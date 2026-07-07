@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="20" font-weight="bold" fill="#1f2937">
+    MESSAGING UX - ERROR STATES
+  </text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Conversation header showing participant name states -->
+    <rect x="20" y="60" width="1240" height="50" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Name resolution examples in header -->
+    <text x="40" y="82" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Conversation with: </text>
+    <text x="175" y="82" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="700">Jane Smith</text>
+    <text x="270" y="82" fill="#374151" font-family="system-ui, sans-serif" font-size="14">(Display Name)</text>
+
+    <!-- Callout 3: Name resolution -->
+    <g transform="translate(400, 82)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Additional name state examples -->
+    <rect x="500" y="68" width="180" height="30" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="510" y="88" fill="#374151" font-family="system-ui, sans-serif" font-size="14">@johnuser (fallback)</text>
+
+    <rect x="700" y="68" width="180" height="30" rx="4" fill="#fee2e2" stroke="#ef4444"/>
+    <text x="710" y="88" fill="#991b1b" font-family="system-ui, sans-serif" font-size="14">Deleted User</text>
+
+    <!-- Callout 4: Special states -->
+    <g transform="translate(900, 82)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <rect x="920" y="68" width="180" height="30" rx="4" fill="#fef3c7" stroke="#f59e0b"/>
+    <text x="930" y="88" fill="#92400e" font-family="system-ui, sans-serif" font-size="14">Unknown User ⚠️</text>
+
+    <!-- Message area -->
+    <rect x="20" y="120" width="1240" height="440" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <!-- Normal decrypted messages -->
+    <g transform="translate(40, 140)">
+      <rect x="0" y="0" width="400" height="50" rx="8" fill="#dcc8a8"/>
+      <text x="15" y="30" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Hey, how's it going?</text>
+    </g>
+
+    <g transform="translate(40, 210)">
+      <rect x="780" y="0" width="380" height="50" rx="8" fill="#8b5cf6"/>
+      <text x="795" y="30" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Pretty good! Working on a new project.</text>
+    </g>
+
+    <!-- Encrypted/undecryptable message with lock icon -->
+    <g transform="translate(40, 280)">
+      <rect x="0" y="0" width="450" height="60" rx="8" fill="#fee2e2" stroke="#f87171" stroke-width="2"/>
+      <!-- Lock icon -->
+      <g transform="translate(20, 30)">
+        <rect x="-8" y="-2" width="16" height="12" rx="2" fill="#ef4444"/>
+        <path d="M-5,-2 L-5,-8 A5,5 0 0 1 5,-8 L5,-2" fill="none" stroke="#ef4444" stroke-width="2"/>
+      </g>
+      <text x="45" y="25" fill="#991b1b" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Encrypted with previous keys</text>
+      <text x="45" y="45" fill="#b91c1c" font-family="system-ui, sans-serif" font-size="14">Cannot be decrypted</text>
+    </g>
+
+    <!-- Callout 1: Decryption failure -->
+    <g transform="translate(510, 310)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Tooltip showing on hover -->
+    <g transform="translate(550, 280)">
+      <rect x="0" y="0" width="350" height="70" rx="6" fill="#1f2937"/>
+      <polygon points="0,35 -10,25 -10,45" fill="#1f2937"/>
+      <text x="15" y="25" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Why can't I read this?</text>
+      <text x="15" y="45" fill="#d1d5db" font-family="system-ui, sans-serif" font-size="14">This message was encrypted with keys</text>
+      <text x="15" y="62" fill="#d1d5db" font-family="system-ui, sans-serif" font-size="14">that have since been revoked.</text>
+    </g>
+
+    <!-- Callout 2: Tooltip -->
+    <g transform="translate(920, 315)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Another encrypted message -->
+    <g transform="translate(40, 370)">
+      <rect x="0" y="0" width="380" height="50" rx="8" fill="#fee2e2" stroke="#f87171" stroke-width="2"/>
+      <g transform="translate(20, 25)">
+        <rect x="-8" y="-2" width="16" height="12" rx="2" fill="#ef4444"/>
+        <path d="M-5,-2 L-5,-8 A5,5 0 0 1 5,-8 L5,-2" fill="none" stroke="#ef4444" stroke-width="2"/>
+      </g>
+      <text x="45" y="30" fill="#991b1b" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Encrypted with previous keys</text>
+    </g>
+
+    <!-- Normal messages continue -->
+    <g transform="translate(40, 440)">
+      <rect x="800" y="0" width="360" height="50" rx="8" fill="#8b5cf6"/>
+      <text x="815" y="30" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Sure, let me know if you need help!</text>
+    </g>
+
+    <!-- Message input -->
+    <rect x="20" y="570" width="1240" height="60" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <rect x="35" y="580" width="1090" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="50" y="605" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="14">Type a message...</text>
+    <rect x="1140" y="580" width="105" height="40" rx="6" fill="#8b5cf6"/>
+    <text x="1192" y="605" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Send</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile conversation header -->
+    <rect x="10" y="85" width="340" height="45" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="25" y="108" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="700">Jane Smith</text>
+    <text x="120" y="108" fill="#374151" font-family="system-ui, sans-serif" font-size="14">(Display)</text>
+
+    <!-- Callout 3 mobile -->
+    <g transform="translate(200, 107)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Special name states mobile -->
+    <rect x="220" y="92" width="120" height="24" rx="4" fill="#fee2e2" stroke="#ef4444"/>
+    <text x="230" y="108" fill="#991b1b" font-family="system-ui, sans-serif" font-size="14">Deleted User</text>
+
+    <!-- Callout 4 mobile -->
+    <g transform="translate(355, 107)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <!-- Mobile message area -->
+    <rect x="10" y="138" width="340" height="440" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <!-- Mobile messages -->
+    <g transform="translate(20, 155)">
+      <rect x="0" y="0" width="200" height="40" rx="8" fill="#dcc8a8"/>
+      <text x="10" y="26" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Hey, how's it going?</text>
+    </g>
+
+    <g transform="translate(20, 205)">
+      <rect x="110" y="0" width="200" height="40" rx="8" fill="#8b5cf6"/>
+      <text x="120" y="26" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Pretty good!</text>
+    </g>
+
+    <!-- Encrypted message mobile -->
+    <g transform="translate(20, 260)">
+      <rect x="0" y="0" width="280" height="55" rx="8" fill="#fee2e2" stroke="#f87171" stroke-width="2"/>
+      <g transform="translate(18, 27)">
+        <rect x="-6" y="-1" width="12" height="10" rx="2" fill="#ef4444"/>
+        <path d="M-4,-1 L-4,-6 A4,4 0 0 1 4,-6 L4,-1" fill="none" stroke="#ef4444" stroke-width="2"/>
+      </g>
+      <text x="35" y="22" fill="#991b1b" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Previous keys</text>
+      <text x="35" y="42" fill="#b91c1c" font-family="system-ui, sans-serif" font-size="14">Cannot decrypt</text>
+    </g>
+
+    <!-- Callout 1 mobile -->
+    <g transform="translate(310, 287)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Mobile tooltip preview -->
+    <g transform="translate(20, 325)">
+      <rect x="0" y="0" width="260" height="50" rx="6" fill="#1f2937"/>
+      <text x="10" y="20" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Why can't I read this?</text>
+      <text x="10" y="40" fill="#d1d5db" font-family="system-ui, sans-serif" font-size="14">Keys were revoked.</text>
+    </g>
+
+    <!-- Callout 2 mobile -->
+    <g transform="translate(290, 350)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Another encrypted message mobile -->
+    <g transform="translate(20, 390)">
+      <rect x="0" y="0" width="220" height="40" rx="8" fill="#fee2e2" stroke="#f87171" stroke-width="2"/>
+      <g transform="translate(18, 20)">
+        <rect x="-6" y="-1" width="12" height="10" rx="2" fill="#ef4444"/>
+        <path d="M-4,-1 L-4,-6 A4,4 0 0 1 4,-6 L4,-1" fill="none" stroke="#ef4444" stroke-width="2"/>
+      </g>
+      <text x="35" y="26" fill="#991b1b" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Previous keys</text>
+    </g>
+
+    <!-- Normal mobile message -->
+    <g transform="translate(20, 445)">
+      <rect x="100" y="0" width="210" height="40" rx="8" fill="#8b5cf6"/>
+      <text x="110" y="26" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Let me know if help!</text>
+    </g>
+
+    <!-- Unknown user example mobile -->
+    <g transform="translate(20, 500)">
+      <rect x="0" y="0" width="200" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b"/>
+      <text x="10" y="26" fill="#92400e" font-family="system-ui, sans-serif" font-size="14">Unknown User ⚠️</text>
+    </g>
+
+    <!-- Mobile input -->
+    <rect x="10" y="585" width="340" height="70" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <rect x="20" y="598" width="240" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="30" y="625" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="14">Message...</text>
+    <rect x="270" y="598" width="70" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="305" y="625" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Send</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+
+    <!-- Column 1: Decryption Failure -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Decryption Failure</text>
+      <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, when a message cannot be</text>
+      <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">decrypted, I see a lock icon with text.</text>
+      <a href="#US-004"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-004</text></a>
+      <a href="#FR-012"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-012</text></a>
+      <a href="#FR-013"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-013</text></a>
+      <a href="#SC-004"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-004</text></a>
+    </g>
+
+    <!-- Column 2: Conversation View -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Conversation View</text>
+      <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I can scroll through messages</text>
+      <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">while tooltip/input stays accessible.</text>
+      <a href="#US-001"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-001</text></a>
+      <a href="#FR-014"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-014</text></a>
+      <a href="#FR-015"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-015</text></a>
+    </g>
+
+    <!-- Column 3: Name Resolution -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Name Resolution</text>
+      <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I see participant's display</text>
+      <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">name (or username as fallback).</text>
+      <a href="#US-005"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-005</text></a>
+      <a href="#FR-016"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-016</text></a>
+      <a href="#FR-017"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-017</text></a>
+      <a href="#SC-005"><rect x="228" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="255" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-005</text></a>
+    </g>
+
+    <!-- Column 4: Special States -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Special User States</text>
+      <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Deleted accounts show "Deleted User",</text>
+      <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">missing profiles show "Unknown User".</text>
+      <a href="#US-005"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-005</text></a>
+      <a href="#FR-018"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-018</text></a>
+      <a href="#FR-019"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-019</text></a>
+    </g>
+  </g>
+
+  <!-- Signature -->
+  <!-- Key Concepts Row (G-047) -->
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">message input | conversation view | error states | OAuth setup</text>
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">016:03 | Messaging Critical Fixes | ScriptHammer</text>
+</svg>

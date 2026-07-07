@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="700" height="420" viewBox="0 0 700 420" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="header-bg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4f46e5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6366f1;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.1"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="700" height="420" fill="#f1f5f9" rx="16"/>
+
+  <!-- Header row -->
+  <rect x="15" y="15" width="670" height="55" fill="url(#header-bg)" rx="10" filter="url(#shadow)"/>
+  <text x="160" y="50" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700" text-anchor="middle" fill="white">PLATFORM</text>
+  <text x="420" y="50" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700" text-anchor="middle" fill="white">CAN THEY READ YOUR DMs?</text>
+  <text x="620" y="50" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700" text-anchor="middle" fill="white">CONTROL</text>
+
+  <!-- Row 1: Facebook -->
+  <rect x="15" y="80" width="670" height="58" fill="white" rx="8" filter="url(#shadow)"/>
+  <rect x="15" y="80" width="6" height="58" fill="#ef4444" rx="3"/>
+  <text x="160" y="116" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" text-anchor="middle" fill="#1e293b">Facebook Messenger</text>
+  <rect x="340" y="97" width="160" height="28" fill="#fef2f2" rx="14"/>
+  <text x="420" y="117" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" text-anchor="middle" fill="#dc2626">YES (default)</text>
+  <rect x="565" y="97" width="70" height="28" fill="#ef4444" rx="14"/>
+  <text x="600" y="117" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" text-anchor="middle" fill="white">LOW</text>
+
+  <!-- Row 2: Instagram -->
+  <rect x="15" y="148" width="670" height="58" fill="white" rx="8" filter="url(#shadow)"/>
+  <rect x="15" y="148" width="6" height="58" fill="#ef4444" rx="3"/>
+  <text x="160" y="184" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" text-anchor="middle" fill="#1e293b">Instagram DMs</text>
+  <rect x="340" y="165" width="160" height="28" fill="#fef2f2" rx="14"/>
+  <text x="420" y="185" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" text-anchor="middle" fill="#dc2626">YES</text>
+  <rect x="565" y="165" width="70" height="28" fill="#ef4444" rx="14"/>
+  <text x="600" y="185" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" text-anchor="middle" fill="white">LOW</text>
+
+  <!-- Row 3: Twitter/X -->
+  <rect x="15" y="216" width="670" height="58" fill="white" rx="8" filter="url(#shadow)"/>
+  <rect x="15" y="216" width="6" height="58" fill="#ef4444" rx="3"/>
+  <text x="160" y="252" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" text-anchor="middle" fill="#1e293b">Twitter / X DMs</text>
+  <rect x="340" y="233" width="160" height="28" fill="#fef2f2" rx="14"/>
+  <text x="420" y="253" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" text-anchor="middle" fill="#dc2626">YES</text>
+  <rect x="565" y="233" width="70" height="28" fill="#ef4444" rx="14"/>
+  <text x="600" y="253" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" text-anchor="middle" fill="white">LOW</text>
+
+  <!-- Row 4: WhatsApp -->
+  <rect x="15" y="284" width="670" height="58" fill="white" rx="8" filter="url(#shadow)"/>
+  <rect x="15" y="284" width="6" height="58" fill="#f59e0b" rx="3"/>
+  <text x="160" y="320" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="600" text-anchor="middle" fill="#1e293b">WhatsApp</text>
+  <rect x="340" y="301" width="160" height="28" fill="#f0fdf4" rx="14"/>
+  <text x="420" y="321" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" text-anchor="middle" fill="#16a34a">NO (encrypted)</text>
+  <rect x="565" y="301" width="70" height="28" fill="#f59e0b" rx="14"/>
+  <text x="600" y="321" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" text-anchor="middle" fill="white">MED</text>
+
+  <!-- Row 5: ScriptHammer (highlighted) -->
+  <rect x="15" y="352" width="670" height="58" fill="#f0fdf4" rx="8" stroke="#22c55e" stroke-width="3" filter="url(#shadow)"/>
+  <rect x="15" y="352" width="6" height="58" fill="#22c55e" rx="3"/>
+  <text x="160" y="388" font-family="system-ui, -apple-system, sans-serif" font-size="17" font-weight="800" text-anchor="middle" fill="#1e293b">ScriptHammer</text>
+  <rect x="340" y="369" width="160" height="28" fill="#dcfce7" rx="14"/>
+  <text x="420" y="389" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" text-anchor="middle" fill="#15803d">NO (encrypted)</text>
+  <rect x="565" y="369" width="70" height="28" fill="#22c55e" rx="14"/>
+  <text x="600" y="389" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" text-anchor="middle" fill="white">HIGH</text>
+</svg>

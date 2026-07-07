@@ -1,0 +1,2919 @@
+/**
+ * Test User Factory - Dynamic user creation for E2E tests
+ * Feature: 027-signup-e2e-tests
+ *
+ * Uses Supabase admin API to:
+ * - Create users dynamically in tests
+ * - Auto-confirm email addresses
+ * - Clean up users after tests
+ *
+ * This enables self-contained E2E tests that don't rely on pre-seeded users.
+ */
+
+import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
+import { expect, type Page, type Browser } from '@playwright/test';
+import { KeyDerivationService } from '@/lib/messaging/key-derivation';
+// Static import so Playwright's TS loader transpiles it: a dynamic import() of
+// this raw .ts module fails under the Playwright node runtime ("Cannot use
+// import statement outside a module"). new GroupKeyService() is Node-safe
+// (createClient() returns an inert {} when window is undefined), and the
+// transitive messaging Dexie instance constructs without indexedDB.
+import { GroupKeyService } from '@/services/messaging/group-key-service';
+
+/**
+ * Email domain for test users.
+ *
+ * IMPORTANT: Supabase validates email domains for MX (mail exchange) records.
+ * - `@example.com` is BLOCKED (reserved domain)
+ * - Custom domains without email infrastructure are BLOCKED
+ * - Gmail with plus aliases WORKS: `yourname+tag@gmail.com`
+ *
+ * Priority order:
+ * 1. TEST_EMAIL_DOMAIN (explicit setting)
+ * 2. Domain derived from TEST_USER_PRIMARY_EMAIL (recommended)
+ * 3. 'example.com' (fallback - will fail with Supabase)
+ *
+ * @example
+ * // .env - Option 1: Use explicit domain
+ * TEST_EMAIL_DOMAIN=myname+e2e@gmail.com
+ *
+ * // .env - Option 2: Derive from primary test user (recommended)
+ * TEST_USER_PRIMARY_EMAIL=myname+test@gmail.com
+ */
+function getDerivedEmailDomain(): string {
+  // First check if TEST_EMAIL_DOMAIN is explicitly set
+  if (process.env.TEST_EMAIL_DOMAIN) {
+    return process.env.TEST_EMAIL_DOMAIN;
+  }
+
+  // Try to derive from TEST_USER_PRIMARY_EMAIL
+  const primaryEmail = process.env.TEST_USER_PRIMARY_EMAIL || '';
+  if (primaryEmail.includes('@gmail.com')) {
+    // Extract base user from Gmail (e.g., "user+test@gmail.com" -> "user")
+    const baseUser = primaryEmail.split('+')[0] || primaryEmail.split('@')[0];
+    return `${baseUser}+e2e@gmail.com`;
+  }
+
+  if (primaryEmail.includes('@')) {
+    // Use the same domain as primary email
+    return primaryEmail.split('@')[1];
+  }
+
+  // Fallback - will fail with Supabase
+  return 'example.com';
+}
+
+export const TEST_EMAIL_DOMAIN = getDerivedEmailDomain();
+
+// Warn if using fallback domain (will fail with Supabase)
+if (TEST_EMAIL_DOMAIN === 'example.com') {
+  console.warn(
+    '\n⚠️  WARNING: No valid email domain configured!\n' +
+      '   E2E tests will fail because Supabase rejects @example.com emails.\n' +
+      '   Set TEST_USER_PRIMARY_EMAIL or TEST_EMAIL_DOMAIN in .env\n' +
+      '   (e.g., TEST_USER_PRIMARY_EMAIL=yourname+test@gmail.com)\n'
+  );
+}
+
+export interface TestUser {
+  id: string;
+  email: string;
+  password: string;
+}
+
+let adminClient: SupabaseClient | null = null;
+
+/**
+ * Get or create the Supabase admin client
+ * Uses SUPABASE_SERVICE_ROLE_KEY for admin operations
+ */
+export function getAdminClient(): SupabaseClient | null {
+  if (adminClient) return adminClient;
+
+  // In-container admin client: prefer SUPABASE_ADMIN_URL (the compose-internal
+  // Kong hostname, e.g. supabase-kong:8000) when running against the local
+  // sandbox, since Node-in-container can't reach the host-published localhost
+  // port. Falls back to NEXT_PUBLIC_SUPABASE_URL — which is what cloud/CI use
+  // (SUPABASE_ADMIN_URL is unset there), so those paths are unchanged. See #121.
+  const supabaseUrl =
+    process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.warn(
+      'Test User Factory: SUPABASE_SERVICE_ROLE_KEY not configured. ' +
+        'Dynamic user creation will not work.'
+    );
+    return null;
+  }
+
+  adminClient = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+
+  return adminClient;
+}
+
+/**
+ * Create a test user with auto-confirmed email
+ *
+ * @param email - User email address
+ * @param password - User password (must meet Supabase requirements)
+ * @param options - Optional: username for user_profiles, additional metadata
+ * @returns TestUser object with id, email, password
+ *
+ * @example
+ * const user = await createTestUser('test@example.com', 'Password123!');
+ * // user is now created and email-confirmed
+ * await deleteTestUser(user.id);
+ */
+export async function createTestUser(
+  email: string,
+  password: string,
+  options?: {
+    username?: string;
+    createProfile?: boolean;
+    metadata?: Record<string, unknown>;
+  }
+): Promise<TestUser | null> {
+  const client = getAdminClient();
+  if (!client) {
+    console.error('createTestUser: Admin client not available');
+    return null;
+  }
+
+  // Check if user already exists (paginated — see getUserByEmail; an
+  // unpaginated listUsers() misses users past page 1 and would then try to
+  // re-create an existing user, failing with "already registered").
+  const existingUser = await getUserByEmail(email);
+
+  if (existingUser) {
+    console.log(`createTestUser: User ${email} already exists, deleting first`);
+    await deleteTestUser(existingUser.id);
+  }
+
+  // Create user with email confirmed
+  const { data, error } = await client.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true, // Auto-confirm email
+    user_metadata: options?.metadata,
+  });
+
+  if (error) {
+    console.error(
+      `createTestUser: Failed to create user ${email}:`,
+      error.message
+    );
+    return null;
+  }
+
+  if (!data.user) {
+    console.error(`createTestUser: No user returned for ${email}`);
+    return null;
+  }
+
+  console.log(`createTestUser: Created user ${email} with id ${data.user.id}`);
+
+  // Create user_profiles record if requested
+  if (options?.createProfile !== false) {
+    const username = options?.username || email.split('@')[0];
+    await createUserProfile(data.user.id, username);
+  }
+
+  return {
+    id: data.user.id,
+    email,
+    password,
+  };
+}
+
+/**
+ * Create a user_profiles record for a user
+ *
+ * Required for messaging/connection features to work properly.
+ */
+export async function createUserProfile(
+  userId: string,
+  username: string
+): Promise<boolean> {
+  const client = getAdminClient();
+  if (!client) return false;
+
+  // Check if profile already exists
+  const { data: existing } = await client
+    .from('user_profiles')
+    .select('id')
+    .eq('id', userId)
+    .single();
+
+  if (existing) {
+    console.log(`createUserProfile: Profile already exists for ${userId}`);
+    return true;
+  }
+
+  const { error } = await client.from('user_profiles').insert({
+    id: userId,
+    username,
+    display_name: username,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+
+  if (error) {
+    console.error(`createUserProfile: Failed for ${userId}:`, error.message);
+    return false;
+  }
+
+  console.log(
+    `createUserProfile: Created profile for ${userId} with username ${username}`
+  );
+  return true;
+}
+
+/**
+ * Delete a test user and their associated data
+ *
+ * Cleans up in order:
+ * 1. Messages sent by user
+ * 2. Conversations involving user
+ * 3. User connections
+ * 4. User profile
+ * 5. Auth user
+ */
+export async function deleteTestUser(userId: string): Promise<boolean> {
+  const client = getAdminClient();
+  if (!client) return false;
+
+  try {
+    // Clean up messaging data
+    await client.from('messages').delete().eq('sender_id', userId);
+
+    await client
+      .from('conversations')
+      .delete()
+      .or(`participant_1_id.eq.${userId},participant_2_id.eq.${userId}`);
+
+    await client
+      .from('user_connections')
+      .delete()
+      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
+
+    // Clean up user profile
+    await client.from('user_profiles').delete().eq('id', userId);
+
+    // Delete auth user
+    const { error } = await client.auth.admin.deleteUser(userId);
+
+    if (error) {
+      console.error(
+        `deleteTestUser: Failed to delete auth user ${userId}:`,
+        error.message
+      );
+      return false;
+    }
+
+    console.log(`deleteTestUser: Successfully deleted user ${userId}`);
+    return true;
+  } catch (err) {
+    console.error(`deleteTestUser: Error deleting user ${userId}:`, err);
+    return false;
+  }
+}
+
+/**
+ * Delete a test user by email address
+ */
+export async function deleteTestUserByEmail(email: string): Promise<boolean> {
+  const client = getAdminClient();
+  if (!client) return false;
+
+  // Paginated lookup — an unpaginated listUsers() misses users past page 1, so
+  // throwaway users would never get deleted and pile up past 50, which is what
+  // pushed the shared test users off page 1 and triggered #197 in the first place.
+  const user = await getUserByEmail(email);
+
+  if (!user) {
+    console.log(`deleteTestUserByEmail: User ${email} not found`);
+    return true; // Already doesn't exist
+  }
+
+  return deleteTestUser(user.id);
+}
+
+/**
+ * Get user by email address.
+ *
+ * Pages through ALL users — `listUsers()` returns only the first 50 by default,
+ * so once the project holds >50 users the target can be on a later page and an
+ * unpaginated lookup returns null (the root cause of the #197 "test user not
+ * found" flake). Search is case-insensitive.
+ */
+export async function getUserByEmail(email: string): Promise<User | null> {
+  const client = getAdminClient();
+  if (!client) return null;
+
+  const target = email.toLowerCase();
+  for (let page = 1; page <= 50; page++) {
+    const { data, error } = await client.auth.admin.listUsers({
+      page,
+      perPage: 1000,
+    });
+    if (error) return null;
+    const batch = data?.users ?? [];
+    const found = batch.find((u) => u.email?.toLowerCase() === target);
+    if (found) return found;
+    if (batch.length < 1000) break; // last page reached
+  }
+  return null;
+}
+
+/**
+ * Check if admin client is available
+ */
+export function isAdminClientAvailable(): boolean {
+  return getAdminClient() !== null;
+}
+
+/**
+ * Ensure a test user has valid encryption keys in the database.
+ *
+ * Uses the admin API to directly insert password-derived keys,
+ * bypassing the browser-based setup flow (ReAuthModal, /messages/setup)
+ * which is unreliable on Supabase free tier due to timeouts.
+ *
+ * This follows the same pattern as scripts/initialize-test-keys.ts.
+ *
+ * @param email - User email address
+ * @param password - Password to derive encryption keys from
+ * @returns true if keys exist (or were created), false on failure
+ */
+export async function ensureEncryptionKeys(
+  email: string,
+  password: string
+): Promise<boolean> {
+  const admin = getAdminClient();
+  if (!admin) {
+    console.error(`ensureEncryptionKeys: Admin client not available`);
+    return false;
+  }
+
+  const user = await getUserByEmail(email);
+  if (!user) {
+    console.error(`ensureEncryptionKeys: User ${email} not found`);
+    return false;
+  }
+
+  // Check if keys already exist — if so, keep them. Deleting and recreating
+  // with a new random salt every CI run was the root cause of all ECDH
+  // decryption failures: the auth-setup job would create keys with salt S1,
+  // then shards would race to derive from S1, and any transient error meant
+  // a shard got wrong keys. Persistent keys eliminate this entirely.
+  const { data: existing } = await admin
+    .from('user_encryption_keys')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('revoked', false)
+    .maybeSingle();
+
+  if (existing) {
+    console.log(`✓ Encryption keys already exist for ${email} — keeping`);
+    return true;
+  }
+
+  // Only create if no keys exist (first-ever run for this user)
+  const kds = new KeyDerivationService();
+  const salt = kds.generateSalt();
+  const keyPair = await kds.deriveKeyPair({ password, salt });
+
+  const { error } = await admin.from('user_encryption_keys').insert({
+    user_id: user.id,
+    public_key: keyPair.publicKeyJwk,
+    encryption_salt: keyPair.salt,
+    device_id: null,
+    expires_at: null,
+    revoked: false,
+  });
+
+  if (error) {
+    console.error(`ensureEncryptionKeys: Failed for ${email}:`, error.message);
+    return false;
+  }
+
+  console.log(`✓ Encryption keys created for ${email} via admin API`);
+  return true;
+}
+
+/**
+ * Generate a unique test email using TEST_EMAIL_DOMAIN
+ *
+ * Supports Gmail plus aliases (e.g., myname+test@gmail.com)
+ * When using Gmail, the prefix is added as a plus-alias tag.
+ *
+ * @param prefix - Prefix for the email (default: 'e2e-test')
+ * @returns Unique email address
+ *
+ * @example
+ * // With TEST_EMAIL_DOMAIN=example.com (default)
+ * generateTestEmail('signup') // => 'signup-1234567890-abc123@example.com'
+ *
+ * // With TEST_EMAIL_DOMAIN=myname+e2e@gmail.com
+ * generateTestEmail('signup') // => 'myname+signup-1234567890-abc123@gmail.com'
+ */
+export function generateTestEmail(prefix = 'e2e-test'): string {
+  const domain = TEST_EMAIL_DOMAIN;
+  const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+  // Handle Gmail plus alias format (e.g., myname+e2e@gmail.com)
+  if (domain.includes('@gmail.com')) {
+    const [baseUser] = domain.split('@');
+    // Append prefix to the existing plus alias or create new one
+    if (baseUser.includes('+')) {
+      const [user, existingTag] = baseUser.split('+');
+      return `${user}+${existingTag}-${prefix}-${uniqueSuffix}@gmail.com`;
+    }
+    return `${baseUser}+${prefix}-${uniqueSuffix}@gmail.com`;
+  }
+
+  // Standard domain format
+  return `${prefix}-${uniqueSuffix}@${domain}`;
+}
+
+/**
+ * Default test password that meets Supabase requirements
+ */
+export const DEFAULT_TEST_PASSWORD = 'TestPassword123!';
+
+/**
+ * Dismiss cookie consent banner and promotional banners if visible.
+ *
+ * Call this after page.goto() and before interacting with forms.
+ * These banners overlay the page and can intercept button clicks.
+ *
+ * Dismisses:
+ * - Cookie consent banner ("Accept All" button)
+ * - Promotional countdown banner ("Dismiss countdown banner" button)
+ *
+ * @param page - Playwright page object
+ * @param options - Configuration options
+ * @param options.timeout - Max time to wait for banner (default: 2000ms)
+ *
+ * @example
+ * await page.goto('/sign-up');
+ * await dismissCookieBanner(page);
+ * // Now safe to interact with the sign-up form
+ */
+export async function dismissCookieBanner(
+  page: Page,
+  options: { timeout?: number } = {}
+): Promise<void> {
+  const { timeout = 2000 } = options;
+
+  // Wait for page to stabilize first
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForTimeout(500);
+
+  // Dismiss cookie consent banner using force click
+  try {
+    const acceptButton = page
+      .getByRole('button', { name: /accept all/i })
+      .first();
+    if (await acceptButton.isVisible({ timeout }).catch(() => false)) {
+      await acceptButton.click({ force: true });
+
+      // CRITICAL: Wait for consent to persist to localStorage
+      // React's useEffect saves consent asynchronously after state update.
+      // Without this wait, navigating away before save completes loses consent.
+      await page.waitForFunction(
+        () => {
+          try {
+            const consent = localStorage.getItem('cookie-consent');
+            if (!consent) return false;
+            const parsed = JSON.parse(consent);
+            return parsed.functional === true;
+          } catch {
+            return false;
+          }
+        },
+        { timeout: 3000 }
+      );
+    }
+  } catch {
+    // Banner not present or already dismissed - continue silently
+  }
+
+  // Dismiss promotional countdown banner using force click
+  try {
+    const countdownDismiss = page.getByRole('button', {
+      name: /dismiss countdown banner/i,
+    });
+    if (await countdownDismiss.isVisible({ timeout }).catch(() => false)) {
+      await countdownDismiss.click({ force: true });
+      await page.waitForTimeout(500);
+    }
+  } catch {
+    // Banner not present or already dismissed - continue silently
+  }
+}
+
+/**
+ * Handle ReAuthModal that appears when accessing /messages after session restore.
+ * Enters the messaging password to unlock encryption keys.
+ *
+ * The ReAuthModal appears when:
+ * - User navigates to /messages after session restore
+ * - Session is valid but encryption keys are not in memory
+ *
+ * @param page - Playwright page object
+ * @param password - Password to enter (defaults to TEST_USER_PRIMARY_PASSWORD)
+ * @returns true if modal was handled, false if modal was not present
+ *
+ * @example
+ * await page.goto('/messages');
+ * await handleReAuthModal(page);
+ * // Now messaging UI is accessible
+ */
+export async function handleReAuthModal(
+  page: Page,
+  password?: string
+): Promise<boolean> {
+  const testPassword =
+    password || process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
+
+  // Check if the CURRENT user's private key is in IndexedDB. After the
+  // batch 7c migration, keys live in MessagingDB.messaging_private_keys
+  // as non-extractable CryptoKey objects (no longer in localStorage).
+  // We still derive userId from the Supabase auth-token in localStorage.
+  const currentUserKeyExists = await page.evaluate(async () => {
+    const sessionKey = Object.keys(localStorage).find(
+      (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+    );
+    if (!sessionKey) return false;
+    let userId: string | undefined;
+    try {
+      const session = JSON.parse(localStorage.getItem(sessionKey) || '{}');
+      userId = session?.user?.id;
+    } catch {
+      return false;
+    }
+    if (!userId) return false;
+
+    // Query IndexedDB for the user's private key.
+    return new Promise<boolean>((resolve) => {
+      try {
+        const open = indexedDB.open('MessagingDB');
+        open.onsuccess = () => {
+          const db = open.result;
+          if (!db.objectStoreNames.contains('messaging_private_keys')) {
+            db.close();
+            resolve(false);
+            return;
+          }
+          const tx = db.transaction('messaging_private_keys', 'readonly');
+          const req = tx.objectStore('messaging_private_keys').get(userId!);
+          req.onsuccess = () => {
+            db.close();
+            resolve(req.result != null);
+          };
+          req.onerror = () => {
+            db.close();
+            resolve(false);
+          };
+        };
+        open.onerror = () => resolve(false);
+        // If MessagingDB doesn't exist yet, onupgradeneeded fires — bail.
+        open.onupgradeneeded = (ev) => {
+          (ev.target as IDBOpenDBRequest).transaction?.abort();
+          resolve(false);
+        };
+      } catch {
+        resolve(false);
+      }
+    });
+  });
+  if (currentUserKeyExists) {
+    // Keys are in localStorage, but verify the auth session is actually valid.
+    // Supabase's single-use refresh tokens can be consumed by a previous test
+    // context, leaving localStorage keys intact but the session expired.
+    // Check if the page shows authenticated state (no "Sign In" link in nav).
+    await page.waitForTimeout(1000);
+    const isAuthenticated = await page.evaluate(() => {
+      // Check if the Supabase session has a non-expired access token
+      const sessionKey = Object.keys(localStorage).find(
+        (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+      );
+      if (!sessionKey) return false;
+      try {
+        const stored = JSON.parse(localStorage.getItem(sessionKey) || '{}');
+        const expiresAt = stored?.expires_at;
+        if (!expiresAt) return false;
+        // Token must have at least 60 seconds remaining
+        return expiresAt > Math.floor(Date.now() / 1000) + 60;
+      } catch {
+        return false;
+      }
+    });
+    if (isAuthenticated) {
+      // Token is valid in localStorage, but the Supabase JS client may not
+      // have initialized the session yet (async useEffect in AuthContext).
+      // Wait for the browser's Supabase client to report a valid session.
+      await page.waitForFunction(
+        () => {
+          // Check if window.__supabase or the global Supabase client has a session.
+          // The Supabase client stores the parsed session in memory after init.
+          const sessionKey = Object.keys(localStorage).find(
+            (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+          );
+          if (!sessionKey) return false;
+          try {
+            const stored = JSON.parse(localStorage.getItem(sessionKey) || '{}');
+            // The session object must have access_token AND user — this means
+            // the client has parsed it successfully.
+            return !!(stored?.access_token && stored?.user?.id);
+          } catch {
+            return false;
+          }
+        },
+        { timeout: 10000 }
+      );
+      // Give React one render cycle to propagate the auth state
+      await page.waitForTimeout(1500);
+      console.log(
+        `[handleReAuthModal] Current user's keys cached + session valid — skipping modal. URL: ${page.url()}`
+      );
+      return false;
+    }
+    console.log(
+      `[handleReAuthModal] Keys cached but session expired — need fresh sign-in. URL: ${page.url()}`
+    );
+    // Fall through to the gate/modal handling below
+  }
+
+  // EncryptionKeyGate has two paths when keys aren't in memory:
+  // 1. Keys exist in DB → shows ReAuthModal overlay
+  // 2. Keys missing from DB (race/slow query) → redirects to /messages/setup
+  // Handle both: wait for the gate to finish checking, then react.
+
+  // Capture browser console for CI debugging (EncryptionKeyGate logs hasKeys result)
+  const consoleHandler = (msg: import('@playwright/test').ConsoleMessage) => {
+    const text = msg.text();
+    if (text.includes('EncryptionKeyGate') || text.includes('hasKeys')) {
+      console.log(`[browser] ${text}`);
+    }
+  };
+  page.on('console', consoleHandler);
+
+  // Wait for EncryptionKeyGate to finish its async check (auth hydration +
+  // hasKeysForUser() Supabase query). The gate renders a loading overlay
+  // with data-testid="encryption-key-gate-loading" while checking. Once it
+  // disappears, the gate has decided: show ReAuthModal, redirect to setup,
+  // or keys are already unlocked.
+  const loadingOverlay = page.locator(
+    '[data-testid="encryption-key-gate-loading"]'
+  );
+  try {
+    // First wait for the overlay to appear (page may still be loading)
+    await loadingOverlay
+      .waitFor({ state: 'visible', timeout: 10000 })
+      .catch(() => {});
+    // Then wait for it to disappear (gate finished checking)
+    await loadingOverlay.waitFor({ state: 'hidden', timeout: 30000 });
+    console.log(`[handleReAuthModal] Gate loading finished`);
+  } catch {
+    // Overlay may never appear if keys were already in memory
+    console.log(
+      `[handleReAuthModal] Gate overlay not detected (keys may be in memory)`
+    );
+  }
+
+  console.log(`[handleReAuthModal] URL after gate: ${page.url()}`);
+
+  if (page.url().includes('/messages/setup')) {
+    // Path 2: Full setup page — fill form and submit
+    const setupPassword = page.locator('#setup-password');
+    const setupVisible = await setupPassword
+      .isVisible({ timeout: 5000 })
+      .catch(() => false);
+    if (setupVisible) {
+      await setupPassword.fill(testPassword);
+      await page.locator('#setup-confirm').fill(testPassword);
+      const setupBtn = page.getByRole('button', {
+        name: /Set Up Encrypted Messaging/i,
+      });
+      await setupBtn.click();
+      await page.waitForURL(/\/messages(?!\/setup)/, { timeout: 60000 });
+      await page.waitForLoadState('domcontentloaded');
+      return true;
+    }
+  }
+
+  // Path 1: ReAuthModal overlay on /messages page
+  const modal = page.locator('[role="dialog"]').first();
+
+  // Wait for the modal to appear. The gate loading overlay already
+  // finished above, so if the modal is going to appear, it shows within
+  // 3s (React re-render after checkKeys resolves). 15s was too long and
+  // wasted time in tests where keys are already unlocked.
+  try {
+    await modal.waitFor({ state: 'visible', timeout: 3000 });
+    console.log(`[handleReAuthModal] Modal found at URL: ${page.url()}`);
+  } catch {
+    // Modal didn't appear — either keys unlocked OR user not authenticated.
+    // Check localStorage for a valid auth token rather than DOM text, which
+    // flashes "Sign in" during the multi-second auth hydration.
+    const hasAuthToken = await page.evaluate(() => {
+      const key = Object.keys(localStorage).find(
+        (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+      );
+      if (!key) return false;
+      try {
+        const session = JSON.parse(localStorage.getItem(key) || '{}');
+        return !!session?.access_token;
+      } catch {
+        return false;
+      }
+    });
+
+    if (hasAuthToken) {
+      // Auth token exists — the "Sign in" text is a transient flash during
+      // auth hydration. Wait for auth to resolve (up to 10s).
+      console.log(
+        `[handleReAuthModal] Auth token in localStorage, waiting for hydration. URL: ${page.url()}`
+      );
+      try {
+        await page.waitForFunction(
+          () => {
+            // Wait until the "Sign in" / "You must be logged in" text disappears
+            const el = document.querySelector(
+              '[data-testid="message-thread"], [data-testid="encryption-key-gate-loading"]'
+            );
+            return el !== null;
+          },
+          { timeout: 10000 }
+        );
+        console.log('[handleReAuthModal] Auth hydrated — no modal needed');
+        return false;
+      } catch {
+        // Hydration timed out — fall through to sign-in
+        console.log(
+          '[handleReAuthModal] Auth hydration timeout — falling through to sign-in'
+        );
+      }
+    }
+
+    // Check if actually not authenticated (no token in localStorage)
+    const notAuthed = !hasAuthToken;
+    if (notAuthed) {
+      console.log(
+        `[handleReAuthModal] Session expired — no auth token. URL: ${page.url()}`
+      );
+      // Sign in fresh via the UI (performSignIn handles the /sign-in form)
+      await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
+      const result = await performSignIn(
+        page,
+        process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
+        testPassword
+      );
+      if (!result.success) {
+        console.error(
+          `[handleReAuthModal] Fresh sign-in failed: ${result.error}`
+        );
+        return false;
+      }
+      console.log(
+        '[handleReAuthModal] Fresh sign-in succeeded — returning to messages'
+      );
+      // Navigate back to where we were
+      const returnUrl = page.url().includes('/messages')
+        ? page.url()
+        : '/messages';
+      await page.goto(returnUrl, { waitUntil: 'domcontentloaded' });
+      // Recursively handle the modal now that we're authenticated
+      return handleReAuthModal(page, password);
+    }
+    console.log(`[handleReAuthModal] No modal needed. URL: ${page.url()}`);
+    return false;
+  }
+
+  // Verify it's the ReAuthModal by checking content
+  const modalText = await modal.textContent();
+  if (
+    !modalText?.toLowerCase().includes('password') &&
+    !modalText?.toLowerCase().includes('encryption') &&
+    !modalText?.toLowerCase().includes('messaging')
+  ) {
+    return false;
+  }
+
+  // Fill password and submit. Allow up to 3 attempts to handle the
+  // documented WebKit-on-Linux flake: Argon2id key derivation is slow
+  // enough on webkit-msg that the ReAuthModal can briefly transition to
+  // `hidden` (Playwright's `waitFor({state:'hidden'})` resolves) and then
+  // re-appear when the underlying unlock actually fails or retries.
+  // We treat "hidden then back" as a transient failure and re-submit the
+  // password. This caught a deterministic 3/3-retry failure mode in
+  // 26105491210 webkit-msg 1/1 (PR #95 rebased run, 2026-05-19) where the
+  // failure-time screenshot showed the modal still visible despite the
+  // helper having "succeeded".
+  const MAX_ATTEMPTS = 3;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    const passwordInput = modal.locator('input[type="password"]').first();
+    await passwordInput.fill(testPassword);
+
+    const submitBtn = modal.locator('button[type="submit"]').first();
+    await submitBtn.click();
+
+    // Wait for modal to close. Argon2id key derivation is CPU-intensive
+    // and under 24-shard CI load with WebCrypto thread contention can take
+    // 60+ seconds. Generous timeout prevents flaky failures.
+    try {
+      await modal.waitFor({ state: 'hidden', timeout: 90000 });
+    } catch {
+      console.log(
+        `[handleReAuthModal] ✗ Modal never hidden on attempt ${attempt}/${MAX_ATTEMPTS}.`
+      );
+      if (attempt === MAX_ATTEMPTS) return false;
+      continue;
+    }
+
+    // Verify the hidden state is SUSTAINED — poll for an extra 2 seconds
+    // to confirm the modal doesn't pop back. Under WebKit + slow Argon2id
+    // we sometimes see a brief hide transition before the dialog re-opens
+    // because the actual unlock failed.
+    const sustainedHidden = await modal
+      .waitFor({ state: 'hidden', timeout: 2000 })
+      .then(async () => {
+        // Sleep + recheck. If still hidden, we're good.
+        await new Promise<void>((resolve) => setTimeout(resolve, 2000));
+        return (await modal.count()) === 0 || !(await modal.isVisible());
+      })
+      .catch(() => false);
+
+    if (sustainedHidden) {
+      console.log(
+        `[handleReAuthModal] ✓ Modal closed (attempt ${attempt}/${MAX_ATTEMPTS}). URL: ${page.url()}`
+      );
+      return true;
+    }
+
+    console.log(
+      `[handleReAuthModal] ⚠ Modal re-appeared after attempt ${attempt}/${MAX_ATTEMPTS}; retrying...`
+    );
+  }
+
+  console.log(
+    `[handleReAuthModal] ✗ Modal persisted after ${MAX_ATTEMPTS} unlock attempts. URL: ${page.url()}`
+  );
+  return false;
+}
+
+/**
+ * Handle the initial Encrypted Messaging Setup page.
+ *
+ * When a user navigates to /messages without encryption keys,
+ * they are redirected to /messages/setup. This helper fills in
+ * the messaging password and submits the form.
+ *
+ * @param page - Playwright page object
+ * @param messagingPassword - Password for messaging encryption (min 8 chars)
+ * @returns true if setup was handled, false if not on setup page
+ */
+export async function handleEncryptionSetup(
+  page: Page,
+  messagingPassword = 'TestMessaging123!'
+): Promise<boolean> {
+  // Check if we're on the setup page
+  const url = page.url();
+  if (!url.includes('/messages/setup')) {
+    // Also check if the setup page heading is visible (in case URL check is too early)
+    const heading = page.getByRole('heading', {
+      name: /Set Up Encrypted Messaging/i,
+    });
+    const isSetupVisible = await heading
+      .isVisible({ timeout: 3000 })
+      .catch(() => false);
+    if (!isSetupVisible) {
+      return false;
+    }
+  }
+
+  // Wait for the form to be ready
+  const passwordInput = page.locator('#setup-password');
+  await passwordInput.waitFor({ state: 'visible', timeout: 10000 });
+
+  // Fill password fields
+  await passwordInput.fill(messagingPassword);
+  await page.locator('#setup-confirm').fill(messagingPassword);
+
+  // Submit the form
+  const submitBtn = page.getByRole('button', {
+    name: /Set Up Encrypted Messaging/i,
+  });
+  await submitBtn.click();
+
+  // Wait for redirect to /messages (setup complete)
+  await page.waitForURL(/\/messages(?!\/setup)/, { timeout: 15000 });
+  await page.waitForLoadState('networkidle');
+
+  return true;
+}
+
+/**
+ * Click the Sign Out button in GlobalNav dropdown.
+ *
+ * The Sign Out button is inside the user avatar dropdown menu.
+ * This helper opens the dropdown and clicks Sign Out.
+ *
+ * @param page - Playwright page object
+ *
+ * @example
+ * await signOutViaDropdown(page);
+ * // User is now signed out
+ */
+export async function signOutViaDropdown(page: Page): Promise<void> {
+  // Click the avatar to open dropdown
+  // Try multiple selectors since AvatarDisplay may override parent aria-label
+  const avatarButton = page
+    .getByLabel('User account menu')
+    .or(page.locator('[aria-label*="avatar"]'));
+  await avatarButton.first().click();
+
+  // Wait for dropdown to open and click Sign Out
+  const signOutButton = page.getByRole('button', { name: 'Sign Out' });
+  await signOutButton.waitFor({ state: 'visible', timeout: 5000 });
+  await signOutButton.click();
+
+  // Wait for sign-out to complete (redirects to home or sign-in page).
+  // Use callback: waitForURL matches full URL, not pathname.
+  // Firefox may redirect to /sign-in/?returnUrl=... before settling on /.
+  await page.waitForURL(
+    (url) => url.pathname === '/' || url.pathname.startsWith('/sign-in'),
+    { timeout: 15000 }
+  );
+
+  // Verify signed-out state. Prefer observing GlobalNav's "Sign In" link;
+  // but on WebKit under concurrent load, getSession() occasionally
+  // re-resolves to a stale-but-valid session after window.location.href='/'
+  // navigates, leaving GlobalNav showing authenticated links indefinitely.
+  // If the Sign In link never appears within 30s, force a hard reload
+  // (which reinitializes the Supabase client from scratch with the cleared
+  // cookies) and re-check.
+  const signInLink = page.getByRole('link', { name: 'Sign In' });
+  const appeared = await signInLink
+    .waitFor({ state: 'visible', timeout: 30000 })
+    .then(() => true)
+    .catch(() => false);
+  if (!appeared) {
+    // Hard reload to defeat any stale getSession that is keeping the user
+    // authenticated in GlobalNav state.
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await signInLink.waitFor({ state: 'visible', timeout: 30000 });
+  }
+}
+
+/**
+ * Wait for authenticated state to fully hydrate.
+ * Waits for Messages link to be visible in GlobalNav (indicates user is logged in).
+ *
+ * This addresses the race condition where:
+ * 1. Sign-in completes and URL redirects
+ * 2. But AuthContext hasn't updated yet
+ * 3. GlobalNav still shows Sign In/Sign Up buttons
+ *
+ * Note: Sign Out button is inside a dropdown menu and not directly visible,
+ * so we check for the Messages link which only appears for authenticated users.
+ *
+ * @param page - Playwright page object
+ * @param timeout - Max time to wait (default: 15000ms)
+ *
+ * @example
+ * await page.getByRole('button', { name: 'Sign In' }).click();
+ * await waitForAuthenticatedState(page);
+ * // Now user is authenticated and Messages link is visible
+ */
+export async function waitForAuthenticatedState(
+  page: Page,
+  timeout = 15000
+): Promise<void> {
+  // Wait for URL to not be sign-in
+  await page.waitForURL((url) => !url.pathname.includes('/sign-in'), {
+    timeout,
+  });
+
+  // Wait for authenticated navbar indicators
+  // Try multiple indicators since layout can vary
+  const authIndicators = [
+    page.getByRole('link', { name: /messages/i }),
+    page.getByLabel('User account menu'),
+    page.locator('img[alt*="avatar"]'),
+  ];
+
+  // Wait for auth indicators first - give AuthContext time to hydrate
+  // Don't race with Sign In link because SSR may briefly show unauthenticated state
+  try {
+    await Promise.any(
+      authIndicators.map((indicator) =>
+        indicator.waitFor({ state: 'visible', timeout })
+      )
+    );
+    // Auth indicator found - we're authenticated
+    return;
+  } catch {
+    // All auth indicators timed out - now check if we're definitively unauthenticated
+    // Wait a bit for any hydration to complete
+    await page.waitForLoadState('networkidle').catch(() => {});
+
+    // Check for Sign In link AFTER page has settled
+    const signInLink = page.getByRole('link', { name: 'Sign In' });
+    const isSignInVisible = await signInLink.isVisible().catch(() => false);
+
+    if (isSignInVisible) {
+      throw new Error(
+        `Auth failed: Sign In link visible on ${page.url()}. User not authenticated.`
+      );
+    }
+
+    // Neither auth indicators nor sign-in visible - log warning but don't fail
+    // This can happen on pages that don't have GlobalNav
+    console.warn(
+      `waitForAuthenticatedState: No auth indicators found on ${page.url()}, but Sign In link also not visible. Assuming authenticated.`
+    );
+  }
+
+  // Brief stabilization delay
+  await page.waitForLoadState('domcontentloaded');
+}
+
+/**
+ * Perform sign-in with proper error detection.
+ *
+ * Unlike just filling forms and clicking, this helper:
+ * 1. Fills credentials
+ * 2. Clicks sign-in
+ * 3. Waits for EITHER success OR failure
+ * 4. Returns detailed error if sign-in failed
+ *
+ * @param page - Playwright page object
+ * @param email - User email
+ * @param password - User password
+ * @param options - Configuration options
+ * @returns Object with success boolean and optional error message
+ *
+ * @example
+ * const result = await performSignIn(page, 'test@example.com', 'password');
+ * if (!result.success) {
+ *   throw new Error(`Sign-in failed: ${result.error}`);
+ * }
+ */
+export async function performSignIn(
+  page: Page,
+  email: string,
+  password: string,
+  options: { rememberMe?: boolean; timeout?: number } = {}
+): Promise<{ success: boolean; error?: string }> {
+  const { rememberMe = false, timeout = 30000 } = options; // Increased from 15s to 30s for CI
+
+  // Dismiss cookie banner first - it can block form interactions
+  await dismissCookieBanner(page);
+
+  // Fill credentials
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+
+  if (rememberMe) {
+    await page.getByLabel('Remember Me').check();
+  }
+
+  // Click sign in
+  await page.getByRole('button', { name: 'Sign In' }).click();
+
+  // Wait for EITHER redirect (success) OR error message (failure)
+  try {
+    // Race between success redirect and error appearance
+    const result = await Promise.race([
+      // Success: URL changes away from /sign-in
+      page
+        .waitForURL((url) => !url.pathname.includes('/sign-in'), { timeout })
+        .then(() => ({ success: true as const })),
+
+      // Failure: Alert with actual error message appears
+      // Filter out page title alerts (e.g., "Sign In - ScriptHammer")
+      page
+        .locator('[role="alert"]')
+        .filter({
+          hasText: /(invalid|error|failed|incorrect|wrong|denied|locked)/i,
+        })
+        .first()
+        .waitFor({ state: 'visible', timeout })
+        .then(async () => {
+          const alertText = await page
+            .locator('[role="alert"]')
+            .filter({
+              hasText: /(invalid|error|failed|incorrect|wrong|denied|locked)/i,
+            })
+            .first()
+            .textContent();
+          return {
+            success: false as const,
+            error: alertText || 'Unknown error',
+          };
+        }),
+    ]);
+
+    if (result.success) {
+      // Wait for full auth hydration
+      await waitForAuthenticatedState(page, timeout);
+      return { success: true };
+    }
+
+    return result;
+  } catch (err) {
+    // Timeout - check current state
+    const currentUrl = page.url();
+    if (currentUrl.includes('/sign-in')) {
+      // Still on sign-in page - check for error
+      const alertText = await page
+        .locator('[role="alert"]')
+        .first()
+        .textContent()
+        .catch(() => null);
+
+      return {
+        success: false,
+        error: alertText || 'Sign-in timed out (still on sign-in page)',
+      };
+    }
+
+    // Not on sign-in but auth didn't hydrate
+    return {
+      success: false,
+      error: `Auth hydration timeout at ${currentUrl}`,
+    };
+  }
+}
+
+/**
+ * Fill a MessageInput textarea and wait for React to process the value.
+ *
+ * MessageInput is a controlled component (value={message}, onChange).
+ * Playwright's fill() dispatches an input event, but React batches state
+ * updates asynchronously. Without waiting, clicking Send immediately after
+ * fill reads stale state ("") and triggers "Message cannot be empty".
+ *
+ * Waits for the #char-count element to reflect the new message length,
+ * which proves React has processed the fill and updated component state.
+ */
+export async function fillMessageInput(
+  page: Page,
+  text: string
+): Promise<void> {
+  const messageInput = page.getByRole('textbox', { name: /Message input/i });
+  await expect(messageInput).toBeEnabled({ timeout: 15000 });
+  await messageInput.fill(text);
+
+  // WebKit sometimes doesn't trigger React's onChange from fill().
+  // Dispatch an input event manually to ensure React processes the value.
+  await messageInput.dispatchEvent('input', { bubbles: true });
+
+  // Wait for React to process the fill — char count updates when state changes
+  await page.waitForFunction(
+    (expectedLen) => {
+      const counter = document.getElementById('char-count');
+      if (!counter) return false;
+      return counter.textContent?.includes(String(expectedLen));
+    },
+    text.length,
+    { timeout: 10000 }
+  );
+}
+
+/**
+ * Delete old messages between two users via admin API.
+ *
+ * Conversations accumulate messages across CI runs. At 100+ messages,
+ * MessageThread enables virtual scrolling and newly-sent messages are
+ * appended outside the virtual viewport — Playwright's getByText()
+ * can't find them because they're not rendered in the DOM.
+ *
+ * Call this in test.beforeAll() before any messaging tests.
+ */
+export async function cleanupOldMessages(
+  userAEmail: string,
+  userBEmail: string
+): Promise<void> {
+  const admin = getAdminClient();
+  if (!admin) return;
+  const userA = await getUserByEmail(userAEmail);
+  const userB = await getUserByEmail(userBEmail);
+  if (!userA || !userB) return;
+  const { error } = await admin
+    .from('messages')
+    .delete()
+    .or(`sender_id.eq.${userA.id},sender_id.eq.${userB.id}`);
+  if (error) {
+    console.warn('cleanupOldMessages: failed:', error.message);
+  } else {
+    console.log('✓ Old messages cleaned up');
+  }
+}
+
+/**
+ * A self-contained, static message-thread fixture for the messaging-scroll
+ * test (issue #109).
+ *
+ * WHY this exists / why it doesn't just reuse the shared users:
+ * Every messaging spec calls cleanupOldMessages() in beforeAll, which does
+ * `DELETE FROM messages WHERE sender_id IN (PRIMARY, TERTIARY)`. That cleanup
+ * is deliberate — it keeps the shared conversation under 100 messages so the
+ * MessageThread virtualizer doesn't hide other specs' newly-sent messages.
+ * But messaging-scroll needs the OPPOSITE: a thread tall enough to scroll. Any
+ * messages it seeds into the shared conversation get wiped by those cleanups.
+ *
+ * The fix is an isolated fixture: a throwaway user whose `sender_id` is NEVER
+ * named in any cleanupOldMessages call, in its own private conversation with
+ * PRIMARY, with a FIXED count of messages. Nothing else can see or delete it;
+ * the count never drifts across CI runs. Tear it down in afterAll via
+ * deleteScrollFixture() (cascades messages + conversation).
+ *
+ * The fixture user is given a public key so getMessageHistory doesn't hit its
+ * "other user has no public key → return []" path. Messages use placeholder
+ * encrypted_content (the viewer can't decrypt them, so each renders as an
+ * "Encrypted with previous keys" bubble) — which is still a real, visible,
+ * height-producing bubble. A scroll test only needs height, not readable text.
+ *
+ * @returns the throwaway user id and conversation id, or null on failure.
+ */
+export interface ScrollFixture {
+  fixtureUserId: string;
+  conversationId: string;
+}
+
+const SCROLL_FIXTURE_MARKER = '-scroll-fixture';
+
+export async function seedScrollFixture(
+  viewerEmail: string,
+  messageCount = 30
+): Promise<ScrollFixture | null> {
+  const admin = getAdminClient();
+  if (!admin) return null;
+
+  const viewer = await getUserByEmail(viewerEmail);
+  if (!viewer) {
+    console.warn('seedScrollFixture: viewer not found:', viewerEmail);
+    return null;
+  }
+
+  // 1. Create the throwaway partner (unique email → no collision, no other
+  //    spec references it, so no cleanupOldMessages ever deletes its messages).
+  //    The username MUST satisfy user_profiles' CHECK (length 3..30) — the
+  //    default email-prefix username overflows for long plus-aliased emails,
+  //    so pass a short explicit one.
+  const fixtureEmail = generateTestEmail('scroll-fixture');
+  const fixturePassword = 'ScrollFixturePass123!';
+  const fixtureUsername = `scrollfix${Date.now().toString().slice(-8)}`;
+  const fixtureUser = await createTestUser(fixtureEmail, fixturePassword, {
+    username: fixtureUsername,
+  });
+  if (!fixtureUser) {
+    console.warn('seedScrollFixture: failed to create fixture user');
+    return null;
+  }
+
+  // 2. Give the fixture user a public key so the viewer's getMessageHistory
+  //    can derive a shared secret instead of returning an empty thread.
+  const keysOk = await ensureEncryptionKeys(fixtureEmail, fixturePassword);
+  if (!keysOk) {
+    console.warn('seedScrollFixture: failed to create fixture keys');
+    await deleteTestUser(fixtureUser.id);
+    return null;
+  }
+
+  // 3. Create the private conversation (canonical sorted participant order).
+  const [p1, p2] =
+    viewer.id < fixtureUser.id
+      ? [viewer.id, fixtureUser.id]
+      : [fixtureUser.id, viewer.id];
+  const { data: conversation, error: convError } = await admin
+    .from('conversations')
+    .insert({ participant_1_id: p1, participant_2_id: p2 })
+    .select('id')
+    .single();
+  if (convError || !conversation) {
+    console.warn(
+      'seedScrollFixture: failed to create conversation:',
+      convError?.message
+    );
+    await deleteTestUser(fixtureUser.id);
+    return null;
+  }
+  const conversationId = conversation.id as string;
+
+  // 4. Insert a FIXED number of messages, alternating sender, timestamps
+  //    spread backwards so it reads like a real history.
+  const senders = [viewer.id, fixtureUser.id];
+  const now = Date.now();
+  const rows = Array.from({ length: messageCount }, (_, i) => ({
+    conversation_id: conversationId,
+    sender_id: senders[i % 2],
+    encrypted_content: `msg-${i + 1}${SCROLL_FIXTURE_MARKER}`,
+    initialization_vector: `iv-${i + 1}`,
+    sequence_number: i + 1,
+    created_at: new Date(
+      now - (messageCount - 1 - i) * 5 * 60 * 1000
+    ).toISOString(),
+  }));
+  const { error: insertError } = await admin.from('messages').insert(rows);
+  if (insertError) {
+    console.warn('seedScrollFixture: insert failed:', insertError.message);
+    await deleteTestUser(fixtureUser.id);
+    return null;
+  }
+
+  await admin
+    .from('conversations')
+    .update({ last_message_at: new Date(now).toISOString() })
+    .eq('id', conversationId);
+
+  console.log(
+    `✓ Scroll fixture: ${messageCount} messages in conversation ${conversationId} (fixture user ${fixtureUser.id})`
+  );
+  return { fixtureUserId: fixtureUser.id, conversationId };
+}
+
+/**
+ * Tear down the scroll fixture created by seedScrollFixture(). Deleting the
+ * throwaway user cascade-deletes its conversation and messages (FK ON DELETE
+ * CASCADE), so nothing is left behind. Safe to call with null.
+ */
+export async function deleteScrollFixture(
+  fixture: ScrollFixture | null
+): Promise<void> {
+  if (!fixture) return;
+  await deleteTestUser(fixture.fixtureUserId);
+  console.log('✓ Scroll fixture torn down');
+}
+
+/**
+ * A FULLY isolated conversation: BOTH the viewer and the partner are throwaway
+ * users created just for this test (unique emails no cleanupOldMessages touches),
+ * plus a private conversation and an optional pre-seeded message history. Unlike
+ * {@link seedScrollFixture} — which isolates only the partner and reuses the
+ * shared PRIMARY viewer — this gives every test its own viewer identity, so
+ * tests can run in parallel (workers>1) without racing shared users/state.
+ *
+ * `viewerSession` is the viewer's auth session, ready to inject into the browser
+ * via localStorage (see the offline-queue-sync.spec.ts pattern) so the test
+ * authenticates as the throwaway viewer instead of the shared storageState.
+ *
+ * Spike for #116 Phase 2 (workers>1 messaging E2E).
+ */
+/**
+ * A throwaway user's auth session, ready to inject into a browser via
+ * localStorage so the page authenticates as that user (see {@link openAsViewer}).
+ */
+export interface InjectableSession {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
+  user: object;
+}
+
+export interface IsolatedConversation {
+  viewer: TestUser;
+  partner: TestUser;
+  conversationId: string;
+  /** Inject into a browser to open the conversation AS the viewer. */
+  viewerSession: InjectableSession;
+  /**
+   * Inject into a SECOND browser context to open the conversation AS the
+   * partner — needed for bidirectional tests (A sends, B receives/replies).
+   */
+  partnerSession: InjectableSession;
+}
+
+/**
+ * Create a fully isolated viewer + partner + conversation for one test.
+ *
+ * @param messageCount  0 = empty conversation (test posts its own messages);
+ *                      >0 = pre-seed that many placeholder messages.
+ * @param opts.viewerPrefix / partnerPrefix  short email/username prefixes.
+ *
+ * Encryption keys are derived through the normal path (ensureEncryptionKeys →
+ * Argon2id at ARGON2_CONFIG.TIME_COST=3, UNCHANGED — never lower it, it breaks
+ * stored-key verification). Returns null if the admin client is unavailable.
+ */
+export async function seedIsolatedConversation(
+  messageCount = 0,
+  opts?: { viewerPrefix?: string; partnerPrefix?: string }
+): Promise<IsolatedConversation | null> {
+  const admin = getAdminClient();
+  if (!admin) return null;
+
+  const viewerPrefix = opts?.viewerPrefix ?? 'iso-viewer';
+  const partnerPrefix = opts?.partnerPrefix ?? 'iso-partner';
+  const stamp = Date.now().toString().slice(-8);
+
+  // Helper: create a throwaway user + encryption keys. Username must satisfy
+  // user_profiles' CHECK (length 3..30), so pass a short explicit one.
+  const makeUser = async (
+    prefix: string,
+    userTag: string
+  ): Promise<TestUser | null> => {
+    const email = generateTestEmail(prefix);
+    const user = await createTestUser(email, DEFAULT_TEST_PASSWORD, {
+      username: `${userTag}${stamp}`,
+    });
+    if (!user) {
+      console.warn(`seedIsolatedConversation: failed to create ${userTag}`);
+      return null;
+    }
+    const keysOk = await ensureEncryptionKeys(email, DEFAULT_TEST_PASSWORD);
+    if (!keysOk) {
+      console.warn(`seedIsolatedConversation: failed to key ${userTag}`);
+      await deleteTestUser(user.id);
+      return null;
+    }
+    return user;
+  };
+
+  // 1. Throwaway viewer + partner (both keyed at TIME_COST=3).
+  const viewer = await makeUser(viewerPrefix, 'isov');
+  if (!viewer) return null;
+  const partner = await makeUser(partnerPrefix, 'isop');
+  if (!partner) {
+    await deleteTestUser(viewer.id);
+    return null;
+  }
+
+  // 2. Auth sessions for BOTH users, for browser localStorage injection. Uses
+  //    the anon key against the same admin-reachable URL.
+  const anonUrl =
+    process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!anonUrl || !anonKey) {
+    console.warn('seedIsolatedConversation: anon URL/key not configured');
+    await deleteTestUser(viewer.id);
+    await deleteTestUser(partner.id);
+    return null;
+  }
+  const signInUser = async (
+    user: TestUser
+  ): Promise<InjectableSession | null> => {
+    const anon = createClient(anonUrl, anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { data, error } = await anon.auth.signInWithPassword({
+      email: user.email,
+      password: user.password,
+    });
+    if (error || !data.session) {
+      console.warn(
+        `seedIsolatedConversation: sign-in failed for ${user.email}:`,
+        error?.message
+      );
+      return null;
+    }
+    return {
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      expires_at: data.session.expires_at ?? 0,
+      user: data.session.user,
+    };
+  };
+
+  const viewerSession = await signInUser(viewer);
+  const partnerSession = viewerSession ? await signInUser(partner) : null;
+  if (!viewerSession || !partnerSession) {
+    await deleteTestUser(viewer.id);
+    await deleteTestUser(partner.id);
+    return null;
+  }
+
+  // 3. Private conversation (canonical sorted participant order).
+  const [p1, p2] =
+    viewer.id < partner.id ? [viewer.id, partner.id] : [partner.id, viewer.id];
+  const { data: conversation, error: convError } = await admin
+    .from('conversations')
+    .insert({ participant_1_id: p1, participant_2_id: p2 })
+    .select('id')
+    .single();
+  if (convError || !conversation) {
+    console.warn(
+      'seedIsolatedConversation: conversation insert failed:',
+      convError?.message
+    );
+    await deleteTestUser(viewer.id);
+    await deleteTestUser(partner.id);
+    return null;
+  }
+  const conversationId = conversation.id as string;
+
+  // 4. Optional pre-seeded history (placeholder content, alternating senders).
+  if (messageCount > 0) {
+    const senders = [viewer.id, partner.id];
+    const now = Date.now();
+    const rows = Array.from({ length: messageCount }, (_, i) => ({
+      conversation_id: conversationId,
+      sender_id: senders[i % 2],
+      encrypted_content: `iso-msg-${i + 1}`,
+      initialization_vector: `iv-${i + 1}`,
+      sequence_number: i + 1,
+      created_at: new Date(
+        now - (messageCount - 1 - i) * 5 * 60 * 1000
+      ).toISOString(),
+    }));
+    const { error: insertError } = await admin.from('messages').insert(rows);
+    if (insertError) {
+      console.warn(
+        'seedIsolatedConversation: message insert failed:',
+        insertError.message
+      );
+      await deleteTestUser(viewer.id);
+      await deleteTestUser(partner.id);
+      return null;
+    }
+    await admin
+      .from('conversations')
+      .update({ last_message_at: new Date(now).toISOString() })
+      .eq('id', conversationId);
+  }
+
+  console.log(
+    `✓ Isolated conversation ${conversationId} (viewer ${viewer.id}, partner ${partner.id}, ${messageCount} msgs)`
+  );
+  return {
+    viewer,
+    partner,
+    conversationId,
+    viewerSession,
+    partnerSession,
+  };
+}
+
+/**
+ * Tear down an isolated conversation. Deleting both throwaway users
+ * cascade-deletes the conversation + messages (FK ON DELETE CASCADE). Safe with
+ * null. See {@link seedIsolatedConversation}.
+ */
+export async function deleteIsolatedConversation(
+  fixture: IsolatedConversation | null
+): Promise<void> {
+  if (!fixture) return;
+  await deleteTestUser(fixture.viewer.id);
+  await deleteTestUser(fixture.partner.id);
+  console.log('✓ Isolated conversation torn down');
+}
+
+/** A browser context opened as one participant of an isolated conversation. */
+export interface OpenedParticipant {
+  page: Page;
+  context: import('@playwright/test').BrowserContext;
+  close: () => Promise<void>;
+}
+
+/**
+ * Open a fresh browser context authenticated as the given throwaway `session`,
+ * landing on `conversationId` with encryption unlocked.
+ *
+ * This is the lower-level primitive behind {@link openAsViewer} /
+ * {@link openAsPartner}. Instead of relying on the shared `storageState` (the
+ * PRIMARY user every serial test races over), each test injects ITS OWN
+ * throwaway session into localStorage — that is what lets messaging specs run
+ * in parallel (workers>1) without contention.
+ *
+ * The Supabase auth-storage key derives from the BROWSER's Supabase URL
+ * (`NEXT_PUBLIC_SUPABASE_URL`), which on local Docker differs from the
+ * in-container admin URL — see {@link seedIsolatedConversation}.
+ *
+ * Always `await close()` in a `finally` (or close the context in `afterEach`)
+ * so parallel workers don't leak contexts.
+ */
+export async function openConversationAs(
+  browser: Browser,
+  session: InjectableSession,
+  conversationId: string
+): Promise<OpenedParticipant> {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const { page, context, close } = await openAuthedPage(browser, session);
+
+  // Navigate to the isolated conversation and unlock encryption keys. The
+  // ReAuthModal appears because IndexedDB has no cached CryptoKey for this fresh
+  // throwaway user; handleReAuthModal re-derives them (Argon2id, TIME_COST=3).
+  await page.goto(`${basePath}/messages?conversation=${conversationId}`, {
+    waitUntil: 'domcontentloaded',
+  });
+  await dismissCookieBanner(page);
+  await handleReAuthModal(page, DEFAULT_TEST_PASSWORD);
+  await page.waitForSelector('[data-testid="message-thread"]', {
+    state: 'visible',
+    timeout: 60000,
+  });
+
+  return { page, context, close };
+}
+
+/**
+ * Open a fresh browser context authenticated as the given throwaway `session`,
+ * landing on `/` with the session injected — but WITHOUT navigating to a
+ * conversation or unlocking encryption keys. For specs that drive non-thread
+ * UI (e.g. the connections tab in friend-requests). The caller navigates and
+ * calls `handleReAuthModal` itself if/when it reaches a thread.
+ *
+ * See {@link openConversationAs} for the session-injection rationale.
+ */
+export async function openAuthedPage(
+  browser: Browser,
+  session: InjectableSession
+): Promise<OpenedParticipant> {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const context = await browser.newContext({
+    storageState: { cookies: [], origins: [] },
+  });
+  const page = await context.newPage();
+
+  // The browser talks to Supabase via NEXT_PUBLIC_SUPABASE_URL (in-container
+  // Chromium → host.docker.internal locally; the real cloud URL in CI). The
+  // localStorage auth key is `sb-<first-host-label>-auth-token`.
+  const browserUrl =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    process.env.SUPABASE_ADMIN_URL ||
+    '';
+  const supabaseHost = new URL(browserUrl).hostname.split('.')[0];
+  const sbStorageKey = `sb-${supabaseHost}-auth-token`;
+
+  await page.goto(`${basePath}/`);
+  await page.waitForLoadState('domcontentloaded');
+  await page.evaluate(
+    ({ key, s }) => {
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          access_token: s.access_token,
+          refresh_token: s.refresh_token,
+          expires_at: s.expires_at,
+          expires_in: 3600,
+          token_type: 'bearer',
+          user: s.user,
+        })
+      );
+    },
+    { key: sbStorageKey, s: session }
+  );
+  // Reload so Supabase picks up the injected session on init.
+  await page.reload();
+  await page.waitForLoadState('domcontentloaded');
+
+  return { page, context, close: () => context.close() };
+}
+
+/**
+ * Open the isolated conversation AS the viewer. The single conversion primitive
+ * for #116 Phase 2 — see {@link openConversationAs}.
+ */
+export async function openAsViewer(
+  browser: Browser,
+  fixture: IsolatedConversation
+): Promise<OpenedParticipant> {
+  return openConversationAs(
+    browser,
+    fixture.viewerSession,
+    fixture.conversationId
+  );
+}
+
+/**
+ * Open the isolated conversation AS the partner (a second browser context), for
+ * bidirectional tests where the viewer sends and the partner receives/replies.
+ */
+export async function openAsPartner(
+  browser: Browser,
+  fixture: IsolatedConversation
+): Promise<OpenedParticipant> {
+  return openConversationAs(
+    browser,
+    fixture.partnerSession,
+    fixture.conversationId
+  );
+}
+
+/**
+ * Create a throwaway user (keyed at TIME_COST=3) and sign it in, returning the
+ * user + an InjectableSession for browser injection. Shared building block for
+ * the isolated-fixture seeders. Returns null on any failure (caller cleans up).
+ */
+async function createKeyedUserWithSession(
+  prefix: string,
+  userTag: string,
+  stamp: string
+): Promise<{
+  user: TestUser;
+  session: InjectableSession;
+  displayName: string;
+} | null> {
+  const email = generateTestEmail(prefix);
+  const displayName = `${userTag}${stamp}`;
+  const user = await createTestUser(email, DEFAULT_TEST_PASSWORD, {
+    username: displayName,
+  });
+  if (!user) {
+    console.warn(`createKeyedUserWithSession: failed to create ${userTag}`);
+    return null;
+  }
+  // A DB trigger auto-creates the user_profiles row on signup, so
+  // createTestUser's createUserProfile() early-returns ("already exists") and
+  // never sets display_name — leaving it null and the user UNsearchable
+  // (UserSearch matches display_name). Set it explicitly here so isolated
+  // users are findable (required by friend-requests / group-chat).
+  const admin = getAdminClient();
+  if (admin) {
+    await admin
+      .from('user_profiles')
+      .update({ username: displayName, display_name: displayName })
+      .eq('id', user.id);
+  }
+  const keysOk = await ensureEncryptionKeys(email, DEFAULT_TEST_PASSWORD);
+  if (!keysOk) {
+    console.warn(`createKeyedUserWithSession: failed to key ${userTag}`);
+    await deleteTestUser(user.id);
+    return null;
+  }
+
+  const anonUrl =
+    process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!anonUrl || !anonKey) {
+    console.warn('createKeyedUserWithSession: anon URL/key not configured');
+    await deleteTestUser(user.id);
+    return null;
+  }
+  const anon = createClient(anonUrl, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data, error } = await anon.auth.signInWithPassword({
+    email: user.email,
+    password: user.password,
+  });
+  if (error || !data.session) {
+    console.warn(
+      `createKeyedUserWithSession: sign-in failed for ${user.email}:`,
+      error?.message
+    );
+    await deleteTestUser(user.id);
+    return null;
+  }
+  return {
+    user,
+    displayName,
+    session: {
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      expires_at: data.session.expires_at ?? 0,
+      user: data.session.user,
+    },
+  };
+}
+
+/**
+ * A fully isolated pair of throwaway users plus a {@link user_connections} row
+ * at a chosen status — for friend-request specs that mutate connection state.
+ * Both users are keyed at TIME_COST=3 and have sessions for browser injection.
+ *
+ * `requesterDisplayName` / `addresseeDisplayName` are the users' searchable
+ * display names (UserSearch searches by display_name, not email).
+ */
+export interface IsolatedConnection {
+  requester: TestUser;
+  addressee: TestUser;
+  connectionId: string;
+  requesterSession: InjectableSession;
+  addresseeSession: InjectableSession;
+  requesterDisplayName: string;
+  addresseeDisplayName: string;
+}
+
+/**
+ * Create a fully isolated requester + addressee for one test, optionally with a
+ * connection row.
+ *
+ * @param status  'pending' (default) so the test can accept/decline it,
+ *                'accepted'/'blocked'/'declined' to start in that state, or
+ *                'none' to create the two users WITHOUT a connection row (for
+ *                tests that send the request via the UI). When 'none',
+ *                `connectionId` is the empty string.
+ * Returns null if the admin client / anon key is unavailable.
+ */
+export async function seedIsolatedConnection(
+  status: 'pending' | 'accepted' | 'blocked' | 'declined' | 'none' = 'pending',
+  opts?: { requesterPrefix?: string; addresseePrefix?: string }
+): Promise<IsolatedConnection | null> {
+  const admin = getAdminClient();
+  if (!admin) return null;
+
+  const stamp = Date.now().toString().slice(-8);
+  const requesterPrefix = opts?.requesterPrefix ?? 'iso-req';
+  const addresseePrefix = opts?.addresseePrefix ?? 'iso-add';
+
+  const requester = await createKeyedUserWithSession(
+    requesterPrefix,
+    'isor',
+    stamp
+  );
+  if (!requester) return null;
+  const addressee = await createKeyedUserWithSession(
+    addresseePrefix,
+    'isoa',
+    stamp
+  );
+  if (!addressee) {
+    await deleteTestUser(requester.user.id);
+    return null;
+  }
+
+  let connectionId = '';
+  if (status !== 'none') {
+    const { data: connection, error: connError } = await admin
+      .from('user_connections')
+      .insert({
+        requester_id: requester.user.id,
+        addressee_id: addressee.user.id,
+        status,
+      })
+      .select('id')
+      .single();
+    if (connError || !connection) {
+      console.warn(
+        'seedIsolatedConnection: connection insert failed:',
+        connError?.message
+      );
+      await deleteTestUser(requester.user.id);
+      await deleteTestUser(addressee.user.id);
+      return null;
+    }
+    connectionId = connection.id as string;
+  }
+
+  console.log(
+    `✓ Isolated connection (${status}; requester ${requester.user.id}, addressee ${addressee.user.id})`
+  );
+  return {
+    requester: requester.user,
+    addressee: addressee.user,
+    connectionId,
+    requesterSession: requester.session,
+    addresseeSession: addressee.session,
+    requesterDisplayName: requester.displayName,
+    addresseeDisplayName: addressee.displayName,
+  };
+}
+
+/**
+ * Tear down an isolated connection. Deleting both throwaway users cascade-deletes
+ * the connection (FK ON DELETE CASCADE). Safe with null.
+ */
+export async function deleteIsolatedConnection(
+  fixture: IsolatedConnection | null
+): Promise<void> {
+  if (!fixture) return;
+  await deleteTestUser(fixture.requester.id);
+  await deleteTestUser(fixture.addressee.id);
+  console.log('✓ Isolated connection torn down');
+}
+
+/** One participant of an isolated group conversation. */
+export interface IsolatedGroupParticipant {
+  user: TestUser;
+  session: InjectableSession;
+}
+
+/**
+ * A fully isolated group conversation: N throwaway users (all keyed at
+ * TIME_COST=3, with sessions) and one group conversation they all belong to.
+ */
+export interface IsolatedGroup {
+  participants: IsolatedGroupParticipant[];
+  conversationId: string;
+}
+
+/**
+ * Distribute a group encryption key to every member, server-side (Node), so a
+ * seeded group is send/decrypt-ready without the in-browser createGroup() flow.
+ *
+ * Reuses the PRODUCTION wrap (`GroupKeyService.encryptGroupKeyForMember`) — no
+ * duplicated crypto, so the seeded `group_keys` rows are byte-identical in shape
+ * to what the app writes. That method is pure (crypto.subtle + ECDH only, no
+ * auth/DB), and `new GroupKeyService()` is Node-safe because `createClient()`
+ * returns an inert object when `window` is undefined.
+ *
+ * Because member keypairs are DETERMINISTIC (Argon2id over password + stored
+ * salt), we re-derive the creator's private key in Node from
+ * DEFAULT_TEST_PASSWORD + the creator's stored `encryption_salt`, then wrap the
+ * one group key for each member using `ECDH(creatorPriv, memberPub)`. Members'
+ * PUBLIC keys are read straight from `user_encryption_keys` (no per-member
+ * private-key derivation needed). `created_by` is the creator for every row, so
+ * each member unwraps with `ECDH(memberPriv, creatorPub)` at runtime.
+ *
+ * @returns true on success, false if any salt/public key is missing or a step
+ *          throws (caller rolls back the conversation).
+ */
+async function distributeGroupKeysForFixture(
+  admin: SupabaseClient,
+  conversationId: string,
+  memberIds: string[],
+  creatorId: string
+): Promise<boolean> {
+  try {
+    // Pull every member's stored public key + salt in one query.
+    const { data: keyRows, error: keyErr } = await admin
+      .from('user_encryption_keys')
+      .select('user_id, public_key, encryption_salt')
+      .in('user_id', memberIds)
+      .eq('revoked', false);
+    if (keyErr || !keyRows) {
+      console.warn(
+        'distributeGroupKeysForFixture: could not read user_encryption_keys:',
+        keyErr?.message
+      );
+      return false;
+    }
+    const keyByUser = new Map(keyRows.map((r) => [r.user_id, r]));
+
+    const creatorRow = keyByUser.get(creatorId);
+    if (!creatorRow?.encryption_salt || !creatorRow.public_key) {
+      console.warn('distributeGroupKeysForFixture: creator has no keys/salt');
+      return false;
+    }
+
+    // Re-derive the creator's keypair in Node (deterministic: same password +
+    // salt ⇒ same keys the browser derives). The stored salt is base64.
+    const kds = new KeyDerivationService();
+    const creatorKeys = await kds.deriveKeyPair({
+      password: DEFAULT_TEST_PASSWORD,
+      salt: new Uint8Array(Buffer.from(creatorRow.encryption_salt, 'base64')),
+    });
+    // Cheap sanity guard: the re-derived public key must match what's stored,
+    // else the ECDH counterparty members fetch at runtime won't line up.
+    if (
+      !kds.verifyPublicKey(
+        creatorKeys.publicKeyJwk,
+        creatorRow.public_key as JsonWebKey
+      )
+    ) {
+      console.warn(
+        'distributeGroupKeysForFixture: re-derived creator key mismatch'
+      );
+      return false;
+    }
+
+    // One AES-GCM-256 group key, wrapped per member with the real prod code.
+    const gks = new GroupKeyService();
+    const groupKey = await gks.generateGroupKey();
+
+    const rows: Array<{
+      conversation_id: string;
+      user_id: string;
+      key_version: number;
+      encrypted_key: string;
+      created_by: string;
+    }> = [];
+    for (const memberId of memberIds) {
+      const memberRow = keyByUser.get(memberId);
+      if (!memberRow?.public_key) {
+        console.warn(
+          `distributeGroupKeysForFixture: member ${memberId} has no public key`
+        );
+        return false;
+      }
+      const encrypted_key = await gks.encryptGroupKeyForMember(
+        groupKey,
+        memberRow.public_key as JsonWebKey,
+        creatorKeys.privateKey
+      );
+      rows.push({
+        conversation_id: conversationId,
+        user_id: memberId,
+        key_version: 1,
+        encrypted_key,
+        created_by: creatorId,
+      });
+    }
+
+    const { error: insertErr } = await admin.from('group_keys').insert(rows);
+    if (insertErr) {
+      console.warn(
+        'distributeGroupKeysForFixture: group_keys insert failed:',
+        insertErr.message
+      );
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.warn(
+      'distributeGroupKeysForFixture: unexpected error:',
+      (err as Error).message
+    );
+    return false;
+  }
+}
+
+/**
+ * Create a fully isolated group of `participantCount` throwaway users plus a
+ * group conversation containing all of them. For the group-chat spec.
+ *
+ * The conversation is created with is_group=true (participant_1/2 NULL per the
+ * CHK023 constraint); membership lives in conversation_members (creator = owner).
+ *
+ * When `opts.withKeys` is set, the fixture ALSO distributes the group encryption
+ * key server-side: it generates one AES-GCM-256 group key and inserts a
+ * `group_keys` row per member, each ECDH-wrapped for that member using the
+ * creator's re-derived private key — exactly what the in-browser
+ * createGroup()/distributeGroupKey path produces, but off the slow UI critical
+ * path. This is what makes a DETERMINISTIC (non-skipping) group send/decrypt E2E
+ * possible: opening the group in a member's browser can then unwrap the key and
+ * decrypt, without driving the >90s in-browser group-creation flow. Without it
+ * (default), opening the group in a browser fails with "Group key not found".
+ *
+ * Returns null if the admin client / anon key is unavailable or seeding fails.
+ */
+export async function seedIsolatedGroup(
+  participantCount = 3,
+  opts?: { prefix?: string; withKeys?: boolean }
+): Promise<IsolatedGroup | null> {
+  const admin = getAdminClient();
+  if (!admin) return null;
+  if (participantCount < 2) {
+    console.warn('seedIsolatedGroup: participantCount must be >= 2');
+    return null;
+  }
+
+  const stamp = Date.now().toString().slice(-8);
+  const prefix = opts?.prefix ?? 'iso-grp';
+  const participants: IsolatedGroupParticipant[] = [];
+
+  const cleanup = async () => {
+    for (const p of participants) await deleteTestUser(p.user.id);
+  };
+
+  for (let i = 0; i < participantCount; i++) {
+    const made = await createKeyedUserWithSession(
+      `${prefix}${i}`,
+      `isog${i}`,
+      stamp
+    );
+    if (!made) {
+      await cleanup();
+      return null;
+    }
+    participants.push({ user: made.user, session: made.session });
+  }
+
+  // Group conversation: per the CHK023 constraint, is_group=true REQUIRES
+  // participant_1_id/participant_2_id NULL and created_by NOT NULL. Membership
+  // lives in conversation_members (the creator is the 'owner').
+  const creatorId = participants[0].user.id;
+  const { data: conversation, error: convError } = await admin
+    .from('conversations')
+    .insert({
+      is_group: true,
+      participant_1_id: null,
+      participant_2_id: null,
+      created_by: creatorId,
+      group_name: `iso-group-${stamp}`,
+    })
+    .select('id')
+    .single();
+  if (convError || !conversation) {
+    console.warn(
+      'seedIsolatedGroup: conversation insert failed:',
+      convError?.message
+    );
+    await cleanup();
+    return null;
+  }
+  const conversationId = conversation.id as string;
+
+  // Register every member in conversation_members (creator = owner).
+  const memberRows = participants.map((p, i) => ({
+    conversation_id: conversationId,
+    user_id: p.user.id,
+    role: i === 0 ? 'owner' : 'member',
+  }));
+  const { error: memberError } = await admin
+    .from('conversation_members')
+    .insert(memberRows);
+  if (memberError) {
+    console.warn(
+      'seedIsolatedGroup: conversation_members insert failed:',
+      memberError.message
+    );
+    await admin.from('conversations').delete().eq('id', conversationId);
+    await cleanup();
+    return null;
+  }
+
+  // Optionally distribute the group key server-side so the group is
+  // send/decrypt-ready without the in-browser createGroup() flow.
+  if (opts?.withKeys) {
+    const memberIds = participants.map((p) => p.user.id);
+    const distributed = await distributeGroupKeysForFixture(
+      admin,
+      conversationId,
+      memberIds,
+      creatorId
+    );
+    if (!distributed) {
+      console.warn('seedIsolatedGroup: group-key distribution failed');
+      await admin.from('conversations').delete().eq('id', conversationId);
+      await cleanup();
+      return null;
+    }
+  }
+
+  console.log(
+    `✓ Isolated group ${conversationId} (${participantCount} members${
+      opts?.withKeys ? ', keyed' : ''
+    })`
+  );
+  return { participants, conversationId };
+}
+
+/**
+ * Tear down an isolated group. Unlike a 1:1 conversation (cascade-deleted via
+ * its participant FKs), a group's `conversations.created_by` is a plain
+ * reference with NO ON DELETE CASCADE, so deleting members alone orphans the
+ * conversation. Delete the conversation row explicitly FIRST (cascading
+ * conversation_members + messages + group_keys), then the users. Safe with null.
+ */
+export async function deleteIsolatedGroup(
+  fixture: IsolatedGroup | null
+): Promise<void> {
+  if (!fixture) return;
+  const admin = getAdminClient();
+  if (admin) {
+    await admin.from('conversations').delete().eq('id', fixture.conversationId);
+  }
+  for (const p of fixture.participants) await deleteTestUser(p.user.id);
+  console.log('✓ Isolated group torn down');
+}
+
+/** A live subscription status the dup-guard treats as occupying the one slot. */
+export type LiveSubscriptionStatus = 'active' | 'past_due' | 'grace_period';
+export type SubscriptionStatus =
+  | LiveSubscriptionStatus
+  | 'canceled'
+  | 'expired';
+
+/**
+ * A throwaway user plus one seeded `subscriptions` row, with a session for
+ * browser injection — for subscription specs that assert UI driven by a real
+ * row (grace-period countdown, cancel, the one-live-per-user guard). Mirrors
+ * {@link IsolatedConnection}.
+ */
+export interface IsolatedSubscription {
+  user: TestUser;
+  session: InjectableSession;
+  subscriptionId: string;
+  /** The row's `grace_period_expires` (YYYY-MM-DD) when status is grace_period. */
+  gracePeriodExpires?: string;
+}
+
+/**
+ * Create a fully isolated throwaway user plus one `subscriptions` row at the
+ * given status. No payment provider is involved — the row is inserted directly
+ * with the service-role key (the same path the #5 webhooks use), so this needs
+ * NO Stripe/PayPal credentials.
+ *
+ * @param status            subscription status to seed (default 'grace_period').
+ * @param opts.provider     'stripe' (default) | 'paypal'.
+ * @param opts.graceDays    days from today for `grace_period_expires` when the
+ *                          status is grace_period/past_due (default 5).
+ *
+ * Returns null if the admin client / anon key is unavailable. Tear down with
+ * {@link deleteIsolatedSubscription} — the subscriptions FK is NO ACTION (not
+ * cascade) and deleteTestUser does not touch subscriptions, so the row MUST be
+ * deleted before the user or the auth-user delete fails on the FK.
+ */
+export async function seedIsolatedSubscription(
+  status: SubscriptionStatus = 'grace_period',
+  opts?: {
+    provider?: 'stripe' | 'paypal';
+    graceDays?: number;
+    prefix?: string;
+  }
+): Promise<IsolatedSubscription | null> {
+  const admin = getAdminClient();
+  if (!admin) return null;
+
+  const stamp = Date.now().toString().slice(-8);
+  const provider = opts?.provider ?? 'stripe';
+  const prefix = opts?.prefix ?? 'iso-sub';
+
+  const created = await createKeyedUserWithSession(prefix, 'isos', stamp);
+  if (!created) return null;
+
+  // grace_period_expires is a TEXT YYYY-MM-DD; only meaningful for the
+  // grace_period / past_due states the UI renders a countdown for.
+  const needsGrace = status === 'grace_period' || status === 'past_due';
+  const graceDays = opts?.graceDays ?? 5;
+  const gracePeriodExpires = needsGrace
+    ? new Date(Date.now() + graceDays * 86_400_000).toISOString().split('T')[0]
+    : undefined;
+
+  const { data: row, error } = await admin
+    .from('subscriptions')
+    .insert({
+      template_user_id: created.user.id,
+      provider,
+      // Unique per row (subscriptions.provider_subscription_id is UNIQUE).
+      provider_subscription_id: `iso_sub_${provider}_${stamp}`,
+      customer_email: created.user.email,
+      plan_amount: 999, // $9.99, satisfies CHECK (>= 100)
+      plan_interval: 'month',
+      status,
+      failed_payment_count: needsGrace ? 1 : 0,
+      ...(gracePeriodExpires
+        ? { grace_period_expires: gracePeriodExpires }
+        : {}),
+    })
+    .select('id')
+    .single();
+
+  if (error || !row) {
+    console.warn(
+      'seedIsolatedSubscription: subscription insert failed:',
+      error?.message
+    );
+    await deleteTestUser(created.user.id);
+    return null;
+  }
+
+  console.log(
+    `✓ Isolated subscription ${row.id} (${status}; user ${created.user.id})`
+  );
+  return {
+    user: created.user,
+    session: created.session,
+    subscriptionId: row.id as string,
+    gracePeriodExpires: gracePeriodExpires,
+  };
+}
+
+/**
+ * Tear down an isolated subscription. Deletes ALL of the user's subscription
+ * rows first (the FK is NO ACTION, so the auth-user delete would otherwise fail)
+ * then the throwaway user. Safe with null.
+ */
+export async function deleteIsolatedSubscription(
+  fixture: IsolatedSubscription | null
+): Promise<void> {
+  if (!fixture) return;
+  const admin = getAdminClient();
+  if (admin) {
+    await admin
+      .from('subscriptions')
+      .delete()
+      .eq('template_user_id', fixture.user.id);
+  }
+  await deleteTestUser(fixture.user.id);
+  console.log('✓ Isolated subscription torn down');
+}
+
+/**
+ * Minimal Stripe REST helper for the live-subscription fixture. Plain fetch
+ * (no SDK dependency) against the TEST-MODE API using the local
+ * STRIPE_SECRET_KEY — never available in CI, so callers must guard.
+ */
+async function stripeApi(
+  method: 'GET' | 'POST' | 'DELETE',
+  path: string,
+  params?: Record<string, string>
+): Promise<Record<string, unknown>> {
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error('STRIPE_SECRET_KEY not set');
+  const res = await fetch(`https://api.stripe.com/v1${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: params ? new URLSearchParams(params).toString() : undefined,
+  });
+  const body = (await res.json()) as Record<string, unknown> & {
+    error?: { message?: string };
+  };
+  if (!res.ok) {
+    throw new Error(
+      `Stripe ${method} ${path} failed: ${body?.error?.message ?? res.status}`
+    );
+  }
+  return body;
+}
+
+/** Fetch a Stripe subscription (test mode) — for asserting provider state. */
+export async function getStripeSubscription(
+  id: string
+): Promise<{ status: string; cancel_at_period_end: boolean }> {
+  return stripeApi('GET', `/subscriptions/${id}`) as Promise<{
+    status: string;
+    cancel_at_period_end: boolean;
+  }>;
+}
+
+/**
+ * An {@link IsolatedSubscription} whose `provider_subscription_id` is a REAL
+ * test-mode Stripe subscription — the only kind the cancel-subscription /
+ * resume-subscription Edge Functions can act on (a fake id 404s at Stripe).
+ */
+export interface LiveStripeSubscription extends IsolatedSubscription {
+  /** Real test-mode Stripe subscription id (sub_…). */
+  stripeSubscriptionId: string;
+}
+
+/**
+ * Seed a throwaway user with a REAL test-mode Stripe subscription (customer +
+ * pm_card_visa + subscription on the NEXT_PUBLIC_STRIPE_PRICE_ID Price) and a
+ * matching `subscriptions` row, so the cancel/resume Edge Functions can be
+ * driven end-to-end (#105).
+ *
+ * The Stripe subscription is created WITHOUT template_user_id metadata on
+ * purpose: the prod stripe-webhook ignores metadata-less subscription events
+ * (`handled:false`), so its echoes never race this fixture's row.
+ *
+ * Returns null when STRIPE_SECRET_KEY / NEXT_PUBLIC_STRIPE_PRICE_ID / the
+ * admin client are unavailable (i.e. always in CI). Tear down with
+ * {@link deleteLiveStripeSubscription}.
+ */
+export async function seedLiveStripeSubscription(): Promise<LiveStripeSubscription | null> {
+  const admin = getAdminClient();
+  const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID;
+  if (!admin || !process.env.STRIPE_SECRET_KEY || !priceId) return null;
+
+  const stamp = Date.now().toString().slice(-8);
+  const created = await createKeyedUserWithSession('live-sub', 'lsub', stamp);
+  if (!created) return null;
+
+  let stripeSubId: string | undefined;
+  try {
+    const customer = await stripeApi('POST', '/customers', {
+      email: created.user.email,
+    });
+    const pm = await stripeApi('POST', '/payment_methods/pm_card_visa/attach', {
+      customer: customer.id as string,
+    });
+    const sub = await stripeApi('POST', '/subscriptions', {
+      customer: customer.id as string,
+      'items[0][price]': priceId,
+      default_payment_method: pm.id as string,
+    });
+    stripeSubId = sub.id as string;
+    if (sub.status !== 'active') {
+      throw new Error(`expected active subscription, got ${sub.status}`);
+    }
+
+    const { data: row, error } = await admin
+      .from('subscriptions')
+      .insert({
+        template_user_id: created.user.id,
+        provider: 'stripe',
+        provider_subscription_id: stripeSubId,
+        customer_email: created.user.email,
+        plan_amount: 999,
+        plan_interval: 'month',
+        status: 'active',
+      })
+      .select('id')
+      .single();
+    if (error || !row) {
+      throw new Error(`subscriptions insert failed: ${error?.message}`);
+    }
+
+    console.log(
+      `✓ Live Stripe subscription ${stripeSubId} (row ${row.id}; user ${created.user.id})`
+    );
+    return {
+      user: created.user,
+      session: created.session,
+      subscriptionId: row.id as string,
+      stripeSubscriptionId: stripeSubId,
+    };
+  } catch (err) {
+    console.warn(
+      'seedLiveStripeSubscription failed:',
+      err instanceof Error ? err.message : err
+    );
+    if (stripeSubId) {
+      await stripeApi('DELETE', `/subscriptions/${stripeSubId}`).catch(
+        () => {}
+      );
+    }
+    await deleteTestUser(created.user.id);
+    return null;
+  }
+}
+
+/**
+ * Tear down a live Stripe subscription fixture: cancel the real Stripe
+ * subscription immediately, then the DB row + throwaway user.
+ */
+export async function deleteLiveStripeSubscription(
+  fixture: LiveStripeSubscription | null
+): Promise<void> {
+  if (!fixture) return;
+  await stripeApi(
+    'DELETE',
+    `/subscriptions/${fixture.stripeSubscriptionId}`
+  ).catch((err) =>
+    console.warn(
+      'deleteLiveStripeSubscription: Stripe cancel failed (may already be canceled):',
+      err instanceof Error ? err.message : err
+    )
+  );
+  await deleteIsolatedSubscription(fixture);
+}
+
+/**
+ * A throwaway user plus one seeded payment (`payment_intents` + `payment_results`)
+ * with a session — for realtime-dashboard specs that assert the PaymentHistory
+ * list/counter updates live. Exposes `addResult()` to insert a SECOND payment
+ * after the page is open (drives the realtime path).
+ */
+export interface IsolatedPayment {
+  user: TestUser;
+  session: InjectableSession;
+  intentId: string;
+  resultId: string;
+  /** Insert another payment_results row for this user (live update). Defaults to
+   * a succeeded row; pass a status to seed e.g. a 'failed' payment. */
+  addResult: (
+    status?: 'succeeded' | 'failed' | 'refunded' | 'pending'
+  ) => Promise<void>;
+}
+
+/**
+ * Seed a throwaway user with one succeeded payment. No provider involved — the
+ * rows are inserted with the service-role key, so this needs NO creds. Tear down
+ * with {@link deleteIsolatedPayment}.
+ */
+export async function seedIsolatedPayment(opts?: {
+  prefix?: string;
+}): Promise<IsolatedPayment | null> {
+  const admin = getAdminClient();
+  if (!admin) return null;
+
+  const stamp = Date.now().toString().slice(-8);
+  const prefix = opts?.prefix ?? 'iso-pay';
+  const created = await createKeyedUserWithSession(prefix, 'isop', stamp);
+  if (!created) return null;
+
+  // Parent intent (payment_results.intent_id → payment_intents, ON DELETE CASCADE).
+  const insertIntent = async () => {
+    const { data, error } = await admin
+      .from('payment_intents')
+      .insert({
+        template_user_id: created.user.id,
+        amount: 1999,
+        currency: 'usd',
+        type: 'one_time',
+        customer_email: created.user.email,
+      })
+      .select('id')
+      .single();
+    if (error || !data)
+      throw new Error(`intent insert failed: ${error?.message}`);
+    return data.id as string;
+  };
+
+  const insertResult = async (
+    intentId: string,
+    status: 'succeeded' | 'failed' | 'refunded' | 'pending' = 'succeeded'
+  ) => {
+    const { data, error } = await admin
+      .from('payment_results')
+      .insert({
+        intent_id: intentId,
+        provider: 'stripe',
+        transaction_id: `iso_txn_${stamp}_${Math.floor(performance.now())}`,
+        status,
+        charged_amount: 1999,
+        charged_currency: 'usd',
+        webhook_verified: true,
+        verification_method: 'webhook',
+      })
+      .select('id')
+      .single();
+    if (error || !data)
+      throw new Error(`result insert failed: ${error?.message}`);
+    return data.id as string;
+  };
+
+  let intentId: string;
+  let resultId: string;
+  try {
+    intentId = await insertIntent();
+    resultId = await insertResult(intentId);
+  } catch (e) {
+    console.warn('seedIsolatedPayment:', (e as Error).message);
+    await deleteTestUser(created.user.id);
+    return null;
+  }
+
+  console.log(`✓ Isolated payment ${resultId} (user ${created.user.id})`);
+  return {
+    user: created.user,
+    session: created.session,
+    intentId,
+    resultId,
+    addResult: async (
+      status: 'succeeded' | 'failed' | 'refunded' | 'pending' = 'succeeded'
+    ) => {
+      const id = await insertIntent();
+      await insertResult(id, status);
+    },
+  };
+}
+
+/**
+ * Tear down an isolated payment. Deletes the user's payment_intents (cascades to
+ * payment_results) before the user. Safe with null.
+ */
+export async function deleteIsolatedPayment(
+  fixture: IsolatedPayment | null
+): Promise<void> {
+  if (!fixture) return;
+  const admin = getAdminClient();
+  if (admin) {
+    // payment_results cascades from payment_intents; delete intents by user.
+    await admin
+      .from('payment_intents')
+      .delete()
+      .eq('template_user_id', fixture.user.id);
+  }
+  await deleteTestUser(fixture.user.id);
+  console.log('✓ Isolated payment torn down');
+}
+
+/**
+ * Open a fresh browser context authenticated as the isolated payment's user,
+ * landing on the payment hub Overview tab (`/payment`). Mirrors openSubscriptionsAs.
+ */
+export async function openPaymentHubAs(
+  browser: Browser,
+  session: InjectableSession
+): Promise<OpenedParticipant> {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const opened = await openAuthedPage(browser, session);
+  await opened.page.goto(`${basePath}/payment`, {
+    waitUntil: 'domcontentloaded',
+  });
+  await dismissCookieBanner(opened.page);
+  return opened;
+}
+
+/**
+ * Open a fresh browser context authenticated as the isolated subscription's
+ * user, landing on the payment hub's Subscriptions tab
+ * (`/payment?tab=subscriptions`). Mirrors {@link openAsViewer}.
+ */
+export async function openSubscriptionsAs(
+  browser: Browser,
+  fixture: IsolatedSubscription
+): Promise<OpenedParticipant> {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const opened = await openAuthedPage(browser, fixture.session);
+  await opened.page.goto(`${basePath}/payment?tab=subscriptions`, {
+    waitUntil: 'domcontentloaded',
+  });
+  await dismissCookieBanner(opened.page);
+  return opened;
+}
+
+/**
+ * Scroll a message thread to the bottom so virtual-scrolled messages
+ * at the end of the list are rendered in the DOM.
+ */
+export async function scrollThreadToBottom(page: Page): Promise<void> {
+  const thread = page.locator('[data-testid="message-thread"]');
+  if (await thread.isVisible().catch(() => false)) {
+    // Scroll multiple times — WebKit's rendering pipeline may not update
+    // the virtualizer on a single scrollTo call. Each iteration scrolls
+    // to the new scrollHeight (which may increase as items render).
+    for (let i = 0; i < 3; i++) {
+      await thread.evaluate((el) => el.scrollTo(0, el.scrollHeight));
+      await page.waitForTimeout(500);
+    }
+  }
+}
+
+/**
+ * Navigate to a URL with retry logic for transient server failures.
+ *
+ * The static server (npx serve) can become temporarily unresponsive
+ * under load, causing page.goto to timeout. This wrapper retries
+ * with a shorter per-attempt timeout so tests don't burn their full
+ * 60s budget on a single navigation.
+ */
+export async function gotoWithRetry(
+  page: Page,
+  url: string,
+  options?: { maxRetries?: number; timeout?: number }
+): Promise<void> {
+  const maxRetries = options?.maxRetries ?? 2;
+  const timeout = options?.timeout ?? 30000;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout });
+      return;
+    } catch (err) {
+      if (attempt === maxRetries) throw err;
+      console.warn(
+        `gotoWithRetry: attempt ${attempt + 1} failed for ${url}, retrying...`
+      );
+      await page.waitForTimeout(2000);
+    }
+  }
+}
+
+/**
+ * Reset encryption keys for a user after performSignIn().
+ *
+ * SignInForm.tsx calls hasKeys() which races with Supabase session
+ * persistence — getSession() returns null, hasKeys() returns false,
+ * and initializeKeys() creates a SECOND key row with a different salt.
+ * This breaks ECDH because encrypt and decrypt use different key pairs.
+ *
+ * This helper:
+ * 1. Deletes ALL encryption keys for the user via admin API
+ * 2. Re-creates exactly ONE key via ensureEncryptionKeys
+ * 3. Clears the user's private key from IndexedDB (post-batch-7c migration)
+ *    so EncryptionKeyGate shows the ReAuthModal and deriveKeys() runs with
+ *    the correct salt
+ */
+export async function resetEncryptionKeys(
+  page: Page,
+  email: string,
+  _password: string
+): Promise<void> {
+  // Delete DUPLICATE keys created by SignInForm's hasKeys() race condition,
+  // keeping only the ORIGINAL key (created by auth.setup.ts with the correct
+  // salt). All 18 CI shards share the same Supabase DB — deleting+recreating
+  // with a new random salt would break any other shard mid-encryption.
+  const admin = getAdminClient();
+  if (admin) {
+    const user = await getUserByEmail(email);
+    if (user) {
+      // Keep only the OLDEST key (the one auth.setup.ts created)
+      const { data: keys } = await admin
+        .from('user_encryption_keys')
+        .select('id, created_at')
+        .eq('user_id', user.id)
+        .eq('revoked', false)
+        .order('created_at', { ascending: true });
+
+      if (keys && keys.length > 1) {
+        // Delete all but the oldest (auth.setup.ts) key
+        const idsToDelete = keys.slice(1).map((k) => k.id);
+        await admin.from('user_encryption_keys').delete().in('id', idsToDelete);
+        console.log(
+          `[resetEncryptionKeys] Deleted ${idsToDelete.length} duplicate keys for ${email}`
+        );
+      }
+    }
+  }
+
+  // Clear stale cached keys from IndexedDB AND force a page reload
+  // to destroy in-memory key state. Without the reload, the E2E
+  // SIGNED_OUT suppression keeps wrong-salt keys in memory — the
+  // EncryptionKeyGate sees them and skips the ReAuthModal, leaving the
+  // user with keys that don't match the DB public key.
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve) => {
+      try {
+        const open = indexedDB.open('MessagingDB');
+        open.onsuccess = () => {
+          const db = open.result;
+          if (!db.objectStoreNames.contains('messaging_private_keys')) {
+            db.close();
+            resolve();
+            return;
+          }
+          const tx = db.transaction('messaging_private_keys', 'readwrite');
+          tx.objectStore('messaging_private_keys').clear();
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => {
+            db.close();
+            resolve();
+          };
+        };
+        open.onerror = () => resolve();
+        open.onupgradeneeded = () => resolve(); // DB doesn't exist; nothing to clear
+      } catch {
+        resolve();
+      }
+    });
+  });
+  // Reload destroys the keyManagementService singleton + all in-memory
+  // caches. On fresh load, restoreKeysFromCache finds nothing in IndexedDB
+  // → EncryptionKeyGate shows ReAuthModal → correct salt from DB.
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  console.log(`[resetEncryptionKeys] Reset keys for ${email}`);
+}
+
+/**
+ * Promote a throwaway user to an OAuth identity and return a FRESH
+ * InjectableSession that carries the new `app_metadata.provider`.
+ *
+ * `isOAuthUser` / `getOAuthProvider` (src/lib/auth/oauth-utils.ts) read
+ * `user.app_metadata.provider`, and the app resolves the current user from the
+ * INJECTED session's `user` object (AuthContext reads `getSession().user`, not a
+ * fresh server `getUser()`). So flipping the metadata via the admin API is not
+ * enough on its own — we must re-sign-in AFTER the update so the new session's
+ * embedded user reflects `provider: <provider>`. That is exactly what a real
+ * OAuth login produces, without any Google/GitHub app or live handshake.
+ *
+ * @returns the fresh session, or null if the admin client / re-sign-in fails.
+ */
+export async function promoteToOAuthAndReSignIn(
+  user: TestUser,
+  provider: 'google' | 'github' = 'google'
+): Promise<InjectableSession | null> {
+  const admin = getAdminClient();
+  if (!admin) return null;
+
+  // Merge provider into app_metadata (updateUserById merges into
+  // raw_app_meta_data — same call scripts/seed-test-users.ts uses for is_admin).
+  const { error: updateErr } = await admin.auth.admin.updateUserById(user.id, {
+    app_metadata: { provider, providers: [provider] },
+  });
+  if (updateErr) {
+    console.warn(
+      `promoteToOAuthAndReSignIn: updateUserById failed for ${user.email}:`,
+      updateErr.message
+    );
+    return null;
+  }
+
+  // Re-sign-in so the new session's JWT + embedded user carry the updated
+  // app_metadata (the pre-promotion session still says provider: 'email').
+  const anonUrl =
+    process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!anonUrl || !anonKey) return null;
+  const anon = createClient(anonUrl, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data, error } = await anon.auth.signInWithPassword({
+    email: user.email,
+    password: user.password,
+  });
+  if (error || !data.session) {
+    console.warn(
+      `promoteToOAuthAndReSignIn: re-sign-in failed for ${user.email}:`,
+      error?.message
+    );
+    return null;
+  }
+  return {
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
+    expires_at: data.session.expires_at ?? 0,
+    user: data.session.user,
+  };
+}
+
+/**
+ * Delete a user's `user_encryption_keys` rows so the messaging key gate treats
+ * them as a NO-KEYS user (ReAuthModal opens in SETUP mode instead of unlock).
+ * For the OAuth setup-mode test. Safe if the user has no keys.
+ */
+export async function deleteUserEncryptionKeys(userId: string): Promise<void> {
+  const admin = getAdminClient();
+  if (!admin) return;
+  await admin.from('user_encryption_keys').delete().eq('user_id', userId);
+}
+
+/**
+ * A payment-queue row to seed, as consumed by the PaymentQueuePanel UI. Mirrors
+ * `PaymentQueueItem` (src/lib/offline-queue/types.ts) minus the auto-`id`.
+ */
+export interface SeedPaymentQueueItem {
+  type: 'payment_intent' | 'subscription_update';
+  data?: Record<string, unknown>;
+  status?: 'pending' | 'processing' | 'failed' | 'completed';
+  retries?: number;
+  lastError?: string;
+  userId?: string;
+}
+
+/**
+ * Seed the offline PAYMENT queue directly in the browser's IndexedDB so tests
+ * can exercise a POPULATED PaymentQueuePanel without a real payment attempt or
+ * provider creds. The queue is a plain client-side Dexie store — DB
+ * `PaymentQueueV2`, object store `queuedOperations`, key `++id` (see
+ * src/lib/offline-queue/payment-adapter.ts) — so a readwrite `add()` per row is
+ * all it takes. No server round-trip, no encryption.
+ *
+ * The app instantiates `paymentQueue` (creating the DB + store) on first load,
+ * so call this AFTER the payment hub / demo page has mounted. The panel polls
+ * `getQueue()` every 5s; reload or wait one interval after seeding to see it.
+ *
+ * @returns the number of rows written (0 if the store didn't exist yet).
+ */
+export async function seedPaymentQueue(
+  page: Page,
+  items: SeedPaymentQueueItem[]
+): Promise<number> {
+  return page.evaluate(async (rows) => {
+    return new Promise<number>((resolve) => {
+      try {
+        const open = indexedDB.open('PaymentQueueV2');
+        open.onsuccess = () => {
+          const db = open.result;
+          if (!db.objectStoreNames.contains('queuedOperations')) {
+            // App hasn't created the store yet — nothing we can seed.
+            db.close();
+            resolve(0);
+            return;
+          }
+          const tx = db.transaction('queuedOperations', 'readwrite');
+          const store = tx.objectStore('queuedOperations');
+          let written = 0;
+          for (const r of rows) {
+            // Dexie auto-assigns id (++id); omit it. createdAt/status/retries
+            // default to a sensible pending row when not supplied.
+            store.add({
+              type: r.type,
+              data: r.data ?? {},
+              status: r.status ?? 'pending',
+              retries: r.retries ?? 0,
+              createdAt: Date.now(),
+              ...(r.lastError ? { lastError: r.lastError } : {}),
+              ...(r.userId ? { userId: r.userId } : {}),
+            });
+            written++;
+          }
+          tx.oncomplete = () => {
+            db.close();
+            resolve(written);
+          };
+          tx.onerror = () => {
+            db.close();
+            resolve(0);
+          };
+        };
+        open.onerror = () => resolve(0);
+        // If the DB doesn't exist yet, abort the upgrade so we don't create a
+        // store-less DB the app then can't upgrade. Signals "not ready".
+        open.onupgradeneeded = (ev) => {
+          (ev.target as IDBOpenDBRequest).transaction?.abort();
+          resolve(0);
+        };
+      } catch {
+        resolve(0);
+      }
+    });
+  }, items);
+}
+
+/**
+ * Empty the offline payment queue in the browser's IndexedDB (teardown for
+ * {@link seedPaymentQueue}). Safe if the store doesn't exist.
+ */
+export async function clearPaymentQueue(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve) => {
+      try {
+        const open = indexedDB.open('PaymentQueueV2');
+        open.onsuccess = () => {
+          const db = open.result;
+          if (!db.objectStoreNames.contains('queuedOperations')) {
+            db.close();
+            resolve();
+            return;
+          }
+          const tx = db.transaction('queuedOperations', 'readwrite');
+          tx.objectStore('queuedOperations').clear();
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => {
+            db.close();
+            resolve();
+          };
+        };
+        open.onerror = () => resolve();
+        open.onupgradeneeded = (ev) => {
+          (ev.target as IDBOpenDBRequest).transaction?.abort();
+          resolve();
+        };
+      } catch {
+        resolve();
+      }
+    });
+  });
+}

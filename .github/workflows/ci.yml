@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+
+    env:
+      NEXT_PUBLIC_DEPLOY_URL: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      TEST_USER_PRIMARY_EMAIL: ${{ vars.TEST_USER_PRIMARY_EMAIL }}
+      TEST_USER_PRIMARY_PASSWORD: ${{ secrets.TEST_USER_PRIMARY_PASSWORD }}
+
+    strategy:
+      matrix:
+        node-version: [20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.16.1
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate project configuration
+        run: node scripts/detect-project.js
+
+      - name: Run linter
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm type-check
+
+      - name: Run tests
+        run: pnpm test --run
+
+      # Eight node:test files under scripts/__tests__/ cover the tooling
+      # scripts CI itself runs — detect-project.js (step above), validate-
+      # structure.js, audit-components.js (both in component-structure.yml),
+      # migrate-components.js (the command that workflow's PR-comment tells
+      # you to run on failure), plop-generator.js (the mandatory component
+      # generator). vitest.config.ts:20-21 excludes them because vitest
+      # cannot load require('node:test'). These sat dark since the initial
+      # commit with only the exclude and no corresponding runner. 86 pass,
+      # 1 intentional todo (spec-for-unbuilt-feature), 1 intentional file-
+      # skip (contract infra never provisioned). Exit 0.
+      - name: Run script tests (node:test)
+        run: pnpm test:scripts
+
+      - name: Check test coverage
+        run: pnpm test:coverage
+
+      - name: Build application
+        run: pnpm build
+
+      - name: Build Storybook
+        run: pnpm build-storybook

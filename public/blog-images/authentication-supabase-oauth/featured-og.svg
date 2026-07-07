@@ -1,0 +1,84 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="auth-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f1419"/>
+      <stop offset="100%" stop-color="#1a2332"/>
+    </linearGradient>
+    <linearGradient id="auth-accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3ecf8e"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <filter id="auth-glow">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#auth-bg)"/>
+
+  <!-- Concentric protection rings -->
+  <g transform="translate(600, 280)">
+    <circle cx="0" cy="0" r="240" fill="none" stroke="#3ecf8e" stroke-width="0.5" opacity="0.06"/>
+    <circle cx="0" cy="0" r="190" fill="none" stroke="#3ecf8e" stroke-width="0.5" opacity="0.08"/>
+    <circle cx="0" cy="0" r="140" fill="none" stroke="#3ecf8e" stroke-width="1" opacity="0.1"/>
+    <circle cx="0" cy="0" r="90" fill="none" stroke="#3ecf8e" stroke-width="1" opacity="0.12"/>
+    <!-- Glow center -->
+    <circle cx="0" cy="0" r="60" fill="#3ecf8e" opacity="0.03" filter="url(#auth-glow)"/>
+  </g>
+
+  <!-- Shield icon at center -->
+  <g transform="translate(565, 130)">
+    <!-- Shield glow -->
+    <path d="M 35 0 L 70 15 V 55 C 70 80 35 100 35 100 C 35 100 0 80 0 55 V 15 Z" fill="#3ecf8e" opacity="0.04" filter="url(#auth-glow)"/>
+    <!-- Shield outline -->
+    <path d="M 35 4 L 66 18 V 55 C 66 76 35 95 35 95 C 35 95 4 76 4 55 V 18 Z" fill="none" stroke="#3ecf8e" stroke-width="2" opacity="0.6"/>
+    <!-- Checkmark inside shield -->
+    <path d="M 20 50 L 30 60 L 50 35" fill="none" stroke="#3ecf8e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+  </g>
+
+  <!-- Key icon — left side -->
+  <g transform="translate(160, 250)" opacity="0.15">
+    <circle cx="30" cy="30" r="20" fill="none" stroke="#3ecf8e" stroke-width="2"/>
+    <line x1="50" y1="30" x2="110" y2="30" stroke="#3ecf8e" stroke-width="2"/>
+    <line x1="90" y1="30" x2="90" y2="45" stroke="#3ecf8e" stroke-width="2"/>
+    <line x1="100" y1="30" x2="100" y2="42" stroke="#3ecf8e" stroke-width="2"/>
+  </g>
+
+  <!-- Lock icon — right side -->
+  <g transform="translate(980, 240)" opacity="0.15">
+    <rect x="5" y="25" width="40" height="30" rx="4" fill="none" stroke="#3ecf8e" stroke-width="2"/>
+    <path d="M 14 25 V 17 C 14 7 36 7 36 17 V 25" fill="none" stroke="#3ecf8e" stroke-width="2"/>
+  </g>
+
+  <!-- Title -->
+  <text x="600" y="290" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="700" text-anchor="middle" fill="white" letter-spacing="-0.5">
+    Production Authentication
+  </text>
+
+  <!-- Subtitle -->
+  <text x="600" y="335" font-family="system-ui, -apple-system, sans-serif" font-size="20" text-anchor="middle" fill="#94a3b8">
+    OAuth, Rate Limiting, and Row-Level Security
+  </text>
+
+  <!-- Provider labels -->
+  <g transform="translate(330, 390)">
+    <rect x="0" y="0" width="100" height="34" rx="6" fill="#3ecf8e" opacity="0.1" stroke="#3ecf8e" stroke-width="0.5" stroke-opacity="0.25"/>
+    <text x="50" y="22" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" text-anchor="middle" fill="#3ecf8e" opacity="0.8">Supabase</text>
+  </g>
+  <g transform="translate(450, 390)">
+    <rect x="0" y="0" width="90" height="34" rx="6" fill="white" opacity="0.05" stroke="white" stroke-width="0.5" stroke-opacity="0.1"/>
+    <text x="45" y="22" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" text-anchor="middle" fill="white" opacity="0.5">GitHub</text>
+  </g>
+  <g transform="translate(560, 390)">
+    <rect x="0" y="0" width="90" height="34" rx="6" fill="white" opacity="0.05" stroke="white" stroke-width="0.5" stroke-opacity="0.1"/>
+    <text x="45" y="22" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" text-anchor="middle" fill="white" opacity="0.5">Google</text>
+  </g>
+  <g transform="translate(670, 390)">
+    <rect x="0" y="0" width="120" height="34" rx="6" fill="white" opacity="0.05" stroke="white" stroke-width="0.5" stroke-opacity="0.1"/>
+    <text x="60" y="22" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" text-anchor="middle" fill="white" opacity="0.5">PostgreSQL</text>
+  </g>
+
+  <!-- Bottom accent -->
+  <rect x="450" y="480" width="300" height="1" fill="url(#auth-accent)" opacity="0.2"/>
+  <text x="600" y="530" font-family="system-ui, -apple-system, sans-serif" font-size="12" text-anchor="middle" fill="#475569" letter-spacing="2">SCRIPTHAMMER</text>
+</svg>

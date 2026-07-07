@@ -1,0 +1,238 @@
+/**
+ * Mobile Navigation Test
+ * PRP-017: Mobile-First Design Overhaul
+ * Task: T008
+ *
+ * Test navigation fits mobile viewport with no horizontal scroll
+ * This test should FAIL initially (TDD RED phase)
+ */
+
+import { test, expect } from '@playwright/test';
+import { TEST_VIEWPORTS } from '@/config/test-viewports';
+import { dismissCookieBanner } from '../utils/test-user-factory';
+
+/**
+ * Wait for layout to stabilize after viewport/page change
+ */
+async function waitForLayoutStability(page: import('@playwright/test').Page) {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForFunction(
+    () => {
+      return new Promise((resolve) => {
+        let stable = 0;
+        const check = () => {
+          stable++;
+          if (stable >= 3) resolve(true);
+          else requestAnimationFrame(check);
+        };
+        requestAnimationFrame(check);
+      });
+    },
+    { timeout: 5000 }
+  );
+}
+
+test.describe('Mobile Navigation', () => {
+  // Test at multiple mobile viewports
+  const mobileViewports = TEST_VIEWPORTS.filter((v) => v.category === 'mobile');
+
+  for (const viewport of mobileViewports) {
+    test(`Navigation fits within ${viewport.name} viewport (${viewport.width}px)`, async ({
+      page,
+    }) => {
+      // Set viewport size
+      await page.setViewportSize({
+        width: viewport.width,
+        height: viewport.height,
+      });
+
+      // Navigate to homepage
+      await page.goto('/');
+      await dismissCookieBanner(page);
+      await waitForLayoutStability(page);
+
+      // Wait for navigation to be visible
+      const nav = page.locator('nav').first();
+      await expect(nav).toBeVisible();
+
+      // Get navigation bounding box
+      const navBox = await nav.boundingBox();
+      expect(navBox).not.toBeNull();
+
+      if (navBox) {
+        // Navigation must fit within viewport width
+        expect(
+          navBox.width,
+          'Navigation width exceeds viewport'
+        ).toBeLessThanOrEqual(
+          viewport.width + 1 // Allow 1px tolerance for sub-pixel rendering
+        );
+
+        // Navigation must not cause horizontal overflow
+        expect(navBox.x, 'Navigation starts off-screen').toBeGreaterThanOrEqual(
+          0
+        );
+      }
+
+      // Check for horizontal scroll on entire page
+      const scrollWidth = await page.evaluate(() => document.body.scrollWidth);
+      const clientWidth = await page.evaluate(() => document.body.clientWidth);
+
+      // DIAGNOSTIC: When overflow is detected, dump the top offending elements
+      // so we can identify which DOM node is causing the horizontal scroll.
+      if (scrollWidth > clientWidth + 1) {
+        const offenders = await page.evaluate((vw) => {
+          const all = Array.from(document.querySelectorAll('*'));
+          const wide: Array<{
+            tag: string;
+            id: string;
+            cls: string;
+            w: number;
+            x: number;
+            right: number;
+          }> = [];
+          for (const el of all) {
+            const r = el.getBoundingClientRect();
+            // Element extends beyond the viewport's right edge
+            if (r.right > vw + 1 && r.width > 0) {
+              wide.push({
+                tag: el.tagName.toLowerCase(),
+                id: (el as HTMLElement).id || '',
+                cls: ((el as HTMLElement).className || '')
+                  .toString()
+                  .slice(0, 80),
+                w: Math.round(r.width),
+                x: Math.round(r.left),
+                right: Math.round(r.right),
+              });
+            }
+          }
+          // Sort by rightmost edge (worst overflow first)
+          wide.sort((a, b) => b.right - a.right);
+          return wide.slice(0, 10);
+        }, viewport.width);
+        console.log(
+          `[OVERFLOW DIAG] ${viewport.name} (${viewport.width}px): top offenders:\n${offenders
+            .map(
+              (o, i) =>
+                `  ${i + 1}. <${o.tag}${o.id ? ' id="' + o.id + '"' : ''}> right=${o.right}px x=${o.x}px w=${o.w}px class="${o.cls}"`
+            )
+            .join('\n')}`
+        );
+      }
+
+      expect(
+        scrollWidth,
+        `Horizontal scroll detected (scrollWidth: ${scrollWidth}px, viewport: ${viewport.width}px)`
+      ).toBeLessThanOrEqual(clientWidth + 1);
+    });
+  }
+
+  test('Navigation controls are all visible at 320px (narrowest mobile)', async ({
+    page,
+  }) => {
+    // Test at absolute minimum supported width
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.goto('/');
+    await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
+
+    const nav = page.locator('nav').first();
+    await expect(nav).toBeVisible();
+
+    // Check that nav doesn't overflow
+    const navBox = await nav.boundingBox();
+    if (navBox) {
+      expect(
+        navBox.width,
+        'Navigation width exceeds viewport'
+      ).toBeLessThanOrEqual(320 + 1);
+    }
+
+    // Check for visible interactive elements in the nav (not hidden dropdown contents)
+    // At 320px, we expect: logo link, hamburger menu button
+    const logo = nav.locator('a').first();
+    await expect(logo, 'Logo should be visible').toBeVisible();
+
+    // Mobile menu toggle (label or button with menu icon)
+    const menuToggle = nav
+      .locator('[aria-label*="menu" i], [aria-label*="navigation" i]')
+      .first();
+    await expect(
+      menuToggle,
+      'Mobile menu toggle should be visible'
+    ).toBeVisible();
+
+    // Verify menu toggle is within viewport
+    const menuBox = await menuToggle.boundingBox();
+    if (menuBox) {
+      expect(
+        menuBox.x,
+        'Menu toggle positioned off-screen'
+      ).toBeGreaterThanOrEqual(0);
+      expect(
+        menuBox.x + menuBox.width,
+        'Menu toggle extends beyond viewport'
+      ).toBeLessThanOrEqual(320 + 1);
+    }
+  });
+
+  test('Mobile menu toggle works on narrow viewports', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+    await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
+
+    // Look for mobile menu button (hamburger icon) - it's a label in DaisyUI dropdown
+    const menuButton = page
+      .locator('[aria-label*="menu" i], [aria-label*="navigation" i]')
+      .first();
+
+    if (await menuButton.isVisible()) {
+      // Click to open mobile menu
+      await menuButton.click();
+
+      // Menu content should become visible (DaisyUI uses dropdown-content class)
+      const menuContent = page.locator('nav .dropdown-content').first();
+
+      // Wait for menu content to be visible (replaces waitForTimeout)
+      await expect(menuContent).toBeVisible({ timeout: 2000 });
+
+      // Verify menu contains navigation items
+      const menuLinks = menuContent.locator('a');
+      const linkCount = await menuLinks.count();
+      expect(linkCount, 'Menu should contain navigation links').toBeGreaterThan(
+        0
+      );
+
+      // Close by clicking outside (DaisyUI dropdowns are focus-based)
+      await page.locator('body').click({ position: { x: 10, y: 10 } });
+    }
+  });
+
+  test('Navigation adapts to orientation change', async ({ page }) => {
+    // Start in portrait
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/');
+    await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
+
+    const nav = page.locator('nav').first();
+    await expect(nav).toBeVisible();
+
+    // Rotate to landscape (width > height but still mobile)
+    await page.setViewportSize({ width: 844, height: 390 });
+    await waitForLayoutStability(page);
+
+    // Navigation should still be visible and fit
+    await expect(nav).toBeVisible();
+
+    const navBox = await nav.boundingBox();
+    if (navBox) {
+      expect(
+        navBox.width,
+        'Navigation overflows in landscape'
+      ).toBeLessThanOrEqual(844 + 1);
+    }
+  });
+});

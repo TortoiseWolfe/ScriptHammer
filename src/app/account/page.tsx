@@ -1,0 +1,57 @@
+import React from 'react';
+import type { Metadata } from 'next';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import AccountSettings from '@/components/auth/AccountSettings';
+import Link from 'next/link';
+
+export const metadata: Metadata = {
+  title: 'Account Settings - ScriptHammer',
+  description: 'Manage your account settings and preferences',
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: {
+      index: false,
+      follow: false,
+    },
+  },
+};
+
+export default function AccountPage() {
+  return (
+    <ProtectedRoute>
+      <main className="container mx-auto px-4 py-12 sm:px-6 md:py-16 lg:px-8">
+        <div className="mx-auto max-w-2xl">
+          <div className="mb-6 flex items-center justify-between">
+            <h1 className="text-3xl font-bold">Account Settings</h1>
+            <Link href="/profile" className="btn btn-ghost min-h-11">
+              Back to Profile
+            </Link>
+          </div>
+
+          <AccountSettings />
+
+          <div className="divider" />
+
+          <div className="flex flex-col gap-3">
+            <Link
+              href="/account/audit"
+              className="btn btn-outline min-h-11 w-full"
+            >
+              View recent security activity
+            </Link>
+            <Link href="/payment" className="btn btn-outline min-h-11 w-full">
+              View payments
+            </Link>
+            <Link
+              href="/payment?tab=subscriptions"
+              className="btn btn-outline min-h-11 w-full"
+            >
+              Manage subscriptions
+            </Link>
+          </div>
+        </div>
+      </main>
+    </ProtectedRoute>
+  );
+}

@@ -1,0 +1,176 @@
+import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { fn } from 'storybook/test';
+import UnifiedSidebar from './UnifiedSidebar';
+import { withAuthProvider } from '../../../../.storybook/decorators';
+
+const meta: Meta<typeof UnifiedSidebar> = {
+  title: 'Components/Organisms/UnifiedSidebar',
+  component: UnifiedSidebar,
+  decorators: [
+    withAuthProvider,
+    (Story) => (
+      <div className="border-base-300 h-[600px] w-[400px] border">
+        <Story />
+      </div>
+    ),
+  ],
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        component:
+          'UnifiedSidebar provides tabbed navigation for Chats and Connections sections in the messaging interface. Feature 038: UserSearch now embedded in ConnectionManager.',
+      },
+    },
+  },
+  tags: ['autodocs'],
+  argTypes: {
+    activeTab: {
+      control: 'select',
+      options: ['chats', 'connections'],
+      description: 'Currently active tab',
+    },
+    selectedConversationId: {
+      control: 'text',
+      description: 'Currently selected conversation ID',
+    },
+    unreadCount: {
+      control: 'number',
+      description: 'Unread message count for Chats tab badge',
+    },
+    pendingConnectionCount: {
+      control: 'number',
+      description: 'Pending connection count for Connections tab badge',
+    },
+    className: {
+      control: 'text',
+      description: 'Additional CSS classes',
+    },
+  },
+  args: {
+    onConversationSelect: fn(),
+    onStartConversation: fn().mockResolvedValue('conv-mock-123'),
+    onTabChange: fn(),
+  },
+};
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {
+  args: {
+    activeTab: 'chats',
+    selectedConversationId: null,
+    unreadCount: 0,
+    pendingConnectionCount: 0,
+  },
+};
+
+export const ChatsTabWithUnread: Story = {
+  args: {
+    activeTab: 'chats',
+    selectedConversationId: null,
+    unreadCount: 5,
+    pendingConnectionCount: 0,
+  },
+};
+
+export const ConnectionsTab: Story = {
+  args: {
+    activeTab: 'connections',
+    selectedConversationId: null,
+    unreadCount: 0,
+    pendingConnectionCount: 3,
+  },
+};
+
+export const WithBadges: Story = {
+  args: {
+    activeTab: 'chats',
+    selectedConversationId: null,
+    unreadCount: 12,
+    pendingConnectionCount: 4,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Shows badge counts on both Chats and Connections tabs.',
+      },
+    },
+  },
+};
+
+export const WithSelectedConversation: Story = {
+  args: {
+    activeTab: 'chats',
+    selectedConversationId: 'conv-123-456',
+    unreadCount: 2,
+    pendingConnectionCount: 0,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Shows the sidebar with a conversation selected (highlighted in the list).',
+      },
+    },
+  },
+};
+
+export const MobileWidth: Story = {
+  args: {
+    activeTab: 'chats',
+    selectedConversationId: null,
+    unreadCount: 3,
+    pendingConnectionCount: 1,
+  },
+  decorators: [
+    (Story) => (
+      <div className="border-base-300 h-[600px] w-[320px] border">
+        <Story />
+      </div>
+    ),
+  ],
+  parameters: {
+    docs: {
+      description: {
+        story: 'Shows the sidebar at mobile viewport width (320px).',
+      },
+    },
+  },
+};
+
+export const ThemeShowcase: Story = {
+  args: {
+    activeTab: 'chats',
+    selectedConversationId: null,
+    unreadCount: 3,
+    pendingConnectionCount: 2,
+  },
+  render: (args) => (
+    <div className="flex flex-col gap-3">
+      <h3 className="text-base-content mb-2 text-lg font-semibold">
+        On Surfaces
+      </h3>
+      <div className="bg-base-100 rounded-lg p-4">
+        <span className="text-base-content/80 text-sm">base-100:</span>
+        <div className="h-[400px] w-[350px]">
+          <UnifiedSidebar {...args} />
+        </div>
+      </div>
+      <div className="bg-base-200 rounded-lg p-4">
+        <span className="text-base-content/80 text-sm">base-200:</span>
+        <div className="h-[400px] w-[350px]">
+          <UnifiedSidebar {...args} />
+        </div>
+      </div>
+      <div className="bg-neutral rounded-lg p-4">
+        <span className="text-neutral-content/80 text-sm">neutral:</span>
+        <div className="h-[400px] w-[350px]">
+          <UnifiedSidebar {...args} />
+        </div>
+      </div>
+    </div>
+  ),
+  parameters: { layout: 'padded' },
+};

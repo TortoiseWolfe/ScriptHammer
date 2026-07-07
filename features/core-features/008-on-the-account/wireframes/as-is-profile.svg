@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">PROFILE - /profile (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+    <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+
+    <text x="640" y="140" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="#1f2937">Your Profile</text>
+
+    <!-- UserProfileCard -->
+    <rect x="336" y="180" width="608" height="280" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="420" cy="252" r="48" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="420" y="262" text-anchor="middle" font-family="system-ui, sans-serif" font-size="32" font-weight="700" fill="#8b5cf6">TW</text>
+    <text x="500" y="228" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#1f2937">TurtleWolfe</text>
+    <text x="500" y="252" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">jonpohlner@gmail.com</text>
+    <text x="500" y="276" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Verified · joined Feb 2025</text>
+
+    <line x1="360" y1="320" x2="920" y2="320" stroke="#b8a080"/>
+
+    <text x="360" y="346" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">ACCOUNT STATUS</text>
+    <text x="360" y="372" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Email verified</text>
+    <text x="900" y="372" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">● yes</text>
+    <text x="360" y="396" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">2FA enabled</text>
+    <text x="900" y="396" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">○ no</text>
+    <text x="360" y="420" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Session expires</text>
+    <text x="900" y="420" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">in 23 hours</text>
+
+    <!-- CTA -->
+    <rect x="540" y="492" width="200" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="640" y="520" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Account Settings</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <g class="callout"><circle cx="640" cy="120" r="14" fill="#dc2626"/><text x="640" y="125" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="420" cy="200" r="14" fill="#dc2626"/><text x="420" y="205" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="940" cy="370" r="14" fill="#dc2626"/><text x="940" y="375" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="770" cy="514" r="14" fill="#dc2626"/><text x="770" y="519" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+    <text x="180" y="128" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="#1f2937">Your Profile</text>
+
+    <rect x="16" y="152" width="328" height="300" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="180" cy="204" r="40" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="180" y="214" text-anchor="middle" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#8b5cf6">TW</text>
+    <text x="180" y="276" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">TurtleWolfe</text>
+    <text x="180" y="298" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">jonpohlner@gmail.com</text>
+
+    <line x1="40" y1="324" x2="320" y2="324" stroke="#b8a080"/>
+    <text x="32" y="350" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Email verified</text>
+    <text x="328" y="350" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">● yes</text>
+    <text x="32" y="374" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">2FA enabled</text>
+    <text x="328" y="374" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">○ no</text>
+    <text x="32" y="398" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Session</text>
+    <text x="328" y="398" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">23h left</text>
+    <rect x="32" y="412" width="296" height="32" rx="4" fill="#8b5cf6"/>
+    <text x="180" y="432" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Account Settings</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="180" cy="432" r="11" fill="#dc2626"/><text x="180" y="437" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">h1 + ProtectedRoute</text>
+      <a href="#us-001" transform="translate(230, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Wrapped in ProtectedRoute — redirects to</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">/sign-in?returnUrl=/profile if unauth.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Avatar + identity</text>
+      <a href="#us-002" transform="translate(180, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">UserProfileCard shows avatar (initials fallback),</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">display name, email, joined date.</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Account status rows</text>
+      <a href="#us-003" transform="translate(220, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Email verified / 2FA / session expiry — quick</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">triage for "is my account set up correctly?"</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Settings CTA</text>
+      <a href="#us-004" transform="translate(140, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Single btn-primary linking to /account.</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Profile is read-only; edits happen there.</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/profile/page.tsx — server component wrapped in &lt;ProtectedRoute&gt; client boundary.</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">robots: {index: false, follow: false} — not indexed by search engines.</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:18 | Profile (as-is /profile) | ScriptHammer</text>
+</svg>

@@ -1,0 +1,29 @@
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import {{pascalCase name}} from './{{pascalCase name}}';
+
+describe('{{pascalCase name}}', () => {
+  it('renders without crashing', () => {
+    const { container } = render(<{{pascalCase name}}{{#if hasProps}} />{{else}} />{{/if}});
+    expect(container.firstChild).toBeInTheDocument();
+  });
+
+  {{#if hasProps}}
+  it('renders children when provided', () => {
+    const testContent = 'Test Content';
+    const { getByText } = render(
+      <{{pascalCase name}}>{testContent}</{{pascalCase name}}>
+    );
+    expect(getByText(testContent)).toBeInTheDocument();
+  });
+
+  it('applies custom className when provided', () => {
+    const customClass = 'custom-test-class';
+    const { container } = render(<{{pascalCase name}} className={customClass} />);
+    const element = container.querySelector('.custom-test-class');
+    expect(element).toBeInTheDocument();
+  });
+  {{/if}}
+
+  // Add component-specific tests based on actual functionality
+});

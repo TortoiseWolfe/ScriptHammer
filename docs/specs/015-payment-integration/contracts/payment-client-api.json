@@ -1,0 +1,341 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Payment Client API",
+    "description": "Supabase client library functions for payment operations (called from Next.js frontend)",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/create-payment-intent": {
+      "post": {
+        "summary": "Create a payment intent",
+        "description": "Creates a payment intent record before redirecting to payment provider",
+        "operationId": "createPaymentIntent",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePaymentIntentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Payment intent created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentIntent"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/get-payment-status": {
+      "get": {
+        "summary": "Get payment status",
+        "description": "Retrieves the current status of a payment intent",
+        "operationId": "getPaymentStatus",
+        "parameters": [
+          {
+            "name": "intent_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment status retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentStatus"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Payment intent not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/list-payment-history": {
+      "get": {
+        "summary": "List payment history",
+        "description": "Retrieves paginated payment history for the authenticated user",
+        "operationId": "listPaymentHistory",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "succeeded", "failed", "refunded"]
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["stripe", "paypal", "cashapp", "chime"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment history retrieved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentHistoryResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/query-transaction": {
+      "get": {
+        "summary": "Query transaction by ID",
+        "description": "Looks up a payment by transaction ID from provider",
+        "operationId": "queryTransaction",
+        "parameters": [
+          {
+            "name": "transaction_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentResult"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Transaction not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreatePaymentIntentRequest": {
+        "type": "object",
+        "required": ["amount", "currency", "type", "customer_email"],
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "description": "Amount in cents",
+            "minimum": 100,
+            "maximum": 99999,
+            "example": 1000
+          },
+          "currency": {
+            "type": "string",
+            "enum": ["usd", "eur", "gbp", "cad", "aud"],
+            "default": "usd"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["one_time", "recurring"]
+          },
+          "interval": {
+            "type": "string",
+            "enum": ["month", "year"],
+            "description": "Required if type is 'recurring'"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "customer_email": {
+            "type": "string",
+            "format": "email"
+          }
+        }
+      },
+      "PaymentIntent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "customer_email": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PaymentStatus": {
+        "type": "object",
+        "properties": {
+          "intent_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "succeeded", "failed", "refunded"]
+          },
+          "provider": {
+            "type": "string"
+          },
+          "transaction_id": {
+            "type": "string"
+          },
+          "webhook_verified": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PaymentResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "intent_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "transaction_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "charged_amount": {
+            "type": "integer"
+          },
+          "webhook_verified": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PaymentHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentResult"
+            }
+          },
+          "count": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "offset": {
+            "type": "integer"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "details": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}

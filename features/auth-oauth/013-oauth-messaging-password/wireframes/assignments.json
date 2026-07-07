@@ -1,0 +1,39 @@
+{
+  "feature": "013-oauth-messaging-password",
+  "plannedAt": "2026-01-14T20:11:55Z",
+  "svgCount": 2,
+  "assignments": [
+    {
+      "svg": "01-oauth-password-setup.svg",
+      "focus": "Create Messaging Password mode for new OAuth users. Modal shows password + confirm fields, strength indicator, and explanation of why separate password is needed. OAuth provider badge visible.",
+      "userStories": [],
+      "requirements": [
+        "FR-004",
+        "FR-005",
+        "FR-006",
+        "FR-007",
+        "FR-008",
+        "FR-012",
+        "FR-015",
+        "FR-016",
+        "FR-017"
+      ],
+      "mode": "new"
+    },
+    {
+      "svg": "02-oauth-password-unlock.svg",
+      "focus": "Unlock Your Messages mode for returning OAuth users with existing keys. Single password field, subtext explaining this is separate from OAuth password. OAuth provider badge visible.",
+      "userStories": [],
+      "requirements": [
+        "FR-009",
+        "FR-010",
+        "FR-011",
+        "FR-012",
+        "FR-015",
+        "FR-016",
+        "FR-017"
+      ],
+      "mode": "new"
+    }
+  ]
+}

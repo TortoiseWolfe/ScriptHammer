@@ -1,0 +1,480 @@
+openapi: 3.0.3
+info:
+  title: Group Chats API Contract
+  description: |
+    API contract for Feature 010: Group Chats.
+
+    Note: This is a static-export Next.js app. These "endpoints" are implemented
+    as Supabase client operations, not traditional REST endpoints. This contract
+    documents the data shapes and operations for service layer implementation.
+  version: 1.0.0
+
+paths:
+  /groups:
+    post:
+      operationId: createGroup
+      summary: Create a new group conversation
+      description: Creates a group with the current user as owner and specified members
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGroupInput'
+      responses:
+        '201':
+          description: Group created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupConversation'
+        '400':
+          description: Invalid input (< 2 members, invalid member IDs)
+        '403':
+          description: Not connected to one or more specified members
+
+  /groups/{groupId}/members:
+    get:
+      operationId: getGroupMembers
+      summary: List all members of a group
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of group members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ConversationMember'
+        '403':
+          description: Not a member of this group
+        '404':
+          description: Group not found
+
+    post:
+      operationId: addMembers
+      summary: Add members to a group
+      description: Any group member can add their connections to the group
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMembersInput'
+      responses:
+        '200':
+          description: Members added, key rotated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddMembersResult'
+        '400':
+          description: Invalid member IDs, already members, or group at capacity
+        '403':
+          description: Not a member of this group or not connected to new members
+
+  /groups/{groupId}/members/{userId}:
+    delete:
+      operationId: removeMember
+      summary: Remove a member from the group
+      description: Only the group owner can remove members
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Member removed, key rotated
+        '403':
+          description: Not the group owner
+        '404':
+          description: Group or member not found
+
+  /groups/{groupId}/leave:
+    post:
+      operationId: leaveGroup
+      summary: Leave a group
+      description: Any member can leave except owner (must transfer ownership first)
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Left group successfully
+        '400':
+          description: Owner cannot leave without transferring ownership
+        '403':
+          description: Not a member of this group
+
+  /groups/{groupId}/transfer-ownership:
+    post:
+      operationId: transferOwnership
+      summary: Transfer group ownership to another member
+      description: Only the current owner can transfer ownership
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferOwnershipInput'
+      responses:
+        '200':
+          description: Ownership transferred
+        '400':
+          description: New owner is not a group member
+        '403':
+          description: Not the current group owner
+
+  /groups/{groupId}/rename:
+    patch:
+      operationId: renameGroup
+      summary: Rename a group
+      description: Only the group owner can rename the group
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenameGroupInput'
+      responses:
+        '200':
+          description: Group renamed successfully
+        '400':
+          description: Invalid name (empty or too long)
+        '403':
+          description: Not the group owner
+
+  /groups/{groupId}:
+    delete:
+      operationId: deleteGroup
+      summary: Delete a group
+      description: Only the group owner can delete the entire group
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Group deleted and archived for all members
+        '403':
+          description: Not the group owner
+        '404':
+          description: Group not found
+
+  /groups/{groupId}/keys/{version}:
+    get:
+      operationId: getGroupKey
+      summary: Get encrypted group key for a specific version
+      description: Returns the calling user's encrypted copy of the group key
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Encrypted group key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupKey'
+        '403':
+          description: Not a member or key version predates membership
+        '404':
+          description: Key version not found
+
+  /conversations/{conversationId}/upgrade:
+    post:
+      operationId: upgradeToGroup
+      summary: Upgrade a 1-to-1 conversation to a group
+      description: Converts DM to group, adds new members, preserves history for originals
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpgradeToGroupInput'
+      responses:
+        '200':
+          description: Upgraded to group successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupConversation'
+        '400':
+          description: Already a group or invalid member IDs
+        '403':
+          description: Not a participant in this conversation
+
+components:
+  schemas:
+    CreateGroupInput:
+      type: object
+      required:
+        - member_ids
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          description: Optional custom group name
+        member_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          minItems: 1
+          maxItems: 199
+          description: User IDs to add (excluding creator)
+
+    AddMembersInput:
+      type: object
+      required:
+        - member_ids
+      properties:
+        member_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          minItems: 1
+          description: User IDs to add to the group
+
+    AddMembersResult:
+      type: object
+      properties:
+        added:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Successfully added member IDs
+        pending:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Members with pending key distribution
+        new_key_version:
+          type: integer
+          description: New key version after rotation
+
+    TransferOwnershipInput:
+      type: object
+      required:
+        - new_owner_id
+      properties:
+        new_owner_id:
+          type: string
+          format: uuid
+          description: User ID of new owner
+
+    RenameGroupInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          description: New group name
+
+    UpgradeToGroupInput:
+      type: object
+      required:
+        - member_ids
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          description: Optional group name
+        member_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          minItems: 1
+          description: New members to add (original participants auto-included)
+
+    GroupConversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        is_group:
+          type: boolean
+          enum: [true]
+        group_name:
+          type: string
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+        current_key_version:
+          type: integer
+        last_message_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    ConversationMember:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversation_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [owner, member]
+        joined_at:
+          type: string
+          format: date-time
+        left_at:
+          type: string
+          format: date-time
+          nullable: true
+        key_version_joined:
+          type: integer
+        key_status:
+          type: string
+          enum: [active, pending]
+        archived:
+          type: boolean
+        muted:
+          type: boolean
+        profile:
+          $ref: '#/components/schemas/UserProfile'
+
+    GroupKey:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        conversation_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        key_version:
+          type: integer
+        encrypted_key:
+          type: string
+          description: Base64-encoded encrypted symmetric key
+        created_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        avatar_url:
+          type: string
+          nullable: true
+
+    SystemMessage:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - member_joined
+            - member_left
+            - member_removed
+            - group_created
+            - group_renamed
+            - ownership_transferred
+        actor_id:
+          type: string
+          format: uuid
+          description: Who performed the action
+        target_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Who was affected (for add/remove)
+        old_value:
+          type: string
+          nullable: true
+          description: Previous value (for renames)
+        new_value:
+          type: string
+          nullable: true
+          description: New value (for renames)

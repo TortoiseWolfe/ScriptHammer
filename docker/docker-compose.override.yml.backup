@@ -1,0 +1,32 @@
+# Docker Compose Override for Development
+# This file is automatically loaded by docker compose and provides development-specific overrides
+
+services:
+  crudkit:
+    # Development-specific environment variables
+    environment:
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      # Prevent webpack from keeping stale cache
+      - NEXT_WEBPACK_CACHE_DISABLED=false
+
+    # Mount source but not build directories
+    volumes:
+      - .:/app
+      - /app/node_modules
+      # Use tmpfs (RAM) for .next to prevent persistence and corruption issues
+      - type: tmpfs
+        target: /app/.next
+        tmpfs:
+          size: 500M
+
+    # Development command with clean option
+    command: >
+      sh -c "
+        echo '🧹 Cleaning stale build artifacts...' &&
+        rm -rf .next/* 2>/dev/null || true &&
+        echo '🚀 Starting Next.js development server...' &&
+        pnpm run dev
+      "

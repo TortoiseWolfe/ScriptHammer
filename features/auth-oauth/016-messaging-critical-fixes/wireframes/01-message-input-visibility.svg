@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="20" font-weight="bold" fill="#1f2937">
+    MESSAGING UX - INPUT VISIBILITY
+  </text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Conversation header -->
+    <rect x="20" y="60" width="1240" height="50" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="40" y="92" fill="#374151" font-family="system-ui, sans-serif" font-size="16" font-weight="600">Conversation with Jane Smith</text>
+    <circle cx="1200" cy="85" r="5" fill="#22c55e"/>
+    <text x="1180" y="90" fill="#374151" font-family="system-ui, sans-serif" font-size="14" text-anchor="end">Online</text>
+
+    <!-- Callout 2: Conversation header with participant name -->
+    <g transform="translate(1270, 85)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Scrollable message area -->
+    <rect x="20" y="120" width="1240" height="430" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <!-- Scroll indicator -->
+    <rect x="1248" y="130" width="8" height="80" rx="4" fill="#b8a080"/>
+
+    <!-- Callout 3: Scrollable area -->
+    <g transform="translate(1270, 335)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Sample messages -->
+    <g transform="translate(40, 170)">
+      <rect x="0" y="0" width="400" height="50" rx="8" fill="#dcc8a8"/>
+      <text x="15" y="30" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Hey, are you free to chat today?</text>
+    </g>
+    <g transform="translate(40, 240)">
+      <rect x="780" y="0" width="380" height="50" rx="8" fill="#8b5cf6"/>
+      <text x="795" y="30" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Sure! What did you want to discuss?</text>
+    </g>
+    <g transform="translate(40, 310)">
+      <rect x="0" y="0" width="450" height="50" rx="8" fill="#dcc8a8"/>
+      <text x="15" y="30" fill="#374151" font-family="system-ui, sans-serif" font-size="14">The project timeline for next quarter...</text>
+    </g>
+
+    <!-- Callout 4: Decryption indicator on older message -->
+    <g transform="translate(40, 390)">
+      <rect x="0" y="0" width="380" height="50" rx="8" fill="#dcc8a8" stroke="#f59e0b" stroke-width="2"/>
+      <path d="M20,15 L20,35 M15,20 L25,20 L25,35 L15,35 Z" fill="none" stroke="#f59e0b" stroke-width="2"/>
+      <text x="45" y="30" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-style="italic">Encrypted with previous keys</text>
+    </g>
+    <g transform="translate(430, 410)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <g transform="translate(40, 460)">
+      <rect x="720" y="0" width="440" height="50" rx="8" fill="#8b5cf6"/>
+      <text x="735" y="30" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Got it. Let me pull up those documents.</text>
+    </g>
+
+    <!-- FIXED MESSAGE INPUT -->
+    <rect x="20" y="560" width="1240" height="70" rx="8" fill="#dcc8a8" stroke="#8b5cf6" stroke-width="2"/>
+    <rect x="35" y="575" width="1080" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="50" y="600" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="14">Type a message...</text>
+    <rect x="1130" y="575" width="115" height="40" rx="6" fill="#8b5cf6"/>
+    <text x="1187" y="600" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Send</text>
+
+    <!-- Callout 1: Fixed input -->
+    <g transform="translate(1270, 595)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile conversation header -->
+    <rect x="10" y="85" width="340" height="45" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="25" y="113" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Jane Smith</text>
+    <circle cx="320" cy="107" r="4" fill="#22c55e"/>
+
+    <!-- Callout 2 on mobile header -->
+    <g transform="translate(370, 107)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Mobile message area -->
+    <rect x="10" y="138" width="340" height="440" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <!-- Callout 3 on message area -->
+    <g transform="translate(370, 355)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Mobile sample messages -->
+    <g transform="translate(20, 155)">
+      <rect x="0" y="0" width="200" height="40" rx="8" fill="#dcc8a8"/>
+      <text x="10" y="26" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Hey, free to chat?</text>
+    </g>
+    <g transform="translate(20, 205)">
+      <rect x="110" y="0" width="200" height="40" rx="8" fill="#8b5cf6"/>
+      <text x="120" y="26" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Sure! What's up?</text>
+    </g>
+    <g transform="translate(20, 255)">
+      <rect x="0" y="0" width="220" height="40" rx="8" fill="#dcc8a8"/>
+      <text x="10" y="26" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Project timeline...</text>
+    </g>
+
+    <!-- Encrypted message mobile -->
+    <g transform="translate(20, 305)">
+      <rect x="0" y="0" width="200" height="40" rx="8" fill="#dcc8a8" stroke="#f59e0b" stroke-width="2"/>
+      <path d="M15,10 L15,30 M10,15 L20,15 L20,30 L10,30 Z" fill="none" stroke="#f59e0b" stroke-width="2"/>
+      <text x="30" y="26" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-style="italic">Previous keys</text>
+    </g>
+
+    <!-- Callout 4 on encrypted message -->
+    <g transform="translate(230, 325)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <g transform="translate(20, 355)">
+      <rect x="100" y="0" width="210" height="40" rx="8" fill="#8b5cf6"/>
+      <text x="110" y="26" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Let me check docs.</text>
+    </g>
+    <g transform="translate(20, 405)">
+      <rect x="0" y="0" width="180" height="40" rx="8" fill="#dcc8a8"/>
+      <text x="10" y="26" fill="#374151" font-family="system-ui, sans-serif" font-size="14">No rush at all.</text>
+    </g>
+    <g transform="translate(20, 455)">
+      <rect x="100" y="0" width="210" height="40" rx="8" fill="#8b5cf6"/>
+      <text x="110" y="26" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Found them!</text>
+    </g>
+    <g transform="translate(20, 505)">
+      <rect x="0" y="0" width="200" height="40" rx="8" fill="#dcc8a8"/>
+      <text x="10" y="26" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Share when ready</text>
+    </g>
+
+    <!-- FIXED MESSAGE INPUT - Mobile -->
+    <rect x="10" y="585" width="340" height="70" rx="8" fill="#dcc8a8" stroke="#8b5cf6" stroke-width="2"/>
+    <rect x="20" y="598" width="240" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="30" y="625" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="14">Message...</text>
+    <rect x="270" y="598" width="70" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="305" y="625" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Send</text>
+
+    <!-- Callout 1 on mobile input -->
+    <g transform="translate(370, 620)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+
+    <!-- Column 1: Fixed Input -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Fixed Input Field</text>
+      <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I need the message input</text>
+      <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">to stay visible while scrolling.</text>
+      <a href="#US-001"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-001</text></a>
+      <a href="#FR-001"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-001</text></a>
+      <a href="#FR-002"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-002</text></a>
+    </g>
+
+    <!-- Column 2: Participant Names -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Participant Name Resolution</text>
+      <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I need to see participant</text>
+      <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">names, not "Unknown".</text>
+      <a href="#US-005"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-005</text></a>
+      <a href="#FR-016"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-016</text></a>
+      <a href="#FR-017"><rect x="167" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-017</text></a>
+    </g>
+
+    <!-- Column 3: Scrollable Messages -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Scrollable Message Area</text>
+      <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I can scroll through</text>
+      <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">message history without losing input.</text>
+      <a href="#US-001"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-001</text></a>
+      <a href="#FR-003"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-003</text></a>
+      <a href="#SC-001"><rect x="167" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-001</text></a>
+    </g>
+
+    <!-- Column 4: Decryption Status -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Decryption Status</text>
+      <text x="40" y="42" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I need to know why</text>
+      <text x="40" y="62" fill="#374151" font-family="system-ui, sans-serif" font-size="14">some messages cannot be read.</text>
+      <a href="#US-004"><rect x="40" y="76" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-004</text></a>
+      <a href="#FR-012"><rect x="106" y="76" width="55" height="22" rx="4" fill="#2563eb"/><text x="133" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-012</text></a>
+      <a href="#SC-004"><rect x="167" y="76" width="55" height="22" rx="4" fill="#ea580c"/><text x="194" y="91" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-004</text></a>
+    </g>
+  </g>
+
+  <!-- Signature -->
+  <!-- Key Concepts Row (G-047) -->
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">message input | conversation view | error states | OAuth setup</text>
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">016:01 | Messaging Critical Fixes | ScriptHammer</text>
+</svg>

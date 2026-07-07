@@ -1,0 +1,417 @@
+import { test, expect, Page } from '@playwright/test';
+import {
+  dismissCookieBanner,
+  handleReAuthModal,
+  seedScrollFixture,
+  deleteScrollFixture,
+  type ScrollFixture,
+} from '../utils/test-user-factory';
+
+// Test user credentials
+const TEST_USER_PASSWORD =
+  process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
+const PRIMARY_EMAIL = process.env.TEST_USER_PRIMARY_EMAIL;
+
+// Issue #109: T007-T008 needs a thread tall enough to scroll, but the shared
+// messaging conversation is deliberately kept SHORT by other specs'
+// cleanupOldMessages() calls. So this spec builds its OWN isolated, static
+// fixture — a throwaway user + private conversation with PRIMARY + a fixed 30
+// messages — that no cleanup ever touches. See seedScrollFixture().
+const SCROLL_FIXTURE_MESSAGE_COUNT = 30;
+let scrollFixture: ScrollFixture | null = null;
+
+/**
+ * Wait for UI to stabilize after navigation or interaction
+ */
+async function waitForUIStability(page: Page) {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForFunction(
+    () => {
+      return new Promise((resolve) => {
+        let stableFrames = 0;
+        const checkStability = () => {
+          stableFrames++;
+          if (stableFrames >= 3) resolve(true);
+          else requestAnimationFrame(checkStability);
+        };
+        requestAnimationFrame(checkStability);
+      });
+    },
+    { timeout: 15000 }
+  );
+}
+
+/**
+ * Messaging Scroll E2E Tests
+ * Feature: 005-fix-messaging-scroll
+ *
+ * Tests CSS Grid layout fix for ChatWindow ensuring:
+ * - Message input is visible at bottom on all viewports
+ * - Scroll is constrained to message thread
+ * - Jump-to-bottom button works correctly
+ */
+
+// Track if conversations exist for test user in CI
+let setupSucceeded = false;
+
+test.beforeAll(async ({ browser }) => {
+  // Build the isolated, static scroll fixture (issue #109). No-ops gracefully
+  // if credentials/admin client are unavailable, preserving the skip path.
+  if (PRIMARY_EMAIL) {
+    scrollFixture = await seedScrollFixture(
+      PRIMARY_EMAIL,
+      SCROLL_FIXTURE_MESSAGE_COUNT
+    );
+  }
+
+  const context = await browser.newContext({
+    storageState: './tests/e2e/fixtures/storage-state-auth.json',
+  });
+  const page = await context.newPage();
+  try {
+    await page.goto('http://localhost:3000/messages', {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000,
+    });
+    // Wait for the conversation list to mount + render. Use waitFor
+    // (auto-retries) instead of isVisible (single shot, returns false
+    // immediately if not yet in DOM). Issue #66 diagnostic confirmed
+    // conversations exist in DB and render correctly — the original
+    // isVisible({ timeout: 8000 }) was returning false in ~50ms because
+    // the element wasn't attached yet at the moment of the call.
+    setupSucceeded = await page
+      .getByRole('button', { name: /Conversation with/ })
+      .first()
+      .waitFor({ state: 'visible', timeout: 20000 })
+      .then(() => true)
+      .catch(() => false);
+  } finally {
+    await context.close();
+  }
+});
+
+test.afterAll(async () => {
+  // Tear down the fixture user — cascades its conversation + messages away.
+  await deleteScrollFixture(scrollFixture);
+});
+
+// Test configuration for viewports
+const VIEWPORTS = {
+  mobile: { width: 375, height: 667 },
+  tablet: { width: 768, height: 1024 },
+  desktop: { width: 1280, height: 800 },
+};
+
+/**
+ * Click the first available conversation button to open a chat
+ * Throws if no conversation exists (tests should have setup)
+ */
+async function clickFirstConversation(page: Page): Promise<void> {
+  const conversationButton = page
+    .getByRole('button', { name: /Conversation with/ })
+    .first();
+
+  // Wait for the button to be visible (give it plenty of time)
+  await conversationButton.waitFor({ state: 'visible', timeout: 45000 });
+  await conversationButton.click();
+
+  // Wait for chat window to load after clicking
+  await page.waitForSelector('[data-testid="chat-window"]', { timeout: 10000 });
+  await waitForUIStability(page);
+}
+
+// Helper to check if element is in viewport
+async function isElementInViewport(
+  page: Page,
+  selector: string
+): Promise<boolean> {
+  const element = page.locator(selector);
+  const isVisible = await element.isVisible();
+  if (!isVisible) return false;
+
+  const box = await element.boundingBox();
+  if (!box) return false;
+
+  const viewport = page.viewportSize();
+  if (!viewport) return false;
+
+  return (
+    box.y >= 0 &&
+    box.y + box.height <= viewport.height &&
+    box.x >= 0 &&
+    box.x + box.width <= viewport.width
+  );
+}
+
+test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
+  test.beforeEach(async ({ page }) => {
+    // Auth comes from storageState — navigate to messages directly
+    await page.goto('about:blank').catch(() => {});
+    await page.goto('/messages', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
+    await dismissCookieBanner(page);
+    // Handle ReAuthModal if encryption keys need unlocking
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
+  });
+
+  test('T003: Message input visible on mobile viewport (375x667)', async ({
+    page,
+  }) => {
+    test.skip(!setupSucceeded, 'No conversations for test user in CI');
+    await page.setViewportSize(VIEWPORTS.mobile);
+    await page.goto('about:blank').catch(() => {});
+    await page.goto('/messages', { waitUntil: 'domcontentloaded' });
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
+
+    // Click on a conversation to open chat (handles waiting internally)
+    await clickFirstConversation(page);
+
+    // Check message input is visible
+    const messageInput = page.locator(
+      'textarea[placeholder*="Type a message"], textarea[placeholder*="message"]'
+    );
+    await expect(messageInput).toBeVisible();
+
+    // Verify it's actually in viewport (not just in DOM)
+    const isInViewport = await isElementInViewport(
+      page,
+      'textarea[placeholder*="Type a message"], textarea[placeholder*="message"]'
+    );
+    expect(isInViewport).toBe(true);
+  });
+
+  test('T004: Message input visible on tablet viewport (768x1024)', async ({
+    page,
+  }) => {
+    test.skip(!setupSucceeded, 'No conversations for test user in CI');
+    await page.setViewportSize(VIEWPORTS.tablet);
+    await page.goto('about:blank').catch(() => {});
+    await page.goto('/messages', { waitUntil: 'domcontentloaded' });
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
+
+    await clickFirstConversation(page);
+
+    const messageInput = page.locator(
+      'textarea[placeholder*="Type a message"], textarea[placeholder*="message"]'
+    );
+    await expect(messageInput).toBeVisible();
+
+    const isInViewport = await isElementInViewport(
+      page,
+      'textarea[placeholder*="Type a message"], textarea[placeholder*="message"]'
+    );
+    expect(isInViewport).toBe(true);
+  });
+
+  test('T005: Message input visible on desktop viewport (1280x800)', async ({
+    page,
+  }) => {
+    test.skip(!setupSucceeded, 'No conversations for test user in CI');
+    await page.setViewportSize(VIEWPORTS.desktop);
+    await page.goto('about:blank').catch(() => {});
+    await page.goto('/messages', { waitUntil: 'domcontentloaded' });
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
+
+    await clickFirstConversation(page);
+
+    const messageInput = page.locator(
+      'textarea[placeholder*="Type a message"], textarea[placeholder*="message"]'
+    );
+    await expect(messageInput).toBeVisible();
+
+    const isInViewport = await isElementInViewport(
+      page,
+      'textarea[placeholder*="Type a message"], textarea[placeholder*="message"]'
+    );
+    expect(isInViewport).toBe(true);
+  });
+});
+
+test.describe('Messaging Scroll - User Story 2: Scroll Through Messages', () => {
+  test.beforeEach(async ({ page }) => {
+    // Auth comes from storageState — navigate to messages directly
+    await page.goto('about:blank').catch(() => {});
+    await page.goto('/messages', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
+    await dismissCookieBanner(page);
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
+  });
+
+  test('T006: Scroll container constrained to MessageThread', async ({
+    page,
+  }) => {
+    test.skip(!setupSucceeded, 'No conversations for test user in CI');
+    await page.setViewportSize(VIEWPORTS.desktop);
+    await page.goto('about:blank').catch(() => {});
+    await page.goto('/messages', { waitUntil: 'domcontentloaded' });
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
+
+    await clickFirstConversation(page);
+
+    // Get message thread element
+    const messageThread = page.locator('[data-testid="message-thread"]');
+    await expect(messageThread).toBeVisible();
+
+    // Get initial input position
+    const messageInput = page.locator(
+      'textarea[placeholder*="Type a message"], textarea[placeholder*="message"]'
+    );
+    const initialInputBox = await messageInput.boundingBox();
+
+    // Scroll up in the message thread.
+    // WebKit does not always fire the scroll event for programmatic scrollTop
+    // assignments. Dispatch it explicitly so React listeners (e.g.,
+    // MessageThread's handleScroll at MessageThread.tsx:194) run reliably
+    // across browsers.
+    await messageThread.evaluate((el) => {
+      el.scrollTop = 0;
+      el.dispatchEvent(new Event('scroll', { bubbles: true }));
+    });
+
+    // Wait for scroll to complete
+    await waitForUIStability(page);
+
+    // Get input position after scroll
+    const afterScrollInputBox = await messageInput.boundingBox();
+
+    // Input should remain in the same position (header and input fixed)
+    expect(afterScrollInputBox?.y).toBe(initialInputBox?.y);
+  });
+});
+
+test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
+  test.beforeEach(async ({ page }) => {
+    // Auth comes from storageState — navigate to messages directly
+    await page.goto('about:blank').catch(() => {});
+    await page.goto('/messages', { waitUntil: 'domcontentloaded' });
+    await page.waitForLoadState('domcontentloaded');
+    await dismissCookieBanner(page);
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
+  });
+
+  test('T007-T008: Jump button appears when scrolled and does not overlap input', async ({
+    page,
+  }) => {
+    // Requires the isolated, tall scroll fixture (issue #109). Skip with a
+    // CLEAR, logged reason if it couldn't be built (e.g. admin client / creds
+    // unavailable) — never a silent pass that hides zero coverage.
+    test.skip(
+      !scrollFixture,
+      'Scroll fixture unavailable (no admin client / credentials) — cannot build a scrollable thread'
+    );
+    const conversationId = scrollFixture!.conversationId;
+
+    await page.setViewportSize(VIEWPORTS.desktop);
+    await page.goto('about:blank').catch(() => {});
+    // Open the fixture conversation DIRECTLY by id — deterministic, not
+    // dependent on conversation-list sort order.
+    await page.goto(`/messages?conversation=${conversationId}`, {
+      waitUntil: 'domcontentloaded',
+    });
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
+
+    const messageThread = page.locator('[data-testid="message-thread"]');
+    await expect(messageThread).toBeVisible({ timeout: 30000 });
+    await waitForUIStability(page);
+
+    // Scroll up more than 500px to trigger button
+    await messageThread.evaluate((el) => {
+      el.scrollTop = Math.max(0, el.scrollHeight - el.clientHeight - 600);
+      el.dispatchEvent(new Event('scroll', { bubbles: true }));
+    });
+
+    await waitForUIStability(page);
+
+    const jumpButton = page.locator('[data-testid="jump-to-bottom"]');
+
+    const scrollInfo = await messageThread.evaluate((el) => ({
+      scrollTop: el.scrollTop,
+      scrollHeight: el.scrollHeight,
+      clientHeight: el.clientHeight,
+      distanceFromBottom: el.scrollHeight - (el.scrollTop + el.clientHeight),
+    }));
+
+    // The fixture seeds a fixed 30 messages, so the thread MUST be scrollable
+    // past the 500px threshold. Assert it (rather than silently skipping the
+    // button checks) — a short thread here is a real regression or a fixture
+    // failure, not a no-op.
+    expect(
+      scrollInfo.distanceFromBottom,
+      'fixture thread should be tall enough to scroll 500px+ from bottom'
+    ).toBeGreaterThan(500);
+
+    // Wait for the parent wrapper's `data-show-scroll-button` attribute
+    // to flip to "true" before asserting button visibility. The attribute
+    // is written by MessageThread.tsx synchronously when `setShowScroll
+    // Button(true)` commits — bypassing the React-state-flush vs
+    // WebKit-event-loop race that rounds 10-13 chased through other
+    // surfaces. See round 14 for the structural fix.
+    const wrapper = page.locator('[data-show-scroll-button]').first();
+    await expect
+      .poll(async () => await wrapper.getAttribute('data-show-scroll-button'), {
+        timeout: 5000,
+        intervals: [50, 100, 200, 500],
+      })
+      .toBe('true');
+
+    await expect(jumpButton).toBeVisible();
+
+    // Verify button doesn't overlap message input
+    const buttonBox = await jumpButton.boundingBox();
+    const messageInput = page.locator(
+      'textarea[placeholder*="Type a message"], textarea[placeholder*="message"]'
+    );
+    const inputBox = await messageInput.boundingBox();
+
+    expect(buttonBox).not.toBeNull();
+    expect(inputBox).not.toBeNull();
+    if (buttonBox && inputBox) {
+      // Button bottom should be above input top
+      expect(buttonBox.y + buttonBox.height).toBeLessThanOrEqual(inputBox.y);
+    }
+  });
+
+  test('T009: Jump button click scrolls to bottom', async ({ page }) => {
+    test.skip(!setupSucceeded, 'No conversations for test user in CI');
+    await page.setViewportSize(VIEWPORTS.desktop);
+    await page.goto('about:blank').catch(() => {});
+    await page.goto('/messages', { waitUntil: 'domcontentloaded' });
+    await handleReAuthModal(page, TEST_USER_PASSWORD);
+
+    await clickFirstConversation(page);
+
+    const messageThread = page.locator('[data-testid="message-thread"]');
+
+    // Scroll up to trigger button
+    await messageThread.evaluate((el) => {
+      el.scrollTop = 0;
+      el.dispatchEvent(new Event('scroll', { bubbles: true }));
+    });
+
+    await waitForUIStability(page);
+
+    const jumpButton = page.locator('[data-testid="jump-to-bottom"]');
+
+    if (await jumpButton.isVisible()) {
+      await jumpButton.click();
+
+      // Wait for smooth scroll animation to complete
+      await waitForUIStability(page);
+
+      // Check we're at the bottom
+      const scrollInfo = await messageThread.evaluate((el) => ({
+        scrollTop: el.scrollTop,
+        scrollHeight: el.scrollHeight,
+        clientHeight: el.clientHeight,
+      }));
+
+      const distanceFromBottom =
+        scrollInfo.scrollHeight -
+        (scrollInfo.scrollTop + scrollInfo.clientHeight);
+      expect(distanceFromBottom).toBeLessThan(100);
+
+      // Button should be hidden after reaching bottom
+      await expect(jumpButton).not.toBeVisible();
+    }
+  });
+});

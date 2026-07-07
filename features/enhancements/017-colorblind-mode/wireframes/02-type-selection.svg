@@ -1,0 +1,458 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Canvas background -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="20" font-weight="bold" fill="#1f2937">
+    COLORBLIND MODE - TYPE SELECTION
+  </text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+
+    <!-- Header -->
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Active nav state for Account -->
+    <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
+          font-size="14" font-weight="600">Account</text>
+
+    <!-- Main content area -->
+    <g transform="translate(40, 70)">
+      <!-- Left Panel: Type Selection -->
+      <rect x="0" y="0" width="400" height="540" rx="12" fill="#dcc8a8" stroke="#b8a080" stroke-width="2"/>
+
+      <text x="20" y="40" fill="#374151" font-family="system-ui, sans-serif"
+            font-size="18" font-weight="bold">Select Colorblind Type</text>
+
+      <!-- Expanded Dropdown List -->
+      <g transform="translate(20, 60)">
+        <!-- Type 1: Protanopia -->
+        <rect x="0" y="0" width="360" height="52" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+        <text x="16" y="24" fill="#374151" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="600">Protanopia</text>
+        <text x="16" y="42" fill="#4b5563" font-family="system-ui, sans-serif"
+              font-size="14">Red-blind (1% of males)</text>
+
+        <!-- Type 2: Protanomaly -->
+        <rect x="0" y="58" width="360" height="52" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+        <text x="16" y="82" fill="#374151" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="600">Protanomaly</text>
+        <text x="16" y="100" fill="#4b5563" font-family="system-ui, sans-serif"
+              font-size="14">Red-weak (1% of males)</text>
+
+        <!-- Type 3: Deuteranopia (selected) -->
+        <rect x="0" y="116" width="360" height="52" rx="6" fill="#8b5cf6" stroke="#8b5cf6"/>
+        <text x="16" y="140" fill="#e8d4b8" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="600">Deuteranopia</text>
+        <text x="16" y="158" fill="#e0d4ff" font-family="system-ui, sans-serif"
+              font-size="14">Green-blind (1% of males)</text>
+        <text x="320" y="145" fill="#e8d4b8" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="bold">✓</text>
+
+        <!-- Type 4: Deuteranomaly -->
+        <rect x="0" y="174" width="360" height="52" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+        <text x="16" y="198" fill="#374151" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="600">Deuteranomaly</text>
+        <text x="16" y="216" fill="#4b5563" font-family="system-ui, sans-serif"
+              font-size="14">Green-weak (5% of males)</text>
+
+        <!-- Type 5: Tritanopia -->
+        <rect x="0" y="232" width="360" height="52" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+        <text x="16" y="256" fill="#374151" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="600">Tritanopia</text>
+        <text x="16" y="274" fill="#4b5563" font-family="system-ui, sans-serif"
+              font-size="14">Blue-blind (0.001%)</text>
+
+        <!-- Type 6: Tritanomaly -->
+        <rect x="0" y="290" width="360" height="52" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+        <text x="16" y="314" fill="#374151" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="600">Tritanomaly</text>
+        <text x="16" y="332" fill="#4b5563" font-family="system-ui, sans-serif"
+              font-size="14">Blue-weak (0.01%)</text>
+
+        <!-- Type 7: Achromatopsia -->
+        <rect x="0" y="348" width="360" height="52" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+        <text x="16" y="372" fill="#374151" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="600">Achromatopsia</text>
+        <text x="16" y="390" fill="#4b5563" font-family="system-ui, sans-serif"
+              font-size="14">Complete colorblind (0.003%)</text>
+
+        <!-- Type 8: Achromatomaly -->
+        <rect x="0" y="406" width="360" height="52" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+        <text x="16" y="430" fill="#374151" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="600">Achromatomaly</text>
+        <text x="16" y="448" fill="#4b5563" font-family="system-ui, sans-serif"
+              font-size="14">Partial colorblind (Rare)</text>
+      </g>
+    </g>
+
+    <!-- Right Panel: Before/After Comparison -->
+    <g transform="translate(460, 70)">
+      <rect x="0" y="0" width="780" height="540" rx="12" fill="#dcc8a8" stroke="#b8a080" stroke-width="2"/>
+
+      <text x="20" y="40" fill="#374151" font-family="system-ui, sans-serif"
+            font-size="18" font-weight="bold">Before / After Comparison</text>
+
+      <!-- Performance indicator -->
+      <rect x="580" y="16" width="180" height="32" rx="6" fill="#22c55e"/>
+      <text x="670" y="38" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="600">Render: &lt; 10ms</text>
+
+      <!-- Before Panel -->
+      <g transform="translate(20, 60)">
+        <text x="0" y="20" fill="#374151" font-family="system-ui, sans-serif"
+              font-size="16" font-weight="600">Original Colors</text>
+        <rect x="0" y="30" width="360" height="220" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+
+        <!-- Original color buttons -->
+        <rect x="20" y="50" width="150" height="40" rx="6" fill="#22c55e"/>
+        <text x="95" y="76" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="600">Success</text>
+
+        <rect x="190" y="50" width="150" height="40" rx="6" fill="#ef4444"/>
+        <text x="265" y="76" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="600">Error</text>
+
+        <rect x="20" y="100" width="150" height="40" rx="6" fill="#eab308"/>
+        <text x="95" y="126" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="600">Warning</text>
+
+        <rect x="190" y="100" width="150" height="40" rx="6" fill="#3b82f6"/>
+        <text x="265" y="126" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="600">Info</text>
+
+        <!-- Color swatches -->
+        <text x="20" y="170" fill="#374151" font-family="system-ui, sans-serif"
+              font-size="14">Standard Palette:</text>
+        <rect x="20" y="180" width="40" height="30" rx="4" fill="#22c55e"/>
+        <rect x="70" y="180" width="40" height="30" rx="4" fill="#ef4444"/>
+        <rect x="120" y="180" width="40" height="30" rx="4" fill="#eab308"/>
+        <rect x="170" y="180" width="40" height="30" rx="4" fill="#3b82f6"/>
+        <rect x="220" y="180" width="40" height="30" rx="4" fill="#8b5cf6"/>
+      </g>
+
+      <!-- After Panel -->
+      <g transform="translate(400, 60)">
+        <text x="0" y="20" fill="#374151" font-family="system-ui, sans-serif"
+              font-size="16" font-weight="600">Deuteranopia Optimized</text>
+        <rect x="0" y="30" width="360" height="220" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+
+        <!-- Optimized color buttons -->
+        <rect x="20" y="50" width="150" height="40" rx="6" fill="#009988"/>
+        <text x="95" y="76" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="600">Success</text>
+
+        <rect x="190" y="50" width="150" height="40" rx="6" fill="#CC3311"/>
+        <text x="265" y="76" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="600">Error</text>
+
+        <rect x="20" y="100" width="150" height="40" rx="6" fill="#EE7733"/>
+        <text x="95" y="126" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="600">Warning</text>
+
+        <rect x="190" y="100" width="150" height="40" rx="6" fill="#0077BB"/>
+        <text x="265" y="126" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="600">Info</text>
+
+        <!-- Optimized color swatches -->
+        <text x="20" y="170" fill="#374151" font-family="system-ui, sans-serif"
+              font-size="14">Optimized Palette:</text>
+        <rect x="20" y="180" width="40" height="30" rx="4" fill="#009988"/>
+        <rect x="70" y="180" width="40" height="30" rx="4" fill="#CC3311"/>
+        <rect x="120" y="180" width="40" height="30" rx="4" fill="#EE7733"/>
+        <rect x="170" y="180" width="40" height="30" rx="4" fill="#0077BB"/>
+        <rect x="220" y="180" width="40" height="30" rx="4" fill="#0077BB"/>
+      </g>
+
+      <!-- Info text -->
+      <g transform="translate(20, 320)">
+        <text x="0" y="0" fill="#374151" font-family="system-ui, sans-serif"
+              font-size="14" font-weight="600">How it works:</text>
+        <text x="0" y="24" fill="#4b5563" font-family="system-ui, sans-serif"
+              font-size="14">CSS custom properties replace standard DaisyUI colors</text>
+        <text x="0" y="48" fill="#4b5563" font-family="system-ui, sans-serif"
+              font-size="14">SVG filters applied via GPU-accelerated rendering</text>
+        <text x="0" y="72" fill="#4b5563" font-family="system-ui, sans-serif"
+              font-size="14">Works seamlessly with all 32 themes</text>
+
+        <!-- Apply button -->
+        <rect x="0" y="100" width="200" height="48" rx="8" fill="#8b5cf6"/>
+        <text x="100" y="130" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
+              font-size="16" font-weight="600">Apply Changes</text>
+
+        <!-- Reset button -->
+        <rect x="220" y="100" width="160" height="48" rx="8" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+        <text x="300" y="130" text-anchor="middle" fill="#8b5cf6" font-family="system-ui, sans-serif"
+              font-size="16" font-weight="600">Reset</text>
+      </g>
+    </g>
+
+    <!-- Desktop Callouts -->
+    <g class="callout" transform="translate(444, 250)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <g class="callout" transform="translate(820, 250)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <g class="callout" transform="translate(1224, 140)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <g class="callout" transform="translate(1224, 98)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <!-- Footer -->
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+
+    <!-- Header -->
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile content (y >= 78 for safe area) -->
+    <text x="16" y="100" fill="#374151" font-family="system-ui, sans-serif"
+          font-size="16" font-weight="bold">Select Type</text>
+
+    <!-- Type List (scrollable) -->
+    <rect x="16" y="115" width="328" height="480" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Type items -->
+    <g transform="translate(24, 125)">
+      <!-- Protanopia -->
+      <rect x="0" y="0" width="312" height="48" rx="6" fill="#f5f0e6"/>
+      <text x="12" y="22" fill="#374151" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="600">Protanopia</text>
+      <text x="12" y="40" fill="#4b5563" font-family="system-ui, sans-serif"
+            font-size="14">Red-blind</text>
+
+      <!-- Deuteranopia (selected) -->
+      <rect x="0" y="56" width="312" height="48" rx="6" fill="#8b5cf6"/>
+      <text x="12" y="78" fill="#e8d4b8" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="600">Deuteranopia</text>
+      <text x="12" y="96" fill="#e0d4ff" font-family="system-ui, sans-serif"
+            font-size="14">Green-blind</text>
+      <text x="280" y="84" fill="#e8d4b8" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold">✓</text>
+
+      <!-- Tritanopia -->
+      <rect x="0" y="112" width="312" height="48" rx="6" fill="#f5f0e6"/>
+      <text x="12" y="134" fill="#374151" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="600">Tritanopia</text>
+      <text x="12" y="152" fill="#4b5563" font-family="system-ui, sans-serif"
+            font-size="14">Blue-blind</text>
+
+      <!-- Achromatopsia -->
+      <rect x="0" y="168" width="312" height="48" rx="6" fill="#f5f0e6"/>
+      <text x="12" y="190" fill="#374151" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="600">Achromatopsia</text>
+      <text x="12" y="208" fill="#4b5563" font-family="system-ui, sans-serif"
+            font-size="14">Complete colorblind</text>
+
+      <!-- High Contrast -->
+      <rect x="0" y="224" width="312" height="48" rx="6" fill="#f5f0e6"/>
+      <text x="12" y="246" fill="#374151" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="600">High Contrast</text>
+      <text x="12" y="264" fill="#4b5563" font-family="system-ui, sans-serif"
+            font-size="14">Maximum visibility</text>
+
+      <!-- Preview section -->
+      <text x="0" y="300" fill="#374151" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="600">Preview:</text>
+
+      <rect x="0" y="312" width="150" height="36" rx="6" fill="#009988"/>
+      <text x="75" y="336" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
+            font-size="14">Success</text>
+
+      <rect x="160" y="312" width="150" height="36" rx="6" fill="#CC3311"/>
+      <text x="235" y="336" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
+            font-size="14">Error</text>
+
+      <!-- Performance badge -->
+      <rect x="80" y="370" width="150" height="28" rx="14" fill="#22c55e"/>
+      <text x="155" y="390" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
+            font-size="14">&lt; 10ms render</text>
+    </g>
+
+    <!-- Apply button -->
+    <rect x="16" y="605" width="328" height="48" rx="8" fill="#8b5cf6"/>
+    <text x="180" y="635" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
+          font-size="16" font-weight="600">Apply Selection</text>
+
+    <!-- Mobile Callouts -->
+    <g class="callout" transform="translate(344, 195)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <g class="callout" transform="translate(344, 475)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <g class="callout" transform="translate(344, 555)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <g class="callout" transform="translate(180, 555)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Footer with active Account tab -->
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <!-- Active state for Account tab -->
+    <g transform="translate(270, 664)">
+      <path d="M 0 0 L 90 0 L 90 32 A 24 24 0 0 1 66 56 L 0 56 L 0 0 Z" fill="#8b5cf6"/>
+      <g transform="translate(33, 6)">
+        <path fill="#e8d4b8" fill-rule="evenodd" clip-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/>
+      </g>
+      <text x="45" y="44" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="600">Account</text>
+    </g>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Column 1: Type Selection -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold">Type Selection</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">
+        All 8 colorblind types listed with
+      </text>
+      <text x="40" y="56" fill="#374151" font-family="system-ui, sans-serif" font-size="14">
+        prevalence data and descriptions.
+      </text>
+
+      <!-- Badges -->
+      <a href="#US-001"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/>
+      <text x="67" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">US-001</text></a>
+
+      <a href="#FR-001"><rect x="101" y="68" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="128" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-001</text></a>
+
+      <a href="#SC-001"><rect x="162" y="68" width="55" height="22" rx="4" fill="#ea580c"/>
+      <text x="189" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-001</text></a>
+    </g>
+
+    <!-- Column 2: Color Palette Preview -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold">Color Palette Preview</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">
+        Shows optimized color palette for the
+      </text>
+      <text x="40" y="56" fill="#374151" font-family="system-ui, sans-serif" font-size="14">
+        selected colorblind type with patterns.
+      </text>
+
+      <!-- Badges -->
+      <a href="#US-002"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/>
+      <text x="67" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">US-002</text></a>
+
+      <a href="#FR-002"><rect x="101" y="68" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="128" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-002</text></a>
+
+      <a href="#FR-004"><rect x="162" y="68" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="189" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-004</text></a>
+    </g>
+
+    <!-- Column 3: Before/After Comparison -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold">Before/After Comparison</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">
+        Side-by-side demonstration of filter
+      </text>
+      <text x="40" y="56" fill="#374151" font-family="system-ui, sans-serif" font-size="14">
+        effect for simulation testing.
+      </text>
+
+      <!-- Badges -->
+      <a href="#US-003"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/>
+      <text x="67" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">US-003</text></a>
+
+      <a href="#FR-008"><rect x="101" y="68" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="128" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-008</text></a>
+    </g>
+
+    <!-- Column 4: Performance Indicator -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif"
+            font-size="14" font-weight="bold">Performance Indicator</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">
+        GPU-accelerated rendering ensures
+      </text>
+      <text x="40" y="56" fill="#374151" font-family="system-ui, sans-serif" font-size="14">
+        filter impact stays under 10ms.
+      </text>
+
+      <!-- Badges -->
+      <a href="#US-001"><rect x="40" y="68" width="55" height="22" rx="4" fill="#0891b2"/>
+      <text x="67" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">US-001</text></a>
+
+      <a href="#FR-006"><rect x="101" y="68" width="55" height="22" rx="4" fill="#2563eb"/>
+      <text x="128" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-006</text></a>
+
+      <a href="#SC-005"><rect x="162" y="68" width="55" height="22" rx="4" fill="#ea580c"/>
+      <text x="189" y="83" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-005</text></a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">accessibility settings | color blindness | contrast modes | visual preferences</text>
+
+
+  <!-- SIGNATURE -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">
+    017:02 | Colorblind Mode | ScriptHammer
+  </text>
+</svg>

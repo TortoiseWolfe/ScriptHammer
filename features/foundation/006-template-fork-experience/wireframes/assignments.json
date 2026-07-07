@@ -1,0 +1,34 @@
+{
+  "feature": "006-template-fork-experience",
+  "plannedAt": "2026-01-13T17:00:00Z",
+  "svgCount": 2,
+  "assignments": [
+    {
+      "svg": "01-service-setup-guidance.svg",
+      "focus": "Dismissible guidance banner at page top showing setup instructions when external services are unconfigured, with dismiss button and link to docs",
+      "userStories": ["US-5"],
+      "requirements": ["FR-023", "FR-024", "FR-027"],
+      "mode": "new"
+    },
+    {
+      "svg": "02-rebrand-automation-flow.svg",
+      "focus": "Architectural diagram showing CLI rebrand tool: input prompts (name, owner, description), file scanning, transformation steps, and success verification",
+      "userStories": ["US-1"],
+      "requirements": [
+        "FR-001",
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-006",
+        "FR-007",
+        "FR-008",
+        "FR-009",
+        "FR-010",
+        "FR-011"
+      ],
+      "mode": "new"
+    }
+  ],
+  "notes": "Developer tooling feature - US-2, US-3, US-4 are infrastructure/config with no visual UI. Only US-5 has user-facing UI (banner)."
+}

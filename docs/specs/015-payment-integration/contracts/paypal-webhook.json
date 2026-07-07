@@ -1,0 +1,284 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "PayPal Webhook Handler",
+    "description": "Supabase Edge Function that receives and processes PayPal webhook events",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://{project_ref}.supabase.co/functions/v1",
+      "description": "Supabase Edge Functions",
+      "variables": {
+        "project_ref": {
+          "default": "your-project-ref",
+          "description": "Your Supabase project reference"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/paypal-webhook": {
+      "post": {
+        "summary": "Process PayPal webhook event",
+        "description": "Receives webhook notifications from PayPal for payment and subscription events. Verifies signature and processes event idempotently.",
+        "operationId": "handlePayPalWebhook",
+        "security": [],
+        "parameters": [
+          {
+            "name": "paypal-transmission-id",
+            "in": "header",
+            "required": true,
+            "description": "PayPal transmission ID for webhook verification",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "paypal-transmission-time",
+            "in": "header",
+            "required": true,
+            "description": "Timestamp of the webhook transmission",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "paypal-transmission-sig",
+            "in": "header",
+            "required": true,
+            "description": "Signature for webhook verification",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "paypal-cert-url",
+            "in": "header",
+            "required": true,
+            "description": "URL to the PayPal certificate",
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          {
+            "name": "paypal-auth-algo",
+            "in": "header",
+            "required": true,
+            "description": "Algorithm used for signature",
+            "schema": {
+              "type": "string",
+              "example": "SHA256withRSA"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "PayPal event object",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayPalEvent"
+              },
+              "examples": {
+                "payment_capture_completed": {
+                  "summary": "Payment Capture Completed",
+                  "value": {
+                    "id": "WH-12345678901234567-12345678901234567",
+                    "event_version": "1.0",
+                    "create_time": "2023-03-01T12:00:00Z",
+                    "resource_type": "capture",
+                    "event_type": "PAYMENT.CAPTURE.COMPLETED",
+                    "summary": "Payment completed for $ 10.00 USD",
+                    "resource": {
+                      "id": "12345678901234567",
+                      "amount": {
+                        "currency_code": "USD",
+                        "value": "10.00"
+                      },
+                      "status": "COMPLETED",
+                      "custom_id": "550e8400-e29b-41d4-a716-446655440000"
+                    }
+                  }
+                },
+                "subscription_created": {
+                  "summary": "Billing Subscription Created",
+                  "value": {
+                    "id": "WH-98765432109876543-98765432109876543",
+                    "event_version": "1.0",
+                    "create_time": "2023-03-01T12:00:00Z",
+                    "resource_type": "subscription",
+                    "event_type": "BILLING.SUBSCRIPTION.CREATED",
+                    "summary": "A billing subscription was created",
+                    "resource": {
+                      "id": "I-12345678901234567",
+                      "plan_id": "P-12345678901234567",
+                      "status": "ACTIVE",
+                      "subscriber": {
+                        "email_address": "customer@example.com"
+                      },
+                      "billing_info": {
+                        "next_billing_time": "2023-04-01T12:00:00Z"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Webhook processed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid signature or malformed request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Duplicate event (already processed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookSuccess"
+                },
+                "examples": {
+                  "duplicate": {
+                    "value": {
+                      "received": true,
+                      "event_id": "WH-12345678901234567-12345678901234567",
+                      "message": "Event already processed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error during processing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PayPalEvent": {
+        "type": "object",
+        "required": ["id", "event_type", "resource_type", "resource"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique webhook event identifier",
+            "example": "WH-12345678901234567-12345678901234567"
+          },
+          "event_version": {
+            "type": "string",
+            "description": "Version of the event",
+            "example": "1.0"
+          },
+          "create_time": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when the event was created",
+            "example": "2023-03-01T12:00:00Z"
+          },
+          "resource_type": {
+            "type": "string",
+            "description": "Type of resource",
+            "enum": ["capture", "refund", "subscription", "sale"],
+            "example": "capture"
+          },
+          "event_type": {
+            "type": "string",
+            "description": "Event type identifier",
+            "enum": [
+              "PAYMENT.CAPTURE.COMPLETED",
+              "PAYMENT.CAPTURE.DENIED",
+              "PAYMENT.CAPTURE.REFUNDED",
+              "BILLING.SUBSCRIPTION.CREATED",
+              "BILLING.SUBSCRIPTION.ACTIVATED",
+              "BILLING.SUBSCRIPTION.UPDATED",
+              "BILLING.SUBSCRIPTION.CANCELLED",
+              "BILLING.SUBSCRIPTION.SUSPENDED",
+              "PAYMENT.SALE.COMPLETED"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "description": "Human-readable event summary",
+            "example": "Payment completed for $ 10.00 USD"
+          },
+          "resource": {
+            "type": "object",
+            "description": "Event resource data (Capture, Subscription, etc.)",
+            "properties": {
+              "id": {
+                "type": "string",
+                "example": "12345678901234567"
+              },
+              "custom_id": {
+                "type": "string",
+                "description": "Custom identifier (our payment_intent.id)",
+                "example": "550e8400-e29b-41d4-a716-446655440000"
+              }
+            }
+          }
+        }
+      },
+      "WebhookSuccess": {
+        "type": "object",
+        "required": ["received"],
+        "properties": {
+          "received": {
+            "type": "boolean",
+            "example": true
+          },
+          "event_id": {
+            "type": "string",
+            "example": "WH-12345678901234567-12345678901234567"
+          },
+          "message": {
+            "type": "string",
+            "example": "Event processed successfully"
+          }
+        }
+      },
+      "WebhookError": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Invalid signature"
+          },
+          "event_id": {
+            "type": "string",
+            "example": "WH-12345678901234567-12345678901234567"
+          }
+        }
+      }
+    }
+  }
+}

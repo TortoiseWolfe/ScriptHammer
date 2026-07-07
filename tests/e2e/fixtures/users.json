@@ -1,0 +1,227 @@
+{
+  "testUsers": [
+    {
+      "id": "user1",
+      "name": "Test User",
+      "email": "testuser@example.com",
+      "role": "user",
+      "preferences": {
+        "theme": "light",
+        "fontSize": "medium",
+        "reducedMotion": false,
+        "highContrast": false,
+        "language": "en"
+      },
+      "accessibility": {
+        "screenReader": false,
+        "keyboardOnly": false,
+        "colorblindMode": "none"
+      }
+    },
+    {
+      "id": "user2",
+      "name": "Dark Mode User",
+      "email": "darkmode@example.com",
+      "role": "user",
+      "preferences": {
+        "theme": "dark",
+        "fontSize": "large",
+        "reducedMotion": false,
+        "highContrast": false,
+        "language": "en"
+      },
+      "accessibility": {
+        "screenReader": false,
+        "keyboardOnly": false,
+        "colorblindMode": "none"
+      }
+    },
+    {
+      "id": "user3",
+      "name": "Accessibility User",
+      "email": "a11y@example.com",
+      "role": "user",
+      "preferences": {
+        "theme": "high-contrast",
+        "fontSize": "xlarge",
+        "reducedMotion": true,
+        "highContrast": true,
+        "language": "en"
+      },
+      "accessibility": {
+        "screenReader": true,
+        "keyboardOnly": true,
+        "colorblindMode": "deuteranopia"
+      }
+    },
+    {
+      "id": "user4",
+      "name": "Mobile User",
+      "email": "mobile@example.com",
+      "role": "user",
+      "device": "mobile",
+      "preferences": {
+        "theme": "light",
+        "fontSize": "medium",
+        "reducedMotion": false,
+        "highContrast": false,
+        "language": "en"
+      },
+      "accessibility": {
+        "screenReader": false,
+        "keyboardOnly": false,
+        "colorblindMode": "none"
+      }
+    },
+    {
+      "id": "admin1",
+      "name": "Admin User",
+      "email": "admin@example.com",
+      "role": "admin",
+      "preferences": {
+        "theme": "corporate",
+        "fontSize": "medium",
+        "reducedMotion": false,
+        "highContrast": false,
+        "language": "en"
+      },
+      "accessibility": {
+        "screenReader": false,
+        "keyboardOnly": false,
+        "colorblindMode": "none"
+      }
+    }
+  ],
+  "personas": {
+    "developer": {
+      "name": "Developer Persona",
+      "goals": [
+        "Test components",
+        "Check accessibility",
+        "Verify responsive design"
+      ],
+      "frustrations": [
+        "Slow load times",
+        "Broken components",
+        "Poor documentation"
+      ],
+      "techLevel": "expert",
+      "devices": ["desktop", "laptop"],
+      "browsers": ["Chrome", "Firefox", "Safari"]
+    },
+    "designer": {
+      "name": "Designer Persona",
+      "goals": [
+        "Preview themes",
+        "Test color combinations",
+        "Check visual consistency"
+      ],
+      "frustrations": [
+        "Inconsistent styling",
+        "Limited customization",
+        "Poor contrast"
+      ],
+      "techLevel": "intermediate",
+      "devices": ["desktop", "tablet"],
+      "browsers": ["Chrome", "Safari"]
+    },
+    "endUser": {
+      "name": "End User Persona",
+      "goals": ["Use the application", "Complete tasks", "Access information"],
+      "frustrations": [
+        "Complex navigation",
+        "Unclear instructions",
+        "Slow responses"
+      ],
+      "techLevel": "beginner",
+      "devices": ["mobile", "tablet", "desktop"],
+      "browsers": ["Chrome", "Safari", "Edge"]
+    },
+    "a11yUser": {
+      "name": "Accessibility User",
+      "goals": [
+        "Navigate with keyboard",
+        "Use screen reader",
+        "Adjust visual settings"
+      ],
+      "frustrations": [
+        "Missing alt text",
+        "Poor focus indicators",
+        "Low contrast"
+      ],
+      "techLevel": "varies",
+      "devices": ["desktop"],
+      "browsers": ["Chrome", "Firefox"],
+      "assistiveTech": ["NVDA", "JAWS", "VoiceOver"]
+    }
+  },
+  "sessions": {
+    "new": {
+      "firstVisit": true,
+      "theme": null,
+      "preferences": {},
+      "cookies": false
+    },
+    "returning": {
+      "firstVisit": false,
+      "theme": "dark",
+      "preferences": {
+        "fontSize": "large",
+        "reducedMotion": false
+      },
+      "cookies": true
+    },
+    "authenticated": {
+      "firstVisit": false,
+      "theme": "synthwave",
+      "preferences": {
+        "fontSize": "medium",
+        "reducedMotion": false
+      },
+      "cookies": true,
+      "token": "mock-jwt-token"
+    }
+  },
+  "testAccounts": {
+    "valid": {
+      "username": "testuser",
+      "password": "Test@123456",
+      "email": "test@example.com"
+    },
+    "invalid": {
+      "username": "invalid",
+      "password": "wrong",
+      "email": "not-an-email"
+    },
+    "locked": {
+      "username": "locked",
+      "password": "Test@123456",
+      "email": "locked@example.com",
+      "status": "locked"
+    }
+  },
+  "formData": {
+    "contact": {
+      "name": "John Doe",
+      "email": "john.doe@example.com",
+      "subject": "Test Message",
+      "message": "This is a test message from E2E tests."
+    },
+    "signup": {
+      "firstName": "John",
+      "lastName": "Doe",
+      "email": "john.doe@example.com",
+      "password": "SecurePass@123",
+      "confirmPassword": "SecurePass@123",
+      "terms": true,
+      "newsletter": false
+    },
+    "profile": {
+      "displayName": "JohnD",
+      "bio": "Test user bio",
+      "website": "https://example.com",
+      "location": "Test City",
+      "timezone": "UTC"
+    }
+  }
+}

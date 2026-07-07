@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">LANDING - / (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+    <rect x="400" y="3" width="70" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="435" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Home</text>
+
+    <!-- Tier 1: Hero (logo left, title+CTAs right) -->
+    <circle cx="260" cy="220" r="130" fill="none" stroke="#8b5cf6" stroke-width="3" stroke-dasharray="6 4"/>
+    <text x="260" y="215" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#4b5563">ScriptHammer</text>
+    <text x="260" y="235" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">(spinning logo)</text>
+
+    <!-- Animated title "ScriptHammer" -->
+    <text x="440" y="170" font-family="system-ui, sans-serif" font-size="36" font-weight="700" fill="#1f2937">ScriptHammer</text>
+    <text x="440" y="210" font-family="system-ui, sans-serif" font-size="20" fill="#374151">Opinionated Next.js template with PWA,</text>
+    <text x="440" y="234" font-family="system-ui, sans-serif" font-size="20" fill="#374151">theming, and interactive components</text>
+
+    <!-- Tech badges -->
+    <g transform="translate(440, 260)">
+      <rect x="0"   y="0" width="84" height="24" rx="12" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="42"  y="17" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Next.js</text>
+      <rect x="92"  y="0" width="60" height="24" rx="12" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="122" y="17" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">React</text>
+      <rect x="160" y="0" width="92" height="24" rx="12" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="206" y="17" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">TypeScript</text>
+      <rect x="260" y="0" width="76" height="24" rx="12" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="298" y="17" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Tailwind</text>
+      <rect x="344" y="0" width="104" height="24" rx="12" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="396" y="17" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">PWA Ready</text>
+    </g>
+
+    <!-- CTAs -->
+    <rect x="440" y="300" width="200" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="540" y="328" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Use this template ↗</text>
+    <rect x="650" y="300" width="240" height="44" rx="6" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="770" y="328" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">Explore Storybook ↗</text>
+
+    <!-- Tier 2: Stats (4 cards) -->
+    <g transform="translate(24, 380)">
+      <rect x="0"   y="0" width="300" height="80" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="150" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#1f2937">32</text>
+      <text x="150" y="50" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Themes</text>
+      <text x="150" y="68" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">DaisyUI · live switching</text>
+
+      <rect x="308" y="0" width="300" height="80" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="458" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#1f2937">2,400+</text>
+      <text x="458" y="50" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Tests</text>
+      <text x="458" y="68" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Unit · a11y · E2E</text>
+
+      <rect x="616" y="0" width="300" height="80" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="766" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#1f2937">WCAG AA</text>
+      <text x="766" y="50" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Accessible</text>
+      <text x="766" y="68" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Skip links · font scaling</text>
+
+      <rect x="924" y="0" width="300" height="80" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="1074" y="30" text-anchor="middle" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#1f2937">PWA</text>
+      <text x="1074" y="50" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Offline-first</text>
+      <text x="1074" y="68" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Service worker · installable</text>
+    </g>
+
+    <!-- Tier 3: Demo grid (8 tiles) -->
+    <g transform="translate(24, 480)">
+      <rect x="0"   y="0" width="150" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="75"  y="26" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Blog</text>
+      <rect x="158" y="0" width="150" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="233" y="26" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Payments</text>
+      <rect x="316" y="0" width="150" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="391" y="26" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Messaging</text>
+      <rect x="474" y="0" width="150" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="549" y="26" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Map</text>
+      <rect x="632" y="0" width="150" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="707" y="26" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Game</text>
+      <rect x="790" y="0" width="150" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="865" y="26" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Wireframes</text>
+      <rect x="948" y="0" width="150" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="1023" y="26" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Schedule</text>
+      <rect x="1106" y="0" width="118" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="1165" y="26" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Contact</text>
+    </g>
+
+    <!-- Tier 4: Features (1 promoted + 4 grouped) -->
+    <rect x="24" y="540" width="600" height="80" rx="8" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="44" y="568" font-family="system-ui, sans-serif" font-size="26" fill="#1f2937">🚀</text>
+    <text x="84" y="568" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">Production Ready</text>
+    <text x="84" y="592" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">CI/CD pipeline, 2,400+ tests, Lighthouse monitoring,</text>
+    <text x="84" y="610" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">GitHub Pages deploy on every push</text>
+
+    <g transform="translate(640, 540)">
+      <rect x="0"   y="0" width="140" height="80" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="70"  y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16">🎨</text>
+      <text x="70"  y="46" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">32 Themes</text>
+      <text x="70"  y="64" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Light &amp; dark</text>
+      <rect x="148" y="0" width="140" height="80" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="218" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16">📐</text>
+      <text x="218" y="46" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Wireframes</text>
+      <text x="218" y="64" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">46 SVG specs</text>
+      <rect x="296" y="0" width="140" height="80" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="366" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16">📱</text>
+      <text x="366" y="46" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">PWA Ready</text>
+      <text x="366" y="64" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Installable</text>
+      <rect x="444" y="0" width="140" height="80" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="514" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16">♿</text>
+      <text x="514" y="46" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Accessible</text>
+      <text x="514" y="64" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">WCAG compliant</text>
+    </g>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <g class="callout"><circle cx="260" cy="110" r="14" fill="#dc2626"/><text x="260" y="115" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="660" cy="322" r="14" fill="#dc2626"/><text x="660" y="327" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="1190" cy="400" r="14" fill="#dc2626"/><text x="1190" y="405" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="440" cy="500" r="14" fill="#dc2626"/><text x="440" y="505" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile hero: stacked -->
+    <circle cx="180" cy="170" r="70" fill="none" stroke="#8b5cf6" stroke-width="3" stroke-dasharray="4 3"/>
+    <text x="180" y="175" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">logo</text>
+
+    <text x="180" y="264" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="700" fill="#1f2937">ScriptHammer</text>
+    <text x="180" y="288" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">PWA template · 32 themes</text>
+
+    <rect x="20" y="308" width="320" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="180" y="336" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8" font-weight="600">Use this template ↗</text>
+
+    <!-- Stats stacked 2x2 -->
+    <g transform="translate(20, 368)">
+      <rect x="0"   y="0" width="156" height="60" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="78"  y="26" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">32</text>
+      <text x="78"  y="48" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Themes</text>
+      <rect x="164" y="0" width="156" height="60" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="242" y="26" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">2,400+</text>
+      <text x="242" y="48" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Tests</text>
+      <rect x="0"   y="68" width="156" height="60" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="78"  y="94" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">AA</text>
+      <text x="78"  y="116" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">WCAG</text>
+      <rect x="164" y="68" width="156" height="60" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="242" y="94" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">PWA</text>
+      <text x="242" y="116" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Offline</text>
+    </g>
+
+    <!-- Demo links compact -->
+    <g transform="translate(20, 514)">
+      <rect x="0"   y="0" width="76" height="28" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="38"  y="18" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Blog</text>
+      <rect x="82"  y="0" width="76" height="28" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="120" y="18" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Pay</text>
+      <rect x="164" y="0" width="76" height="28" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="202" y="18" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Msgs</text>
+      <rect x="246" y="0" width="74" height="28" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="283" y="18" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Map</text>
+    </g>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="180" cy="110" r="11" fill="#dc2626"/><text x="180" y="115" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="180" cy="330" r="11" fill="#dc2626"/><text x="180" y="335" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Hero logo + title</text>
+      <a href="#us-001" transform="translate(170, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Spinning LayeredScriptHammerLogo (client island) +</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">AnimatedLogo text "ScriptHammer".</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Primary CTA</text>
+      <a href="#us-002" transform="translate(140, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">"Use this template" — the ONE filled btn-primary.</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Links to GitHub generate-from-template URL.</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Stats row (4 proofs)</text>
+      <a href="#us-003" transform="translate(220, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">32 Themes / 2,400+ Tests / WCAG AA / PWA</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Each card links to its proof page.</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Demo grid (8 links)</text>
+      <a href="#us-004" transform="translate(220, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Blog · Payments · Messaging · Map · Game ·</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Wireframes · Schedule · Contact.</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/page.tsx — server component, logo + title as 'use client' internal islands. Zero client JS beyond those.</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Hierarchy: logo draws eye → animated title → ONE btn-primary → proof numbers. "Production Ready" card stands alone.</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:01 | Landing (as-is /) | ScriptHammer</text>
+</svg>

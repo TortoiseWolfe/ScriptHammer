@@ -1,0 +1,329 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">
+    MOBILE-FIRST DESIGN - TOUCH TARGETS AND PERFORMANCE
+  </text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP MOCKUP -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Navigation active state overlay for Features -->
+    <rect x="480" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="520" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Features</text>
+
+    <!-- Touch Target Demonstration Panel -->
+    <g transform="translate(60, 70)">
+      <!-- Panel background -->
+      <rect width="560" height="530" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+
+      <text x="20" y="35" fill="#1f2937" font-family="system-ui, sans-serif" font-size="20" font-weight="bold">Touch Target Standards</text>
+
+      <!-- Button row with 44px targets and 8px spacing -->
+      <text x="20" y="70" fill="#374151" font-family="system-ui, sans-serif" font-size="16">All buttons meet 44x44px minimum:</text>
+
+      <!-- Primary button 44px height -->
+      <rect x="20" y="85" width="120" height="44" rx="6" fill="#8b5cf6"/>
+      <text x="80" y="113" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Primary</text>
+
+      <!-- 8px gap -->
+      <rect x="148" y="85" width="120" height="44" rx="6" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+      <text x="208" y="113" text-anchor="middle" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Secondary</text>
+
+      <!-- 8px gap -->
+      <rect x="276" y="85" width="120" height="44" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="336" y="113" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Tertiary</text>
+
+      <!-- Spacing indicator -->
+      <line x1="140" y1="140" x2="148" y2="140" stroke="#dc2626" stroke-width="2"/>
+      <text x="144" y="158" text-anchor="middle" fill="#dc2626" font-family="system-ui, sans-serif" font-size="14">8px</text>
+
+      <!-- Form controls -->
+      <text x="20" y="200" fill="#1f2937" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">Form Controls</text>
+
+      <!-- Text input 44px height -->
+      <text x="20" y="230" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Email Address</text>
+      <rect x="20" y="240" width="280" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="30" y="268" fill="#374151" font-family="system-ui, sans-serif" font-size="14">user@example.com</text>
+
+      <!-- Checkbox row -->
+      <rect x="20" y="300" width="24" height="24" rx="4" fill="#8b5cf6"/>
+      <text x="20" y="315" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">✓</text>
+      <text x="54" y="318" fill="#374151" font-family="system-ui, sans-serif" font-size="16">Remember me</text>
+
+      <!-- Toggle switch -->
+      <text x="20" y="370" fill="#374151" font-family="system-ui, sans-serif" font-size="16">Enable notifications</text>
+      <rect x="200" y="352" width="52" height="28" rx="14" fill="#22c55e"/>
+      <circle cx="238" cy="366" r="12" fill="#e8d4b8"/>
+
+      <!-- Toggle OFF state -->
+      <text x="20" y="420" fill="#374151" font-family="system-ui, sans-serif" font-size="16">Dark mode</text>
+      <rect x="200" y="402" width="52" height="28" rx="14" fill="#6b7280"/>
+      <circle cx="214" cy="416" r="12" fill="#e8d4b8"/>
+
+      <!-- No hover dependency note -->
+      <rect x="20" y="460" width="520" height="50" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="30" y="485" fill="#374151" font-family="system-ui, sans-serif" font-size="14">No hover-dependent interactions. All actions accessible via tap.</text>
+      <text x="30" y="502" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Tooltips appear on long-press for mobile users.</text>
+    </g>
+
+    <!-- Performance Metrics Panel -->
+    <g transform="translate(660, 70)">
+      <rect width="560" height="530" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+
+      <text x="20" y="35" fill="#1f2937" font-family="system-ui, sans-serif" font-size="20" font-weight="bold">Performance Metrics</text>
+
+      <!-- LCP indicator -->
+      <rect x="20" y="55" width="520" height="80" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="30" y="80" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Largest Contentful Paint (LCP)</text>
+      <text x="30" y="105" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Target: under 2.5 seconds on mobile</text>
+      <rect x="30" y="115" width="400" height="10" rx="5" fill="#e8d4b8"/>
+      <rect x="30" y="115" width="280" height="10" rx="5" fill="#22c55e"/>
+      <text x="450" y="125" fill="#22c55e" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">1.8s</text>
+
+      <!-- FID indicator -->
+      <rect x="20" y="150" width="520" height="80" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="30" y="175" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">First Input Delay (FID)</text>
+      <text x="30" y="200" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Target: under 100ms</text>
+      <rect x="30" y="210" width="400" height="10" rx="5" fill="#e8d4b8"/>
+      <rect x="30" y="210" width="320" height="10" rx="5" fill="#22c55e"/>
+      <text x="450" y="220" fill="#22c55e" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">45ms</text>
+
+      <!-- CLS indicator -->
+      <rect x="20" y="245" width="520" height="80" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="30" y="270" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Cumulative Layout Shift (CLS)</text>
+      <text x="30" y="295" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Target: below 0.1</text>
+      <rect x="30" y="305" width="400" height="10" rx="5" fill="#e8d4b8"/>
+      <rect x="30" y="305" width="100" height="10" rx="5" fill="#22c55e"/>
+      <text x="450" y="315" fill="#22c55e" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">0.02</text>
+
+      <!-- TTI indicator -->
+      <rect x="20" y="340" width="520" height="80" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="30" y="365" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Time to Interactive (TTI)</text>
+      <text x="30" y="390" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Target: under 5 seconds on 3G</text>
+      <rect x="30" y="400" width="400" height="10" rx="5" fill="#e8d4b8"/>
+      <rect x="30" y="400" width="260" height="10" rx="5" fill="#22c55e"/>
+      <text x="450" y="410" fill="#22c55e" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">3.2s</text>
+
+      <!-- Page weight -->
+      <rect x="20" y="435" width="520" height="80" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="30" y="460" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Page Weight</text>
+      <text x="30" y="485" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Total: under 1MB | Critical: under 500KB</text>
+      <rect x="30" y="495" width="200" height="10" rx="5" fill="#22c55e"/>
+      <text x="240" y="505" fill="#22c55e" font-family="system-ui, sans-serif" font-size="14">420KB</text>
+      <rect x="300" y="495" width="100" height="10" rx="5" fill="#3b82f6"/>
+      <text x="410" y="505" fill="#3b82f6" font-family="system-ui, sans-serif" font-size="14">780KB total</text>
+    </g>
+
+    <!-- Callout 1 on touch targets -->
+    <g transform="translate(430, 115)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Callout 2 on form controls -->
+    <g transform="translate(380, 310)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Callout 3 on performance panel -->
+    <g transform="translate(1240, 115)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Callout 4 on page weight -->
+    <g transform="translate(1240, 520)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE MOCKUP -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile content safe area starts at 78 -->
+    <rect x="16" y="86" width="328" height="530" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <!-- Touch Targets Section -->
+    <text x="28" y="115" fill="#1f2937" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">Touch Targets</text>
+
+    <!-- Mobile buttons 44px height -->
+    <rect x="28" y="130" width="140" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="98" y="158" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Primary</text>
+
+    <rect x="180" y="130" width="140" height="44" rx="6" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="250" y="158" text-anchor="middle" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Secondary</text>
+
+    <!-- Form input -->
+    <text x="28" y="205" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Email</text>
+    <rect x="28" y="215" width="292" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="38" y="243" fill="#374151" font-family="system-ui, sans-serif" font-size="14">user@example.com</text>
+
+    <!-- Toggle switches -->
+    <text x="28" y="290" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Notifications</text>
+    <rect x="250" y="272" width="52" height="28" rx="14" fill="#22c55e"/>
+    <circle cx="288" cy="286" r="12" fill="#e8d4b8"/>
+
+    <!-- Performance Section -->
+    <text x="28" y="345" fill="#1f2937" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">Performance</text>
+
+    <!-- Mini metrics -->
+    <rect x="28" y="360" width="292" height="60" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="38" y="382" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">LCP</text>
+    <rect x="80" y="375" width="150" height="8" rx="4" fill="#e8d4b8"/>
+    <rect x="80" y="375" width="105" height="8" rx="4" fill="#22c55e"/>
+    <text x="270" y="382" fill="#22c55e" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">1.8s</text>
+    <text x="38" y="408" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">CLS</text>
+    <rect x="80" y="401" width="150" height="8" rx="4" fill="#e8d4b8"/>
+    <rect x="80" y="401" width="38" height="8" rx="4" fill="#22c55e"/>
+    <text x="270" y="408" fill="#22c55e" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">0.02</text>
+
+    <!-- Page weight mini -->
+    <rect x="28" y="435" width="292" height="50" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="38" y="457" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Page Weight</text>
+    <text x="38" y="478" fill="#374151" font-family="system-ui, sans-serif" font-size="14">420KB critical | 780KB total</text>
+
+    <!-- Orientation note -->
+    <rect x="28" y="500" width="292" height="50" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="38" y="522" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Landscape maintains mobile</text>
+    <text x="38" y="542" fill="#374151" font-family="system-ui, sans-serif" font-size="14">styles (device-type aware).</text>
+
+    <!-- Zoom support -->
+    <text x="28" y="590" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Supports 200% zoom without</text>
+    <text x="28" y="608" fill="#374151" font-family="system-ui, sans-serif" font-size="14">breaking layouts.</text>
+
+    <!-- Callout 1 on buttons -->
+    <g transform="translate(330, 152)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Callout 2 on form -->
+    <g transform="translate(330, 255)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Callout 3 on metrics -->
+    <g transform="translate(330, 390)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Callout 4 on page weight -->
+    <g transform="translate(330, 460)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <!-- Mobile footer with active state -->
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <rect x="90" y="664" width="90" height="56" fill="#8b5cf6"/>
+    <text x="135" y="702" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Features</text>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Group 1 - Touch-Friendly Interactions, Column 1 -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+      <text x="40" y="14" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Touch-Friendly Interactions</text>
+      <text x="40" y="34" fill="#374151" font-family="system-ui, sans-serif" font-size="14">All interactive elements meet 44x44px minimum touch target</text>
+      <text x="40" y="52" fill="#374151" font-family="system-ui, sans-serif" font-size="14">size with 8px spacing between adjacent controls.</text>
+
+      <a href="#US-003"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">US-003</text></a>
+      <a href="#FR-020"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-020</text></a>
+      <a href="#FR-021"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-021</text></a>
+      <a href="#SC-002"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-002</text></a>
+      <a href="#SC-003"><rect x="284" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-003</text></a>
+    </g>
+
+    <!-- Group 2 - Consistent Mobile Experience, Column 2 -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+      <text x="40" y="14" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Consistent Mobile Experience</text>
+      <text x="40" y="34" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Purpose-built mobile layouts. Landscape orientation</text>
+      <text x="40" y="52" fill="#374151" font-family="system-ui, sans-serif" font-size="14">maintains mobile styles. Supports 200% zoom.</text>
+
+      <a href="#US-004"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">US-004</text></a>
+      <a href="#FR-017"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-017</text></a>
+      <a href="#FR-018"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-018</text></a>
+      <a href="#FR-019"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-019</text></a>
+      <a href="#FR-022"><rect x="284" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="311" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-022</text></a>
+    </g>
+
+    <!-- Group 3 - Performance on Mobile Networks, Column 3 -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+      <text x="40" y="14" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Performance on Mobile Networks</text>
+      <text x="40" y="34" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Fast page loads on 3G/4G. LCP under 2.5s,</text>
+      <text x="40" y="52" fill="#374151" font-family="system-ui, sans-serif" font-size="14">FID under 100ms, CLS below 0.1.</text>
+
+      <a href="#US-005"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">US-005</text></a>
+      <a href="#FR-023"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-023</text></a>
+      <a href="#SC-005"><rect x="162" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="189" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-005</text></a>
+      <a href="#SC-006"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-006</text></a>
+      <a href="#SC-007"><rect x="284" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="311" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-007</text></a>
+    </g>
+
+    <!-- Group 4 - Page Weight Budget, Column 4 -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+      <text x="40" y="14" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Page Weight Budget</text>
+      <text x="40" y="34" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Total page under 1MB, critical content under 500KB.</text>
+      <text x="40" y="52" fill="#374151" font-family="system-ui, sans-serif" font-size="14">TTI under 5 seconds on simulated 3G.</text>
+
+      <a href="#US-005"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">US-005</text></a>
+      <a href="#FR-024"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-024</text></a>
+      <a href="#SC-011"><rect x="162" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="189" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-011</text></a>
+      <a href="#SC-012"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-012</text></a>
+    </g>
+
+    <!-- Key concepts row -->
+    <g transform="translate(20, 140)">
+      <text fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Key Concepts:</text>
+      <text x="120" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="14">44x44px targets | 8px spacing | No hover dependency | LCP 2.5s | FID 100ms | CLS 0.1 | TTI 5s | 1MB budget</text>
+    </g>
+  </g>
+
+  <!-- SIGNATURE -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">
+    004:02 | Mobile-First Design | ScriptHammer
+  </text>
+</svg>

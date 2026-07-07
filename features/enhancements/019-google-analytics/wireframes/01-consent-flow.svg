@@ -1,0 +1,346 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="20" font-weight="bold" fill="#1f2937">
+    ANALYTICS SETTINGS - PRIVACY-FIRST TRACKING
+  </text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP MOCKUP -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Navigation active state for Settings -->
+    <rect x="560" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="600" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Settings</text>
+
+    <!-- Privacy Settings Panel -->
+    <g transform="translate(60, 70)">
+      <rect width="560" height="530" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+
+      <text x="20" y="35" fill="#1f2937" font-family="system-ui, sans-serif" font-size="20" font-weight="bold">Privacy &amp; Analytics</text>
+
+      <!-- Permission Status Indicator -->
+      <rect x="20" y="55" width="520" height="80" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="35" y="80" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Analytics Permission Status</text>
+
+      <!-- Status badge - Granted -->
+      <rect x="35" y="95" width="100" height="28" rx="14" fill="#22c55e"/>
+      <text x="85" y="114" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Granted</text>
+
+      <text x="150" y="114" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Tracking active since Jan 14, 2026</text>
+
+      <!-- Analytics Toggle Section -->
+      <text x="20" y="170" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Analytics Tracking</text>
+
+      <!-- Toggle row -->
+      <rect x="20" y="185" width="520" height="50" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="35" y="215" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Enable analytics to help improve the site</text>
+      <rect x="450" y="197" width="52" height="28" rx="14" fill="#22c55e"/>
+      <circle cx="488" cy="211" r="12" fill="#e8d4b8"/>
+
+      <!-- Privacy Mode Indicator -->
+      <rect x="20" y="250" width="520" height="70" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="35" y="275" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Privacy Mode</text>
+      <text x="35" y="300" fill="#374151" font-family="system-ui, sans-serif" font-size="14">When disabled: Zero tracking, no scripts loaded</text>
+
+      <!-- What We Track Section -->
+      <text x="20" y="355" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">What We Track (when enabled)</text>
+
+      <rect x="20" y="370" width="520" height="140" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+
+      <!-- Tracking items with checkmarks -->
+      <text x="35" y="395" fill="#22c55e" font-family="system-ui, sans-serif" font-size="16">✓</text>
+      <text x="55" y="395" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Page views and navigation patterns</text>
+
+      <text x="35" y="420" fill="#22c55e" font-family="system-ui, sans-serif" font-size="16">✓</text>
+      <text x="55" y="420" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Performance metrics (Web Vitals)</text>
+
+      <text x="35" y="445" fill="#22c55e" font-family="system-ui, sans-serif" font-size="16">✓</text>
+      <text x="55" y="445" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Feature usage (theme, PWA install)</text>
+
+      <text x="35" y="470" fill="#ef4444" font-family="system-ui, sans-serif" font-size="16">✗</text>
+      <text x="55" y="470" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Personal information (never collected)</text>
+
+      <text x="35" y="495" fill="#ef4444" font-family="system-ui, sans-serif" font-size="16">✗</text>
+      <text x="55" y="495" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Cross-site tracking (not shared)</text>
+    </g>
+
+    <!-- Page View Tracking Panel -->
+    <g transform="translate(660, 70)">
+      <rect width="560" height="530" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+
+      <text x="20" y="35" fill="#1f2937" font-family="system-ui, sans-serif" font-size="20" font-weight="bold">Page View Tracking</text>
+
+      <!-- Current Session Stats -->
+      <rect x="20" y="55" width="520" height="100" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="35" y="80" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Current Session</text>
+
+      <!-- Stats row -->
+      <text x="35" y="110" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Pages viewed:</text>
+      <text x="140" y="110" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">7</text>
+
+      <text x="180" y="110" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Session duration:</text>
+      <text x="310" y="110" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">12m 34s</text>
+
+      <text x="35" y="135" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Last tracked:</text>
+      <text x="130" y="135" fill="#374151" font-family="system-ui, sans-serif" font-size="14">/settings (this page)</text>
+
+      <!-- Recent Page Views -->
+      <text x="20" y="185" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Recent Page Views</text>
+
+      <rect x="20" y="200" width="520" height="180" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+
+      <!-- Page view list -->
+      <text x="35" y="225" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Path</text>
+      <text x="280" y="225" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Title</text>
+      <text x="450" y="225" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Time</text>
+
+      <line x1="35" y1="235" x2="520" y2="235" stroke="#b8a080" stroke-width="1"/>
+
+      <text x="35" y="255" fill="#374151" font-family="monospace" font-size="14">/settings</text>
+      <text x="280" y="255" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Settings</text>
+      <text x="450" y="255" fill="#374151" font-family="system-ui, sans-serif" font-size="14">now</text>
+
+      <text x="35" y="280" fill="#374151" font-family="monospace" font-size="14">/features</text>
+      <text x="280" y="280" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Features</text>
+      <text x="450" y="280" fill="#374151" font-family="system-ui, sans-serif" font-size="14">2m ago</text>
+
+      <text x="35" y="305" fill="#374151" font-family="monospace" font-size="14">/blog/mobile-first</text>
+      <text x="280" y="305" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Mobile-First Guide</text>
+      <text x="450" y="305" fill="#374151" font-family="system-ui, sans-serif" font-size="14">5m ago</text>
+
+      <text x="35" y="330" fill="#374151" font-family="monospace" font-size="14">/blog</text>
+      <text x="280" y="330" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Blog</text>
+      <text x="450" y="330" fill="#374151" font-family="system-ui, sans-serif" font-size="14">8m ago</text>
+
+      <text x="35" y="355" fill="#374151" font-family="monospace" font-size="14">/</text>
+      <text x="280" y="355" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Home</text>
+      <text x="450" y="355" fill="#374151" font-family="system-ui, sans-serif" font-size="14">12m ago</text>
+
+      <!-- SPA Navigation Note -->
+      <rect x="20" y="400" width="520" height="60" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="35" y="425" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Single-Page Navigation</text>
+      <text x="35" y="445" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Route changes and browser back/forward tracked automatically</text>
+
+      <!-- Data Sent Indicator -->
+      <rect x="20" y="475" width="520" height="40" rx="4" fill="#f5f0e6" stroke="#22c55e" stroke-width="2"/>
+      <circle cx="45" cy="495" r="8" fill="#22c55e"/>
+      <text x="65" y="500" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Data sent to Google Analytics 4 (GA4)</text>
+    </g>
+
+    <!-- Callout 1 on permission status -->
+    <g transform="translate(600, 115)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Callout 2 on page view tracking -->
+    <g transform="translate(1240, 115)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Callout 3 on analytics toggle -->
+    <g transform="translate(600, 215)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Callout 4 on tracking status -->
+    <g transform="translate(1240, 535)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE MOCKUP -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile content safe area starts at 78 -->
+    <rect x="16" y="86" width="328" height="530" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <!-- Privacy Settings Header -->
+    <text x="28" y="115" fill="#1f2937" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">Privacy &amp; Analytics</text>
+
+    <!-- Permission Status -->
+    <rect x="28" y="130" width="300" height="60" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="40" y="152" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Permission Status</text>
+    <rect x="40" y="162" width="70" height="22" rx="11" fill="#22c55e"/>
+    <text x="75" y="178" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Granted</text>
+    <text x="120" y="178" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Active</text>
+
+    <!-- Analytics Toggle -->
+    <rect x="28" y="205" width="300" height="50" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="40" y="235" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Analytics tracking</text>
+    <rect x="250" y="217" width="52" height="28" rx="14" fill="#22c55e"/>
+    <circle cx="288" cy="231" r="12" fill="#e8d4b8"/>
+
+    <!-- Session Stats -->
+    <text x="28" y="285" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Session Stats</text>
+
+    <rect x="28" y="300" width="145" height="60" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="40" y="322" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Pages</text>
+    <text x="40" y="345" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="20" font-weight="bold">7</text>
+
+    <rect x="183" y="300" width="145" height="60" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="195" y="322" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Duration</text>
+    <text x="195" y="345" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="20" font-weight="bold">12:34</text>
+
+    <!-- Recent Pages -->
+    <text x="28" y="395" fill="#1f2937" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Recent Pages</text>
+
+    <rect x="28" y="410" width="300" height="130" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <text x="40" y="435" fill="#374151" font-family="monospace" font-size="14">/settings</text>
+    <text x="260" y="435" fill="#374151" font-family="system-ui, sans-serif" font-size="14">now</text>
+
+    <text x="40" y="460" fill="#374151" font-family="monospace" font-size="14">/features</text>
+    <text x="260" y="460" fill="#374151" font-family="system-ui, sans-serif" font-size="14">2m</text>
+
+    <text x="40" y="485" fill="#374151" font-family="monospace" font-size="14">/blog/mobile</text>
+    <text x="260" y="485" fill="#374151" font-family="system-ui, sans-serif" font-size="14">5m</text>
+
+    <text x="40" y="510" fill="#374151" font-family="monospace" font-size="14">/blog</text>
+    <text x="260" y="510" fill="#374151" font-family="system-ui, sans-serif" font-size="14">8m</text>
+
+    <text x="40" y="535" fill="#374151" font-family="monospace" font-size="14">/</text>
+    <text x="260" y="535" fill="#374151" font-family="system-ui, sans-serif" font-size="14">12m</text>
+
+    <!-- GA4 Status -->
+    <rect x="28" y="555" width="300" height="40" rx="4" fill="#f5f0e6" stroke="#22c55e" stroke-width="2"/>
+    <circle cx="48" cy="575" r="6" fill="#22c55e"/>
+    <text x="65" y="580" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Sending to GA4</text>
+
+    <!-- Callout 1 on permission toggle -->
+    <g transform="translate(330, 160)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Callout 2 on toggle -->
+    <g transform="translate(330, 230)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Callout 3 on stats -->
+    <g transform="translate(330, 330)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Callout 4 on GA4 status -->
+    <g transform="translate(330, 575)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+
+    <!-- Mobile footer with Settings active -->
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <rect x="270" y="664" width="90" height="56" fill="#8b5cf6"/>
+    <text x="315" y="702" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Settings</text>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Group 1 - Permission-Gated Analytics, Column 1 -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+      <text x="40" y="14" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Permission-Gated Analytics</text>
+      <text x="40" y="34" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Analytics tracking only begins after explicit user permission.</text>
+      <text x="40" y="52" fill="#374151" font-family="system-ui, sans-serif" font-size="14">No scripts load until permission granted via cookie banner.</text>
+
+      <a href="#US-001"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">US-001</text></a>
+      <a href="#FR-001"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-001</text></a>
+      <a href="#FR-002"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-002</text></a>
+      <a href="#FR-003"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-003</text></a>
+      <a href="#FR-004"><rect x="284" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="311" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-004</text></a>
+      <a href="#SC-001"><rect x="40" y="88" width="55" height="22" rx="4" fill="#ea580c"/><text x="67" y="103" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-001</text></a>
+      <a href="#SC-007"><rect x="101" y="88" width="55" height="22" rx="4" fill="#ea580c"/><text x="128" y="103" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-007</text></a>
+    </g>
+
+    <!-- Group 2 - Page View Tracking, Column 2 -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+      <text x="40" y="14" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Page View Tracking</text>
+      <text x="40" y="34" fill="#374151" font-family="system-ui, sans-serif" font-size="14">All page views tracked with path and title when allowed</text>
+      <text x="40" y="52" fill="#374151" font-family="system-ui, sans-serif" font-size="14">granted. SPA route changes and back/forward handled.</text>
+
+      <a href="#US-002"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">US-002</text></a>
+      <a href="#FR-005"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-005</text></a>
+      <a href="#FR-006"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-006</text></a>
+      <a href="#FR-007"><rect x="223" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="250" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-007</text></a>
+      <a href="#FR-008"><rect x="284" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="311" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-008</text></a>
+      <a href="#SC-002"><rect x="40" y="88" width="55" height="22" rx="4" fill="#ea580c"/><text x="67" y="103" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-002</text></a>
+    </g>
+
+    <!-- Group 3 - Graceful Degradation, Column 3 -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+      <text x="40" y="14" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Graceful Degradation</text>
+      <text x="40" y="34" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Site functions normally when analytics blocked by ad</text>
+      <text x="40" y="52" fill="#374151" font-family="system-ui, sans-serif" font-size="14">blockers. No errors thrown, silent failure handling.</text>
+
+      <a href="#US-005"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">US-005</text></a>
+      <a href="#FR-017"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-017</text></a>
+      <a href="#FR-018"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-018</text></a>
+      <a href="#SC-006"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-006</text></a>
+    </g>
+
+    <!-- Group 4 - GA4 Integration, Column 4 -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+      <text x="40" y="14" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">GA4 Integration Status</text>
+      <text x="40" y="34" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Visual indicator shows when data is being sent to</text>
+      <text x="40" y="52" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Google Analytics 4. Scripts load asynchronously.</text>
+
+      <a href="#US-002"><rect x="40" y="62" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">US-002</text></a>
+      <a href="#FR-019"><rect x="101" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-019</text></a>
+      <a href="#FR-020"><rect x="162" y="62" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">FR-020</text></a>
+      <a href="#SC-005"><rect x="223" y="62" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="77" fill="#e8d4b8" font-size="11" text-anchor="middle">SC-005</text></a>
+    </g>
+
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Permission-first | Zero tracking without permission | Privacy mode | Async script loading | GA4 integration | Session persistence</text>
+
+  <!-- SIGNATURE -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">
+    019:01 | Google Analytics | ScriptHammer
+  </text>
+</svg>

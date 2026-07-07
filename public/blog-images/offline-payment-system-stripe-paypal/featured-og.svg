@@ -1,0 +1,94 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="pay-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#16213e"/>
+    </linearGradient>
+    <linearGradient id="pay-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <filter id="pay-glow">
+      <feGaussianBlur stdDeviation="8"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#pay-bg)"/>
+
+  <!-- Subtle diagonal lines -->
+  <g stroke="#f59e0b" stroke-width="0.5" opacity="0.04">
+    <line x1="0" y1="0" x2="600" y2="630"/>
+    <line x1="200" y1="0" x2="800" y2="630"/>
+    <line x1="400" y1="0" x2="1000" y2="630"/>
+    <line x1="600" y1="0" x2="1200" y2="630"/>
+    <line x1="800" y1="0" x2="1200" y2="420"/>
+    <line x1="1000" y1="0" x2="1200" y2="210"/>
+  </g>
+
+  <!-- Abstract payment card shapes -->
+  <g transform="translate(80, 140)">
+    <!-- Card 1 — back -->
+    <g transform="rotate(-8, 100, 100)">
+      <rect x="0" y="0" width="200" height="130" rx="12" fill="#f59e0b" opacity="0.08" stroke="#f59e0b" stroke-width="0.5" stroke-opacity="0.15"/>
+    </g>
+    <!-- Card 2 — front -->
+    <g transform="rotate(4, 100, 100)">
+      <rect x="20" y="20" width="200" height="130" rx="12" fill="#f59e0b" opacity="0.12" stroke="#f59e0b" stroke-width="0.5" stroke-opacity="0.2"/>
+      <!-- Chip -->
+      <rect x="50" y="55" width="36" height="28" rx="4" fill="#f59e0b" opacity="0.25"/>
+      <line x1="50" y1="69" x2="86" y2="69" stroke="#f59e0b" stroke-width="0.5" stroke-opacity="0.3"/>
+      <line x1="68" y1="55" x2="68" y2="83" stroke="#f59e0b" stroke-width="0.5" stroke-opacity="0.3"/>
+      <!-- Number dots -->
+      <g fill="#f59e0b" opacity="0.3">
+        <circle cx="55" cy="100" r="2.5"/><circle cx="63" cy="100" r="2.5"/><circle cx="71" cy="100" r="2.5"/><circle cx="79" cy="100" r="2.5"/>
+        <circle cx="95" cy="100" r="2.5"/><circle cx="103" cy="100" r="2.5"/><circle cx="111" cy="100" r="2.5"/><circle cx="119" cy="100" r="2.5"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Right side: stacked coins / abstract wealth -->
+  <g transform="translate(900, 160)">
+    <ellipse cx="100" cy="180" rx="80" ry="20" fill="#f59e0b" opacity="0.05"/>
+    <ellipse cx="100" cy="160" rx="80" ry="20" fill="#f59e0b" opacity="0.07"/>
+    <ellipse cx="100" cy="140" rx="80" ry="20" fill="#f59e0b" opacity="0.09"/>
+    <ellipse cx="100" cy="120" rx="80" ry="20" fill="#f59e0b" opacity="0.11"/>
+    <ellipse cx="100" cy="100" rx="80" ry="20" fill="#f59e0b" opacity="0.13" stroke="#f59e0b" stroke-width="0.5" stroke-opacity="0.2"/>
+  </g>
+
+  <!-- Title -->
+  <text x="600" y="260" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="700" text-anchor="middle" fill="white" letter-spacing="-0.5">
+    Offline-First Payments
+  </text>
+
+  <!-- Subtitle -->
+  <text x="600" y="310" font-family="system-ui, -apple-system, sans-serif" font-size="22" text-anchor="middle" fill="#94a3b8">
+    Stripe, PayPal, and GDPR on Static Sites
+  </text>
+
+  <!-- Provider labels -->
+  <g transform="translate(310, 370)">
+    <rect x="0" y="0" width="90" height="34" rx="6" fill="#635bff" opacity="0.15" stroke="#635bff" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="45" y="22" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" text-anchor="middle" fill="#635bff" opacity="0.9">Stripe</text>
+  </g>
+  <g transform="translate(420, 370)">
+    <rect x="0" y="0" width="90" height="34" rx="6" fill="#0070ba" opacity="0.15" stroke="#0070ba" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="45" y="22" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" text-anchor="middle" fill="#0070ba" opacity="0.9">PayPal</text>
+  </g>
+  <g transform="translate(530, 370)">
+    <rect x="0" y="0" width="90" height="34" rx="6" fill="#3ecf8e" opacity="0.15" stroke="#3ecf8e" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="45" y="22" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" text-anchor="middle" fill="#3ecf8e" opacity="0.9">Supabase</text>
+  </g>
+  <g transform="translate(640, 370)">
+    <rect x="0" y="0" width="90" height="34" rx="6" fill="#f59e0b" opacity="0.15" stroke="#f59e0b" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="45" y="22" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" text-anchor="middle" fill="#f59e0b" opacity="0.9">IndexedDB</text>
+  </g>
+  <g transform="translate(750, 370)">
+    <rect x="0" y="0" width="80" height="34" rx="6" fill="#ef4444" opacity="0.15" stroke="#ef4444" stroke-width="0.5" stroke-opacity="0.3"/>
+    <text x="40" y="22" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="600" text-anchor="middle" fill="#ef4444" opacity="0.9">GDPR</text>
+  </g>
+
+  <!-- Bottom accent -->
+  <rect x="450" y="470" width="300" height="1" fill="url(#pay-gold)" opacity="0.2"/>
+  <text x="600" y="520" font-family="system-ui, -apple-system, sans-serif" font-size="12" text-anchor="middle" fill="#475569" letter-spacing="2">SCRIPTHAMMER</text>
+</svg>

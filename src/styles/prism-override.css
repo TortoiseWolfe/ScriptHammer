@@ -1,0 +1,121 @@
+/* Override Prism styles to work with DaisyUI mockup-code */
+.mockup-code pre[class*='language-'] {
+  background: transparent !important;
+  margin: 0 !important;
+  padding: 0.5rem 1rem !important;
+  font-size: 0.875rem; /* 14px mobile */
+}
+
+.mockup-code code[class*='language-'] {
+  background: transparent !important;
+  text-shadow: none !important;
+  display: block !important;
+  text-indent: 0 !important;
+  font-size: 0.875rem; /* 14px mobile */
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+  .mockup-code pre[class*='language-'],
+  .mockup-code code[class*='language-'] {
+    font-size: 0.95rem; /* 15.2px */
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .mockup-code pre[class*='language-'],
+  .mockup-code code[class*='language-'] {
+    font-size: 1.125rem; /* 18px */
+  }
+}
+
+/* Large desktop */
+@media (min-width: 1280px) {
+  .mockup-code pre[class*='language-'],
+  .mockup-code code[class*='language-'] {
+    font-size: 1.25rem; /* 20px */
+  }
+}
+
+/* Ensure mockup-code container has proper padding */
+.mockup-code {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+
+/* Tomorrow Night theme colors adapted for mockup-code */
+.mockup-code .token.comment,
+.mockup-code .token.prolog,
+.mockup-code .token.doctype,
+.mockup-code .token.cdata {
+  color: #969896;
+}
+
+.mockup-code .token.punctuation {
+  color: #c5c8c6;
+}
+
+.mockup-code .token.namespace {
+  opacity: 0.7;
+}
+
+.mockup-code .token.property,
+.mockup-code .token.tag,
+.mockup-code .token.constant,
+.mockup-code .token.symbol,
+.mockup-code .token.deleted {
+  color: #cc6666;
+}
+
+.mockup-code .token.boolean,
+.mockup-code .token.number {
+  color: #de935f;
+}
+
+.mockup-code .token.selector,
+.mockup-code .token.attr-name,
+.mockup-code .token.string,
+.mockup-code .token.char,
+.mockup-code .token.builtin,
+.mockup-code .token.inserted {
+  color: #b5bd68;
+}
+
+.mockup-code .token.operator,
+.mockup-code .token.entity,
+.mockup-code .token.url,
+.mockup-code .language-css .token.string,
+.mockup-code .style .token.string,
+.mockup-code .token.variable {
+  color: #8abeb7;
+}
+
+.mockup-code .token.atrule,
+.mockup-code .token.attr-value,
+.mockup-code .token.function,
+.mockup-code .token.class-name {
+  color: #f0c674;
+}
+
+.mockup-code .token.keyword {
+  color: #b294bb;
+}
+
+.mockup-code .token.regex,
+.mockup-code .token.important {
+  color: #de935f;
+}
+
+.mockup-code .token.important,
+.mockup-code .token.bold {
+  font-weight: bold;
+}
+
+.mockup-code .token.italic {
+  font-style: italic;
+}
+
+.mockup-code .token.entity {
+  cursor: help;
+}

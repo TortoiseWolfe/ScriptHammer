@@ -1,0 +1,150 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/.next-acceptance/
+/.next-basepath/
+/out/
+# basePath E2E (#157): prefixed export + symlink wrapper dir
+/out-basepath/
+/serve-root/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (keep .env.example for documentation)
+.env
+.env.backup
+.env.local
+.env.*.local
+# .env.cloud holds your REAL cloud creds (backup made by `pnpm run use:local`).
+.env.cloud
+# NOTE: .env.local-supabase is intentionally TRACKED — it holds only safe demo
+# local values (no secrets) and is the source for `pnpm run use:local`.
+
+# Filled-in Edge Function secrets for `pnpm supabase:secrets` (real Vault values).
+# The .example.json placeholder IS tracked; the filled copy must NEVER be committed.
+scripts/supabase/edge-function-secrets.json
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# playwright
+test-results/
+playwright-report/
+tests/e2e/fixtures/storage-state-auth.json
+tests/e2e/fixtures/storage-state-auth-b.json
+
+# pnpm
+.pnpm-store/
+
+# Generated files (copied during build)
+public/wireframes/
+public/TASKS.md
+public/manifest.json
+/src/config/project-detected.ts
+/src/config/project-detected.json
+/public/rss.xml
+/public/sitemap.xml
+
+# Claude Code local settings (user-specific permissions)
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+
+# SpecKit harness scripts and templates ship with the repo so every contributor
+# gets working /speckit.* commands without per-machine setup. The scripts under
+# .specify/scripts/bash/ are vendored from upstream github/spec-kit with two
+# ScriptHammer-specific adaptations:
+#   - common.sh recurses through features/<category>/<NNN-name>/ instead of flat specs/
+#   - create-new-feature.sh lands new dirs under features/_uncategorized/
+# See .specify/scripts/bash/config.sh for the configurable bits.
+plan
+tasks
+storybook-static/
+
+# SpecKit installed extensions — payload is reinstalled via `./specify
+# extension add …`. We commit a small allow-list: the registry, the
+# project's wireframe-config.yml, and a hand-picked set of scripts that
+# ScriptHammer ships INTO the extension (not bundled by upstream). Any
+# script shipped BY the extension stays gitignored so `specify extension
+# update wireframe` can overwrite it without producing a diff.
+.specify/extensions/**
+!.specify/extensions/
+!.specify/extensions/*/
+!.specify/extensions/*/wireframe-config.yml
+!.specify/extensions/*/scripts/
+!.specify/extensions/*/scripts/validate.py
+!.specify/extensions/*/scripts/inspect-wireframes.py
+# ScriptHammer-local patches to extension-shipped scripts. Extension update
+# will overwrite these; re-apply the diff from git log afterwards (or better,
+# upstream the change so it becomes the shipped version).
+!.specify/extensions/*/scripts/generate-manifest.py
+# Project-local viewer customization. viewer-config.json is pure branding;
+# viewer.html carries ScriptHammer-local patches (kind grouping, status
+# detection wired to .issues.md format) that aren't upstream yet. An
+# extension update overwrites both; re-apply patches from git log after.
+!.specify/extensions/*/viewer/
+!.specify/extensions/*/viewer/viewer-config.json
+!.specify/extensions/*/viewer/viewer.html
+# Project-local authoring conventions doc (ScriptHammer-specific as-is
+# wireframe rules). Extension-shipped; re-apply on update if wiped.
+!.specify/extensions/*/AUTHORING-AS-IS.md
+# Registered wireframe-extension skills. The payload is installed by
+# `./specify extension add wireframe`, but we track the SKILL.md copies so
+# local ScriptHammer-specific preamble (path conventions) persists across
+# forks. An extension update overwrites these — re-apply from git log.
+.claude/skills/speckit-wireframe-*/
+!.claude/skills/speckit-wireframe-*/
+!.claude/skills/speckit-wireframe-*/SKILL.md
+
+# Brainstorm scratch (superpowers visual-companion sessions)
+.superpowers/
+.component-backup-*
+docs/visual-testing/
+
+# Test screenshots
+screenshots/
+.screenshots/
+mobile-check.png
+
+# Runtime test fixtures — created by node:test beforeEach, deleted by afterEach.
+# If afterEach fails they linger; never commit them (see fixtures/README.md).
+scripts/__tests__/fixtures/*
+!scripts/__tests__/fixtures/README.md
+
+# SpecKit wrapper (Docker-first) — tool + cache state, never commit
+.speckit-tools/
+.speckit-cache/
+.lighthouseci/
+
+# Chattanooga Mini bake: commit DERIVED artifacts (buildings/streets/terrain/heroes/manifest.json + drape),
+# but the raw upstream cache is large and local-only (regenerable by re-running the fetch scripts).
+/public/chatt/_raw/
+/public/chatt/_tmp/

@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3"
+            orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#3b82f6"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="700" fill="#374151" letter-spacing="1">
+    E2E TESTING - CI/CD PIPELINE FLOW
+  </text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (Full-Width Architecture)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE (Same Architecture)</text>
+
+  <!-- Include references (hidden for architecture diagram) -->
+  <g id="desktop" transform="translate(40, 60)" opacity="0">
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+  <g id="mobile" transform="translate(1360, 60)" opacity="0">
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+    <rect x="0" y="78" width="360" height="1" fill="none"/>
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+  </g>
+
+  <!-- DIAGRAM AREA -->
+  <g id="diagram" transform="translate(40, 60)">
+    <rect width="1840" height="700" rx="8" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+
+    <!-- GitHub Events Panel (Left) -->
+    <g transform="translate(60, 40)">
+      <rect width="220" height="280" rx="8" fill="#334155" stroke="#475569" stroke-width="2"/>
+      <text x="110" y="30" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">GitHub Events</text>
+
+      <!-- Push -->
+      <rect x="20" y="50" width="180" height="60" rx="6" fill="#1e40af" stroke="#3b82f6"/>
+      <text x="110" y="75" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">push</text>
+      <text x="110" y="95" text-anchor="middle" fill="#93c5fd" font-family="system-ui, sans-serif" font-size="14">main, develop</text>
+
+      <!-- PR -->
+      <rect x="20" y="120" width="180" height="60" rx="6" fill="#7c3aed" stroke="#a78bfa"/>
+      <text x="110" y="145" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">pull_request</text>
+      <text x="110" y="165" text-anchor="middle" fill="#c4b5fd" font-family="system-ui, sans-serif" font-size="14">opened, sync</text>
+
+      <!-- Schedule -->
+      <rect x="20" y="190" width="180" height="60" rx="6" fill="#0f766e" stroke="#14b8a6"/>
+      <text x="110" y="215" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">schedule</text>
+      <text x="110" y="235" text-anchor="middle" fill="#5eead4" font-family="system-ui, sans-serif" font-size="14">cron: daily</text>
+    </g>
+    <!-- Callout 1 on Events -->
+    <g transform="translate(300, 80)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+    </g>
+
+    <!-- Arrow to Workflow -->
+    <line x1="290" y1="180" x2="330" y2="180" stroke="#3b82f6" stroke-width="3" marker-end="url(#arrow)"/>
+
+    <!-- Workflow Stages Panel (Center) -->
+    <g transform="translate(340, 40)">
+      <rect width="700" height="320" rx="8" fill="#334155" stroke="#475569" stroke-width="2"/>
+      <text x="350" y="30" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">GitHub Actions Workflow</text>
+
+      <!-- Checkout -->
+      <rect x="20" y="50" width="140" height="60" rx="6" fill="#374151" stroke="#6b7280"/>
+      <text x="90" y="75" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Checkout</text>
+      <text x="90" y="95" text-anchor="middle" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="14">~5s</text>
+
+      <!-- Arrow -->
+      <line x1="165" y1="80" x2="180" y2="80" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)"/>
+
+      <!-- Install -->
+      <rect x="190" y="50" width="140" height="60" rx="6" fill="#374151" stroke="#6b7280"/>
+      <text x="260" y="75" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Install</text>
+      <text x="260" y="95" text-anchor="middle" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="14">~45s</text>
+
+      <!-- Arrow -->
+      <line x1="335" y1="80" x2="350" y2="80" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)"/>
+
+      <!-- Build -->
+      <rect x="360" y="50" width="140" height="60" rx="6" fill="#374151" stroke="#6b7280"/>
+      <text x="430" y="75" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Build</text>
+      <text x="430" y="95" text-anchor="middle" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="14">~90s</text>
+
+      <!-- Arrow -->
+      <line x1="505" y1="80" x2="520" y2="80" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow)"/>
+
+      <!-- Test -->
+      <rect x="530" y="50" width="150" height="60" rx="6" fill="#1e40af" stroke="#3b82f6" stroke-width="2"/>
+      <text x="605" y="75" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Playwright</text>
+      <text x="605" y="95" text-anchor="middle" fill="#93c5fd" font-family="system-ui, sans-serif" font-size="14">~3-5min</text>
+
+      <!-- Browser Matrix -->
+      <text x="350" y="140" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Browser Matrix</text>
+
+      <!-- Chrome -->
+      <rect x="80" y="155" width="160" height="50" rx="6" fill="#dc2626" stroke="#f87171"/>
+      <text x="160" y="185" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Chrome</text>
+
+      <!-- Firefox -->
+      <rect x="270" y="155" width="160" height="50" rx="6" fill="#ea580c" stroke="#fb923c"/>
+      <text x="350" y="185" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Firefox</text>
+
+      <!-- WebKit -->
+      <rect x="460" y="155" width="160" height="50" rx="6" fill="#0891b2" stroke="#22d3ee"/>
+      <text x="540" y="185" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Safari</text>
+
+      <!-- Config boxes -->
+      <rect x="20" y="230" width="320" height="70" rx="6" fill="#374151" stroke="#f59e0b" stroke-width="2"/>
+      <text x="180" y="255" text-anchor="middle" fill="#fbbf24" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Retry: 2x | Timeout: 30s</text>
+      <text x="180" y="280" text-anchor="middle" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="14">trace: on-first-retry</text>
+
+      <rect x="360" y="230" width="320" height="70" rx="6" fill="#374151" stroke="#8b5cf6" stroke-width="2"/>
+      <text x="520" y="255" text-anchor="middle" fill="#a78bfa" font-family="system-ui, sans-serif" font-size="14" font-weight="600">playwright.config.ts</text>
+      <text x="520" y="280" text-anchor="middle" fill="#9ca3af" font-family="system-ui, sans-serif" font-size="14">.github/workflows/e2e.yml</text>
+    </g>
+    <!-- Callout 2 on Workflow -->
+    <g transform="translate(1060, 100)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+    </g>
+
+    <!-- Arrow to Results -->
+    <line x1="1050" y1="200" x2="1100" y2="200" stroke="#3b82f6" stroke-width="3" marker-end="url(#arrow)"/>
+
+    <!-- Results Panel (Right) -->
+    <g transform="translate(1110, 40)">
+      <rect width="320" height="320" rx="8" fill="#334155" stroke="#475569" stroke-width="2"/>
+      <text x="160" y="30" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Artifacts</text>
+
+      <!-- Report -->
+      <rect x="20" y="50" width="280" height="70" rx="6" fill="#166534" stroke="#22c55e" stroke-width="2"/>
+      <text x="160" y="75" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">HTML Report</text>
+      <text x="160" y="100" text-anchor="middle" fill="#86efac" font-family="system-ui, sans-serif" font-size="14">playwright-report/</text>
+
+      <!-- Failures -->
+      <rect x="20" y="135" width="280" height="70" rx="6" fill="#7f1d1d" stroke="#ef4444" stroke-width="2"/>
+      <text x="160" y="160" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Failure Artifacts</text>
+      <text x="160" y="185" text-anchor="middle" fill="#fca5a5" font-family="system-ui, sans-serif" font-size="14">Screenshots + Videos</text>
+
+      <!-- Traces -->
+      <rect x="20" y="220" width="280" height="70" rx="6" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2"/>
+      <text x="160" y="245" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Debug Traces</text>
+      <text x="160" y="270" text-anchor="middle" fill="#93c5fd" font-family="system-ui, sans-serif" font-size="14">Network + DOM</text>
+    </g>
+    <!-- Callout 3 on Results -->
+    <g transform="translate(1450, 100)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Bottom Status Row -->
+    <g transform="translate(60, 400)">
+      <rect width="1370" height="260" rx="8" fill="#334155" stroke="#475569" stroke-width="2"/>
+      <text x="685" y="30" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="16" font-weight="bold">Pipeline Status &amp; Notifications</text>
+
+      <!-- Success flow -->
+      <rect x="40" y="60" width="400" height="80" rx="6" fill="#166534" stroke="#22c55e"/>
+      <text x="240" y="95" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="16" font-weight="600">All Tests Pass</text>
+      <text x="240" y="120" text-anchor="middle" fill="#86efac" font-family="system-ui, sans-serif" font-size="14">Merge allowed, deploy triggered</text>
+
+      <!-- Failure flow -->
+      <rect x="480" y="60" width="400" height="80" rx="6" fill="#7f1d1d" stroke="#ef4444"/>
+      <text x="680" y="95" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="16" font-weight="600">Tests Fail</text>
+      <text x="680" y="120" text-anchor="middle" fill="#fca5a5" font-family="system-ui, sans-serif" font-size="14">Block merge, notify developers</text>
+
+      <!-- Retry flow -->
+      <rect x="920" y="60" width="400" height="80" rx="6" fill="#92400e" stroke="#f59e0b"/>
+      <text x="1120" y="95" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="16" font-weight="600">Flaky Test</text>
+      <text x="1120" y="120" text-anchor="middle" fill="#fcd34d" font-family="system-ui, sans-serif" font-size="14">Auto-retry, collect trace</text>
+
+      <!-- Status indicators -->
+      <text x="240" y="175" text-anchor="middle" fill="#22c55e" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">PR Status: Ready to merge</text>
+      <text x="680" y="175" text-anchor="middle" fill="#ef4444" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">PR Status: Blocked</text>
+      <text x="1120" y="175" text-anchor="middle" fill="#f59e0b" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">PR Status: Pending retry</text>
+
+      <!-- Slack notification -->
+      <rect x="460" y="200" width="450" height="45" rx="6" fill="#4a154b"/>
+      <text x="685" y="228" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14">Slack notification on failure (optional)</text>
+    </g>
+    <!-- Callout 4 on Status -->
+    <g transform="translate(1450, 520)">
+      <circle r="14" fill="#dc2626"/>
+      <text y="5" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+    </g>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#e8d4b8" stroke="#b8a080" stroke-width="2"/>
+
+    <!-- Column 1: CI/CD Integration -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">CI/CD Integration</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a developer, I need tests to run</text>
+      <text x="40" y="56" fill="#374151" font-family="system-ui, sans-serif" font-size="14">automatically on every PR.</text>
+      <a href="#US-006"><rect x="40" y="66" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="81" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-006</text></a>
+      <a href="#FR-013"><rect x="106" y="66" width="60" height="22" rx="4" fill="#2563eb"/><text x="136" y="81" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-013</text></a>
+      <a href="#FR-014"><rect x="172" y="66" width="60" height="22" rx="4" fill="#2563eb"/><text x="202" y="81" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-014</text></a>
+      <a href="#SC-006"><rect x="238" y="66" width="60" height="22" rx="4" fill="#ea580c"/><text x="268" y="81" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-006</text></a>
+    </g>
+
+    <!-- Column 2: Failure Investigation -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Failure Investigation</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a developer, I need artifacts to</text>
+      <text x="40" y="56" fill="#374151" font-family="system-ui, sans-serif" font-size="14">debug test failures quickly.</text>
+      <a href="#US-003"><rect x="40" y="66" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="81" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-003</text></a>
+      <a href="#FR-009"><rect x="106" y="66" width="60" height="22" rx="4" fill="#2563eb"/><text x="136" y="81" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-009</text></a>
+      <a href="#FR-010"><rect x="172" y="66" width="60" height="22" rx="4" fill="#2563eb"/><text x="202" y="81" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-010</text></a>
+      <a href="#SC-007"><rect x="238" y="66" width="60" height="22" rx="4" fill="#ea580c"/><text x="268" y="81" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-007</text></a>
+    </g>
+
+    <!-- Column 3: Retry Logic -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Retry Logic</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a developer, I need flaky tests</text>
+      <text x="40" y="56" fill="#374151" font-family="system-ui, sans-serif" font-size="14">auto-retried to reduce noise.</text>
+      <a href="#US-005"><rect x="40" y="66" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="81" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-005</text></a>
+      <a href="#FR-012"><rect x="106" y="66" width="60" height="22" rx="4" fill="#2563eb"/><text x="136" y="81" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-012</text></a>
+      <a href="#SC-005"><rect x="172" y="66" width="60" height="22" rx="4" fill="#ea580c"/><text x="202" y="81" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-005</text></a>
+    </g>
+
+    <!-- Column 4: Configuration -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Configuration</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a developer, I need centralized</text>
+      <text x="40" y="56" fill="#374151" font-family="system-ui, sans-serif" font-size="14">config for consistent behavior.</text>
+      <a href="#US-004"><rect x="40" y="66" width="60" height="22" rx="4" fill="#0891b2"/><text x="70" y="81" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">US-004</text></a>
+      <a href="#FR-008"><rect x="106" y="66" width="60" height="22" rx="4" fill="#2563eb"/><text x="136" y="81" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">FR-008</text></a>
+      <a href="#SC-002"><rect x="172" y="66" width="60" height="22" rx="4" fill="#ea580c"/><text x="202" y="81" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" text-anchor="middle">SC-002</text></a>
+    </g>
+  </g>
+
+  <!-- Signature -->
+  <!-- Key Concepts Row (G-047) -->
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Playwright | CI/CD pipeline | test coverage | visual regression</text>
+
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">007:02 | E2E Testing Framework | ScriptHammer</text>
+</svg>

@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 006-template-fork-experience: Rebrand Automation Flow -->
+<!-- Technical diagram showing CLI rebrand process and configuration -->
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">
+    TEMPLATE FORK - REBRAND CLI FLOW
+  </text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- CLI Rebrand Flow Title -->
+    <text x="60" y="80" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="#374151">Rebrand CLI Workflow</text>
+
+    <!-- Flow Diagram: Command Entry -->
+    <g transform="translate(60, 100)">
+      <!-- Step 1: Command Entry -->
+      <rect x="0" y="0" width="340" height="100" rx="8" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+      <text x="20" y="30" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">1. Run Rebrand Command</text>
+      <rect x="20" y="45" width="300" height="40" rx="4" fill="#1f2937"/>
+      <text x="30" y="72" font-family="monospace" font-size="14" fill="#22c55e">$ npm run rebrand my-app</text>
+      <!-- Callout 1 -->
+      <circle cx="355" cy="50" r="14" fill="#dc2626"/>
+      <text x="355" y="55" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">1</text>
+
+      <!-- Arrow to Step 2 -->
+      <line x1="340" y1="50" x2="400" y2="50" stroke="#8b5cf6" stroke-width="2"/>
+      <polygon points="400,45 410,50 400,55" fill="#8b5cf6"/>
+
+      <!-- Step 2: Config Detection -->
+      <rect x="410" y="0" width="340" height="100" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="430" y="30" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">2. Detect Configuration</text>
+      <text x="430" y="55" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Scans package.json, next.config</text>
+      <text x="430" y="75" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Identifies replacement targets</text>
+      <!-- Callout 2 -->
+      <circle cx="765" cy="50" r="14" fill="#dc2626"/>
+      <text x="765" y="55" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">2</text>
+
+      <!-- Arrow to Step 3 -->
+      <line x1="750" y1="50" x2="810" y2="50" stroke="#8b5cf6" stroke-width="2"/>
+      <polygon points="810,45 820,50 810,55" fill="#8b5cf6"/>
+
+      <!-- Step 3: Transform Files -->
+      <rect x="820" y="0" width="340" height="100" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="840" y="30" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">3. Transform Files</text>
+      <text x="840" y="55" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Updates 12+ config files</text>
+      <text x="840" y="75" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Replaces ScriptHammer → my-app</text>
+      <!-- Callout 3 -->
+      <circle cx="1175" cy="50" r="14" fill="#dc2626"/>
+      <text x="1175" y="55" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">3</text>
+    </g>
+
+    <!-- Files Modified Section -->
+    <text x="60" y="240" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">Configuration Files Updated</text>
+
+    <g transform="translate(60, 260)">
+      <!-- Column 1 -->
+      <rect x="0" y="0" width="280" height="180" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="15" y="25" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Package Config</text>
+      <text x="15" y="50" font-family="monospace" font-size="14" fill="#4b5563">package.json</text>
+      <text x="15" y="70" font-family="monospace" font-size="14" fill="#4b5563">package-lock.json</text>
+      <text x="15" y="90" font-family="monospace" font-size="14" fill="#4b5563">tsconfig.json</text>
+      <text x="15" y="110" font-family="monospace" font-size="14" fill="#4b5563">next.config.mjs</text>
+      <text x="15" y="130" font-family="monospace" font-size="14" fill="#4b5563">.env.example</text>
+
+      <!-- Column 2 -->
+      <rect x="300" y="0" width="280" height="180" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="315" y="25" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Documentation</text>
+      <text x="315" y="50" font-family="monospace" font-size="14" fill="#4b5563">README.md</text>
+      <text x="315" y="70" font-family="monospace" font-size="14" fill="#4b5563">CLAUDE.md</text>
+      <text x="315" y="90" font-family="monospace" font-size="14" fill="#4b5563">CONTRIBUTING.md</text>
+      <text x="315" y="110" font-family="monospace" font-size="14" fill="#4b5563">docker-compose.yml</text>
+      <text x="315" y="130" font-family="monospace" font-size="14" fill="#4b5563">Dockerfile</text>
+
+      <!-- Column 3 -->
+      <rect x="600" y="0" width="280" height="180" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="615" y="25" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">App Config</text>
+      <text x="615" y="50" font-family="monospace" font-size="14" fill="#4b5563">src/app/layout.tsx</text>
+      <text x="615" y="70" font-family="monospace" font-size="14" fill="#4b5563">public/manifest.json</text>
+      <text x="615" y="90" font-family="monospace" font-size="14" fill="#4b5563">.github/workflows/</text>
+      <text x="615" y="110" font-family="monospace" font-size="14" fill="#4b5563">supabase/config.toml</text>
+      <text x="615" y="130" font-family="monospace" font-size="14" fill="#4b5563">.devcontainer/</text>
+
+      <!-- Callout 4 for files section -->
+      <circle cx="895" cy="90" r="14" fill="#dc2626"/>
+      <text x="895" y="95" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">4</text>
+    </g>
+
+    <!-- Validation Panel -->
+    <rect x="60" y="480" width="580" height="140" rx="8" fill="#f5f0e6" stroke="#22c55e" stroke-width="2"/>
+    <text x="80" y="510" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">Post-Rebrand Validation</text>
+    <text x="80" y="540" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Runs automated checks after transformation:</text>
+    <text x="100" y="565" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">✓ TypeScript compilation passes</text>
+    <text x="100" y="590" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">✓ No remaining ScriptHammer references</text>
+    <text x="100" y="615" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">✓ Git commit created with changes</text>
+    <!-- Callout 5 -->
+    <circle cx="48" cy="560" r="14" fill="#dc2626"/>
+    <text x="48" y="565" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">5</text>
+
+    <!-- Mock System Panel -->
+    <rect x="660" y="480" width="560" height="140" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="680" y="510" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#374151">Test Infrastructure</text>
+    <text x="680" y="540" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Mock system enables testing without external services:</text>
+    <text x="700" y="565" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">• Supabase client mock with in-memory storage</text>
+    <text x="700" y="590" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">• Auth state simulation for test scenarios</text>
+    <text x="700" y="615" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">• Database fixture system with seed data</text>
+    <!-- Callout 6 -->
+    <circle cx="648" cy="560" r="14" fill="#dc2626"/>
+    <text x="648" y="565" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">6</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile Content starts after header safe area -->
+    <!-- Title -->
+    <text x="20" y="105" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#374151">Rebrand CLI</text>
+
+    <!-- Vertical Flow Steps -->
+    <rect x="15" y="120" width="330" height="70" rx="6" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="25" y="145" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">1. Run Command</text>
+    <text x="25" y="170" font-family="monospace" font-size="14" fill="#22c55e">npm run rebrand</text>
+    <!-- Mobile Callout 1 -->
+    <circle cx="330" cy="145" r="14" fill="#dc2626"/>
+    <text x="330" y="150" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">1</text>
+
+    <!-- Arrow -->
+    <line x1="180" y1="190" x2="180" y2="210" stroke="#8b5cf6" stroke-width="2"/>
+    <polygon points="175,210 180,220 185,210" fill="#8b5cf6"/>
+
+    <rect x="15" y="225" width="330" height="70" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="25" y="250" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">2. Auto-Detect Config</text>
+    <text x="25" y="275" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Scans project files</text>
+    <!-- Mobile Callout 2 -->
+    <circle cx="330" cy="250" r="14" fill="#dc2626"/>
+    <text x="330" y="255" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">2</text>
+
+    <!-- Arrow -->
+    <line x1="180" y1="295" x2="180" y2="315" stroke="#8b5cf6" stroke-width="2"/>
+    <polygon points="175,315 180,325 185,315" fill="#8b5cf6"/>
+
+    <rect x="15" y="330" width="330" height="70" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="25" y="355" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">3. Transform Files</text>
+    <text x="25" y="380" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Updates 12+ config files</text>
+    <!-- Mobile Callout 3 -->
+    <circle cx="330" cy="355" r="14" fill="#dc2626"/>
+    <text x="330" y="360" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">3</text>
+
+    <!-- Arrow -->
+    <line x1="180" y1="400" x2="180" y2="420" stroke="#8b5cf6" stroke-width="2"/>
+    <polygon points="175,420 180,430 185,420" fill="#8b5cf6"/>
+
+    <!-- Validation Summary -->
+    <rect x="15" y="435" width="330" height="90" rx="6" fill="#f5f0e6" stroke="#22c55e" stroke-width="2"/>
+    <text x="25" y="460" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">4. Validate</text>
+    <text x="25" y="485" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">✓ TypeScript OK</text>
+    <text x="25" y="510" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e">✓ References updated</text>
+    <!-- Mobile Callout 4 -->
+    <circle cx="330" cy="475" r="14" fill="#dc2626"/>
+    <text x="330" y="480" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">4</text>
+
+    <!-- Test Infrastructure Note -->
+    <rect x="15" y="540" width="330" height="80" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="25" y="565" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Test Infrastructure</text>
+    <text x="25" y="590" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Mock system included</text>
+    <text x="25" y="610" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">No external deps needed</text>
+    <!-- Mobile Callout 5 -->
+    <circle cx="330" cy="580" r="14" fill="#dc2626"/>
+    <text x="330" y="585" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">5</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+  </g>
+
+  <!-- ANNOTATIONS -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Column 1: US-001 Rebrand Command -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">1</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Automated Rebranding</text>
+      <text x="40" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Single command transforms fork to branded project.</text>
+      <a href="#US-001"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">US-001</text></a>
+      <a href="#FR-001"><rect x="101" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-001</text></a>
+      <a href="#FR-002"><rect x="162" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-002</text></a>
+    </g>
+
+    <!-- Column 2: Config Detection -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">2</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Configuration Detection</text>
+      <text x="40" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Auto-detect project settings and replacement targets.</text>
+      <a href="#US-001"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">US-001</text></a>
+      <a href="#FR-003"><rect x="101" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-003</text></a>
+      <a href="#FR-004"><rect x="162" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-004</text></a>
+    </g>
+
+    <!-- Column 3: File Transformation -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">3</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">File Transformation</text>
+      <text x="40" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Bulk update config files with new project name.</text>
+      <a href="#US-001"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">US-001</text></a>
+      <a href="#FR-005"><rect x="101" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-005</text></a>
+      <a href="#FR-006"><rect x="162" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-006</text></a>
+    </g>
+
+    <!-- Column 4: Config Files -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">4</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Configuration Scope</text>
+      <text x="40" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">All key project files automatically updated.</text>
+      <a href="#US-001"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">US-001</text></a>
+      <a href="#SC-002"><rect x="101" y="48" width="55" height="22" rx="4" fill="#ea580c"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">SC-002</text></a>
+    </g>
+
+    <!-- Row 2: Validation -->
+    <g transform="translate(20, 90)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">5</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Deployment Works Automatically</text>
+      <text x="40" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Automated checks ensure deployment-ready state.</text>
+      <a href="#US-003"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">US-003</text></a>
+      <a href="#FR-009"><rect x="101" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-009</text></a>
+      <a href="#FR-010"><rect x="162" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-010</text></a>
+      <a href="#SC-003"><rect x="223" y="48" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">SC-003</text></a>
+    </g>
+
+    <!-- Row 2 Column 2: Mock System -->
+    <g transform="translate(470, 90)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#e8d4b8" text-anchor="middle">6</text>
+      <text x="40" y="18" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">Test Infrastructure</text>
+      <text x="40" y="38" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Comprehensive mocks enable testing without externals.</text>
+      <a href="#US-002"><rect x="40" y="48" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">US-002</text></a>
+      <a href="#FR-007"><rect x="101" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-007</text></a>
+      <a href="#FR-008"><rect x="162" y="48" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">FR-008</text></a>
+      <a href="#SC-001"><rect x="223" y="48" width="55" height="22" rx="4" fill="#ea580c"/><text x="250" y="63" font-family="system-ui, sans-serif" font-size="11" fill="#e8d4b8" text-anchor="middle">SC-001</text></a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">environment setup | service configuration | rebrand automation</text>
+
+
+  <!-- SIGNATURE -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">
+    006:02 | Template Fork Experience | ScriptHammer
+  </text>
+</svg>

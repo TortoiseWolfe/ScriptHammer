@@ -1,0 +1,720 @@
+/**
+ * TypeScript Type Contracts for User Messaging System
+ * Generated: 2025-10-08
+ * For: PRP-023
+ *
+ * These types define the public API contracts for the messaging system.
+ * They are independent of database schemas and internal implementation.
+ */
+
+// =============================================================================
+// DATABASE ENTITIES (Mirror PostgreSQL schema)
+// =============================================================================
+
+export type ConnectionStatus = 'pending' | 'accepted' | 'blocked' | 'declined';
+
+export interface UserConnection {
+  id: string;
+  requester_id: string;
+  addressee_id: string;
+  status: ConnectionStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Conversation {
+  id: string;
+  participant_1_id: string | null;
+  participant_2_id: string | null;
+  last_message_at: string | null;
+  created_at: string;
+  is_group: boolean;
+  group_name: string | null;
+  created_by: string | null;
+  current_key_version: number;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  encrypted_content: string; // Base64-encoded ciphertext
+  initialization_vector: string; // Base64-encoded IV
+  sequence_number: number;
+  deleted: boolean;
+  edited: boolean;
+  edited_at: string | null;
+  delivered_at: string | null;
+  read_at: string | null;
+  created_at: string;
+  key_version: number;
+  is_system_message: boolean;
+  system_message_type: string | null;
+}
+
+export interface UserEncryptionKey {
+  id: string;
+  user_id: string;
+  public_key: JsonWebKey; // JWK format
+  encryption_salt: string | null; // Base64 Argon2 salt (NULL = legacy keys)
+  device_id: string | null;
+  expires_at: string | null;
+  revoked: boolean;
+  created_at: string;
+}
+
+export interface ConversationKey {
+  id: string;
+  conversation_id: string;
+  user_id: string;
+  encrypted_shared_secret: string;
+  key_version: number;
+  created_at: string;
+}
+
+export interface TypingIndicator {
+  id: string;
+  conversation_id: string;
+  user_id: string;
+  is_typing: boolean;
+  updated_at: string;
+}
+
+// =============================================================================
+// INDEXEDDB ENTITIES (Client-side storage)
+// =============================================================================
+
+export type QueueStatus = 'pending' | 'processing' | 'failed' | 'sent';
+
+export interface QueuedMessage {
+  id: string; // UUID
+  conversation_id: string;
+  sender_id: string; // User ID who sent the message
+  encrypted_content: string;
+  initialization_vector: string;
+  /** Plaintext — for UI rendering while queued. Client-only, never synced. */
+  content?: string;
+  /** Plaintext content for deferred encryption during sync. Client-only. */
+  plaintext_content?: string;
+  status: QueueStatus; // Queue status
+  /**
+   * Synced flag. Stored as 0/1 rather than boolean because IndexedDB does
+   * not permit booleans as index key values — Dexie's `.where('synced')
+   * .equals(0)` query never matched records written with `synced: false`,
+   * leaving getQueue() permanently returning []. That broke the offline-
+   * queue sync flow silently (T149 on firefox-msg kept finding zero
+   * messages in the DB after reconnect; run 24643471992 diagnostic
+   * confirmed `queueBefore: []` even after two offline queueMessage()
+   * calls). 0 = unsynced, 1 = synced.
+   */
+  synced: 0 | 1;
+  retries: number;
+  created_at: number; // Unix timestamp
+  sequence_number?: number; // Optional sequence number after successful send
+  /**
+   * Group-key version the content was encrypted under. Only set for group
+   * conversations; 1:1 messages leave it undefined (the messages table
+   * defaults key_version to 1). Preserved so a message queued offline under
+   * one group-key version still decrypts after a later rotation.
+   */
+  key_version?: number;
+}
+
+/**
+ * UI-layer representation of a queued message.
+ *
+ * Holds plaintext content (in memory only, never persisted) so the
+ * thread can optimistically display outgoing messages before they sync.
+ * Status is synced from the underlying {@link QueuedMessage} in IndexedDB.
+ */
+export interface PendingMessage {
+  id: string; // Same ID as the QueuedMessage
+  conversation_id: string;
+  content: string; // Decrypted plaintext (session-only)
+  status: QueueStatus;
+  retries: number;
+  created_at: string; // ISO string for sorting alongside DecryptedMessage
+}
+
+// CachedMessage is identical to Message but stored in IndexedDB
+export type CachedMessage = Message;
+
+export interface PrivateKey {
+  userId: string;
+  privateKey: CryptoKey;
+  created_at: number;
+}
+
+export interface SyncMetadata {
+  key: string; // 'last_sync_timestamp' | 'sync_in_progress' | 'queue_processing_count'
+  value: string | number | boolean;
+  updated_at: number; // Unix timestamp
+}
+
+// =============================================================================
+// UI NAVIGATION TYPES
+// =============================================================================
+
+/**
+ * Tab options for the UnifiedSidebar component
+ * Feature 038: Consolidated to 2 tabs - UserSearch now inside ConnectionManager
+ * @see Feature 037 - Unified Messaging Sidebar
+ */
+export type SidebarTab = 'chats' | 'connections';
+
+// =============================================================================
+// APPLICATION TYPES (UI/Business Logic)
+// =============================================================================
+
+export interface DecryptedMessage {
+  id: string;
+  conversation_id: string;
+  sender_id: string;
+  content: string; // Decrypted plaintext
+  sequence_number: number;
+  deleted: boolean;
+  edited: boolean;
+  edited_at: string | null;
+  delivered_at: string | null;
+  read_at: string | null;
+  created_at: string;
+  isOwn: boolean; // Convenience flag
+  senderName: string; // From user profile
+  /** True if message could not be decrypted (e.g., encrypted with old/revoked keys) */
+  decryptionError?: boolean;
+}
+
+export interface ConversationWithParticipants extends Conversation {
+  participants: {
+    participant_1: UserProfile;
+    participant_2: UserProfile;
+  };
+  unread_count: number;
+  last_message_preview: string | null;
+}
+
+export interface UserProfile {
+  id: string;
+  username?: string | null; // Optional - removed from UI in Feature 036
+  display_name: string | null;
+  avatar_url: string | null;
+}
+
+export interface ConnectionRequest {
+  connection: UserConnection;
+  requester: UserProfile;
+  addressee: UserProfile;
+}
+
+// =============================================================================
+// SERVICE LAYER INPUTS
+// =============================================================================
+
+export interface SendMessageInput {
+  conversation_id: string;
+  content: string; // Plaintext (will be encrypted)
+}
+
+export interface EditMessageInput {
+  message_id: string;
+  new_content: string; // Plaintext (will be re-encrypted)
+}
+
+export interface DeleteMessageInput {
+  message_id: string;
+}
+
+export interface SendFriendRequestInput {
+  addressee_id: string; // User ID to send request to
+}
+
+export interface RespondToRequestInput {
+  connection_id: string;
+  action: 'accept' | 'decline' | 'block';
+}
+
+export interface SearchUsersInput {
+  query: string; // Email or username (exact match)
+  limit?: number;
+}
+
+// =============================================================================
+// SERVICE LAYER OUTPUTS
+// =============================================================================
+
+export interface SendMessageResult {
+  message: Message; // Encrypted version stored in DB
+  queued: boolean; // True if offline and queued
+}
+
+export interface MessageHistory {
+  messages: DecryptedMessage[];
+  has_more: boolean;
+  cursor: number | null; // sequence_number for pagination
+}
+
+export interface ConnectionList {
+  pending_sent: ConnectionRequest[];
+  pending_received: ConnectionRequest[];
+  accepted: ConnectionRequest[];
+  blocked: ConnectionRequest[];
+}
+
+export interface SearchUsersResult {
+  users: UserProfile[];
+  already_connected: string[]; // user_ids already connected
+}
+
+// =============================================================================
+// CRYPTO TYPES
+// =============================================================================
+
+export interface KeyDerivationParams {
+  password: string;
+  salt: Uint8Array; // 16 bytes
+}
+
+export interface DerivedKeyPair {
+  privateKey: CryptoKey; // ECDH P-256, never persisted
+  publicKey: CryptoKey; // ECDH P-256
+  publicKeyJwk: JsonWebKey; // For Supabase storage
+  salt: string; // Base64-encoded for storage
+}
+
+export interface EncryptedPayload {
+  ciphertext: string; // Base64-encoded
+  iv: string; // Base64-encoded initialization vector
+}
+
+export interface KeyPair {
+  publicKey: CryptoKey;
+  privateKey: CryptoKey;
+}
+
+export interface SharedSecret {
+  key: CryptoKey; // AES-GCM key derived from ECDH
+  derived_at: number; // Unix timestamp
+}
+
+// =============================================================================
+// REALTIME EVENT TYPES
+// =============================================================================
+
+export interface RealtimeNewMessagePayload {
+  new: Message;
+}
+
+export interface RealtimeMessageUpdatePayload {
+  new: Message;
+  old: Message;
+}
+
+export interface RealtimeTypingPayload {
+  new: TypingIndicator;
+  old: TypingIndicator | null;
+}
+
+// =============================================================================
+// VALIDATION TYPES
+// =============================================================================
+
+export interface ValidationResult {
+  valid: boolean;
+  error?: string;
+}
+
+export interface MessageValidationRules {
+  max_length: number; // 10,000 characters
+  min_length: number; // 1 character
+  allow_empty_after_trim: boolean; // false
+}
+
+// =============================================================================
+// HOOK RETURN TYPES
+// =============================================================================
+
+export interface UseConversationRealtimeReturn {
+  messages: DecryptedMessage[];
+  loading: boolean;
+  error: Error | null;
+  sendMessage: (content: string) => Promise<void>;
+  editMessage: (message_id: string, new_content: string) => Promise<void>;
+  deleteMessage: (message_id: string) => Promise<void>;
+  loadMore: () => Promise<void>;
+  hasMore: boolean;
+}
+
+export interface UseTypingIndicatorReturn {
+  isTyping: boolean; // Other user typing
+  setTyping: (typing: boolean) => void; // Set own typing status
+}
+
+export interface UseOfflineQueueReturn {
+  queue: QueuedMessage[];
+  queueCount: number;
+  syncQueue: () => Promise<void>;
+  clearQueue: () => Promise<void>;
+}
+
+export interface UseConnectionsReturn {
+  connections: ConnectionList;
+  loading: boolean;
+  error: Error | null;
+  sendRequest: (email: string) => Promise<void>;
+  acceptRequest: (connection_id: string) => Promise<void>;
+  declineRequest: (connection_id: string) => Promise<void>;
+  blockUser: (connection_id: string) => Promise<void>;
+  searchUsers: (query: string) => Promise<SearchUsersResult>;
+}
+
+// =============================================================================
+// ERROR TYPES
+// =============================================================================
+
+export class EncryptionError extends Error {
+  constructor(
+    message: string,
+    public override cause?: unknown
+  ) {
+    super(message);
+    this.name = 'EncryptionError';
+  }
+}
+
+export class DecryptionError extends Error {
+  constructor(
+    message: string,
+    public override cause?: unknown
+  ) {
+    super(message);
+    this.name = 'DecryptionError';
+  }
+}
+
+export class ConnectionError extends Error {
+  constructor(
+    message: string,
+    public override cause?: unknown
+  ) {
+    super(message);
+    this.name = 'ConnectionError';
+  }
+}
+
+export class AuthenticationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AuthenticationError';
+  }
+}
+
+export class ValidationError extends Error {
+  constructor(
+    message: string,
+    public field?: string
+  ) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+export class KeyDerivationError extends Error {
+  constructor(
+    message: string,
+    public override cause?: unknown
+  ) {
+    super(message);
+    this.name = 'KeyDerivationError';
+  }
+}
+
+export class KeyMismatchError extends Error {
+  constructor(
+    message: string = "Incorrect password. The encryption key doesn't match. Please try again."
+  ) {
+    super(message);
+    this.name = 'KeyMismatchError';
+  }
+}
+
+export class MigrationError extends Error {
+  constructor(
+    message: string,
+    public override cause?: unknown
+  ) {
+    super(message);
+    this.name = 'MigrationError';
+  }
+}
+
+export class EncryptionLockedError extends Error {
+  constructor(
+    message: string = 'Encryption keys are not available. Please sign in again to unlock messaging.'
+  ) {
+    super(message);
+    this.name = 'EncryptionLockedError';
+  }
+}
+
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+export const MESSAGE_CONSTRAINTS = {
+  MAX_LENGTH: 10000,
+  MIN_LENGTH: 1,
+  EDIT_WINDOW_MINUTES: 15,
+  DELETE_WINDOW_MINUTES: 15,
+} as const;
+
+export const CRYPTO_PARAMS = {
+  ALGORITHM: 'ECDH',
+  CURVE: 'P-256',
+  AES_ALGORITHM: 'AES-GCM',
+  AES_KEY_LENGTH: 256,
+  IV_LENGTH_BYTES: 12, // 96 bits
+} as const;
+
+/**
+ * Argon2 configuration (OWASP recommended for password hashing)
+ * Per FR-001: Argon2id with memory=65536 (64MB), timeCost=3, parallelism=4, hashLength=32
+ */
+export const ARGON2_CONFIG = {
+  TYPE: 'argon2id', // Hybrid of argon2i and argon2d (best for passwords)
+  MEMORY_COST: 65536, // 64 MB
+  TIME_COST: 3, // 3 iterations
+  PARALLELISM: 4, // 4 parallel lanes
+  HASH_LENGTH: 32, // 256 bits for P-256 seed
+  SALT_LENGTH: 16, // 16 bytes
+} as const;
+
+export const OFFLINE_QUEUE_CONFIG = {
+  MAX_RETRIES: 5,
+  BACKOFF_MULTIPLIER: 2, // Exponential: 1s, 2s, 4s, 8s, 16s
+  INITIAL_DELAY_MS: 1000,
+} as const;
+
+export const REALTIME_CONFIG = {
+  TYPING_DEBOUNCE_MS: 3000,
+  TYPING_EXPIRE_SECONDS: 5,
+  MESSAGE_DELIVERY_TIMEOUT_MS: 500,
+} as const;
+
+export const CACHE_CONFIG = {
+  MAX_MESSAGES_PER_CONVERSATION: 1000,
+  MESSAGE_RETENTION_DAYS: 30,
+  PAGINATION_PAGE_SIZE: 50,
+} as const;
+
+// =============================================================================
+// GROUP CHAT TYPES (Feature 010)
+// =============================================================================
+
+/**
+ * Group conversation - has is_group=true, group_name, created_by
+ */
+export interface GroupConversation {
+  id: string;
+  is_group: true;
+  group_name: string | null;
+  created_by: string;
+  current_key_version: number;
+  last_message_at: string | null;
+  created_at: string;
+}
+
+/**
+ * Direct (1-to-1) conversation - has participant_1_id, participant_2_id
+ */
+export interface DirectConversation {
+  id: string;
+  is_group: false;
+  participant_1_id: string;
+  participant_2_id: string;
+  last_message_at: string | null;
+  created_at: string;
+}
+
+/**
+ * Union type for all conversation types
+ */
+export type ConversationType = GroupConversation | DirectConversation;
+
+/**
+ * Member role in a group conversation
+ */
+export type MemberRole = 'owner' | 'member';
+
+/**
+ * Key distribution status for group members
+ */
+export type KeyStatus = 'active' | 'pending';
+
+/**
+ * Junction table linking users to group conversations
+ */
+export interface ConversationMember {
+  id: string;
+  conversation_id: string;
+  user_id: string;
+  role: MemberRole;
+  joined_at: string;
+  left_at: string | null;
+  key_version_joined: number;
+  key_status: KeyStatus;
+  archived: boolean;
+  muted: boolean;
+  profile?: UserProfile;
+}
+
+/**
+ * Encrypted symmetric group key stored per member per version
+ */
+export interface GroupKey {
+  id: string;
+  conversation_id: string;
+  user_id: string;
+  key_version: number;
+  encrypted_key: string; // Base64(IV || Ciphertext || AuthTag)
+  created_at: string;
+  created_by: string;
+}
+
+/**
+ * System message types for group events
+ */
+export type SystemMessageType =
+  | 'member_joined'
+  | 'member_left'
+  | 'member_removed'
+  | 'group_created'
+  | 'group_renamed'
+  | 'ownership_transferred';
+
+/**
+ * Data payload for system messages
+ */
+export interface SystemMessageData {
+  type: SystemMessageType;
+  actor_id: string;
+  target_id?: string;
+  old_value?: string;
+  new_value?: string;
+}
+
+/**
+ * Input for creating a new group
+ */
+export interface CreateGroupInput {
+  name?: string;
+  member_ids: string[]; // User IDs to add (excluding creator)
+}
+
+/**
+ * Input for adding members to a group
+ */
+export interface AddMembersInput {
+  conversation_id: string;
+  member_ids: string[];
+}
+
+/**
+ * Result of adding members
+ */
+export interface AddMembersResult {
+  added: string[]; // Successfully added member IDs
+  pending: string[]; // Members with pending key distribution
+  new_key_version: number;
+}
+
+/**
+ * Input for transferring group ownership
+ */
+export interface TransferOwnershipInput {
+  conversation_id: string;
+  new_owner_id: string;
+}
+
+/**
+ * Input for upgrading 1-to-1 to group
+ */
+export interface UpgradeToGroupInput {
+  conversation_id: string;
+  name?: string;
+  member_ids: string[]; // New members to add
+}
+
+/**
+ * Extended conversation for groups with member list
+ */
+export interface GroupConversationWithMembers extends GroupConversation {
+  members: ConversationMember[];
+  unread_count: number;
+  last_message_preview: string | null;
+}
+
+/**
+ * Group key cache entry
+ */
+export interface CachedGroupKey {
+  key: CryptoKey;
+  version: number;
+  cached_at: number;
+}
+
+// =============================================================================
+// GROUP CHAT CONSTANTS
+// =============================================================================
+
+export const GROUP_CONSTRAINTS = {
+  MIN_MEMBERS: 2, // At creation
+  MAX_MEMBERS: 200,
+  MAX_NAME_LENGTH: 100,
+  KEY_DISTRIBUTION_BATCH_SIZE: 50,
+  KEY_DISTRIBUTION_RETRY_COUNT: 3,
+  KEY_DISTRIBUTION_RETRY_DELAYS: [1000, 2000, 4000], // ms
+} as const;
+
+export const GROUP_KEY_CACHE_CONFIG = {
+  MAX_KEYS: 50, // LRU eviction
+  TTL_MS: 0, // No expiry (cleared on logout)
+} as const;
+
+// =============================================================================
+// GROUP CHAT ERRORS
+// =============================================================================
+
+export class GroupError extends Error {
+  constructor(
+    message: string,
+    public override cause?: unknown
+  ) {
+    super(message);
+    this.name = 'GroupError';
+  }
+}
+
+export class GroupKeyError extends Error {
+  constructor(
+    message: string,
+    public override cause?: unknown
+  ) {
+    super(message);
+    this.name = 'GroupKeyError';
+  }
+}
+
+export class MembershipError extends Error {
+  constructor(
+    message: string,
+    public code?:
+      | 'NOT_MEMBER'
+      | 'NOT_OWNER'
+      | 'ALREADY_MEMBER'
+      | 'NOT_CONNECTED'
+      | 'AT_CAPACITY'
+  ) {
+    super(message);
+    this.name = 'MembershipError';
+  }
+}

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">CAPTAIN SHIP CREW - /game (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+    <rect x="400" y="3" width="70" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="435" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Home</text>
+
+    <!-- Compact header -->
+    <text x="640" y="114" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="#1f2937">Captain, Ship &amp; Crew</text>
+    <text x="640" y="140" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Roll for your ship, captain, and crew!</text>
+
+    <!-- 2-col game layout: game area left (2 cols) + rules right (1 col) -->
+    <!-- Game area -->
+    <rect x="40" y="166" width="820" height="440" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="60" y="194" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">DICE AREA</text>
+
+    <!-- 5 dice (one set for player) -->
+    <g transform="translate(60, 214)">
+      <rect x="0"   y="0" width="80" height="80" rx="8" fill="#f5f0e6" stroke="#1f2937" stroke-width="2"/>
+      <text x="40" y="52" text-anchor="middle" font-family="system-ui, sans-serif" font-size="40" font-weight="700" fill="#1f2937">6</text>
+      <text x="40" y="108" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Ship ✓</text>
+
+      <rect x="96"  y="0" width="80" height="80" rx="8" fill="#f5f0e6" stroke="#1f2937" stroke-width="2"/>
+      <text x="136" y="52" text-anchor="middle" font-family="system-ui, sans-serif" font-size="40" font-weight="700" fill="#1f2937">5</text>
+      <text x="136" y="108" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Captain ✓</text>
+
+      <rect x="192" y="0" width="80" height="80" rx="8" fill="#f5f0e6" stroke="#1f2937" stroke-width="2"/>
+      <text x="232" y="52" text-anchor="middle" font-family="system-ui, sans-serif" font-size="40" font-weight="700" fill="#1f2937">4</text>
+      <text x="232" y="108" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Crew ✓</text>
+
+      <rect x="288" y="0" width="80" height="80" rx="8" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="4 2"/>
+      <text x="328" y="52" text-anchor="middle" font-family="system-ui, sans-serif" font-size="40" font-weight="700" fill="#8b5cf6">?</text>
+      <text x="328" y="108" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6">Cargo</text>
+
+      <rect x="384" y="0" width="80" height="80" rx="8" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="4 2"/>
+      <text x="424" y="52" text-anchor="middle" font-family="system-ui, sans-serif" font-size="40" font-weight="700" fill="#8b5cf6">?</text>
+      <text x="424" y="108" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6">Cargo</text>
+    </g>
+
+    <!-- Action buttons -->
+    <rect x="60" y="360" width="180" height="48" rx="6" fill="#8b5cf6"/>
+    <text x="150" y="390" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#e8d4b8">Roll (2 left)</text>
+    <rect x="260" y="360" width="180" height="48" rx="6" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="350" y="390" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#8b5cf6">Hold</text>
+    <rect x="460" y="360" width="180" height="48" rx="6" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="550" y="390" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#8b5cf6">End Turn</text>
+
+    <!-- Score board -->
+    <rect x="60" y="432" width="760" height="156" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="80" y="458" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">SCOREBOARD</text>
+    <text x="80" y="490" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#1f2937">You</text>
+    <text x="200" y="490" font-family="system-ui, sans-serif" font-size="16" fill="#1f2937">Round 2 · Cargo: 0</text>
+    <text x="80" y="522" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#1f2937">NPC</text>
+    <text x="200" y="522" font-family="system-ui, sans-serif" font-size="16" fill="#1f2937">Round 1 · Cargo: 9</text>
+    <text x="80" y="566" font-family="system-ui, sans-serif" font-size="16" font-weight="600" fill="#4b5563">Status: Rolling...</text>
+
+    <!-- Rules sidebar (sticky on real page) -->
+    <rect x="880" y="166" width="380" height="440" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="900" y="194" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">How to Play</text>
+    <text x="900" y="224" font-family="system-ui, sans-serif" font-size="14" fill="#374151"><tspan font-weight="700" fill="#8b5cf6">1.</tspan> Roll five dice to get a Ship (6),</text>
+    <text x="900" y="242" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Captain (5), and Crew (4) in order</text>
+    <text x="900" y="274" font-family="system-ui, sans-serif" font-size="14" fill="#374151"><tspan font-weight="700" fill="#8b5cf6">2.</tspan> Remaining 2 dice = cargo score</text>
+    <text x="900" y="306" font-family="system-ui, sans-serif" font-size="14" fill="#374151"><tspan font-weight="700" fill="#8b5cf6">3.</tspan> Three rolls per turn</text>
+    <text x="900" y="338" font-family="system-ui, sans-serif" font-size="14" fill="#374151"><tspan font-weight="700" fill="#8b5cf6">4.</tspan> Beat the NPC to win!</text>
+
+    <line x1="900" y1="368" x2="1240" y2="368" stroke="#b8a080"/>
+    <text x="900" y="392" font-family="system-ui, sans-serif" font-size="14" fill="#374151"><tspan font-weight="700">Tip:</tspan> Higher cargo scores win</text>
+    <text x="900" y="412" font-family="system-ui, sans-serif" font-size="14" fill="#374151">rounds.</text>
+    <text x="900" y="442" font-family="system-ui, sans-serif" font-size="14" fill="#374151"><tspan font-weight="700">Tie:</tspan> Cargo sums determine</text>
+    <text x="900" y="462" font-family="system-ui, sans-serif" font-size="14" fill="#374151">the winner.</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <g class="callout"><circle cx="640" cy="114" r="14" fill="#dc2626"/><text x="640" y="119" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="456" cy="254" r="14" fill="#dc2626"/><text x="456" y="259" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="660" cy="384" r="14" fill="#dc2626"/><text x="660" y="389" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="1060" cy="190" r="14" fill="#dc2626"/><text x="1060" y="195" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+    <text x="180" y="112" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#1f2937">Captain, Ship &amp; Crew</text>
+    <text x="180" y="134" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Roll to win!</text>
+
+    <!-- Mobile dice grid 5-across compact -->
+    <g transform="translate(16, 158)">
+      <rect x="0"  y="0" width="58" height="58" rx="6" fill="#f5f0e6" stroke="#1f2937" stroke-width="2"/>
+      <text x="29" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#1f2937">6</text>
+      <rect x="66" y="0" width="58" height="58" rx="6" fill="#f5f0e6" stroke="#1f2937" stroke-width="2"/>
+      <text x="95" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#1f2937">5</text>
+      <rect x="132" y="0" width="58" height="58" rx="6" fill="#f5f0e6" stroke="#1f2937" stroke-width="2"/>
+      <text x="161" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#1f2937">4</text>
+      <rect x="198" y="0" width="58" height="58" rx="6" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="3 2"/>
+      <text x="227" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#8b5cf6">?</text>
+      <rect x="264" y="0" width="58" height="58" rx="6" fill="#e8d4b8" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="3 2"/>
+      <text x="293" y="40" text-anchor="middle" font-family="system-ui, sans-serif" font-size="26" font-weight="700" fill="#8b5cf6">?</text>
+    </g>
+
+    <text x="16" y="234" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Ship ✓ · Captain ✓ · Crew ✓</text>
+
+    <rect x="16" y="252" width="328" height="40" rx="6" fill="#8b5cf6"/>
+    <text x="180" y="278" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8" font-weight="600">Roll (2 left)</text>
+    <rect x="16" y="298" width="156" height="40" rx="6" fill="#f5f0e6" stroke="#8b5cf6"/>
+    <text x="94" y="324" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">Hold</text>
+    <rect x="188" y="298" width="156" height="40" rx="6" fill="#f5f0e6" stroke="#8b5cf6"/>
+    <text x="266" y="324" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">End Turn</text>
+
+    <rect x="16" y="352" width="328" height="120" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="28" y="374" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">SCOREBOARD</text>
+    <text x="28" y="400" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">You · Round 2 · Cargo: 0</text>
+    <text x="28" y="424" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">NPC · Round 1 · Cargo: 9</text>
+    <text x="28" y="452" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Status: Rolling...</text>
+
+    <!-- Rules collapsed (accordion-style summary) -->
+    <rect x="16" y="488" width="328" height="40" rx="4" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="28" y="514" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">▶ How to Play</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="178" cy="188" r="11" fill="#dc2626"/><text x="178" y="193" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="180" cy="272" r="11" fill="#dc2626"/><text x="180" y="277" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Compact header</text>
+      <a href="#us-001" transform="translate(170, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Small h1 (text-3xl) + tagline. Less vertical</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">space than other pages — game is the point.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">5-dice game state</text>
+      <a href="#us-002" transform="translate(190, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">CaptainShipCrewWithNPC organism (dynamic</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">import, SSR off). Ship/Captain/Crew + cargo dice.</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Roll / Hold / End Turn</text>
+      <a href="#us-003" transform="translate(240, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">3 rolls per turn. Button states track remaining</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">rolls and which dice are held.</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Rules sidebar (sticky)</text>
+      <a href="#us-004" transform="translate(240, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">lg:col-span-1 sticky panel — "How to Play"</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">numbered list. Collapses to accordion on mobile.</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/game/page.tsx — thin page wrapping the CaptainShipCrewWithNPC organism.</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Dynamic import keeps the game JS out of initial bundle. 2-col layout (lg: grid-cols-3).</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:17 | Game (as-is /game) | ScriptHammer</text>
+</svg>

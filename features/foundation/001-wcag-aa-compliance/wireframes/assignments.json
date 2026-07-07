@@ -1,0 +1,57 @@
+{
+  "feature": "001-wcag-aa-compliance",
+  "plannedAt": "2026-01-13T19:10:00Z",
+  "svgCount": 3,
+  "assignments": [
+    {
+      "svg": "01-accessibility-dashboard.svg",
+      "focus": "Stakeholder dashboard showing overall compliance score, per-page breakdown, historical trends, and drill-down to specific violations",
+      "userStories": ["US-9"],
+      "requirements": ["FR-032", "FR-033", "FR-034", "FR-035"],
+      "successCriteria": ["SC-001", "SC-010"],
+      "mode": "new"
+    },
+    {
+      "svg": "02-cicd-pipeline-integration.svg",
+      "focus": "Developer view of CI/CD accessibility testing flow showing build pass/fail states, violation reports, and remediation guidance",
+      "userStories": ["US-1", "US-8"],
+      "requirements": [
+        "FR-001",
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-028",
+        "FR-029",
+        "FR-030",
+        "FR-031"
+      ],
+      "successCriteria": ["SC-008", "SC-009"],
+      "mode": "new"
+    },
+    {
+      "svg": "03-accessibility-controls-overlay.svg",
+      "focus": "End-user accessibility controls showing pause animations, focus indicators, time limit removal, and AAA-compliant UI elements",
+      "userStories": ["US-2", "US-3", "US-4", "US-5", "US-6", "US-7"],
+      "requirements": [
+        "FR-006",
+        "FR-007",
+        "FR-009",
+        "FR-011",
+        "FR-014",
+        "FR-016",
+        "FR-024",
+        "FR-025"
+      ],
+      "successCriteria": [
+        "SC-002",
+        "SC-003",
+        "SC-004",
+        "SC-005",
+        "SC-006",
+        "SC-007"
+      ],
+      "mode": "new"
+    }
+  ]
+}

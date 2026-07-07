@@ -1,0 +1,42 @@
+{
+  "feature": "017-colorblind-mode",
+  "plannedAt": "2026-01-14T20:36:46Z",
+  "svgCount": 2,
+  "assignments": [
+    {
+      "svg": "01-colorblind-settings.svg",
+      "focus": "Colorblind mode settings panel. Shows dropdown/radio selector for 8 colorblind types (Protanopia, Protanomaly, Deuteranopia, Deuteranomaly, Tritanopia, Tritanomaly, Achromatopsia, Achromatomaly) plus high-contrast mode. Each type has clear description. Toggle for pattern overlays. Persistence indicator.",
+      "userStories": [],
+      "requirements": [
+        "FR-001",
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-006",
+        "FR-007",
+        "FR-008",
+        "FR-009",
+        "FR-010",
+        "FR-011",
+        "FR-012",
+        "FR-013"
+      ],
+      "mode": "new"
+    },
+    {
+      "svg": "02-colorblind-preview.svg",
+      "focus": "Simulation mode and status indicator examples. Shows before/after comparison of UI elements (success/error/warning/info states) with colorblind adjustments applied. Pattern overlay examples. Theme compatibility demonstration (light/dark with colorblind mode).",
+      "userStories": [],
+      "requirements": [
+        "FR-014",
+        "FR-015",
+        "FR-016",
+        "FR-017",
+        "FR-018",
+        "FR-019"
+      ],
+      "mode": "new"
+    }
+  ]
+}

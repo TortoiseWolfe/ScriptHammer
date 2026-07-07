@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#c7ddf5"/><stop offset="100%" stop-color="#b8d4f0"/></linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">ADMIN MESSAGING PAGE - /admin/messaging (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <rect x="0" y="60" width="1280" height="44" fill="#dcc8a8"/>
+    <text x="60" y="88" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Overview</text>
+    <text x="156" y="88" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Users</text>
+    <rect x="196" y="68" width="104" height="28" rx="4" fill="#8b5cf6"/>
+    <text x="248" y="88" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Messaging</text>
+    <text x="352" y="88" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Audit</text>
+    <text x="416" y="88" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Payments</text>
+
+    <text x="40" y="136" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#1f2937">Messaging Overview</text>
+
+    <!-- Stats -->
+    <rect x="40" y="160" width="220" height="64" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="56" y="184" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">MESSAGES</text>
+    <text x="56" y="212" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1f2937">38,421</text>
+    <rect x="270" y="160" width="220" height="64" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="286" y="184" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">CONVERSATIONS</text>
+    <text x="286" y="212" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1f2937">2,108</text>
+    <rect x="500" y="160" width="220" height="64" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="516" y="184" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">GROUPS</text>
+    <text x="516" y="212" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1f2937">184</text>
+    <rect x="730" y="160" width="220" height="64" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="746" y="184" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">ENCRYPTED</text>
+    <text x="746" y="212" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1f2937">100% 🔒</text>
+    <rect x="960" y="160" width="220" height="64" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="976" y="184" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">RANGE</text>
+    <text x="976" y="208" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">03-23 → 04-22  ▾</text>
+
+    <!-- Trends chart -->
+    <rect x="40" y="244" width="1190" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="56" y="270" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">MESSAGE VOLUME - 30 DAY TREND</text>
+    <!-- Bars -->
+    <g transform="translate(56, 300)">
+      <rect x="0" y="80" width="28" height="50" fill="#8b5cf6"/>
+      <rect x="36" y="70" width="28" height="60" fill="#8b5cf6"/>
+      <rect x="72" y="88" width="28" height="42" fill="#8b5cf6"/>
+      <rect x="108" y="60" width="28" height="70" fill="#8b5cf6"/>
+      <rect x="144" y="52" width="28" height="78" fill="#8b5cf6"/>
+      <rect x="180" y="40" width="28" height="90" fill="#8b5cf6"/>
+      <rect x="216" y="64" width="28" height="66" fill="#8b5cf6"/>
+      <rect x="252" y="48" width="28" height="82" fill="#8b5cf6"/>
+      <rect x="288" y="32" width="28" height="98" fill="#8b5cf6"/>
+      <rect x="324" y="28" width="28" height="102" fill="#8b5cf6"/>
+      <rect x="360" y="40" width="28" height="90" fill="#8b5cf6"/>
+      <rect x="396" y="24" width="28" height="106" fill="#8b5cf6"/>
+      <rect x="432" y="16" width="28" height="114" fill="#8b5cf6"/>
+      <rect x="468" y="22" width="28" height="108" fill="#8b5cf6"/>
+      <rect x="504" y="10" width="28" height="120" fill="#8b5cf6"/>
+      <rect x="540" y="6" width="28" height="124" fill="#8b5cf6"/>
+      <rect x="576" y="14" width="28" height="116" fill="#8b5cf6"/>
+      <rect x="612" y="2" width="28" height="128" fill="#8b5cf6"/>
+      <line x1="0" y1="130" x2="1120" y2="130" stroke="#6b7280"/>
+      <text x="0" y="150" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Mar 23</text>
+      <text x="1120" y="150" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Apr 22</text>
+    </g>
+
+    <!-- Conversation list -->
+    <rect x="40" y="484" width="1190" height="130" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="56" y="510" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">CONVERSATIONS</text>
+    <text x="56" y="536" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">alice@example.com ↔ ben@company.co · 128 msgs · last 2m ago</text>
+    <text x="56" y="558" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">team-wireframes (group, 8 members) · 412 msgs · last 5m ago</text>
+    <text x="56" y="580" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">c.diaz@mail.net ↔ e.vance@…  · 64 msgs · last 1h ago</text>
+    <text x="1210" y="604" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">← Prev  1  2  3  …  Next →</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <g class="callout"><circle cx="320" cy="88" r="14" fill="#dc2626"/><text x="320" y="93" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="840" cy="212" r="14" fill="#dc2626"/><text x="840" y="217" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="56" cy="350" r="14" fill="#dc2626"/><text x="56" y="355" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="1100" cy="558" r="14" fill="#dc2626"/><text x="1100" y="563" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <text x="180" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1f2937">Messaging</text>
+
+    <rect x="0" y="132" width="360" height="40" fill="#dcc8a8"/>
+    <text x="40" y="157" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Overview</text>
+    <text x="104" y="157" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Users</text>
+    <rect x="148" y="140" width="72" height="24" rx="4" fill="#8b5cf6"/>
+    <text x="184" y="157" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Msg</text>
+    <text x="244" y="157" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Audit</text>
+    <text x="296" y="157" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Pay</text>
+
+    <rect x="16" y="188" width="160" height="64" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="32" y="212" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">MSGS</text>
+    <text x="32" y="240" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1f2937">38,421</text>
+    <rect x="184" y="188" width="160" height="64" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="200" y="212" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">CONV</text>
+    <text x="200" y="240" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1f2937">2,108</text>
+
+    <rect x="16" y="268" width="328" height="160" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="32" y="292" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">VOLUME TREND</text>
+    <g transform="translate(32, 320)">
+      <rect x="0" y="60" width="14" height="40" fill="#8b5cf6"/>
+      <rect x="20" y="50" width="14" height="50" fill="#8b5cf6"/>
+      <rect x="40" y="40" width="14" height="60" fill="#8b5cf6"/>
+      <rect x="60" y="30" width="14" height="70" fill="#8b5cf6"/>
+      <rect x="80" y="20" width="14" height="80" fill="#8b5cf6"/>
+      <rect x="100" y="10" width="14" height="90" fill="#8b5cf6"/>
+      <rect x="120" y="20" width="14" height="80" fill="#8b5cf6"/>
+      <rect x="140" y="30" width="14" height="70" fill="#8b5cf6"/>
+      <rect x="160" y="15" width="14" height="85" fill="#8b5cf6"/>
+      <rect x="180" y="6" width="14" height="94" fill="#8b5cf6"/>
+      <rect x="200" y="12" width="14" height="88" fill="#8b5cf6"/>
+      <rect x="220" y="0" width="14" height="100" fill="#8b5cf6"/>
+      <rect x="240" y="8" width="14" height="92" fill="#8b5cf6"/>
+      <rect x="260" y="0" width="14" height="100" fill="#8b5cf6"/>
+      <line x1="0" y1="100" x2="300" y2="100" stroke="#6b7280"/>
+    </g>
+
+    <rect x="16" y="444" width="328" height="176" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="32" y="468" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">CONVERSATIONS</text>
+    <text x="32" y="492" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">alice ↔ ben · 128 msgs</text>
+    <text x="32" y="514" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">team-wireframes · 412 msgs</text>
+    <text x="32" y="536" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">c.diaz ↔ e.vance · 64 msgs</text>
+    <text x="180" y="604" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">← 1/43 →</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="184" cy="152" r="11" fill="#dc2626"/><text x="184" y="157" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Active tab: Messaging</text>
+      <a href="#us-001" transform="translate(260, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">AdminMessagingService returns stats, trends,</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">and paginated conversation list.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Encrypted = 100%</text>
+      <a href="#us-002" transform="translate(220, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">All msgs are E2E encrypted. Badge confirms</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">zero plaintext storage in the DB.</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Volume bar chart</text>
+      <a href="#us-003" transform="translate(200, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Daily message counts. Range-sensitive via</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">getTrends(start, end).</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Paginated list</text>
+      <a href="#us-004" transform="translate(170, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">50/page with separate convLoading state —</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">paging never re-skeletons the whole page.</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/admin/messaging/page.tsx — AdminMessagingOverview + AdminConversationList organisms.</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Admin sees metadata only (sender/recipient/count) — ciphertext never decrypted server-side.</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:36 | Admin Messaging (as-is /admin/messaging) | ScriptHammer</text>
+</svg>

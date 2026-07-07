@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4f46e5;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg-gradient)"/>
+
+  <!-- Grid pattern -->
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="white" stroke-width="0.5" opacity="0.1"/>
+  </pattern>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <!-- Lock icon background decoration -->
+  <circle cx="1050" cy="150" r="80" fill="white" opacity="0.05"/>
+  <circle cx="150" cy="500" r="60" fill="white" opacity="0.05"/>
+
+  <!-- Main Title -->
+  <text x="600" y="160" font-family="Arial, sans-serif" font-size="56" font-weight="bold" text-anchor="middle" fill="white">
+    How We Protect Your Messages
+  </text>
+
+  <!-- Subtitle -->
+  <text x="600" y="230" font-family="Arial, sans-serif" font-size="32" text-anchor="middle" fill="white" opacity="0.9">
+    End-to-End Encryption • Honest &amp; Transparent
+  </text>
+
+  <!-- Feature boxes -->
+  <g transform="translate(100, 320)">
+    <rect x="0" y="0" width="230" height="140" rx="12" fill="white" opacity="0.15"/>
+    <text x="115" y="55" font-family="Arial, sans-serif" font-size="48" text-anchor="middle" fill="white">🔒</text>
+    <text x="115" y="95" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle" fill="white">E2E Encrypted</text>
+    <text x="115" y="118" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="white" opacity="0.8">We can't read it</text>
+  </g>
+
+  <g transform="translate(360, 320)">
+    <rect x="0" y="0" width="230" height="140" rx="12" fill="white" opacity="0.15"/>
+    <text x="115" y="55" font-family="Arial, sans-serif" font-size="48" text-anchor="middle" fill="white">🔑</text>
+    <text x="115" y="95" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle" fill="white">Your Keys</text>
+    <text x="115" y="118" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="white" opacity="0.8">Password-derived</text>
+  </g>
+
+  <g transform="translate(620, 320)">
+    <rect x="0" y="0" width="230" height="140" rx="12" fill="white" opacity="0.15"/>
+    <text x="115" y="55" font-family="Arial, sans-serif" font-size="48" text-anchor="middle" fill="white">🛡️</text>
+    <text x="115" y="95" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle" fill="white">AES-256-GCM</text>
+    <text x="115" y="118" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="white" opacity="0.8">Bank-grade crypto</text>
+  </g>
+
+  <g transform="translate(880, 320)">
+    <rect x="0" y="0" width="230" height="140" rx="12" fill="white" opacity="0.15"/>
+    <text x="115" y="55" font-family="Arial, sans-serif" font-size="48" text-anchor="middle" fill="white">✓</text>
+    <text x="115" y="95" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle" fill="white">Honest Limits</text>
+    <text x="115" y="118" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="white" opacity="0.8">No hidden catches</text>
+  </g>
+
+  <!-- Comparison callout -->
+  <text x="600" y="520" font-family="Arial, sans-serif" font-size="22" text-anchor="middle" fill="white" opacity="0.85">
+    More private than Facebook, Instagram &amp; Twitter DMs
+  </text>
+
+  <!-- Bottom badge -->
+  <text x="600" y="585" font-family="Arial, sans-serif" font-size="20" text-anchor="middle" fill="white" opacity="0.6">
+    ScriptHammer Blog
+  </text>
+</svg>

@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#c7ddf5"/><stop offset="100%" stop-color="#b8d4f0"/></linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">MESSAGES - /messages (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+    <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+
+    <!-- Sidebar (left) -->
+    <rect x="16" y="70" width="320" height="560" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="32" y="98" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">Messages</text>
+
+    <!-- Tabs -->
+    <rect x="32" y="112" width="80" height="28" rx="4" fill="#8b5cf6"/>
+    <text x="72" y="131" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Chats</text>
+    <text x="132" y="131" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Requests · 2</text>
+    <text x="232" y="131" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Archived</text>
+
+    <!-- Search -->
+    <rect x="32" y="152" width="288" height="36" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="48" y="174" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Search conversations…</text>
+
+    <!-- New group CTA -->
+    <rect x="32" y="200" width="288" height="36" rx="4" fill="#f5f0e6" stroke="#8b5cf6"/>
+    <text x="176" y="223" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">+ New group</text>
+
+    <!-- Conversation list items -->
+    <rect x="16" y="252" width="320" height="64" fill="#c7ddf5"/>
+    <circle cx="52" cy="284" r="20" fill="#8b5cf6"/>
+    <text x="52" y="290" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#e8d4b8">A</text>
+    <text x="84" y="276" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Alice Hartwell</text>
+    <text x="300" y="276" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">2m</text>
+    <text x="84" y="296" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Got the PR up — ready to merge?</text>
+    <circle cx="314" cy="300" r="8" fill="#dc2626"/>
+    <text x="314" y="304" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#fff">3</text>
+
+    <rect x="16" y="316" width="320" height="64" fill="#dcc8a8"/>
+    <circle cx="52" cy="348" r="20" fill="#f59e0b"/>
+    <text x="52" y="354" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#e8d4b8">TW</text>
+    <text x="84" y="340" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">team-wireframes</text>
+    <text x="300" y="340" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">1h</text>
+    <text x="84" y="360" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Ben: shipping β6 now…</text>
+
+    <rect x="16" y="380" width="320" height="64" fill="#dcc8a8"/>
+    <circle cx="52" cy="412" r="20" fill="#22c55e"/>
+    <text x="52" y="418" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#e8d4b8">C</text>
+    <text x="84" y="404" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Carla Diaz</text>
+    <text x="300" y="404" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">yest.</text>
+    <text x="84" y="424" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Sounds good — lmk when you&apos;re free.</text>
+
+    <!-- Conversation view (right pane) -->
+    <rect x="340" y="70" width="924" height="508" fill="#e8d4b8" stroke="#b8a080"/>
+    <rect x="340" y="70" width="924" height="52" fill="#dcc8a8"/>
+    <circle cx="376" cy="96" r="18" fill="#8b5cf6"/>
+    <text x="376" y="102" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#e8d4b8">A</text>
+    <text x="404" y="92" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Alice Hartwell</text>
+    <text x="404" y="108" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">online · end-to-end encrypted 🔒</text>
+
+    <!-- Message bubbles -->
+    <rect x="380" y="156" width="280" height="48" rx="12" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="396" y="178" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Hey! Took a look at the PR—</text>
+    <text x="396" y="196" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">overall LGTM.</text>
+
+    <rect x="780" y="220" width="456" height="68" rx="12" fill="#8b5cf6"/>
+    <text x="796" y="242" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Thanks! Ready to merge? I&apos;ll run the</text>
+    <text x="796" y="260" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">e2e suite one more time first.</text>
+    <text x="796" y="278" font-family="system-ui, sans-serif" font-size="14" fill="#c7ddf5">delivered · 10:42 am</text>
+
+    <rect x="380" y="304" width="420" height="68" rx="12" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="396" y="326" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Got the PR up — ready to merge?</text>
+    <text x="396" y="344" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Please also check out 023-sidebar!</text>
+    <text x="396" y="362" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">10:44 am</text>
+
+    <!-- Composer -->
+    <rect x="340" y="520" width="924" height="56" fill="#dcc8a8" stroke="#b8a080"/>
+    <rect x="360" y="532" width="800" height="32" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="376" y="552" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Type a message…</text>
+    <rect x="1176" y="532" width="72" height="32" rx="4" fill="#8b5cf6"/>
+    <text x="1212" y="552" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Send</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <g class="callout"><circle cx="72" cy="98" r="14" fill="#dc2626"/><text x="72" y="103" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="346" cy="284" r="14" fill="#dc2626"/><text x="346" y="289" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="732" cy="108" r="14" fill="#dc2626"/><text x="732" y="113" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="1262" cy="548" r="14" fill="#dc2626"/><text x="1262" y="553" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile shows conversation view (drawer closed) -->
+    <rect x="0" y="96" width="360" height="48" fill="#dcc8a8"/>
+    <text x="20" y="124" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">☰</text>
+    <text x="180" y="124" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">Alice Hartwell</text>
+
+    <rect x="16" y="160" width="240" height="48" rx="12" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="28" y="182" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Hey! Took a look at the</text>
+    <text x="28" y="200" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">PR — overall LGTM.</text>
+
+    <rect x="104" y="220" width="240" height="64" rx="12" fill="#8b5cf6"/>
+    <text x="116" y="242" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Thanks! Ready to merge?</text>
+    <text x="116" y="260" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">I&apos;ll run e2e first.</text>
+    <text x="116" y="278" font-family="system-ui, sans-serif" font-size="14" fill="#c7ddf5">delivered · 10:42</text>
+
+    <rect x="16" y="300" width="260" height="64" rx="12" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="28" y="322" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Got the PR up — ready to</text>
+    <text x="28" y="340" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">merge? Check out 023.</text>
+    <text x="28" y="358" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">10:44 am</text>
+
+    <rect x="0" y="568" width="360" height="56" fill="#dcc8a8" stroke="#b8a080"/>
+    <rect x="16" y="580" width="256" height="32" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="28" y="600" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Message…</text>
+    <rect x="280" y="580" width="64" height="32" rx="4" fill="#8b5cf6"/>
+    <text x="312" y="600" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Send</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="20" cy="124" r="11" fill="#dc2626"/><text x="20" y="129" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">MessagesSidebar</text>
+      <a href="#us-001" transform="translate(190, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Tabs (Chats/Requests/Archived), search, new-group</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">CTA, conversation list. DaisyUI drawer.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Selected + unread badges</text>
+      <a href="#us-002" transform="translate(280, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Active conversation has primary-tinted row.</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Red badge shows unread count.</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">E2E encryption indicator</text>
+      <a href="#us-003" transform="translate(260, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">🔒 badge confirms messages are end-to-end</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">encrypted (ECDH keys from /messages/setup).</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Composer (send btn)</text>
+      <a href="#us-004" transform="translate(220, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Textarea + Send. Enqueues encrypted ciphertext</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">via offline-queue when offline.</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/messages/page.tsx — MessagingGate + EncryptionKeyGate + ConversationView/MessagesSidebar.</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">URL sync via SearchParamsReader for ?conversation= deep links. Mobile drawer closes on selection.</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:25 | Messages (as-is /messages) | ScriptHammer</text>
+</svg>

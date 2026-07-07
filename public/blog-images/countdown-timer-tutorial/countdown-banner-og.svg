@@ -1,0 +1,50 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="ogBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Bright warning/alert yellow background -->
+  <rect width="1200" height="630" fill="url(#ogBg)"/>
+
+  <!-- Main visual - big countdown display -->
+  <g transform="translate(0, 80)">
+    <!-- Giant clock emoji -->
+    <text x="600" y="120" font-size="140" text-anchor="middle">⏰</text>
+
+    <!-- Huge countdown numbers -->
+    <g transform="translate(0, 120)">
+      <!-- Days -->
+      <text x="200" y="120" font-family="monospace" font-size="110" font-weight="bold" fill="#1f2937" text-anchor="middle">92</text>
+      <text x="200" y="180" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#1f2937" text-anchor="middle">DAYS</text>
+
+      <!-- Colon -->
+      <text x="340" y="120" font-family="monospace" font-size="110" font-weight="bold" fill="#1f2937" text-anchor="middle">:</text>
+
+      <!-- Hours -->
+      <text x="480" y="120" font-family="monospace" font-size="110" font-weight="bold" fill="#1f2937" text-anchor="middle">08</text>
+      <text x="480" y="180" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#1f2937" text-anchor="middle">HOURS</text>
+
+      <!-- Colon -->
+      <text x="620" y="120" font-family="monospace" font-size="110" font-weight="bold" fill="#1f2937" text-anchor="middle">:</text>
+
+      <!-- Minutes -->
+      <text x="760" y="120" font-family="monospace" font-size="110" font-weight="bold" fill="#1f2937" text-anchor="middle">47</text>
+      <text x="760" y="180" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#1f2937" text-anchor="middle">MINS</text>
+
+      <!-- Colon -->
+      <text x="900" y="120" font-family="monospace" font-size="110" font-weight="bold" fill="#1f2937" text-anchor="middle">:</text>
+
+      <!-- Seconds -->
+      <text x="1000" y="120" font-family="monospace" font-size="110" font-weight="bold" fill="#1f2937" text-anchor="middle">23</text>
+      <text x="1000" y="180" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#1f2937" text-anchor="middle">SECS</text>
+    </g>
+
+    <!-- Bottom text -->
+    <text x="600" y="360" font-family="Arial, sans-serif" font-size="56" font-weight="bold" fill="#1f2937" text-anchor="middle">Build This Component</text>
+    <text x="600" y="430" font-family="Arial, sans-serif" font-size="42" fill="#1f2937" text-anchor="middle">React • TypeScript • TDD Tutorial</text>
+    <text x="600" y="490" font-family="Arial, sans-serif" font-size="38" fill="#7c2d12" text-anchor="middle">ScriptHammer Template</text>
+  </g>
+</svg>

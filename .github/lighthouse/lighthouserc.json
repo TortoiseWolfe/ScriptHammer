@@ -1,0 +1,42 @@
+{
+  "ci": {
+    "collect": {
+      "numberOfRuns": 3,
+      "settings": {
+        "skipAudits": ["uses-http2"],
+        "onlyCategories": [
+          "performance",
+          "accessibility",
+          "best-practices",
+          "seo",
+          "pwa"
+        ],
+        "emulatedFormFactor": "mobile",
+        "throttlingMethod": "devtools",
+        "chromeFlags": [
+          "--ignore-certificate-errors",
+          "--no-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+          "--disable-web-security",
+          "--disable-features=site-per-process",
+          "--disable-setuid-sandbox",
+          "--disable-accelerated-2d-canvas",
+          "--disable-webgl"
+        ]
+      }
+    },
+    "assert": {
+      "// note": "No preset — this is a daily/push perf DASHBOARD, not a merge gate (the job commits scores to docs/lighthouse-scores.json and runs on schedule + push-to-main). The lighthouse:no-pwa preset ships error-level per-audit assertions (errors-in-console, valid-source-maps, legacy-javascript...) that would fail every main push on a healthy site — the exact 'red check everyone ignores' problem #168 fixed. Category scores are warn-level: regressions show in the logs without failing the job. A genuine collect failure (site unreachable) still fails loudly because the step is no longer continue-on-error.",
+      "assertions": {
+        "categories:performance": ["warn", { "minScore": 0.5 }],
+        "categories:accessibility": ["warn", { "minScore": 0.8 }],
+        "categories:best-practices": ["warn", { "minScore": 0.7 }],
+        "categories:seo": ["warn", { "minScore": 0.8 }]
+      }
+    },
+    "upload": {
+      "target": "temporary-public-storage"
+    }
+  }
+}

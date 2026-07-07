@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">CREATE ACCOUNT - /sign-up (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+    <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+
+    <text x="640" y="140" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="#1f2937">Create Account</text>
+
+    <rect x="416" y="170" width="448" height="320" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="436" y="198" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Email</text>
+    <rect x="436" y="208" width="408" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="452" y="234" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">you@example.com</text>
+
+    <text x="436" y="274" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Password</text>
+    <rect x="436" y="284" width="408" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="452" y="310" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">8+ chars · upper · number · symbol</text>
+
+    <text x="436" y="350" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Confirm Password</text>
+    <rect x="436" y="360" width="408" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="452" y="386" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">••••••••</text>
+
+    <rect x="436" y="420" width="408" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="640" y="448" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Create Account</text>
+
+    <line x1="436" y1="502" x2="620" y2="502" stroke="#b8a080"/>
+    <text x="640" y="508" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">OR</text>
+    <line x1="660" y1="502" x2="844" y2="502" stroke="#b8a080"/>
+
+    <rect x="436" y="524" width="408" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="640" y="552" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Continue with GitHub</text>
+    <rect x="436" y="578" width="408" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="640" y="606" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Continue with Google</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <g class="callout"><circle cx="640" cy="120" r="14" fill="#dc2626"/><text x="640" y="125" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="900" cy="310" r="14" fill="#dc2626"/><text x="900" y="315" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="900" cy="442" r="14" fill="#dc2626"/><text x="900" y="447" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="900" cy="552" r="14" fill="#dc2626"/><text x="900" y="557" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+    <text x="180" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="#1f2937">Create Account</text>
+
+    <rect x="16" y="158" width="328" height="340" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="32" y="182" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Email</text>
+    <rect x="32" y="192" width="296" height="42" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="32" y="256" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Password</text>
+    <rect x="32" y="266" width="296" height="42" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="32" y="330" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Confirm Password</text>
+    <rect x="32" y="340" width="296" height="42" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <rect x="32" y="396" width="296" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="180" y="424" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Create Account</text>
+
+    <text x="180" y="478" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">OR</text>
+    <rect x="16" y="498" width="328" height="36" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="180" y="522" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Continue with GitHub</text>
+    <rect x="16" y="542" width="328" height="36" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="180" y="566" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Continue with Google</text>
+
+    <text x="180" y="618" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Have account? <tspan fill="#8b5cf6" text-decoration="underline">Sign in</tspan></text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="180" cy="424" r="11" fill="#dc2626"/><text x="180" y="429" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">h1 "Create Account"</text>
+      <a href="#us-001" transform="translate(210, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Centered max-w-md narrow column.</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Client component for returnUrl reading.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">SignUpForm (3 fields)</text>
+      <a href="#us-002" transform="translate(240, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Email + password + confirm password.</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Password rules: 8+ chars, upper, number, symbol.</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Submit → /verify-email</text>
+      <a href="#us-003" transform="translate(250, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">onSuccess hard-navigates to /verify-email</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">(window.location.href = '/verify-email').</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">OAuth alternative</text>
+      <a href="#us-004" transform="translate(180, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Same OAuthButtons as /sign-in. Successful OAuth</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">creates account + session in one step.</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/sign-up/page.tsx — client component, SignUpForm molecule + OAuthButtons.</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Post-submit navigation is full page reload to /verify-email (not router.push).</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:12 | Sign Up (as-is /sign-up) | ScriptHammer</text>
+</svg>

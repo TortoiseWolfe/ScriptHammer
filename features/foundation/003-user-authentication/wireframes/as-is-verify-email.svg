@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">VERIFY EMAIL - /verify-email (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+    <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+
+    <text x="640" y="140" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="#1f2937">Verify Your Email</text>
+
+    <!-- EmailVerificationNotice alert -->
+    <rect x="416" y="176" width="448" height="120" rx="8" fill="#fff7ed" stroke="#f59e0b" stroke-width="2"/>
+    <text x="440" y="206" font-family="system-ui, sans-serif" font-size="22" fill="#f59e0b">✉</text>
+    <text x="474" y="204" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">Confirmation email sent</text>
+    <text x="474" y="226" font-family="system-ui, sans-serif" font-size="14" fill="#374151">We sent a verification link to your inbox.</text>
+    <text x="474" y="246" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Click the link to activate your account.</text>
+
+    <rect x="474" y="254" width="160" height="32" rx="4" fill="#f5f0e6" stroke="#f59e0b"/>
+    <text x="554" y="274" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#f59e0b" font-weight="600">Resend email</text>
+
+    <text x="640" y="340" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Check your inbox for a verification link. Once verified,</text>
+    <text x="640" y="360" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">you'll be able to access all features.</text>
+
+    <text x="640" y="412" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" text-decoration="underline">Go to profile</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <g class="callout"><circle cx="640" cy="120" r="14" fill="#dc2626"/><text x="640" y="125" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="880" cy="204" r="14" fill="#dc2626"/><text x="880" y="209" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="650" cy="270" r="14" fill="#dc2626"/><text x="650" y="275" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="750" cy="412" r="14" fill="#dc2626"/><text x="750" y="417" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+    <text x="180" y="130" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="#1f2937">Verify Your Email</text>
+
+    <rect x="16" y="158" width="328" height="146" rx="8" fill="#fff7ed" stroke="#f59e0b" stroke-width="2"/>
+    <text x="32" y="188" font-family="system-ui, sans-serif" font-size="22" fill="#f59e0b">✉</text>
+    <text x="68" y="186" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Email sent</text>
+    <text x="32" y="214" font-family="system-ui, sans-serif" font-size="14" fill="#374151">We sent a verification</text>
+    <text x="32" y="232" font-family="system-ui, sans-serif" font-size="14" fill="#374151">link to your inbox.</text>
+    <rect x="32" y="252" width="296" height="36" rx="4" fill="#f5f0e6" stroke="#f59e0b"/>
+    <text x="180" y="276" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#f59e0b" font-weight="600">Resend email</text>
+
+    <text x="180" y="338" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Check your inbox.</text>
+    <text x="180" y="358" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Click the link to activate.</text>
+
+    <text x="180" y="418" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" text-decoration="underline">Go to profile</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="180" cy="276" r="11" fill="#dc2626"/><text x="180" y="281" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">h1 "Verify Your Email"</text>
+      <a href="#us-001" transform="translate(230, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Server component. Auth-gated in practice —</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">reached right after signup submit.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">EmailVerificationNotice</text>
+      <a href="#us-002" transform="translate(260, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Warning-style alert card. Shows email status,</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">last-sent timestamp, resend CTA.</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Resend button</text>
+      <a href="#us-003" transform="translate(140, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Re-triggers Supabase verification email. Rate-</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">limited (1/min); disabled while cooldown active.</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Profile escape hatch</text>
+      <a href="#us-004" transform="translate(210, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Link to /profile (unverified users can browse</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">with reduced perms while waiting for link).</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/verify-email/page.tsx — server component + EmailVerificationNotice molecule.</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Metadata: robots: {index: false} on most auth-gated pages (not exposed to crawlers).</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:15 | Verify Email (as-is /verify-email) | ScriptHammer</text>
+</svg>

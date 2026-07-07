@@ -1,0 +1,254 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import Script from 'next/script';
+import { useEmbedThemeColor } from '@/hooks/useEmbedThemeColor';
+import { getAccessibleEmbedColor } from '@/utils/embed-theme';
+
+// Disqus thread background (hardcoded RGB so Disqus's embed.js never sees an
+// OKLCH value it can't parse). Link text must stay legible against these.
+const DISQUS_BG_DARK = '#111827'; // rgb(17, 24, 39)
+const DISQUS_BG_LIGHT = '#ffffff'; // rgb(255, 255, 255)
+// Legible link fallbacks used when a theme's primary fails AA on the bg above
+// (issue #46 NFR-002 — many DaisyUI primaries are pale accents). Both clear
+// WCAG AA (4.5:1) on their respective bg: blue-300 9.84:1 on dark, blue-600
+// 5.17:1 on light. (The previous blue-500 #3b82f6 was only 3.68:1 — a latent
+// a11y gap this contrast work surfaced.)
+const DISQUS_LINK_FALLBACK_DARK = '#93c5fd'; // Tailwind blue-300
+const DISQUS_LINK_FALLBACK_LIGHT = '#2563eb'; // Tailwind blue-600
+
+interface DisqusCommentsProps {
+  slug: string;
+  title: string;
+  url: string;
+  shortname?: string;
+}
+
+declare global {
+  interface Window {
+    DISQUS?: any;
+    disqus_config?: any;
+  }
+}
+
+/**
+ * Disqus Comments Component
+ *
+ * IMPORTANT FIXES:
+ * 1. URL is hardcoded to scripthammer.com because environment variables
+ *    are not available during GitHub Actions static build
+ * 2. CSS overrides are applied to prevent OKLCH color parsing errors
+ *    (Disqus embed.js cannot parse modern OKLCH color format)
+ * 3. No dynamic imports - they exclude components from static builds
+ */
+export default function DisqusComments({
+  slug,
+  title,
+  url,
+  shortname = '',
+}: DisqusCommentsProps) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [scriptReady, setScriptReady] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // Theme-aware link color + dark/light scheme (issue #46). The hook
+  // re-renders on data-theme change so the injected CSS + Disqus colorScheme
+  // re-apply across all 34 DaisyUI themes. The link color uses the theme
+  // primary only when it clears WCAG AA against the Disqus bg, else a legible
+  // fallback (NFR-002) — many DaisyUI primaries are pale accents that would be
+  // illegible as link text. Disqus's embed.js can't parse OKLCH, so this is hex.
+  const { isDark: dark } = useEmbedThemeColor('p');
+  const linkColor = getAccessibleEmbedColor(
+    dark ? DISQUS_BG_DARK : DISQUS_BG_LIGHT,
+    dark ? DISQUS_LINK_FALLBACK_DARK : DISQUS_LINK_FALLBACK_LIGHT,
+    'p'
+  );
+
+  // Generate production URL - hardcoded for GitHub Actions compatibility
+  const productionUrl = url?.startsWith('http')
+    ? url
+    : `https://scripthammer.com/blog/${slug}`;
+
+  // Set up intersection observer for lazy loading
+  useEffect(() => {
+    if (!containerRef.current || !shortname) return;
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observerRef.current?.disconnect();
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    observerRef.current.observe(containerRef.current);
+
+    return () => {
+      observerRef.current?.disconnect();
+    };
+  }, [shortname]);
+
+  // Mark loaded so the script tag renders (one-shot gate).
+  useEffect(() => {
+    if (!isVisible || !shortname || isLoaded) return;
+    setIsLoaded(true);
+  }, [isVisible, shortname, isLoaded]);
+
+  // Build/refresh window.disqus_config and (re)initialize Disqus. `dark` is in
+  // the deps so a post-load theme switch rebuilds the config with the new
+  // colorScheme and calls DISQUS.reset to re-render the embed in that scheme
+  // (issue #46). The config builder must be rebuilt here — not behind the
+  // one-shot isLoaded gate above — or colorScheme would freeze at first load.
+  useEffect(() => {
+    if (!scriptReady || !isLoaded || !shortname) return;
+
+    window.disqus_config = function (this: any) {
+      this.page = this.page || {};
+      this.page.url = productionUrl;
+      this.page.identifier = slug;
+      this.page.title = title;
+      // Follow the DaisyUI dark/light split (issue #46).
+      this.page.colorScheme = dark ? 'dark' : 'light';
+    };
+
+    const initializeDisqus = () => {
+      if (window.DISQUS) {
+        try {
+          window.DISQUS.reset({
+            reload: true,
+            config: window.disqus_config,
+          });
+        } catch (error) {
+          // Silently handle errors
+        }
+      }
+    };
+
+    // Try immediately and after a delay
+    initializeDisqus();
+    const timeout = setTimeout(initializeDisqus, 1000);
+
+    return () => clearTimeout(timeout);
+  }, [scriptReady, isLoaded, shortname, slug, title, productionUrl, dark]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      // Clean up global variables
+      delete window.disqus_config;
+
+      // Remove Disqus script
+      const script = document.querySelector(
+        `script[src*="${shortname}.disqus.com/embed.js"]`
+      );
+      if (script) {
+        script.remove();
+      }
+
+      // Reset DISQUS if it exists
+      if (window.DISQUS) {
+        try {
+          window.DISQUS.reset({});
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
+      }
+    };
+  }, [shortname]);
+
+  // Inject minimal CSS to fix OKLCH parsing without conflicts
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const style = document.createElement('style');
+    style.textContent = `
+      /* Minimal override for Disqus OKLCH compatibility
+         Only set what's absolutely necessary to prevent conflicts */
+
+      :root {
+        /* Override CSS variables with RGB fallbacks for Disqus.
+           bg/text follow the dark/light split; link tracks the active
+           DaisyUI theme's primary color (hex — Disqus can't parse OKLCH). */
+        --disqus-bg: ${dark ? 'rgb(17, 24, 39)' : 'rgb(255, 255, 255)'};
+        --disqus-text: ${dark ? 'rgb(243, 244, 246)' : 'rgb(31, 41, 55)'};
+        --disqus-link: ${linkColor};
+      }
+
+      #disqus_thread {
+        /* Use the fallback variables */
+        background-color: var(--disqus-bg) !important;
+        color: var(--disqus-text) !important;
+        padding: 1rem;
+        border-radius: var(--rounded-box, 1rem);
+      }
+
+      #disqus_thread * {
+        /* Let children inherit, don't force colors */
+        background-color: transparent !important;
+        color: inherit !important;
+      }
+
+      #disqus_thread a {
+        color: var(--disqus-link) !important;
+      }
+
+      #disqus_thread a:hover {
+        opacity: 0.8;
+      }
+    `;
+    style.setAttribute('data-disqus-override', 'true');
+    document.head.appendChild(style);
+
+    return () => {
+      const styleToRemove = document.querySelector(
+        'style[data-disqus-override="true"]'
+      );
+      if (styleToRemove) {
+        document.head.removeChild(styleToRemove);
+      }
+    };
+  }, [isVisible, dark, linkColor]);
+
+  // Don't render if no shortname
+  if (!shortname) {
+    return null;
+  }
+
+  return (
+    <div ref={containerRef} className="border-base-300 mt-8 border-t pt-6">
+      <h2 className="mb-4 text-xl font-semibold">Discussion</h2>
+
+      {/* Loading state */}
+      {isVisible && !scriptReady && (
+        <div className="flex items-center justify-center py-8">
+          <span className="loading loading-spinner loading-md"></span>
+          <span className="ml-2">Loading comments...</span>
+        </div>
+      )}
+
+      {/* Disqus thread container */}
+      <div id="disqus_thread" />
+
+      {/* Load Disqus script when visible */}
+      {isVisible && isLoaded && (
+        <Script
+          id={`disqus-script-${shortname}`}
+          src={`https://${shortname}.disqus.com/embed.js`}
+          strategy="afterInteractive"
+          onLoad={() => {
+            setScriptReady(true);
+          }}
+          onError={() => {
+            // Silently handle script load errors
+          }}
+        />
+      )}
+    </div>
+  );
+}

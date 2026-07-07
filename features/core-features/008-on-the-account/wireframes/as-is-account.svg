@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">ACCOUNT SETTINGS - /account (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+    <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+
+    <!-- Heading + back link -->
+    <text x="200" y="140" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="#1f2937">Account Settings</text>
+    <rect x="940" y="112" width="160" height="36" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="1020" y="134" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Back to Profile</text>
+
+    <!-- AccountSettings sections -->
+    <text x="200" y="186" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">DISPLAY NAME</text>
+    <rect x="200" y="198" width="900" height="48" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="216" y="226" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">TurtleWolfe</text>
+    <rect x="980" y="206" width="104" height="32" rx="4" fill="#8b5cf6"/>
+    <text x="1032" y="226" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Edit</text>
+
+    <text x="200" y="276" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">EMAIL</text>
+    <rect x="200" y="288" width="900" height="48" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="216" y="316" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">jonpohlner@gmail.com  <tspan fill="#22c55e">● verified</tspan></text>
+    <rect x="980" y="296" width="104" height="32" rx="4" fill="#f5f0e6" stroke="#8b5cf6"/>
+    <text x="1032" y="316" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">Change</text>
+
+    <text x="200" y="366" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">PASSWORD</text>
+    <rect x="200" y="378" width="900" height="48" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="216" y="406" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">•••••••• · last changed 3 months ago</text>
+    <rect x="980" y="386" width="104" height="32" rx="4" fill="#f5f0e6" stroke="#8b5cf6"/>
+    <text x="1032" y="406" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">Update</text>
+
+    <text x="200" y="456" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">DANGER ZONE</text>
+    <rect x="200" y="468" width="900" height="140" rx="4" fill="#fef2f2" stroke="#ef4444"/>
+    <text x="216" y="494" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Delete Account</text>
+    <text x="216" y="516" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Permanently remove your account and all associated data.</text>
+    <text x="216" y="536" font-family="system-ui, sans-serif" font-size="14" fill="#374151">This cannot be undone.</text>
+    <rect x="216" y="552" width="200" height="36" rx="4" fill="#ef4444"/>
+    <text x="316" y="574" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#fff">Delete My Account</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <g class="callout"><circle cx="170" cy="140" r="14" fill="#dc2626"/><text x="170" y="145" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="1076" cy="240" r="14" fill="#dc2626"/><text x="1076" y="245" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="1160" cy="332" r="14" fill="#dc2626"/><text x="1160" y="337" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="460" cy="572" r="14" fill="#dc2626"/><text x="460" y="577" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+    <text x="20" y="128" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="#1f2937">Account Settings</text>
+    <text x="340" y="128" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" text-decoration="underline">← Profile</text>
+
+    <text x="20" y="160" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">DISPLAY NAME</text>
+    <rect x="16" y="170" width="328" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="28" y="195" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">TurtleWolfe</text>
+    <text x="332" y="195" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">Edit</text>
+
+    <text x="20" y="232" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">EMAIL</text>
+    <rect x="16" y="242" width="328" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="28" y="267" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">jonpohlner@gmail.com ✓</text>
+
+    <text x="20" y="304" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">PASSWORD</text>
+    <rect x="16" y="314" width="328" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="28" y="339" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">•••••••• · 3mo ago</text>
+
+    <rect x="16" y="376" width="328" height="120" rx="4" fill="#fef2f2" stroke="#ef4444"/>
+    <text x="28" y="400" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Danger Zone</text>
+    <text x="28" y="422" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Delete account permanently.</text>
+    <rect x="28" y="448" width="180" height="32" rx="4" fill="#ef4444"/>
+    <text x="118" y="468" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#fff" font-weight="600">Delete My Account</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="220" cy="464" r="11" fill="#dc2626"/><text x="220" y="469" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Heading + back link</text>
+      <a href="#us-001" transform="translate(220, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Left-aligned h1 + ghost button "Back to Profile"</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">right-aligned. ProtectedRoute wrapper.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Display name editor</text>
+      <a href="#us-002" transform="translate(220, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Inline Edit button opens dialog. Supabase.</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">updateUser({ data: { display_name } }).</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Email + password</text>
+      <a href="#us-003" transform="translate(200, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Change email (triggers re-verify); update password</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">(requires current password). Shows last-changed.</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Danger Zone</text>
+      <a href="#us-004" transform="translate(130, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Red-bordered card. Delete requires confirmation</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">dialog. Soft-delete then purge after 30 days.</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/account/page.tsx — server component wrapping AccountSettings client component.</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">All mutations go through Supabase Auth API. Session refreshed after email or password change.</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:19 | Account Settings (as-is /account) | ScriptHammer</text>
+</svg>

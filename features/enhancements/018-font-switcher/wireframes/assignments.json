@@ -1,0 +1,43 @@
+{
+  "feature": "018-font-switcher",
+  "specPath": "features/enhancements/018-font-switcher/spec.md",
+  "plannedBy": "Planner",
+  "plannedAt": "2026-01-16",
+  "svgCount": 2,
+  "assignments": [
+    {
+      "svg": "01-font-selector-panel.svg",
+      "mode": "new",
+      "focus": "Font selection menu showing all 6 font options (System Default, Screen-Optimized Sans, Dyslexia-Friendly, High-Readability, Serif, Monospace) with live preview text in each font's typeface, accessibility badges for dyslexia-friendly and high-readability options, current selection checkmark indicator, and reset-to-default button",
+      "requirements": [
+        "FR-001",
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-009",
+        "FR-010",
+        "FR-011",
+        "FR-012"
+      ],
+      "userStories": ["US-1", "US-3", "US-4"],
+      "successCriteria": ["SC-001", "SC-005"]
+    },
+    {
+      "svg": "02-font-applied-comparison.svg",
+      "mode": "new",
+      "focus": "Split-view showing font applied to application content: left side shows sample page with current font, persistence indicator showing 'preference saved', and demonstration of instant application (FR-005). Right side shows theme compatibility matrix with dark/light/colorblind modes all rendering correctly with selected font",
+      "requirements": [
+        "FR-005",
+        "FR-006",
+        "FR-007",
+        "FR-008",
+        "FR-013",
+        "FR-014",
+        "FR-015",
+        "FR-016"
+      ],
+      "userStories": ["US-2", "US-5"],
+      "successCriteria": ["SC-002", "SC-003", "SC-004", "SC-006"]
+    }
+  ]
+}

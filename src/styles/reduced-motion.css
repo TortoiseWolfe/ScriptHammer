@@ -1,0 +1,37 @@
+/**
+ * Reduced motion overrides
+ *
+ * Two triggers respect this:
+ *   1. The OS-level `prefers-reduced-motion: reduce` media query
+ *   2. The user's explicit setting via AccessibilityContext, which sets
+ *      `data-reduce-motion="true"` on the <html> element
+ *      (see src/contexts/AccessibilityContext.tsx:104-109)
+ *
+ * Disable the loud Tailwind keyframe animations everywhere they show up
+ * (game dice, loading spinners, attention-grabbing buttons). We do NOT
+ * disable `transition-*` because those are generally short, semantically
+ * useful state-change cues that don't trigger vestibular issues.
+ *
+ * The `!important` is intentional and necessary — Tailwind's animation
+ * utilities apply via inline classes (specificity 0,1,0), so a non-!important
+ * override would have to win a specificity arms race. WCAG 2.3.3 puts
+ * vestibular safety above style purity.
+ *
+ * Spec: features/testing/037-game-a11y-tests/spec.md FR-022
+ */
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin,
+  .animate-bounce,
+  .animate-pulse,
+  .animate-ping {
+    animation: none !important;
+  }
+}
+
+[data-reduce-motion='true'] .animate-spin,
+[data-reduce-motion='true'] .animate-bounce,
+[data-reduce-motion='true'] .animate-pulse,
+[data-reduce-motion='true'] .animate-ping {
+  animation: none !important;
+}

@@ -1,0 +1,77 @@
+services:
+  # Main application service
+  scripthammer:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: dev
+    ports:
+      - '3000:3000'
+      - '6006:6006'
+      - '24678:24678'
+    volumes:
+      - ..:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/ScriptHammer']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - e2e-network
+
+  # E2E testing service with Playwright
+  e2e-tests:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.e2e
+    depends_on:
+      scripthammer:
+        condition: service_healthy
+    volumes:
+      - ../tests/e2e:/app/tests/e2e
+      - ../test-results:/app/test-results
+      - ../playwright-report:/app/playwright-report
+    environment:
+      - BASE_URL=http://scripthammer:3000/ScriptHammer
+      - CI=false
+      - PWDEBUG=${PWDEBUG:-0}
+    networks:
+      - e2e-network
+    command: pnpm test:e2e
+
+  # Optional: Playwright UI mode service
+  e2e-ui:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.e2e
+    depends_on:
+      scripthammer:
+        condition: service_healthy
+    ports:
+      - '9323:9323' # Playwright UI port
+    volumes:
+      - ../tests/e2e:/app/tests/e2e
+      - ../test-results:/app/test-results
+      - ../playwright-report:/app/playwright-report
+    environment:
+      - BASE_URL=http://scripthammer:3000/ScriptHammer
+      - DISPLAY=:99
+    networks:
+      - e2e-network
+    command: pnpm test:e2e:ui
+    profiles:
+      - ui
+
+networks:
+  e2e-network:
+    driver: bridge
+
+volumes:
+  test-results:
+  playwright-report:

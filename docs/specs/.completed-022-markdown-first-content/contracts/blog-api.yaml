@@ -1,0 +1,685 @@
+openapi: 3.0.0
+info:
+  title: Blog System API
+  version: 1.0.0
+  description: API endpoints for blog system with markdown content pipeline
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+  - url: /api
+    description: Production (relative)
+
+paths:
+  /blog/posts:
+    get:
+      summary: List all blog posts
+      operationId: listPosts
+      tags:
+        - Posts
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, published, scheduled, archived]
+          description: Filter by post status
+        - name: author
+          in: query
+          schema:
+            type: string
+          description: Filter by author ID
+        - name: tag
+          in: query
+          schema:
+            type: string
+          description: Filter by tag
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by category
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  posts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BlogPost'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+
+    post:
+      summary: Create a new blog post
+      operationId: createPost
+      tags:
+        - Posts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlogPostCreate'
+      responses:
+        '201':
+          description: Post created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogPost'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /blog/posts/{id}:
+    get:
+      summary: Get a single blog post
+      operationId: getPost
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Post ID or slug
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogPost'
+        '404':
+          description: Post not found
+
+    put:
+      summary: Update a blog post
+      operationId: updatePost
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlogPostUpdate'
+      responses:
+        '200':
+          description: Post updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogPost'
+        '404':
+          description: Post not found
+        '409':
+          description: Version conflict
+
+    delete:
+      summary: Delete a blog post
+      operationId: deletePost
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Post deleted
+        '404':
+          description: Post not found
+
+  /blog/posts/{id}/publish:
+    post:
+      summary: Publish a draft post
+      operationId: publishPost
+      tags:
+        - Posts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                publishAt:
+                  type: string
+                  format: date-time
+                  description: Schedule for future publication
+      responses:
+        '200':
+          description: Post published
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogPost'
+
+  /blog/sync:
+    post:
+      summary: Sync offline changes
+      operationId: syncChanges
+      tags:
+        - Sync
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                changes:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/SyncChange'
+                lastSyncTime:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Sync successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  synced:
+                    type: array
+                    items:
+                      type: string
+                  conflicts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ConflictInfo'
+                  serverTime:
+                    type: string
+                    format: date-time
+
+  /blog/conflicts/{id}/resolve:
+    post:
+      summary: Resolve a content conflict
+      operationId: resolveConflict
+      tags:
+        - Sync
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Post ID with conflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resolution:
+                  type: string
+                  enum: [local, remote, merged]
+                mergedContent:
+                  type: string
+                  description: Required when resolution is 'merged'
+                mergedMetadata:
+                  type: object
+                  description: Required when resolution is 'merged'
+      responses:
+        '200':
+          description: Conflict resolved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogPost'
+
+  /blog/authors:
+    get:
+      summary: List all authors
+      operationId: listAuthors
+      tags:
+        - Authors
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Author'
+
+  /blog/authors/{id}:
+    get:
+      summary: Get author details
+      operationId: getAuthor
+      tags:
+        - Authors
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Author'
+        '404':
+          description: Author not found
+
+    put:
+      summary: Update author profile
+      operationId: updateAuthor
+      tags:
+        - Authors
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthorUpdate'
+      responses:
+        '200':
+          description: Author updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Author'
+
+  /blog/share:
+    post:
+      summary: Track a share event
+      operationId: trackShare
+      tags:
+        - Social
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - postId
+                - platform
+              properties:
+                postId:
+                  type: string
+                platform:
+                  type: string
+                  enum: [twitter, linkedin, facebook, reddit, email]
+                referrer:
+                  type: string
+      responses:
+        '201':
+          description: Share tracked
+        '400':
+          description: Invalid request
+
+  /blog/storage:
+    get:
+      summary: Get storage quota information
+      operationId: getStorageQuota
+      tags:
+        - Storage
+      responses:
+        '200':
+          description: Storage quota info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StorageQuota'
+
+  /blog/cache/clear:
+    post:
+      summary: Clear processing cache
+      operationId: clearCache
+      tags:
+        - Storage
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                postId:
+                  type: string
+                  description: Clear cache for specific post
+                all:
+                  type: boolean
+                  description: Clear all cache entries
+      responses:
+        '204':
+          description: Cache cleared
+
+components:
+  schemas:
+    BlogPost:
+      type: object
+      required:
+        - id
+        - slug
+        - title
+        - content
+        - author
+        - metadata
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+        contentHtml:
+          type: string
+        excerpt:
+          type: string
+        author:
+          $ref: '#/components/schemas/AuthorReference'
+        metadata:
+          $ref: '#/components/schemas/PostMetadata'
+        status:
+          type: string
+          enum: [draft, published, scheduled, archived]
+        version:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        publishedAt:
+          type: string
+          format: date-time
+        syncStatus:
+          type: string
+          enum: [synced, pending, conflict, error]
+
+    BlogPostCreate:
+      type: object
+      required:
+        - title
+        - content
+        - authorId
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        slug:
+          type: string
+          pattern: '^[a-z0-9-]+$'
+        content:
+          type: string
+        authorId:
+          type: string
+        metadata:
+          $ref: '#/components/schemas/PostMetadata'
+        status:
+          type: string
+          enum: [draft, published]
+          default: draft
+
+    BlogPostUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        metadata:
+          $ref: '#/components/schemas/PostMetadata'
+        status:
+          type: string
+          enum: [draft, published, scheduled, archived]
+        version:
+          type: integer
+          description: For optimistic locking
+
+    PostMetadata:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            type: string
+        categories:
+          type: array
+          items:
+            type: string
+        featuredImage:
+          type: string
+        featuredImageAlt:
+          type: string
+        showToc:
+          type: boolean
+          default: false
+        enableComments:
+          type: boolean
+          default: true
+        readingTime:
+          type: integer
+        seoTitle:
+          type: string
+        seoDescription:
+          type: string
+        socialImage:
+          type: string
+        featured:
+          type: boolean
+          default: false
+
+    Author:
+      type: object
+      required:
+        - id
+        - username
+        - name
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        bio:
+          type: string
+        avatar:
+          type: string
+        socialLinks:
+          type: array
+          items:
+            $ref: '#/components/schemas/SocialLink'
+        website:
+          type: string
+        location:
+          type: string
+        joinedAt:
+          type: string
+          format: date-time
+        postsCount:
+          type: integer
+        hideSocial:
+          type: boolean
+          default: false
+
+    AuthorReference:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        avatar:
+          type: string
+
+    AuthorUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        bio:
+          type: string
+          maxLength: 500
+        avatar:
+          type: string
+        socialLinks:
+          type: array
+          items:
+            $ref: '#/components/schemas/SocialLink'
+        website:
+          type: string
+        location:
+          type: string
+        hideSocial:
+          type: boolean
+
+    SocialLink:
+      type: object
+      required:
+        - platform
+        - url
+      properties:
+        platform:
+          type: string
+          enum:
+            [
+              twitter,
+              linkedin,
+              github,
+              facebook,
+              instagram,
+              youtube,
+              reddit,
+              mastodon,
+              website,
+              email,
+            ]
+        url:
+          type: string
+        username:
+          type: string
+        displayOrder:
+          type: integer
+        isVerified:
+          type: boolean
+          default: false
+
+    SyncChange:
+      type: object
+      required:
+        - postId
+        - action
+        - timestamp
+      properties:
+        postId:
+          type: string
+        action:
+          type: string
+          enum: [create, update, delete]
+        payload:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+        checksum:
+          type: string
+
+    ConflictInfo:
+      type: object
+      required:
+        - postId
+        - localVersion
+        - remoteVersion
+      properties:
+        postId:
+          type: string
+        localVersion:
+          type: object
+        remoteVersion:
+          type: object
+        baseVersion:
+          type: object
+
+    StorageQuota:
+      type: object
+      properties:
+        textUsed:
+          type: integer
+        textLimit:
+          type: integer
+        imagesUsed:
+          type: integer
+        imagesLimit:
+          type: integer
+        percentUsed:
+          type: number
+        compressionEnabled:
+          type: boolean
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object

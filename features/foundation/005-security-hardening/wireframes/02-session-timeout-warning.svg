@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background gradient -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- CENTERED TITLE -->
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">SECURITY HARDENING - SESSION MANAGEMENT</text>
+
+  <!-- Section labels -->
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1360" y="52" fill="#d946ef" font-family="system-ui, sans-serif"
+        font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP (1280x720) -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+
+    <!-- Desktop Header -->
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Active nav overlay (Account) -->
+    <rect x="660" y="3" width="80" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="700" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+
+    <!-- LEFT PANEL: Sign In Form with Remember Me -->
+    <rect x="40" y="70" width="380" height="500" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="230" y="110" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1a1a2e">Sign In</text>
+
+    <!-- Email Input -->
+    <text x="60" y="150" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Email</text>
+    <rect x="60" y="160" width="340" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <!-- Password Input -->
+    <text x="60" y="230" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Password</text>
+    <rect x="60" y="240" width="340" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <!-- Remember Me Checkbox -->
+    <rect x="60" y="300" width="24" height="24" rx="4" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="95" y="318" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Remember me for 7 days</text>
+
+    <!-- Callout ② on Remember Me -->
+    <circle cx="300" cy="312" r="14" fill="#dc2626"/>
+    <text x="300" y="317" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+    <!-- Sign In Button -->
+    <rect x="60" y="345" width="340" height="48" rx="6" fill="#8b5cf6"/>
+    <text x="230" y="375" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="16" font-weight="600">Sign In</text>
+
+    <!-- Session Info Text -->
+    <text x="60" y="420" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Standard session: 24h inactivity timeout</text>
+    <text x="60" y="440" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Remember Me: 7 day inactivity timeout</text>
+
+    <!-- CENTER PANEL: Active Session Indicator -->
+    <rect x="450" y="70" width="380" height="180" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="640" y="110" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">Session Active</text>
+
+    <!-- Session Status -->
+    <circle cx="530" cy="150" r="8" fill="#22c55e"/>
+    <text x="550" y="155" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Signed in as user@example.com</text>
+    <text x="530" y="180" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Session expires in: 23h 45m</text>
+    <text x="530" y="200" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Last activity: Just now</text>
+
+    <!-- Callout ③ on session indicator -->
+    <circle cx="810" cy="150" r="14" fill="#dc2626"/>
+    <text x="810" y="155" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+    <!-- Sign Out Button -->
+    <rect x="530" y="220" width="120" height="36" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="590" y="244" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Sign Out</text>
+
+    <!-- Callout ④ on sign out -->
+    <circle cx="670" cy="238" r="14" fill="#dc2626"/>
+    <text x="670" y="243" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+    <!-- RIGHT PANEL: Session Timeout Warning Preview -->
+    <rect x="860" y="70" width="380" height="500" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="1050" y="110" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1a1a2e">Timeout Warning</text>
+
+    <!-- Warning Alert Preview -->
+    <rect x="880" y="130" width="340" height="260" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+
+    <!-- Dimmed background indicator -->
+    <rect x="880" y="130" width="340" height="50" fill="#1a1a2e" opacity="0.3" rx="8"/>
+    <text x="1050" y="160" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Page content dimmed</text>
+
+    <!-- Warning Icon -->
+    <circle cx="1050" cy="220" r="24" fill="#f59e0b"/>
+    <text x="1050" y="228" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="#e8d4b8">!</text>
+
+    <!-- Timer -->
+    <text x="1050" y="275" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="700" fill="#dc2626">0:59</text>
+    <text x="1050" y="295" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Session expiring</text>
+
+    <!-- Callout ① on timeout warning -->
+    <circle cx="1200" cy="250" r="14" fill="#dc2626"/>
+    <text x="1200" y="255" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+    <!-- Action Buttons Preview -->
+    <rect x="900" y="320" width="140" height="40" rx="4" fill="#8b5cf6"/>
+    <text x="970" y="346" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Stay Signed In</text>
+
+    <rect x="1060" y="320" width="140" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="1130" y="346" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Sign Out</text>
+
+    <!-- Warning appears 1 min before expiry note -->
+    <text x="1050" y="410" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Warning shown 1 minute</text>
+    <text x="1050" y="430" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">before session expires</text>
+
+    <!-- Desktop Footer -->
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+  </g>
+
+  <!-- MOBILE (360x720) -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+
+    <!-- Mobile Header -->
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <!-- Mobile Content (y >= 78 safe area) -->
+    <!-- Session Status Card -->
+    <rect x="15" y="78" width="330" height="100" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="40" cy="110" r="8" fill="#22c55e"/>
+    <text x="60" y="115" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Session Active</text>
+    <text x="30" y="140" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Expires in: 23h 45m</text>
+
+    <!-- Callout ③ on mobile session -->
+    <circle cx="345" cy="110" r="14" fill="#dc2626"/>
+    <text x="345" y="115" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+
+    <!-- Sign Out Button -->
+    <rect x="220" y="148" width="110" height="28" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="275" y="167" text-anchor="middle" fill="#374151" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Sign Out</text>
+
+    <!-- Callout ④ on mobile sign out -->
+    <circle cx="345" cy="162" r="14" fill="#dc2626"/>
+    <text x="345" y="167" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+
+    <!-- Remember Me Preview -->
+    <rect x="15" y="190" width="330" height="80" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="30" y="220" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Sign In Options</text>
+    <rect x="30" y="235" width="20" height="20" rx="3" fill="#f5f0e6" stroke="#8b5cf6" stroke-width="2"/>
+    <text x="60" y="251" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Remember me (7 days)</text>
+
+    <!-- Callout ② on mobile remember me -->
+    <circle cx="345" cy="243" r="14" fill="#dc2626"/>
+    <text x="345" y="248" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+
+    <!-- Timeout Warning Preview Card -->
+    <rect x="15" y="285" width="330" height="200" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="180" y="315" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1a1a2e">Timeout Warning</text>
+
+    <!-- Warning alert preview -->
+    <rect x="35" y="330" width="290" height="140" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <circle cx="180" cy="370" r="20" fill="#f59e0b"/>
+    <text x="180" y="378" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" font-weight="bold" fill="#e8d4b8">!</text>
+    <text x="180" y="410" text-anchor="middle" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#dc2626">0:59</text>
+    <text x="180" y="430" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Session expiring</text>
+
+    <!-- Callout ① on mobile timeout -->
+    <circle cx="345" cy="380" r="14" fill="#dc2626"/>
+    <text x="345" y="385" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+
+    <!-- Mobile action buttons -->
+    <rect x="40" y="445" width="130" height="35" rx="4" fill="#8b5cf6"/>
+    <text x="105" y="468" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Stay In</text>
+
+    <!-- Mobile Bottom Nav -->
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <!-- Active tab overlay (Account) -->
+    <g transform="translate(270, 664)">
+      <path d="M 0 0 L 90 0 L 90 32 A 24 24 0 0 1 66 56 L 0 56 L 0 0 Z" fill="#8b5cf6"/>
+      <g transform="translate(33, 6)">
+        <path fill="#e8d4b8" fill-rule="evenodd" clip-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/>
+      </g>
+      <text x="45" y="44" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Account</text>
+    </g>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Column 1: US-009 Session Timeout -->
+    <g transform="translate(20, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">1</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Session Timeout Warning</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">As a user, I need warning before my</text>
+      <text x="40" y="55" fill="#374151" font-family="system-ui, sans-serif" font-size="14">session expires due to inactivity.</text>
+      <a href="#US-009"><rect x="40" y="65" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">US-009</text></a>
+      <a href="#FR-031"><rect x="101" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-031</text></a>
+      <a href="#SC-010"><rect x="162" y="65" width="55" height="22" rx="4" fill="#ea580c"/><text x="189" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">SC-010</text></a>
+    </g>
+
+    <!-- Column 2: Remember Me (US-003 - lockout ties into session persistence) -->
+    <g transform="translate(470, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">2</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Remember Me Option</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Extended 7-day session for trusted</text>
+      <text x="40" y="55" fill="#374151" font-family="system-ui, sans-serif" font-size="14">devices vs standard 24h timeout.</text>
+      <a href="#US-003"><rect x="40" y="65" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">US-003</text></a>
+      <a href="#FR-029"><rect x="101" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-029</text></a>
+      <a href="#FR-030"><rect x="162" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-030</text></a>
+    </g>
+
+    <!-- Column 3: Activity Tracking -->
+    <g transform="translate(920, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">3</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Session Activity</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Inactivity timer resets on user</text>
+      <text x="40" y="55" fill="#374151" font-family="system-ui, sans-serif" font-size="14">interaction to extend session.</text>
+      <a href="#US-009"><rect x="40" y="65" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">US-009</text></a>
+      <a href="#FR-032"><rect x="101" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-032</text></a>
+    </g>
+
+    <!-- Column 4: Error Recovery (US-010 - session expiry recovery) -->
+    <g transform="translate(1370, 20)">
+      <circle cx="14" cy="14" r="14" fill="#dc2626"/>
+      <text x="14" y="19" fill="#e8d4b8" font-size="14" font-weight="bold" text-anchor="middle">4</text>
+      <text x="40" y="18" fill="#1f2937" font-family="system-ui, sans-serif" font-size="14" font-weight="bold">Session Recovery</text>
+      <text x="40" y="38" fill="#374151" font-family="system-ui, sans-serif" font-size="14">Clear options when session expires</text>
+      <text x="40" y="55" fill="#374151" font-family="system-ui, sans-serif" font-size="14">to sign back in or sign out.</text>
+      <a href="#US-010"><rect x="40" y="65" width="55" height="22" rx="4" fill="#0891b2"/><text x="67" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">US-010</text></a>
+      <a href="#FR-033"><rect x="101" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="128" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-033</text></a>
+      <a href="#FR-036"><rect x="162" y="65" width="55" height="22" rx="4" fill="#2563eb"/><text x="189" y="80" fill="#e8d4b8" font-size="14" text-anchor="middle">FR-036</text></a>
+    </g>
+  </g>
+
+  <!-- Key Concepts Row (G-047) -->
+
+
+  <text x="40" y="940" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#374151">Key Concepts:</text>
+  <text x="140" y="940" font-family="system-ui, sans-serif" font-size="14" fill="#374151">CSP headers | rate limiting | session timeout | audit logging</text>
+
+
+  <!-- SIGNATURE: 18px bold -->
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif"
+        font-size="18" font-weight="bold">005:02 | Security Hardening | ScriptHammer</text>
+</svg>

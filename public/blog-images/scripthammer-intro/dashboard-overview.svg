@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1000" height="600" viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1000" height="600" fill="#f3f4f6"/>
+
+  <!-- Header Bar -->
+  <rect width="1000" height="60" fill="#1f2937"/>
+  <text x="30" y="38" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white">
+    Scripthammer Dashboard
+  </text>
+
+  <!-- Theme Switcher -->
+  <rect x="800" y="15" width="170" height="30" rx="15" fill="#4f46e5"/>
+  <text x="885" y="35" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="white">
+    🎨 Theme: Dark
+  </text>
+
+  <!-- Sidebar -->
+  <rect x="0" y="60" width="200" height="540" fill="#e5e7eb"/>
+  <text x="20" y="100" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#374151">
+    COMPONENTS
+  </text>
+  <rect x="15" y="120" width="170" height="30" rx="4" fill="#4f46e5" opacity="0.1"/>
+  <text x="25" y="140" font-family="Arial, sans-serif" font-size="14" fill="#4f46e5">📦 Atomic</text>
+
+  <text x="25" y="175" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">📁 Molecular</text>
+  <text x="25" y="210" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">🧩 Organisms</text>
+  <text x="25" y="245" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">📑 Templates</text>
+
+  <!-- Main Content Area -->
+  <rect x="220" y="80" width="760" height="500" rx="8" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+
+  <!-- Cards Grid -->
+  <g transform="translate(240, 100)">
+    <!-- Card 1 -->
+    <rect x="0" y="0" width="220" height="140" rx="8" fill="white" stroke="#e5e7eb" stroke-width="2"/>
+    <rect x="0" y="0" width="220" height="40" rx="8 8 0 0" fill="#10b981"/>
+    <text x="110" y="26" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="white" font-weight="bold">
+      Tests Passing
+    </text>
+    <text x="110" y="80" font-family="Arial, sans-serif" font-size="36" text-anchor="middle" fill="#10b981" font-weight="bold">
+      ✓ 1122
+    </text>
+    <text x="110" y="110" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#6b7280">
+      58% Coverage
+    </text>
+  </g>
+
+  <g transform="translate(480, 100)">
+    <!-- Card 2 -->
+    <rect x="0" y="0" width="220" height="140" rx="8" fill="white" stroke="#e5e7eb" stroke-width="2"/>
+    <rect x="0" y="0" width="220" height="40" rx="8 8 0 0" fill="#7c3aed"/>
+    <text x="110" y="26" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="white" font-weight="bold">
+      Available Themes
+    </text>
+    <text x="110" y="80" font-family="Arial, sans-serif" font-size="36" text-anchor="middle" fill="#7c3aed" font-weight="bold">
+      32
+    </text>
+    <text x="110" y="110" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#6b7280">
+      DaisyUI Themes
+    </text>
+  </g>
+
+  <g transform="translate(720, 100)">
+    <!-- Card 3 -->
+    <rect x="0" y="0" width="220" height="140" rx="8" fill="white" stroke="#e5e7eb" stroke-width="2"/>
+    <rect x="0" y="0" width="220" height="40" rx="8 8 0 0" fill="#f59e0b"/>
+    <text x="110" y="26" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="white" font-weight="bold">
+      Components
+    </text>
+    <text x="110" y="80" font-family="Arial, sans-serif" font-size="36" text-anchor="middle" fill="#f59e0b" font-weight="bold">
+      45+
+    </text>
+    <text x="110" y="110" font-family="Arial, sans-serif" font-size="14" text-anchor="middle" fill="#6b7280">
+      Ready to Use
+    </text>
+  </g>
+
+  <!-- Component Preview -->
+  <text x="240" y="280" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#374151">
+    Component Structure
+  </text>
+
+  <rect x="240" y="300" width="700" height="250" rx="4" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+
+  <!-- File tree -->
+  <text x="260" y="330" font-family="monospace" font-size="14" fill="#374151">📁 MyComponent/</text>
+  <text x="280" y="355" font-family="monospace" font-size="14" fill="#6b7280">├── 📄 index.tsx</text>
+  <text x="280" y="380" font-family="monospace" font-size="14" fill="#6b7280">├── 📄 MyComponent.tsx</text>
+  <text x="280" y="405" font-family="monospace" font-size="14" fill="#6b7280">├── 🧪 MyComponent.test.tsx</text>
+  <text x="280" y="430" font-family="monospace" font-size="14" fill="#6b7280">├── 📖 MyComponent.stories.tsx</text>
+  <text x="280" y="455" font-family="monospace" font-size="14" fill="#6b7280">└── ♿ MyComponent.accessibility.test.tsx</text>
+</svg>

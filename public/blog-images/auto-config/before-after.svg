@@ -1,0 +1,154 @@
+<svg viewBox="0 0 900 500" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="2" dy="4" stdDeviation="4" flood-opacity="0.15"/>
+    </filter>
+    <pattern id="crosshatch" patternUnits="userSpaceOnUse" width="4" height="4">
+      <path d="M0,4 l4,-4 M0,0 l4,4" stroke="#e5e7eb" stroke-width="0.5"/>
+    </pattern>
+  </defs>
+
+  <!-- Title -->
+  <text x="450" y="35" font-family="system-ui, -apple-system, sans-serif" font-size="26" font-weight="bold" text-anchor="middle" fill="#1f2937">
+    Traditional Setup vs ScriptHammer
+  </text>
+
+  <!-- Before Section -->
+  <g transform="translate(50, 80)">
+    <!-- Label -->
+    <rect x="0" y="0" width="350" height="40" rx="6" fill="#fee2e2"/>
+    <text x="175" y="27" font-family="system-ui" font-size="18" font-weight="600" text-anchor="middle" fill="#991b1b">
+      ❌ Traditional Setup (22+ steps)
+    </text>
+
+    <!-- Manual steps -->
+    <g transform="translate(0, 60)">
+      <rect x="0" y="0" width="350" height="320" rx="8" fill="white" stroke="#ef4444" stroke-width="2" stroke-dasharray="5,5"/>
+
+      <!-- Step items with red X marks -->
+      <text x="20" y="30" font-family="system-ui" font-size="14" fill="#7f1d1d">
+        ✗ Edit package.json project name
+      </text>
+      <text x="20" y="55" font-family="system-ui" font-size="14" fill="#7f1d1d">
+        ✗ Update README.md with your info
+      </text>
+      <text x="20" y="80" font-family="system-ui" font-size="14" fill="#7f1d1d">
+        ✗ Change all GitHub URLs
+      </text>
+      <text x="20" y="105" font-family="system-ui" font-size="14" fill="#7f1d1d">
+        ✗ Modify deployment scripts
+      </text>
+      <text x="20" y="130" font-family="system-ui" font-size="14" fill="#7f1d1d">
+        ✗ Update PWA manifest.json
+      </text>
+      <text x="20" y="155" font-family="system-ui" font-size="14" fill="#7f1d1d">
+        ✗ Edit next.config.ts basePath
+      </text>
+      <text x="20" y="180" font-family="system-ui" font-size="14" fill="#7f1d1d">
+        ✗ Change meta tags in layout
+      </text>
+      <text x="20" y="205" font-family="system-ui" font-size="14" fill="#7f1d1d">
+        ✗ Update environment variables
+      </text>
+      <text x="20" y="230" font-family="system-ui" font-size="14" fill="#7f1d1d">
+        ✗ Configure CI/CD workflows
+      </text>
+      <text x="20" y="255" font-family="system-ui" font-size="14" fill="#7f1d1d">
+        ✗ Fix hardcoded project references
+      </text>
+      <text x="20" y="280" font-family="system-ui" font-size="14" fill="#7f1d1d">
+        ✗ Test everything still works...
+      </text>
+      <text x="20" y="305" font-family="system-ui" font-size="14" font-style="italic" fill="#7f1d1d">
+        ... and 11+ more manual edits
+      </text>
+    </g>
+
+    <!-- Time indicator -->
+    <g transform="translate(100, 410)">
+      <rect x="0" y="0" width="150" height="35" rx="17" fill="#fecaca"/>
+      <text x="75" y="23" font-family="system-ui" font-size="14" font-weight="600" text-anchor="middle" fill="#991b1b">
+        ⏱️ 30-60 minutes
+      </text>
+    </g>
+  </g>
+
+  <!-- Arrow -->
+  <g transform="translate(430, 250)">
+    <path d="M 0 0 L 40 0" stroke="#6b7280" stroke-width="3" fill="none" marker-end="url(#bigarrow)"/>
+  </g>
+
+  <!-- After Section -->
+  <g transform="translate(500, 80)">
+    <!-- Label -->
+    <rect x="0" y="0" width="350" height="40" rx="6" fill="#dcfce7"/>
+    <text x="175" y="27" font-family="system-ui" font-size="18" font-weight="600" text-anchor="middle" fill="#166534">
+      ✅ ScriptHammer (3 steps)
+    </text>
+
+    <!-- Automated steps -->
+    <g transform="translate(0, 60)">
+      <rect x="0" y="0" width="350" height="320" rx="8" fill="white" stroke="#22c55e" stroke-width="2" filter="url(#shadow)"/>
+
+      <!-- Just 3 simple steps with green checks -->
+      <g transform="translate(20, 40)">
+        <circle cx="20" cy="20" r="25" fill="#22c55e" opacity="0.1"/>
+        <text x="20" y="27" font-family="system-ui" font-size="28" font-weight="bold" text-anchor="middle" fill="#22c55e">
+          1
+        </text>
+        <text x="60" y="15" font-family="system-ui" font-size="16" font-weight="600" fill="#166534">
+          Use Template
+        </text>
+        <text x="60" y="35" font-family="system-ui" font-size="13" fill="#15803d">
+          Any name you want!
+        </text>
+      </g>
+
+      <g transform="translate(20, 120)">
+        <circle cx="20" cy="20" r="25" fill="#22c55e" opacity="0.1"/>
+        <text x="20" y="27" font-family="system-ui" font-size="28" font-weight="bold" text-anchor="middle" fill="#22c55e">
+          2
+        </text>
+        <text x="60" y="15" font-family="system-ui" font-size="16" font-weight="600" fill="#166534">
+          Clone &amp; Run Docker
+        </text>
+        <text x="60" y="35" font-family="system-ui" font-size="13" fill="#15803d">
+          docker compose up
+        </text>
+      </g>
+
+      <g transform="translate(20, 200)">
+        <circle cx="20" cy="20" r="25" fill="#22c55e" opacity="0.1"/>
+        <text x="20" y="27" font-family="system-ui" font-size="28" font-weight="bold" text-anchor="middle" fill="#22c55e">
+          3
+        </text>
+        <text x="60" y="15" font-family="system-ui" font-size="16" font-weight="600" fill="#166534">
+          Start Building!
+        </text>
+        <text x="60" y="35" font-family="system-ui" font-size="13" fill="#15803d">
+          Everything is configured
+        </text>
+      </g>
+
+      <!-- Magic wand icon -->
+      <g transform="translate(250, 250)">
+        <text x="0" y="0" font-size="48">🪄</text>
+      </g>
+    </g>
+
+    <!-- Time indicator -->
+    <g transform="translate(100, 410)">
+      <rect x="0" y="0" width="150" height="35" rx="17" fill="#bbf7d0"/>
+      <text x="75" y="23" font-family="system-ui" font-size="14" font-weight="600" text-anchor="middle" fill="#166534">
+        ⚡ 2 minutes
+      </text>
+    </g>
+  </g>
+
+  <!-- Big arrow marker -->
+  <defs>
+    <marker id="bigarrow" markerWidth="15" markerHeight="12" refX="14" refY="6" orient="auto">
+      <polygon points="0 0, 15 6, 0 12" fill="#6b7280"/>
+    </marker>
+  </defs>
+</svg>

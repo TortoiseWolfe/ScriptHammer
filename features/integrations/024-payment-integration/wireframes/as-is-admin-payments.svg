@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#c7ddf5"/><stop offset="100%" stop-color="#b8d4f0"/></linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">ADMIN PAYMENTS PAGE - /admin/payments (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <rect x="0" y="60" width="1280" height="44" fill="#dcc8a8"/>
+    <text x="60" y="88" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Overview</text>
+    <text x="156" y="88" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Users</text>
+    <text x="248" y="88" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Messaging</text>
+    <text x="332" y="88" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Audit</text>
+    <rect x="380" y="68" width="88" height="28" rx="4" fill="#8b5cf6"/>
+    <text x="424" y="88" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Payments</text>
+
+    <text x="40" y="136" font-family="system-ui, sans-serif" font-size="24" font-weight="700" fill="#1f2937">Payment Activity</text>
+
+    <!-- Stats -->
+    <rect x="40" y="160" width="220" height="60" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="56" y="184" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">GROSS 30D</text>
+    <text x="56" y="210" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#22c55e">$14,280</text>
+    <rect x="270" y="160" width="220" height="60" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="286" y="184" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">TXN COUNT</text>
+    <text x="286" y="210" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">412</text>
+    <rect x="500" y="160" width="220" height="60" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="516" y="184" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">AVG TICKET</text>
+    <text x="516" y="210" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">$34.66</text>
+    <rect x="730" y="160" width="220" height="60" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="746" y="184" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">FAILURE RATE</text>
+    <text x="746" y="210" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#f59e0b">4.3%</text>
+    <rect x="960" y="160" width="220" height="60" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="976" y="184" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">RANGE</text>
+    <text x="976" y="206" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">2026-03-23 → 04-22 ▾</text>
+
+    <!-- Trends: 2-series line chart -->
+    <rect x="40" y="240" width="590" height="190" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="56" y="268" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">REVENUE TREND</text>
+    <polyline points="56,400 90,392 120,384 150,390 180,378 210,368 240,376 270,358 300,362 330,340 360,350 390,328 420,338 450,316 480,320 510,302 540,310 570,286 600,280 620,264" fill="none" stroke="#22c55e" stroke-width="2"/>
+    <line x1="56" y1="412" x2="620" y2="412" stroke="#6b7280"/>
+
+    <!-- Providers pie -->
+    <rect x="650" y="240" width="580" height="190" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="666" y="268" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">BY PROVIDER</text>
+    <circle cx="780" cy="354" r="56" fill="#8b5cf6"/>
+    <path d="M 780 298 A 56 56 0 0 1 828 372 L 780 354 Z" fill="#22c55e"/>
+    <path d="M 780 410 A 56 56 0 0 1 724 354 L 780 354 Z" fill="#f59e0b"/>
+    <text x="870" y="314" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">■ Stripe  72%</text>
+    <text x="870" y="342" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">■ PayPal  24%</text>
+    <text x="870" y="370" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">■ Apple Pay  4%</text>
+
+    <!-- Transactions table -->
+    <rect x="40" y="448" width="1190" height="172" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <rect x="40" y="448" width="1190" height="30" fill="#c7ddf5"/>
+    <text x="56" y="468" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">When</text>
+    <text x="180" y="468" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">User</text>
+    <text x="440" y="468" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Amount</text>
+    <text x="600" y="468" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Provider</text>
+    <text x="760" y="468" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Status</text>
+    <text x="900" y="468" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Intent ID</text>
+    <text x="1120" y="468" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Action</text>
+
+    <line x1="40" y1="478" x2="1230" y2="478" stroke="#b8a080"/>
+    <text x="56" y="502" font-family="monospace" font-size="14" fill="#1f2937">14:22</text>
+    <text x="180" y="502" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">alice@example.com</text>
+    <text x="440" y="502" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">$20.00</text>
+    <text x="600" y="502" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Stripe</text>
+    <text x="760" y="502" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e" font-weight="600">✓ succeeded</text>
+    <text x="900" y="502" font-family="monospace" font-size="14" fill="#1f2937">pi_3NzxyA…</text>
+    <text x="1120" y="502" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">View</text>
+
+    <line x1="40" y1="512" x2="1230" y2="512" stroke="#b8a080"/>
+    <text x="56" y="536" font-family="monospace" font-size="14" fill="#1f2937">14:18</text>
+    <text x="180" y="536" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">ben@company.co</text>
+    <text x="440" y="536" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">$9.99/mo</text>
+    <text x="600" y="536" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Stripe</text>
+    <text x="760" y="536" font-family="system-ui, sans-serif" font-size="14" fill="#22c55e" font-weight="600">⟳ recurring</text>
+    <text x="900" y="536" font-family="monospace" font-size="14" fill="#1f2937">pi_3Nzbc8…</text>
+    <text x="1120" y="536" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">View</text>
+
+    <line x1="40" y1="546" x2="1230" y2="546" stroke="#b8a080"/>
+    <text x="56" y="570" font-family="monospace" font-size="14" fill="#1f2937">14:09</text>
+    <text x="180" y="570" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">unknown@example.net</text>
+    <text x="440" y="570" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">$20.00</text>
+    <text x="600" y="570" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Stripe</text>
+    <text x="760" y="570" font-family="system-ui, sans-serif" font-size="14" fill="#dc2626" font-weight="600">✗ declined</text>
+    <text x="900" y="570" font-family="monospace" font-size="14" fill="#1f2937">pi_3Nzzzf…</text>
+    <text x="1120" y="570" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">View</text>
+
+    <text x="56" y="612" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Showing 1-50 of 412</text>
+    <text x="1210" y="612" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">⬇ Export CSV</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <g class="callout"><circle cx="486" cy="88" r="14" fill="#dc2626"/><text x="486" y="93" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="746" cy="210" r="14" fill="#dc2626"/><text x="746" y="215" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="70" cy="384" r="14" fill="#dc2626"/><text x="70" y="389" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="828" cy="568" r="14" fill="#dc2626"/><text x="828" y="573" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <text x="180" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" font-weight="700" fill="#1f2937">Payment Activity</text>
+
+    <rect x="0" y="132" width="360" height="40" fill="#dcc8a8"/>
+    <text x="40" y="157" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Overview</text>
+    <text x="104" y="157" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Users</text>
+    <text x="148" y="157" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Msg</text>
+    <text x="196" y="157" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Audit</text>
+    <rect x="240" y="140" width="88" height="24" rx="4" fill="#8b5cf6"/>
+    <text x="284" y="157" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#e8d4b8">Payments</text>
+
+    <rect x="16" y="188" width="160" height="60" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="32" y="212" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">GROSS</text>
+    <text x="32" y="236" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#22c55e">$14,280</text>
+    <rect x="184" y="188" width="160" height="60" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="200" y="212" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">TXN</text>
+    <text x="200" y="236" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">412</text>
+
+    <rect x="16" y="264" width="328" height="160" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="32" y="288" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">REVENUE TREND</text>
+    <polyline points="32,400 72,390 112,378 152,362 192,348 232,332 272,316 312,300" fill="none" stroke="#22c55e" stroke-width="2"/>
+
+    <rect x="16" y="444" width="328" height="176" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="32" y="468" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563">TRANSACTIONS</text>
+    <text x="32" y="490" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">alice · $20 · ✓</text>
+    <text x="32" y="510" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">ben · $9.99/mo · ⟳</text>
+    <text x="32" y="530" font-family="system-ui, sans-serif" font-size="14" fill="#dc2626">unknown · $20 · ✗</text>
+    <text x="180" y="604" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6" font-weight="600">← 1/9 →</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="284" cy="152" r="11" fill="#dc2626"/><text x="284" y="157" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Active tab: Payments</text>
+      <a href="#us-001" transform="translate(250, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">AdminPaymentService.getStats/getRecentTransactions</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">/getTrends parallel on first load.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Failure rate (amber)</text>
+      <a href="#us-002" transform="translate(240, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Flags spikes in decline rate (&gt; 5% → warn).</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Drives on-call alerting for provider outages.</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Revenue trend</text>
+      <a href="#us-003" transform="translate(170, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">30-day gross revenue line. Range filter</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">re-queries trends only.</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Transactions table</text>
+      <a href="#us-004" transform="translate(220, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">50/page, View opens full PaymentStatusDisplay</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">in a drawer (not a separate route).</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/admin/payments/page.tsx — AdminPaymentPanel organism backed by AdminPaymentService.</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Raw Stripe/PayPal webhook events stored server-side; UI displays normalized PaymentActivity.</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:38 | Admin Payments (as-is /admin/payments) | ScriptHammer</text>
+</svg>

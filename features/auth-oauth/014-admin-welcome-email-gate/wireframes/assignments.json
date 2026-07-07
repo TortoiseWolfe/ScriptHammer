@@ -1,0 +1,22 @@
+{
+  "feature": "014-admin-welcome-email-gate",
+  "plannedAt": "2026-01-14T20:15:32Z",
+  "svgCount": 1,
+  "assignments": [
+    {
+      "svg": "01-email-verification-gate.svg",
+      "focus": "Email Verification Required blocking screen. Shows clear message that email verification is needed to access messaging. Includes 'Resend Verification Email' button, pending/success state after resend, and note that OAuth users bypass this gate.",
+      "userStories": [],
+      "requirements": [
+        "FR-001",
+        "FR-002",
+        "FR-003",
+        "FR-004",
+        "FR-005",
+        "FR-006",
+        "FR-007"
+      ],
+      "mode": "new"
+    }
+  ]
+}

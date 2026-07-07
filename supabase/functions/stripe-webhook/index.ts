@@ -1,0 +1,535 @@
+/**
+ * Stripe Webhook Handler (Supabase Edge Function)
+ * Processes Stripe webhook events for payments and subscriptions
+ */
+
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
+
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
+  apiVersion: '2024-06-20',
+  httpClient: Stripe.createFetchHttpClient(),
+});
+
+const supabaseUrl =
+  Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
+
+// Days a past-due subscription stays usable before expiring. Mirrors
+// subscriptionConfig.gracePeriodDays in src/config/payment.ts (kept in sync
+// manually — Deno can't import that browser-oriented module).
+const GRACE_PERIOD_DAYS = 7;
+
+serve(async (req) => {
+  try {
+    // Get signature and body
+    const signature = req.headers.get('stripe-signature');
+    if (!signature) {
+      return new Response(
+        JSON.stringify({ error: 'Missing stripe-signature header' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const body = await req.text();
+
+    // Verify webhook signature. Must be the async variant: Deno's
+    // SubtleCryptoProvider refuses synchronous use, so constructEvent()
+    // throws on EVERY delivery (all events 400 before reaching handlers).
+    let event: Stripe.Event;
+    try {
+      event = await stripe.webhooks.constructEventAsync(
+        body,
+        signature,
+        webhookSecret
+      );
+    } catch (err) {
+      console.error('Signature verification failed:', err.message);
+      return new Response(
+        JSON.stringify({
+          error: `Webhook signature verification failed: ${err.message}`,
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Initialize Supabase client with service role
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Check for duplicate event (idempotency)
+    const { data: existingEvent } = await supabase
+      .from('webhook_events')
+      .select('id')
+      .eq('provider', 'stripe')
+      .eq('provider_event_id', event.id)
+      .single();
+
+    if (existingEvent) {
+      console.log(`Event ${event.id} already processed`);
+      return new Response(
+        JSON.stringify({ received: true, message: 'Event already processed' }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Store webhook event
+    const { data: webhookEvent, error: webhookError } = await supabase
+      .from('webhook_events')
+      .insert({
+        provider: 'stripe',
+        provider_event_id: event.id,
+        event_type: event.type,
+        event_data: event.data.object,
+        signature: signature,
+        signature_verified: true,
+        processed: false,
+      })
+      .select()
+      .single();
+
+    if (webhookError) {
+      console.error('Failed to store webhook event:', webhookError);
+      throw webhookError;
+    }
+
+    // Process event based on type
+    let processResult;
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        processResult = await handlePaymentIntentSucceeded(
+          supabase,
+          event,
+          webhookEvent.id
+        );
+        break;
+      case 'checkout.session.completed':
+        processResult = await handleCheckoutSessionCompleted(
+          supabase,
+          event,
+          webhookEvent.id
+        );
+        break;
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated':
+        processResult = await handleSubscriptionEvent(
+          supabase,
+          event,
+          webhookEvent.id
+        );
+        break;
+      case 'customer.subscription.deleted':
+        processResult = await handleSubscriptionDeleted(
+          supabase,
+          event,
+          webhookEvent.id
+        );
+        break;
+      case 'invoice.payment_failed':
+        processResult = await handleInvoicePaymentFailed(
+          supabase,
+          event,
+          webhookEvent.id
+        );
+        break;
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+        processResult = { handled: false };
+    }
+
+    // Mark webhook event as processed
+    await supabase
+      .from('webhook_events')
+      .update({
+        processed: true,
+        processed_at: new Date().toISOString(),
+        ...(processResult.related_payment_id && {
+          related_payment_id: processResult.related_payment_id,
+        }),
+        ...(processResult.related_subscription_id && {
+          related_subscription_id: processResult.related_subscription_id,
+        }),
+      })
+      .eq('id', webhookEvent.id);
+
+    return new Response(
+      JSON.stringify({ received: true, processed: processResult }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('Webhook processing error:', error);
+    return new Response(
+      JSON.stringify({ error: error.message || 'Internal server error' }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+});
+
+/**
+ * Handle payment_intent.succeeded event
+ */
+async function handlePaymentIntentSucceeded(
+  supabase: any,
+  event: Stripe.Event,
+  webhookEventId: string
+) {
+  const paymentIntent = event.data.object as Stripe.PaymentIntent;
+
+  // Find corresponding payment_intent in database
+  const { data: intent } = await supabase
+    .from('payment_intents')
+    .select('*')
+    .eq('id', paymentIntent.metadata?.intent_id)
+    .single();
+
+  if (!intent) {
+    console.warn(`No payment_intent found for Stripe PI: ${paymentIntent.id}`);
+    return { handled: false };
+  }
+
+  // Create payment_result record
+  const { data: paymentResult, error } = await supabase
+    .from('payment_results')
+    .insert({
+      intent_id: intent.id,
+      provider: 'stripe',
+      transaction_id: paymentIntent.id,
+      status: 'succeeded',
+      charged_amount: paymentIntent.amount,
+      charged_currency: paymentIntent.currency,
+      provider_fee: paymentIntent.application_fee_amount || null,
+      webhook_verified: true,
+      verification_method: 'webhook',
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Failed to create payment_result:', error);
+    throw error;
+  }
+
+  return {
+    handled: true,
+    related_payment_id: paymentResult.id,
+  };
+}
+
+/**
+ * Handle checkout.session.completed event
+ */
+async function handleCheckoutSessionCompleted(
+  supabase: any,
+  event: Stripe.Event,
+  webhookEventId: string
+) {
+  const session = event.data.object as Stripe.Checkout.Session;
+
+  if (session.mode === 'subscription') {
+    // Handle subscription checkout
+    return await handleSubscriptionCheckout(supabase, session, webhookEventId);
+  } else {
+    // Handle one-time payment checkout
+    return await handlePaymentCheckout(supabase, session, webhookEventId);
+  }
+}
+
+/**
+ * Handle one-time payment checkout
+ */
+async function handlePaymentCheckout(
+  supabase: any,
+  session: Stripe.Checkout.Session,
+  webhookEventId: string
+) {
+  const { data: intent } = await supabase
+    .from('payment_intents')
+    .select('*')
+    .eq('id', session.metadata?.intent_id)
+    .single();
+
+  if (!intent) {
+    console.warn(`No payment_intent found for checkout session: ${session.id}`);
+    return { handled: false };
+  }
+
+  const { data: paymentResult, error } = await supabase
+    .from('payment_results')
+    .insert({
+      intent_id: intent.id,
+      provider: 'stripe',
+      transaction_id: session.payment_intent as string,
+      status: session.payment_status === 'paid' ? 'succeeded' : 'pending',
+      charged_amount: session.amount_total,
+      charged_currency: session.currency,
+      webhook_verified: true,
+      verification_method: 'webhook',
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Failed to create payment_result:', error);
+    throw error;
+  }
+
+  return {
+    handled: true,
+    related_payment_id: paymentResult.id,
+  };
+}
+
+/**
+ * Handle subscription checkout
+ */
+async function handleSubscriptionCheckout(
+  supabase: any,
+  session: Stripe.Checkout.Session,
+  webhookEventId: string
+) {
+  const subscription = session.subscription as string;
+
+  // Subscription details will come via customer.subscription.created event
+  return {
+    handled: true,
+    subscription_id: subscription,
+  };
+}
+
+/**
+ * Handle subscription created/updated events
+ */
+async function handleSubscriptionEvent(
+  supabase: any,
+  event: Stripe.Event,
+  webhookEventId: string
+) {
+  const subscription = event.data.object as Stripe.Subscription;
+
+  // template_user_id and customer_email come from the metadata that
+  // create-stripe-subscription sets via subscription_data.metadata when
+  // creating the Checkout Session. Without these the NOT NULL
+  // constraints on subscriptions.template_user_id / customer_email fail.
+  // (Phase 0b — issue #102 — paired this webhook fix with the new
+  // create-stripe-subscription function.)
+  const templateUserId = subscription.metadata?.template_user_id;
+  const customerEmail = subscription.metadata?.customer_email;
+
+  if (!templateUserId) {
+    console.error(
+      `customer.subscription event missing template_user_id metadata; ` +
+        `subscription_id=${subscription.id}. Ensure the Checkout Session was ` +
+        `created via create-stripe-subscription which sets ` +
+        `subscription_data.metadata.template_user_id.`
+    );
+    return { handled: false };
+  }
+
+  // Pre-payment states never become rows: the table models real (paid)
+  // subscriptions and its status CHECK has no 'pending'. Checkout fires
+  // customer.subscription.created with status=incomplete BEFORE the card is
+  // confirmed; the paid state arrives seconds later as .updated (active).
+  if (subscription.status === 'incomplete') {
+    return { handled: true, reason: 'incomplete_not_persisted' };
+  }
+  if (subscription.status === 'incomplete_expired') {
+    // Abandoned checkout — only relevant if an earlier state made a row.
+    await supabase
+      .from('subscriptions')
+      .update({ status: 'expired', updated_at: new Date().toISOString() })
+      .eq('provider_subscription_id', subscription.id);
+    return { handled: true, reason: 'incomplete_expired' };
+  }
+
+  // Stripe API 2025-03-31+ moved current_period_start/end from the
+  // subscription onto its items; the payload shape follows the WEBHOOK
+  // ENDPOINT's API version (2025+), not this SDK's pin. Read the item first,
+  // fall back to the legacy top-level fields, and never throw on absence.
+  const firstItem = subscription.items.data[0] as
+    | (Stripe.SubscriptionItem & {
+        current_period_start?: number;
+        current_period_end?: number;
+      })
+    | undefined;
+  const periodStartSecs =
+    firstItem?.current_period_start ?? subscription.current_period_start;
+  const periodEndSecs =
+    firstItem?.current_period_end ?? subscription.current_period_end;
+  const toDateString = (secs: number | undefined | null) =>
+    secs ? new Date(secs * 1000).toISOString().split('T')[0] : null;
+
+  // Local model: status 'canceled' = user canceled (access until period end).
+  // Stripe represents that as status=active + cancel_at_period_end=true and
+  // fires .updated for it — without this mapping that event would clobber the
+  // 'canceled' status cancel-subscription just wrote (and make resume 400).
+  const mappedStatus = mapStripeSubscriptionStatus(subscription.status);
+  const localStatus =
+    subscription.cancel_at_period_end && mappedStatus === 'active'
+      ? 'canceled'
+      : mappedStatus;
+
+  const subscriptionData = {
+    provider: 'stripe',
+    provider_subscription_id: subscription.id,
+    template_user_id: templateUserId,
+    customer_email: customerEmail || '',
+    plan_amount: firstItem?.price.unit_amount || 0,
+    plan_interval: firstItem?.price.recurring?.interval || 'month',
+    status: localStatus,
+    current_period_start: toDateString(periodStartSecs),
+    current_period_end: toDateString(periodEndSecs),
+    next_billing_date:
+      localStatus === 'active' ? toDateString(periodEndSecs) : null,
+    // Reconcile cancellation fields both ways: a Stripe-side cancel carries
+    // canceled_at; a resume (cancel_at_period_end back to false) clears it.
+    canceled_at: subscription.canceled_at
+      ? new Date(subscription.canceled_at * 1000).toISOString()
+      : null,
+    cancellation_reason: subscription.cancellation_details?.reason ?? null,
+  };
+
+  // Upsert subscription (create or update)
+  const { data: sub, error } = await supabase
+    .from('subscriptions')
+    .upsert(subscriptionData, {
+      onConflict: 'provider_subscription_id',
+    })
+    .select()
+    .single();
+
+  if (error) {
+    // idx_subscriptions_one_live_per_user (partial unique index) rejects a
+    // SECOND live subscription for a user who already has one. Don't 500 — the
+    // provider would retry forever; acknowledge and report the reason instead.
+    if (error.code === '23505') {
+      console.warn(
+        'Duplicate live subscription rejected by unique index:',
+        error.message
+      );
+      return { handled: false, reason: 'duplicate_live_subscription' };
+    }
+    console.error('Failed to upsert subscription:', error);
+    throw error;
+  }
+
+  return {
+    handled: true,
+    related_subscription_id: sub.id,
+  };
+}
+
+/**
+ * Handle subscription deleted event
+ */
+async function handleSubscriptionDeleted(
+  supabase: any,
+  event: Stripe.Event,
+  webhookEventId: string
+) {
+  const subscription = event.data.object as Stripe.Subscription;
+
+  const { data: sub, error } = await supabase
+    .from('subscriptions')
+    .update({
+      status: 'canceled',
+      canceled_at: new Date().toISOString(),
+      cancellation_reason: subscription.cancellation_details?.reason || null,
+    })
+    .eq('provider_subscription_id', subscription.id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Failed to update subscription:', error);
+    throw error;
+  }
+
+  return {
+    handled: true,
+    related_subscription_id: sub.id,
+  };
+}
+
+/**
+ * Handle invoice payment failed event
+ */
+async function handleInvoicePaymentFailed(
+  supabase: any,
+  event: Stripe.Event,
+  webhookEventId: string
+) {
+  const invoice = event.data.object as Stripe.Invoice;
+
+  if (!invoice.subscription) {
+    return { handled: false };
+  }
+
+  const providerSubId = invoice.subscription as string;
+
+  // Read the current row so we can increment the failure count safely. The
+  // supabase-js client has no SQL-expression template tag, so the previous
+  // `supabase.sql\`failed_payment_count + 1\`` never incremented — it must be a
+  // plain read-then-write. Webhook events for one subscription are delivered
+  // serially, so this is not racy in practice.
+  const { data: existing } = await supabase
+    .from('subscriptions')
+    .select('id, failed_payment_count')
+    .eq('provider_subscription_id', providerSubId)
+    .single();
+
+  if (!existing) {
+    return { handled: false };
+  }
+
+  // Start the grace clock now (the canonical YYYY-MM-DD TEXT date format used
+  // elsewhere in this file). GRACE_PERIOD_DAYS mirrors
+  // subscriptionConfig.gracePeriodDays in src/config/payment.ts (Deno can't
+  // import that browser module, so the value is duplicated here).
+  const gracePeriodExpires = new Date(
+    Date.now() + GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000
+  )
+    .toISOString()
+    .split('T')[0];
+
+  const { data: sub, error } = await supabase
+    .from('subscriptions')
+    .update({
+      status: 'grace_period',
+      failed_payment_count: (existing.failed_payment_count ?? 0) + 1,
+      grace_period_expires: gracePeriodExpires,
+    })
+    .eq('provider_subscription_id', providerSubId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Failed to update subscription:', error);
+    throw error;
+  }
+
+  return {
+    handled: true,
+    related_subscription_id: sub.id,
+  };
+}
+
+/**
+ * Map Stripe subscription status to our schema
+ */
+function mapStripeSubscriptionStatus(
+  status: Stripe.Subscription.Status
+): string {
+  const statusMap: Record<Stripe.Subscription.Status, string> = {
+    active: 'active',
+    past_due: 'past_due',
+    unpaid: 'grace_period',
+    canceled: 'canceled',
+    incomplete: 'pending',
+    incomplete_expired: 'expired',
+    trialing: 'active', // Treat trial as active
+    paused: 'canceled',
+  };
+
+  return statusMap[status] || 'canceled';
+}

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#c7ddf5"/><stop offset="100%" stop-color="#b8d4f0"/></linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">BLOG POST - /blog/[slug] (AS-IS)</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+    <rect x="480" y="3" width="90" height="44" rx="4" fill="#8b5cf6"/>
+    <text x="525" y="31" text-anchor="middle" fill="#e8d4b8" font-family="system-ui, sans-serif" font-size="14" font-weight="600">Features</text>
+
+    <!-- Cover + title -->
+    <rect x="200" y="80" width="880" height="100" rx="8" fill="#8b5cf6"/>
+    <text x="640" y="116" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">[cover image]</text>
+    <text x="640" y="200" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="700" fill="#1f2937">Welcome to ScriptHammer</text>
+    <text x="640" y="224" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">By TortoiseWolfe · 2025-09-15 · 5 min read · intro</text>
+
+    <!-- 2-col: TOC + body -->
+    <!-- TOC sidebar (left) -->
+    <rect x="60" y="260" width="260" height="380" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="80" y="284" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">TABLE OF CONTENTS</text>
+    <text x="80" y="312" font-family="system-ui, sans-serif" font-size="14" fill="#8b5cf6">1. Why a template</text>
+    <text x="80" y="336" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">2. What's included</text>
+    <text x="80" y="360" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">3. Five-file components</text>
+    <text x="80" y="384" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">4. PWA + offline</text>
+    <text x="80" y="408" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">5. Next steps</text>
+
+    <line x1="80" y1="436" x2="300" y2="436" stroke="#b8a080"/>
+    <text x="80" y="464" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">SEO SCORE</text>
+    <rect x="80" y="476" width="220" height="8" rx="4" fill="#f5f0e6"/>
+    <rect x="80" y="476" width="186" height="8" rx="4" fill="#22c55e"/>
+    <text x="80" y="510" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">85 / 100  <tspan fill="#22c55e">● good</tspan></text>
+
+    <!-- Body article -->
+    <rect x="340" y="260" width="740" height="380" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="360" y="286" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">1. Why a template</text>
+    <text x="360" y="312" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Starting a new web app is a solved problem —</text>
+    <text x="360" y="332" font-family="system-ui, sans-serif" font-size="14" fill="#374151">yet every team ends up building the same scaffold</text>
+    <text x="360" y="352" font-family="system-ui, sans-serif" font-size="14" fill="#374151">again. ScriptHammer ships the parts no one</text>
+    <text x="360" y="372" font-family="system-ui, sans-serif" font-size="14" fill="#374151">enjoys writing twice: auth, GDPR, theming, PWA.</text>
+
+    <text x="360" y="408" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">2. What's included</text>
+    <text x="360" y="434" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Supabase auth (email + OAuth + magic links)</text>
+    <text x="360" y="454" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• 34 DaisyUI themes + custom variants</text>
+    <text x="360" y="474" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• PWA with service worker + offline queue</text>
+    <text x="360" y="494" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• 2,400+ tests (unit, a11y, E2E)</text>
+
+    <!-- Share buttons -->
+    <rect x="360" y="524" width="100" height="32" rx="16" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="410" y="544" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Tweet</text>
+    <rect x="472" y="524" width="100" height="32" rx="16" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="522" y="544" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">LinkedIn</text>
+    <rect x="584" y="524" width="100" height="32" rx="16" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="634" y="544" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Copy link</text>
+
+    <!-- Disqus placeholder -->
+    <rect x="360" y="574" width="700" height="50" rx="4" fill="#f5f0e6" stroke="#b8a080" stroke-dasharray="3 3"/>
+    <text x="710" y="604" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Disqus comments (loads on scroll)</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <g class="callout"><circle cx="640" cy="200" r="14" fill="#dc2626"/><text x="640" y="205" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="330" cy="340" r="14" fill="#dc2626"/><text x="330" y="345" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="330" cy="498" r="14" fill="#dc2626"/><text x="330" y="503" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="710" cy="582" r="14" fill="#dc2626"/><text x="710" y="587" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <rect x="16" y="96" width="328" height="80" rx="8" fill="#8b5cf6"/>
+    <text x="180" y="140" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">[cover]</text>
+
+    <text x="180" y="208" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#1f2937">Welcome to ScriptHammer</text>
+    <text x="180" y="234" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">TortoiseWolfe · 5 min</text>
+
+    <text x="20" y="274" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">1. Why a template</text>
+    <text x="20" y="300" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Starting a new web app is a</text>
+    <text x="20" y="318" font-family="system-ui, sans-serif" font-size="14" fill="#374151">solved problem — yet every team</text>
+    <text x="20" y="336" font-family="system-ui, sans-serif" font-size="14" fill="#374151">rebuilds the scaffold anyway.</text>
+
+    <text x="20" y="376" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">2. What's included</text>
+    <text x="20" y="402" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• Supabase auth (all flows)</text>
+    <text x="20" y="420" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• 34 DaisyUI themes</text>
+    <text x="20" y="438" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• PWA + offline queue</text>
+    <text x="20" y="456" font-family="system-ui, sans-serif" font-size="14" fill="#374151">• 2,400+ tests</text>
+
+    <rect x="16" y="484" width="100" height="32" rx="16" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="66" y="504" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Tweet</text>
+    <rect x="124" y="484" width="108" height="32" rx="16" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="178" y="504" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">LinkedIn</text>
+    <rect x="240" y="484" width="104" height="32" rx="16" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="292" y="504" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#1f2937">Copy</text>
+
+    <rect x="16" y="528" width="328" height="40" rx="4" fill="#f5f0e6" stroke="#b8a080" stroke-dasharray="3 3"/>
+    <text x="180" y="552" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#6b7280">Disqus (on scroll)</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+    <g class="callout"><circle cx="180" cy="208" r="11" fill="#dc2626"/><text x="180" y="213" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Hero + metadata</text>
+      <a href="#us-001" transform="translate(170, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Cover image + post title + byline + reading</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">time + tags.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">TOC + SEO score sidebar</text>
+      <a href="#us-002" transform="translate(290, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">tocGenerator builds nav from markdown headings.</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">SEO score from seoAnalyzer.</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Markdown-rendered body</text>
+      <a href="#us-003" transform="translate(270, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">markdownProcessor renders MDX at build;</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Tailwind prose plugin for typography.</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Share + Disqus</text>
+      <a href="#us-004" transform="translate(160, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-004</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Social share chips + Disqus iframe (lazy-loaded</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">on scroll to reduce TTI).</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Source: src/app/blog/[slug]/page.tsx — dynamic SSG route, BlogPostPageClient handles markdown.</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Author info from detectedConfig; falls back to project owner when no match.</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">999:21 | Blog Post (as-is /blog/[slug]) | ScriptHammer</text>
+</svg>

@@ -1,0 +1,131 @@
+<svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f97316;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ea580c;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="detectGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="generateGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="2" dy="4" stdDeviation="4" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- Title -->
+  <text x="400" y="40" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="bold" text-anchor="middle" fill="#1f2937">
+    Auto-Configuration Flow
+  </text>
+
+  <!-- Step 1: Use Template -->
+  <g transform="translate(100, 100)">
+    <rect x="0" y="0" width="160" height="80" rx="8" fill="url(#gitGrad)" filter="url(#shadow)"/>
+    <text x="80" y="35" font-family="system-ui" font-size="16" font-weight="600" text-anchor="middle" fill="white">
+      1. Use Template
+    </text>
+    <text x="80" y="55" font-family="system-ui" font-size="13" text-anchor="middle" fill="white">
+      Any name works!
+    </text>
+  </g>
+
+  <!-- Arrow 1 -->
+  <path d="M 260 140 L 320 140" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+
+  <!-- Step 2: Clone and Build -->
+  <g transform="translate(320, 100)">
+    <rect x="0" y="0" width="160" height="80" rx="8" fill="url(#detectGrad)" filter="url(#shadow)"/>
+    <text x="80" y="35" font-family="system-ui" font-size="16" font-weight="600" text-anchor="middle" fill="white">
+      2. Clone &amp; Build
+    </text>
+    <text x="80" y="55" font-family="system-ui" font-size="13" text-anchor="middle" fill="white">
+      docker compose up
+    </text>
+  </g>
+
+  <!-- Arrow 2 -->
+  <path d="M 480 140 L 540 140" stroke="#6b7280" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+
+  <!-- Step 3: Auto-Config -->
+  <g transform="translate(540, 100)">
+    <rect x="0" y="0" width="160" height="80" rx="8" fill="url(#generateGrad)" filter="url(#shadow)"/>
+    <text x="80" y="35" font-family="system-ui" font-size="16" font-weight="600" text-anchor="middle" fill="white">
+      3. Auto-Config
+    </text>
+    <text x="80" y="55" font-family="system-ui" font-size="13" text-anchor="middle" fill="white">
+      Ready to code!
+    </text>
+  </g>
+
+  <!-- Details boxes -->
+  <g transform="translate(100, 220)">
+    <!-- Git Remote Detection -->
+    <rect x="0" y="0" width="200" height="120" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1"/>
+    <text x="10" y="25" font-family="system-ui" font-size="14" font-weight="600" fill="#92400e">
+      Git Remote Detection
+    </text>
+    <text x="10" y="45" font-family="system-ui" font-size="12" fill="#78350f">
+      • github.com/user/repo
+    </text>
+    <text x="10" y="65" font-family="system-ui" font-size="12" fill="#78350f">
+      • Extracts owner &amp; name
+    </text>
+    <text x="10" y="85" font-family="system-ui" font-size="12" fill="#78350f">
+      • Works with SSH/HTTPS
+    </text>
+    <text x="10" y="105" font-family="system-ui" font-size="12" fill="#78350f">
+      • GitLab/Bitbucket too!
+    </text>
+  </g>
+
+  <g transform="translate(320, 220)">
+    <!-- Project Files Generated -->
+    <rect x="0" y="0" width="200" height="120" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1"/>
+    <text x="10" y="25" font-family="system-ui" font-size="14" font-weight="600" fill="#1e3a8a">
+      Files Generated
+    </text>
+    <text x="10" y="45" font-family="system-ui" font-size="12" fill="#1e40af">
+      • project-detected.ts
+    </text>
+    <text x="10" y="65" font-family="system-ui" font-size="12" fill="#1e40af">
+      • project-detected.json
+    </text>
+    <text x="10" y="85" font-family="system-ui" font-size="12" fill="#1e40af">
+      • manifest.json (PWA)
+    </text>
+    <text x="10" y="105" font-family="system-ui" font-size="12" fill="#1e40af">
+      • All meta tags updated
+    </text>
+  </g>
+
+  <g transform="translate(540, 220)">
+    <!-- What's Configured -->
+    <rect x="0" y="0" width="200" height="120" rx="6" fill="#d1fae5" stroke="#10b981" stroke-width="1"/>
+    <text x="10" y="25" font-family="system-ui" font-size="14" font-weight="600" fill="#064e3b">
+      Auto-Configured
+    </text>
+    <text x="10" y="45" font-family="system-ui" font-size="12" fill="#065f46">
+      • Project name everywhere
+    </text>
+    <text x="10" y="65" font-family="system-ui" font-size="12" fill="#065f46">
+      • Owner attribution
+    </text>
+    <text x="10" y="85" font-family="system-ui" font-size="12" fill="#065f46">
+      • GitHub URLs
+    </text>
+    <text x="10" y="105" font-family="system-ui" font-size="12" fill="#065f46">
+      • Deploy paths ready
+    </text>
+  </g>
+
+  <!-- Arrow marker -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6b7280"/>
+    </marker>
+  </defs>
+</svg>

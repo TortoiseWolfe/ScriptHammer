@@ -1,0 +1,51 @@
+import type { StorybookConfig } from '@storybook/nextjs-vite';
+import { config as dotenvConfig } from 'dotenv';
+import path from 'path';
+
+// Load environment variables from .env files
+dotenvConfig({ path: path.resolve(process.cwd(), '.env.local') });
+dotenvConfig({ path: path.resolve(process.cwd(), '.env') });
+
+const config: StorybookConfig = {
+  stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
+  addons: [
+    '@storybook/addon-onboarding',
+    '@storybook/addon-links',
+    '@storybook/addon-docs',
+    '@chromatic-com/storybook',
+    '@storybook/addon-themes',
+    '@storybook/addon-a11y',
+  ],
+  framework: {
+    name: '@storybook/nextjs-vite',
+    options: {},
+  },
+  staticDirs: process.env.STORYBOOK_SKIP_STATIC ? [] : ['../public'],
+  viteFinal: async (config) => {
+    const storybookDir = path.dirname(new URL(import.meta.url).pathname);
+    config.resolve = config.resolve || {};
+    config.resolve.alias = {
+      ...(config.resolve.alias as Record<string, string>),
+      '@/services/messaging/key-service': path.resolve(
+        storybookDir,
+        'mocks/key-service.ts'
+      ),
+    };
+    return config;
+  },
+  env: (config) => ({
+    ...config,
+    // Pass through all NEXT_PUBLIC_ env vars to Storybook
+    ...Object.keys(process.env)
+      .filter((key) => key.startsWith('NEXT_PUBLIC_'))
+      .reduce(
+        (env, key) => {
+          env[key] = process.env[key];
+          return env;
+        },
+        {} as Record<string, string>
+      ),
+  }),
+};
+
+export default config;

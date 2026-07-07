@@ -1,0 +1,52 @@
+{
+  "feature": "003-user-authentication",
+  "plannedAt": "2026-01-13T16:15:00Z",
+  "svgCount": 4,
+  "assignments": [
+    {
+      "svg": "01-registration-sign-in.svg",
+      "focus": "Combined sign-up and sign-in forms with email/password fields, OAuth buttons (GitHub, Google), and remember-me checkbox",
+      "userStories": ["US-1", "US-2", "US-4"],
+      "requirements": [
+        "FR-001",
+        "FR-002",
+        "FR-003",
+        "FR-006",
+        "FR-007",
+        "FR-008",
+        "FR-013",
+        "FR-016"
+      ],
+      "mode": "new"
+    },
+    {
+      "svg": "02-password-recovery.svg",
+      "focus": "Forgot password entry form and password reset form with new password confirmation",
+      "userStories": ["US-3"],
+      "requirements": ["FR-010", "FR-011"],
+      "mode": "new"
+    },
+    {
+      "svg": "03-email-verification.svg",
+      "focus": "Email verification prompt page with resend option and verification success state",
+      "userStories": ["US-7"],
+      "requirements": ["FR-004", "FR-005", "FR-018"],
+      "mode": "new"
+    },
+    {
+      "svg": "04-profile-settings.svg",
+      "focus": "Profile management page with display name, avatar, password change, active sessions list, and account deletion",
+      "userStories": ["US-6"],
+      "requirements": [
+        "FR-024",
+        "FR-025",
+        "FR-026",
+        "FR-027",
+        "FR-028",
+        "FR-029",
+        "FR-030"
+      ],
+      "mode": "new"
+    }
+  ]
+}

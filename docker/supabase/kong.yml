@@ -1,0 +1,194 @@
+# Kong declarative config for the local Supabase profile.
+#
+# The supabase-kong entrypoint in docker-compose.yml cats this whole file
+# into a shell eval to substitute ANON_KEY, SERVICE_ROLE_KEY,
+# DASHBOARD_USERNAME, DASHBOARD_PASSWORD before Kong reads it. That means
+# every byte of this file is parsed by busybox ash inside a double-quoted
+# string first. There is no such thing as a comment at that stage. A dollar
+# sign, a backtick, or a backslash ANYWHERE in this file -- right here in
+# this paragraph included -- is a live shell metacharacter.
+#
+# This comment used to read DASHBOARD-underscore-asterisk wrapped in
+# dollar-brace as a shorthand for the two DASHBOARD vars. An asterisk is
+# not legal in a POSIX parameter name, so ash reported bad-substitution and
+# exited before Kong ever ran. The error pointed at the last line of the
+# file, not line 3, because ash reports where the multi-line quoted argument
+# ends, not where the bad token sits. Keep this header ASCII-plain.
+
+_format_version: '2.1'
+_transform: true
+
+consumers:
+  - username: anon
+    keyauth_credentials:
+      - key: ${ANON_KEY}
+  - username: service_role
+    keyauth_credentials:
+      - key: ${SERVICE_ROLE_KEY}
+  - username: DASHBOARD
+    basicauth_credentials:
+      - username: ${DASHBOARD_USERNAME}
+        password: ${DASHBOARD_PASSWORD}
+
+acls:
+  - consumer: anon
+    group: anon
+  - consumer: service_role
+    group: admin
+
+services:
+  # ── Auth (GoTrue) ────────────────────────────────────────────────────
+  - name: auth-v1-open
+    url: http://supabase-auth:9999/verify
+    routes:
+      - name: auth-v1-open
+        strip_path: true
+        paths: [/auth/v1/verify]
+    plugins:
+      - name: cors
+
+  - name: auth-v1-open-callback
+    url: http://supabase-auth:9999/callback
+    routes:
+      - name: auth-v1-open-callback
+        strip_path: true
+        paths: [/auth/v1/callback]
+    plugins:
+      - name: cors
+
+  - name: auth-v1-open-authorize
+    url: http://supabase-auth:9999/authorize
+    routes:
+      - name: auth-v1-open-authorize
+        strip_path: true
+        paths: [/auth/v1/authorize]
+    plugins:
+      - name: cors
+
+  - name: auth-v1
+    url: http://supabase-auth:9999/
+    routes:
+      - name: auth-v1-all
+        strip_path: true
+        paths: [/auth/v1/]
+    plugins:
+      - name: cors
+      - name: key-auth
+        config:
+          hide_credentials: false
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow: [admin, anon]
+
+  # ── PostgREST ────────────────────────────────────────────────────────
+  - name: rest-v1
+    url: http://supabase-rest:3000/
+    routes:
+      - name: rest-v1-all
+        strip_path: true
+        paths: [/rest/v1/]
+    plugins:
+      - name: cors
+      - name: key-auth
+        config:
+          hide_credentials: true
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow: [admin, anon]
+
+  # ── GraphQL (PostgREST RPC) ──────────────────────────────────────────
+  - name: graphql-v1
+    url: http://supabase-rest:3000/rpc/graphql
+    routes:
+      - name: graphql-v1-all
+        strip_path: true
+        paths: [/graphql/v1]
+    plugins:
+      - name: cors
+      - name: key-auth
+        config:
+          hide_credentials: true
+      - name: request-transformer
+        config:
+          add:
+            headers:
+              - 'Content-Profile:graphql_public'
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow: [admin, anon]
+
+  # ── Realtime ─────────────────────────────────────────────────────────
+  - name: realtime-v1-ws
+    url: http://supabase-realtime:4000/socket
+    protocol: ws
+    routes:
+      - name: realtime-v1-ws
+        strip_path: true
+        paths: [/realtime/v1/]
+    plugins:
+      - name: cors
+      - name: key-auth
+        config:
+          hide_credentials: false
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow: [admin, anon]
+
+  - name: realtime-v1-rest
+    url: http://supabase-realtime:4000/api
+    routes:
+      - name: realtime-v1-rest
+        strip_path: true
+        paths: [/realtime/v1/api]
+    plugins:
+      - name: cors
+      - name: key-auth
+        config:
+          hide_credentials: false
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow: [admin, anon]
+
+  # ── Storage ──────────────────────────────────────────────────────────
+  - name: storage-v1
+    url: http://supabase-storage:5000/
+    routes:
+      - name: storage-v1-all
+        strip_path: true
+        paths: [/storage/v1/]
+    plugins:
+      - name: cors
+
+  # ── Postgres Meta (Studio backend) ───────────────────────────────────
+  - name: meta
+    url: http://supabase-meta:8080/
+    routes:
+      - name: meta-all
+        strip_path: true
+        paths: [/pg/]
+    plugins:
+      - name: key-auth
+        config:
+          hide_credentials: false
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow: [admin]
+
+  # ── Studio dashboard (basic-auth protected) ──────────────────────────
+  - name: dashboard
+    url: http://supabase-studio:3000/
+    routes:
+      - name: dashboard-all
+        strip_path: true
+        paths: [/]
+    plugins:
+      - name: cors
+      - name: basic-auth
+        config:
+          hide_credentials: true

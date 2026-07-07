@@ -1,0 +1,170 @@
+# Wireframe Plan: 024-Payment-Integration
+
+**Feature ID**: 024
+**Priority**: P1 Critical
+**Blocks**: 038-payment-dashboard, 039-payment-offline-queue, 040-payment-retry-ui, 041-payment-failover-ui
+
+## Screen Inventory
+
+Based on feature spec analysis, 024-payment-integration requires **4 wireframes**:
+
+### Screen 1: Payment Consent Flow
+
+**File**: `01-payment-consent-flow.svg`
+**User Scenario**: US-3 (Consent Flow)
+
+**Desktop Content** (x=40, y=60, 1280x720):
+
+- Header with logo and navigation
+- Consent modal overlay (centered)
+  - Provider logos (Stripe, PayPal)
+  - Consent explanation text
+  - "Accept" and "Decline" buttons (44px touch targets)
+- Background: Payment page (dimmed)
+
+**Mobile Content** (x=1360, y=60, 360x720):
+
+- Full-screen consent modal
+- Stacked provider logos
+- Large touch-friendly buttons
+
+**Annotations**:
+
+1. GDPR compliance: Scripts only load after consent (FR-017)
+2. Decline path shows Cash App/Chime links (FR-018)
+3. Consent persisted, re-prompted on next visit if declined (FR-019)
+
+---
+
+### Screen 2: One-Time Payment
+
+**File**: `02-one-time-payment.svg`
+**User Scenario**: US-1 (One-Time Payment)
+
+**Desktop Content**:
+
+- Header with navigation
+- Payment form section:
+  - Amount input with currency selector (USD, EUR, GBP, CAD, AUD)
+  - Min $1.00 / Max $999.99 validation (FR-004)
+  - Provider selection tabs (Stripe | PayPal)
+  - Credit card form (Stripe) or PayPal button
+  - "Pay Now" CTA button
+- Order summary sidebar
+- Trust badges / security indicators
+
+**Mobile Content**:
+
+- Stacked layout
+- Amount input full-width
+- Provider tabs compact
+- Sticky "Pay Now" button at bottom
+
+**Annotations**:
+
+1. Amount validation: min $1.00, max $999.99 (FR-004)
+2. Multi-currency support (FR-005)
+3. Payment pending until webhook verifies (FR-010)
+
+---
+
+### Screen 3: Subscription Management
+
+**File**: `03-subscription-management.svg`
+**User Scenario**: US-2 (Subscription Payment)
+
+**Desktop Content**:
+
+- Header with navigation
+- Plan selection cards:
+  - Monthly plan ($X/mo)
+  - Yearly plan ($X/yr, show savings)
+- Selected plan details:
+  - Next billing date
+  - Payment method on file
+  - "Subscribe" / "Update" / "Cancel" buttons
+- Subscription status indicator (active/grace/cancelled)
+
+**Mobile Content**:
+
+- Plan cards stacked vertically
+- Current subscription status prominent
+- Action buttons full-width
+
+**Annotations**:
+
+1. Auto-retry on failure: days 1, 3, 7 (FR-014)
+2. Grace period: 7 days after retry exhaustion (FR-015)
+3. Auto-cancel after grace period (FR-016)
+
+---
+
+### Screen 4: Payment Error & Retry
+
+**File**: `04-payment-error-retry.svg`
+**User Scenario**: US-1 (AC-3), US-5 (Offline Queuing)
+
+**Desktop Content**:
+
+- Header with navigation
+- Error state panel:
+  - Error icon and message
+  - Error code/details (expandable)
+  - "Retry Payment" button
+  - "Try Different Method" link
+- Offline indicator (if applicable):
+  - "Offline - Payment Queued" badge
+  - Queue status: "Will process when connected"
+- Fallback options: Cash App, Chime links
+
+**Mobile Content**:
+
+- Full-width error message
+- Large retry button
+- Offline indicator banner at top
+- Fallback payment links
+
+**Annotations**:
+
+1. Clear error messaging with retry option (US-1 AC-3)
+2. Offline queue persists across browser sessions (NFR-004)
+3. Offline indicator visible in UI (US-5 AC-3)
+4. Cash App/Chime fallback always available (FR-006)
+
+---
+
+## Acceptance Criteria Mapping
+
+| AC        | Screen | Element                        |
+| --------- | ------ | ------------------------------ |
+| US-1 AC-1 | 01     | Consent modal → redirect       |
+| US-1 AC-2 | 02     | Webhook verification (backend) |
+| US-1 AC-3 | 04     | Error state with retry         |
+| US-2 AC-1 | 03     | Subscription setup             |
+| US-2 AC-2 | 03     | Next billing date display      |
+| US-2 AC-3 | 03     | Retry schedule annotation      |
+| US-3 AC-1 | 01     | Consent modal on first visit   |
+| US-3 AC-2 | 01     | Scripts load after consent     |
+| US-3 AC-3 | 01     | Cash App/Chime on decline      |
+| US-5 AC-1 | 04     | Offline queue indicator        |
+| US-5 AC-2 | 04     | Queue sync status              |
+| US-5 AC-3 | 04     | Offline indicator badge        |
+
+## Generator Assignment
+
+| Screen                     | Assigned To | Priority |
+| -------------------------- | ----------- | -------- |
+| 01-payment-consent-flow    | Generator-1 | High     |
+| 02-one-time-payment        | Generator-2 | High     |
+| 03-subscription-management | Generator-3 | High     |
+| 04-payment-error-retry     | Generator-1 | High     |
+
+## Dependencies
+
+- Requires `includes/header-desktop.svg` and `includes/footer-desktop.svg`
+- Requires `includes/header-mobile.svg` and `includes/footer-mobile.svg`
+- Colors per light theme: panel `#e8d4b8`, buttons `#3b82f6`, destructive `#ef4444`
+
+---
+
+_Generated by Coordinator for Planner terminal dispatch_

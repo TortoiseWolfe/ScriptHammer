@@ -1,0 +1,156 @@
+{
+  "themes": {
+    "light": [
+      "light",
+      "cupcake",
+      "bumblebee",
+      "emerald",
+      "corporate",
+      "synthwave",
+      "retro",
+      "cyberpunk",
+      "valentine",
+      "halloween",
+      "garden",
+      "forest",
+      "aqua",
+      "lofi",
+      "pastel",
+      "fantasy",
+      "wireframe",
+      "autumn",
+      "acid",
+      "lemonade",
+      "winter"
+    ],
+    "dark": [
+      "dark",
+      "dracula",
+      "night",
+      "coffee",
+      "dim",
+      "sunset",
+      "luxury",
+      "business",
+      "black",
+      "nord"
+    ],
+    "default": "light",
+    "testThemes": ["light", "dark", "synthwave", "cyberpunk", "dracula"]
+  },
+  "forms": {
+    "validEmail": "test@example.com",
+    "invalidEmail": "invalid-email",
+    "validPhone": "+1234567890",
+    "invalidPhone": "123",
+    "validURL": "https://example.com",
+    "invalidURL": "not-a-url",
+    "textInput": "Test Input Value",
+    "longText": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+    "shortText": "Test",
+    "specialChars": "Test!@#$%^&*()",
+    "numbers": "1234567890",
+    "alphanumeric": "Test123"
+  },
+  "navigation": {
+    "pages": [
+      { "name": "Home", "path": "/", "title": "ScriptHammer" },
+      { "name": "Themes", "path": "/themes", "title": "Theme" },
+      { "name": "Components", "path": "/components", "title": "Component" },
+      {
+        "name": "Accessibility",
+        "path": "/accessibility",
+        "title": "Accessibility"
+      },
+      { "name": "Status", "path": "/status", "title": "Status" }
+    ],
+    "externalLinks": [
+      { "name": "GitHub", "url": "github.com/TortoiseWolfe/ScriptHammer" }
+    ]
+  },
+  "components": {
+    "buttons": [
+      { "type": "primary", "text": "Primary Button" },
+      { "type": "secondary", "text": "Secondary Button" },
+      { "type": "success", "text": "Success Button" },
+      { "type": "warning", "text": "Warning Button" },
+      { "type": "error", "text": "Error Button" }
+    ],
+    "alerts": [
+      { "type": "info", "message": "This is an info alert" },
+      { "type": "success", "message": "Operation completed successfully" },
+      { "type": "warning", "message": "Please review before proceeding" },
+      { "type": "error", "message": "An error occurred" }
+    ],
+    "badges": [
+      { "type": "primary", "text": "New" },
+      { "type": "success", "text": "Active" },
+      { "type": "warning", "text": "Pending" },
+      { "type": "error", "text": "Failed" }
+    ]
+  },
+  "pwa": {
+    "manifest": {
+      "name": "ScriptHammer",
+      "short_name": "ScriptHammer",
+      "start_url": "/ScriptHammer/",
+      "display": "standalone",
+      "theme_color": "#3b82f6",
+      "background_color": "#ffffff"
+    },
+    "icons": [
+      { "size": "192x192", "purpose": "any" },
+      { "size": "512x512", "purpose": "any" },
+      { "size": "192x192", "purpose": "maskable" }
+    ]
+  },
+  "accessibility": {
+    "skipLinks": ["#main", "#game-demo"],
+    "landmarks": ["main", "nav", "header", "footer"],
+    "ariaRoles": ["navigation", "main", "banner", "contentinfo"],
+    "fontSizes": {
+      "small": "14px",
+      "medium": "16px",
+      "large": "18px",
+      "xlarge": "20px"
+    },
+    "contrastRatios": {
+      "normal": 4.5,
+      "large": 3.0,
+      "enhanced": 7.0
+    }
+  },
+  "game": {
+    "diceCount": 5,
+    "maxRolls": 3,
+    "targetScore": 21,
+    "combinations": [
+      { "name": "Captain", "value": 6 },
+      { "name": "Ship", "value": 5 },
+      { "name": "Crew", "value": 4 }
+    ]
+  },
+  "viewport": {
+    "mobile": { "width": 375, "height": 667 },
+    "tablet": { "width": 768, "height": 1024 },
+    "desktop": { "width": 1920, "height": 1080 },
+    "breakpoints": {
+      "sm": 640,
+      "md": 768,
+      "lg": 1024,
+      "xl": 1280,
+      "xxl": 1536
+    }
+  },
+  "timeout": {
+    "short": 1000,
+    "medium": 5000,
+    "long": 10000,
+    "network": 30000
+  },
+  "testData": {
+    "searchTerms": ["button", "form", "modal", "card", "nav"],
+    "invalidSearchTerms": ["xyz123", "nonexistent", ""],
+    "specialSearchTerms": ["!@#$", "test&test", "test|test"]
+  }
+}

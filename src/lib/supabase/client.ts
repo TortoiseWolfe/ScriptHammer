@@ -1,0 +1,270 @@
+/**
+ * Supabase Client for Browser (Client-side)
+ *
+ * Creates a Supabase client for use in browser/client components.
+ * Configured for static export (no server-side code exchange).
+ *
+ * @module lib/supabase/client
+ */
+
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/supabase/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+/**
+ * Flag for the E2E storage adapter: when true, auth-token removal is
+ * allowed (intentional sign-out). When false, removeItem is blocked
+ * for auth-token keys to prevent spurious session wipes.
+ */
+let _allowAuthTokenRemoval = false;
+export function setAllowAuthTokenRemoval(value: boolean): void {
+  _allowAuthTokenRemoval = value;
+}
+
+/**
+ * Creates a disabled mock client for when Supabase is not configured.
+ * Returns a client that won't crash but all operations return errors.
+ */
+function createDisabledClient(): SupabaseClient<Database> {
+  const notConfiguredError = {
+    message: 'Supabase not configured',
+    status: 503,
+  };
+
+  const errorResponse = Promise.resolve({
+    data: null,
+    error: notConfiguredError,
+  });
+
+  const chainableMock = () => ({
+    select: chainableMock,
+    eq: chainableMock,
+    neq: chainableMock,
+    in: chainableMock,
+    order: chainableMock,
+    limit: chainableMock,
+    range: chainableMock,
+    single: () => errorResponse,
+    maybeSingle: () => errorResponse,
+    insert: chainableMock,
+    update: chainableMock,
+    delete: chainableMock,
+    upsert: () => errorResponse,
+    then: (resolve: (value: unknown) => void) =>
+      resolve({ data: null, error: notConfiguredError }),
+  });
+
+  return {
+    auth: {
+      getSession: () => errorResponse,
+      getUser: () => errorResponse,
+      signInWithPassword: () => errorResponse,
+      signInWithOAuth: () => errorResponse,
+      signUp: () => errorResponse,
+      signOut: () => errorResponse,
+      resetPasswordForEmail: () => errorResponse,
+      updateUser: () => errorResponse,
+      onAuthStateChange: () => ({
+        data: { subscription: { unsubscribe: () => {} } },
+      }),
+      exchangeCodeForSession: () => errorResponse,
+    },
+    from: () => chainableMock(),
+    channel: () => ({
+      on: function () {
+        return this;
+      },
+      subscribe: function () {
+        return this;
+      },
+      unsubscribe: () => Promise.resolve('ok'),
+      send: () => Promise.resolve('ok'),
+    }),
+    removeChannel: () => Promise.resolve('ok'),
+    removeAllChannels: () => Promise.resolve([]),
+    getChannels: () => [],
+    storage: {
+      from: () => ({
+        upload: () => errorResponse,
+        getPublicUrl: () => ({ data: { publicUrl: '' } }),
+        remove: () => errorResponse,
+        download: () => errorResponse,
+        list: () => errorResponse,
+      }),
+    },
+    rpc: () => errorResponse,
+  } as unknown as SupabaseClient<Database>;
+}
+
+// Global singleton instance (persists across hot reloads in development)
+let supabaseInstance: SupabaseClient<Database> | null = null;
+let isConfigured = false;
+
+/**
+ * Check if Supabase is properly configured
+ * @returns true if environment variables are set
+ */
+export function isSupabaseConfigured(): boolean {
+  return isConfigured;
+}
+
+/**
+ * Creates a Supabase client for browser use
+ * Uses implicit flow for static sites (no PKCE)
+ *
+ * @returns Supabase client instance
+ * @throws Error if environment variables are not configured (browser only)
+ */
+export function createClient(): SupabaseClient<Database> {
+  // Return existing instance if available
+  if (supabaseInstance) {
+    return supabaseInstance;
+  }
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // During build/SSR, return a placeholder - don't throw
+  // The actual client will be created when running in browser
+  if (typeof window === 'undefined') {
+    // Create a mock client that won't actually be used
+    // This allows the build to succeed
+    return {} as SupabaseClient<Database>;
+  }
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    // Log warning instead of throwing - allows graceful degradation
+    console.warn(
+      'Supabase environment variables not configured. Some features will be unavailable.'
+    );
+    isConfigured = false;
+    // Return a disabled mock client that won't crash
+    return createDisabledClient();
+  }
+
+  isConfigured = true;
+  supabaseInstance = createSupabaseClient<Database>(
+    supabaseUrl,
+    supabaseAnonKey,
+    {
+      auth: {
+        // Use implicit flow for static sites (no server-side code exchange)
+        flowType: 'implicit',
+        // Custom storage adapter that prevents auth-token removal except
+        // during an explicit sign-out (toggled via setAllowAuthTokenRemoval).
+        // Supabase auth-js clears the session on transient 406/403 errors
+        // from Realtime / RLS — without this guard, that transient error
+        // wipes the auth-token, fires SIGNED_OUT, and forces the user back
+        // to /sign-in even though the access_token was still valid. With
+        // the guard, the token persists across the spurious event; the
+        // next TOKEN_REFRESHED / SIGNED_IN fires shortly and recovers.
+        // This applies in production AND E2E — the test path now exercises
+        // exactly the same auth flow real users see.
+        storage:
+          typeof window !== 'undefined'
+            ? {
+                getItem: (key: string) => window.localStorage.getItem(key),
+                setItem: (key: string, value: string) =>
+                  window.localStorage.setItem(key, value),
+                removeItem: (key: string) => {
+                  if (key.includes('auth-token') && !_allowAuthTokenRemoval)
+                    return;
+                  window.localStorage.removeItem(key);
+                },
+              }
+            : undefined,
+        // Auto-refresh must stay on so Supabase Realtime can authenticate
+        // its WebSocket connection — Realtime fetches the JWT from the
+        // in-memory session, and without auto-refresh the session's access
+        // token never gets refreshed via the Realtime auth handshake. The
+        // channel never reaches 'SUBSCRIBED' and every messaging E2E test
+        // falls back to the slow reload-retry path.
+        //
+        // Prior commits (d353494, 4b645aa, 18b6bf8) disabled this in E2E to
+        // prevent parallel test contexts from consuming each other's
+        // single-use refresh tokens, but commit 62f8a40 introduced the
+        // storage adapter (above) that prevents auth-token wipes — which
+        // solves the SIGNED_OUT cascade that was the original concern. The
+        // boolean gate is no longer needed.
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+      },
+    }
+  );
+
+  return supabaseInstance;
+}
+
+/**
+ * Get the Supabase client singleton
+ * Only initializes when called (lazy loading)
+ */
+export function getSupabase(): SupabaseClient<Database> {
+  return createClient();
+}
+
+/**
+ * Lazy singleton getter - only creates client when accessed in browser
+ * This prevents SSR issues while maintaining backwards compatibility
+ */
+function getSupabaseInstance() {
+  if (typeof window === 'undefined') {
+    throw new Error('Supabase client can only be used in browser context');
+  }
+  return createClient();
+}
+
+// Export singleton using a getter to ensure lazy initialization
+export const supabase = new Proxy({} as ReturnType<typeof createClient>, {
+  get: (target, prop) => {
+    const instance = getSupabaseInstance();
+    const value = instance[prop as keyof typeof instance];
+    return typeof value === 'function' ? value.bind(instance) : value;
+  },
+});
+
+/**
+ * Helper: Check if Supabase is accessible
+ * @returns Promise<boolean> - true if connected
+ */
+export async function isSupabaseOnline(): Promise<boolean> {
+  try {
+    const client = createClient();
+    const { error } = await client
+      .from('payment_intents')
+      .select('id')
+      .limit(1);
+    return !error || error.code !== 'PGRST301'; // PGRST301 = connection error
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Helper: Subscribe to connection status changes
+ * @param callback - Called when connection status changes
+ * @returns Unsubscribe function
+ */
+export function onConnectionChange(
+  callback: (online: boolean) => void
+): () => void {
+  let isOnline = true;
+
+  const checkConnection = async () => {
+    const online = await isSupabaseOnline();
+    if (online !== isOnline) {
+      isOnline = online;
+      callback(online);
+    }
+  };
+
+  // Check every 30 seconds
+  const interval = setInterval(checkConnection, 30000);
+
+  // Initial check
+  checkConnection();
+
+  // Return unsubscribe function
+  return () => clearInterval(interval);
+}
