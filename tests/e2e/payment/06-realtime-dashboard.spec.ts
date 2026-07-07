@@ -301,8 +301,31 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
     }
   });
 
-  test.skip('should update chart/graphs in real-time', async ({ page }) => {
-    // Skip: Payment chart not implemented
-    test.skip(true, 'Payment chart not yet implemented');
+  test("should render a payment trend chart from the user's payments", async ({
+    browser,
+  }) => {
+    // Seed a payment, open the hub — the user-scoped trend chart aggregates the
+    // fetched payments into a daily series and renders. Deterministic.
+    let fixture: IsolatedPayment | null = null;
+    let opened: Awaited<ReturnType<typeof openPaymentHubAs>> | null = null;
+    try {
+      fixture = await seedIsolatedPayment();
+      test.skip(!fixture, 'Admin client unavailable to seed payment');
+      if (!fixture) return;
+
+      opened = await openPaymentHubAs(browser, fixture.session);
+      const { page } = opened;
+      await expect(page.getByTestId('transaction-count')).toContainText(
+        '1 total',
+        { timeout: 30000 }
+      );
+      // The trend chart (SVG) renders from the aggregated daily series.
+      await expect(page.getByTestId('payment-trend-chart')).toBeVisible({
+        timeout: 15000,
+      });
+    } finally {
+      if (opened) await opened.close();
+      await deleteIsolatedPayment(fixture);
+    }
   });
 });

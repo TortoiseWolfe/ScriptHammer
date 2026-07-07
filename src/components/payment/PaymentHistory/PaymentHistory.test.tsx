@@ -106,6 +106,16 @@ describe('PaymentHistory', () => {
     });
   });
 
+  it('renders the payment trend chart from the fetched payments', async () => {
+    render(<PaymentHistory realtime={false} />);
+
+    // The mocked getPaymentHistory returns 2 payments (succeeded + failed) →
+    // a non-empty daily series → the trend chart renders.
+    await waitFor(() => {
+      expect(screen.getByTestId('payment-trend-chart')).toBeInTheDocument();
+    });
+  });
+
   it('shows an "N updates" pill when a burst of realtime updates is coalesced', async () => {
     render(<PaymentHistory />);
     await waitFor(() => {
