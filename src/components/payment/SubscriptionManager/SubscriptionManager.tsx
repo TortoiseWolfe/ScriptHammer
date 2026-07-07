@@ -195,6 +195,49 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
     }
   };
 
+  // Retry a failed recurring payment (dunning recovery). Mirrors handleResume:
+  // JWT-authed POST to the retry-subscription edge function, which advances the
+  // dunning schedule and, on success, reactivates the subscription. A refetch
+  // reconciles the card (Realtime also re-runs refetch on the row change).
+  const handleRetry = async (subscriptionId: string) => {
+    setActionLoading(subscriptionId);
+    try {
+      const {
+        data: { session: retrySession },
+      } = await supabase.auth.getSession();
+      if (!retrySession?.access_token) {
+        throw new Error('No active session — sign in required');
+      }
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/retry-subscription`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${retrySession.access_token}`,
+          },
+          body: JSON.stringify({ subscription_id: subscriptionId }),
+        }
+      );
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        // A 429 means the retry falls inside an already-fired backoff window;
+        // surface the next eligible date the function returned.
+        throw new Error(
+          result.error ||
+            (response.status === 429
+              ? 'Retry not available yet — please wait before trying again.'
+              : 'Failed to retry payment')
+        );
+      }
+      await refetch();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to retry payment');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   // Get status badge
   const getStatusBadge = (subscription: Subscription) => {
     const badges: Record<Subscription['status'], React.ReactElement> = {
@@ -405,6 +448,30 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
                       </div>
                     );
                   })()}
+
+                {/* Dunning recovery: let the user re-attempt the failed charge. */}
+                {(subscription.status === 'grace_period' ||
+                  subscription.status === 'past_due') && (
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm min-h-11"
+                      onClick={() => handleRetry(subscription.id)}
+                      disabled={actionLoading === subscription.id}
+                      data-testid={`retry-payment-${subscription.id}`}
+                      aria-label="Retry payment now"
+                    >
+                      {actionLoading === subscription.id ? (
+                        <>
+                          <span className="loading loading-spinner loading-xs"></span>
+                          Retrying…
+                        </>
+                      ) : (
+                        'Retry payment now'
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Actions — cancel a live subscription, or resume a canceled one. */}

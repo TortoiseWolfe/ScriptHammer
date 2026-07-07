@@ -10,6 +10,10 @@ import { test, expect } from '@playwright/test';
 import {
   dismissCookieBanner,
   waitForAuthenticatedState,
+  seedIsolatedSubscription,
+  deleteIsolatedSubscription,
+  openSubscriptionsAs,
+  type IsolatedSubscription,
 } from '../utils/test-user-factory';
 
 test.describe('Failed Payment Retry Logic', () => {
@@ -129,11 +133,49 @@ test.describe('Failed Payment Retry Logic', () => {
     }
   });
 
-  test.skip('should handle subscription payment retry with exponential backoff', async ({
-    page,
+  test('should offer + run a dunning retry for a past_due subscription', async ({
+    browser,
   }) => {
-    // Skip: /payment/subscriptions route doesn't exist
-    test.skip(true, 'Subscription management page not yet implemented');
+    // Seed a past_due subscription, open the hub's Subscriptions tab, and click
+    // "Retry payment now". The retry-subscription edge function (credentials-free
+    // dunning) advances the retry_schedule and returns success, so the click
+    // completes without an error alert. (The actual provider re-charge is a
+    // creds-gated leg; the automatic dunning + webhook flip status to active.)
+    let fixture: IsolatedSubscription | null = null;
+    let opened: Awaited<ReturnType<typeof openSubscriptionsAs>> | null = null;
+    try {
+      fixture = await seedIsolatedSubscription('past_due', {
+        provider: 'stripe',
+      });
+      test.skip(!fixture, 'Admin client unavailable to seed subscription');
+      if (!fixture) return;
+
+      opened = await openSubscriptionsAs(browser, fixture);
+      const { page } = opened;
+
+      const retryBtn = page.getByTestId(
+        `retry-payment-${fixture.subscriptionId}`
+      );
+      await expect(retryBtn).toBeVisible({ timeout: 30000 });
+
+      // Fail the test if the retry surfaces an error dialog (a real backend break).
+      let dialogMessage: string | null = null;
+      page.on('dialog', async (d) => {
+        dialogMessage = d.message();
+        await d.accept();
+      });
+
+      await retryBtn.click();
+      // The button leaves its loading state once the edge fn responds.
+      await expect(retryBtn).not.toContainText('Retrying', { timeout: 20000 });
+      expect(
+        dialogMessage,
+        `retry surfaced an error: ${dialogMessage}`
+      ).toBeNull();
+    } finally {
+      if (opened) await opened.close();
+      await deleteIsolatedSubscription(fixture);
+    }
   });
 
   test.skip('should mount SwitchProviderPanel when "Use a different payment method" is clicked', async ({
