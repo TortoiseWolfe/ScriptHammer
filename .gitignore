@@ -17,6 +17,7 @@
 /.next/
 /.next-acceptance/
 /.next-basepath/
+/.next-ci/
 /out/
 # basePath E2E (#157): prefixed export + symlink wrapper dir
 /out-basepath/
