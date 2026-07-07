@@ -13,7 +13,7 @@
 - **Docker-first, no host installs.** Never run `npm install`/`pnpm install`/`node` on the host. All commands run in containers: `docker compose exec app pnpm ...`, `docker compose run --rm chatt-bake ...`. Never use `sudo`; fix permission errors with `docker compose down && docker compose up`.
 - **Zero runtime third-party calls.** The runtime fetches only `public/chatt/*`. No Overpass/OpenTopoData/NAIP/Esri at runtime.
 - **Every runtime asset URL goes through `getAssetUrl(path)`** (from `src/lib/assetUrl.ts`). Never hardcode `/chatt/...` absolute strings — they 404 under the GitHub Pages basePath.
-- **The box (WGS-84), locked:** `SW 35.0340,-85.3160 · NE 35.0600,-85.3000`. ENU origin = center `35.0470,-85.3080`. `metersPerDegree_lon = 111320·cos(35.0470°)`, `metersPerDegree_lat = 110574`. North = −Z.
+- **The box (WGS-84), v2 corridor:** `SW 35.0078,-85.3160 · NE 35.0600,-85.3000`. ENU origin = center `35.0339,-85.3080`. `metersPerDegree_lon = 111320·cos(35.0339°) ≈ 91150`, `metersPerDegree_lat = 110574`. North = −Z. Ground ≈ 1458 m (E-W) × 5772 m (N-S), aspect ~0.25. **v2 note:** the south edge was extended from 35.0340 → 35.0078 to include the Chattanooga Choo Choo / Terminal Station (~35.0093). Re-baked: buildings 797→1544, highways 1849→2499, terrain grid 40×40→25×60, drape 729×1437→729×2886. The compact pre-Choo-Choo extent is kept as `BOX.tightCoreSouthLat = 35.034`. Any plan code block below showing the OLD values (35.034 south edge, 1458×2875, 729×1437) is historical — the committed code uses the v2 corridor values.
 - **One color owner: the Grade pass.** `gl.toneMapping = NoToneMapping`; the only `lin2srgb` in the whole chain is inside the Grade shader (ACES folded in before it). Eyedrop gate: linear-0.5 → ~0.5, not ~0.73.
 - **Post-processing uses the raw `postprocessing` package**, not `@react-three/postprocessing`'s `<EffectComposer>`/`<Effect>` (it cannot host cm's separable ShaderPass blur).
 - **`StageCore` imports nothing from `src/world`, `src/packs`, `src/agents`.** Enforced by an import-guard test.
@@ -429,20 +429,19 @@ beforeEach(() => vi.restoreAllMocks());
 
 describe('overpassQuery', () => {
   it('POSTs with a User-Agent and the QL body', async () => {
-    const spy = vi
-      .spyOn(globalThis, 'fetch')
-      .mockResolvedValue(
-        new Response(JSON.stringify({ elements: [{ type: 'way', id: 1 }] }), {
-          status: 200,
-        })
-      );
+    const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ elements: [{ type: 'way', id: 1 }] }), {
+        status: 200,
+      })
+    );
     const r = await overpassQuery('[out:json];out count;');
     expect(r.elements[0].id).toBe(1);
     const [, init] = spy.mock.calls[0];
     expect((init!.headers as Record<string, string>)['User-Agent']).toBe(
       USER_AGENT
     );
-    expect(String(init!.body)).toContain('out count');
+    // body is URL-encoded (encodeURIComponent) — decode before asserting content
+    expect(decodeURIComponent(String(init!.body))).toContain('out count');
   });
   it('retries then throws on repeated 406', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
@@ -961,6 +960,9 @@ export const HEIGHT_OVERRIDES: Record<string, number> = {
 };
 
 // Fallback level priors by building tag value (the COMMON path — ~74% of buildings).
+// NOTE (fix from T7 review): priors give real range so the clamp is reachable and
+// downtown mid-rise isn't flattened to ~6 stories. OSM tags the true towers with
+// building:levels (rule 2 catches them); this fallback is for untagged mid-rise.
 const LEVEL_PRIORS: Record<string, number> = {
   house: 1,
   detached: 1,
@@ -968,44 +970,54 @@ const LEVEL_PRIORS: Record<string, number> = {
   shed: 1,
   hut: 1,
   residential: 2,
-  apartments: 3,
+  apartments: 4,
   retail: 2,
-  commercial: 3,
-  office: 4,
+  commercial: 5,
+  office: 8,
   industrial: 2,
   warehouse: 2,
-  hotel: 5,
+  hotel: 6,
   civic: 3,
-  yes: 2,
+  yes: 3,
 };
 const LEVEL_M = 3.2;
+
+// Tiered area→extra-levels: big downtown footprints tend taller. Gives the
+// fallback real dynamic range (and makes the Republic Centre clamp reachable).
+function areaBonusLevels(areaM2: number): number {
+  if (areaM2 >= 3000) return 6;
+  if (areaM2 >= 1500) return 4;
+  if (areaM2 >= 800) return 2;
+  if (areaM2 >= 300) return 1;
+  return 0;
+}
 
 export function resolveHeight(
   tags: Record<string, string>,
   footprintAreaM2: number
 ): { meters: number; rule: 'height' | 'levels' | 'override' | 'fallback' } {
-  // Rule 1: explicit height tag (may carry a unit suffix)
+  // Rule 1: explicit height tag (may carry a unit suffix). Guard against
+  // nonpositive/NaN (vandalized tags) — fall through if bad.
   if (tags.height) {
     const m = parseFloat(tags.height);
-    if (!Number.isNaN(m)) return { meters: m, rule: 'height' };
+    if (!Number.isNaN(m) && m > 0) return { meters: m, rule: 'height' };
   }
-  // Rule 2: building:levels
+  // Rule 2: building:levels (same nonpositive/NaN guard).
   if (tags['building:levels']) {
     const lv = parseFloat(tags['building:levels']);
-    if (!Number.isNaN(lv)) return { meters: lv * LEVEL_M, rule: 'levels' };
+    if (!Number.isNaN(lv) && lv > 0)
+      return { meters: lv * LEVEL_M, rule: 'levels' };
   }
   // Rule 3: named override
   if (tags.name && HEIGHT_OVERRIDES[tags.name] != null) {
     return { meters: HEIGHT_OVERRIDES[tags.name], rule: 'override' };
   }
-  // Rule 4: fallback — bucket by building tag, nudge by footprint area, clamp.
+  // Rule 4: fallback — bucket by building tag, add tiered area bonus, clamp
+  // below the Republic Centre ceiling (now reachable).
   const kind = tags.building || 'yes';
-  const priorLevels = LEVEL_PRIORS[kind] ?? 2;
-  const areaBonus = footprintAreaM2 > 800 ? 1 : 0; // big footprints tend taller downtown
-  const meters = Math.min(
-    REPUBLIC_CENTRE_M,
-    (priorLevels + areaBonus) * LEVEL_M
-  );
+  const priorLevels = LEVEL_PRIORS[kind] ?? 3;
+  const totalLevels = priorLevels + areaBonusLevels(footprintAreaM2);
+  const meters = Math.min(REPUBLIC_CENTRE_M, totalLevels * LEVEL_M);
   return { meters, rule: 'fallback' };
 }
 ```
