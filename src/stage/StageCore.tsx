@@ -70,7 +70,16 @@ export default function StageCore({
     timeRef.current += dt;
     rig.setTime(timeRef.current);
     onFrame?.(dt, timeRef.current);
-    rig.composer.render(dt);
+    // ?nofx bypasses the composer to render the raw scene directly (dev diagnostic
+    // for isolating post-processing vs scene issues).
+    if (
+      typeof window !== 'undefined' &&
+      window.location.search.includes('nofx')
+    ) {
+      gl.render(scene, camera);
+    } else {
+      rig.composer.render(dt);
+    }
   }, 1); // renderPriority 1 suppresses R3F's own render; this loop is authoritative
 
   return <>{children}</>;

@@ -5,10 +5,10 @@ varying vec2 vUv;
 void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`;
 
 // Directional 9-tap gaussian keyed to a horizontal focus band (Scheimpflug tilt).
-// Ported verbatim from cm-shaders.js TiltShiftBlur; tDiffuse -> inputBuffer.
+// Ported verbatim from cm-shaders.js TiltShiftBlur; tDiffuse -> tDiffuse.
 export const TILT_SHIFT_FRAG = `
 varying vec2 vUv;
-uniform sampler2D inputBuffer;
+uniform sampler2D tDiffuse;
 uniform vec2 texel;
 uniform vec2 direction;
 uniform float focus, band, gradient, tilt, maxBlur;
@@ -19,15 +19,15 @@ void main(){
   amt = amt * amt;
   float r = amt * maxBlur;
   vec2 dir = direction * texel * r;
-  vec4 c = texture2D(inputBuffer, vUv) * 0.1964825501511404;
-  c += texture2D(inputBuffer, vUv + dir * 1.0) * 0.2969069646728344 * 0.5;
-  c += texture2D(inputBuffer, vUv - dir * 1.0) * 0.2969069646728344 * 0.5;
-  c += texture2D(inputBuffer, vUv + dir * 2.0) * 0.09447039785044732;
-  c += texture2D(inputBuffer, vUv - dir * 2.0) * 0.09447039785044732;
-  c += texture2D(inputBuffer, vUv + dir * 3.0) * 0.010381362401148057;
-  c += texture2D(inputBuffer, vUv - dir * 3.0) * 0.010381362401148057;
-  c += texture2D(inputBuffer, vUv + dir * 4.0) * 0.002214997443481223;
-  c += texture2D(inputBuffer, vUv - dir * 4.0) * 0.002214997443481223;
+  vec4 c = texture2D(tDiffuse, vUv) * 0.1964825501511404;
+  c += texture2D(tDiffuse, vUv + dir * 1.0) * 0.2969069646728344 * 0.5;
+  c += texture2D(tDiffuse, vUv - dir * 1.0) * 0.2969069646728344 * 0.5;
+  c += texture2D(tDiffuse, vUv + dir * 2.0) * 0.09447039785044732;
+  c += texture2D(tDiffuse, vUv - dir * 2.0) * 0.09447039785044732;
+  c += texture2D(tDiffuse, vUv + dir * 3.0) * 0.010381362401148057;
+  c += texture2D(tDiffuse, vUv - dir * 3.0) * 0.010381362401148057;
+  c += texture2D(tDiffuse, vUv + dir * 4.0) * 0.002214997443481223;
+  c += texture2D(tDiffuse, vUv - dir * 4.0) * 0.002214997443481223;
   gl_FragColor = c;
 }`;
 
@@ -35,7 +35,7 @@ void main(){
 // (the renderer no longer tonemaps — Grade is the sole color owner).
 export const GRADE_FRAG = `
 varying vec2 vUv;
-uniform sampler2D inputBuffer;
+uniform sampler2D tDiffuse;
 uniform float saturation, contrast, exposure, vignette, warmth, lift, grain, time;
 float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
 vec3 aces(vec3 x){ // Narkowicz ACES filmic approximation
@@ -44,7 +44,7 @@ vec3 aces(vec3 x){ // Narkowicz ACES filmic approximation
 }
 vec3 lin2srgb(vec3 c){ return mix(1.055*pow(max(c,0.0),vec3(1.0/2.4))-0.055, c*12.92, step(c,vec3(0.0031308))); }
 void main(){
-  vec3 c = texture2D(inputBuffer, vUv).rgb;
+  vec3 c = texture2D(tDiffuse, vUv).rgb;
   c *= exposure;
   c = max(c + lift * (1.0 - c), 0.0);
   float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
@@ -61,7 +61,7 @@ void main(){
 
 export function makeTiltShiftUniforms() {
   return {
-    inputBuffer: { value: null },
+    tDiffuse: { value: null },
     texel: { value: new Vector2(1 / 1024, 1 / 1024) },
     direction: { value: new Vector2(1, 0) },
     focus: { value: 0.52 },
@@ -73,7 +73,7 @@ export function makeTiltShiftUniforms() {
 }
 export function makeGradeUniforms() {
   return {
-    inputBuffer: { value: null },
+    tDiffuse: { value: null },
     saturation: { value: 1.34 },
     contrast: { value: 1.07 },
     exposure: { value: 1.03 },

@@ -7,10 +7,16 @@ import {
 } from '../shaders';
 
 describe('ported shaders', () => {
-  it('uses inputBuffer (postprocessing convention), not tDiffuse', () => {
-    expect(TILT_SHIFT_FRAG).toContain('inputBuffer');
-    expect(TILT_SHIFT_FRAG).not.toContain('tDiffuse');
-    expect(GRADE_FRAG).not.toContain('tDiffuse');
+  it("uses tDiffuse (three's ShaderPass convention), not inputBuffer", () => {
+    // three's ShaderPass builds a FullScreenQuad whose ortho camera makes the
+    // ported `projectionMatrix*modelViewMatrix*position` vertex shader correct,
+    // and writes the read-buffer into the `tDiffuse` uniform. The pmndrs
+    // `postprocessing` lib expected `inputBuffer` + a different vertex stage,
+    // which rendered a degenerate fullscreen quad → black. We use three's composer.
+    expect(TILT_SHIFT_FRAG).toContain('tDiffuse');
+    expect(TILT_SHIFT_FRAG).not.toContain('inputBuffer');
+    expect(GRADE_FRAG).toContain('tDiffuse');
+    expect(GRADE_FRAG).not.toContain('inputBuffer');
   });
   it('Grade folds ACES in before the single sRGB encode', () => {
     const acesIdx = GRADE_FRAG.indexOf('aces');

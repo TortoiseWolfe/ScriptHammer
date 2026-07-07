@@ -40,14 +40,22 @@ function SceneInner({
 }) {
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
-  const rig = useMemo(
-    () => new Rig(camera as import('three').PerspectiveCamera, gl.domElement),
-    [camera, gl]
-  );
+  const rig = useMemo(() => {
+    const r = new Rig(
+      camera as import('three').PerspectiveCamera,
+      gl.domElement
+    );
+    // Aim BEFORE first paint (not in a post-paint effect) so the tour is
+    // pointed at the city from frame 0 — no empty-void first frames.
+    r.setWaypoints(RIVERFRONT_TOUR as RigWaypoint[]);
+    // Orbit/Miniature mode centers on the city centroid (z ≈ -2000), not the
+    // origin. Set from here (not Rig.ts) to keep the Rig generic/liftable.
+    r.focus.set(-100, 0, -2000);
+    return r;
+  }, [camera, gl]);
 
   useEffect(() => {
     rig.bind();
-    rig.setWaypoints(RIVERFRONT_TOUR as RigWaypoint[]);
     rig.onCaption = (cap) => {
       onCaption(cap ? { name: cap.name, blurb: cap.blurb } : null);
     };
@@ -93,7 +101,7 @@ export default function ChattCanvas() {
       : null
   );
   const [showFps, setShowFps] = useState(false);
-  const day = 0.28;
+  const day = 0.4; // well-lit late-morning; sun elevation ~0.95
   const handleRef = useRef<StageHandle | null>(null);
 
   useEffect(() => {
@@ -110,8 +118,27 @@ export default function ChattCanvas() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // Route-scoped chrome control: hide the global cookie/PWA popups that would
+  // overlap the diorama HUD. Keeps ScriptHammer's top nav (the diorama insets
+  // below it). Class is removed on unmount so other routes are unaffected.
+  useEffect(() => {
+    document.body.classList.add('chatt-fullscreen');
+    return () => document.body.classList.remove('chatt-fullscreen');
+  }, []);
+
   return (
-    <div style={{ position: 'fixed', inset: 0, background: '#070a12' }}>
+    // Inset below the 64px sticky GlobalNav (h-16) so the diorama + HUD sit
+    // under the nav rather than behind it.
+    <div
+      style={{
+        position: 'fixed',
+        top: 64,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: '#070a12',
+      }}
+    >
       <Canvas
         shadows
         dpr={[1, 1.75]}
@@ -122,9 +149,13 @@ export default function ChattCanvas() {
         }}
         camera={{
           fov: PALETTES[paletteKey].fov,
-          position: [-30, 150, 250],
+          // Above/near the downtown cluster (city geometry is at z ≈ -1600..-2900
+          // in the 5772m corridor), looking at it — so frame 0 shows the city,
+          // not the origin void. far=8000 covers the whole corridor + orbit pull-back
+          // (the old far=2400 clipped the city ~2400-3160m away → black scene).
+          position: [-140, 260, -1500],
           near: 1,
-          far: 2400,
+          far: 8000,
         }}
       >
         <SceneInner
