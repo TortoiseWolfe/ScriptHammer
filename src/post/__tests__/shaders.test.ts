@@ -18,11 +18,14 @@ describe('ported shaders', () => {
     expect(GRADE_FRAG).toContain('tDiffuse');
     expect(GRADE_FRAG).not.toContain('inputBuffer');
   });
-  it('Grade folds ACES in before the single sRGB encode', () => {
-    const acesIdx = GRADE_FRAG.indexOf('aces');
-    const srgbIdx = GRADE_FRAG.indexOf('lin2srgb');
-    expect(acesIdx).toBeGreaterThanOrEqual(0);
-    expect(srgbIdx).toBeGreaterThan(acesIdx); // sRGB is the LAST step
+  it('Grade is the sole color owner: single lin2srgb, NO ACES', () => {
+    // Renderer stays linear; Grade does the one final sRGB encode. ACES was
+    // removed — it expects linear HDR and hue-shifted the LDR scene to magenta
+    // + hid the terrain drape (verified by screenshot).
+    expect(GRADE_FRAG).not.toContain('aces');
+    expect(GRADE_FRAG).toContain('lin2srgb'); // the single, final encode
+    expect(GRADE_FRAG).toContain('saturation');
+    expect(GRADE_FRAG).toContain('vignette');
   });
   it('exposes the tilt-shift focus/band/maxBlur uniforms', () => {
     const u = makeTiltShiftUniforms();

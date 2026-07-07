@@ -6,7 +6,7 @@
 // sibling. This is the FIRST VISIBLE RENDER (Task 20).
 
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { NoToneMapping } from 'three';
+import { NoToneMapping, LinearSRGBColorSpace } from 'three';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import StageCore, { StageHandle } from '@/stage/StageCore';
 import { Rig, RigMode, RigWaypoint } from '@/stage/Rig';
@@ -156,6 +156,13 @@ export default function ChattCanvas() {
         dpr={[1, 1.75]}
         gl={{
           toneMapping: NoToneMapping,
+          // The Grade pass is the SOLE color owner: renderer stays linear (no
+          // sRGB encode on present), the composer buffers stay linear, and the
+          // Grade shader does its color grading then the single final lin2srgb
+          // encode. (Letting the renderer ALSO encode = double-encode → neon;
+          // folding ACES in = hue-shift, since ACES wants linear HDR not this
+          // LDR scene. Verified by screenshot: this combo renders natural.)
+          outputColorSpace: LinearSRGBColorSpace,
           antialias: true,
           powerPreference: 'high-performance',
         }}

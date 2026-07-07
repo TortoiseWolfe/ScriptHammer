@@ -31,17 +31,19 @@ void main(){
   gl_FragColor = c;
 }`;
 
-// Grade: ported from cm-shaders.js Grade, with ACES folded in before lin2srgb
-// (the renderer no longer tonemaps — Grade is the sole color owner).
+// Grade: ported from cm-shaders.js Grade. This pass is the SOLE color owner —
+// the renderer stays linear (NoToneMapping + linear outputColorSpace) and the
+// composer buffers are linear, so the Grade does its color grading on linear
+// values then the single final lin2srgb encode. We do NOT apply ACES: the scene
+// is LDR (standard materials, no HDR lighting), and an ACES filmic tonemap
+// (which expects linear HDR) hue-shifts the LDR values toward magenta and
+// crushes darks — verified by screenshot (it turned brick-red buildings magenta
+// and hid the terrain drape).
 export const GRADE_FRAG = `
 varying vec2 vUv;
 uniform sampler2D tDiffuse;
 uniform float saturation, contrast, exposure, vignette, warmth, lift, grain, time;
 float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
-vec3 aces(vec3 x){ // Narkowicz ACES filmic approximation
-  const float a=2.51, b=0.03, c=2.43, d=0.59, e=0.14;
-  return clamp((x*(a*x+b))/(x*(c*x+d)+e), 0.0, 1.0);
-}
 vec3 lin2srgb(vec3 c){ return mix(1.055*pow(max(c,0.0),vec3(1.0/2.4))-0.055, c*12.92, step(c,vec3(0.0031308))); }
 void main(){
   vec3 c = texture2D(tDiffuse, vUv).rgb;
@@ -53,8 +55,8 @@ void main(){
   c += vec3(warmth, warmth * 0.1, -warmth) * 0.6;
   float dv = distance(vUv, vec2(0.5)) * 1.414;
   c *= 1.0 - vignette * smoothstep(0.55, 1.05, dv);
-  c = aces(c);            // ACES tonemap (moved off the renderer)
-  c = lin2srgb(c);        // <- the ONLY sRGB encode in the whole chain
+  c = clamp(c, 0.0, 1.0);
+  c = lin2srgb(c);        // single, final sRGB encode (Grade is the sole owner)
   c += (hash(vUv * vec2(1920.0,1080.0) + time) - 0.5) * grain;
   gl_FragColor = vec4(c, 1.0);
 }`;
