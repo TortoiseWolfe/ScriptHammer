@@ -164,56 +164,62 @@ export default function SignUpForm({
       onSubmit={handleSubmit}
       className={`space-y-4${className ? ` ${className}` : ''}`}
     >
-      <div>
-        <label className="label" htmlFor="email">
-          <span>Email</span>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6">
+        <label className="label sm:w-36 sm:shrink-0 sm:text-right" htmlFor="email">
+          <span className="label-text">Email</span>
         </label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="input min-h-11"
-          placeholder="you@example.com"
-          required
-          disabled={loading}
-        />
-      </div>
-
-      <div>
-        <label className="label" htmlFor="password">
-          <span>Password</span>
-        </label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="input min-h-11"
-          placeholder="••••••••"
-          required
-          disabled={loading}
-        />
-        {/* Password strength indicator (T042) */}
-        <div className="mt-2">
-          <PasswordStrengthIndicator password={password} />
+        <div className="flex-1 min-w-0">
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="input input-bordered min-h-11 w-full"
+            placeholder="you@example.com"
+            required
+            disabled={loading}
+          />
         </div>
       </div>
 
-      <div>
-        <label className="label" htmlFor="confirm-password">
-          <span>Confirm Password</span>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6">
+        <label className="label sm:w-36 sm:shrink-0 sm:text-right" htmlFor="password">
+          <span className="label-text">Password</span>
         </label>
-        <input
-          id="confirm-password"
-          type="password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          className="input min-h-11"
-          placeholder="••••••••"
-          required
-          disabled={loading}
-        />
+        <div className="flex-1 min-w-0">
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="input input-bordered min-h-11 w-full"
+            placeholder="••••••••"
+            required
+            disabled={loading}
+          />
+          {/* Password strength indicator (T042) */}
+          <div className="mt-2">
+            <PasswordStrengthIndicator password={password} />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6">
+        <label className="label sm:w-36 sm:shrink-0 sm:text-right" htmlFor="confirm-password">
+          <span className="label-text">Confirm Password</span>
+        </label>
+        <div className="flex-1 min-w-0">
+          <input
+            id="confirm-password"
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="input input-bordered min-h-11 w-full"
+            placeholder="••••••••"
+            required
+            disabled={loading}
+          />
+        </div>
       </div>
 
       <div>
