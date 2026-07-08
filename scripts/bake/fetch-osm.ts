@@ -17,6 +17,16 @@ export function buildOsmQL(): string {
     `  relation["building"](${b});`,
     `  relation["type"="building"](${b});`,
     `  way["highway"](${b});`,
+    // Water: the river surface. Without these the terrain has no idea where the
+    // water is, so the coarse heightfield smears the bank ~100 m off and
+    // riverfront buildings render sitting in the Tennessee River (see #225).
+    // `natural=water` (+ `water=river/lake/pond`) are the surface polygons we
+    // stamp into the terrain as a flat channel; `waterway=riverbank` is the
+    // legacy polygon tag; `waterway=river/stream` centerlines are a fallback.
+    `  way["natural"="water"](${b});`,
+    `  way["waterway"="riverbank"](${b});`,
+    `  relation["natural"="water"](${b});`,
+    `  way["waterway"~"^(river|stream|canal)$"](${b});`,
     ');',
     'out geom;',
   ].join('\n');
@@ -33,5 +43,8 @@ export async function fetchOsm(outDir: string) {
   const highways = data.elements.filter(
     (e) => e.type === 'way' && e.tags?.highway
   ).length;
-  return { buildings, highways, relations };
+  const water = data.elements.filter(
+    (e) => e.tags?.natural === 'water' || e.tags?.waterway
+  ).length;
+  return { buildings, highways, relations, water };
 }

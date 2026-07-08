@@ -1,12 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { drapePixelSize, drapeUrl } from '../fetch-drape';
 
-// Choo-Choo corridor box: 1.46km E-W x 5.77km N-S. The drape is a plate-carrée
+// Choo-Choo corridor box: 1.46km E-W x 5.79km N-S. The drape is a plate-carrée
 // (SR 4326) request, so its pixel aspect MUST equal the DEGREE aspect (~0.307)
 // or ArcGIS over-scans the latitude extent. E-W resolution is fixed at 2 m/px
-// (729 px); height is derived from the degree aspect → 729 x 2378. The runtime
+// (730 px); height is derived from the degree aspect → 730 x 2382. The runtime
 // maps world-Z→row linearly via groundHm (true metres), independent of pixel
 // count, so this taller-in-pixels image still registers correctly.
+// (Dims moved 729x2378 → 730x2382 when enu.ts switched from equator/spherical
+// constants to WGS-84 arc lengths at the box latitude — #229.)
 describe('drape sizing (plate-carrée, degree-aspect for exact-bbox return)', () => {
   it('matches the DEGREE aspect (~0.307) so the returned extent is not expanded', () => {
     const { width, height } = drapePixelSize(2);
@@ -14,10 +16,10 @@ describe('drape sizing (plate-carrée, degree-aspect for exact-bbox return)', ()
     const degAspect = (-85.3 - -85.316) / (35.06 - 35.0078);
     expect(aspect).toBeCloseTo(degAspect, 3);
   });
-  it('sizes 729 x 2378 at mpp=2 (E-W at 2 m/px, height from degree aspect)', () => {
+  it('sizes 730 x 2382 at mpp=2 (E-W at 2 m/px, height from degree aspect)', () => {
     const { width, height } = drapePixelSize(2);
-    expect(width).toBe(729);
-    expect(height).toBe(2378);
+    expect(width).toBe(730);
+    expect(height).toBe(2382);
   });
   it('requests NAIP exportImage with the exact box bbox at SR 4326', () => {
     const url = drapeUrl(2, 'naip');
@@ -26,7 +28,7 @@ describe('drape sizing (plate-carrée, degree-aspect for exact-bbox return)', ()
     expect(url).toContain('bbox=-85.316,35.0078,-85.3,35.06'); // minx,miny,maxx,maxy
     expect(url).toContain('bboxSR=4326');
     expect(url).toContain('imageSR=4326');
-    expect(url).toContain('size=729,2378');
+    expect(url).toContain('size=730,2382');
   });
 
   it('requested pixel aspect matches the bbox aspect IN THE REQUEST SR (no extent expansion)', () => {

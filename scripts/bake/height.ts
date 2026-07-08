@@ -1,16 +1,24 @@
 const FT = 0.3048;
 export const REPUBLIC_CENTRE_M = 300 * FT; // 91.44
 
+// Safety net BEHIND explicit OSM height/levels tags (rules 1-2 win, correctly —
+// most of these towers carry an OSM `height` today, so the table rarely fires).
+// Keys must match the OSM `name` tag EXACTLY: the original list used colloquial
+// names ("First Horizon Bank Building", "The Maclellan", "Sheraton Read House")
+// that matched NOTHING in the extract, so the table was 100% dead code
+// (ruleHistogram override: 0) — verified against _raw/osm.json and corrected to
+// the real names (#229). "Chattanooga Bank Building" and "Patten Towers" have no
+// named way in the current extract; kept in case OSM tagging catches up.
 export const HEIGHT_OVERRIDES: Record<string, number> = {
   'Republic Centre': 300 * FT,
-  'First Horizon Bank Building': 204 * FT,
+  'First Tennessee Bank Building': 204 * FT,
   'James Building': 187 * FT,
-  'Volunteer Life': 165 * FT,
-  'The Maclellan': 158 * FT,
-  'Medical Arts': 146 * FT,
-  'Chattanooga Bank': 132 * FT,
+  'Volunteer Life Building': 165 * FT,
+  'Maclellan Building': 158 * FT,
+  'Medical Arts Building': 146 * FT,
+  'Chattanooga Bank Building': 132 * FT,
   'Patten Towers': 130 * FT,
-  'Sheraton Read House': 130 * FT,
+  'The Read House Historic Inn And Suites': 130 * FT,
 };
 
 // Fallback level priors by building tag value (the COMMON path — ~74% of buildings).
