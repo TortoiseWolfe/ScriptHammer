@@ -25,7 +25,24 @@ const staticPages = [
   '/game',
   '/map',
   '/schedule',
+  // Committed digital twins (#232): a /twins/<slug> page exists for every
+  // baked site under public/twins/ (gitignore allowlists what ships). The
+  // /chatt alias is deliberately absent — its canonical is /twins/chatt.
+  ...discoverTwinSlugs().map((slug) => `/twins/${slug}`),
 ];
+
+function discoverTwinSlugs() {
+  const twinsDir = path.join(PUBLIC_DIR, 'twins');
+  if (!fs.existsSync(twinsDir)) return [];
+  return fs
+    .readdirSync(twinsDir, { withFileTypes: true })
+    .filter(
+      (e) =>
+        e.isDirectory() &&
+        fs.existsSync(path.join(twinsDir, e.name, 'manifest.json'))
+    )
+    .map((e) => e.name);
+}
 
 // Auth/protected pages to disallow in robots.txt
 const disallowedPaths = [

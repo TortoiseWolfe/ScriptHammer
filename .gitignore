@@ -145,8 +145,16 @@ scripts/__tests__/fixtures/*
 .speckit-cache/
 .lighthouseci/
 
-# Chattanooga Mini bake: commit DERIVED artifacts (buildings/streets/terrain/heroes/manifest + drape),
-# but the raw upstream cache is large and local-only (regenerable via `pnpm bake`).
-/public/chatt/_raw/
-/public/chatt/_tmp/
+# Digital twins (#232): PRIVATE BY DEFAULT. Baked sites and their configs are
+# client-address material — nothing under sites/ or public/twins/ is committed
+# unless explicitly allowlisted below (the flagship demo is). To publish a new
+# site, add its own `!` entries deliberately.
+/sites/*
+!/sites/chatt.json
+/public/twins/*
+!/public/twins/chatt/
+# Every site's raw upstream cache is large and local-only (regenerable via
+# `pnpm bake`) — the wildcard also covers any future allowlisted site.
+/public/twins/*/_raw/
+/public/twins/*/_tmp/
 knowledge/spatial

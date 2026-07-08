@@ -1,15 +1,20 @@
 import { describe, it, expect } from 'vitest';
-import { mkdtempSync, rmSync, existsSync } from 'node:fs';
-import { readFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  rmSync,
+  existsSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import {
-  ringAreaM2,
-  polygonCentroid,
-  buildScene,
-  HERO_WAY_IDS,
-} from '../build-scene';
-import { lonLatToEnu } from '../enu';
+import { ringAreaM2, polygonCentroid, buildScene } from '../build-scene';
+import { createProjection } from '../enu';
+import { loadSiteConfig, SiteConfigSchema } from '../site-config';
+
+const site = loadSiteConfig('chatt');
+const proj = createProjection(site.box);
 
 describe('build-scene geometry', () => {
   it('computes ring area via the shoelace formula', () => {
@@ -34,33 +39,139 @@ describe('build-scene geometry', () => {
   });
 });
 
+// --- Synthetic-fixture derive: exercises the per-site optional paths without
+// the large _raw cache (runs everywhere, incl. CI). --------------------------
+describe('build-scene per-site behavior (synthetic fixture)', () => {
+  // A tiny site at the equator: one building way, one street, no heroes, no
+  // water carve, no tour/trolley. lonLatToEnu(0.0001, 0) ≈ (11.1, 0).
+  const tinySite = SiteConfigSchema.parse({
+    slug: 'tiny',
+    name: 'Tiny Test Site',
+    box: { swLat: -0.01, swLon: -0.01, neLat: 0.01, neLon: 0.01 },
+    carveWater: false,
+  });
+  const tinyProj = createProjection(tinySite.box);
+
+  function writeFixture(rawDir: string) {
+    const sq = (dLon: number, dLat: number) => [
+      { lat: -0.0005 + dLat, lon: -0.0005 + dLon },
+      { lat: -0.0005 + dLat, lon: 0.0005 + dLon },
+      { lat: 0.0005 + dLat, lon: 0.0005 + dLon },
+      { lat: 0.0005 + dLat, lon: -0.0005 + dLon },
+    ];
+    writeFileSync(
+      join(rawDir, 'osm.json'),
+      JSON.stringify({
+        elements: [
+          { type: 'way', id: 1, tags: { building: 'yes' }, geometry: sq(0, 0) },
+          {
+            type: 'way',
+            id: 2,
+            tags: { building: 'office', name: 'Test Tower' },
+            geometry: sq(0.002, 0.002),
+          },
+          {
+            type: 'way',
+            id: 3,
+            tags: { highway: 'residential' },
+            geometry: [
+              { lat: 0, lon: -0.02 }, // straddles the west edge → gets clipped
+              { lat: 0, lon: 0.005 },
+            ],
+          },
+        ],
+      })
+    );
+    writeFileSync(
+      join(rawDir, 'terrain.json'),
+      JSON.stringify({ cols: 2, rows: 2, heights: [5, 6, 7, 8] })
+    );
+    // no drape.jpg — manifest still emits, carve skips
+  }
+
+  it('emits [] heroes, no swap fields, and an uncarved terrain for a hero-less carve-less site', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'build-scene-tiny-'));
+    try {
+      const rawDir = join(dir, '_raw');
+      const outDir = join(dir, 'out');
+      mkdirSync(rawDir, { recursive: true });
+      writeFixture(rawDir);
+
+      const manifest = await buildScene(rawDir, outDir, tinySite, tinyProj);
+
+      const heroes = JSON.parse(
+        readFileSync(join(outDir, 'heroes.json'), 'utf8')
+      );
+      expect(heroes).toEqual([]);
+
+      const buildings = JSON.parse(
+        readFileSync(join(outDir, 'buildings.json'), 'utf8')
+      ) as { swap?: string; rule: string }[];
+      expect(buildings).toHaveLength(2);
+      expect(buildings.every((b) => b.swap === undefined)).toBe(true);
+
+      const terrain = JSON.parse(
+        readFileSync(join(outDir, 'terrain.json'), 'utf8')
+      );
+      expect(terrain).toEqual({ cols: 2, rows: 2, heights: [5, 6, 7, 8] });
+
+      // manifest carries the site block + basename drape path; water is a bake
+      // RESULT (nothing carved here → false)
+      expect(manifest.drape.path).toBe('drape.jpg');
+      expect(manifest.site).toEqual({
+        slug: 'tiny',
+        name: 'Tiny Test Site',
+        water: false,
+      });
+      expect(manifest.box).toEqual(tinySite.box);
+      expect(existsSync(join(outDir, 'drape.jpg'))).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('clips straddling streets to the box', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'build-scene-tiny-'));
+    try {
+      const rawDir = join(dir, '_raw');
+      const outDir = join(dir, 'out');
+      mkdirSync(rawDir, { recursive: true });
+      writeFixture(rawDir);
+
+      const manifest = await buildScene(rawDir, outDir, tinySite, tinyProj);
+      const streets = JSON.parse(
+        readFileSync(join(outDir, 'streets.json'), 'utf8')
+      ) as { pts: number[] }[];
+      expect(streets).toHaveLength(1);
+      const halfW = manifest.groundWm / 2;
+      for (let i = 0; i < streets[0].pts.length; i += 2) {
+        expect(Math.abs(streets[0].pts[i])).toBeLessThanOrEqual(halfW + 2);
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
 // These exercise the full buildScene() derive against the raw upstream cache
-// (public/chatt/_raw/). That cache is gitignored (large, regenerable via
+// (public/twins/chatt/_raw/). That cache is gitignored (large, regenerable via
 // `pnpm bake`), so it exists locally but NOT in CI or a fresh clone — skip the
 // suite when it's absent rather than fail. The committed DERIVED artifacts
-// (public/chatt/*.json) are the runtime source of truth and are covered by the
-// runtime component tests; these integration tests just validate the deriver.
-const rawDir = join(process.cwd(), 'public/chatt/_raw');
+// (public/twins/chatt/*.json) are the runtime source of truth and are covered
+// by the runtime component tests; these integration tests just validate the
+// deriver.
+const rawDir = join(process.cwd(), 'public/twins/chatt/_raw');
 const hasRaw = existsSync(join(rawDir, 'osm.json'));
 
 describe.skipIf(!hasRaw)(
   'build-scene hero resolution (local _raw cache; skipped in CI)',
   () => {
-    const ALL_HERO_KEYS = [
-      'aquarium',
-      'walnut_st_bridge',
-      'tivoli',
-      'dome_building',
-      'courthouse',
-      'hunter_museum',
-      'choo_choo',
-      'republic_centre',
-    ];
+    const ALL_HERO_KEYS = site.heroes.map((h) => h.slug);
 
     it('resolves all 8 hero keys and none sit on a street', async () => {
       const outDir = mkdtempSync(join(tmpdir(), 'build-scene-test-'));
       try {
-        await buildScene(rawDir, outDir);
+        await buildScene(rawDir, outDir, site, proj);
 
         const heroes = JSON.parse(
           readFileSync(join(outDir, 'heroes.json'), 'utf8')
@@ -73,8 +184,8 @@ describe.skipIf(!hasRaw)(
         expect(foundKeys).toEqual([...ALL_HERO_KEYS].sort());
 
         // None of the hero anchor points should coincide with any street vertex
-        // (a hero placed "on a street" indicates the regex matched a road name
-        // instead of a building/landmark).
+        // (a hero placed "on a street" indicates a landmark matched a road
+        // instead of a building).
         const streetPts = new Set<string>();
         for (const s of streets) {
           for (let i = 0; i < s.pts.length; i += 2) {
@@ -92,7 +203,7 @@ describe.skipIf(!hasRaw)(
     it('produces ~1500 buildings for the extended corridor box', async () => {
       const outDir = mkdtempSync(join(tmpdir(), 'build-scene-test-'));
       try {
-        const manifest = await buildScene(rawDir, outDir);
+        const manifest = await buildScene(rawDir, outDir, site, proj);
         const buildings = JSON.parse(
           readFileSync(join(outDir, 'buildings.json'), 'utf8')
         ) as unknown[];
@@ -109,7 +220,7 @@ describe.skipIf(!hasRaw)(
       // within the box half-extents (small epsilon for quantization).
       const outDir = mkdtempSync(join(tmpdir(), 'build-scene-test-'));
       try {
-        const manifest = await buildScene(rawDir, outDir);
+        const manifest = await buildScene(rawDir, outDir, site, proj);
         const streets = JSON.parse(
           readFileSync(join(outDir, 'streets.json'), 'utf8')
         ) as { pts: number[] }[];
@@ -131,7 +242,7 @@ describe.skipIf(!hasRaw)(
       }
     });
 
-    it('registers each way-based hero on its true OSM footprint centroid (≤5 m)', () => {
+    it('registers each way-based hero on its true OSM footprint centroid (≤5 m)', async () => {
       // Ground-truth registration: a hero backed by a real OSM way (aquarium,
       // courthouse, republic_centre, walnut_st_bridge) MUST be emitted at that
       // way's own footprint centroid, projected through the same ENU the whole
@@ -151,26 +262,29 @@ describe.skipIf(!hasRaw)(
 
       const outDir = mkdtempSync(join(tmpdir(), 'build-scene-test-'));
       try {
-        buildScene(rawDir, outDir);
+        await buildScene(rawDir, outDir, site, proj);
         const heroes = JSON.parse(
           readFileSync(join(outDir, 'heroes.json'), 'utf8')
         ) as { swap: string; x: number; z: number }[];
 
-        for (const [id, swap] of Object.entries(HERO_WAY_IDS)) {
-          const el = byId.get(Number(id));
-          expect(el?.geometry, `raw way ${id} (${swap}) missing`).toBeTruthy();
-          const ring = el!.geometry!.map((g) => lonLatToEnu(g.lon, g.lat)) as [
-            number,
-            number,
-          ][];
+        for (const h of site.heroes) {
+          if (h.wayId == null) continue;
+          const el = byId.get(h.wayId);
+          expect(
+            el?.geometry,
+            `raw way ${h.wayId} (${h.slug}) missing`
+          ).toBeTruthy();
+          const ring = el!.geometry!.map((g) =>
+            proj.lonLatToEnu(g.lon, g.lat)
+          ) as [number, number][];
           const [tx, tz] = polygonCentroid(ring);
 
-          const hero = heroes.find((h) => h.swap === swap);
-          expect(hero, `hero ${swap} not emitted`).toBeTruthy();
+          const hero = heroes.find((x) => x.swap === h.slug);
+          expect(hero, `hero ${h.slug} not emitted`).toBeTruthy();
           const dist = Math.hypot(hero!.x - tx, hero!.z - tz);
           expect(
             dist,
-            `${swap} is ${dist.toFixed(1)} m from its true OSM footprint centroid`
+            `${h.slug} is ${dist.toFixed(1)} m from its true OSM footprint centroid`
           ).toBeLessThanOrEqual(5);
         }
       } finally {

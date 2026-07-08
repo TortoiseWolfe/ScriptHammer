@@ -2,17 +2,6 @@
 import type { Hero, TerrainGrid, Manifest } from '@/lib/manifest';
 import { elevationAt, minElevation } from './terrainSample';
 
-export const HERO_KEYS = [
-  'aquarium',
-  'walnut_st_bridge',
-  'tivoli',
-  'dome_building',
-  'courthouse',
-  'hunter_museum',
-  'choo_choo',
-  'republic_centre',
-];
-
 export default function Heroes({
   heroes,
   grid,

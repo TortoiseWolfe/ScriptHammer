@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { drapePixelSize, drapeUrl } from '../fetch-drape';
+import { createProjection } from '../enu';
+
+const proj = createProjection({
+  swLat: 35.0078,
+  swLon: -85.316,
+  neLat: 35.06,
+  neLon: -85.3,
+});
 
 // Choo-Choo corridor box: 1.46km E-W x 5.79km N-S. The drape is a plate-carrée
 // (SR 4326) request, so its pixel aspect MUST equal the DEGREE aspect (~0.307)
@@ -11,24 +19,29 @@ import { drapePixelSize, drapeUrl } from '../fetch-drape';
 // constants to WGS-84 arc lengths at the box latitude — #229.)
 describe('drape sizing (plate-carrée, degree-aspect for exact-bbox return)', () => {
   it('matches the DEGREE aspect (~0.307) so the returned extent is not expanded', () => {
-    const { width, height } = drapePixelSize(2);
+    const { width, height } = drapePixelSize(proj, 2);
     const aspect = width / height;
     const degAspect = (-85.3 - -85.316) / (35.06 - 35.0078);
     expect(aspect).toBeCloseTo(degAspect, 3);
   });
   it('sizes 730 x 2382 at mpp=2 (E-W at 2 m/px, height from degree aspect)', () => {
-    const { width, height } = drapePixelSize(2);
+    const { width, height } = drapePixelSize(proj, 2);
     expect(width).toBe(730);
     expect(height).toBe(2382);
   });
   it('requests NAIP exportImage with the exact box bbox at SR 4326', () => {
-    const url = drapeUrl(2, 'naip');
+    const url = drapeUrl(proj, 2, 'naip');
     expect(url).toContain('imagery.nationalmap.gov');
     expect(url).toContain('exportImage');
     expect(url).toContain('bbox=-85.316,35.0078,-85.3,35.06'); // minx,miny,maxx,maxy
     expect(url).toContain('bboxSR=4326');
     expect(url).toContain('imageSR=4326');
     expect(url).toContain('size=730,2382');
+  });
+  it('routes the esri source to World_Imagery (the non-US fallback)', () => {
+    const url = drapeUrl(proj, 2, 'esri');
+    expect(url).toContain('server.arcgisonline.com');
+    expect(url).toContain('World_Imagery');
   });
 
   it('requested pixel aspect matches the bbox aspect IN THE REQUEST SR (no extent expansion)', () => {
@@ -38,29 +51,20 @@ describe('drape sizing (plate-carrée, degree-aspect for exact-bbox return)', ()
     // preserve pixel squareness — verified live: requesting SR 4326 with a
     // metre-proportional 729x2886 returned lat 35.00223..35.06557 instead of
     // 35.0078..35.06 (~616 m over-scan each end), which shifts every N-S feature
-    // and floats south-bank buildings out over the river.
+    // and floats south-bank buildings out over the water.
     //
     // The drape is requested in `imageSR` units, so the pixel aspect must equal
     // the bbox aspect measured IN THOSE UNITS. Metre-proportional pixels only
     // stay consistent with a metric imageSR (3857), or the bbox must be sized in
     // the same unit as the pixels.
-    const url = drapeUrl(2, 'naip');
+    const url = drapeUrl(proj, 2, 'naip');
     const bbox = /bbox=([\d.-]+),([\d.-]+),([\d.-]+),([\d.-]+)/.exec(url)!;
     const [, xmin, ymin, xmax, ymax] = bbox.map(Number);
     const size = /size=(\d+),(\d+)/.exec(url)!;
     const [, width, height] = size.map(Number);
-    const imageSR = /imageSR=(\d+)/.exec(url)![1];
 
     const pixelAspect = width / height;
-    if (imageSR === '4326') {
-      // degrees
-      const bboxAspect = (xmax - xmin) / (ymax - ymin);
-      expect(pixelAspect).toBeCloseTo(bboxAspect, 3);
-    } else {
-      // metric SR (e.g. 3857): the bbox must already be in metres and its aspect
-      // must match; the projected metre extent aspect equals the ground aspect.
-      const bboxAspect = (xmax - xmin) / (ymax - ymin);
-      expect(pixelAspect).toBeCloseTo(bboxAspect, 3);
-    }
+    const bboxAspect = (xmax - xmin) / (ymax - ymin);
+    expect(pixelAspect).toBeCloseTo(bboxAspect, 3);
   });
 });

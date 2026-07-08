@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { buildGrid, chunk } from '../fetch-terrain';
-import { BOX } from '../box';
+
+const BOX = { swLat: 35.0078, swLon: -85.316, neLat: 35.06, neLon: -85.3 };
 
 describe('terrain grid', () => {
   it('builds a row-major grid over the box, S->N, W->E', () => {
-    const g = buildGrid(3, 3);
+    const g = buildGrid(BOX, 3, 3);
     expect(g).toHaveLength(9);
     expect(g[0].lat).toBeCloseTo(BOX.swLat, 5); // first row = south
     expect(g[0].lon).toBeCloseTo(BOX.swLon, 5); // first col = west

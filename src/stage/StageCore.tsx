@@ -16,6 +16,9 @@ export interface StageCoreProps {
   grade?: Record<string, number>;
   onFrame?: (dt: number, t: number) => void;
   registerHandle?: (h: StageHandle) => void;
+  /** ?topdown diagnostic frame — where to hover and how high (site-sized).
+   *  Without it the ?topdown query param is ignored. */
+  topdown?: { center: [number, number]; height: number };
 }
 
 // StageCore is the liftable seam: it owns the composer, the single render
@@ -29,6 +32,7 @@ export default function StageCore({
   grade,
   onFrame,
   registerHandle,
+  topdown,
 }: StageCoreProps) {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
@@ -72,13 +76,15 @@ export default function StageCore({
     rig.setTime(timeRef.current);
     onFrame?.(dt, timeRef.current);
     const search = typeof window !== 'undefined' ? window.location.search : '';
-    // ?topdown: dev diagnostic — force a straight-down view over the corridor to
-    // check drape (aerial) vs vector (streets/buildings) georegistration.
-    if (search.includes('topdown')) {
+    // ?topdown: dev diagnostic — force a straight-down view over the model to
+    // check drape (aerial) vs vector (streets/buildings) georegistration. The
+    // frame (center + height) is site-sized and passed in by the composition
+    // root; without it the param is ignored.
+    if (search.includes('topdown') && topdown) {
       const cam = camera as PerspectiveCamera;
-      cam.position.set(-100, 5000, 0);
+      cam.position.set(topdown.center[0], topdown.height, topdown.center[1]);
       cam.up.set(0, 0, -1); // -Z (north) toward top of screen
-      cam.lookAt(-100, 0, 0);
+      cam.lookAt(topdown.center[0], 0, topdown.center[1]);
       cam.fov = 62;
       cam.updateProjectionMatrix();
       gl.render(scene, camera);

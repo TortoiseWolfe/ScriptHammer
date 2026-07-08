@@ -1,0 +1,91 @@
+{
+  "box": {
+    "swLat": 35.0078,
+    "swLon": -85.316,
+    "neLat": 35.06,
+    "neLon": -85.3
+  },
+  "groundWm": 1460,
+  "groundHm": 5791.1,
+  "cosLat": 0.8197131890928896,
+  "drape": {
+    "path": "drape.jpg",
+    "width": 730,
+    "height": 2382,
+    "mpp": 2
+  },
+  "provenance": "© OpenStreetMap · USGS 3DEP · USGS NAIP",
+  "fetchedAt": "2026-07-08T22:14:02.376Z",
+  "ruleHistogram": {
+    "height": 96,
+    "levels": 116,
+    "override": 0,
+    "fallback": 1298
+  },
+  "site": {
+    "slug": "chatt",
+    "name": "Chattanooga Mini",
+    "subtitle": "a living tilt-shift diorama",
+    "palette": "toy",
+    "day": 0.4,
+    "tour": [
+      {
+        "pos": [-40, 240, -1980],
+        "look": [-220, 20, -2340],
+        "dwell": 5,
+        "name": "Ross's Landing",
+        "blurb": "The 1815 riverfront landing where Chattanooga began."
+      },
+      {
+        "pos": [-120, 230, -2120],
+        "look": [-273, 20, -2424],
+        "dwell": 5,
+        "name": "Tennessee Aquarium",
+        "blurb": "Opened 1992 — the world's largest freshwater aquarium at the time."
+      },
+      {
+        "pos": [-40, 240, -2360],
+        "look": [68, 18, -2726],
+        "dwell": 5,
+        "name": "Walnut Street Bridge",
+        "blurb": "1890 truss bridge, 2,376 ft — one of the longest pedestrian bridges in the world."
+      },
+      {
+        "pos": [20, 250, -2560],
+        "look": [80, 20, -2960],
+        "dwell": 5,
+        "name": "Coolidge Park",
+        "blurb": "North Shore park with a 1894 Dentzel carousel and a climbable fountain."
+      },
+      {
+        "pos": [-220, 300, -1120],
+        "look": [-382, 30, -1614],
+        "dwell": 5,
+        "name": "Republic Centre",
+        "blurb": "At 300 ft / 21 floors, Chattanooga's tallest building — the downtown skyline's anchor."
+      },
+      {
+        "pos": [120, 300, 120],
+        "look": [40, 20, -600],
+        "dwell": 4.5,
+        "name": "Downtown Core",
+        "blurb": "The Broad & Market Street grid — the dense heart of downtown, laid out in 1839."
+      },
+      {
+        "pos": [40, 320, 2900],
+        "look": [-55, 20, 2720],
+        "dwell": 6,
+        "name": "Chattanooga Choo Choo",
+        "blurb": "Historic Terminal Station (1909), immortalized by the 1941 Glenn Miller hit. Now a hotel + gardens on the Southside."
+      }
+    ],
+    "trolley": [
+      -180, -2180, -220, -2320, -180, -2460, 10, -2600, 60, -2860, 60, -2700,
+      -60, -2400, -180, -2180
+    ],
+    "framing": {
+      "homeFocus": [-100, 0, -2000]
+    },
+    "water": true
+  }
+}
