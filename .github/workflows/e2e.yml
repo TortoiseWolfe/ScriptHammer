@@ -112,6 +112,18 @@ jobs:
     name: Smoke Tests
     runs-on: ubuntu-latest
     needs: build
+    # Fork-PR guard: GitHub withholds repo secrets (Supabase URL/keys, TEST_USER_*)
+    # from pull_request runs opened from a FORK, so the E2E prerequisite check
+    # fails fast with "missing environment variables" — a false red that has
+    # nothing to do with the contributor's change. Skip the secret-dependent E2E
+    # jobs on fork PRs (they show neutral, not failed); maintainers verify E2E
+    # after pulling the branch into this repo. Same-repo branch PRs, push, cron,
+    # and workflow_dispatch always have secrets and run normally. This condition
+    # is repeated on every job below that needs secrets (basepath, rate-limiting,
+    # auth-setup, e2e) — Actions has no YAML-anchor support for jobs.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 15
 
     steps:
@@ -218,6 +230,10 @@ jobs:
     name: basePath Project-Site Smoke
     runs-on: ubuntu-latest
     needs: build
+    # Fork-PR guard (see smoke job): skip on fork PRs where secrets are withheld.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 15
 
     steps:
@@ -309,6 +325,11 @@ jobs:
     name: Rate-Limiting Tests
     runs-on: ubuntu-latest
     needs: smoke
+    # Fork-PR guard (see smoke job): skip on fork PRs where secrets are withheld.
+    # (smoke already skips on forks and this needs it, but keep the guard explicit.)
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 10
     continue-on-error: true
 
@@ -401,6 +422,10 @@ jobs:
     name: Auth Setup
     runs-on: ubuntu-latest
     needs: smoke
+    # Fork-PR guard (see smoke job): skip on fork PRs where secrets are withheld.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 15
 
     steps:
@@ -506,6 +531,10 @@ jobs:
     name: E2E (${{ matrix.project }} ${{ matrix.shard }})
     runs-on: ubuntu-latest
     needs: [smoke, rate-limiting, auth-setup]
+    # Fork-PR guard (see smoke job): skip on fork PRs where secrets are withheld.
+    if: >-
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -711,10 +740,13 @@ jobs:
     # touching WebKit/Firefox-sensitive code can opt back in with the `full-e2e`
     # label (e.g. messaging error-string handling — see the real Safari "Load
     # failed" retry bug fixed in commit 7fb7563).
+    # Fork-PR guard folded into the existing label gate: even a `full-e2e`-labeled
+    # PR from a fork lacks secrets, so require the PR head to be this repo.
     if: >-
       always() && !cancelled() &&
       (github.event_name != 'pull_request' ||
-       contains(github.event.pull_request.labels.*.name, 'full-e2e'))
+       (github.event.pull_request.head.repo.full_name == github.repository &&
+        contains(github.event.pull_request.labels.*.name, 'full-e2e')))
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -876,10 +908,13 @@ jobs:
     needs: [smoke, rate-limiting, auth-setup]
     # Lever 2: see e2e-firefox above — skipped on PRs (chromium gates those)
     # unless the PR carries the `full-e2e` label; runs on push-to-main + cron.
+    # Fork-PR guard folded in (see e2e-firefox): fork PRs lack secrets, so require
+    # the PR head to be this repo even when `full-e2e`-labeled.
     if: >-
       always() && !cancelled() &&
       (github.event_name != 'pull_request' ||
-       contains(github.event.pull_request.labels.*.name, 'full-e2e'))
+       (github.event.pull_request.head.repo.full_name == github.repository &&
+        contains(github.event.pull_request.labels.*.name, 'full-e2e')))
     timeout-minutes: 60
     strategy:
       fail-fast: false
