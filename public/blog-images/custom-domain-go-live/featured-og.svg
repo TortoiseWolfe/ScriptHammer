@@ -1,0 +1,57 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Going live: a static Next.js app on a custom domain">
+  <defs>
+    <linearGradient id="gl-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#27272a"/>
+    </linearGradient>
+    <linearGradient id="gl-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="gl-green" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#gl-bg)"/>
+
+  <g opacity="0.06" stroke="#a78bfa" stroke-width="1">
+    <path d="M0 158 H1200 M0 316 H1200 M0 474 H1200"/>
+    <path d="M240 0 V630 M480 0 V630 M720 0 V630 M960 0 V630"/>
+  </g>
+
+  <rect x="90" y="118" width="72" height="8" rx="4" fill="url(#gl-accent)"/>
+
+  <!-- browser address bar with a lock + custom domain, top-right -->
+  <g transform="translate(770 150)">
+    <rect x="0" y="0" width="330" height="150" rx="16" fill="#1e1b2e" stroke="url(#gl-accent)" stroke-width="4"/>
+    <!-- traffic dots -->
+    <circle cx="26" cy="26" r="7" fill="#52525b"/>
+    <circle cx="50" cy="26" r="7" fill="#52525b"/>
+    <circle cx="74" cy="26" r="7" fill="#52525b"/>
+    <!-- address field -->
+    <rect x="20" y="54" width="290" height="40" rx="20" fill="#0f0f14" stroke="#3f3f46" stroke-width="2"/>
+    <!-- lock -->
+    <g transform="translate(40 66)">
+      <rect x="0" y="7" width="16" height="12" rx="2" fill="url(#gl-green)"/>
+      <path d="M3 7 V4 a5 5 0 0 1 10 0 V7" fill="none" stroke="url(#gl-green)" stroke-width="2.5"/>
+    </g>
+    <text x="70" y="80" font-family="'Courier New', monospace" font-size="20" font-weight="700" fill="#e4e4e7">heldpaws.com</text>
+    <!-- redirect chips: the other domains -> canonical -->
+    <text x="20" y="128" font-family="'Segoe UI', sans-serif" font-size="15" fill="#71717a">heldpaws.org · raisedpaws.* &#8594; 301</text>
+  </g>
+
+  <!-- Title -->
+  <text x="90" y="252" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="82" font-weight="800" fill="#fafafa">Going Live</text>
+  <text x="90" y="342" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="82" font-weight="800" fill="url(#gl-accent)">on a Custom Domain</text>
+
+  <!-- Subtitle -->
+  <text x="94" y="414" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="32" font-weight="500" fill="#d4d4d8">A static Next.js app: DNS, basePath, the</text>
+  <text x="94" y="454" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="32" font-weight="500" fill="#d4d4d8">Supabase auth redirect that bites, Pages vs Vercel</text>
+
+  <g font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
+    <text x="90" y="560" font-size="28" font-weight="700" fill="#a78bfa">ScriptHammer</text>
+    <text x="368" y="560" font-size="24" font-weight="400" fill="#71717a">a go-live runbook</text>
+  </g>
+</svg>
