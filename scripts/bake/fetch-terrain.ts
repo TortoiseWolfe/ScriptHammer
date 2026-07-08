@@ -51,9 +51,13 @@ async function fetchBatch(
 }
 
 // Grid defaults tuned for the Choo-Choo corridor box (1.46km E-W x 5.77km N-S).
-// 25x60 = 1500 pts (15 batches) → ~61m E-W, ~98m N-S spacing. Asymmetric to
-// match the ~4:1 corridor without wasting requests on redundant E-W density.
-export async function fetchTerrain(outDir: string, cols = 25, rows = 60) {
+// 49x195 = 9555 pts (96 batches) → ~30m E-W, ~30m N-S spacing. The previous
+// 25x60 (~98m N-S cells) was far too coarse to resolve the Tennessee River
+// bank: the bank got smeared across a single cell, misplacing the 3D water edge
+// ~100 m from where the buildings actually stop, so riverfront buildings
+// rendered sitting in the river (#225). ~30m isotropic cells resolve the bank,
+// and the OSM water carve (carve-water.ts) stamps the exact channel on top.
+export async function fetchTerrain(outDir: string, cols = 49, rows = 195) {
   mkdirSync(outDir, { recursive: true });
   const grid = buildGrid(cols, rows);
   const heights: number[] = [];

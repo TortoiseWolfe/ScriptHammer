@@ -35,10 +35,19 @@ function extrude(
     bevelEnabled: false,
   });
   geo.rotateX(-Math.PI / 2); // shape's Y -> world Z; extrude depth -> world +Y
-  // Seat the building base on the terrain at its own centroid (normalized to the
-  // same Y=0 floor the Terrain mesh uses), so it sits ON the topology, not below it.
-  const groundY = elevationAt(grid, manifest, center[0], center[1]) - minE;
-  geo.translate(center[0], groundY, center[1]);
+  // Seat the building base at the LOWEST terrain under its footprint (ring
+  // vertices + centroid), normalized to the same Y=0 floor the Terrain mesh
+  // uses. Seating at the centroid alone left downhill corners hanging in the
+  // air on sloped lots (~55 m of relief across the corridor) — a big part of
+  // the perceived "floating buildings" (#225/#229). Seating at the minimum
+  // embeds the uphill side slightly, which is how real buildings cut into a
+  // slope.
+  let groundE = elevationAt(grid, manifest, center[0], center[1]);
+  for (let i = 0; i < b.ring.length; i += 2) {
+    const e = elevationAt(grid, manifest, b.ring[i], b.ring[i + 1]);
+    if (e < groundE) groundE = e;
+  }
+  geo.translate(center[0], groundE - minE, center[1]);
   return geo;
 }
 

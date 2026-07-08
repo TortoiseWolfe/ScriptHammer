@@ -149,3 +149,4 @@ scripts/__tests__/fixtures/*
 # but the raw upstream cache is large and local-only (regenerable via `pnpm bake`).
 /public/chatt/_raw/
 /public/chatt/_tmp/
+knowledge/spatial

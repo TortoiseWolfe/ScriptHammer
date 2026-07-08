@@ -5,17 +5,17 @@
     "neLat": 35.06,
     "neLon": -85.3
   },
-  "groundWm": 1458.4,
-  "groundHm": 5772,
-  "cosLat": 0.8188125348994125,
+  "groundWm": 1460,
+  "groundHm": 5791.1,
+  "cosLat": 0.8197131890928896,
   "drape": {
     "path": "chatt/drape.jpg",
-    "width": 729,
-    "height": 2378,
+    "width": 730,
+    "height": 2382,
     "mpp": 2
   },
   "provenance": "© OpenStreetMap · USGS 3DEP · USGS NAIP",
-  "fetchedAt": "2026-07-07T18:21:49.885Z",
+  "fetchedAt": "2026-07-08T18:39:18.951Z",
   "ruleHistogram": {
     "height": 96,
     "levels": 116,

@@ -10,6 +10,11 @@ import { lonLatToEnu, enuGroundSize, M_PER_DEG_LON } from './enu';
 import { BOX } from './box';
 import { resolveHeight } from './height';
 import { drapePixelSize } from './fetch-drape';
+import {
+  classifyAerialWater,
+  carveToMask,
+  type TerrainGrid,
+} from './carve-water';
 
 export function ringAreaM2(ring: [number, number][]): number {
   let a = 0;
@@ -318,7 +323,34 @@ export async function buildScene(rawDir: string, outDir: string, mpp = 2) {
   writeFileSync(join(outDir, 'buildings.json'), JSON.stringify(buildings));
   writeFileSync(join(outDir, 'streets.json'), JSON.stringify(streets));
   writeFileSync(join(outDir, 'heroes.json'), JSON.stringify(heroes));
-  copyFileSync(join(rawDir, 'terrain.json'), join(outDir, 'terrain.json'));
+
+  // Carve the river into the terrain by following the AERIAL waterline (#225):
+  // classify the drape's water at pixel resolution and lower every terrain sample
+  // whose drape pixel is water to the water level. The bank then follows the real
+  // shoreline (buildings register to the drape), instead of the ragged coarse-grid
+  // edge that made riverfront buildings float. Falls back to the raw grid if the
+  // drape is missing.
+  const rawGrid = JSON.parse(
+    readFileSync(join(rawDir, 'terrain.json'), 'utf8')
+  ) as TerrainGrid;
+  const drapeSrc = existsSync(join(rawDir, 'drape.jpg'))
+    ? join(rawDir, 'drape.jpg')
+    : existsSync(drapePath)
+      ? drapePath
+      : null;
+  let carvedGrid = rawGrid;
+  if (drapeSrc) {
+    const mask = await classifyAerialWater(drapeSrc);
+    const res = carveToMask(rawGrid, mask, widthM, depthM);
+    carvedGrid = res.grid;
+    const waterPx = mask.mask.reduce((a, v) => a + v, 0);
+    console.log(
+      `[carve-water] aerial water ${waterPx}px → ${res.carved} terrain samples lowered to ${res.waterLevel.toFixed(1)} m`
+    );
+  } else {
+    console.log('[carve-water] no drape found; terrain left uncarved');
+  }
+  writeFileSync(join(outDir, 'terrain.json'), JSON.stringify(carvedGrid));
   writeFileSync(
     join(outDir, 'manifest.json'),
     JSON.stringify(manifest, null, 2)

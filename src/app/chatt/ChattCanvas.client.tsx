@@ -30,11 +30,13 @@ const TROLLEY_POLYLINE: number[] = [
 function SceneInner({
   paletteKey,
   day,
+  mode,
   onCaption,
   registerHandle,
 }: {
   paletteKey: PaletteKey;
   day: number;
+  mode: RigMode;
   onCaption: (c: HudCaption | null) => void;
   registerHandle: (h: StageHandle) => void;
 }) {
@@ -80,6 +82,29 @@ function SceneInner({
     };
     return () => rig.dispose();
   }, [rig, onCaption]);
+
+  // Wire the HUD mode buttons to the Rig. Without this, clicking
+  // Miniature/Follow/Walk only updated React state — the Rig kept running in
+  // its previous mode, so the camera never re-framed (and Miniature inherited
+  // whatever grazing/buried angle the tour left, looking like a broken slab).
+  useEffect(() => {
+    if (mode === 'orbit') {
+      // Enter Miniature from a clean, guaranteed-good overhead frame rather than
+      // syncing from a possibly-buried tour camera: pull up and look down at the
+      // downtown/riverfront so the whole diorama reads as a toy model.
+      rig.focus.set(-100, 0, -2000);
+      rig.radius = rig.tRadius = 2600;
+      rig.theta = rig.tTheta = 0;
+      rig.phi = rig.tPhi = 0.62; // ~35° from vertical → tilted-overhead diorama view
+      rig.cam.position.set(
+        rig.focus.x + 2600 * Math.sin(0.62) * Math.sin(0),
+        rig.focus.y + 2600 * Math.cos(0.62),
+        rig.focus.z + 2600 * Math.sin(0.62) * Math.cos(0)
+      );
+      rig.cam.lookAt(rig.focus);
+    }
+    rig.setMode(mode);
+  }, [rig, mode]);
 
   const d = useMemo(() => computeDay(day), [day]);
   const grade = useMemo(
@@ -192,6 +217,7 @@ export default function ChattCanvas() {
         <SceneInner
           paletteKey={paletteKey}
           day={day}
+          mode={mode}
           onCaption={setCaption}
           registerHandle={(h) => {
             handleRef.current = h;

@@ -14,6 +14,7 @@ import Buildings from './Buildings';
 import Terrain from './Terrain';
 import Streets from './Streets';
 import Heroes from './Heroes';
+import Water from './Water';
 
 interface WorldData {
   manifest: Manifest;
@@ -64,6 +65,7 @@ export default function ChattWorld({
         drape={data.drape}
         manifest={data.manifest}
       />
+      <Water manifest={data.manifest} />
       <Buildings
         buildings={data.buildings}
         palette={palette}
