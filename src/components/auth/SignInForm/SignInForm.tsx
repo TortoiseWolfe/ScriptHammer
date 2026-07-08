@@ -242,38 +242,42 @@ export default function SignInForm({
       onSubmit={handleSubmit}
       className={`space-y-4${className ? ` ${className}` : ''}`}
     >
-      <div>
-        <label className="label" htmlFor="email">
-          <span>Email</span>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6">
+        <label className="label sm:w-36 sm:shrink-0 sm:text-right" htmlFor="email">
+          <span className="label-text">Email</span>
         </label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="input min-h-11"
-          placeholder="you@example.com"
-          autoComplete="email"
-          required
-          disabled={loading}
-        />
+        <div className="flex-1 min-w-0">
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="input input-bordered min-h-11 w-full"
+            placeholder="you@example.com"
+            autoComplete="email"
+            required
+            disabled={loading}
+          />
+        </div>
       </div>
 
-      <div>
-        <label className="label" htmlFor="password">
-          <span>Password</span>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6">
+        <label className="label sm:w-36 sm:shrink-0 sm:text-right" htmlFor="password">
+          <span className="label-text">Password</span>
         </label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="input min-h-11"
-          placeholder="••••••••"
-          autoComplete="current-password"
-          required
-          disabled={loading}
-        />
+        <div className="flex-1 min-w-0">
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="input input-bordered min-h-11 w-full"
+            placeholder="••••••••"
+            autoComplete="current-password"
+            required
+            disabled={loading}
+          />
+        </div>
       </div>
 
       <div>

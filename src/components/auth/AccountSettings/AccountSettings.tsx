@@ -248,41 +248,51 @@ export default function AccountSettings({
           <h3 className="card-title">Profile Settings</h3>
 
           {/* Display Name Field */}
-          <div>
-            <label htmlFor="displayname-input" className="label">
-              <span>Display Name</span>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6">
+            <label
+              htmlFor="displayname-input"
+              className="label sm:w-36 sm:shrink-0 sm:text-right"
+            >
+              <span className="label-text">Display Name</span>
             </label>
-            <input
-              id="displayname-input"
-              type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="input min-h-11"
-              placeholder="e.g., John Doe"
-              disabled={loading || isUpdatingProfile}
-            />
-            <label className="label">
-              <span>Your friendly name shown to other users</span>
-            </label>
+            <div className="flex-1 min-w-0">
+              <input
+                id="displayname-input"
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="input input-bordered min-h-11 w-full"
+                placeholder="e.g., John Doe"
+                disabled={loading || isUpdatingProfile}
+              />
+              <label className="label mt-2">
+                <span className="text-sm">Your friendly name shown to other users</span>
+              </label>
+            </div>
           </div>
 
           {/* Bio Field */}
-          <div>
-            <label htmlFor="bio-textarea" className="label">
-              <span>Bio</span>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-x-6">
+            <label
+              htmlFor="bio-textarea"
+              className="label sm:w-36 sm:shrink-0 sm:text-right"
+            >
+              <span className="label-text">Bio</span>
             </label>
-            <textarea
-              id="bio-textarea"
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              className="textarea"
-              rows={3}
-              placeholder="Tell us about yourself..."
-              disabled={loading || isUpdatingProfile}
-            />
-            <label className="label">
-              <span>Maximum 500 characters</span>
-            </label>
+            <div className="flex-1 min-w-0">
+              <textarea
+                id="bio-textarea"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                className="textarea w-full"
+                rows={3}
+                placeholder="Tell us about yourself..."
+                disabled={loading || isUpdatingProfile}
+              />
+              <label className="label mt-2">
+                <span className="text-sm">Maximum 500 characters</span>
+              </label>
+            </div>
           </div>
 
           <button
@@ -368,32 +378,45 @@ export default function AccountSettings({
       <form onSubmit={handleChangePassword} className="card bg-base-200">
         <div className="card-body">
           <h3 className="card-title">Change Password</h3>
-          <div>
-            <label htmlFor="new-password-input" className="label">
-              <span>New Password</span>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6">
+            <label
+              htmlFor="new-password-input"
+              className="label sm:w-36 sm:shrink-0 sm:text-right"
+            >
+              <span className="label-text">New Password</span>
             </label>
-            <input
-              id="new-password-input"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="input min-h-11"
-              disabled={loading || isUpdatingProfile}
-            />
+            <div className="flex-1 min-w-0">
+              <input
+                id="new-password-input"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input input-bordered min-h-11 w-full"
+                disabled={loading || isUpdatingProfile}
+              />
+            </div>
           </div>
-          <div>
-            <label htmlFor="confirm-password-input" className="label">
-              <span>Confirm Password</span>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6">
+            <label
+              htmlFor="confirm-password-input"
+              className="label sm:w-36 sm:shrink-0 sm:text-right"
+            >
+              <span className="label-text">Confirm Password</span>
             </label>
-            <input
-              id="confirm-password-input"
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              className="input min-h-11"
-              disabled={loading || isUpdatingProfile}
-            />
+            <div className="flex-1 min-w-0">
+              <input
+                id="confirm-password-input"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="input input-bordered min-h-11 w-full"
+                disabled={loading || isUpdatingProfile}
+              />
+            </div>
           </div>
+
           <button
             type="submit"
             className="btn btn-primary min-h-11"
