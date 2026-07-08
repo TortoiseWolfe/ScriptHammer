@@ -1,7 +1,7 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { BOX } from './box';
-import { M_PER_DEG_LON, M_PER_DEG_LAT } from './enu';
+import sharp from 'sharp';
+import type { Projection } from './enu';
 
 const NAIP =
   'https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPImagery/ImageServer/exportImage';
@@ -26,11 +26,12 @@ const ESRI =
  * from the DEGREE aspect so the request self-registers (no extent expansion).
  * The image is a touch taller in pixels; it still maps linearly and correctly.
  */
-export function drapePixelSize(mpp: number) {
-  const groundWm = (BOX.neLon - BOX.swLon) * M_PER_DEG_LON;
-  const groundHm = (BOX.neLat - BOX.swLat) * M_PER_DEG_LAT;
-  const degLon = BOX.neLon - BOX.swLon;
-  const degLat = BOX.neLat - BOX.swLat;
+export function drapePixelSize(proj: Projection, mpp: number) {
+  const { box } = proj;
+  const groundWm = (box.neLon - box.swLon) * proj.mPerDegLon;
+  const groundHm = (box.neLat - box.swLat) * proj.mPerDegLat;
+  const degLon = box.neLon - box.swLon;
+  const degLat = box.neLat - box.swLat;
   const width = Math.round(groundWm / mpp);
   // height so that width/height === degLon/degLat → ArcGIS returns the exact bbox.
   const height = Math.round(width * (degLat / degLon));
@@ -38,21 +39,73 @@ export function drapePixelSize(mpp: number) {
 }
 
 export function drapeUrl(
+  proj: Projection,
   mpp: number,
   source: 'naip' | 'esri' = 'naip'
 ): string {
-  const { width, height } = drapePixelSize(mpp);
-  const bbox = `${BOX.swLon},${BOX.swLat},${BOX.neLon},${BOX.neLat}`; // minx,miny,maxx,maxy
+  const { box } = proj;
+  const { width, height } = drapePixelSize(proj, mpp);
+  const bbox = `${box.swLon},${box.swLat},${box.neLon},${box.neLat}`; // minx,miny,maxx,maxy
   const base = source === 'naip' ? NAIP : ESRI;
   return `${base}?bbox=${bbox}&bboxSR=4326&imageSR=4326&size=${width},${height}&format=jpeg&f=image`;
 }
 
-export async function fetchDrape(outDir: string, mpp = 2) {
+export async function fetchDrape(
+  outDir: string,
+  proj: Projection,
+  mpp = 2,
+  source: 'naip' | 'esri' = 'naip'
+): Promise<{
+  width: number;
+  height: number;
+  bytes: number;
+  source: 'naip' | 'esri';
+}> {
   mkdirSync(outDir, { recursive: true });
-  const { width, height } = drapePixelSize(mpp);
-  const res = await fetch(drapeUrl(mpp, 'naip'));
-  if (!res.ok) throw new Error(`NAIP HTTP ${res.status}`);
+  const { width, height } = drapePixelSize(proj, mpp);
+
+  // The site config pins the imagery source as part of its reproducibility
+  // contract — NEVER silently substitute the other source (Esri pixels carve a
+  // different waterline than the NAIP-tuned classifier expects). Retry the
+  // pinned source on transient errors, then fail loudly.
+  let res: Response | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    res = await fetch(drapeUrl(proj, mpp, source));
+    if (res.ok) break;
+    console.warn(
+      `[fetch-drape] ${source.toUpperCase()} HTTP ${res.status} (attempt ${attempt + 1}/3)`
+    );
+    await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+  }
+  if (!res || !res.ok) {
+    const hint =
+      source === 'naip'
+        ? ' (NAIP covers the US only — set "drapeSource": "esri" in the site config for non-US sites)'
+        : '';
+    throw new Error(`${source.toUpperCase()} HTTP ${res?.status}${hint}`);
+  }
+
   const buf = Buffer.from(await res.arrayBuffer());
+  // ArcGIS services return HTTP 200 with a JSON error body even for f=image
+  // requests, and silently clamp sizes beyond maxImageWidth/Height (~4000 px on
+  // USGSNAIPImagery). Validate we actually got a JPEG of the requested size so
+  // a corrupt/clamped drape can never ship (it would both mis-register and
+  // derail the water carve).
+  if (buf.length < 4 || buf[0] !== 0xff || buf[1] !== 0xd8) {
+    throw new Error(
+      `${source.toUpperCase()} returned a non-JPEG body (${buf.length} bytes): ${buf
+        .subarray(0, 120)
+        .toString('utf8')}`
+    );
+  }
+  const meta = await sharp(buf).metadata();
+  if (meta.width !== width || meta.height !== height) {
+    throw new Error(
+      `${source.toUpperCase()} returned ${meta.width}x${meta.height}, requested ${width}x${height} — ` +
+        `the service likely clamped the request (maxImageWidth/Height); use a coarser mpp or a smaller box`
+    );
+  }
+
   writeFileSync(join(outDir, 'drape.jpg'), buf);
-  return { width, height, bytes: buf.length };
+  return { width, height, bytes: buf.length, source };
 }

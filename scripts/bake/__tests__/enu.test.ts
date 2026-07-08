@@ -1,40 +1,77 @@
 import { describe, it, expect } from 'vitest';
 import {
-  BOX,
-  M_PER_DEG_LON,
-  M_PER_DEG_LAT,
-  lonLatToEnu,
-  enuGroundSize,
+  metersPerDegree,
+  createProjection,
+  boxFromCenter,
+  type GeoBox,
 } from '../enu';
 
-describe('ENU projection', () => {
-  it('locks the box constants', () => {
-    expect(BOX.swLat).toBe(35.0078);
-    expect(BOX.neLon).toBe(-85.3);
-    expect(BOX.centerLat).toBeCloseTo(35.0339, 4);
-    expect(BOX.centerLon).toBeCloseTo(-85.308, 4);
+// The flagship box (also pinned in sites/chatt.json — golden-chatt.test.ts
+// asserts the two stay in sync).
+const CHATT_BOX: GeoBox = {
+  swLat: 35.0078,
+  swLon: -85.316,
+  neLat: 35.06,
+  neLon: -85.3,
+};
+
+describe('metersPerDegree (WGS-84 truncated series)', () => {
+  it('matches the true arc lengths at 35°N (not equator/spherical values)', () => {
+    // The old constants (110574 equator m/deg lat; 111320·cos φ spherical lon)
+    // compressed the model 0.33% N-S (~19 m over the corridor) — see #229.
+    const { mPerDegLat, mPerDegLon } = metersPerDegree(35.0339);
+    expect(mPerDegLat).toBeCloseTo(110941, 0);
+    expect(mPerDegLon).toBeCloseTo(91250, 0);
   });
-  it('uses WGS-84 arc lengths at the box latitude (not equator/spherical values)', () => {
-    // Truncated WGS-84 series at 35.0339°N. The old constants (110574 equator
-    // m/deg lat; 111320·cos φ spherical lon) compressed the model 0.33% N-S
-    // (~19 m over the corridor) — see #229.
-    expect(M_PER_DEG_LAT).toBeCloseTo(110941, 0);
-    expect(M_PER_DEG_LON).toBeCloseTo(91250, 0);
+  it('gives the equator figure at 0°', () => {
+    const { mPerDegLat } = metersPerDegree(0);
+    expect(mPerDegLat).toBeCloseTo(110574, 0);
+  });
+});
+
+describe('createProjection', () => {
+  const proj = createProjection(CHATT_BOX);
+
+  it('derives the centre from the box', () => {
+    expect(proj.centerLat).toBeCloseTo(35.0339, 4);
+    expect(proj.centerLon).toBeCloseTo(-85.308, 4);
   });
   it('puts the box center at the origin', () => {
-    const [x, z] = lonLatToEnu(BOX.centerLon, BOX.centerLat);
+    const [x, z] = proj.lonLatToEnu(proj.centerLon, proj.centerLat);
     expect(x).toBeCloseTo(0, 5);
     expect(z).toBeCloseTo(0, 5);
   });
   it('projects north as -Z and east as +X', () => {
-    const [, zN] = lonLatToEnu(BOX.centerLon, BOX.neLat); // north edge
-    const [xE] = lonLatToEnu(BOX.neLon, BOX.centerLat); // east edge
+    const [, zN] = proj.lonLatToEnu(proj.centerLon, CHATT_BOX.neLat);
+    const [xE] = proj.lonLatToEnu(CHATT_BOX.neLon, proj.centerLat);
     expect(zN).toBeLessThan(0); // north => -Z
     expect(xE).toBeGreaterThan(0); // east => +X
   });
   it('reports true ground size in metres (~1460 x 5791, Choo-Choo corridor)', () => {
-    const { widthM, depthM } = enuGroundSize();
+    const { widthM, depthM } = proj.groundSize();
     expect(widthM).toBeCloseTo(1460, -1);
     expect(depthM).toBeCloseTo(5791, -1);
+  });
+  it('is a pure factory — two boxes coexist in one process', () => {
+    const other = createProjection({
+      swLat: -0.01,
+      swLon: -0.01,
+      neLat: 0.01,
+      neLon: 0.01,
+    });
+    expect(other.mPerDegLat).toBeCloseTo(110574, 0); // equator
+    expect(proj.mPerDegLat).toBeCloseTo(110941, 0); // still 35°N
+  });
+});
+
+describe('boxFromCenter', () => {
+  it('round-trips: the derived box has the requested metric extents and centre', () => {
+    const box = boxFromCenter(35.0212, -85.2673, 1600, 900);
+    const proj = createProjection(box);
+    const { widthM, depthM } = proj.groundSize();
+    expect(widthM).toBeCloseTo(1600, 6);
+    expect(depthM).toBeCloseTo(900, 6);
+    expect(proj.centerLat).toBeCloseTo(35.0212, 10);
+    expect(proj.centerLon).toBeCloseTo(-85.2673, 10);
   });
 });

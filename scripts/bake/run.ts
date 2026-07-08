@@ -1,8 +1,29 @@
+// Bake orchestrator + CLI (#232).
+//
+//   pnpm bake                                       # flagship (sites/chatt.json)
+//   pnpm bake --site <slug>                         # bake an existing site config
+//   pnpm bake --address "2630 E Main St, Chattanooga TN" --radius 800
+//   pnpm bake --center 35.0212,-85.2673 --box 1600x1600 --slug main-st
+//
+// --address/--center scaffold a fully-explicit sites/<slug>.json (geocoding
+// happens once, here), then bake it — the config file is the reproducibility
+// contract. --dry-run prints the would-be config without writing or baking.
+
+import { parseArgs } from 'node:util';
 import { mkdirSync, rmSync, existsSync, cpSync } from 'node:fs';
 import { fetchOsm } from './fetch-osm';
 import { fetchTerrain } from './fetch-terrain';
 import { fetchDrape } from './fetch-drape';
 import { buildScene } from './build-scene';
+import { createProjection } from './enu';
+import {
+  defaultTerrainGrid,
+  loadSiteConfig,
+  sitePaths,
+  type SiteConfig,
+} from './site-config';
+import { geocode, slugFromGeocode, slugify } from './geocode';
+import { buildSiteConfig, scaffoldSite } from './scaffold';
 
 export const bakeOrder = [
   'fetch-osm',
@@ -11,21 +32,136 @@ export const bakeOrder = [
   'build-scene',
 ] as const;
 
-const RAW = 'public/chatt/_raw';
-const OUT = 'public/chatt';
-const TMP = 'public/chatt/_tmp';
+export type CliPlan =
+  | { kind: 'site'; slug: string }
+  | {
+      kind: 'scaffold';
+      source: 'address' | 'center';
+      address?: string;
+      centerLat?: number;
+      centerLon?: number;
+      widthM: number;
+      heightM: number;
+      slug?: string;
+      name?: string;
+      force: boolean;
+      dryRun: boolean;
+    };
 
-export async function run() {
-  mkdirSync(RAW, { recursive: true });
+export function parseCliArgs(argv: string[]): CliPlan {
+  const { values } = parseArgs({
+    args: argv,
+    strict: true,
+    options: {
+      site: { type: 'string' },
+      address: { type: 'string' },
+      center: { type: 'string' },
+      radius: { type: 'string' },
+      box: { type: 'string' },
+      slug: { type: 'string' },
+      name: { type: 'string' },
+      force: { type: 'boolean', default: false },
+      'dry-run': { type: 'boolean', default: false },
+    },
+  });
+
+  const newSite = values.address != null || values.center != null;
+  if (values.address != null && values.center != null) {
+    throw new Error('--address and --center are mutually exclusive');
+  }
+  if (newSite && values.site != null) {
+    throw new Error('--site cannot be combined with --address/--center');
+  }
+
+  if (!newSite) {
+    for (const flag of ['radius', 'box', 'slug', 'name'] as const) {
+      if (values[flag] != null)
+        throw new Error(`--${flag} only applies with --address/--center`);
+    }
+    // Booleans default to false, so test truthiness — an existing-site bake has
+    // no scaffold step, and a "--dry-run" that silently performed a full live
+    // bake would overwrite committed artifacts the user asked to preview.
+    if (values.force)
+      throw new Error('--force only applies with --address/--center');
+    if (values['dry-run'])
+      throw new Error(
+        '--dry-run only applies with --address/--center (an existing site bakes from its sites/<slug>.json verbatim)'
+      );
+    return { kind: 'site', slug: values.site ?? 'chatt' };
+  }
+
+  if ((values.radius != null) === (values.box != null)) {
+    throw new Error(
+      'a new site needs exactly one of --radius <metres> | --box <WxH metres>'
+    );
+  }
+  let widthM: number;
+  let heightM: number;
+  if (values.radius != null) {
+    const r = Number(values.radius);
+    if (!Number.isFinite(r) || r <= 0)
+      throw new Error(`bad --radius "${values.radius}" (metres)`);
+    widthM = heightM = 2 * r;
+  } else {
+    const m = /^(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)$/.exec(values.box!);
+    if (!m) throw new Error(`bad --box "${values.box}" (expected WxH metres)`);
+    widthM = Number(m[1]);
+    heightM = Number(m[2]);
+    if (widthM <= 0 || heightM <= 0)
+      throw new Error(`bad --box "${values.box}" (extents must be positive)`);
+  }
+
+  const plan: CliPlan = {
+    kind: 'scaffold',
+    source: values.address != null ? 'address' : 'center',
+    address: values.address,
+    slug: values.slug,
+    name: values.name,
+    widthM,
+    heightM,
+    force: values.force!,
+    dryRun: values['dry-run']!,
+  };
+  if (values.center != null) {
+    const m = /^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/.exec(values.center);
+    if (!m)
+      throw new Error(`bad --center "${values.center}" (expected lat,lon)`);
+    plan.centerLat = Number(m[1]);
+    plan.centerLon = Number(m[2]);
+    if (values.slug == null)
+      throw new Error(
+        '--center requires --slug (no address to derive it from)'
+      );
+  }
+  return plan;
+}
+
+export async function bake(site: SiteConfig) {
+  const proj = createProjection(site.box);
+  const paths = sitePaths(site);
+  mkdirSync(paths.raw, { recursive: true });
+  console.log(`[bake] site=${site.slug} → ${paths.out}`);
   console.log('[bake] fetch-osm...');
-  console.log(await fetchOsm(RAW));
+  console.log(await fetchOsm(paths.raw, site.box));
   console.log('[bake] fetch-terrain...');
-  await fetchTerrain(RAW);
+  const grid = site.terrain ?? {
+    ...defaultTerrainGrid(site.box),
+    dataset: 'ned10m' as const,
+  };
+  await fetchTerrain(paths.raw, site.box, grid);
   console.log('[bake] fetch-drape...');
-  console.log(await fetchDrape(RAW));
+  const drape = await fetchDrape(paths.raw, proj, site.mpp, site.drapeSource);
+  console.log(drape);
   console.log('[bake] build-scene -> temp...');
-  if (existsSync(TMP)) rmSync(TMP, { recursive: true, force: true });
-  const manifest = await buildScene(RAW, TMP);
+  if (existsSync(paths.tmp))
+    rmSync(paths.tmp, { recursive: true, force: true });
+  const manifest = await buildScene(
+    paths.raw,
+    paths.tmp,
+    site,
+    proj,
+    drape.source
+  );
   // Atomic swap: build-scene writes into TMP (never touching OUT), so if any
   // fetch or build step above throws, OUT still holds the last-known-good
   // derived files untouched. Only once TMP is fully populated do we copy the
@@ -38,16 +174,72 @@ export async function run() {
     'manifest.json',
     'drape.jpg',
   ]) {
-    if (existsSync(`${TMP}/${f}`)) {
-      cpSync(`${TMP}/${f}`, `${OUT}/${f}`);
+    if (existsSync(`${paths.tmp}/${f}`)) {
+      cpSync(`${paths.tmp}/${f}`, `${paths.out}/${f}`);
     }
   }
-  rmSync(TMP, { recursive: true, force: true });
+  rmSync(paths.tmp, { recursive: true, force: true });
   console.log('[bake] done. rules:', JSON.stringify(manifest.ruleHistogram));
+  return manifest;
+}
+
+export async function run(argv: string[]) {
+  const plan = parseCliArgs(argv);
+  if (plan.kind === 'site') {
+    await bake(loadSiteConfig(plan.slug));
+    return;
+  }
+
+  let centerLat: number;
+  let centerLon: number;
+  let slug: string;
+  let name: string;
+  if (plan.source === 'address') {
+    const g = await geocode(plan.address!);
+    console.log(
+      `[geocode] "${plan.address}" → ${g.lat.toFixed(6)},${g.lon.toFixed(6)} (${g.displayName})`
+    );
+    centerLat = g.lat;
+    centerLon = g.lon;
+    slug = plan.slug ? slugify(plan.slug) : slugFromGeocode(g);
+    name = plan.name ?? g.displayName.split(',').slice(0, 2).join(',').trim();
+  } else {
+    centerLat = plan.centerLat!;
+    centerLon = plan.centerLon!;
+    slug = slugify(plan.slug!);
+    name = plan.name ?? plan.slug!;
+  }
+  console.log(`[scaffold] slug=${slug} name="${name}"`);
+
+  if (plan.dryRun) {
+    const config = buildSiteConfig({
+      slug,
+      name,
+      centerLat,
+      centerLon,
+      widthM: plan.widthM,
+      heightM: plan.heightM,
+    });
+    console.log(JSON.stringify(config, null, 2));
+    console.log('[dry-run] nothing written');
+    return;
+  }
+
+  const { path, config } = scaffoldSite({
+    slug,
+    name,
+    centerLat,
+    centerLon,
+    widthM: plan.widthM,
+    heightM: plan.heightM,
+    force: plan.force,
+  });
+  console.log(`[scaffold] wrote ${path}`);
+  await bake(config);
 }
 
 if (process.argv[1] && process.argv[1].endsWith('run.ts')) {
-  run().catch((e) => {
+  run(process.argv.slice(2)).catch((e) => {
     console.error(e);
     process.exit(1);
   });

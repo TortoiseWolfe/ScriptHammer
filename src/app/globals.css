@@ -832,11 +832,12 @@ p:not([class*='text-']) {
   background-color: var(--color-base-100, inherit) !important;
 }
 
-/* Chattanooga Mini diorama (/chatt): the ChattCanvas client adds .chatt-fullscreen
-   to <body> on mount. Hide the global cookie-consent + PWA-install popups that
-   would otherwise overlap the immersive diorama HUD. The top nav stays visible;
-   the diorama insets below it. Reverts on unmount (other routes unaffected). */
-body.chatt-fullscreen [aria-label='Cookie consent banner'],
-body.chatt-fullscreen [aria-label='Install Progressive Web App'] {
+/* Digital-twin diorama (/twins/[slug], /chatt): the TwinCanvas client adds
+   .twin-fullscreen to <body> on mount. Hide the global cookie-consent +
+   PWA-install popups that would otherwise overlap the immersive diorama HUD.
+   The top nav stays visible; the diorama insets below it. Reverts on unmount
+   (other routes unaffected). */
+body.twin-fullscreen [aria-label='Cookie consent banner'],
+body.twin-fullscreen [aria-label='Install Progressive Web App'] {
   display: none !important;
 }

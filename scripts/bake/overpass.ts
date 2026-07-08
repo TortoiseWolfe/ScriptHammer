@@ -1,4 +1,4 @@
-export const USER_AGENT = 'chattanooga-mini-bake/0.1 (jonpohlner@gmail.com)';
+export const USER_AGENT = 'scripthammer-twin-bake/0.1 (jonpohlner@gmail.com)';
 const ENDPOINT = 'https://overpass-api.de/api/interpreter';
 
 export interface OverpassElement {

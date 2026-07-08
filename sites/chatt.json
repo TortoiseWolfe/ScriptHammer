@@ -1,0 +1,100 @@
+{
+  "slug": "chatt",
+  "name": "Chattanooga Mini",
+  "subtitle": "a living tilt-shift diorama",
+  "box": {
+    "swLat": 35.0078,
+    "swLon": -85.316,
+    "neLat": 35.06,
+    "neLon": -85.3
+  },
+  "mpp": 2,
+  "terrain": { "cols": 49, "rows": 195, "dataset": "ned10m" },
+  "carveWater": true,
+  "heroes": [
+    { "slug": "aquarium", "wayId": 173782782 },
+    { "slug": "walnut_st_bridge", "wayId": 164158074 },
+    { "slug": "courthouse", "wayId": 79292898 },
+    { "slug": "republic_centre", "wayId": 66951392 },
+    {
+      "slug": "hunter_museum",
+      "anchor": { "lat": 35.0558416, "lon": -85.3062145 }
+    },
+    { "slug": "tivoli", "anchor": { "lat": 35.0455, "lon": -85.3078 } },
+    { "slug": "dome_building", "anchor": { "lat": 35.0466, "lon": -85.3086 } },
+    { "slug": "choo_choo", "anchor": { "lat": 35.0093, "lon": -85.3086 } }
+  ],
+  "heights": {
+    "overrides": {
+      "Republic Centre": 91.44,
+      "First Tennessee Bank Building": 62.1792,
+      "James Building": 56.9976,
+      "Volunteer Life Building": 50.292,
+      "Maclellan Building": 48.1584,
+      "Medical Arts Building": 44.5008,
+      "Chattanooga Bank Building": 40.2336,
+      "Patten Towers": 39.624,
+      "The Read House Historic Inn And Suites": 39.624
+    },
+    "fallbackClampM": 91.44
+  },
+  "tour": [
+    {
+      "pos": [-40, 240, -1980],
+      "look": [-220, 20, -2340],
+      "dwell": 5,
+      "name": "Ross's Landing",
+      "blurb": "The 1815 riverfront landing where Chattanooga began."
+    },
+    {
+      "pos": [-120, 230, -2120],
+      "look": [-273, 20, -2424],
+      "dwell": 5,
+      "name": "Tennessee Aquarium",
+      "blurb": "Opened 1992 — the world's largest freshwater aquarium at the time."
+    },
+    {
+      "pos": [-40, 240, -2360],
+      "look": [68, 18, -2726],
+      "dwell": 5,
+      "name": "Walnut Street Bridge",
+      "blurb": "1890 truss bridge, 2,376 ft — one of the longest pedestrian bridges in the world."
+    },
+    {
+      "pos": [20, 250, -2560],
+      "look": [80, 20, -2960],
+      "dwell": 5,
+      "name": "Coolidge Park",
+      "blurb": "North Shore park with a 1894 Dentzel carousel and a climbable fountain."
+    },
+    {
+      "pos": [-220, 300, -1120],
+      "look": [-382, 30, -1614],
+      "dwell": 5,
+      "name": "Republic Centre",
+      "blurb": "At 300 ft / 21 floors, Chattanooga's tallest building — the downtown skyline's anchor."
+    },
+    {
+      "pos": [120, 300, 120],
+      "look": [40, 20, -600],
+      "dwell": 4.5,
+      "name": "Downtown Core",
+      "blurb": "The Broad & Market Street grid — the dense heart of downtown, laid out in 1839."
+    },
+    {
+      "pos": [40, 320, 2900],
+      "look": [-55, 20, 2720],
+      "dwell": 6,
+      "name": "Chattanooga Choo Choo",
+      "blurb": "Historic Terminal Station (1909), immortalized by the 1941 Glenn Miller hit. Now a hotel + gardens on the Southside."
+    }
+  ],
+  "trolley": [
+    -180, -2180, -220, -2320, -180, -2460, 10, -2600, 60, -2860, 60, -2700, -60,
+    -2400, -180, -2180
+  ],
+  "palette": "toy",
+  "day": 0.4,
+  "framing": { "homeFocus": [-100, 0, -2000] },
+  "drapeSource": "naip"
+}

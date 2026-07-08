@@ -1,15 +1,15 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { BOX } from './box';
+import type { GeoBox } from './enu';
 import { overpassQuery } from './overpass';
 
 /** bbox in Overpass order: south,west,north,east */
-function bbox(): string {
-  return `${BOX.swLat},${BOX.swLon},${BOX.neLat},${BOX.neLon}`;
+function bbox(box: GeoBox): string {
+  return `${box.swLat},${box.swLon},${box.neLat},${box.neLon}`;
 }
 
-export function buildOsmQL(): string {
-  const b = bbox();
+export function buildOsmQL(box: GeoBox): string {
+  const b = bbox(box);
   return [
     '[out:json][timeout:120];',
     '(',
@@ -19,7 +19,7 @@ export function buildOsmQL(): string {
     `  way["highway"](${b});`,
     // Water: the river surface. Without these the terrain has no idea where the
     // water is, so the coarse heightfield smears the bank ~100 m off and
-    // riverfront buildings render sitting in the Tennessee River (see #225).
+    // riverfront buildings render sitting in the water (see #225).
     // `natural=water` (+ `water=river/lake/pond`) are the surface polygons we
     // stamp into the terrain as a flat channel; `waterway=riverbank` is the
     // legacy polygon tag; `waterway=river/stream` centerlines are a fallback.
@@ -32,9 +32,9 @@ export function buildOsmQL(): string {
   ].join('\n');
 }
 
-export async function fetchOsm(outDir: string) {
+export async function fetchOsm(outDir: string, box: GeoBox) {
   mkdirSync(outDir, { recursive: true });
-  const data = await overpassQuery(buildOsmQL());
+  const data = await overpassQuery(buildOsmQL(box));
   writeFileSync(join(outDir, 'osm.json'), JSON.stringify(data));
   const buildings = data.elements.filter(
     (e) => e.type === 'way' && e.tags?.building
