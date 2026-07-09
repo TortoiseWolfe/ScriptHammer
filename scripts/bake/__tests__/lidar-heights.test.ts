@@ -1,0 +1,179 @@
+// #229 PR-B lidar heights — pure-function coverage, all offline/synthetic.
+
+import { describe, it, expect } from 'vitest';
+import {
+  lonToMercX,
+  latToMercY,
+  keyBounds2d,
+  boxesIntersect,
+  percentile,
+  dtmAtEnu,
+  FootprintIndex,
+} from '../fetch-lidar-heights';
+import { resolveHeight } from '../height';
+import { SiteConfigSchema, provenanceFor } from '../site-config';
+
+describe('mercator helpers', () => {
+  it('matches EPSG:3857 for downtown Chattanooga (live-verified anchors)', () => {
+    expect(lonToMercX(-85.3094)).toBeCloseTo(-9496599.0, 0);
+    expect(latToMercY(35.0456)).toBeCloseTo(4170079.7, 0);
+  });
+});
+
+describe('keyBounds2d / boxesIntersect', () => {
+  // A synthetic 1024 m cube anchored at (1000, 2000).
+  const bounds = [1000, 2000, 0, 2024, 3024, 1024];
+  it('root key spans the full cube', () => {
+    const b = keyBounds2d('0-0-0-0', bounds);
+    expect(b).toEqual({ d: 0, x0: 1000, y0: 2000, x1: 2024, y1: 3024 });
+  });
+  it('depth-2 key (2-3-1-0) is the 256 m cell at (3,1)', () => {
+    const b = keyBounds2d('2-3-1-0', bounds);
+    expect(b).toEqual({ d: 2, x0: 1768, y0: 2256, x1: 2024, y1: 2512 });
+  });
+  it('boxesIntersect is exclusive at shared edges', () => {
+    const a = { x0: 0, y0: 0, x1: 10, y1: 10 };
+    expect(boxesIntersect(a, { x0: 10, y0: 0, x1: 20, y1: 10 })).toBe(false);
+    expect(boxesIntersect(a, { x0: 9.9, y0: 9.9, x1: 20, y1: 20 })).toBe(true);
+    expect(boxesIntersect(a, { x0: -5, y0: -5, x1: 30, y1: 30 })).toBe(true);
+  });
+});
+
+describe('percentile (nearest-rank on an unsorted sample)', () => {
+  it('p90 of 1..10 (shuffled) is 10; p50 is 6', () => {
+    const v = [7, 1, 10, 3, 9, 2, 8, 4, 6, 5];
+    expect(percentile(v, 0.9)).toBe(10);
+    expect(percentile(v, 0.5)).toBe(6);
+    expect(percentile([42], 0.9)).toBe(42);
+  });
+});
+
+describe('dtmAtEnu (south-first grid, the runtime fraction mapping)', () => {
+  // 3x3 grid over a 100x200 m ground; row 0 = SOUTH.
+  const grid = {
+    cols: 3,
+    rows: 3,
+    // south row: 10 11 12 / middle: 20 21 22 / north row: 30 31 32
+    heights: [10, 11, 12, 20, 21, 22, 30, 31, 32],
+  };
+  it('corners: SW / NE', () => {
+    expect(dtmAtEnu(grid, -50, 100, 100, 200)).toBe(10); // west, south(+z)
+    expect(dtmAtEnu(grid, 50, -100, 100, 200)).toBe(32); // east, north(-z)
+  });
+  it('centre bilinear', () => {
+    expect(dtmAtEnu(grid, 0, 0, 100, 200)).toBe(21);
+  });
+  it('clamps outside the box instead of extrapolating', () => {
+    expect(dtmAtEnu(grid, -9999, 9999, 100, 200)).toBe(10);
+  });
+});
+
+describe('FootprintIndex', () => {
+  const mk = (id: number, x0: number, y0: number, x1: number, y1: number) => ({
+    id,
+    ring: [
+      [x0, y0],
+      [x1, y0],
+      [x1, y1],
+      [x0, y1],
+    ] as [number, number][],
+    bbox: { x0, y0, x1, y1 },
+    cx: 0,
+    cz: 0,
+    zs: [],
+  });
+  const index = new FootprintIndex(
+    [mk(1, 100, 100, 130, 130), mk(2, 500, 500, 540, 520)],
+    64
+  );
+  it('candidates by cell', () => {
+    expect(index.candidates(110, 110)).toEqual([0]);
+    expect(index.candidates(510, 510)).toEqual([1]);
+    expect(index.candidates(9000, 9000)).toEqual([]);
+  });
+  it('intersectsAny: occupied vs empty regions', () => {
+    expect(index.intersectsAny({ x0: 90, y0: 90, x1: 150, y1: 150 })).toBe(
+      true
+    );
+    expect(
+      index.intersectsAny({ x0: 2000, y0: 2000, x1: 2100, y1: 2100 })
+    ).toBe(false);
+  });
+  it('very wide nodes over the site are accepted without cell iteration', () => {
+    expect(index.intersectsAny({ x0: -1e6, y0: -1e6, x1: 1e6, y1: 1e6 })).toBe(
+      true
+    );
+  });
+  it('wide nodes NOWHERE NEAR the site are rejected (state-tiling datasets have thousands)', () => {
+    // Caught live: without the global-bbox pre-filter, every shallow node of
+    // the 27-county dataset was admitted — a 78M-point selection for a
+    // 20M-point site.
+    expect(index.intersectsAny({ x0: 5e5, y0: 5e5, x1: 6e5, y1: 6e5 })).toBe(
+      false
+    );
+    expect(
+      new FootprintIndex([]).intersectsAny({ x0: 0, y0: 0, x1: 10, y1: 10 })
+    ).toBe(false);
+  });
+});
+
+describe('height rule precedence with lidar (#229 PR-B)', () => {
+  const cfg = { overrides: { Named: 50 }, fallbackClampM: 100 };
+  it('lidar beats ms and fallback', () => {
+    expect(resolveHeight({}, 100, cfg, 12, 9.4)).toEqual({
+      meters: 9.4,
+      rule: 'lidar',
+    });
+    expect(resolveHeight({}, 100, cfg, undefined, 9.4).rule).toBe('lidar');
+  });
+  it('explicit tags and overrides still beat lidar', () => {
+    expect(resolveHeight({ height: '30' }, 100, cfg, 12, 9.4).rule).toBe(
+      'height'
+    );
+    expect(
+      resolveHeight({ 'building:levels': '3' }, 100, cfg, 12, 9.4).rule
+    ).toBe('levels');
+    expect(resolveHeight({ name: 'Named' }, 100, cfg, 12, 9.4).rule).toBe(
+      'override'
+    );
+  });
+  it('absent/zero lidar falls through to ms', () => {
+    expect(resolveHeight({}, 100, cfg, 12, undefined).rule).toBe('ms');
+    expect(resolveHeight({}, 100, cfg, 12, 0).rule).toBe('ms');
+  });
+});
+
+describe('site-config lidar block', () => {
+  const MINIMAL = {
+    slug: 'nowhere',
+    name: 'Nowhere',
+    box: { swLat: 1, swLon: 2, neLat: 1.01, neLon: 2.01 },
+  };
+  it('is opt-in (absent by default) and defaults maxDepth to 11', () => {
+    expect(SiteConfigSchema.parse(MINIMAL).lidar).toBeUndefined();
+    const cfg = SiteConfigSchema.parse({
+      ...MINIMAL,
+      lidar: { ept: 'https://example.com/USGS_LPC_X' },
+    });
+    expect(cfg.lidar).toEqual({
+      ept: 'https://example.com/USGS_LPC_X',
+      maxDepth: 11,
+    });
+  });
+  it('rejects a non-URL ept and out-of-range maxDepth', () => {
+    expect(() =>
+      SiteConfigSchema.parse({ ...MINIMAL, lidar: { ept: 'not a url' } })
+    ).toThrow();
+    expect(() =>
+      SiteConfigSchema.parse({
+        ...MINIMAL,
+        lidar: { ept: 'https://x.com/d', maxDepth: 30 },
+      })
+    ).toThrow();
+  });
+  it('provenance credits the lidar when used', () => {
+    expect(provenanceFor('3dep1m', 'tnmap', true, true)).toBe(
+      '© OpenStreetMap · USGS 3DEP 1m · TDOT Aerial Surveys · Microsoft Buildings · USGS 3DEP Lidar'
+    );
+  });
+});

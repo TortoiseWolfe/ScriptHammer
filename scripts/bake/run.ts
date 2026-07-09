@@ -14,6 +14,7 @@ import { mkdirSync, rmSync, existsSync, cpSync } from 'node:fs';
 import { fetchOsm } from './fetch-osm';
 import { fetchMsHeights } from './fetch-ms-heights';
 import { fetchTerrain } from './fetch-terrain';
+import { fetchLidarHeights } from './fetch-lidar-heights';
 import { fetchDrape } from './fetch-drape';
 import { buildScene } from './build-scene';
 import { createProjection } from './enu';
@@ -30,6 +31,7 @@ export const bakeOrder = [
   'fetch-osm',
   'fetch-ms-heights',
   'fetch-terrain',
+  'fetch-lidar-heights', // needs osm.json (footprints) + terrain.json (DTM)
   'fetch-drape',
   'build-scene',
 ] as const;
@@ -155,6 +157,10 @@ export async function bake(site: SiteConfig) {
     dataset: 'ned10m' as const,
   };
   await fetchTerrain(paths.raw, site.box, grid);
+  if (site.lidar) {
+    console.log('[bake] fetch-lidar-heights...');
+    console.log(await fetchLidarHeights(paths.raw, site.box, site.lidar));
+  }
   console.log('[bake] fetch-drape...');
   const drape = await fetchDrape(paths.raw, proj, site.mpp, site.drapeSource);
   console.log(drape);

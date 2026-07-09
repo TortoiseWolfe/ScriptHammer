@@ -105,9 +105,31 @@ export async function buildScene(
     height: 0,
     levels: 0,
     override: 0,
+    lidar: 0,
     ms: 0,
     fallback: 0,
   };
+
+  // Lidar-measured heights (fetch-lidar-heights stage, #229 PR-B): keyed by
+  // OSM way id directly (points were binned into the footprints themselves).
+  let lidarHeightByOsmId = new Map<number, number>();
+  const lidarPath = join(rawDir, 'lidar-heights.json');
+  if (site.lidar && !existsSync(lidarPath)) {
+    console.warn(
+      '[build-scene] site.lidar is set but _raw/lidar-heights.json is missing — run the full bake (fetch-lidar-heights); heights fall back to ms/priors'
+    );
+  }
+  if (site.lidar && existsSync(lidarPath)) {
+    const lidar = JSON.parse(readFileSync(lidarPath, 'utf8')) as {
+      heights: Record<string, number>;
+    };
+    lidarHeightByOsmId = new Map(
+      Object.entries(lidar.heights).map(([id, h]) => [Number(id), h])
+    );
+    console.log(
+      `[build-scene] lidar heights for ${lidarHeightByOsmId.size} footprints`
+    );
+  }
 
   // Microsoft ML-measured heights (fetch-ms-heights stage). Matching runs on
   // RAW lon/lat centroids (containment is projection-invariant) before any
@@ -279,7 +301,8 @@ export async function buildScene(
         tags,
         area,
         site.heights,
-        msHeightByOsmId.get(el.id)
+        msHeightByOsmId.get(el.id),
+        lidarHeightByOsmId.get(el.id)
       );
       ruleHistogram[rule]++;
       const flat: number[] = [];
@@ -394,7 +417,8 @@ export async function buildScene(
     provenance: provenanceFor(
       site.terrain?.dataset ?? 'ned10m',
       drapeSource,
-      site.msHeights
+      site.msHeights,
+      site.lidar != null
     ),
     fetchedAt: new Date().toISOString(),
     ruleHistogram,

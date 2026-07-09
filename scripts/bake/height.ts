@@ -46,10 +46,11 @@ export function resolveHeight(
   tags: Record<string, string>,
   footprintAreaM2: number,
   cfg: HeightsConfig,
-  msHeightM?: number
+  msHeightM?: number,
+  lidarHeightM?: number
 ): {
   meters: number;
-  rule: 'height' | 'levels' | 'override' | 'ms' | 'fallback';
+  rule: 'height' | 'levels' | 'override' | 'lidar' | 'ms' | 'fallback';
 } {
   // Rule 1: explicit height tag (may carry a unit suffix). Fall through on bad values.
   if (tags.height) {
@@ -66,12 +67,17 @@ export function resolveHeight(
   if (tags.name && cfg.overrides[tags.name] != null) {
     return { meters: cfg.overrides[tags.name], rule: 'override' };
   }
-  // Rule 4: Microsoft ML-measured height — real data displaces only the
+  // Rule 4: lidar-measured height (#229 PR-B) — a direct per-footprint
+  // measurement (first-return p90 − DTM) beats the ML estimate below.
+  if (lidarHeightM != null && lidarHeightM > 0) {
+    return { meters: lidarHeightM, rule: 'lidar' };
+  }
+  // Rule 5: Microsoft ML-measured height — real data displaces only the
   // guessy fallback; explicit tags and human overrides above still win.
   if (msHeightM != null && msHeightM > 0) {
     return { meters: msHeightM, rule: 'ms' };
   }
-  // Rule 5: fallback — bucket by building tag, nudge by footprint area, clamp.
+  // Rule 6: fallback — bucket by building tag, nudge by footprint area, clamp.
   const kind = tags.building || 'yes';
   const priorLevels = LEVEL_PRIORS[kind] ?? 3;
   const bonusLevels = areaBonusLevels(footprintAreaM2); // big footprints tend taller downtown

@@ -85,6 +85,16 @@ export const SiteConfigSchema = z.object({
   /** Fill missing building heights from Microsoft Global ML Building
    *  Footprints (ML-measured, global). Explicit opt-out for offline rebakes. */
   msHeights: z.boolean().default(true),
+  /** Measure per-building heights from a USGS 3DEP lidar EPT dataset (#229
+   *  PR-B): first-return p90 − DTM, rule 'lidar' above 'ms'. Opt-in per site;
+   *  the EPT URL is pinned here because blocks tile the state and coverage
+   *  must be verified per box (blk3 does NOT cover downtown Chattanooga). */
+  lidar: z
+    .object({
+      ept: z.string().url(),
+      maxDepth: z.number().int().min(4).max(16).default(11),
+    })
+    .optional(),
   heroes: z
     .array(HeroSchema)
     .default([])
@@ -252,12 +262,14 @@ const PROVENANCE_DRAPE: Record<string, string> = {
 export function provenanceFor(
   terrainDataset: string,
   drapeSource: 'naip' | 'esri' | 'tnmap',
-  msHeights = false
+  msHeights = false,
+  lidar = false
 ): string {
   return [
     '© OpenStreetMap',
     PROVENANCE_TERRAIN[terrainDataset] ?? terrainDataset,
     PROVENANCE_DRAPE[drapeSource],
     ...(msHeights ? ['Microsoft Buildings'] : []),
+    ...(lidar ? ['USGS 3DEP Lidar'] : []),
   ].join(' · ');
 }
