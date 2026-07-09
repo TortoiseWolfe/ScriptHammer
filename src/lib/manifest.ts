@@ -214,6 +214,19 @@ export interface HouseInfo {
   details?: Record<string, string>;
   /** OSM building ids whose massing boxes hide while the scan is shown. */
   hideBuildingIds?: number[];
+  /** Multi-fragment captures: per-GLB-group registration transforms, keyed by
+   *  the group name convert-scan.mjs assigned (the fragment's file basename).
+   *  pos' = T(position)·RotY(−yawDeg)·T(−pivot); pivot is the fragment's
+   *  vertex centroid, position its registered location (both metres in the
+   *  primary fragment's frame). Measured by the voxel-overlap search. */
+  parts?: Record<
+    string,
+    {
+      pivot: [number, number, number];
+      yawDeg: number;
+      position: [number, number, number];
+    }
+  >;
 }
 
 export function validateHouse(h: unknown, slug: string): HouseInfo {
@@ -236,6 +249,24 @@ export function validateHouse(h: unknown, slug: string): HouseInfo {
       house.hideBuildingIds.some((v) => !Number.isInteger(v)))
   )
     fail('hideBuildingIds must be integer OSM ids');
+  if (house.parts != null) {
+    if (typeof house.parts !== 'object' || Array.isArray(house.parts))
+      fail('parts must be an object keyed by GLB group name');
+    const finiteTriple = (v: unknown): v is [number, number, number] =>
+      Array.isArray(v) && v.length === 3 && v.every((n) => Number.isFinite(n));
+    for (const [name, part] of Object.entries(house.parts)) {
+      if (
+        typeof part !== 'object' ||
+        part === null ||
+        !finiteTriple(part.pivot) ||
+        !finiteTriple(part.position) ||
+        !Number.isFinite(part.yawDeg)
+      )
+        fail(
+          `parts["${name}"] needs finite pivot/position triples and a yawDeg`
+        );
+    }
+  }
   return house;
 }
 

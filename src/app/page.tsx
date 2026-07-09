@@ -47,6 +47,7 @@ const DEMOS: readonly TemplateDemo[] = [
   { label: 'Messaging', href: '/messages' },
   { label: 'Map', href: '/map' },
   { label: 'Game', href: '/game' },
+  { label: 'Digital Twin', href: '/chatt' },
   { label: 'Wireframes', href: '/wireframes' },
   { label: 'Schedule', href: '/schedule' },
   { label: 'Contact', href: '/contact' },

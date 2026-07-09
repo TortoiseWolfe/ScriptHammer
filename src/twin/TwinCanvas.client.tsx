@@ -7,7 +7,7 @@
 // framing derived from the model's true extents (src/lib/framing.ts).
 
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { NoToneMapping, LinearSRGBColorSpace } from 'three';
+import { NoToneMapping, LinearSRGBColorSpace, type Vector3 } from 'three';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import StageCore, { StageHandle } from '@/stage/StageCore';
 import { Rig, RigMode, RigWaypoint } from '@/stage/Rig';
@@ -36,6 +36,37 @@ export type TwinFocus = 'twin' | 'house';
 /** The camera dock: the Rig's modes plus the pseudo-mode 'ortho' (true
  *  orthographic top-down — StageCore renders it directly; the Rig idles). */
 type CameraMode = RigMode | 'ortho';
+
+/** The camera dock for a site's data: every entry must DO something — Tour
+ *  needs waypoints, Ride needs a trolley to board (an unboarded follow mode
+ *  just chases an invisible avatar: the "does nothing" mode the dock used to
+ *  ship). Pure for unit tests. */
+export function modesForSite(
+  hasTour: boolean,
+  hasTrolley: boolean
+): HudOption[] {
+  return [
+    ...(hasTour ? [{ key: 'tour', label: 'Tour' }] : []),
+    { key: 'orbit', label: 'Miniature' },
+    ...(hasTrolley ? [{ key: 'follow', label: 'Ride' }] : []),
+    { key: 'walk', label: 'Walk' },
+    { key: 'ortho', label: 'Top-down' },
+  ];
+}
+
+/** One-line control hints for the embodied modes — without them Walk reads
+ *  as broken (nothing moves until you click for pointer-lock) and Ride's
+ *  drag-to-orbit isn't discoverable. Shown via the HUD caption card. */
+const MODE_HINTS: Partial<Record<CameraMode, HudCaption>> = {
+  walk: {
+    name: 'Walk',
+    blurb: 'Click the scene to look around · WASD to move · Shift to sprint',
+  },
+  follow: {
+    name: 'Ride',
+    blurb: 'Riding the trolley — drag to look around it · scroll to zoom',
+  },
+};
 
 /** Scripted-capture override: `?ortho=cx,cz,halfH` zooms the orthographic
  *  compare view onto a district (world metres). Bare `?ortho` = full extent. */
@@ -198,6 +229,43 @@ function SceneInner({
     rig.update(dt);
   });
 
+  // Ride mode (#follow): the trolley registers itself as the Rig's boarded
+  // object each frame; entering follow mode boards it, leaving unboards. The
+  // Rig's dormant board()/_follow plumbing does the rest (trail the boarded
+  // object's own heading — Rig.ts:504-531). The world hands us its terrain
+  // sampler so the trolley (and therefore the chase camera) rides ON the
+  // ground instead of at sea level.
+  const trolleyTarget = useRef({ position: { x: 0, y: 0, z: 0 }, heading: 0 });
+  const groundAtRef = useRef<((x: number, z: number) => number) | null>(null);
+  const handleGroundReady = useCallback(
+    (fn: (x: number, z: number) => number) => {
+      groundAtRef.current = fn;
+    },
+    []
+  );
+  const trolleyGroundAt = useCallback(
+    (x: number, z: number) => groundAtRef.current?.(x, z) ?? 0,
+    []
+  );
+  const handleTrolleyTick = useCallback((pos: Vector3, heading: number) => {
+    trolleyTarget.current.position.x = pos.x;
+    trolleyTarget.current.position.y = pos.y;
+    trolleyTarget.current.position.z = pos.z;
+    trolleyTarget.current.heading = heading;
+  }, []);
+  useEffect(() => {
+    if (mode === 'follow' && site.trolley) {
+      rig.board(trolleyTarget.current);
+      // Trail distance tuned live: long trails (44 m) put the camera inside
+      // downtown buildings (the chase cam has no collision — future item);
+      // 28 m clears the trolley's roofline while staying inside street
+      // canyons most of the route.
+      rig.radius = rig.tRadius = 28;
+    } else {
+      rig.unboard();
+    }
+  }, [rig, mode, site.trolley]);
+
   return (
     <StageCore
       lens={lens}
@@ -226,9 +294,16 @@ function SceneInner({
         showHouse={showHouse}
         buildingsOpacity={buildingsOpacity}
         onHouseGround={onHouseGround}
+        onGroundReady={handleGroundReady}
         onError={onWorldError}
       />
-      {site.trolley && <Trolley polyline={site.trolley} />}
+      {site.trolley && (
+        <Trolley
+          polyline={site.trolley}
+          onTick={handleTrolleyTick}
+          groundAt={trolleyGroundAt}
+        />
+      )}
     </StageCore>
   );
 }
@@ -300,14 +375,8 @@ function TwinCanvasInner({
     });
   }, [manifest, site, house, houseFocused, houseGroundY]);
   const modes = useMemo<HudOption[]>(
-    () => [
-      ...(hasTour ? [{ key: 'tour', label: 'Tour' }] : []),
-      { key: 'orbit', label: 'Miniature' },
-      { key: 'follow', label: 'Follow' },
-      { key: 'walk', label: 'Walk' },
-      { key: 'ortho', label: 'Top-down' },
-    ],
-    [hasTour]
+    () => modesForSite(hasTour, site.trolley != null),
+    [hasTour, site.trolley]
   );
   // As-built ⇄ massing view switch, only for twins that carry a scan. On the
   // property page the scan leads; in the plain twin the massing leads.
@@ -565,7 +634,9 @@ function TwinCanvasInner({
         onView={(v) => setView(v as 'massing' | 'asbuilt')}
         links={links}
         sliders={sliders}
-        caption={mode === 'tour' ? caption : null}
+        caption={
+          mode === 'tour' ? caption : (MODE_HINTS[mode] ?? null) // embodied modes explain their controls
+        }
         showFps={showFps}
       />
     </div>

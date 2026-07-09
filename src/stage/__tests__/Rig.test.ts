@@ -51,6 +51,30 @@ describe('Rig', () => {
     expect(rig.followObj).toBeNull();
   });
 
+  it('follow mode CHASES a boarded moving object (#Ride — the twin wires the trolley here)', () => {
+    const trolley = { position: { x: 0, y: 0, z: 0 }, heading: 0 };
+    rig.setMode('follow');
+    rig.board(trolley);
+    // settle behind the stationary target first
+    for (let i = 0; i < 120; i++) rig.update(0.05);
+    const d0 = Math.hypot(
+      rig.cam.position.x - trolley.position.x,
+      rig.cam.position.z - trolley.position.z
+    );
+    // drive the target away; the camera must give chase (stay within a
+    // bounded trail distance rather than being left behind)
+    for (let i = 0; i < 240; i++) {
+      trolley.position.x += 12 * 0.05; // 12 m/s east
+      rig.update(0.05);
+    }
+    const d1 = Math.hypot(
+      rig.cam.position.x - trolley.position.x,
+      rig.cam.position.z - trolley.position.z
+    );
+    expect(d1).toBeLessThan(d0 + 25); // chased, not parked at the origin
+    expect(Math.abs(rig.cam.position.x)).toBeGreaterThan(30); // actually moved east
+  });
+
   it('update(dt) advances without throwing in each mode', () => {
     for (const m of ['orbit', 'follow', 'walk'] as const) {
       rig.setMode(m);

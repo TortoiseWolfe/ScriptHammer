@@ -6,9 +6,14 @@ import { CatmullRomCurve3, Vector3, Group } from 'three';
 export default function Trolley({
   polyline,
   onTick,
+  groundAt,
 }: {
   polyline: number[];
   onTick?: (pos: Vector3, heading: number) => void;
+  /** Terrain height sampler (runtime Y at ENU x/z). Without it the trolley
+   *  runs at sea level — buried wherever the terrain rises, and any camera
+   *  following it (Ride mode) goes underground with it. */
+  groundAt?: (x: number, z: number) => number;
 }) {
   const ref = useRef<Group>(null);
   const uRef = useRef(0);
@@ -30,8 +35,9 @@ export default function Trolley({
     const target = Math.atan2(tan.current.x, tan.current.z);
     const d = ((target - heading.current + Math.PI) % (Math.PI * 2)) - Math.PI;
     heading.current += d * (1 - Math.exp(-7 * dt));
+    pos.current.y = groundAt?.(pos.current.x, pos.current.z) ?? 0;
     if (ref.current) {
-      ref.current.position.set(pos.current.x, 0, pos.current.z);
+      ref.current.position.set(pos.current.x, pos.current.y, pos.current.z);
       ref.current.rotation.y = heading.current;
     }
     onTick?.(pos.current, heading.current);

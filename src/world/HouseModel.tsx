@@ -3,9 +3,17 @@
 // house.json anchor. Scan meshes are open shells with mixed winding, so
 // materials render DoubleSide; the model auto-grounds (bbox bottom seated on
 // the terrain at the anchor) with yOffset as the fine-tune.
+//
+// Multi-fragment captures: a Polycam PROJECT converts to one GLB with one
+// named group per fragment (convert-scan.mjs --dae ... --dae ...), but each
+// fragment keeps its own capture origin. house.json `parts` carries the
+// measured registration per fragment (from the voxel-overlap search):
+//   pos' = T(position) · RotY(−yawDeg) · T(−pivot)   — pivot = fragment
+// vertex centroid, position = its registered location in the PRIMARY
+// fragment's frame. Parts without an entry stay at their native origin.
 import { useMemo } from 'react';
-import { Box3, DoubleSide, Vector3 } from 'three';
-import type { Mesh, MeshStandardMaterial } from 'three';
+import { Box3, DoubleSide, Matrix4, Vector3 } from 'three';
+import type { Mesh, MeshStandardMaterial, Object3D } from 'three';
 import { useGLTF } from '@react-three/drei';
 import { siteAssetUrl } from '@/lib/manifest';
 import type { HouseInfo, Manifest, TerrainGrid } from '@/lib/manifest';
@@ -36,13 +44,42 @@ export default function HouseModel({
         for (const m of mats) (m as MeshStandardMaterial).side = DoubleSide;
       }
     });
+    // Seat registered fragments BEFORE measuring the grounding bbox — an
+    // unplaced fragment at its capture origin would drag box.min.y down and
+    // float the whole model.
+    if (house.parts) {
+      for (const [name, part] of Object.entries(house.parts)) {
+        let target: Object3D | null = null;
+        scene.traverse((o) => {
+          if (o.name === name) target = o;
+        });
+        if (!target) {
+          console.warn(`[house] parts["${name}"] has no matching GLB group`);
+          continue;
+        }
+        const yaw = (part.yawDeg * Math.PI) / 180;
+        const m = new Matrix4()
+          .makeTranslation(part.position[0], part.position[1], part.position[2])
+          .multiply(new Matrix4().makeRotationY(-yaw))
+          .multiply(
+            new Matrix4().makeTranslation(
+              -part.pivot[0],
+              -part.pivot[1],
+              -part.pivot[2]
+            )
+          );
+        (target as Object3D).matrixAutoUpdate = false;
+        (target as Object3D).matrix.copy(m);
+      }
+      scene.updateMatrixWorld(true);
+    }
     const box = new Box3().setFromObject(scene);
     return {
       groundY:
         elevationAt(grid, manifest, house.x, house.z) - minElevation(grid),
       bottomY: box.min.y,
     };
-  }, [scene, grid, manifest, house.x, house.z]);
+  }, [scene, grid, manifest, house.x, house.z, house.parts]);
 
   const scale = house.scale ?? 1;
   return (
