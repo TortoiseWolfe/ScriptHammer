@@ -13,7 +13,7 @@ import StageCore, { StageHandle } from '@/stage/StageCore';
 import { Rig, RigMode, RigWaypoint } from '@/stage/Rig';
 import TwinWorld from '@/world/TwinWorld';
 import Trolley from '@/agents/trolley';
-import Hud, { HudCaption, HudLink, HudOption } from '@/stage/Hud';
+import Hud, { HudCaption, HudLink, HudOption, HudSlider } from '@/stage/Hud';
 import { computeDay } from '@/stage/lightRig';
 import { PALETTES, applyProfile } from '@/packs/themes';
 import { loadHouse, loadLocalLinks, loadManifest } from '@/lib/manifest';
@@ -40,6 +40,7 @@ function SceneInner({
   tour,
   house,
   showHouse,
+  buildingsOpacity,
   crisp = false,
   paletteKey,
   day,
@@ -55,6 +56,7 @@ function SceneInner({
   tour: TourWaypoint[];
   house: HouseInfo | null;
   showHouse: boolean;
+  buildingsOpacity: number;
   /** Architectural close-up: disable the tilt-shift blur (property page). */
   crisp?: boolean;
   paletteKey: PaletteKey;
@@ -186,6 +188,7 @@ function SceneInner({
         palette={bricks}
         house={house}
         showHouse={showHouse}
+        buildingsOpacity={buildingsOpacity}
         onHouseGround={onHouseGround}
         onError={onWorldError}
       />
@@ -310,6 +313,20 @@ function TwinCanvasInner({
   );
   const [showFps, setShowFps] = useState(false);
   const [worldError, setWorldError] = useState<string | null>(null);
+  // Layer fade for judging footprint registration against the aerial (the
+  // buildings/heroes layer fades; streets stay as the reference).
+  const [buildingsOpacity, setBuildingsOpacity] = useState(1);
+  const sliders = useMemo<HudSlider[]>(
+    () => [
+      {
+        key: 'buildings',
+        label: 'Buildings',
+        value: buildingsOpacity,
+        onChange: setBuildingsOpacity,
+      },
+    ],
+    [buildingsOpacity]
+  );
   // Property page gets solar noon — the close-up reads the scan's baked photo
   // textures, which need max light. (computeDay's brightness is sin(π·t),
   // peaking at 0.5 — a Math.max on t would DARKEN dusk-authored sites.)
@@ -391,6 +408,7 @@ function TwinCanvasInner({
           tour={tour}
           house={house}
           showHouse={view === 'asbuilt'}
+          buildingsOpacity={buildingsOpacity}
           crisp={houseFocused}
           paletteKey={paletteKey}
           day={day}
@@ -486,6 +504,7 @@ function TwinCanvasInner({
         activeView={view}
         onView={(v) => setView(v as 'massing' | 'asbuilt')}
         links={links}
+        sliders={sliders}
         caption={mode === 'tour' ? caption : null}
         showFps={showFps}
       />

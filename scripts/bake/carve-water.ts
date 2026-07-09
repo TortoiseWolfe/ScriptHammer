@@ -163,14 +163,18 @@ export function carveToMask(
   groundWm: number,
   groundHm: number
 ): { grid: TerrainGrid; carved: number; waterLevel: number } {
-  void groundWm;
-  void groundHm;
+  void groundWm; // (E-W extent unused; N-S extent sizes the dilation rounds)
   const { cols, rows, heights } = grid;
   const { mask: m, width: dW, height: dH } = mask;
-  const waterLevel = Math.min(...heights);
+  // NOT Math.min(...heights): spreading overflows the call stack at ~126k
+  // args, and 1 m-class grids (#229 accuracy v2) exceed that.
+  let waterLevel = Infinity;
+  for (const h of heights) if (h < waterLevel) waterLevel = h;
   const out = heights.slice();
-  let carved = 0;
 
+  // Pass 1: cells whose drape pixel the classifier marked as water.
+  const isWater = new Uint8Array(cols * rows);
+  const surfaceSamples: number[] = [];
   for (let r = 0; r < rows; r++) {
     const v = r / (rows - 1);
     const drow = Math.min(dH - 1, Math.max(0, Math.round((1 - v) * (dH - 1))));
@@ -178,12 +182,62 @@ export function carveToMask(
       const u = c / (cols - 1);
       const dcol = Math.min(dW - 1, Math.max(0, Math.round(u * (dW - 1))));
       if (m[drow * dW + dcol]) {
-        const i = r * cols + c;
-        if (out[i] !== waterLevel) {
-          out[i] = waterLevel;
-          carved++;
+        isWater[r * cols + c] = 1;
+        surfaceSamples.push(heights[r * cols + c]);
+      }
+    }
+  }
+
+  // Pass 2: elevation-gated dilation. Fine (1 m-class) DEMs are
+  // hydro-flattened: open water sits at one surface elevation. Where the
+  // imagery classifier has holes (bridge shadows, sun glint), the uncarved
+  // samples poke ~0.5 m above the carved ones and render as stripes across
+  // the water. Grow the mask into 4-adjacent cells whose DEM height matches
+  // the masked-region's median surface — fills holes without touching bridge
+  // decks (metres higher) or rising banks. The gate is deliberately TIGHT
+  // (hydro-flat equality, not "roughly low"): flat dry shoreline — mudflats,
+  // boat ramps, riverside parks — commonly sits <1 m above pool level and
+  // must NOT flood, since the imagery classifier (the module's ground truth)
+  // said it was land. Rounds scale inversely with cell size so coarse default
+  // grids can't creep ~180 m inland.
+  if (surfaceSamples.length > 0) {
+    surfaceSamples.sort((a, b) => a - b);
+    const waterSurface = surfaceSamples[surfaceSamples.length >> 1];
+    const TOL = 0.35;
+    const cellNsM = rows > 1 ? groundHm / (rows - 1) : groundHm;
+    const DILATE_ROUNDS = Math.min(
+      6,
+      Math.max(2, Math.round(50 / Math.max(cellNsM, 1)))
+    );
+    for (let round = 0; round < DILATE_ROUNDS; round++) {
+      let grew = false;
+      const next = isWater.slice();
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const i = r * cols + c;
+          if (next[i]) continue;
+          if (Math.abs(heights[i] - waterSurface) > TOL) continue;
+          const nbr =
+            (c > 0 && isWater[i - 1]) ||
+            (c < cols - 1 && isWater[i + 1]) ||
+            (r > 0 && isWater[i - cols]) ||
+            (r < rows - 1 && isWater[i + cols]);
+          if (nbr) {
+            next[i] = 1;
+            grew = true;
+          }
         }
       }
+      isWater.set(next);
+      if (!grew) break;
+    }
+  }
+
+  let carved = 0;
+  for (let i = 0; i < isWater.length; i++) {
+    if (isWater[i] && out[i] !== waterLevel) {
+      out[i] = waterLevel;
+      carved++;
     }
   }
   return { grid: { cols, rows, heights: out }, carved, waterLevel };

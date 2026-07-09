@@ -70,16 +70,21 @@ export const SiteConfigSchema = z.object({
   box: GeoBoxSchema,
   /** Aerial drape metres-per-pixel. */
   mpp: z.number().positive().default(2),
-  /** Elevation grid; absent -> defaultTerrainGrid(box) (~30 m isotropic). */
+  /** Elevation grid; absent -> defaultTerrainGridFor(dataset, box). */
   terrain: z
     .object({
       cols: z.number().int().min(2),
       rows: z.number().int().min(2),
-      dataset: z.enum(['ned10m', 'srtm30m', 'mapzen']).default('ned10m'),
+      dataset: z
+        .enum(['ned10m', 'srtm30m', 'mapzen', '3dep1m'])
+        .default('ned10m'),
     })
     .optional(),
   /** Carve the aerial waterline into the terrain (disable for waterless sites). */
   carveWater: z.boolean().default(true),
+  /** Fill missing building heights from Microsoft Global ML Building
+   *  Footprints (ML-measured, global). Explicit opt-out for offline rebakes. */
+  msHeights: z.boolean().default(true),
   heroes: z
     .array(HeroSchema)
     .default([])
@@ -179,8 +184,44 @@ export function defaultTerrainGrid(box: GeoBox): {
   }
 }
 
+/**
+ * Grid for the 3DEP raster path: MUST be degree-square —
+ * (cols-1)/(rows-1) === degLon/degLat — or the service adjusts the returned
+ * extent and every sample lands in the wrong place (terrain registration via
+ * groundWm/Hm fractions is not self-correcting). N-S cells are the target
+ * spacing; E-W cells come out finer by mPerDegLat/mPerDegLon (~1.22 at 35°N),
+ * which the fraction-mapped runtime never notices.
+ */
+export function terrainGridFor3Dep(
+  box: GeoBox,
+  targetNsM = 9
+): { cols: number; rows: number } {
+  const proj = createProjection(box);
+  const { depthM } = proj.groundSize();
+  const degLon = box.neLon - box.swLon;
+  const degLat = box.neLat - box.swLat;
+  let spacing = targetNsM;
+  for (;;) {
+    const rows = Math.max(2, Math.round(depthM / spacing) + 1);
+    const cols = Math.max(2, Math.round((rows - 1) * (degLon / degLat)) + 1);
+    if (cols * rows <= 180_000) return { cols, rows };
+    spacing *= 1.25;
+  }
+}
+
+/** Grid defaults dispatch by dataset (raster vs point-query budgets differ). */
+export function defaultTerrainGridFor(
+  dataset: string,
+  box: GeoBox
+): { cols: number; rows: number } {
+  return dataset === '3dep1m'
+    ? terrainGridFor3Dep(box)
+    : defaultTerrainGrid(box);
+}
+
 const PROVENANCE_TERRAIN: Record<string, string> = {
   ned10m: 'USGS 3DEP',
+  '3dep1m': 'USGS 3DEP 1m',
   srtm30m: 'NASA SRTM',
   mapzen: 'Mapzen Terrain',
 };
@@ -188,11 +229,13 @@ const PROVENANCE_TERRAIN: Record<string, string> = {
 /** Attribution line shown in the HUD, built from the actual sources baked. */
 export function provenanceFor(
   terrainDataset: string,
-  drapeSource: 'naip' | 'esri'
+  drapeSource: 'naip' | 'esri',
+  msHeights = false
 ): string {
   return [
     '© OpenStreetMap',
     PROVENANCE_TERRAIN[terrainDataset] ?? terrainDataset,
     drapeSource === 'naip' ? 'USGS NAIP' : 'Esri World Imagery',
+    ...(msHeights ? ['Microsoft Buildings'] : []),
   ].join(' · ');
 }

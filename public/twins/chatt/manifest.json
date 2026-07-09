@@ -10,17 +10,18 @@
   "cosLat": 0.8197131890928896,
   "drape": {
     "path": "drape.jpg",
-    "width": 730,
-    "height": 2382,
-    "mpp": 2
+    "width": 2433,
+    "height": 7938,
+    "mpp": 0.6
   },
-  "provenance": "© OpenStreetMap · USGS 3DEP · USGS NAIP",
-  "fetchedAt": "2026-07-08T22:14:02.376Z",
+  "provenance": "© OpenStreetMap · USGS 3DEP 1m · USGS NAIP · Microsoft Buildings",
+  "fetchedAt": "2026-07-09T10:07:47.644Z",
   "ruleHistogram": {
     "height": 96,
     "levels": 116,
     "override": 0,
-    "fallback": 1298
+    "ms": 1029,
+    "fallback": 269
   },
   "site": {
     "slug": "chatt",

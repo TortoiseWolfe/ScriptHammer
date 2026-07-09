@@ -32,6 +32,7 @@ export default function TwinWorld({
   palette,
   house,
   showHouse = false,
+  buildingsOpacity = 1,
   onHouseGround,
   onError,
 }: {
@@ -42,6 +43,8 @@ export default function TwinWorld({
   house?: HouseInfo | null;
   /** When true, render the scan and hide its massing boxes. */
   showHouse?: boolean;
+  /** Buildings/heroes layer fade (1 = opaque) — registration diagnostics. */
+  buildingsOpacity?: number;
   /** Reports the terrain height (runtime Y) under the house anchor once the
    *  grid loads — lets the composition root aim the camera at the parcel. */
   onHouseGround?: (y: number) => void;
@@ -105,9 +108,15 @@ export default function TwinWorld({
         palette={palette}
         grid={data.terrain}
         manifest={manifest}
+        opacity={buildingsOpacity}
       />
       <Streets streets={data.streets} grid={data.terrain} manifest={manifest} />
-      <Heroes heroes={data.heroes} grid={data.terrain} manifest={manifest} />
+      <Heroes
+        heroes={data.heroes}
+        grid={data.terrain}
+        manifest={manifest}
+        opacity={buildingsOpacity}
+      />
       {scanVisible && house ? (
         <Suspense fallback={null}>
           <HouseModel

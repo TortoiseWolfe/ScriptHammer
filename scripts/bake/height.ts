@@ -45,8 +45,12 @@ function areaBonusLevels(footprintAreaM2: number): number {
 export function resolveHeight(
   tags: Record<string, string>,
   footprintAreaM2: number,
-  cfg: HeightsConfig
-): { meters: number; rule: 'height' | 'levels' | 'override' | 'fallback' } {
+  cfg: HeightsConfig,
+  msHeightM?: number
+): {
+  meters: number;
+  rule: 'height' | 'levels' | 'override' | 'ms' | 'fallback';
+} {
   // Rule 1: explicit height tag (may carry a unit suffix). Fall through on bad values.
   if (tags.height) {
     const m = parseFloat(tags.height);
@@ -62,7 +66,12 @@ export function resolveHeight(
   if (tags.name && cfg.overrides[tags.name] != null) {
     return { meters: cfg.overrides[tags.name], rule: 'override' };
   }
-  // Rule 4: fallback — bucket by building tag, nudge by footprint area, clamp.
+  // Rule 4: Microsoft ML-measured height — real data displaces only the
+  // guessy fallback; explicit tags and human overrides above still win.
+  if (msHeightM != null && msHeightM > 0) {
+    return { meters: msHeightM, rule: 'ms' };
+  }
+  // Rule 5: fallback — bucket by building tag, nudge by footprint area, clamp.
   const kind = tags.building || 'yes';
   const priorLevels = LEVEL_PRIORS[kind] ?? 3;
   const bonusLevels = areaBonusLevels(footprintAreaM2); // big footprints tend taller downtown

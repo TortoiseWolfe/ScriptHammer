@@ -115,6 +115,7 @@
     "lz-string": "^1.5.0",
     "markdown-to-jsx": "^7.7.13",
     "next": "15.5.9",
+    "postprocessing": "^6.39.2",
     "prismjs": "^1.30.0",
     "react": "19.1.0",
     "react-calendly": "^4.4.0",
@@ -137,8 +138,7 @@
     "to-vfile": "^8.0.0",
     "unified": "^11.0.5",
     "web-vitals": "^5.1.0",
-    "zod": "^4.1.8",
-    "postprocessing": "^6.39.2"
+    "zod": "^4.1.8"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.0.1",
@@ -180,6 +180,7 @@
     "eslint-config-next": "15.5.9",
     "eslint-plugin-storybook": "^10.2.8",
     "fake-indexeddb": "^6.2.2",
+    "geotiff": "^3.0.5",
     "glob": "^10.0.0",
     "hash-wasm": "^4.12.0",
     "husky": "^9.1.7",

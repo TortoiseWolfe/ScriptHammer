@@ -7,7 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import { createProjection } from '../enu';
 import { loadSiteConfig, sitePaths } from '../site-config';
-import { drapePixelSize, drapeUrl } from '../fetch-drape';
+import { drapePixelSize, sliceDrapeTiles, tileUrl } from '../fetch-drape';
 import { buildOsmQL } from '../fetch-osm';
 import { resolveHeight } from '../height';
 
@@ -24,23 +24,34 @@ describe('golden: sites/chatt.json', () => {
     });
   });
 
-  it('pins the terrain grid 49x195 (derivation would give a different row count)', () => {
-    expect(site.terrain).toEqual({ cols: 49, rows: 195, dataset: 'ned10m' });
+  it('pins the 3DEP 1m degree-square terrain grid 198x644 (#229 accuracy v2)', () => {
+    expect(site.terrain).toEqual({ cols: 198, rows: 644, dataset: '3dep1m' });
   });
 
-  it('sizes the drape 730x2382 at mpp=2 (the #223 degree-aspect invariant)', () => {
-    expect(site.mpp).toBe(2);
+  it('sizes the drape 2433x7938 at native-res mpp=0.6 in two N-S tiles (#223 invariant per tile)', () => {
+    expect(site.mpp).toBe(0.6);
     const { width, height } = drapePixelSize(proj, site.mpp);
-    expect(width).toBe(730);
-    expect(height).toBe(2382);
+    expect(width).toBe(2433);
+    expect(height).toBe(7938);
+    const { tiles } = sliceDrapeTiles(proj, site.mpp);
+    expect(tiles.map((t) => t.rows)).toEqual([4000, 3938]);
+    expect(tiles[0].bbox[1]).toBe(tiles[1].bbox[3]); // exact shared edge
   });
 
-  it('requests the exact box bbox from NAIP (the pinned drape source)', () => {
+  it('requests the exact box bbox from NAIP (the pinned drape source), tile by tile', () => {
     expect(site.drapeSource).toBe('naip');
-    const url = drapeUrl(proj, site.mpp, site.drapeSource);
-    expect(url).toContain('imagery.nationalmap.gov');
-    expect(url).toContain('bbox=-85.316,35.0078,-85.3,35.06');
-    expect(url).toContain('size=730,2382');
+    const { tiles } = sliceDrapeTiles(proj, site.mpp);
+    const t0 = tileUrl(tiles[0], site.drapeSource);
+    expect(t0).toContain('imagery.nationalmap.gov');
+    expect(t0).toContain(`bbox=-85.316,${tiles[0].bbox[1]},-85.3,35.06`);
+    expect(t0).toContain('size=2433,4000');
+    const t1 = tileUrl(tiles[1], site.drapeSource);
+    expect(t1).toContain(`bbox=-85.316,35.0078,-85.3,${tiles[1].bbox[3]}`);
+    expect(t1).toContain('size=2433,3938');
+  });
+
+  it('fills fallback heights from Microsoft Buildings (msHeights on)', () => {
+    expect(site.msHeights).toBe(true);
   });
 
   it('queries Overpass over the exact box', () => {
