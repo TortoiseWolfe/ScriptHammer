@@ -159,24 +159,39 @@ export function tileUrl(
 
 async function fetchWithRetry(
   url: string,
-  source: DrapeSource
+  source: DrapeSource,
+  opts: { coverageHint?: boolean } = { coverageHint: true }
 ): Promise<Response> {
-  let res: Response | null = null;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    res = await fetch(url);
-    if (res.ok) return res;
+  const ATTEMPTS = 3;
+  let lastFailure = '';
+  for (let attempt = 0; attempt < ATTEMPTS; attempt++) {
+    try {
+      // fetch() rejects without an HTTP status on ECONNRESET/DNS/TLS-level
+      // failures — transient network errors deserve the same retries as a 5xx.
+      const res = await fetch(url);
+      if (res.ok) return res;
+      lastFailure = `HTTP ${res.status}`;
+    } catch (e) {
+      lastFailure = `network error: ${(e as Error).message}`;
+    }
     console.warn(
-      `[fetch-drape] ${source.toUpperCase()} HTTP ${res.status} (attempt ${attempt + 1}/3)`
+      `[fetch-drape] ${source.toUpperCase()} ${lastFailure} (attempt ${attempt + 1}/${ATTEMPTS})`
     );
-    await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+    if (attempt < ATTEMPTS - 1) {
+      await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+    }
   }
-  const hint =
-    source === 'naip'
+  // The coverage hint only fits the primary export request — a failed
+  // follow-up (e.g. a MapServer-rendered href) is a transient service
+  // problem, not an out-of-coverage site.
+  const hint = !opts.coverageHint
+    ? ''
+    : source === 'naip'
       ? ' (NAIP covers the US only — set "drapeSource": "esri" in the site config for non-US sites)'
       : source === 'tnmap'
         ? ' (TDOT orthos cover Tennessee only)'
         : '';
-  throw new Error(`${source.toUpperCase()} HTTP ${res?.status}${hint}`);
+  throw new Error(`${source.toUpperCase()} ${lastFailure}${hint}`);
 }
 
 async function validateImage(
@@ -220,24 +235,25 @@ async function fetchTileImage(
   return buf;
 }
 
+export interface RenderInfo {
+  href?: string;
+  width?: number;
+  height?: number;
+  extent?: { xmin: number; ymin: number; xmax: number; ymax: number };
+}
+
 /**
- * MapServer path (tnmap): dims are honored unconditionally and the EXTENT
- * silently adjusts on aspect mismatch — the one failure mode a dims check
- * cannot see. Ask for f=json first (returns the ACTUAL rendered extent + an
- * href to the rendered image), hard-fail if any edge drifted more than
- * ~3/4 px, then fetch the href.
+ * The MapServer extent guard, pure and testable: validate an f=json render
+ * response against the requested tile — presence, exact dims, and a returned
+ * extent within `tolPx` of the request on every edge (per-axis pixel sizes).
+ * Throws with a diagnostic message on any violation; returns the href.
  */
-async function fetchTileViaJson(
+export function assertRenderMatchesTile(
   tile: DrapeTile,
-  source: DrapeSource
-): Promise<Buffer> {
-  const res = await fetchWithRetry(tileUrl(tile, source, 'json'), source);
-  const info = (await res.json()) as {
-    href?: string;
-    width?: number;
-    height?: number;
-    extent?: { xmin: number; ymin: number; xmax: number; ymax: number };
-  };
+  info: RenderInfo,
+  source: DrapeSource,
+  tolPx = 0.75
+): string {
   if (!info.href || !info.extent) {
     throw new Error(
       `${source.toUpperCase()} f=json response missing href/extent: ${JSON.stringify(info).slice(0, 200)}`
@@ -250,14 +266,13 @@ async function fetchTileViaJson(
   }
   const pxLon = (tile.bbox[2] - tile.bbox[0]) / tile.cols;
   const pxLat = (tile.bbox[3] - tile.bbox[1]) / tile.rows;
-  const tol = 0.75;
   const drift = [
     Math.abs(info.extent.xmin - tile.bbox[0]) / pxLon,
     Math.abs(info.extent.ymin - tile.bbox[1]) / pxLat,
     Math.abs(info.extent.xmax - tile.bbox[2]) / pxLon,
     Math.abs(info.extent.ymax - tile.bbox[3]) / pxLat,
   ];
-  if (drift.some((d) => d > tol)) {
+  if (drift.some((d) => d > tolPx)) {
     throw new Error(
       `${source.toUpperCase()} adjusted the extent (drift ${drift.map((d) => d.toFixed(2)).join('/')} px, ` +
         `returned ${[
@@ -270,7 +285,31 @@ async function fetchTileViaJson(
           .join(',')}) — aspect mismatch; registration invariant violated`
     );
   }
-  const img = await fetchWithRetry(info.href, source);
+  return info.href;
+}
+
+/**
+ * MapServer path (tnmap): dims are honored unconditionally and the EXTENT
+ * silently adjusts on aspect mismatch — the one failure mode a dims check
+ * cannot see. Ask for f=json first (returns the ACTUAL rendered extent + an
+ * href to the rendered image), hard-fail if any edge drifted more than
+ * ~3/4 px, then fetch the href.
+ */
+async function fetchTileViaJson(
+  tile: DrapeTile,
+  source: DrapeSource
+): Promise<Buffer> {
+  const res = await fetchWithRetry(tileUrl(tile, source, 'json'), source);
+  let info: RenderInfo;
+  try {
+    info = (await res.json()) as RenderInfo;
+  } catch {
+    throw new Error(
+      `${source.toUpperCase()} f=json returned a non-JSON body — service error page?`
+    );
+  }
+  const href = assertRenderMatchesTile(tile, info, source);
+  const img = await fetchWithRetry(href, source, { coverageHint: false });
   const buf = Buffer.from(await img.arrayBuffer());
   await validateImage(buf, tile, source);
   return buf;

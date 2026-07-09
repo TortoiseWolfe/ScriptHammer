@@ -14,6 +14,7 @@ import {
   districtIndex,
   measureRegistration,
 } from '../registration';
+import { createProjection, boxFromCenter } from '../enu';
 
 describe('enuToPx (the runtime terrainSample mapping, inverted to pixels)', () => {
   const W = 101;
@@ -129,7 +130,20 @@ describe('rasterizeEdges', () => {
     expect(cCol).toBeCloseTo(100, 6);
     expect(cRow).toBeCloseTo(100, 6);
   });
-  it('drops degenerate rings and clips out-of-bounds pixels', () => {
+  it('centroid ignores the duplicated closing vertex of OSM rings', () => {
+    // Every baked OSM ring repeats vertex 0 at the end; a naive vertex mean
+    // would weight the first corner twice and drag the centroid ~10% of the
+    // footprint size toward it (skewing district pooling + flag coordinates).
+    const open = squareRing(80, 80, 120, 120);
+    const closed = [...open, open[0], open[1]];
+    const a = rasterizeEdges([{ id: 1, ring: open }], W, H, gW, gH)
+      .perBuilding[0];
+    const b = rasterizeEdges([{ id: 1, ring: closed }], W, H, gW, gH)
+      .perBuilding[0];
+    expect(b.x).toBeCloseTo(a.x, 9);
+    expect(b.z).toBeCloseTo(a.z, 9);
+  });
+  it('drops degenerate rings and CLIPS out-of-bounds pixels (no row wrap)', () => {
     const { edgePx, perBuilding } = rasterizeEdges(
       [
         { id: 1, ring: [0, 0, 5, 5] }, // 2 points — degenerate
@@ -141,32 +155,115 @@ describe('rasterizeEdges', () => {
       gH
     );
     expect(perBuilding.map((b) => b.id)).toEqual([2]);
+    // The ring spans cols -10..5: without the bounds check, a negative col
+    // packs as (row-1)*W + (W+col) — a WRAPPED pixel near the EAST edge of
+    // the previous row. Every emitted pixel must sit in the real col range.
+    expect(edgePx.length).toBeGreaterThan(0);
     for (const idx of edgePx) {
-      expect(idx % W).toBeLessThan(W);
-      expect(idx).toBeLessThan(W * H);
+      const col = idx % W;
+      const row = (idx - col) / W;
+      expect(col).toBeLessThanOrEqual(5);
+      expect(row).toBeGreaterThanOrEqual(90);
+      expect(row).toBeLessThanOrEqual(110);
     }
   });
 });
 
+/** A second, deliberately ASYMMETRIC photo: bright rect spanning pixel rows
+ *  90..120, cols 80..130 — a transposition (x/z swap) bug cannot pass tests
+ *  built on it, unlike the symmetric square. */
+function rectGray(): Uint8Array {
+  const g = new Uint8Array(W * H);
+  for (let r = 90; r <= 120; r++)
+    for (let c = 80; c <= 130; c++) g[r * W + c] = 220;
+  return g;
+}
+
 describe('searchOffset recovers a known misregistration', () => {
-  const grad = sobelMagnitude(syntheticGray(), W, H);
-  it('footprint drawn 4 m west + 4 m north of the photo square → offset {x:4, z:4}', () => {
-    // The photo square outline is at [80..120]; the vector ring at [76..116]
-    // needs +4 east and +4 south to land on it.
-    const ring = squareRing(76, 76, 116, 116);
+  const grad = sobelMagnitude(rectGray(), W, H);
+  it('footprint drawn 4 m west + 2 m north of the photo rect → offset {x:4, z:2} (axes distinct)', () => {
+    // The photo rect outline is cols 80..130, rows 90..120; the vector ring
+    // at cols 76..126, rows 88..118 needs +4 east and +2 south to land on it.
+    // UNEQUAL x/z components + a non-square rect: a transposed-axes
+    // implementation would report {x:2, z:4} and fail here.
+    const ring = squareRing(76, 88, 126, 118);
     const { edgePx } = rasterizeEdges([{ id: 1, ring }], W, H, gW, gH);
     const res = searchOffset(edgePx, grad, W, H, gW, gH);
-    expect(res.offsetM).toEqual({ x: 4, z: 4 });
+    expect(res.offsetM).toEqual({ x: 4, z: 2 });
     expect(res.score).toBeGreaterThan(res.score0 * 3);
     expect(res.confidence).toBeGreaterThan(1);
   });
   it('an aligned footprint reports ~zero offset', () => {
-    const ring = squareRing(80, 80, 120, 120);
+    const ring = squareRing(80, 90, 130, 120);
     const { edgePx } = rasterizeEdges([{ id: 1, ring }], W, H, gW, gH);
     const res = searchOffset(edgePx, grad, W, H, gW, gH);
     expect(Math.abs(res.offsetM.x)).toBeLessThanOrEqual(0.5);
     expect(Math.abs(res.offsetM.z)).toBeLessThanOrEqual(0.5);
     expect(res.score0).toBeGreaterThan(0);
+  });
+  it('NO SIGNAL answers {0,0}, never the search-window corner', () => {
+    // All-tie surfaces (featureless drape / zero in-bounds edge pixels) used
+    // to crown the first-evaluated corner (-10,-10) — a plausible-looking
+    // offset that the |v|<=15 site-config refine would accept if pinned.
+    const flat = new Float32Array(W * H); // zero gradients everywhere
+    const ring = squareRing(80, 90, 130, 120);
+    const { edgePx } = rasterizeEdges([{ id: 1, ring }], W, H, gW, gH);
+    const res = searchOffset(edgePx, flat, W, H, gW, gH);
+    expect(res.offsetM).toEqual({ x: 0, z: 0 });
+    expect(res.confidence).toBe(0);
+    // zero in-bounds samples (empty edge set) — same contract
+    const empty = searchOffset(new Uint32Array(0), flat, W, H, gW, gH);
+    expect(empty.offsetM).toEqual({ x: 0, z: 0 });
+  });
+});
+
+describe('closed-loop sign contract: report → vectorOffsetM → residual 0', () => {
+  it('pinning the measured offset in createProjection zeroes the next measurement', () => {
+    // The full chain the operator workflow depends on, offline: lon/lat ring
+    // projected through createProjection lands 4 m west + 2 m north of the
+    // photo rect; the report says ADD {x:4, z:2}; re-projecting the SAME
+    // lon/lat through createProjection(box, thatOffset) must zero the
+    // residual. A sign error anywhere in enuToPx/search/enu-injection flips
+    // this loop and the corrected bake would DOUBLE the error instead.
+    const box = boxFromCenter(35, -85, gW, gH);
+    const proj0 = createProjection(box);
+    const grad = sobelMagnitude(rectGray(), W, H);
+    // lon/lat corners whose UNSHIFTED projection lands at cols 76..126,
+    // rows 88..118 (4 px west, 2 px north of the photo rect).
+    const enuRing = squareRing(76, 88, 126, 118);
+    const lonLat: [number, number][] = [];
+    for (let i = 0; i + 1 < enuRing.length; i += 2) {
+      lonLat.push([
+        proj0.centerLon + enuRing[i] / proj0.mPerDegLon,
+        proj0.centerLat - enuRing[i + 1] / proj0.mPerDegLat,
+      ]);
+    }
+    const projectRing = (p: ReturnType<typeof createProjection>) =>
+      lonLat.flatMap(([lon, lat]) => p.lonLatToEnu(lon, lat));
+
+    const first = searchOffset(
+      rasterizeEdges([{ id: 1, ring: projectRing(proj0) }], W, H, gW, gH)
+        .edgePx,
+      grad,
+      W,
+      H,
+      gW,
+      gH
+    );
+    expect(first.offsetM).toEqual({ x: 4, z: 2 });
+
+    const proj1 = createProjection(box, first.offsetM);
+    const second = searchOffset(
+      rasterizeEdges([{ id: 1, ring: projectRing(proj1) }], W, H, gW, gH)
+        .edgePx,
+      grad,
+      W,
+      H,
+      gW,
+      gH
+    );
+    expect(Math.abs(second.offsetM.x)).toBeLessThanOrEqual(0.5);
+    expect(Math.abs(second.offsetM.z)).toBeLessThanOrEqual(0.5);
   });
 });
 

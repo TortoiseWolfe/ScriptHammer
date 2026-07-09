@@ -49,7 +49,10 @@ export function parseOrthoParam(search: string): {
   const m = v
     ? /^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?),(\d+(?:\.\d+)?)$/.exec(v)
     : null;
-  if (!m) return { on: true };
+  // halfH must be strictly positive — 0 would build a degenerate frustum
+  // (0/0 aspect → NaN projection → blank canvas with no error). Any
+  // malformed value degrades to the full-extent frame, never a broken view.
+  if (!m || !(Number(m[3]) > 0)) return { on: true };
   return {
     on: true,
     frame: { center: [Number(m[1]), Number(m[2])], halfH: Number(m[3]) },
@@ -135,9 +138,12 @@ function SceneInner({
   // its previous mode, so the camera never re-framed (and Miniature inherited
   // whatever grazing/buried angle the tour left, looking like a broken slab).
   // Top-down is a StageCore render mode, not a Rig mode — the Rig idles in
-  // orbit underneath so leaving Top-down lands on a clean overhead frame.
-  const rigMode: RigMode = mode === 'ortho' ? 'orbit' : mode;
+  // orbit underneath. Keyed on the DOCK selection (mode), not the derived
+  // rigMode: rig input stays bound while Top-down renders, so drags during
+  // ortho silently move the hidden perspective camera — exiting
+  // ortho→Miniature keeps rigMode 'orbit' but must still re-frame cleanly.
   useEffect(() => {
+    const rigMode: RigMode = mode === 'ortho' ? 'orbit' : mode;
     if (rigMode === 'orbit') {
       // Enter Miniature from a clean, guaranteed-good overhead frame rather than
       // syncing from a possibly-buried tour camera: pull up and look down at the
@@ -155,7 +161,7 @@ function SceneInner({
       rig.cam.lookAt(rig.focus);
     }
     rig.setMode(rigMode);
-  }, [rig, rigMode, framing]);
+  }, [rig, mode, framing]);
 
   // R3F's Canvas camera options only apply at creation — sync the palette's
   // fov onto the live camera so the Toy/True-to-life toggle actually changes

@@ -59,6 +59,48 @@ test.describe('/twins/[slug] — digital-twin viewer', () => {
     await expect(page.locator('canvas')).toBeAttached({ timeout: 10000 });
   });
 
+  test('Top-down compare mode (#233): dock button + ?ortho render without errors', async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error')
+        errors.push(`${msg.text()} [${msg.location()?.url ?? ''}]`);
+    });
+    // ?ortho opens straight into the orthographic compare view
+    await page.goto('/twins/chatt/?ortho');
+    await expect(page.getByText(WORDMARK).first()).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByRole('button', { name: 'Top-down' })).toBeVisible();
+    test.skip(
+      !(await webglAvailable(page)),
+      'WebGL unavailable in this browser/runner; the twin route has no fallback panel'
+    );
+    await expect(page.locator('canvas')).toBeAttached({ timeout: 10000 });
+    // Round-trip through the dock: leave and re-enter Top-down. This drives
+    // the ortho render branch (frustum, colorspace flip, fog restore) and the
+    // rig re-frame on exit — a NaN frustum or render-loop throw would surface
+    // as console errors below.
+    await page.getByRole('button', { name: 'Miniature' }).click();
+    await page.getByRole('button', { name: 'Top-down' }).click();
+    await page.waitForTimeout(1500);
+    const relevant = errors.filter((e) => {
+      const lower = e.toLowerCase();
+      return (
+        !lower.includes('favicon') &&
+        !lower.includes('analytics') &&
+        !lower.includes('chrome-extension') &&
+        !lower.includes('cf_bm') &&
+        !lower.includes('cloudflare') &&
+        !lower.includes('webgl') &&
+        !lower.includes('links.local.json') &&
+        !lower.includes('house/house.json')
+      );
+    });
+    expect(relevant).toEqual([]);
+  });
+
   test('no unexpected console.error on load', async ({ page }) => {
     // Record the failing resource URL alongside the message: Chromium logs a
     // generic "Failed to load resource ... 404" with the URL only in

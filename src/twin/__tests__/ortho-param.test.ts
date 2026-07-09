@@ -21,4 +21,12 @@ describe('parseOrthoParam (?ortho scripted-capture syntax)', () => {
     expect(parseOrthoParam('?ortho=1,2')).toEqual({ on: true });
     expect(parseOrthoParam('?ortho=1,2,-3')).toEqual({ on: true }); // negative halfH
   });
+  it('halfH=0 degrades to full extent — a zero half-height means a 0/0 frustum (NaN projection, blank canvas)', () => {
+    expect(parseOrthoParam('?ortho=1,2,0')).toEqual({ on: true });
+    expect(parseOrthoParam('?ortho=1,2,0.0')).toEqual({ on: true });
+    expect(parseOrthoParam('?ortho=1,2,0.5')).toEqual({
+      on: true,
+      frame: { center: [1, 2], halfH: 0.5 },
+    });
+  });
 });

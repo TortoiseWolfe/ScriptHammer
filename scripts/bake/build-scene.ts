@@ -59,6 +59,9 @@ export async function buildScene(
     /** #233 measurement (Sobel over the full drape, ~10s at flagship size).
      *  Always on in real bakes; tests not asserting registration skip it. */
     registration?: boolean;
+    /** Where the report + overlays land (default rawDir/registration/) —
+     *  test seam so suite runs never touch a developer's real _raw cache. */
+    registrationDir?: string;
   } = {}
 ) {
   const { registration: measureReg = true } = opts;
@@ -360,7 +363,8 @@ export async function buildScene(
       drapeSrc,
       buildings,
       widthM,
-      depthM
+      depthM,
+      opts.registrationDir
     );
   }
 

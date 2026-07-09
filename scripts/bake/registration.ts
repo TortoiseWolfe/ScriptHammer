@@ -15,7 +15,7 @@
 // their roof edges displace outward from nadir — so a low per-building score
 // on a tower is expected residual, not necessarily bad vectors.
 
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import sharp from 'sharp';
 
@@ -148,13 +148,24 @@ export function rasterizeEdges(
     }
     if (pts.length < 3) continue;
     const mine: number[] = [];
+    // OSM rings repeat the first vertex at the end — including it in the
+    // vertex-mean would weight the first corner twice (measured ~10% of the
+    // footprint size for a square), dragging district assignment and the
+    // flagged-building coordinates. Edges are unaffected (the wrap below
+    // closes the ring either way).
+    const len = b.ring.length;
+    const closed =
+      len >= 4 &&
+      b.ring[0] === b.ring[len - 2] &&
+      b.ring[1] === b.ring[len - 1];
+    const lastPair = closed ? len - 2 : len;
     let cx = 0;
     let cz = 0;
-    for (let i = 0; i + 1 < b.ring.length; i += 2) {
+    for (let i = 0; i + 1 < lastPair; i += 2) {
       cx += b.ring[i];
       cz += b.ring[i + 1];
     }
-    const n = b.ring.length / 2;
+    const n = lastPair / 2;
     for (let i = 0; i < pts.length; i++) {
       const [c0, r0] = pts[i];
       const [c1, r1] = pts[(i + 1) % pts.length];
@@ -283,7 +294,12 @@ export function searchOffset(
     scoreAtShift(edgePx, grad, W, H, dxM * pxPerMx, dzM * pxPerMz, stride);
 
   const pass = (cx: number, cz: number, rangeM: number, stepM: number) => {
-    let best = { dxM: cx, dzM: cz, score: -Infinity };
+    // Anchor `best` at the pass CENTRE with its real score: on an all-tie
+    // surface (featureless drape, zero in-bounds edge pixels) a -Infinity
+    // seed with strict `>` replacement would crown the first-evaluated
+    // corner, cascading to a plausible-looking ±10 m offset in the report.
+    // No signal must answer "no offset", not "corner of the search window".
+    let best = { dxM: cx, dzM: cz, score: evaluate(cx, cz) };
     const scores: number[] = [];
     for (let dz = -rangeM; dz <= rangeM + 1e-9; dz += stepM) {
       for (let dx = -rangeM; dx <= rangeM + 1e-9; dx += stepM) {
@@ -503,13 +519,16 @@ export async function writeOverlay(
 }
 
 /** Bake-stage entry: measure, write report + overlays, return the summary
- *  block for the manifest. */
+ *  block for the manifest. `diagnosticsDir` overrides where the report +
+ *  overlays land (default _raw/registration/) — the test seam that keeps
+ *  suite runs out of a developer's real _raw cache. */
 export async function runRegistration(
   rawDir: string,
   drapeSrc: string,
   buildings: { id: number; ring: number[] }[],
   groundWm: number,
-  groundHm: number
+  groundHm: number,
+  diagnosticsDir?: string
 ): Promise<{
   offsetM: { x: number; z: number };
   score: number;
@@ -529,7 +548,11 @@ export async function runRegistration(
     return measureRegistration(buildings, grayArr, W, H, groundWm, groundHm);
   })();
 
-  const regDir = join(rawDir, 'registration');
+  const regDir = diagnosticsDir ?? join(rawDir, 'registration');
+  // Fresh dir per measurement: report + overlays describe ONE bake — a crash
+  // between writes must never leave this bake's report beside a previous
+  // bake's overlays.
+  rmSync(regDir, { recursive: true, force: true });
   mkdirSync(regDir, { recursive: true });
   writeFileSync(join(regDir, 'report.json'), JSON.stringify(report, null, 2));
   const pxPerMx = (W - 1) / groundWm;

@@ -261,7 +261,9 @@ describe.skipIf(!hasRaw)(
       }
     });
 
-    it(
+    // Also needs the cached drape (hasRaw alone only guarantees osm.json —
+    // a partial cache would hard-fail inside runRegistration otherwise).
+    it.skipIf(!existsSync(join(rawDir, 'drape.jpg')))(
       'measures footprint-vs-aerial registration into the manifest (#233)',
       { timeout: 120_000 }, // Sobel over the full flagship drape under suite load
       async () => {
@@ -270,15 +272,24 @@ describe.skipIf(!hasRaw)(
           // The same projection the real bake uses (pinned vectorOffsetM
           // applied) — the measured RESIDUAL must be within the fine step of
           // zero, or the pinned correction has rotted vs the cached drape.
+          // Diagnostics go to the temp dir, NOT the developer's real
+          // _raw/registration (which describes the last real bake).
           const pinnedProj = createProjection(site.box, site.vectorOffsetM);
-          const manifest = await buildScene(rawDir, outDir, site, pinnedProj);
+          const manifest = await buildScene(
+            rawDir,
+            outDir,
+            site,
+            pinnedProj,
+            site.drapeSource,
+            { registrationDir: join(outDir, 'registration') }
+          );
           expect(manifest.registration).toBeTruthy();
           const reg = manifest.registration!;
           expect(Math.abs(reg.offsetM.x)).toBeLessThanOrEqual(0.5);
           expect(Math.abs(reg.offsetM.z)).toBeLessThanOrEqual(0.5);
           expect(reg.score).toBeGreaterThan(0);
           expect(reg.confidence).toBeGreaterThan(0);
-          expect(existsSync(join(rawDir, 'registration/report.json'))).toBe(
+          expect(existsSync(join(outDir, 'registration/report.json'))).toBe(
             true
           );
         } finally {
