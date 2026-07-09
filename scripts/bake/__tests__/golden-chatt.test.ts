@@ -38,16 +38,24 @@ describe('golden: sites/chatt.json', () => {
     expect(tiles[0].bbox[1]).toBe(tiles[1].bbox[3]); // exact shared edge
   });
 
-  it('requests the exact box bbox from NAIP (the pinned drape source), tile by tile', () => {
-    expect(site.drapeSource).toBe('naip');
+  it('requests the exact box bbox from the TDOT ortho (the pinned drape source), tile by tile', () => {
+    // Accuracy v3 (#233): the flagship moved NAIP → TDOT statewide ortho.
+    // Same dims/tiling at mpp 0.6; what changed is georeferencing quality —
+    // measured residual dropped 1.5 m → 0.5 m (pinned in vectorOffsetM below).
+    expect(site.drapeSource).toBe('tnmap');
     const { tiles } = sliceDrapeTiles(proj, site.mpp);
     const t0 = tileUrl(tiles[0], site.drapeSource);
-    expect(t0).toContain('imagery.nationalmap.gov');
+    expect(t0).toContain('tnmap.tn.gov');
+    expect(t0).toContain('MapServer/export');
     expect(t0).toContain(`bbox=-85.316,${tiles[0].bbox[1]},-85.3,35.06`);
     expect(t0).toContain('size=2433,4000');
     const t1 = tileUrl(tiles[1], site.drapeSource);
     expect(t1).toContain(`bbox=-85.316,35.0078,-85.3,${tiles[1].bbox[3]}`);
     expect(t1).toContain('size=2433,3938');
+  });
+
+  it('pins the measured vector correction (#233 registration report, 2026-07-09)', () => {
+    expect(site.vectorOffsetM).toEqual({ x: 0.5, z: 0 });
   });
 
   it('fills fallback heights from Microsoft Buildings (msHeights on)', () => {

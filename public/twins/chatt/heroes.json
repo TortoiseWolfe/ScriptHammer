@@ -1,35 +1,35 @@
 [
   {
     "swap": "republic_centre",
-    "x": -382.7,
+    "x": -382.2,
     "z": -1619.5,
     "name": "Republic Centre"
   },
   {
     "swap": "courthouse",
-    "x": 100.4,
+    "x": 100.9,
     "z": -1703.5,
     "name": "Hamilton County Courthouse"
   },
   {
     "swap": "walnut_st_bridge",
-    "x": 67.8,
+    "x": 68.3,
     "z": -2735.1,
     "name": "Walnut Street"
   },
   {
     "swap": "aquarium",
-    "x": -273.8,
+    "x": -273.3,
     "z": -2432.1,
     "name": "Tennessee Aquarium"
   },
   {
     "swap": "hunter_museum",
-    "x": 162.9,
+    "x": 163.4,
     "z": -2434.2,
     "name": "hunter_museum"
   },
-  { "swap": "tivoli", "x": 18.3, "z": -1286.9, "name": "tivoli" },
-  { "swap": "dome_building", "x": -54.8, "z": -1409, "name": "dome_building" },
-  { "swap": "choo_choo", "x": -54.8, "z": 2729.2, "name": "choo_choo" }
+  { "swap": "tivoli", "x": 18.8, "z": -1286.9, "name": "tivoli" },
+  { "swap": "dome_building", "x": -54.3, "z": -1409, "name": "dome_building" },
+  { "swap": "choo_choo", "x": -54.3, "z": 2729.2, "name": "choo_choo" }
 ]

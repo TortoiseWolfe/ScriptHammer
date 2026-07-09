@@ -9,7 +9,7 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import type { Projection } from './enu';
 import { resolveHeight } from './height';
-import { drapePixelSize } from './fetch-drape';
+import { drapePixelSize, type DrapeSource } from './fetch-drape';
 import {
   provenanceFor,
   siteManifestBlock,
@@ -25,6 +25,7 @@ import {
   carveToMask,
   type TerrainGrid,
 } from './carve-water';
+import { runRegistration } from './registration';
 
 export function ringAreaM2(ring: [number, number][]): number {
   let a = 0;
@@ -53,8 +54,17 @@ export async function buildScene(
   outDir: string,
   site: SiteConfig,
   proj: Projection,
-  drapeSource: 'naip' | 'esri' = site.drapeSource
+  drapeSource: DrapeSource = site.drapeSource,
+  opts: {
+    /** #233 measurement (Sobel over the full drape, ~10s at flagship size).
+     *  Always on in real bakes; tests not asserting registration skip it. */
+    registration?: boolean;
+    /** Where the report + overlays land (default rawDir/registration/) —
+     *  test seam so suite runs never touch a developer's real _raw cache. */
+    registrationDir?: string;
+  } = {}
 ) {
+  const { registration: measureReg = true } = opts;
   mkdirSync(outDir, { recursive: true });
   const osm = JSON.parse(readFileSync(join(rawDir, 'osm.json'), 'utf8')) as {
     elements: {
@@ -335,6 +345,28 @@ export async function buildScene(
   const drapePath = join(outDir, 'drape.jpg');
   if (existsSync(join(rawDir, 'drape.jpg')))
     copyFileSync(join(rawDir, 'drape.jpg'), drapePath);
+  const drapeSrc = existsSync(join(rawDir, 'drape.jpg'))
+    ? join(rawDir, 'drape.jpg')
+    : existsSync(drapePath)
+      ? drapePath
+      : null;
+
+  // Measure footprint-vs-aerial registration (#233): report + overlays land
+  // in _raw/registration/ (local-only), the summary block goes into the
+  // manifest. When the site config pins a measured vectorOffsetM, the rings
+  // above are already shifted — this measures the RESIDUAL, so a corrected
+  // bake should report ~0.
+  let registration: Awaited<ReturnType<typeof runRegistration>> | undefined;
+  if (measureReg && drapeSrc && buildings.length > 0) {
+    registration = await runRegistration(
+      rawDir,
+      drapeSrc,
+      buildings,
+      widthM,
+      depthM,
+      opts.registrationDir
+    );
+  }
 
   const manifest = {
     box: {
@@ -366,6 +398,7 @@ export async function buildScene(
     ),
     fetchedAt: new Date().toISOString(),
     ruleHistogram,
+    ...(registration ? { registration } : {}),
     // `site.water` is a bake RESULT (did the carve find water?), filled in
     // below — the runtime uses it to gate the water mesh, so a waterless site
     // never renders a spurious pond at its terrain minimum.
@@ -387,11 +420,6 @@ export async function buildScene(
   const rawGrid = JSON.parse(
     readFileSync(join(rawDir, 'terrain.json'), 'utf8')
   ) as TerrainGrid;
-  const drapeSrc = existsSync(join(rawDir, 'drape.jpg'))
-    ? join(rawDir, 'drape.jpg')
-    : existsSync(drapePath)
-      ? drapePath
-      : null;
   let carvedGrid = rawGrid;
   let carvedSamples = 0;
   if (!site.carveWater) {

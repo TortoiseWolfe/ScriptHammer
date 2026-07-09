@@ -40,13 +40,27 @@ export interface Projection {
   readonly centerLon: number;
   readonly mPerDegLat: number;
   readonly mPerDegLon: number;
+  /** The vector correction baked into lonLatToEnu (metres; zero when unset). */
+  readonly offsetM: { x: number; z: number };
   /** lon/lat -> local ENU metres. Origin = box center. North = -Z, East = +X. */
   lonLatToEnu(lon: number, lat: number): [number, number];
   /** True ground extent of the box in metres. */
   groundSize(): { widthM: number; depthM: number };
 }
 
-export function createProjection(box: GeoBox): Projection {
+/**
+ * `offsetM` is the site config's measured `vectorOffsetM` (#233): OSM vectors
+ * and the ortho imagery each carry their own absolute georeferencing error,
+ * and the registration report measures their relative offset. Applying it
+ * HERE — the single lon/lat→world chokepoint — shifts every vector layer
+ * (buildings, streets, heroes, house anchors) together relative to the fixed
+ * aerial+terrain, so no consumer can be missed. The drape/terrain mappings
+ * (groundWm/Hm fractions) are deliberately untouched.
+ */
+export function createProjection(
+  box: GeoBox,
+  offsetM: { x: number; z: number } = { x: 0, z: 0 }
+): Projection {
   const centerLat = (box.swLat + box.neLat) / 2;
   const centerLon = (box.swLon + box.neLon) / 2;
   const { mPerDegLat, mPerDegLon } = metersPerDegree(centerLat);
@@ -56,8 +70,12 @@ export function createProjection(box: GeoBox): Projection {
     centerLon,
     mPerDegLat,
     mPerDegLon,
+    offsetM,
     lonLatToEnu(lon: number, lat: number): [number, number] {
-      return [(lon - centerLon) * mPerDegLon, -(lat - centerLat) * mPerDegLat];
+      return [
+        (lon - centerLon) * mPerDegLon + offsetM.x,
+        -(lat - centerLat) * mPerDegLat + offsetM.z,
+      ];
     },
     groundSize() {
       return {

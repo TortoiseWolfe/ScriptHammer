@@ -139,7 +139,7 @@ export function parseCliArgs(argv: string[]): CliPlan {
 }
 
 export async function bake(site: SiteConfig) {
-  const proj = createProjection(site.box);
+  const proj = createProjection(site.box, site.vectorOffsetM);
   const paths = sitePaths(site);
   mkdirSync(paths.raw, { recursive: true });
   console.log(`[bake] site=${site.slug} → ${paths.out}`);

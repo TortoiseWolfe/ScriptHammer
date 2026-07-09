@@ -24,7 +24,7 @@ import type {
   TourWaypoint,
   TwinLink,
 } from '@/lib/manifest';
-import { deriveFraming, type Framing } from '@/lib/framing';
+import { deriveFraming, type Framing, type OrthoFrame } from '@/lib/framing';
 import { getInternalUrl } from '@/config/project.config';
 
 /** 'house' focuses the camera on the as-built parcel (the property view).
@@ -32,6 +32,32 @@ import { getInternalUrl } from '@/config/project.config';
  *  output:'export' because house assets are never in the committed tree, so a
  *  route's generateStaticParams would be empty (which static export rejects). */
 export type TwinFocus = 'twin' | 'house';
+
+/** The camera dock: the Rig's modes plus the pseudo-mode 'ortho' (true
+ *  orthographic top-down — StageCore renders it directly; the Rig idles). */
+type CameraMode = RigMode | 'ortho';
+
+/** Scripted-capture override: `?ortho=cx,cz,halfH` zooms the orthographic
+ *  compare view onto a district (world metres). Bare `?ortho` = full extent. */
+export function parseOrthoParam(search: string): {
+  on: boolean;
+  frame?: { center: [number, number]; halfH: number };
+} {
+  const params = new URLSearchParams(search);
+  if (!params.has('ortho')) return { on: false };
+  const v = params.get('ortho');
+  const m = v
+    ? /^(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?),(\d+(?:\.\d+)?)$/.exec(v)
+    : null;
+  // halfH must be strictly positive — 0 would build a degenerate frustum
+  // (0/0 aspect → NaN projection → blank canvas with no error). Any
+  // malformed value degrades to the full-extent frame, never a broken view.
+  if (!m || !(Number(m[3]) > 0)) return { on: true };
+  return {
+    on: true,
+    frame: { center: [Number(m[1]), Number(m[2])], halfH: Number(m[3]) },
+  };
+}
 
 function SceneInner({
   slug,
@@ -45,6 +71,7 @@ function SceneInner({
   paletteKey,
   day,
   mode,
+  ortho,
   onCaption,
   onHouseGround,
   onWorldError,
@@ -61,7 +88,9 @@ function SceneInner({
   crisp?: boolean;
   paletteKey: PaletteKey;
   day: number;
-  mode: RigMode;
+  mode: CameraMode;
+  /** Present while Top-down mode is active. */
+  ortho?: OrthoFrame;
   onCaption: (c: HudCaption | null) => void;
   onHouseGround?: (y: number) => void;
   onWorldError: (message: string) => void;
@@ -108,8 +137,14 @@ function SceneInner({
   // Miniature/Follow/Walk only updated React state — the Rig kept running in
   // its previous mode, so the camera never re-framed (and Miniature inherited
   // whatever grazing/buried angle the tour left, looking like a broken slab).
+  // Top-down is a StageCore render mode, not a Rig mode — the Rig idles in
+  // orbit underneath. Keyed on the DOCK selection (mode), not the derived
+  // rigMode: rig input stays bound while Top-down renders, so drags during
+  // ortho silently move the hidden perspective camera — exiting
+  // ortho→Miniature keeps rigMode 'orbit' but must still re-frame cleanly.
   useEffect(() => {
-    if (mode === 'orbit') {
+    const rigMode: RigMode = mode === 'ortho' ? 'orbit' : mode;
+    if (rigMode === 'orbit') {
       // Enter Miniature from a clean, guaranteed-good overhead frame rather than
       // syncing from a possibly-buried tour camera: pull up and look down at the
       // home focus so the whole diorama reads as a toy model.
@@ -125,7 +160,7 @@ function SceneInner({
       );
       rig.cam.lookAt(rig.focus);
     }
-    rig.setMode(mode);
+    rig.setMode(rigMode);
   }, [rig, mode, framing]);
 
   // R3F's Canvas camera options only apply at creation — sync the palette's
@@ -168,6 +203,7 @@ function SceneInner({
       lens={lens}
       grade={grade}
       topdown={framing.topdown}
+      ortho={ortho}
       registerHandle={registerHandle}
     >
       {/* Sky background + atmospheric fog, ranged to the model's extents so
@@ -269,6 +305,7 @@ function TwinCanvasInner({
       { key: 'orbit', label: 'Miniature' },
       { key: 'follow', label: 'Follow' },
       { key: 'walk', label: 'Walk' },
+      { key: 'ortho', label: 'Top-down' },
     ],
     [hasTour]
   );
@@ -304,7 +341,29 @@ function TwinCanvasInner({
     return out;
   }, [house, houseFocused, localLinks, site.name, slug]);
 
-  const [mode, setMode] = useState<RigMode>(hasTour ? 'tour' : 'orbit');
+  // ?ortho opens straight into the compare view (scripted captures); an
+  // optional `cx,cz,halfH` value zooms it onto a district.
+  const orthoParam = useMemo(
+    () =>
+      parseOrthoParam(
+        typeof window !== 'undefined' ? window.location.search : ''
+      ),
+    []
+  );
+  const [mode, setMode] = useState<CameraMode>(
+    orthoParam.on ? 'ortho' : hasTour ? 'tour' : 'orbit'
+  );
+  const orthoFrame = useMemo<OrthoFrame | undefined>(() => {
+    if (mode !== 'ortho') return undefined;
+    if (!orthoParam.frame) return framing.ortho;
+    return {
+      center: orthoParam.frame.center,
+      // Square target; StageCore expands to the viewport aspect either way.
+      halfW: orthoParam.frame.halfH,
+      halfH: orthoParam.frame.halfH,
+      height: framing.ortho.height,
+    };
+  }, [mode, orthoParam, framing.ortho]);
   const [paletteKey, setPaletteKey] = useState<PaletteKey>(
     site.palette ?? 'toy'
   );
@@ -345,10 +404,10 @@ function TwinCanvasInner({
       if (e.code === 'Backquote') setShowFps((v) => !v);
       // Digit keys map by position into the mode dock (so `1` is never a dead
       // key on tour-less sites).
-      const m = /^Digit([1-4])$/.exec(e.code);
+      const m = /^Digit([1-5])$/.exec(e.code);
       if (m) {
         const opt = modes[Number(m[1]) - 1];
-        if (opt) setMode(opt.key as RigMode);
+        if (opt) setMode(opt.key as CameraMode);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -413,6 +472,7 @@ function TwinCanvasInner({
           paletteKey={paletteKey}
           day={day}
           mode={mode}
+          ortho={orthoFrame}
           onCaption={setCaption}
           onHouseGround={houseFocused ? setHouseGroundY : undefined}
           onWorldError={setWorldError}
@@ -493,7 +553,7 @@ function TwinCanvasInner({
         provenance={manifest.provenance}
         modes={modes}
         activeMode={mode}
-        onMode={(m) => setMode(m as RigMode)}
+        onMode={(m) => setMode(m as CameraMode)}
         palettes={[
           { key: 'trueToLife', label: 'True to life' },
           { key: 'toy', label: 'Toy' },

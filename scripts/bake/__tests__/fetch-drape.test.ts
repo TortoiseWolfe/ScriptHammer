@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { drapePixelSize, drapeUrl } from '../fetch-drape';
+import {
+  drapePixelSize,
+  drapeUrl,
+  sliceDrapeTiles,
+  assertRenderMatchesTile,
+} from '../fetch-drape';
 import { createProjection } from '../enu';
 
 const proj = createProjection({
@@ -43,6 +48,19 @@ describe('drape sizing (plate-carrée, degree-aspect for exact-bbox return)', ()
     expect(url).toContain('server.arcgisonline.com');
     expect(url).toContain('World_Imagery');
   });
+  it('routes the tnmap source to the TDOT ortho MapServer, geographic in AND out', () => {
+    // imageSR=4326 makes the server reproject its Web-Mercator cache to
+    // plate-carrée, so rows stay uniform-in-lat and the degree-aspect
+    // registration discipline applies unchanged. MapServer /export honors SIZE
+    // and adjusts the EXTENT on aspect mismatch (verified live) — the fetch
+    // path validates the returned extent via f=json before downloading.
+    const url = drapeUrl(proj, 2, 'tnmap');
+    expect(url).toContain('tnmap.tn.gov');
+    expect(url).toContain('MapServer/export');
+    expect(url).toContain('bboxSR=4326');
+    expect(url).toContain('imageSR=4326');
+    expect(url).toContain('size=730,2382');
+  });
 
   it('requested pixel aspect matches the bbox aspect IN THE REQUEST SR (no extent expansion)', () => {
     // REGISTRATION INVARIANT: ArcGIS exportImage returns the requested bbox
@@ -66,5 +84,56 @@ describe('drape sizing (plate-carrée, degree-aspect for exact-bbox return)', ()
     const pixelAspect = width / height;
     const bboxAspect = (xmax - xmin) / (ymax - ymin);
     expect(pixelAspect).toBeCloseTo(bboxAspect, 3);
+  });
+});
+
+describe('assertRenderMatchesTile (the MapServer f=json extent guard)', () => {
+  // MapServer /export honors SIZE unconditionally and silently ADJUSTS THE
+  // EXTENT on aspect mismatch (verified live on tnmap: ±1.5 m lon widening
+  // for a 0.2% aspect error) — the one failure mode a dims check cannot see.
+  const tile = sliceDrapeTiles(proj, 4).tiles[0];
+  const exact = {
+    href: 'https://tnmap.tn.gov/arcgis/rest/directories/x/y.jpeg',
+    width: tile.cols,
+    height: tile.rows,
+    extent: {
+      xmin: tile.bbox[0],
+      ymin: tile.bbox[1],
+      xmax: tile.bbox[2],
+      ymax: tile.bbox[3],
+    },
+  };
+  it('passes an exact render and returns the href', () => {
+    expect(assertRenderMatchesTile(tile, exact, 'tnmap')).toBe(exact.href);
+  });
+  it('tolerates sub-tolerance jitter (≤0.75 px per edge)', () => {
+    const pxLon = (tile.bbox[2] - tile.bbox[0]) / tile.cols;
+    const jittered = {
+      ...exact,
+      extent: { ...exact.extent, xmin: tile.bbox[0] - 0.5 * pxLon },
+    };
+    expect(assertRenderMatchesTile(tile, jittered, 'tnmap')).toBe(exact.href);
+  });
+  it('throws on the live-observed silent lon widening (aspect-mismatch adjustment)', () => {
+    const pxLon = (tile.bbox[2] - tile.bbox[0]) / tile.cols;
+    const widened = {
+      ...exact,
+      extent: {
+        ...exact.extent,
+        xmin: tile.bbox[0] - 3 * pxLon,
+        xmax: tile.bbox[2] + 3 * pxLon,
+      },
+    };
+    expect(() => assertRenderMatchesTile(tile, widened, 'tnmap')).toThrow(
+      /adjusted the extent/
+    );
+  });
+  it('throws on clamped dims and on a missing href/extent', () => {
+    expect(() =>
+      assertRenderMatchesTile(tile, { ...exact, width: tile.cols - 1 }, 'tnmap')
+    ).toThrow(/rendered/);
+    expect(() =>
+      assertRenderMatchesTile(tile, { extent: exact.extent }, 'tnmap')
+    ).toThrow(/missing href/);
   });
 });
