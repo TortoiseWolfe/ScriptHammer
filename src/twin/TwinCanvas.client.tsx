@@ -13,31 +13,55 @@ import StageCore, { StageHandle } from '@/stage/StageCore';
 import { Rig, RigMode, RigWaypoint } from '@/stage/Rig';
 import TwinWorld from '@/world/TwinWorld';
 import Trolley from '@/agents/trolley';
-import Hud, { HudCaption, HudOption } from '@/stage/Hud';
+import Hud, { HudCaption, HudLink, HudOption } from '@/stage/Hud';
 import { computeDay } from '@/stage/lightRig';
 import { PALETTES, applyProfile } from '@/packs/themes';
-import { loadManifest } from '@/lib/manifest';
-import type { Manifest, PaletteKey } from '@/lib/manifest';
+import { loadHouse, loadLocalLinks, loadManifest } from '@/lib/manifest';
+import type {
+  HouseInfo,
+  Manifest,
+  PaletteKey,
+  TourWaypoint,
+  TwinLink,
+} from '@/lib/manifest';
 import { deriveFraming, type Framing } from '@/lib/framing';
+import { getInternalUrl } from '@/config/project.config';
+
+/** 'house' focuses the camera on the as-built parcel (the property view).
+ *  Reached via the `?house` query param — a dedicated route can't exist under
+ *  output:'export' because house assets are never in the committed tree, so a
+ *  route's generateStaticParams would be empty (which static export rejects). */
+export type TwinFocus = 'twin' | 'house';
 
 function SceneInner({
   slug,
   manifest,
   framing,
+  tour,
+  house,
+  showHouse,
+  crisp = false,
   paletteKey,
   day,
   mode,
   onCaption,
+  onHouseGround,
   onWorldError,
   registerHandle,
 }: {
   slug: string;
   manifest: Manifest;
   framing: Framing;
+  tour: TourWaypoint[];
+  house: HouseInfo | null;
+  showHouse: boolean;
+  /** Architectural close-up: disable the tilt-shift blur (property page). */
+  crisp?: boolean;
   paletteKey: PaletteKey;
   day: number;
   mode: RigMode;
   onCaption: (c: HudCaption | null) => void;
+  onHouseGround?: (y: number) => void;
   onWorldError: (message: string) => void;
   registerHandle: (h: StageHandle) => void;
 }) {
@@ -63,12 +87,12 @@ function SceneInner({
     );
     // Aim BEFORE first paint (not in a post-paint effect) so the tour is
     // pointed at the city from frame 0 — no empty-void first frames.
-    r.setWaypoints((site.tour ?? []) as RigWaypoint[]);
+    r.setWaypoints(tour as RigWaypoint[]);
     r.focus.set(...framing.homeFocus);
     r.radius = framing.homeRadius;
     r.tRadius = framing.homeRadius;
     return r;
-  }, [camera, gl, framing, site]);
+  }, [camera, gl, framing, tour]);
 
   useEffect(() => {
     rig.bind();
@@ -120,8 +144,13 @@ function SceneInner({
   // effects and rebuild the merged building geometry on every re-render (the
   // tour emits a caption every few seconds).
   const lens = useMemo(
-    () => ({ focus: 0.52, blur: PALETTES[paletteKey].maxBlur }),
-    [paletteKey]
+    () => ({
+      focus: 0.52,
+      // The miniature-diorama blur reads as depth at corridor scale but turns
+      // an architectural close-up to mush — the property page renders crisp.
+      blur: crisp ? 0 : PALETTES[paletteKey].maxBlur,
+    }),
+    [paletteKey, crisp]
   );
   const bricks = useMemo(
     () => ({ bricks: PALETTES[paletteKey].bricks }),
@@ -155,6 +184,9 @@ function SceneInner({
         slug={slug}
         manifest={manifest}
         palette={bricks}
+        house={house}
+        showHouse={showHouse}
+        onHouseGround={onHouseGround}
         onError={onWorldError}
       />
       {site.trolley && <Trolley polyline={site.trolley} />}
@@ -179,13 +211,55 @@ const shellStyle: React.CSSProperties = {
 function TwinCanvasInner({
   slug,
   manifest,
+  house,
+  localLinks,
+  focus,
 }: {
   slug: string;
   manifest: Manifest;
+  house: HouseInfo | null;
+  localLinks: TwinLink[];
+  focus: TwinFocus;
 }) {
   const site = manifest.site;
-  const hasTour = (site.tour?.length ?? 0) > 0;
-  const framing = useMemo(() => deriveFraming(manifest), [manifest]);
+  const houseFocused = focus === 'house' && !!house;
+  // The property page is a static close-up study — no tour there.
+  const hasTour = (site.tour?.length ?? 0) > 0 && !houseFocused;
+  const tour = useMemo<TourWaypoint[]>(
+    () => (hasTour ? (site.tour ?? []) : []),
+    [hasTour, site.tour]
+  );
+  // Terrain height under the house anchor (reported by the world once the
+  // grid loads) — the orbit pivot must sit ON the parcel, not at sea level.
+  const [houseGroundY, setHouseGroundY] = useState(0);
+  const framing = useMemo(() => {
+    if (!houseFocused || !house) return deriveFraming(manifest);
+    // Frame the parcel: pivot mid-house on the parcel's terrain, pulled back
+    // for a close shot, approaching from the street side. The twin's origin is
+    // the geocoded address point, which Nominatim pins on the street — so
+    // aiming the camera from the origin's direction reads as "standing on the
+    // street looking at the property" for any site. Routing through
+    // deriveFraming keeps initialCameraPos and ?topdown consistent.
+    const streetTheta =
+      house.x === 0 && house.z === 0 ? 0 : Math.atan2(-house.x, -house.z);
+    return deriveFraming({
+      ...manifest,
+      site: {
+        ...site,
+        tour: undefined,
+        framing: {
+          ...site.framing,
+          homeFocus: [house.x, houseGroundY + 3, house.z],
+          homeRadius: 40,
+          // The derived minR (max(50, L/30)) would silently clamp the 40 m
+          // close-up AND forbid zooming in — parcel study needs to get close.
+          minR: 8,
+          homeTheta: streetTheta,
+          homePhi: 1.1, // low orbit (~27° above horizon): façades, not rooftops
+        },
+      },
+    });
+  }, [manifest, site, house, houseFocused, houseGroundY]);
   const modes = useMemo<HudOption[]>(
     () => [
       ...(hasTour ? [{ key: 'tour', label: 'Tour' }] : []),
@@ -195,6 +269,37 @@ function TwinCanvasInner({
     ],
     [hasTour]
   );
+  // As-built ⇄ massing view switch, only for twins that carry a scan. On the
+  // property page the scan leads; in the plain twin the massing leads.
+  const [view, setView] = useState<'massing' | 'asbuilt'>(
+    houseFocused ? 'asbuilt' : 'massing'
+  );
+  const views = useMemo<HudOption[] | undefined>(
+    () =>
+      house
+        ? [
+            { key: 'massing', label: 'Massing' },
+            { key: 'asbuilt', label: 'As-built' },
+          ]
+        : undefined,
+    [house]
+  );
+  const links = useMemo<HudLink[]>(() => {
+    const out: HudLink[] = [];
+    if (house && !houseFocused) {
+      out.push({
+        label: house.label,
+        href: getInternalUrl(`/twins/${slug}/?house`),
+      });
+    }
+    if (houseFocused) {
+      out.push({ label: site.name, href: getInternalUrl(`/twins/${slug}/`) });
+    }
+    for (const l of localLinks) {
+      out.push({ label: l.label, href: getInternalUrl(l.href) });
+    }
+    return out;
+  }, [house, houseFocused, localLinks, site.name, slug]);
 
   const [mode, setMode] = useState<RigMode>(hasTour ? 'tour' : 'orbit');
   const [paletteKey, setPaletteKey] = useState<PaletteKey>(
@@ -205,7 +310,10 @@ function TwinCanvasInner({
   );
   const [showFps, setShowFps] = useState(false);
   const [worldError, setWorldError] = useState<string | null>(null);
-  const day = site.day ?? 0.4; // well-lit late-morning by default
+  // Property page gets solar noon — the close-up reads the scan's baked photo
+  // textures, which need max light. (computeDay's brightness is sin(π·t),
+  // peaking at 0.5 — a Math.max on t would DARKEN dusk-authored sites.)
+  const day = houseFocused ? 0.5 : (site.day ?? 0.4);
   const handleRef = useRef<StageHandle | null>(null);
   // Stable identity — an inline arrow would re-run StageCore's registerHandle
   // effect (whose cleanup disposes the composer) on every re-render.
@@ -280,14 +388,57 @@ function TwinCanvasInner({
           slug={slug}
           manifest={manifest}
           framing={framing}
+          tour={tour}
+          house={house}
+          showHouse={view === 'asbuilt'}
+          crisp={houseFocused}
           paletteKey={paletteKey}
           day={day}
           mode={mode}
           onCaption={setCaption}
+          onHouseGround={houseFocused ? setHouseGroundY : undefined}
           onWorldError={setWorldError}
           registerHandle={registerHandle}
         />
       </Canvas>
+      {houseFocused && house ? (
+        <div
+          style={{
+            position: 'absolute',
+            top: 84,
+            left: 16,
+            maxWidth: 320,
+            padding: '14px 16px',
+            background: 'rgba(12, 16, 24, 0.72)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: 12,
+            color: '#f0ead8',
+            fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+            zIndex: 11,
+          }}
+        >
+          <div style={{ fontSize: 15, fontWeight: 700 }}>{house.label}</div>
+          {house.details ? (
+            <dl style={{ margin: '10px 0 0', fontSize: 12.5 }}>
+              {Object.entries(house.details).map(([k, v]) => (
+                <div
+                  key={k}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    padding: '2px 0',
+                  }}
+                >
+                  <dt style={{ opacity: 0.65 }}>{k}</dt>
+                  <dd style={{ margin: 0, textAlign: 'right' }}>{v}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+        </div>
+      ) : null}
       {worldError && (
         <div
           role="alert"
@@ -331,6 +482,10 @@ function TwinCanvasInner({
         ]}
         activePalette={paletteKey}
         onPalette={(p) => setPaletteKey(p as PaletteKey)}
+        views={views}
+        activeView={view}
+        onView={(v) => setView(v as 'massing' | 'asbuilt')}
+        links={links}
         caption={mode === 'tour' ? caption : null}
         showFps={showFps}
       />
@@ -338,17 +493,47 @@ function TwinCanvasInner({
   );
 }
 
-export default function TwinCanvas({ slug }: { slug: string }) {
+export default function TwinCanvas({
+  slug,
+  focus,
+}: {
+  slug: string;
+  focus?: TwinFocus;
+}) {
+  // This component is client-only (ssr:false dynamic import), so the query
+  // string is readable at first render — `?house` opens the property view.
+  const effectiveFocus: TwinFocus =
+    focus ??
+    (typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('house')
+      ? 'house'
+      : 'twin');
   const [manifest, setManifest] = useState<Manifest | null>(null);
+  const [house, setHouse] = useState<HouseInfo | null>(null);
+  const [localLinks, setLocalLinks] = useState<TwinLink[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
     setManifest(null);
+    setHouse(null);
+    setLocalLinks([]);
     setError(null);
-    loadManifest(slug)
-      .then((m) => {
-        if (alive) setManifest(m);
+    Promise.all([
+      loadManifest(slug),
+      // Optional per twin (404 → null is the normal case), but a PRESENT-and-
+      // broken capture must stay diagnosable — warn, don't swallow silently.
+      loadHouse(slug).catch((e: unknown) => {
+        console.warn('[twin] as-built capture ignored:', e);
+        return null;
+      }),
+      loadLocalLinks(slug),
+    ])
+      .then(([m, h, links]) => {
+        if (!alive) return;
+        setHouse(h);
+        setLocalLinks(links);
+        setManifest(m);
       })
       .catch((e: unknown) => {
         if (alive) setError(e instanceof Error ? e.message : String(e));
@@ -377,5 +562,13 @@ export default function TwinCanvas({ slug }: { slug: string }) {
       </div>
     );
   }
-  return <TwinCanvasInner slug={slug} manifest={manifest} />;
+  return (
+    <TwinCanvasInner
+      slug={slug}
+      manifest={manifest}
+      house={house}
+      localLinks={localLinks}
+      focus={effectiveFocus}
+    />
+  );
 }

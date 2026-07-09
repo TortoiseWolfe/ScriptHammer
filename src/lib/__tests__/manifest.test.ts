@@ -1,9 +1,13 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
+  loadHouse,
+  loadLocalLinks,
   loadManifest,
   loadSiteJson,
   siteAssetUrl,
+  validateHouse,
   validateManifest,
+  type HouseInfo,
   type Manifest,
 } from '../manifest';
 
@@ -169,5 +173,123 @@ describe('validateManifest (the bake↔runtime contract)', () => {
     const m2 = clone();
     m2.site.water = true;
     expect(() => validateManifest(m2, 'chatt')).not.toThrow();
+  });
+  it('accepts homePhi/homeTheta framing overrides; rejects non-finite ones', () => {
+    const m = clone();
+    m.site.framing = { homePhi: 1.1, homeTheta: Math.PI };
+    expect(() => validateManifest(m, 'chatt')).not.toThrow();
+    const m2 = clone();
+    // @ts-expect-error deliberately malformed
+    m2.site.framing = { homeTheta: 'north' };
+    expect(() => validateManifest(m2, 'chatt')).toThrow(/homeTheta/);
+  });
+});
+
+describe('as-built house assets (#234)', () => {
+  // Fully synthetic fixture — NEVER copy a real capture's values here: a real
+  // OSM way id or ENU anchor is an address-by-pointer leak of a client parcel
+  // (the privacy gate this feature exists to uphold).
+  const VALID_HOUSE: HouseInfo = {
+    label: 'Test Property — As-Built',
+    x: 12.5,
+    z: -30.25,
+    rotationDeg: 30,
+    details: { Built: '1900' },
+    hideBuildingIds: [123456],
+  };
+
+  it('validateHouse passes a valid descriptor through', () => {
+    expect(validateHouse(VALID_HOUSE, 't')).toEqual(VALID_HOUSE);
+  });
+  it('validateHouse throws on missing label / non-finite anchor / bad ids', () => {
+    expect(() => validateHouse({ ...VALID_HOUSE, label: '' }, 't')).toThrow(
+      /label/
+    );
+    expect(() => validateHouse({ ...VALID_HOUSE, x: 'here' }, 't')).toThrow(
+      /x\/z/
+    );
+    expect(() =>
+      validateHouse({ ...VALID_HOUSE, rotationDeg: NaN }, 't')
+    ).toThrow(/rotationDeg/);
+    expect(() =>
+      validateHouse({ ...VALID_HOUSE, hideBuildingIds: [1.5] }, 't')
+    ).toThrow(/hideBuildingIds/);
+  });
+  it('loadHouse resolves null when the twin has no capture (404)', async () => {
+    process.env.NEXT_PUBLIC_BASE_PATH = '';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 404 })
+    );
+    await expect(loadHouse('chatt')).resolves.toBeNull();
+  });
+  it('loadHouse validates house.json AND probes model.glb (HEAD)', async () => {
+    process.env.NEXT_PUBLIC_BASE_PATH = '';
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => VALID_HOUSE,
+      })
+      .mockResolvedValueOnce({ ok: true, status: 200 });
+    vi.stubGlobal('fetch', fetchMock);
+    const h = await loadHouse('main-st');
+    expect(h).toEqual(VALID_HOUSE);
+    expect(fetchMock.mock.calls[0][0]).toBe('/twins/main-st/house/house.json');
+    expect(fetchMock.mock.calls[1][0]).toBe('/twins/main-st/house/model.glb');
+    expect(fetchMock.mock.calls[1][1]).toEqual({ method: 'HEAD' });
+  });
+  it('loadHouse throws loudly when house.json exists but model.glb is missing', async () => {
+    process.env.NEXT_PUBLIC_BASE_PATH = '';
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => VALID_HOUSE,
+      })
+      .mockResolvedValueOnce({ ok: false, status: 404 });
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(loadHouse('main-st')).rejects.toThrow(/model\.glb/);
+  });
+});
+
+describe('local-only HUD links (privacy side channel)', () => {
+  it('resolves [] when links.local.json is absent (the committed case)', async () => {
+    process.env.NEXT_PUBLIC_BASE_PATH = '';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 404 })
+    );
+    await expect(loadLocalLinks('chatt')).resolves.toEqual([]);
+  });
+  it('resolves [] when a static host serves an HTML 404 page (JSON parse throws)', async () => {
+    process.env.NEXT_PUBLIC_BASE_PATH = '';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => {
+          throw new Error('not JSON');
+        },
+      })
+    );
+    await expect(loadLocalLinks('chatt')).resolves.toEqual([]);
+  });
+  it('keeps only well-formed app-path entries', async () => {
+    process.env.NEXT_PUBLIC_BASE_PATH = '';
+    mockFetchOnce([
+      { label: 'Client house', href: '/twins/x/house/' },
+      { label: '', href: '/nope/' },
+      { label: 'external', href: 'https://evil.example' },
+      { label: 'protocol-relative', href: '//evil.example/' },
+      'garbage',
+      { href: '/no-label/' },
+    ]);
+    await expect(loadLocalLinks('chatt')).resolves.toEqual([
+      { label: 'Client house', href: '/twins/x/house/' },
+    ]);
   });
 });

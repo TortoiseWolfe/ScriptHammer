@@ -1,19 +1,22 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { TextureLoader, Texture } from 'three';
 import { loadSiteJson, siteAssetUrl } from '@/lib/manifest';
 import type {
   Building,
   Street,
   Hero,
+  HouseInfo,
   TerrainGrid,
   Manifest,
 } from '@/lib/manifest';
 import Buildings from './Buildings';
+import HouseModel from './HouseModel';
 import Terrain from './Terrain';
 import Streets from './Streets';
 import Heroes from './Heroes';
 import Water from './Water';
+import { elevationAt, minElevation } from './terrainSample';
 
 interface WorldData {
   buildings: Building[];
@@ -27,11 +30,21 @@ export default function TwinWorld({
   slug,
   manifest,
   palette,
+  house,
+  showHouse = false,
+  onHouseGround,
   onError,
 }: {
   slug: string;
   manifest: Manifest;
   palette: { bricks: number[] };
+  /** Optional as-built scan descriptor (#234). */
+  house?: HouseInfo | null;
+  /** When true, render the scan and hide its massing boxes. */
+  showHouse?: boolean;
+  /** Reports the terrain height (runtime Y) under the house anchor once the
+   *  grid loads — lets the composition root aim the camera at the parcel. */
+  onHouseGround?: (y: number) => void;
   onError?: (message: string) => void;
 }) {
   const [data, setData] = useState<WorldData | null>(null);
@@ -62,6 +75,24 @@ export default function TwinWorld({
     };
   }, [slug, manifest, onError]);
 
+  useEffect(() => {
+    if (!data || !house || !onHouseGround) return;
+    onHouseGround(
+      elevationAt(data.terrain, manifest, house.x, house.z) -
+        minElevation(data.terrain)
+    );
+  }, [data, house, manifest, onHouseGround]);
+
+  // While the as-built scan is shown, its massing boxes step aside so the two
+  // don't z-fight on the parcel (identity changes only on toggle).
+  const scanVisible = showHouse && !!house;
+  const visibleBuildings = useMemo(() => {
+    if (!data) return [];
+    if (!scanVisible || !house?.hideBuildingIds?.length) return data.buildings;
+    const hide = new Set(house.hideBuildingIds);
+    return data.buildings.filter((b) => !hide.has(b.id));
+  }, [data, scanVisible, house]);
+
   if (!data) return null;
   return (
     <>
@@ -70,13 +101,23 @@ export default function TwinWorld({
           get a spurious pond at its terrain minimum. */}
       {manifest.site.water === true && <Water manifest={manifest} />}
       <Buildings
-        buildings={data.buildings}
+        buildings={visibleBuildings}
         palette={palette}
         grid={data.terrain}
         manifest={manifest}
       />
       <Streets streets={data.streets} grid={data.terrain} manifest={manifest} />
       <Heroes heroes={data.heroes} grid={data.terrain} manifest={manifest} />
+      {scanVisible && house ? (
+        <Suspense fallback={null}>
+          <HouseModel
+            slug={slug}
+            house={house}
+            grid={data.terrain}
+            manifest={manifest}
+          />
+        </Suspense>
+      ) : null}
     </>
   );
 }

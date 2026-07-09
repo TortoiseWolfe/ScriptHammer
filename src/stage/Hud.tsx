@@ -17,6 +17,13 @@ export interface HudCaption {
   blurb: string;
 }
 
+/** Navigation button rendered in the dock row (href must be fully resolved —
+ *  the HUD is generic and does no basePath prefixing). */
+export interface HudLink {
+  label: string;
+  href: string;
+}
+
 export interface HudProps {
   title: string;
   subtitle?: string;
@@ -27,6 +34,12 @@ export interface HudProps {
   palettes: HudOption[];
   activePalette: string;
   onPalette: (key: string) => void;
+  /** Optional third dock (e.g. an as-built ⇄ massing view switch). */
+  views?: HudOption[];
+  activeView?: string;
+  onView?: (key: string) => void;
+  /** Optional navigation buttons (e.g. a premium property page). */
+  links?: HudLink[];
   caption?: HudCaption | null;
   showFps: boolean;
   fps?: number;
@@ -74,6 +87,10 @@ export default function Hud({
   palettes,
   activePalette,
   onPalette,
+  views,
+  activeView,
+  onView,
+  links,
   caption,
   showFps,
   fps,
@@ -186,6 +203,29 @@ export default function Hud({
             ))}
           </div>
 
+          {views && views.length > 0 && onView ? (
+            <div
+              style={{
+                ...glass,
+                display: 'flex',
+                gap: 4,
+                padding: 4,
+              }}
+            >
+              {views.map((v) => (
+                <button
+                  key={v.key}
+                  type="button"
+                  style={dockButtonStyle(v.key === activeView)}
+                  aria-pressed={v.key === activeView}
+                  onClick={() => onView(v.key)}
+                >
+                  {v.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
           <div
             style={{
               ...glass,
@@ -206,6 +246,31 @@ export default function Hud({
               </button>
             ))}
           </div>
+
+          {links && links.length > 0 ? (
+            <div
+              style={{
+                ...glass,
+                display: 'flex',
+                gap: 4,
+                padding: 4,
+              }}
+            >
+              {links.map((l) => (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  style={{
+                    ...dockButtonStyle(false),
+                    textDecoration: 'none',
+                    display: 'inline-block',
+                  }}
+                >
+                  {l.label}
+                </a>
+              ))}
+            </div>
+          ) : null}
         </div>
 
         <div style={{ fontSize: 10.5, opacity: 0.6 }}>{provenance}</div>
