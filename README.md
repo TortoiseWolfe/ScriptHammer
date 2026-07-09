@@ -4,7 +4,7 @@
 [![Live App](https://img.shields.io/badge/Live-scripthammer.com-2ea44f)](https://www.scripthammer.com/)
 [![Stars](https://img.shields.io/github/stars/TortoiseWolfe/ScriptHammer?style=social)](https://github.com/TortoiseWolfe/ScriptHammer)
 
-A production Next.js 15 / React 19 / Supabase platform running live at [scripthammer.com](https://www.scripthammer.com/): OAuth and email auth, Stripe and PayPal payments through Supabase Edge Functions, end-to-end encrypted messaging with ECDH key exchange, an admin and moderation surface, and a WCAG-AA-accessible installable PWA — built on a strict atomic component pattern with Vitest, Playwright, and Pa11y test suites. It's also a template: fork it and rebrand in five minutes to ship your own app (see [Forking](#-forking-scripthammer-to-build-your-own)).
+A production Next.js 15 / React 19 / Supabase platform running live at [scripthammer.com](https://www.scripthammer.com/): OAuth and email auth, Stripe and PayPal payments through Supabase Edge Functions, end-to-end encrypted messaging with ECDH key exchange, an admin and moderation surface, and a WCAG-AA-accessible installable PWA — built on a strict atomic component pattern with Vitest, Playwright, and Pa11y test suites. It can also be forked as a base for your own app (see [Forking](#-forking-scripthammer-to-build-your-own)).
 
 ## 🚀 See it live
 
@@ -87,7 +87,7 @@ docker compose up --build
 
 ## 💳 Payment Integration Setup
 
-**Heads-up for forkers**: Payment integration (Stripe one-time + PayPal subscriptions + GDPR consent flow) is **built into this template** but is **NOT activated out of the box**. No API keys are committed — you must create your own accounts and configure them before `/payment-demo` will work against live sandbox APIs.
+**Heads-up**: Payment integration (Stripe one-time + PayPal subscriptions + GDPR consent flow) is **built in** but is **NOT activated out of the box**. No API keys are committed — you must create your own accounts and configure them before `/payment-demo` will work against live sandbox APIs.
 
 **Security — where keys go**:
 
@@ -500,7 +500,7 @@ Key context:
 - Everything runs inside Docker: docker compose exec scripthammer <command>
 - pnpm, not npm
 - DaisyUI beta with Tailwind v4 CSS-first config (@plugin syntax)
-- ScriptHammer is a template, design must be bold but also easy to rebrand
+- Design must be bold but also easy to rebrand when forked as a base
 - Brand colors: silver/steel (primary), warm amber (secondary), electric accent, charcoal base
 - Dark theme default, light variant available
 - Both themes pass WCAG AAA (7:1) contrast
@@ -516,7 +516,7 @@ MIT - See [LICENSE](./LICENSE) for details
 
 ---
 
-**For Template Users**: Your project name is automatically detected from your new repository! No manual configuration needed. See [docs/TEMPLATE-GUIDE.md](./docs/TEMPLATE-GUIDE.md) for details.
+**Forking as a base?** Your project name is automatically detected from your new repository, so there's no manual configuration needed. See [docs/TEMPLATE-GUIDE.md](./docs/TEMPLATE-GUIDE.md) for details.
 
 ---
 

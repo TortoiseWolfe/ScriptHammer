@@ -55,7 +55,7 @@ function generateRSSFeed() {
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>ScriptHammer Blog</title>
-    <description>Opinionated Next.js PWA Template with 32 themes and comprehensive tooling</description>
+    <description>The engineering blog of ScriptHammer, a production Next.js and Supabase platform</description>
     <link>${SITE_URL}/blog</link>
     <language>en-US</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
@@ -91,7 +91,7 @@ ${post.categories.map((cat) => `      <category>${escapeXml(cat)}</category>`).j
     title: 'ScriptHammer Blog',
     home_page_url: `${SITE_URL}/blog`,
     feed_url: `${SITE_URL}/feed.json`,
-    description: 'Opinionated Next.js PWA Template',
+    description: 'The engineering blog of ScriptHammer, a production Next.js and Supabase platform',
     items: blogPosts.map((post) => ({
       id: `${SITE_URL}${post.url}`,
       url: `${SITE_URL}${post.url}`,

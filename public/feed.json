@@ -3,6 +3,6 @@
   "title": "ScriptHammer Blog",
   "home_page_url": "https://tortoisewolfe.github.io/ScriptHammer/blog",
   "feed_url": "https://tortoisewolfe.github.io/ScriptHammer/feed.json",
-  "description": "Opinionated Next.js PWA Template",
+  "description": "The engineering blog of ScriptHammer, a production Next.js and Supabase platform",
   "items": []
 }

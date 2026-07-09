@@ -15,7 +15,7 @@ import { detectedConfig } from '@/config/project-detected';
 export const metadata: Metadata = {
   title: 'Documentation - ScriptHammer',
   description:
-    'Documentation index for ScriptHammer — fork, configure, build, ship.',
+    'Documentation index for ScriptHammer — configure, build, ship.',
 };
 
 const gh = (path: string) => `${detectedConfig.projectUrl}/blob/main/${path}`;
@@ -104,7 +104,7 @@ export default function DocsPage() {
           Documentation
         </h1>
         <p className="text-base-content mb-10 text-base sm:text-lg">
-          Just forked? The first two links get you to{' '}
+          New here? The first two links get you to{' '}
           <code className="font-mono text-sm">docker compose up</code>.
         </p>
 

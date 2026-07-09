@@ -4,7 +4,7 @@
  * 1. Environment variables (highest priority)
  * 2. Default values (lowest priority)
  *
- * When forking this template:
+ * Forking to build your own app:
  * - The scripts/detect-project.js script runs at build time to auto-detect settings
  * - Or set environment variables: NEXT_PUBLIC_PROJECT_NAME, NEXT_PUBLIC_PROJECT_OWNER
  */
@@ -14,7 +14,7 @@ const defaultConfig = {
   projectName: 'ScriptHammer',
   projectOwner: 'TortoiseWolfe',
   projectDescription:
-    'Opinionated Next.js template with PWA, theming, and interactive components',
+    'A production Next.js and Supabase platform with auth, payments, encrypted messaging, and an accessible offline-capable PWA',
   basePath: '',
 };
 
@@ -127,7 +127,7 @@ export function generateManifest() {
   const basePath = config.basePath || '';
 
   return {
-    name: `${config.projectName} - Modern Web Starter`,
+    name: config.projectName,
     short_name: config.projectName,
     description: config.projectDescription,
     start_url: `${basePath}/`,

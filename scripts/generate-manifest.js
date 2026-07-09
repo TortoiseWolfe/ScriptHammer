@@ -50,7 +50,7 @@ if (process.env.NEXT_PUBLIC_BASE_PATH !== undefined) {
 const manifest = {
   name: projectConfig.projectName,
   short_name: projectConfig.projectName.substring(0, 12),
-  description: `${projectConfig.projectName} - Modern Next.js template with PWA, theming, and interactive components`,
+  description: `${projectConfig.projectName} - A production Next.js and Supabase platform with auth, payments, encrypted messaging, and an accessible offline-capable PWA`,
   theme_color: '#1a1a2e',
   background_color: '#1a1a2e',
   display: 'standalone',
