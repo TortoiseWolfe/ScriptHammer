@@ -34,6 +34,7 @@ export default function TwinWorld({
   showHouse = false,
   buildingsOpacity = 1,
   onHouseGround,
+  onGroundReady,
   onError,
 }: {
   slug: string;
@@ -48,6 +49,10 @@ export default function TwinWorld({
   /** Reports the terrain height (runtime Y) under the house anchor once the
    *  grid loads — lets the composition root aim the camera at the parcel. */
   onHouseGround?: (y: number) => void;
+  /** Hands the composition root a terrain sampler (runtime Y at ENU x/z)
+   *  once the grid loads — ground agents (the trolley) ride ON the terrain
+   *  instead of at sea level, and so does the camera that follows them. */
+  onGroundReady?: (groundAt: (x: number, z: number) => number) => void;
   onError?: (message: string) => void;
 }) {
   const [data, setData] = useState<WorldData | null>(null);
@@ -85,6 +90,12 @@ export default function TwinWorld({
         minElevation(data.terrain)
     );
   }, [data, house, manifest, onHouseGround]);
+
+  useEffect(() => {
+    if (!data || !onGroundReady) return;
+    const min = minElevation(data.terrain);
+    onGroundReady((x, z) => elevationAt(data.terrain, manifest, x, z) - min);
+  }, [data, manifest, onGroundReady]);
 
   // While the as-built scan is shown, its massing boxes step aside so the two
   // don't z-fight on the parcel (identity changes only on toggle).

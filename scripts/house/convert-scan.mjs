@@ -9,12 +9,19 @@
 //
 //   docker compose exec scripthammer node scripts/house/convert-scan.mjs \
 //     --dae public/twins/<slug>/house/_src/scan.dae \
+//     [--dae public/twins/<slug>/house/_src/scan_2.dae ...] \
 //     --out public/twins/<slug>/house/model.glb
 //
-// Prints mesh stats (vertex count + bounding-box metres) so the result can be
-// sanity-checked against ground truth (e.g. a floorplan's extents) before it
-// ever renders. PRIVACY: client scans live under public/twins/<slug>/ which
-// is gitignored by default — this tool is committed, its inputs are not.
+// A Polycam PROJECT often exports as several captures — pass --dae once per
+// fragment and they merge into ONE GLB, each fragment under a named group
+// (its file basename) so per-part placement stays addressable downstream.
+// All fragments must live in the same directory (shared textures/ subdir).
+//
+// Prints per-fragment mesh stats (vertex count + bounding-box metres) so the
+// result can be sanity-checked against ground truth (e.g. a floorplan's
+// extents) before it ever renders. PRIVACY: client scans live under
+// public/twins/<slug>/ which is gitignored by default — this tool is
+// committed, its inputs are not.
 
 import { createServer } from 'node:http';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
@@ -34,23 +41,31 @@ const MIME = {
 
 const { values } = parseArgs({
   options: {
-    dae: { type: 'string' },
+    dae: { type: 'string', multiple: true },
     out: { type: 'string' },
   },
 });
-if (!values.dae || !values.out) {
+if (!values.dae?.length || !values.out) {
   console.error(
-    'usage: node scripts/house/convert-scan.mjs --dae <scan.dae> --out <model.glb>'
+    'usage: node scripts/house/convert-scan.mjs --dae <scan.dae> [--dae <more.dae> ...] --out <model.glb>'
   );
   process.exit(1);
 }
-const daePath = resolve(values.dae);
+const daePaths = values.dae.map((p) => resolve(p));
 const outPath = resolve(values.out);
-if (!existsSync(daePath)) {
-  console.error(`no such file: ${daePath}`);
+for (const p of daePaths) {
+  if (!existsSync(p)) {
+    console.error(`no such file: ${p}`);
+    process.exit(1);
+  }
+}
+const daeDir = dirname(daePaths[0]);
+if (daePaths.some((p) => dirname(p) !== daeDir)) {
+  console.error(
+    'all --dae fragments must live in the same directory (shared textures/)'
+  );
   process.exit(1);
 }
-const daeDir = dirname(daePath);
 const threeDir = resolve('node_modules/three');
 
 // Tiny static server: /scan/** -> the DAE's directory (textures resolve
@@ -83,6 +98,13 @@ const server = createServer(async (req, res) => {
   }
 });
 
+const FRAGMENTS = JSON.stringify(
+  daePaths.map((p) => ({
+    url: `/scan/${encodeURIComponent(basename(p))}`,
+    name: basename(p, '.dae'),
+  }))
+);
+
 const PAGE = `<!doctype html><html><head>
 <script type="importmap">{"imports":{"three":"/three/build/three.module.js","three/addons/":"/three/examples/jsm/"}}</script>
 </head><body><script type="module">
@@ -91,30 +113,48 @@ import { ColladaLoader } from 'three/addons/loaders/ColladaLoader.js';
 import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 
 try {
+  const fragments = ${FRAGMENTS};
   // loadAsync resolves when the DAE parses, but its textures load through the
-  // manager asynchronously — the exporter needs REAL image data, so barrier on
-  // the manager before exporting.
+  // manager asynchronously — the exporter needs REAL image data. The manager
+  // batches: onLoad fires when EVERYTHING queued so far completes, so arm a
+  // fresh barrier BEFORE each fragment's load and await it right after the
+  // parse (its textures were queued during parse and belong to that batch).
   const manager = new THREE.LoadingManager();
-  const everythingLoaded = new Promise((resolve, reject) => {
-    manager.onLoad = resolve;
-    manager.onError = (url) => reject(new Error('failed to load: ' + url));
-  });
-  const collada = await new ColladaLoader(manager).loadAsync('/scan/${encodeURIComponent(basename(daePath))}');
-  await everythingLoaded;
-  const scene = collada.scene;
-  scene.updateMatrixWorld(true);
+  const root = new THREE.Group();
+  const perFragment = [];
+  for (const frag of fragments) {
+    const batchLoaded = new Promise((resolve, reject) => {
+      manager.onLoad = resolve;
+      manager.onError = (url) => reject(new Error('failed to load: ' + url));
+    });
+    const collada = await new ColladaLoader(manager).loadAsync(frag.url);
+    await batchLoaded;
+    const group = new THREE.Group();
+    group.name = frag.name;
+    group.add(collada.scene);
+    root.add(group);
+    let verts = 0, meshes = 0;
+    collada.scene.traverse((o) => {
+      if (o.isMesh && o.geometry?.attributes?.position) {
+        meshes++;
+        verts += o.geometry.attributes.position.count;
+      }
+    });
+    root.updateMatrixWorld(true);
+    const fbox = new THREE.Box3().setFromObject(group);
+    const fsize = fbox.getSize(new THREE.Vector3());
+    perFragment.push({
+      name: frag.name, meshes, verts,
+      bbox: { x: +fsize.x.toFixed(2), y: +fsize.y.toFixed(2), z: +fsize.z.toFixed(2) },
+      min: { x: +fbox.min.x.toFixed(2), y: +fbox.min.y.toFixed(2), z: +fbox.min.z.toFixed(2) },
+    });
+  }
+  root.updateMatrixWorld(true);
 
-  let verts = 0, meshes = 0;
-  scene.traverse((o) => {
-    if (o.isMesh && o.geometry?.attributes?.position) {
-      meshes++;
-      verts += o.geometry.attributes.position.count;
-    }
-  });
-  const box = new THREE.Box3().setFromObject(scene);
+  const box = new THREE.Box3().setFromObject(root);
   const size = box.getSize(new THREE.Vector3());
 
-  const glb = await new GLTFExporter().parseAsync(scene, { binary: true });
+  const glb = await new GLTFExporter().parseAsync(root, { binary: true });
   const bytes = new Uint8Array(glb);
   let bin = '';
   const CHUNK = 0x8000;
@@ -124,8 +164,7 @@ try {
   window.__result = {
     glbBase64: btoa(bin),
     stats: {
-      meshes,
-      verts,
+      fragments: perFragment,
       bbox: {
         x: +size.x.toFixed(2),
         y: +size.y.toFixed(2),
@@ -162,10 +201,15 @@ try {
   const buf = Buffer.from(glbBase64, 'base64');
   await writeFile(outPath, buf);
   console.log(
-    `[convert-scan] ${basename(daePath)} → ${values.out} (${(buf.length / 1024 / 1024).toFixed(2)} MB)`
+    `[convert-scan] ${daePaths.map((p) => basename(p)).join(' + ')} → ${values.out} (${(buf.length / 1024 / 1024).toFixed(2)} MB)`
   );
+  for (const f of stats.fragments) {
+    console.log(
+      `[convert-scan]   ${f.name}: ${f.meshes} mesh(es), ${f.verts} verts, bbox ${f.bbox.x} x ${f.bbox.y} x ${f.bbox.z} m (min ${f.min.x}, ${f.min.y}, ${f.min.z})`
+    );
+  }
   console.log(
-    `[convert-scan] ${stats.meshes} mesh(es), ${stats.verts} verts, bbox ${stats.bbox.x} x ${stats.bbox.y} x ${stats.bbox.z} m (min.y ${stats.min.y})`
+    `[convert-scan] combined bbox ${stats.bbox.x} x ${stats.bbox.y} x ${stats.bbox.z} m (min.y ${stats.min.y})`
   );
 } finally {
   await browser.close();

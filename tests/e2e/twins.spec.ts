@@ -47,6 +47,21 @@ test.describe('/twins/[slug] — digital-twin viewer', () => {
     });
   });
 
+  test('the twin is reachable from normal navigation (homepage demo card)', async ({
+    page,
+  }) => {
+    // The twin used to be URL-only — no homepage card, no nav item. A user
+    // landing on the site must be able to FIND it.
+    await page.goto('/');
+    await page
+      .getByRole('link', { name: /Digital Twin/i })
+      .first()
+      .click();
+    await expect(page.getByText(WORDMARK).first()).toBeVisible({
+      timeout: 15000,
+    });
+  });
+
   test('the R3F canvas mounts when WebGL is available', async ({ page }) => {
     await page.goto('/twins/chatt/');
     await expect(page.getByText(WORDMARK).first()).toBeVisible({

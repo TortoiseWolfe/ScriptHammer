@@ -215,6 +215,43 @@ describe('as-built house assets (#234)', () => {
       validateHouse({ ...VALID_HOUSE, hideBuildingIds: [1.5] }, 't')
     ).toThrow(/hideBuildingIds/);
   });
+  it('validateHouse accepts multi-fragment parts and rejects malformed ones', () => {
+    // synthetic transform — never a real capture's registration values
+    const withParts: HouseInfo = {
+      ...VALID_HOUSE,
+      parts: {
+        fragment_b: {
+          pivot: [1, 0.5, -2],
+          yawDeg: 90,
+          position: [3, 1, 4],
+        },
+      },
+    };
+    expect(validateHouse(withParts, 't')).toEqual(withParts);
+    expect(() =>
+      validateHouse(
+        {
+          ...VALID_HOUSE,
+          parts: { bad: { pivot: [1, 2], yawDeg: 0, position: [0, 0, 0] } },
+        },
+        't'
+      )
+    ).toThrow(/parts\["bad"\]/);
+    expect(() =>
+      validateHouse(
+        {
+          ...VALID_HOUSE,
+          parts: {
+            bad: { pivot: [1, 2, 3], yawDeg: NaN, position: [0, 0, 0] },
+          },
+        },
+        't'
+      )
+    ).toThrow(/parts\["bad"\]/);
+    expect(() => validateHouse({ ...VALID_HOUSE, parts: [] }, 't')).toThrow(
+      /keyed by GLB group/
+    );
+  });
   it('loadHouse resolves null when the twin has no capture (404)', async () => {
     process.env.NEXT_PUBLIC_BASE_PATH = '';
     vi.stubGlobal(
