@@ -60,18 +60,26 @@ test.describe('/twins/[slug] — digital-twin viewer', () => {
   });
 
   test('no unexpected console.error on load', async ({ page }) => {
+    // Record the failing resource URL alongside the message: Chromium logs a
+    // generic "Failed to load resource ... 404" with the URL only in
+    // msg.location(), and some 404s here are EXPECTED (see below).
     const errors: string[] = [];
     page.on('console', (msg) => {
-      if (msg.type() === 'error') errors.push(msg.text());
+      if (msg.type() === 'error')
+        errors.push(`${msg.text()} [${msg.location()?.url ?? ''}]`);
     });
     await page.goto('/twins/chatt/');
     await expect(page.getByText(WORDMARK).first()).toBeVisible({
       timeout: 15000,
     });
-    // Known-noisy errors unrelated to this route (same allowlist as
-    // game-3d.spec.ts): favicon 404s, keyless analytics, extension leaks,
-    // Cloudflare bot-management cookie warnings, and WebGL-unavailable
-    // noise from headless runners without a GPU.
+    // Allowlists:
+    //  - the game-3d.spec.ts noise set (favicon, keyless analytics, extension
+    //    leaks, Cloudflare cookie warnings, GPU-less WebGL noise), plus
+    //  - the twin's OPTIONAL per-site assets (#234): links.local.json and
+    //    house/house.json are absence-probed by design on static hosting, and
+    //    the browser logs each 404 as a console error. Those two paths 404ing
+    //    is the NORMAL state for any twin without a private demo link or an
+    //    as-built capture (i.e. every committed twin).
     const relevant = errors.filter((e) => {
       const lower = e.toLowerCase();
       return (
@@ -80,7 +88,9 @@ test.describe('/twins/[slug] — digital-twin viewer', () => {
         !lower.includes('chrome-extension') &&
         !lower.includes('cf_bm') &&
         !lower.includes('cloudflare') &&
-        !lower.includes('webgl')
+        !lower.includes('webgl') &&
+        !lower.includes('links.local.json') &&
+        !lower.includes('house/house.json')
       );
     });
     expect(relevant).toEqual([]);
