@@ -25,6 +25,18 @@ export interface Framing {
   homeTheta: number;
   initialCameraPos: [number, number, number];
   topdown: { center: [number, number]; height: number };
+  /** True-orthographic top-down frame: the whole drape extent, north-up.
+   *  Unlike `topdown` (perspective fov 62, box tops splay outward from
+   *  center), an orthographic projection is the only honest way to eyeball
+   *  footprint-vs-aerial registration. */
+  ortho: OrthoFrame;
+}
+
+export interface OrthoFrame {
+  center: [number, number];
+  halfW: number;
+  halfH: number;
+  height: number;
 }
 
 // ~35° from vertical: the tilted-overhead diorama angle.
@@ -75,6 +87,17 @@ export function deriveFraming(m: Manifest): Framing {
     topdown: {
       center: [homeFocus[0], 0],
       // Fit the long extent in the topdown diagnostic's vertical fov, +5%.
+      height:
+        (1.05 * (L / 2)) / Math.tan(((TOPDOWN_FOV_DEG / 2) * Math.PI) / 180),
+    },
+    ortho: {
+      // The full drape extent around the world origin (the box centre): in
+      // this frame the aerial fills its exact world rectangle, so what you
+      // see IS the georegistration. Height only needs to clear the content;
+      // the topdown formula is site-scaled and always does.
+      center: [0, 0],
+      halfW: W / 2,
+      halfH: H / 2,
       height:
         (1.05 * (L / 2)) / Math.tan(((TOPDOWN_FOV_DEG / 2) * Math.PI) / 180),
     },

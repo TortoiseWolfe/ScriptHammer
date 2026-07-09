@@ -7,8 +7,17 @@ const NAIP =
   'https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPImagery/ImageServer/exportImage';
 const ESRI =
   'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export';
+// Tennessee statewide orthos (TDOT Aerial Surveys): 6-inch (0.15 m) for 2022+
+// flights, engineering-grade georeferencing — far tighter than NAIP's ±4-6 m
+// spec. MapServer /export (not exportImage); imageSR=4326 makes the server
+// reproject its Web-Mercator cache to geographic, so rows stay uniform-in-lat
+// and the degree-aspect discipline below applies unchanged.
+const TNMAP =
+  'https://tnmap.tn.gov/arcgis/rest/services/BASEMAPS/IMAGERY_WEB_MERCATOR/MapServer/export';
 
-/** Measured live on USGSNAIPImagery: exports beyond this are silently clamped. */
+export type DrapeSource = 'naip' | 'esri' | 'tnmap';
+
+/** Measured live: USGSNAIPImagery clamps beyond ~4000; tnmap caps at 4096. */
 export const MAX_EXPORT_PX = 4000;
 
 /**
@@ -28,6 +37,11 @@ export const MAX_EXPORT_PX = 4000;
  * the box lat/lon*. We fix E-W resolution at `groundWm/mpp` and derive height
  * from the DEGREE aspect so the request self-registers (no extent expansion).
  * The image is a touch taller in pixels; it still maps linearly and correctly.
+ *
+ * MapServer (/export) sources honor SIZE unconditionally and adjust the
+ * EXTENT on aspect mismatch instead (verified live on tnmap: ±1.5 m lon
+ * widening for a probe with 0.2% aspect error) — dims checks can't catch it,
+ * so the tnmap path validates the RETURNED EXTENT via f=json per tile.
  */
 export function drapePixelSize(proj: Projection, mpp: number) {
   const { box } = proj;
@@ -44,19 +58,23 @@ export function drapePixelSize(proj: Projection, mpp: number) {
 export interface DrapeTile {
   /** minLon, minLat, maxLon, maxLat — this tile's exact bbox slice. */
   bbox: [number, number, number, number];
-  width: number;
+  /** Pixel columns in this tile. */
+  cols: number;
   /** Pixel rows in this tile. */
   rows: number;
+  /** This tile's first column within the global raster (0 = west edge). */
+  colOffset: number;
   /** This tile's first row within the global raster (0 = north edge). */
   rowOffset: number;
 }
 
 /**
- * Slice the GLOBAL degree-aspect raster into N-S tiles that each fit the
- * service export cap. The global dims are computed FIRST; each tile's bbox is
- * derived from its pixel-row range, so shared edges are exact (no seams) and
- * Σ tile rows === global height. Per-tile pixel aspect equals per-tile degree
- * aspect by construction, preserving the registration invariant per request.
+ * Slice the GLOBAL degree-aspect raster into a row×col grid of tiles that
+ * each fit the service export cap. The global dims are computed FIRST; each
+ * tile's bbox is derived from its pixel row/col range, so shared edges are
+ * exact (no seams) and Σ tile dims === global dims. Per-tile pixel aspect
+ * equals per-tile degree aspect by construction, preserving the registration
+ * invariant per request.
  */
 export function sliceDrapeTiles(
   proj: Projection,
@@ -65,44 +83,60 @@ export function sliceDrapeTiles(
 ): { width: number; height: number; tiles: DrapeTile[] } {
   const { box } = proj;
   const { width, height } = drapePixelSize(proj, mpp);
-  if (width > maxPx) {
-    throw new Error(
-      `drape width ${width}px exceeds the ${maxPx}px export cap — E-W tiling is not implemented; use a coarser mpp or a narrower box`
-    );
-  }
   const degLat = box.neLat - box.swLat;
-  const n = Math.ceil(height / maxPx);
+  const degLon = box.neLon - box.swLon;
+
+  const slice = (total: number) => {
+    const n = Math.ceil(total / maxPx);
+    const out: { offset: number; size: number }[] = [];
+    let at = 0;
+    for (let i = 0; i < n; i++) {
+      const size = Math.min(maxPx, total - at);
+      out.push({ offset: at, size });
+      at += size;
+    }
+    return out;
+  };
+
+  const rowSlices = slice(height);
+  const colSlices = slice(width);
   const tiles: DrapeTile[] = [];
-  let row = 0;
-  for (let i = 0; i < n; i++) {
-    const rows = Math.min(maxPx, height - row);
-    const latTop = box.neLat - (row / height) * degLat;
-    const latBottom = box.neLat - ((row + rows) / height) * degLat;
-    tiles.push({
-      bbox: [box.swLon, latBottom, box.neLon, latTop],
-      width,
-      rows,
-      rowOffset: row,
-    });
-    row += rows;
+  for (const r of rowSlices) {
+    const latTop = box.neLat - (r.offset / height) * degLat;
+    const latBottom = box.neLat - ((r.offset + r.size) / height) * degLat;
+    for (const c of colSlices) {
+      const lonLeft = box.swLon + (c.offset / width) * degLon;
+      const lonRight = box.swLon + ((c.offset + c.size) / width) * degLon;
+      tiles.push({
+        bbox: [lonLeft, latBottom, lonRight, latTop],
+        cols: c.size,
+        rows: r.size,
+        colOffset: c.offset,
+        rowOffset: r.offset,
+      });
+    }
   }
   return { width, height, tiles };
 }
 
+function baseFor(source: DrapeSource): string {
+  return source === 'naip' ? NAIP : source === 'esri' ? ESRI : TNMAP;
+}
+
 function exportUrl(
   bbox: [number, number, number, number],
-  width: number,
+  cols: number,
   rows: number,
-  source: 'naip' | 'esri'
+  source: DrapeSource,
+  f: 'image' | 'json' = 'image'
 ): string {
-  const base = source === 'naip' ? NAIP : ESRI;
-  return `${base}?bbox=${bbox.join(',')}&bboxSR=4326&imageSR=4326&size=${width},${rows}&format=jpeg&f=image`;
+  return `${baseFor(source)}?bbox=${bbox.join(',')}&bboxSR=4326&imageSR=4326&size=${cols},${rows}&format=jpeg&f=${f}`;
 }
 
 export function drapeUrl(
   proj: Projection,
   mpp: number,
-  source: 'naip' | 'esri' = 'naip'
+  source: DrapeSource = 'naip'
 ): string {
   const { box } = proj;
   const { width, height } = drapePixelSize(proj, mpp);
@@ -117,68 +151,153 @@ export function drapeUrl(
 /** Per-tile export URL — the tiled sibling of drapeUrl. */
 export function tileUrl(
   tile: DrapeTile,
-  source: 'naip' | 'esri' = 'naip'
+  source: DrapeSource = 'naip',
+  f: 'image' | 'json' = 'image'
 ): string {
-  return exportUrl(tile.bbox, tile.width, tile.rows, source);
+  return exportUrl(tile.bbox, tile.cols, tile.rows, source, f);
 }
 
-async function fetchTile(
-  tile: DrapeTile,
-  source: 'naip' | 'esri'
-): Promise<Buffer> {
-  // The site config pins the imagery source as part of its reproducibility
-  // contract — NEVER silently substitute the other source (Esri pixels carve a
-  // different waterline than the NAIP-tuned classifier expects). Retry the
-  // pinned source on transient errors, then fail loudly.
+async function fetchWithRetry(
+  url: string,
+  source: DrapeSource
+): Promise<Response> {
   let res: Response | null = null;
   for (let attempt = 0; attempt < 3; attempt++) {
-    res = await fetch(tileUrl(tile, source));
-    if (res.ok) break;
+    res = await fetch(url);
+    if (res.ok) return res;
     console.warn(
       `[fetch-drape] ${source.toUpperCase()} HTTP ${res.status} (attempt ${attempt + 1}/3)`
     );
     await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
   }
-  if (!res || !res.ok) {
-    const hint =
-      source === 'naip'
-        ? ' (NAIP covers the US only — set "drapeSource": "esri" in the site config for non-US sites)'
+  const hint =
+    source === 'naip'
+      ? ' (NAIP covers the US only — set "drapeSource": "esri" in the site config for non-US sites)'
+      : source === 'tnmap'
+        ? ' (TDOT orthos cover Tennessee only)'
         : '';
-    throw new Error(`${source.toUpperCase()} HTTP ${res?.status}${hint}`);
-  }
+  throw new Error(`${source.toUpperCase()} HTTP ${res?.status}${hint}`);
+}
 
-  const buf = Buffer.from(await res.arrayBuffer());
-  // ArcGIS services return HTTP 200 with a JSON error body even for f=image
-  // requests, and silently clamp sizes beyond maxImageWidth/Height. Validate
-  // we actually got a JPEG of the requested size so a corrupt/clamped tile can
-  // never ship (it would both mis-register and derail the water carve).
-  if (buf.length < 4 || buf[0] !== 0xff || buf[1] !== 0xd8) {
+async function validateImage(
+  buf: Buffer,
+  tile: DrapeTile,
+  source: DrapeSource
+): Promise<void> {
+  // ArcGIS services return HTTP 200 with a JSON error body even for image
+  // requests, and silently clamp sizes beyond maxImageWidth/Height. Accept
+  // JPEG or PNG (MapServer render hrefs can be either) and validate dims.
+  const isJpeg = buf.length >= 4 && buf[0] === 0xff && buf[1] === 0xd8;
+  const isPng =
+    buf.length >= 8 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e;
+  if (!isJpeg && !isPng) {
     throw new Error(
-      `${source.toUpperCase()} returned a non-JPEG body (${buf.length} bytes): ${buf
+      `${source.toUpperCase()} returned a non-image body (${buf.length} bytes): ${buf
         .subarray(0, 120)
         .toString('utf8')}`
     );
   }
   const meta = await sharp(buf).metadata();
-  if (meta.width !== tile.width || meta.height !== tile.rows) {
+  if (meta.width !== tile.cols || meta.height !== tile.rows) {
     throw new Error(
-      `${source.toUpperCase()} returned ${meta.width}x${meta.height}, requested ${tile.width}x${tile.rows} — ` +
+      `${source.toUpperCase()} returned ${meta.width}x${meta.height}, requested ${tile.cols}x${tile.rows} — ` +
         `the service likely clamped the request (maxImageWidth/Height); use a coarser mpp or a smaller box`
     );
   }
+}
+
+/**
+ * ImageServer path (naip/esri): fetch the image directly; dims mismatch is
+ * the clamp signal (these services keep the extent and clamp size).
+ */
+async function fetchTileImage(
+  tile: DrapeTile,
+  source: DrapeSource
+): Promise<Buffer> {
+  const res = await fetchWithRetry(tileUrl(tile, source), source);
+  const buf = Buffer.from(await res.arrayBuffer());
+  await validateImage(buf, tile, source);
   return buf;
+}
+
+/**
+ * MapServer path (tnmap): dims are honored unconditionally and the EXTENT
+ * silently adjusts on aspect mismatch — the one failure mode a dims check
+ * cannot see. Ask for f=json first (returns the ACTUAL rendered extent + an
+ * href to the rendered image), hard-fail if any edge drifted more than
+ * ~3/4 px, then fetch the href.
+ */
+async function fetchTileViaJson(
+  tile: DrapeTile,
+  source: DrapeSource
+): Promise<Buffer> {
+  const res = await fetchWithRetry(tileUrl(tile, source, 'json'), source);
+  const info = (await res.json()) as {
+    href?: string;
+    width?: number;
+    height?: number;
+    extent?: { xmin: number; ymin: number; xmax: number; ymax: number };
+  };
+  if (!info.href || !info.extent) {
+    throw new Error(
+      `${source.toUpperCase()} f=json response missing href/extent: ${JSON.stringify(info).slice(0, 200)}`
+    );
+  }
+  if (info.width !== tile.cols || info.height !== tile.rows) {
+    throw new Error(
+      `${source.toUpperCase()} rendered ${info.width}x${info.height}, requested ${tile.cols}x${tile.rows}`
+    );
+  }
+  const pxLon = (tile.bbox[2] - tile.bbox[0]) / tile.cols;
+  const pxLat = (tile.bbox[3] - tile.bbox[1]) / tile.rows;
+  const tol = 0.75;
+  const drift = [
+    Math.abs(info.extent.xmin - tile.bbox[0]) / pxLon,
+    Math.abs(info.extent.ymin - tile.bbox[1]) / pxLat,
+    Math.abs(info.extent.xmax - tile.bbox[2]) / pxLon,
+    Math.abs(info.extent.ymax - tile.bbox[3]) / pxLat,
+  ];
+  if (drift.some((d) => d > tol)) {
+    throw new Error(
+      `${source.toUpperCase()} adjusted the extent (drift ${drift.map((d) => d.toFixed(2)).join('/')} px, ` +
+        `returned ${[
+          info.extent.xmin,
+          info.extent.ymin,
+          info.extent.xmax,
+          info.extent.ymax,
+        ]
+          .map((v) => v.toFixed(7))
+          .join(',')}) — aspect mismatch; registration invariant violated`
+    );
+  }
+  const img = await fetchWithRetry(info.href, source);
+  const buf = Buffer.from(await img.arrayBuffer());
+  await validateImage(buf, tile, source);
+  return buf;
+}
+
+async function fetchTile(
+  tile: DrapeTile,
+  source: DrapeSource
+): Promise<Buffer> {
+  // The site config pins the imagery source as part of its reproducibility
+  // contract — NEVER silently substitute another source. Retry the pinned
+  // source on transient errors, then fail loudly.
+  return source === 'tnmap'
+    ? fetchTileViaJson(tile, source)
+    : fetchTileImage(tile, source);
 }
 
 export async function fetchDrape(
   outDir: string,
   proj: Projection,
   mpp = 2,
-  source: 'naip' | 'esri' = 'naip'
+  source: DrapeSource = 'naip'
 ): Promise<{
   width: number;
   height: number;
   bytes: number;
-  source: 'naip' | 'esri';
+  source: DrapeSource;
   tiles: number;
 }> {
   mkdirSync(outDir, { recursive: true });
@@ -188,19 +307,19 @@ export async function fetchDrape(
   for (const tile of tiles) {
     if (tiles.length > 1) {
       console.log(
-        `[fetch-drape] tile ${buffers.length + 1}/${tiles.length} (${tile.width}x${tile.rows}, lat ${tile.bbox[1].toFixed(5)}..${tile.bbox[3].toFixed(5)})`
+        `[fetch-drape] tile ${buffers.length + 1}/${tiles.length} (${tile.cols}x${tile.rows} at col ${tile.colOffset}, row ${tile.rowOffset})`
       );
     }
     buffers.push(await fetchTile(tile, source));
   }
 
   let out: Buffer;
-  if (tiles.length === 1) {
-    // Byte-identical fast path: no decode/re-encode for sites under the cap.
+  if (tiles.length === 1 && buffers[0][0] === 0xff) {
+    // Byte-identical fast path for a single JPEG tile (sites under the cap).
     out = buffers[0];
   } else {
-    // Stitch N-S tiles onto one canvas. Tiles are exports of the same source
-    // mosaic sharing exact bbox edges, so the seam is invisible; one JPEG
+    // Stitch grid tiles onto one canvas. Tiles are exports of the same source
+    // mosaic sharing exact bbox edges, so seams are invisible; one JPEG
     // re-encode generation at q90 is imperceptible on aerial imagery.
     out = await sharp({
       create: {
@@ -213,7 +332,7 @@ export async function fetchDrape(
       .composite(
         tiles.map((tile, i) => ({
           input: buffers[i],
-          left: 0,
+          left: tile.colOffset,
           top: tile.rowOffset,
         }))
       )

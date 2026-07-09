@@ -28,7 +28,7 @@ const CHATT_BOX: GeoBox = {
 };
 const proj = createProjection(CHATT_BOX);
 
-describe('sliceDrapeTiles (native-res N-S tiling)', () => {
+describe('sliceDrapeTiles (native-res row x col grid tiling)', () => {
   it('chatt at mpp 0.6: global 2433x7938 sliced into 2 tiles under the 4000 cap', () => {
     const { width, height, tiles } = sliceDrapeTiles(proj, 0.6);
     expect(width).toBe(2433);
@@ -46,9 +46,43 @@ describe('sliceDrapeTiles (native-res N-S tiling)', () => {
     // per-tile pixel aspect matches per-tile degree aspect (registration invariant)
     for (const t of tiles) {
       const degAspect = (t.bbox[2] - t.bbox[0]) / (t.bbox[3] - t.bbox[1]);
-      expect(t.width / t.rows).toBeCloseTo(degAspect, 4);
-      expect(tileUrl(t)).toContain(`size=${t.width},${t.rows}`);
+      expect(t.cols / t.rows).toBeCloseTo(degAspect, 4);
+      expect(tileUrl(t)).toContain(`size=${t.cols},${t.rows}`);
     }
+  });
+  it('chatt at mpp 0.3: 4867x15879 → 2x4 grid, exact shared edges both axes', () => {
+    const { width, height, tiles } = sliceDrapeTiles(proj, 0.3);
+    expect(width).toBe(4867);
+    expect(height).toBe(15879);
+    expect(
+      tiles.map((t) => [t.cols, t.rows, t.colOffset, t.rowOffset])
+    ).toEqual([
+      [4000, 4000, 0, 0],
+      [867, 4000, 4000, 0],
+      [4000, 4000, 0, 4000],
+      [867, 4000, 4000, 4000],
+      [4000, 4000, 0, 8000],
+      [867, 4000, 4000, 8000],
+      [4000, 3879, 0, 12000],
+      [867, 3879, 4000, 12000],
+    ]);
+    // E-W shared edge EXACT within each row band; outer lon edges = box edges
+    for (let r = 0; r < 4; r++) {
+      const west = tiles[r * 2];
+      const east = tiles[r * 2 + 1];
+      expect(west.bbox[2]).toBe(east.bbox[0]);
+      expect(west.bbox[0]).toBe(CHATT_BOX.swLon);
+      expect(east.bbox[2]).toBe(CHATT_BOX.neLon);
+      // Σ cols across the band === global width
+      expect(west.cols + east.cols).toBe(width);
+    }
+    // N-S shared edges EXACT between bands
+    expect(tiles[0].bbox[1]).toBe(tiles[2].bbox[3]);
+    expect(tiles[4].bbox[1]).toBe(tiles[6].bbox[3]);
+    // Σ rows down a column === global height
+    expect(tiles[0].rows + tiles[2].rows + tiles[4].rows + tiles[6].rows).toBe(
+      height
+    );
   });
   it('exact-cap and cap+1 edges', () => {
     // synthesize boxes whose global height is exactly 4000 / 4001
@@ -79,8 +113,24 @@ describe('sliceDrapeTiles (native-res N-S tiling)', () => {
     expect(width).toBeLessThanOrEqual(4000);
     expect(height).toBeLessThanOrEqual(4000);
   });
-  it('throws when the WIDTH would exceed the cap (E-W tiling unimplemented)', () => {
-    expect(() => sliceDrapeTiles(proj, 0.3)).toThrow(/E-W tiling/);
+  it('mini-twin at TDOT-native mpp 0.25: 6389x5249 → 2x2 grid', () => {
+    const mini = createProjection({
+      swLat: 35.0140213,
+      swLon: -85.2761,
+      neLat: 35.0284,
+      neLon: -85.2586,
+    });
+    const { width, height, tiles } = sliceDrapeTiles(mini, 0.25);
+    expect(width).toBe(6389);
+    expect(height).toBe(5249);
+    expect(
+      tiles.map((t) => [t.cols, t.rows, t.colOffset, t.rowOffset])
+    ).toEqual([
+      [4000, 4000, 0, 0],
+      [2389, 4000, 4000, 0],
+      [4000, 1249, 0, 4000],
+      [2389, 1249, 4000, 4000],
+    ]);
   });
 });
 

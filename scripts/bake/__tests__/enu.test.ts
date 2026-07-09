@@ -62,6 +62,23 @@ describe('createProjection', () => {
     expect(other.mPerDegLat).toBeCloseTo(110574, 0); // equator
     expect(proj.mPerDegLat).toBeCloseTo(110941, 0); // still 35°N
   });
+
+  it('vectorOffsetM shifts EVERY lonLatToEnu output, nothing else (#233)', () => {
+    const shifted = createProjection(CHATT_BOX, { x: 3.5, z: -1.5 });
+    const [x0, z0] = proj.lonLatToEnu(-85.31, 35.02);
+    const [x1, z1] = shifted.lonLatToEnu(-85.31, 35.02);
+    expect(x1 - x0).toBeCloseTo(3.5, 10);
+    expect(z1 - z0).toBeCloseTo(-1.5, 10);
+    // the origin moves WITH the vectors (it's a vector-layer correction)
+    const [cx, cz] = shifted.lonLatToEnu(shifted.centerLon, shifted.centerLat);
+    expect(cx).toBeCloseTo(3.5, 6);
+    expect(cz).toBeCloseTo(-1.5, 6);
+    // ground extents (the drape/terrain mapping) are untouched
+    expect(shifted.groundSize()).toEqual(proj.groundSize());
+    expect(shifted.offsetM).toEqual({ x: 3.5, z: -1.5 });
+    // default = zero offset, and the default projection reports it
+    expect(proj.offsetM).toEqual({ x: 0, z: 0 });
+  });
 });
 
 describe('boxFromCenter', () => {

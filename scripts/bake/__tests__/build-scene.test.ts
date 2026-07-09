@@ -168,10 +168,15 @@ describe.skipIf(!hasRaw)(
   () => {
     const ALL_HERO_KEYS = site.heroes.map((h) => h.slug);
 
+    // registration: false — the #233 measurement (Sobel over the full 19M-px
+    // drape) costs ~10s per call and has its own unit suite + the dedicated
+    // integration test below; these tests assert hero/clip/height behavior.
     it('resolves all 8 hero keys and none sit on a street', async () => {
       const outDir = mkdtempSync(join(tmpdir(), 'build-scene-test-'));
       try {
-        await buildScene(rawDir, outDir, site, proj);
+        await buildScene(rawDir, outDir, site, proj, site.drapeSource, {
+          registration: false,
+        });
 
         const heroes = JSON.parse(
           readFileSync(join(outDir, 'heroes.json'), 'utf8')
@@ -203,7 +208,14 @@ describe.skipIf(!hasRaw)(
     it('produces ~1500 buildings for the extended corridor box', async () => {
       const outDir = mkdtempSync(join(tmpdir(), 'build-scene-test-'));
       try {
-        const manifest = await buildScene(rawDir, outDir, site, proj);
+        const manifest = await buildScene(
+          rawDir,
+          outDir,
+          site,
+          proj,
+          site.drapeSource,
+          { registration: false }
+        );
         const buildings = JSON.parse(
           readFileSync(join(outDir, 'buildings.json'), 'utf8')
         ) as unknown[];
@@ -220,7 +232,14 @@ describe.skipIf(!hasRaw)(
       // within the box half-extents (small epsilon for quantization).
       const outDir = mkdtempSync(join(tmpdir(), 'build-scene-test-'));
       try {
-        const manifest = await buildScene(rawDir, outDir, site, proj);
+        const manifest = await buildScene(
+          rawDir,
+          outDir,
+          site,
+          proj,
+          site.drapeSource,
+          { registration: false }
+        );
         const streets = JSON.parse(
           readFileSync(join(outDir, 'streets.json'), 'utf8')
         ) as { pts: number[] }[];
@@ -242,6 +261,32 @@ describe.skipIf(!hasRaw)(
       }
     });
 
+    it(
+      'measures footprint-vs-aerial registration into the manifest (#233)',
+      { timeout: 120_000 }, // Sobel over the full flagship drape under suite load
+      async () => {
+        const outDir = mkdtempSync(join(tmpdir(), 'build-scene-test-'));
+        try {
+          // The same projection the real bake uses (pinned vectorOffsetM
+          // applied) — the measured RESIDUAL must be within the fine step of
+          // zero, or the pinned correction has rotted vs the cached drape.
+          const pinnedProj = createProjection(site.box, site.vectorOffsetM);
+          const manifest = await buildScene(rawDir, outDir, site, pinnedProj);
+          expect(manifest.registration).toBeTruthy();
+          const reg = manifest.registration!;
+          expect(Math.abs(reg.offsetM.x)).toBeLessThanOrEqual(0.5);
+          expect(Math.abs(reg.offsetM.z)).toBeLessThanOrEqual(0.5);
+          expect(reg.score).toBeGreaterThan(0);
+          expect(reg.confidence).toBeGreaterThan(0);
+          expect(existsSync(join(rawDir, 'registration/report.json'))).toBe(
+            true
+          );
+        } finally {
+          rmSync(outDir, { recursive: true, force: true });
+        }
+      }
+    );
+
     it('registers each way-based hero on its true OSM footprint centroid (≤5 m)', async () => {
       // Ground-truth registration: a hero backed by a real OSM way (aquarium,
       // courthouse, republic_centre, walnut_st_bridge) MUST be emitted at that
@@ -262,7 +307,9 @@ describe.skipIf(!hasRaw)(
 
       const outDir = mkdtempSync(join(tmpdir(), 'build-scene-test-'));
       try {
-        await buildScene(rawDir, outDir, site, proj);
+        await buildScene(rawDir, outDir, site, proj, site.drapeSource, {
+          registration: false,
+        });
         const heroes = JSON.parse(
           readFileSync(join(outDir, 'heroes.json'), 'utf8')
         ) as { swap: string; x: number; z: number }[];

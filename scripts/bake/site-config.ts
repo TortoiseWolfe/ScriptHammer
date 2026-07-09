@@ -112,8 +112,24 @@ export const SiteConfigSchema = z.object({
   palette: z.enum(['trueToLife', 'toy']).optional(),
   day: z.number().min(0).max(1).optional(),
   framing: FramingSchema.optional(),
-  /** Aerial source. NAIP is US-only; non-US sites need 'esri'. */
-  drapeSource: z.enum(['naip', 'esri']).default('naip'),
+  /** Aerial source. NAIP is US-only; non-US sites need 'esri'; 'tnmap' is
+   *  Tennessee's TDOT statewide ortho (0.15 m, engineering-grade georef). */
+  drapeSource: z.enum(['naip', 'esri', 'tnmap']).default('naip'),
+  /** Measured vector correction (#233): metres to ADD to every vector layer
+   *  (+x east, +z south), from the bake's registration report. Applied at the
+   *  projection chokepoint (createProjection). Pin the report's measured
+   *  offset here, then rebake — the next report should show ~0 residual. */
+  vectorOffsetM: z
+    .object({
+      x: z.number().finite(),
+      z: z.number().finite(),
+    })
+    .refine((v) => Math.hypot(v.x, v.z) <= 15, {
+      // The search window is ±8 m coarse +2 m fine; anything beyond ~15 m
+      // means the box/imagery is wrong, not the vectors — don't mask that.
+      message: 'vectorOffsetM must be within 15 m of zero',
+    })
+    .optional(),
 });
 
 export type SiteConfig = z.infer<typeof SiteConfigSchema>;
@@ -226,16 +242,22 @@ const PROVENANCE_TERRAIN: Record<string, string> = {
   mapzen: 'Mapzen Terrain',
 };
 
+const PROVENANCE_DRAPE: Record<string, string> = {
+  naip: 'USGS NAIP',
+  esri: 'Esri World Imagery',
+  tnmap: 'TDOT Aerial Surveys',
+};
+
 /** Attribution line shown in the HUD, built from the actual sources baked. */
 export function provenanceFor(
   terrainDataset: string,
-  drapeSource: 'naip' | 'esri',
+  drapeSource: 'naip' | 'esri' | 'tnmap',
   msHeights = false
 ): string {
   return [
     '© OpenStreetMap',
     PROVENANCE_TERRAIN[terrainDataset] ?? terrainDataset,
-    drapeSource === 'naip' ? 'USGS NAIP' : 'Esri World Imagery',
+    PROVENANCE_DRAPE[drapeSource],
     ...(msHeights ? ['Microsoft Buildings'] : []),
   ].join(' · ');
 }

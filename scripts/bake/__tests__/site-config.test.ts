@@ -34,6 +34,20 @@ describe('SiteConfigSchema', () => {
       })
     ).toThrow();
   });
+  it('accepts a measured vectorOffsetM and rejects one beyond 15 m (#233)', () => {
+    const cfg = SiteConfigSchema.parse({
+      ...MINIMAL,
+      vectorOffsetM: { x: -3.5, z: 2 },
+    });
+    expect(cfg.vectorOffsetM).toEqual({ x: -3.5, z: 2 });
+    expect(SiteConfigSchema.parse(MINIMAL).vectorOffsetM).toBeUndefined();
+    expect(() =>
+      SiteConfigSchema.parse({ ...MINIMAL, vectorOffsetM: { x: 12, z: 12 } })
+    ).toThrow(/15 m/); // hypot(12,12) ≈ 17
+    expect(() =>
+      SiteConfigSchema.parse({ ...MINIMAL, vectorOffsetM: { x: 1 } })
+    ).toThrow();
+  });
   it('rejects duplicate hero slugs and duplicate wayIds', () => {
     expect(() =>
       SiteConfigSchema.parse({
@@ -143,6 +157,11 @@ describe('provenanceFor', () => {
   it('credits Esri when the fallback imagery was used', () => {
     expect(provenanceFor('srtm30m', 'esri')).toBe(
       '© OpenStreetMap · NASA SRTM · Esri World Imagery'
+    );
+  });
+  it('credits TDOT for the Tennessee statewide ortho', () => {
+    expect(provenanceFor('3dep1m', 'tnmap', true)).toBe(
+      '© OpenStreetMap · USGS 3DEP 1m · TDOT Aerial Surveys · Microsoft Buildings'
     );
   });
 });

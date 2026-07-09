@@ -50,6 +50,18 @@ export interface Manifest {
   provenance: string;
   fetchedAt: string;
   ruleHistogram: Record<string, number>;
+  /** #233 bake-measured footprint-vs-aerial registration. offsetM is the
+   *  RESIDUAL misregistration of this bake's geometry (a bake with a pinned
+   *  vectorOffsetM should report ~0). Absent on pre-#233 bakes and on
+   *  drapeless/buildingless sites. */
+  registration?: {
+    offsetM: { x: number; z: number };
+    score: number;
+    score0: number;
+    confidence: number;
+    districtSpreadM: number;
+    flaggedCount: number;
+  };
   site: SiteInfo;
 }
 

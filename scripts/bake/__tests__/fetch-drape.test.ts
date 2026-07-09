@@ -43,6 +43,19 @@ describe('drape sizing (plate-carrée, degree-aspect for exact-bbox return)', ()
     expect(url).toContain('server.arcgisonline.com');
     expect(url).toContain('World_Imagery');
   });
+  it('routes the tnmap source to the TDOT ortho MapServer, geographic in AND out', () => {
+    // imageSR=4326 makes the server reproject its Web-Mercator cache to
+    // plate-carrée, so rows stay uniform-in-lat and the degree-aspect
+    // registration discipline applies unchanged. MapServer /export honors SIZE
+    // and adjusts the EXTENT on aspect mismatch (verified live) — the fetch
+    // path validates the returned extent via f=json before downloading.
+    const url = drapeUrl(proj, 2, 'tnmap');
+    expect(url).toContain('tnmap.tn.gov');
+    expect(url).toContain('MapServer/export');
+    expect(url).toContain('bboxSR=4326');
+    expect(url).toContain('imageSR=4326');
+    expect(url).toContain('size=730,2382');
+  });
 
   it('requested pixel aspect matches the bbox aspect IN THE REQUEST SR (no extent expansion)', () => {
     // REGISTRATION INVARIANT: ArcGIS exportImage returns the requested bbox

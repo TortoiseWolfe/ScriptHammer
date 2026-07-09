@@ -72,6 +72,13 @@ describe('deriveFraming — formulas at chatt dimensions', () => {
     const expected = (1.05 * (L / 2)) / Math.tan((31 * Math.PI) / 180);
     expect(f.topdown.height).toBeCloseTo(expected, 6); // ≈5060
   });
+  it('ortho frame IS the drape extent: box-centred half-extents, north-up (#233)', () => {
+    expect(f.ortho.center).toEqual([0, 0]); // world origin = box centre, NOT homeFocus
+    expect(f.ortho.halfW).toBeCloseTo(1460 / 2, 6);
+    expect(f.ortho.halfH).toBeCloseTo(L / 2, 6);
+    // hover height reuses the site-scaled topdown formula (always clears content)
+    expect(f.ortho.height).toBeCloseTo(f.topdown.height, 6);
+  });
   it('initial camera = first tour shot when a tour exists', () => {
     expect(f.initialCameraPos).toEqual([-40, 240, -1980]);
   });

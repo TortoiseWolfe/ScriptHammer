@@ -1,5 +1,6 @@
 'use client';
 import { useThree, useFrame } from '@react-three/fiber';
+import { OrthographicCamera, SRGBColorSpace } from 'three';
 import type { PerspectiveCamera } from 'three';
 import { useEffect, useMemo, useRef } from 'react';
 import { buildComposer } from '@/post/tiltShift';
@@ -19,6 +20,16 @@ export interface StageCoreProps {
   /** ?topdown diagnostic frame — where to hover and how high (site-sized).
    *  Without it the ?topdown query param is ignored. */
   topdown?: { center: [number, number]; height: number };
+  /** True-orthographic top-down frame (the registration compare view).
+   *  Present = active: the composition root passes it only while the
+   *  Top-down mode is on. Rendered raw (no composer, no fog) — the whole
+   *  point is honest pixels over the aerial. */
+  ortho?: {
+    center: [number, number];
+    halfW: number;
+    halfH: number;
+    height: number;
+  };
 }
 
 // StageCore is the liftable seam: it owns the composer, the single render
@@ -33,12 +44,14 @@ export default function StageCore({
   onFrame,
   registerHandle,
   topdown,
+  ortho,
 }: StageCoreProps) {
   const gl = useThree((s) => s.gl);
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
   const timeRef = useRef(0);
+  const orthoCamRef = useRef<OrthographicCamera | null>(null);
 
   const rig = useMemo(
     () =>
@@ -75,6 +88,47 @@ export default function StageCore({
     timeRef.current += dt;
     rig.setTime(timeRef.current);
     onFrame?.(dt, timeRef.current);
+    // Top-down compare mode: TRUE orthographic projection, north-up. A
+    // perspective camera splays box tops outward from the view centre even
+    // when footprints register perfectly — orthographic is the only honest
+    // eyeball judge of vector-vs-aerial alignment. Rendered raw: no composer
+    // (tilt-shift blur) and no fog (distance haze), both of which would
+    // soften exactly the edges being compared.
+    if (ortho) {
+      if (!orthoCamRef.current) {
+        orthoCamRef.current = new OrthographicCamera();
+      }
+      const cam = orthoCamRef.current;
+      // Cover at least halfW x halfH, expanded to the viewport aspect so
+      // pixels stay square (no anisotropic stretch).
+      const viewAspect = size.width / size.height;
+      let hw = ortho.halfW;
+      let hh = ortho.halfH;
+      if (hw / hh < viewAspect) hw = hh * viewAspect;
+      else hh = hw / viewAspect;
+      cam.left = -hw;
+      cam.right = hw;
+      cam.top = hh;
+      cam.bottom = -hh;
+      cam.near = 1;
+      cam.far = ortho.height * 2;
+      cam.position.set(ortho.center[0], ortho.height, ortho.center[1]);
+      cam.up.set(0, 0, -1); // -Z (north) toward top of screen
+      cam.lookAt(ortho.center[0], 0, ortho.center[1]);
+      cam.updateProjectionMatrix();
+      const fog = scene.fog;
+      scene.fog = null;
+      // The composer's Grade pass normally owns the single lin2srgb encode;
+      // bypassing it means the renderer must encode instead or the compare
+      // view presents linear (dark). Restored right after — the program
+      // recompile this triggers happens once per mode switch, not per frame.
+      const colorSpace = gl.outputColorSpace;
+      gl.outputColorSpace = SRGBColorSpace;
+      gl.render(scene, cam);
+      gl.outputColorSpace = colorSpace;
+      scene.fog = fog;
+      return;
+    }
     const search = typeof window !== 'undefined' ? window.location.search : '';
     // ?topdown: dev diagnostic — force a straight-down view over the model to
     // check drape (aerial) vs vector (streets/buildings) georegistration. The
