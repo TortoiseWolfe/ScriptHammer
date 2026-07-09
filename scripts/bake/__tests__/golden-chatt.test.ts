@@ -58,6 +58,13 @@ describe('golden: sites/chatt.json', () => {
     expect(site.vectorOffsetM).toEqual({ x: 0.5, z: 0 });
   });
 
+  it('pins the lidar height source (#229 PR-B): blk4 covers downtown, blk3 does NOT', () => {
+    expect(site.lidar).toEqual({
+      ept: 'https://s3-us-west-2.amazonaws.com/usgs-lidar-public/USGS_LPC_TN_27County_blk4_2015_LAS_2018',
+      maxDepth: 10,
+    });
+  });
+
   it('fills fallback heights from Microsoft Buildings (msHeights on)', () => {
     expect(site.msHeights).toBe(true);
   });

@@ -97,5 +97,9 @@
   "day": 0.4,
   "framing": { "homeFocus": [-100, 0, -2000] },
   "drapeSource": "tnmap",
-  "vectorOffsetM": { "x": 0.5, "z": 0 }
+  "vectorOffsetM": { "x": 0.5, "z": 0 },
+  "lidar": {
+    "ept": "https://s3-us-west-2.amazonaws.com/usgs-lidar-public/USGS_LPC_TN_27County_blk4_2015_LAS_2018",
+    "maxDepth": 10
+  }
 }

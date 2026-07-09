@@ -4,15 +4,17 @@ import { USER_AGENT } from '../overpass';
 
 beforeEach(() => vi.restoreAllMocks());
 
+// Public-landmark fixture (downtown commercial block by the aquarium) — test
+// fixtures must never carry a client address or parcel coordinates.
 const NOMINATIM_HIT = [
   {
-    lat: '35.0211714',
-    lon: '-85.2673479',
+    lat: '35.0563000',
+    lon: '-85.3111000',
     display_name:
-      '2630, East Main Street, Glenwood, Chattanooga, Hamilton County, Tennessee, 37404, United States',
+      '1, Broad Street, Chattanooga, Hamilton County, Tennessee, 37402, United States',
     address: {
-      house_number: '2630',
-      road: 'East Main Street',
+      house_number: '1',
+      road: 'Broad Street',
       city: 'Chattanooga',
       state: 'Tennessee',
     },
@@ -26,17 +28,17 @@ describe('geocode', () => {
       .mockResolvedValue(
         new Response(JSON.stringify(NOMINATIM_HIT), { status: 200 })
       );
-    const r = await geocode('2630 E Main St, Chattanooga TN');
-    expect(r.lat).toBeCloseTo(35.0211714, 7);
-    expect(r.lon).toBeCloseTo(-85.2673479, 7);
-    expect(r.address.road).toBe('East Main Street');
+    const r = await geocode('1 Broad St, Chattanooga TN');
+    expect(r.lat).toBeCloseTo(35.0563, 7);
+    expect(r.lon).toBeCloseTo(-85.3111, 7);
+    expect(r.address.road).toBe('Broad Street');
 
     const [url, init] = spy.mock.calls[0];
     expect(String(url)).toContain('nominatim.openstreetmap.org/search');
     expect(String(url)).toContain('format=jsonv2');
     expect(String(url)).toContain('limit=1');
     expect(String(url)).toContain(
-      encodeURIComponent('2630 E Main St, Chattanooga TN')
+      encodeURIComponent('1 Broad St, Chattanooga TN')
     );
     expect((init!.headers as Record<string, string>)['User-Agent']).toBe(
       USER_AGENT
@@ -58,8 +60,8 @@ describe('geocode', () => {
 
 describe('slugify / slugFromGeocode', () => {
   it('produces schema-valid slugs', () => {
-    expect(slugify('East Main Street Chattanooga')).toBe(
-      'east-main-street-chattanooga'
+    expect(slugify('Broad Street Chattanooga')).toBe(
+      'broad-street-chattanooga'
     );
     expect(slugify('  --Weird__ Input!! ')).toBe('weird-input');
     expect(slugify('!!!')).toBe('site');
@@ -72,7 +74,7 @@ describe('slugify / slugFromGeocode', () => {
         displayName: NOMINATIM_HIT[0].display_name,
         address: NOMINATIM_HIT[0].address,
       })
-    ).toBe('east-main-street-chattanooga');
+    ).toBe('broad-street-chattanooga');
   });
   it('falls back to the display name head without structured fields', () => {
     expect(

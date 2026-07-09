@@ -177,6 +177,7 @@
     "axe-playwright": "^2.2.2",
     "canvas": "^3.2.0",
     "concurrently": "^9.2.1",
+    "copc": "^0.0.8",
     "daisyui": "beta",
     "dotenv": "^17.2.2",
     "eslint": "^9.35.0",

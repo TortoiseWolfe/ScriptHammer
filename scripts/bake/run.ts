@@ -2,8 +2,8 @@
 //
 //   pnpm bake                                       # flagship (sites/chatt.json)
 //   pnpm bake --site <slug>                         # bake an existing site config
-//   pnpm bake --address "2630 E Main St, Chattanooga TN" --radius 800
-//   pnpm bake --center 35.0212,-85.2673 --box 1600x1600 --slug main-st
+//   pnpm bake --address "1 Broad St, Chattanooga TN" --radius 800
+//   pnpm bake --center 35.0563,-85.3111 --box 1600x1600 --slug broad-st
 //
 // --address/--center scaffold a fully-explicit sites/<slug>.json (geocoding
 // happens once, here), then bake it — the config file is the reproducibility
@@ -14,6 +14,7 @@ import { mkdirSync, rmSync, existsSync, cpSync } from 'node:fs';
 import { fetchOsm } from './fetch-osm';
 import { fetchMsHeights } from './fetch-ms-heights';
 import { fetchTerrain } from './fetch-terrain';
+import { fetchLidarHeights } from './fetch-lidar-heights';
 import { fetchDrape } from './fetch-drape';
 import { buildScene } from './build-scene';
 import { createProjection } from './enu';
@@ -30,6 +31,7 @@ export const bakeOrder = [
   'fetch-osm',
   'fetch-ms-heights',
   'fetch-terrain',
+  'fetch-lidar-heights', // needs osm.json (footprints) + terrain.json (DTM)
   'fetch-drape',
   'build-scene',
 ] as const;
@@ -155,6 +157,17 @@ export async function bake(site: SiteConfig) {
     dataset: 'ned10m' as const,
   };
   await fetchTerrain(paths.raw, site.box, grid);
+  if (site.lidar) {
+    console.log('[bake] fetch-lidar-heights...');
+    console.log(
+      await fetchLidarHeights(
+        paths.raw,
+        site.box,
+        site.lidar,
+        site.vectorOffsetM
+      )
+    );
+  }
   console.log('[bake] fetch-drape...');
   const drape = await fetchDrape(paths.raw, proj, site.mpp, site.drapeSource);
   console.log(drape);
