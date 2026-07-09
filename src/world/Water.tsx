@@ -28,11 +28,18 @@ export default function Water({ manifest }: { manifest: Manifest }) {
   }, [manifest]);
 
   return (
-    // A hair above the carved channel floor (Y=0) so it doesn't z-fight the
-    // terrain bed but stays below the banks. Standard water look: teal, low
-    // roughness for a sheen off the sun/hemisphere lights, slightly translucent.
-    <mesh geometry={geometry} position={[0, 0.15, 0]} receiveShadow>
+    // Above the carved channel floor (Y=0). 0.15 m was enough separation for
+    // the 30 m-grid era but z-fights low-precision depth buffers (CI's
+    // swiftshader) now that 1 m-class terrain puts real rows this close.
+    // NOTE: hydro-flattened SECOND water bodies (creeks/ponds the carve never
+    // reaches) can sit exactly at/near this height — chatt has a basin at
+    // normalized 0.4-0.5 — so the depth bias below, not the lift alone, is
+    // what resolves coplanar cells (in the water's favor: they ARE water).
+    <mesh geometry={geometry} position={[0, 0.5, 0]} receiveShadow>
       <meshStandardMaterial
+        polygonOffset
+        polygonOffsetFactor={-1}
+        polygonOffsetUnits={-1}
         // Diorama water reads as water only if it's largely self-lit: a flat
         // horizontal plane catches almost no direct sun at the grazing tour
         // angles, and the tilt-shift/grade post darkens it further, so a

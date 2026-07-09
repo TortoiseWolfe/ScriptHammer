@@ -8,8 +8,8 @@
     "neLat": 35.06,
     "neLon": -85.3
   },
-  "mpp": 2,
-  "terrain": { "cols": 49, "rows": 195, "dataset": "ned10m" },
+  "mpp": 0.6,
+  "terrain": { "cols": 198, "rows": 644, "dataset": "3dep1m" },
   "carveWater": true,
   "heroes": [
     { "slug": "aquarium", "wayId": 173782782 },

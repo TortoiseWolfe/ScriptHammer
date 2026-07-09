@@ -6,12 +6,16 @@ export default function Heroes({
   heroes,
   grid,
   manifest,
+  opacity = 1,
 }: {
   heroes: Hero[];
   grid: TerrainGrid;
   manifest: Manifest;
+  /** Follows the buildings layer fade (heroes sit on the same layer). */
+  opacity?: number;
 }) {
   const minE = minElevation(grid);
+  if (opacity <= 0) return null;
   return (
     <>
       {heroes.map((h, i) => {
@@ -33,7 +37,7 @@ export default function Heroes({
               roughness={0.3}
               metalness={0.1}
               transparent
-              opacity={0.85}
+              opacity={0.85 * opacity}
             />
           </mesh>
         );

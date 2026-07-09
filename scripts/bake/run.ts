@@ -12,6 +12,7 @@
 import { parseArgs } from 'node:util';
 import { mkdirSync, rmSync, existsSync, cpSync } from 'node:fs';
 import { fetchOsm } from './fetch-osm';
+import { fetchMsHeights } from './fetch-ms-heights';
 import { fetchTerrain } from './fetch-terrain';
 import { fetchDrape } from './fetch-drape';
 import { buildScene } from './build-scene';
@@ -27,6 +28,7 @@ import { buildSiteConfig, scaffoldSite } from './scaffold';
 
 export const bakeOrder = [
   'fetch-osm',
+  'fetch-ms-heights',
   'fetch-terrain',
   'fetch-drape',
   'build-scene',
@@ -143,6 +145,10 @@ export async function bake(site: SiteConfig) {
   console.log(`[bake] site=${site.slug} → ${paths.out}`);
   console.log('[bake] fetch-osm...');
   console.log(await fetchOsm(paths.raw, site.box));
+  if (site.msHeights) {
+    console.log('[bake] fetch-ms-heights...');
+    console.log(await fetchMsHeights(paths.raw, site.box));
+  }
   console.log('[bake] fetch-terrain...');
   const grid = site.terrain ?? {
     ...defaultTerrainGrid(site.box),

@@ -24,6 +24,15 @@ export interface HudLink {
   href: string;
 }
 
+/** Continuous 0..1 control rendered as a labelled range slider (e.g. a layer
+ *  fade for comparing vectors against the aerial ground truth). */
+export interface HudSlider {
+  key: string;
+  label: string;
+  value: number; // 0..1
+  onChange: (value: number) => void;
+}
+
 export interface HudProps {
   title: string;
   subtitle?: string;
@@ -40,6 +49,8 @@ export interface HudProps {
   onView?: (key: string) => void;
   /** Optional navigation buttons (e.g. a premium property page). */
   links?: HudLink[];
+  /** Optional layer sliders (e.g. building-fade for registration checks). */
+  sliders?: HudSlider[];
   caption?: HudCaption | null;
   showFps: boolean;
   fps?: number;
@@ -91,6 +102,7 @@ export default function Hud({
   activeView,
   onView,
   links,
+  sliders,
   caption,
   showFps,
   fps,
@@ -271,6 +283,35 @@ export default function Hud({
               ))}
             </div>
           ) : null}
+
+          {sliders && sliders.length > 0
+            ? sliders.map((s) => (
+                <label
+                  key={s.key}
+                  style={{
+                    ...glass,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '6px 12px',
+                    fontSize: 12,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <span style={{ opacity: 0.8 }}>{s.label}</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={s.value}
+                    aria-label={s.label}
+                    onChange={(e) => s.onChange(Number(e.target.value))}
+                    style={{ width: 96, accentColor: '#f0ead8' }}
+                  />
+                </label>
+              ))
+            : null}
         </div>
 
         <div style={{ fontSize: 10.5, opacity: 0.6 }}>{provenance}</div>

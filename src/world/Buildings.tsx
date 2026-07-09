@@ -56,11 +56,14 @@ export default function Buildings({
   palette,
   grid,
   manifest,
+  opacity = 1,
 }: {
   buildings: Building[];
   palette: BuildingPalette;
   grid: TerrainGrid;
   manifest: Manifest;
+  /** Layer fade (registration checks against the aerial); 1 = opaque. */
+  opacity?: number;
 }) {
   const { geometry } = useMemo(() => {
     const minE = minElevation(grid);
@@ -85,9 +88,24 @@ export default function Buildings({
     };
   }, [buildings, palette, grid, manifest]);
 
+  if (opacity <= 0) return null;
   return (
-    <mesh geometry={geometry} castShadow receiveShadow>
-      <meshStandardMaterial vertexColors roughness={0.92} metalness={0} />
+    <mesh geometry={geometry} castShadow={opacity >= 1} receiveShadow>
+      {/* UNCONDITIONALLY transparent: three bakes an OPAQUE define into the
+          program when a material mounts with transparent=false, and flipping
+          `transparent` at runtime never recompiles — the fade would silently
+          no-op until a full unmount/remount cycle. One merged mesh, so the
+          transparent-pass sorting cost is nil. depthWrite stays on while
+          fading: self-overlap artifacts are acceptable for a diagnostic layer
+          and it avoids sort popping. Shadows drop while faded so a ghosted
+          layer doesn't cast solid shadows on the aerial. */}
+      <meshStandardMaterial
+        vertexColors
+        roughness={0.92}
+        metalness={0}
+        transparent
+        opacity={opacity}
+      />
     </mesh>
   );
 }

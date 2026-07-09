@@ -6,6 +6,7 @@ import {
   existsSync,
 } from 'node:fs';
 import { join } from 'node:path';
+import sharp from 'sharp';
 import type { Projection } from './enu';
 import { resolveHeight } from './height';
 import { drapePixelSize } from './fetch-drape';
@@ -14,6 +15,11 @@ import {
   siteManifestBlock,
   type SiteConfig,
 } from './site-config';
+import {
+  matchMsHeights,
+  pointInRing,
+  type MsBuilding,
+} from './fetch-ms-heights';
 import {
   classifyAerialWater,
   carveToMask,
@@ -89,8 +95,60 @@ export async function buildScene(
     height: 0,
     levels: 0,
     override: 0,
+    ms: 0,
     fallback: 0,
   };
+
+  // Microsoft ML-measured heights (fetch-ms-heights stage). Matching runs on
+  // RAW lon/lat centroids (containment is projection-invariant) before any
+  // ENU work; absence of the file (msHeights: false) degrades to no matches.
+  let msHeightByOsmId = new Map<number, number>();
+  const msPath = join(rawDir, 'ms-buildings.json');
+  if (site.msHeights && !existsSync(msPath)) {
+    console.warn(
+      '[build-scene] msHeights is on but _raw/ms-buildings.json is missing — run the full bake (fetch-ms-heights) or set "msHeights": false; heights fall back to priors'
+    );
+  }
+  if (site.msHeights && existsSync(msPath)) {
+    const ms = JSON.parse(readFileSync(msPath, 'utf8')) as MsBuilding[];
+    const centroids: { id: number; lon: number; lat: number }[] = [];
+    let concaveSkips = 0;
+    for (const el of osm.elements) {
+      if (
+        el.type === 'way' &&
+        el.tags?.building &&
+        el.geometry &&
+        el.geometry.length >= 3
+      ) {
+        let lon = 0;
+        let lat = 0;
+        for (const g of el.geometry) {
+          lon += g.lon;
+          lat += g.lat;
+        }
+        const cLon = lon / el.geometry.length;
+        const cLat = lat / el.geometry.length;
+        // The vertex-mean of a concave (L/U-shaped) footprint can land
+        // OUTSIDE the building — matching it against MS detections would
+        // assign a NEIGHBOR's height (verified live: a 9-story hotel baked
+        // 2 stories). Only ms-match buildings whose mean point is inside
+        // their own ring; the rest keep their prior-based fallback.
+        const ownRing = el.geometry.map(
+          (g) => [g.lon, g.lat] as [number, number]
+        );
+        if (!pointInRing(cLon, cLat, ownRing)) {
+          concaveSkips++;
+          continue;
+        }
+        centroids.push({ id: el.id, lon: cLon, lat: cLat });
+      }
+    }
+    msHeightByOsmId = matchMsHeights(centroids, ms);
+    console.log(
+      `[build-scene] Microsoft heights matched ${msHeightByOsmId.size}/${centroids.length} OSM buildings ` +
+        `(${ms.length} MS detections in box, ${concaveSkips} concave footprints kept on priors)`
+    );
+  }
 
   // Way ids in heroWayIds that we've already emitted a hero for. Some hero
   // ways (e.g. a pedestrian bridge) are tagged `highway=footway` rather than
@@ -207,7 +265,12 @@ export async function buildScene(
       // drape. (A hero way is never dropped: its swap tag pins a landmark.)
       const swap = heroWayIds.get(el.id);
       if (!swap && !inBox(cX, cZ)) continue;
-      const { meters, rule } = resolveHeight(tags, area, site.heights);
+      const { meters, rule } = resolveHeight(
+        tags,
+        area,
+        site.heights,
+        msHeightByOsmId.get(el.id)
+      );
       ruleHistogram[rule]++;
       const flat: number[] = [];
       for (const [x, z] of ringEnu) flat.push(q(x), q(z));
@@ -296,7 +359,11 @@ export async function buildScene(
       })(),
       mpp: site.mpp,
     },
-    provenance: provenanceFor(site.terrain?.dataset ?? 'ned10m', drapeSource),
+    provenance: provenanceFor(
+      site.terrain?.dataset ?? 'ned10m',
+      drapeSource,
+      site.msHeights
+    ),
     fetchedAt: new Date().toISOString(),
     ruleHistogram,
     // `site.water` is a bake RESULT (did the carve find water?), filled in
@@ -330,7 +397,21 @@ export async function buildScene(
   if (!site.carveWater) {
     console.log('[carve-water] disabled by site config; terrain left uncarved');
   } else if (drapeSrc) {
-    const mask = await classifyAerialWater(drapeSrc);
+    // The water classifier's window/threshold tuning is SCALE-dependent
+    // (validated at mpp 2: 7x7 variance window ≈ 14 m). For sharper drapes,
+    // classify a working copy downscaled to mpp-2 scale — preserves the tuned
+    // semantics and caps classifier memory. carveToMask maps grid→mask by
+    // fractions, so the mask resolution is otherwise irrelevant.
+    let classifySrc = drapeSrc;
+    if (site.mpp < 2) {
+      const classifyPath = join(rawDir, 'drape-classify.jpg');
+      await sharp(drapeSrc)
+        .resize({ width: Math.round(widthM / 2) })
+        .jpeg({ quality: 90 })
+        .toFile(classifyPath);
+      classifySrc = classifyPath;
+    }
+    const mask = await classifyAerialWater(classifySrc);
     const res = carveToMask(rawGrid, mask, widthM, depthM);
     carvedGrid = res.grid;
     carvedSamples = res.carved;
