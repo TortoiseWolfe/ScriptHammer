@@ -6,11 +6,19 @@
 // real browser (no window/WebGL during SSG), and the composer + Rig attach DOM
 // listeners that must not run server-side.
 import dynamic from 'next/dynamic';
+import type { TwinFocus } from './TwinCanvas.client';
 
 const TwinCanvas = dynamic(() => import('./TwinCanvas.client'), {
   ssr: false,
 });
 
-export default function TwinCanvasHost({ slug }: { slug: string }) {
-  return <TwinCanvas slug={slug} />;
+export default function TwinCanvasHost({
+  slug,
+  focus,
+}: {
+  slug: string;
+  /** 'house' renders the as-built property page framing (#234). */
+  focus?: TwinFocus;
+}) {
+  return <TwinCanvas slug={slug} focus={focus} />;
 }

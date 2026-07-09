@@ -21,7 +21,7 @@ export interface Framing {
   cameraFar: number;
   homeFocus: [number, number, number];
   homeRadius: number;
-  homePhi: number; // constants — diorama style, not site size
+  homePhi: number; // style defaults (0.62 / 0); per-site overridable
   homeTheta: number;
   initialCameraPos: [number, number, number];
   topdown: { center: [number, number]; height: number };
@@ -41,12 +41,14 @@ export function deriveFraming(m: Manifest): Framing {
 
   const homeFocus: [number, number, number] = f.homeFocus ?? [0, 0, 0];
   const homeRadius = f.homeRadius ?? 0.45 * L;
+  const homePhi = f.homePhi ?? HOME_PHI;
+  const homeTheta = f.homeTheta ?? HOME_THETA;
   const panMargin = f.panMargin ?? Math.max(150, 0.05 * L);
 
   const homeOrbitPos: [number, number, number] = [
-    homeFocus[0] + homeRadius * Math.sin(HOME_PHI) * Math.sin(HOME_THETA),
-    homeFocus[1] + homeRadius * Math.cos(HOME_PHI),
-    homeFocus[2] + homeRadius * Math.sin(HOME_PHI) * Math.cos(HOME_THETA),
+    homeFocus[0] + homeRadius * Math.sin(homePhi) * Math.sin(homeTheta),
+    homeFocus[1] + homeRadius * Math.cos(homePhi),
+    homeFocus[2] + homeRadius * Math.sin(homePhi) * Math.cos(homeTheta),
   ];
   const tour = m.site.tour;
   // With a tour, frame 0 IS the first shot (the rig aims pre-paint via
@@ -67,8 +69,8 @@ export function deriveFraming(m: Manifest): Framing {
     cameraFar: f.cameraFar ?? Math.max(2000, 1.4 * L),
     homeFocus,
     homeRadius,
-    homePhi: HOME_PHI,
-    homeTheta: HOME_THETA,
+    homePhi,
+    homeTheta,
     initialCameraPos,
     topdown: {
       center: [homeFocus[0], 0],

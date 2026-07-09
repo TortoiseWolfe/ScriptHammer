@@ -126,6 +126,26 @@ describe('deriveFraming — defaults and overrides', () => {
     expect(f.cameraFar).toBe(2000);
     expect(f.minR).toBe(50);
   });
+  it('homePhi/homeTheta overrides steer the home orbit position (#234 street-side camera)', () => {
+    // synthetic anchor — never a real parcel's coordinates
+    const f = deriveFraming(
+      chattManifest({
+        tour: undefined,
+        framing: {
+          homeFocus: [12.5, 27, -30.25],
+          homeRadius: 40,
+          homePhi: 1.1,
+          homeTheta: Math.PI,
+        },
+      })
+    );
+    expect(f.homePhi).toBe(1.1);
+    expect(f.homeTheta).toBe(Math.PI);
+    // camera = focus + r·(sinφ·sinθ, cosφ, sinφ·cosθ); θ=π → offset -Z (north)
+    expect(f.initialCameraPos[0]).toBeCloseTo(12.5, 6);
+    expect(f.initialCameraPos[1]).toBeCloseTo(27 + 40 * Math.cos(1.1), 6);
+    expect(f.initialCameraPos[2]).toBeCloseTo(-30.25 - 40 * Math.sin(1.1), 6);
+  });
   it('uses the LONG extent for a landscape site (L = max(W, H), not groundHm)', () => {
     const m = chattManifest({ tour: undefined, framing: undefined });
     m.groundWm = 6000; // wider than deep

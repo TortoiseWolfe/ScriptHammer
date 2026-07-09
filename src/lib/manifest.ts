@@ -18,6 +18,8 @@ export interface TourWaypoint {
 export interface SiteFraming {
   homeFocus?: [number, number, number];
   homeRadius?: number;
+  homePhi?: number; // radians from vertical
+  homeTheta?: number; // radians around +Y (0 = camera south of focus)
   minR?: number;
   maxR?: number;
   moveSpeed?: number;
@@ -150,6 +152,8 @@ export function validateManifest(m: unknown, slug: string): Manifest {
       fail('site.framing.homeFocus must be a finite [x,y,z] triple');
     for (const k of [
       'homeRadius',
+      'homePhi',
+      'homeTheta',
       'minR',
       'maxR',
       'moveSpeed',
@@ -172,4 +176,110 @@ export async function loadManifest(slug: string): Promise<Manifest> {
     await loadSiteJson<unknown>(slug, 'manifest.json'),
     slug
   );
+}
+
+// --- Premium as-built assets (#234) -----------------------------------------
+//
+// A twin MAY carry a LiDAR as-built capture under twins/<slug>/house/:
+//   house/model.glb   — the converted scan (scripts/house/convert-scan.mjs)
+//   house/house.json  — placement + property details (schema below)
+// Both are OPTIONAL and, like every twin asset, PRIVATE BY DEFAULT (gitignored
+// unless the site is explicitly allowlisted). Client-parcel captures must stay
+// local-only without written consent — see issue #234's privacy gate.
+
+export interface HouseInfo {
+  /** Property label — HUD link text + as-built page heading. */
+  label: string;
+  /** Scan anchor in ENU metres (origin = box centre, north = -Z). */
+  x: number;
+  z: number;
+  /** Yaw around +Y in degrees (align the scan to the aerial). */
+  rotationDeg?: number;
+  scale?: number;
+  /** Fine-tune seating after auto-grounding on the terrain. */
+  yOffset?: number;
+  /** Key/value property facts shown on the as-built page. */
+  details?: Record<string, string>;
+  /** OSM building ids whose massing boxes hide while the scan is shown. */
+  hideBuildingIds?: number[];
+}
+
+export function validateHouse(h: unknown, slug: string): HouseInfo {
+  const fail = (why: string): never => {
+    throw new Error(`house.json for twin "${slug}" invalid: ${why}`);
+  };
+  if (typeof h !== 'object' || h === null) fail('not an object');
+  const house = h as HouseInfo;
+  if (typeof house.label !== 'string' || house.label.length === 0)
+    fail('label missing');
+  if (!Number.isFinite(house.x) || !Number.isFinite(house.z))
+    fail('x/z must be finite ENU metres');
+  for (const k of ['rotationDeg', 'scale', 'yOffset'] as const) {
+    if (house[k] != null && !Number.isFinite(house[k]))
+      fail(`${k} must be a finite number`);
+  }
+  if (
+    house.hideBuildingIds != null &&
+    (!Array.isArray(house.hideBuildingIds) ||
+      house.hideBuildingIds.some((v) => !Number.isInteger(v)))
+  )
+    fail('hideBuildingIds must be integer OSM ids');
+  return house;
+}
+
+/** Load a twin's as-built descriptor; null when the twin has none (404).
+ *  Throws (loudly) on a malformed descriptor or a descriptor whose model.glb
+ *  is missing — a half-installed capture must not degrade silently. */
+export async function loadHouse(slug: string): Promise<HouseInfo | null> {
+  const res = await fetch(siteAssetUrl(slug, 'house/house.json'));
+  if (!res.ok) return null;
+  const house = validateHouse(await res.json(), slug);
+  // house.json without its GLB would otherwise surface as a mid-render loader
+  // rejection (page-level error UI) — probe up front for a named error.
+  const model = await fetch(siteAssetUrl(slug, 'house/model.glb'), {
+    method: 'HEAD',
+  });
+  if (!model.ok) {
+    throw new Error(
+      `house.json for twin "${slug}" present but house/model.glb -> HTTP ${model.status} — run scripts/house/convert-scan.mjs`
+    );
+  }
+  return house;
+}
+
+// --- Local-only HUD links ----------------------------------------------------
+//
+// twins/<slug>/links.local.json: [{ "label": "...", "href": "/twins/x/house/" }]
+// `*.local.json` is ALWAYS gitignored — this is how a private demo (e.g. the
+// flagship's "client house" button) gets wired without the target address ever
+// touching git: drop the file locally, delete it when done. hrefs are app
+// paths WITHOUT basePath (the HUD consumer prefixes via getInternalUrl).
+
+export interface TwinLink {
+  label: string;
+  href: string;
+}
+
+export async function loadLocalLinks(slug: string): Promise<TwinLink[]> {
+  try {
+    const res = await fetch(siteAssetUrl(slug, 'links.local.json'));
+    if (!res.ok) return [];
+    const raw = (await res.json()) as unknown;
+    if (!Array.isArray(raw)) return [];
+    return raw.filter(
+      (l): l is TwinLink =>
+        typeof l === 'object' &&
+        l !== null &&
+        typeof (l as TwinLink).label === 'string' &&
+        (l as TwinLink).label.length > 0 &&
+        typeof (l as TwinLink).href === 'string' &&
+        (l as TwinLink).href.startsWith('/') &&
+        // '//host' is a protocol-relative EXTERNAL url, not an app path
+        !(l as TwinLink).href.startsWith('//')
+    );
+  } catch {
+    // absent, non-JSON (static hosts serve HTML 404 pages), or malformed —
+    // local links are best-effort by design
+    return [];
+  }
 }
