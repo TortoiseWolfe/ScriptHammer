@@ -1,7 +1,7 @@
 {
   "name": "scripthammer",
   "version": "0.0.1",
-  "description": "ScriptHammer - Modern Next.js template with PWA, theming, and interactive components",
+  "description": "ScriptHammer - A production Next.js and Supabase platform with auth, payments, encrypted messaging, and an accessible offline-capable PWA",
   "packageManager": "pnpm@10.16.1",
   "keywords": [
     "nextjs",
@@ -9,7 +9,10 @@
     "pwa",
     "tailwindcss",
     "daisyui",
-    "starter",
+    "supabase",
+    "payments",
+    "e2e-encryption",
+    "pwa-offline",
     "dice",
     "gaming",
     "drag-drop",

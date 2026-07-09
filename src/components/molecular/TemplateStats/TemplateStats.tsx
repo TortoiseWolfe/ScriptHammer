@@ -30,7 +30,7 @@ export interface TemplateStatsProps {
 }
 
 /**
- * TemplateStats — the "proof" ledger of a template landing page.
+ * TemplateStats — the "proof" ledger of the product landing page.
  *
  * Renders capability numbers as full-width link rows — number · label ·
  * detail — separated by hairline rules. Deliberately NOT the DaisyUI `stats`

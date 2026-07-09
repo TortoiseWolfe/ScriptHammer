@@ -7,8 +7,8 @@ import TemplateStats, {
 } from '@/components/molecular/TemplateStats';
 import { detectedConfig } from '@/config/project-detected';
 
-// ── Hosted-demo landing — audience is a developer deciding whether to
-//     fork. Visual hierarchy: spinning logo + animated title draw the eye,
+// ── Hosted landing — audience is a visitor evaluating the product.
+//     Visual hierarchy: spinning logo + animated title draw the eye,
 //     one `btn-primary` is the only filled button, proof numbers below. ──
 //
 // Server component: logo and animated-title are 'use client' internally,
@@ -131,8 +131,8 @@ export default function Home() {
 
             <p className="text-base-content/80 mb-6 max-w-2xl text-lg leading-relaxed sm:text-xl">
               Auth, payments, messaging, and offline support are already wired
-              to Supabase and tested. Fork it, change the theme, start on your
-              features.
+              to Supabase and tested, accessible to WCAG AA, and running in
+              production.
             </p>
 
             {/* Tech stack badges */}
@@ -163,12 +163,12 @@ export default function Home() {
               className="flex flex-col items-center gap-4 lg:items-start"
             >
               <a
-                href={`${detectedConfig.projectUrl}/generate`}
+                href={detectedConfig.projectUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn btn-primary btn-lg min-h-11 min-w-11"
               >
-                Use this template
+                Explore the source
               </a>
               <a
                 href={STORYBOOK_URL}

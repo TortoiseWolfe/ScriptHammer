@@ -42,7 +42,7 @@ describe('Project Configuration', () => {
       expect(config.projectName).toBe('ScriptHammer');
       expect(config.projectOwner).toBe('TortoiseWolfe');
       expect(config.projectDescription).toContain(
-        'Opinionated Next.js template'
+        'production Next.js and Supabase platform'
       );
       expect(config.basePath).toBe('');
       expect(config.deployUrl).toBe('http://localhost:3000');
@@ -232,7 +232,7 @@ describe('Project Configuration', () => {
 
       expect(manifest.name).toContain('ScriptHammer');
       expect(manifest.short_name).toBe('ScriptHammer');
-      expect(manifest.description).toContain('Opinionated Next.js template');
+      expect(manifest.description).toContain('production Next.js and Supabase platform');
       expect(manifest.start_url).toBe('/');
       expect(manifest.display).toBe('standalone');
       expect(manifest.theme_color).toBe('#1a1a2e');
