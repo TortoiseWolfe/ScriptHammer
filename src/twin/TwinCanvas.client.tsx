@@ -27,7 +27,10 @@ import type {
 import { deriveFraming, type Framing } from '@/lib/framing';
 import { getInternalUrl } from '@/config/project.config';
 
-/** 'house' focuses the camera on the as-built parcel (the property page). */
+/** 'house' focuses the camera on the as-built parcel (the property view).
+ *  Reached via the `?house` query param — a dedicated route can't exist under
+ *  output:'export' because house assets are never in the committed tree, so a
+ *  route's generateStaticParams would be empty (which static export rejects). */
 export type TwinFocus = 'twin' | 'house';
 
 function SceneInner({
@@ -286,7 +289,7 @@ function TwinCanvasInner({
     if (house && !houseFocused) {
       out.push({
         label: house.label,
-        href: getInternalUrl(`/twins/${slug}/house/`),
+        href: getInternalUrl(`/twins/${slug}/?house`),
       });
     }
     if (houseFocused) {
@@ -492,11 +495,19 @@ function TwinCanvasInner({
 
 export default function TwinCanvas({
   slug,
-  focus = 'twin',
+  focus,
 }: {
   slug: string;
   focus?: TwinFocus;
 }) {
+  // This component is client-only (ssr:false dynamic import), so the query
+  // string is readable at first render — `?house` opens the property view.
+  const effectiveFocus: TwinFocus =
+    focus ??
+    (typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('house')
+      ? 'house'
+      : 'twin');
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [house, setHouse] = useState<HouseInfo | null>(null);
   const [localLinks, setLocalLinks] = useState<TwinLink[]>([]);
@@ -557,7 +568,7 @@ export default function TwinCanvas({
       manifest={manifest}
       house={house}
       localLinks={localLinks}
-      focus={focus}
+      focus={effectiveFocus}
     />
   );
 }

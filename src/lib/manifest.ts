@@ -249,7 +249,7 @@ export async function loadHouse(slug: string): Promise<HouseInfo | null> {
 
 // --- Local-only HUD links ----------------------------------------------------
 //
-// twins/<slug>/links.local.json: [{ "label": "...", "href": "/twins/x/house/" }]
+// twins/<slug>/links.local.json: [{ "label": "...", "href": "/twins/x/?house" }]
 // `*.local.json` is ALWAYS gitignored — this is how a private demo (e.g. the
 // flagship's "client house" button) gets wired without the target address ever
 // touching git: drop the file locally, delete it when done. hrefs are app
