@@ -14,14 +14,14 @@ describe('parseCliArgs', () => {
   it('scaffolds from an address + radius', () => {
     const plan = parseCliArgs([
       '--address',
-      '2630 E Main St, Chattanooga TN',
+      '1 Broad St, Chattanooga TN',
       '--radius',
       '800',
     ]);
     expect(plan).toMatchObject({
       kind: 'scaffold',
       source: 'address',
-      address: '2630 E Main St, Chattanooga TN',
+      address: '1 Broad St, Chattanooga TN',
       widthM: 1600,
       heightM: 1600,
       force: false,
@@ -31,23 +31,23 @@ describe('parseCliArgs', () => {
   it('scaffolds from a center + box, slug required', () => {
     const plan = parseCliArgs([
       '--center',
-      '35.0212,-85.2673',
+      '35.0563,-85.3111',
       '--box',
       '1600x900',
       '--slug',
-      'main-st',
+      'broad-st',
     ]);
     expect(plan).toMatchObject({
       kind: 'scaffold',
       source: 'center',
-      centerLat: 35.0212,
-      centerLon: -85.2673,
+      centerLat: 35.0563,
+      centerLon: -85.3111,
       widthM: 1600,
       heightM: 900,
-      slug: 'main-st',
+      slug: 'broad-st',
     });
     expect(() =>
-      parseCliArgs(['--center', '35.0212,-85.2673', '--box', '1600x900'])
+      parseCliArgs(['--center', '35.0563,-85.3111', '--box', '1600x900'])
     ).toThrow(/--slug/);
   });
   it('passes through --name, --force and --dry-run', () => {

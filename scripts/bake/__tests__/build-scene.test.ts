@@ -130,6 +130,46 @@ describe('build-scene per-site behavior (synthetic fixture)', () => {
     }
   });
 
+  it('wires lidar heights through resolveHeight — rule + value prove which source won', async () => {
+    // Findings gate (#229 PR-B review): lidarHeightM and msHeightM are
+    // type-identical resolveHeight args — an argument swap would pass every
+    // other test. Here the two sources carry DIFFERENT values for the same
+    // building, so the baked height + rule histogram pin the wiring.
+    const dir = mkdtempSync(join(tmpdir(), 'build-scene-tiny-'));
+    try {
+      const rawDir = join(dir, '_raw');
+      const outDir = join(dir, 'out');
+      mkdirSync(rawDir, { recursive: true });
+      writeFixture(rawDir);
+      // Building 1 gets a lidar height; building 2 has neither → fallback.
+      writeFileSync(
+        join(rawDir, 'lidar-heights.json'),
+        JSON.stringify({ meta: {}, heights: { 1: 7.7 } })
+      );
+      const lidarSite = SiteConfigSchema.parse({
+        slug: 'tiny',
+        name: 'Tiny Test Site',
+        box: { swLat: -0.01, swLon: -0.01, neLat: 0.01, neLon: 0.01 },
+        carveWater: false,
+        msHeights: false,
+        lidar: { ept: 'https://example.com/synthetic' }, // no network: file pre-written
+      });
+      const manifest = await buildScene(rawDir, outDir, lidarSite, tinyProj);
+      const buildings = JSON.parse(
+        readFileSync(join(outDir, 'buildings.json'), 'utf8')
+      ) as { id: number; height: number; rule: string }[];
+      const b1 = buildings.find((b) => b.id === 1)!;
+      const b2 = buildings.find((b) => b.id === 2)!;
+      expect(b1.rule).toBe('lidar'); // an ms/lidar arg swap would report 'ms'
+      expect(b1.height).toBe(7.7);
+      expect(b2.rule).toBe('fallback');
+      expect(manifest.ruleHistogram.lidar).toBe(1);
+      expect(manifest.provenance).toContain('USGS 3DEP Lidar');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('clips straddling streets to the box', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'build-scene-tiny-'));
     try {

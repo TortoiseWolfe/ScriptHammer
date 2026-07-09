@@ -72,10 +72,13 @@ export function boxesIntersect(a: Box2, b: Box2): boolean {
   return a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
 }
 
-/** Percentile of an UNSORTED sample (sorts a copy; nearest-rank). */
+/** Percentile of an UNSORTED sample (sorts a copy; NEAREST-RANK: the value at
+ *  rank ⌈p·n⌉). `floor(p·n)` looks similar but is exclusive-rank — at exactly
+ *  n=10 it returns the MAXIMUM for p90, defeating outlier rejection precisely
+ *  at the MIN_POINTS floor where sparse samples need it most. */
 export function percentile(values: number[], p: number): number {
   const sorted = [...values].sort((a, b) => a - b);
-  return sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+  return sorted[Math.max(0, Math.ceil(p * sorted.length) - 1)];
 }
 
 /**
@@ -120,7 +123,56 @@ interface FootprintTarget {
   /** Vertex-mean anchor in ENU metres (closing vertex deduplicated). */
   cx: number;
   cz: number;
-  zs: number[];
+  /** SINGLE returns (ReturnNumber===1 && NumberOfReturns===1): solid-surface
+   *  echoes — canopy splits the pulse into multiple returns, so roofs under
+   *  overhanging trees keep a clean sample here. */
+  zsSingle: number[];
+  /** All first returns — the fallback when a footprint has too few singles
+   *  (dense canopy or sparse coverage). */
+  zsFirst: number[];
+}
+
+/** Pick the roof sample for a footprint: prefer single returns (canopy-proof),
+ *  fall back to first returns when singles are too sparse to measure. */
+export function pickRoofSample(
+  zsSingle: number[],
+  zsFirst: number[],
+  minPoints: number
+): { zs: number[]; usedFallback: boolean } {
+  if (zsSingle.length >= minPoints)
+    return { zs: zsSingle, usedFallback: false };
+  return { zs: zsFirst, usedFallback: true };
+}
+
+/** Datum tripwire evaluation, pure: median ground-class-vs-DTM delta with a
+ *  SAMPLE FLOOR — an unclassified dataset (zero class-2 points) must fail,
+ *  not vacuously report a perfect 0.0 (ellipsoidal or survey-feet z would
+ *  sail through unverified otherwise). Throws >5 m or under the floor;
+ *  warns >1.5 m. */
+export function assertDatumSane(
+  groundDeltas: number[],
+  minSamples = 500
+): number {
+  if (groundDeltas.length < minSamples) {
+    throw new Error(
+      `[fetch-lidar] only ${groundDeltas.length} ground-class samples (< ${minSamples}) — ` +
+        `the dataset's classification is too sparse to verify the vertical datum; ` +
+        `heights cannot be trusted (an ellipsoidal-z cloud would pass unverified)`
+    );
+  }
+  const sorted = [...groundDeltas].sort((a, b) => a - b);
+  const median = sorted[Math.floor(sorted.length / 2)];
+  if (Math.abs(median) > 5) {
+    throw new Error(
+      `[fetch-lidar] ground-class z sits ${median.toFixed(1)} m off the DTM — vertical datum mismatch; do not use these heights`
+    );
+  }
+  if (Math.abs(median) > 1.5) {
+    console.warn(
+      `[fetch-lidar] ground-vs-DTM median delta ${median.toFixed(2)} m — usable but investigate`
+    );
+  }
+  return median;
 }
 
 /** Spatial hash of footprint bboxes → candidate indices per cell. */
@@ -228,6 +280,51 @@ async function fetchBuffer(url: string): Promise<Uint8Array> {
   throw new Error(`EPT fetch failed: ${url}`);
 }
 
+type LazPerfModule = Awaited<ReturnType<typeof Las.PointData.createLazPerf>>;
+
+/**
+ * LAZ-file decompress with CORRECT WASM cleanup. copc's decompressFile
+ * mallocs blob + point buffers on the (shared, module-cached) LazPerf heap
+ * and frees NEITHER in its finally block — across the ~500 nodes of a site
+ * bake that leaks hundreds of MB of WASM heap. Same algorithm, plus the two
+ * _free calls its decompressChunk sibling already does. Fully synchronous
+ * after the instance exists, so pool() concurrency can't interleave heap use.
+ */
+export function decompressLazFile(
+  lazPerf: LazPerfModule,
+  file: Uint8Array,
+  header: { pointCount: number; pointDataRecordLength: number }
+): Uint8Array {
+  const { pointCount, pointDataRecordLength } = header;
+  const out = new Uint8Array(pointCount * pointDataRecordLength);
+  const blobPointer = lazPerf._malloc(file.byteLength);
+  const dataPointer = lazPerf._malloc(pointDataRecordLength);
+  const reader = new lazPerf.LASZip();
+  try {
+    lazPerf.HEAPU8.set(
+      new Uint8Array(file.buffer, file.byteOffset, file.byteLength),
+      blobPointer
+    );
+    reader.open(blobPointer, file.byteLength);
+    for (let i = 0; i < pointCount; i++) {
+      reader.getPoint(dataPointer);
+      out.set(
+        new Uint8Array(
+          lazPerf.HEAPU8.buffer,
+          dataPointer,
+          pointDataRecordLength
+        ),
+        i * pointDataRecordLength
+      );
+    }
+  } finally {
+    reader.delete();
+    lazPerf._free(blobPointer);
+    lazPerf._free(dataPointer);
+  }
+  return out;
+}
+
 /** Simple bounded-concurrency runner (order not preserved). */
 async function pool<T>(
   jobs: (() => Promise<T>)[],
@@ -251,7 +348,8 @@ async function pool<T>(
 export async function fetchLidarHeights(
   rawDir: string,
   box: GeoBox,
-  cfg: LidarConfig
+  cfg: LidarConfig,
+  vectorOffsetM: { x: number; z: number } = { x: 0, z: 0 }
 ): Promise<{
   buildings: number;
   measured: number;
@@ -259,8 +357,23 @@ export async function fetchLidarHeights(
   datumDeltaM: number;
 }> {
   mkdirSync(rawDir, { recursive: true });
-  const proj = createProjection(box);
-  const { widthM: groundWm, depthM: groundHm } = proj.groundSize();
+  // Two frames, deliberately distinct (#233):
+  // - rawProj (no offset): converts LIDAR points to ENU for the datum
+  //   tripwire — the cloud shares USGS georeferencing with the DTM, so no
+  //   vector correction applies to it.
+  // - offsetProj (pinned vectorOffsetM): the DTM anchor for each footprint
+  //   centroid — matching where the runtime actually RENDERS the building.
+  //   The binning rings get the same correction in Mercator (below), since
+  //   the roofs physically sit where the imagery/lidar frame says, not where
+  //   the raw OSM trace says.
+  const rawProj = createProjection(box);
+  const offsetProj = createProjection(box, vectorOffsetM);
+  const { widthM: groundWm, depthM: groundHm } = rawProj.groundSize();
+  // ENU metres → Web-Mercator metres are inflated by 1/cos(lat); +z is south
+  // (Mercator y decreases).
+  const cosLat = Math.cos(rawProj.centerLat * DEG);
+  const mercOffX = vectorOffsetM.x / cosLat;
+  const mercOffY = -vectorOffsetM.z / cosLat;
   const grid = JSON.parse(
     readFileSync(join(rawDir, 'terrain.json'), 'utf8')
   ) as TerrainGrid;
@@ -290,7 +403,11 @@ export async function fetchLidarHeights(
       g[0].lon === g[g.length - 1].lon;
     const verts = closed ? g.slice(0, -1) : g;
     const ring = g.map(
-      (p) => [lonToMercX(p.lon), latToMercY(p.lat)] as [number, number]
+      (p) =>
+        [lonToMercX(p.lon) + mercOffX, latToMercY(p.lat) + mercOffY] as [
+          number,
+          number,
+        ]
     );
     let x0 = Infinity,
       y0 = Infinity,
@@ -305,7 +422,7 @@ export async function fetchLidarHeights(
     let cx = 0,
       cz = 0;
     for (const p of verts) {
-      const [ex, ez] = proj.lonLatToEnu(p.lon, p.lat);
+      const [ex, ez] = offsetProj.lonLatToEnu(p.lon, p.lat);
       cx += ex;
       cz += ez;
     }
@@ -315,7 +432,8 @@ export async function fetchLidarHeights(
       bbox: { x0, y0, x1, y1 },
       cx: cx / verts.length,
       cz: cz / verts.length,
-      zs: [],
+      zsSingle: [],
+      zsFirst: [],
     });
   }
   const index = new FootprintIndex(targets);
@@ -367,19 +485,22 @@ export async function fetchLidarHeights(
   }
 
   // Download + decode + bin. Ground-class deltas double as the datum tripwire.
+  // ONE LazPerf instance for the whole run — see decompressLazFile.
+  const lazPerf = await Las.PointData.createLazPerf();
   const groundDeltas: number[] = [];
   let processed = 0;
   await pool(
     selected.map((node) => async () => {
       const laz = await fetchBuffer(`${cfg.ept}/ept-data/${node.key}.laz`);
       const header = Las.Header.parse(laz);
-      const data = await Las.PointData.decompressFile(laz);
+      const data = decompressLazFile(lazPerf, laz, header);
       const view = Las.View.create(data, header);
       const gX = view.getter('X');
       const gY = view.getter('Y');
       const gZ = view.getter('Z');
       const gC = view.getter('Classification');
       const gR = view.getter('ReturnNumber');
+      const gN = view.getter('NumberOfReturns');
       for (let i = 0; i < view.pointCount; i++) {
         const cls = gC(i);
         if (NOISE_CLASSES.has(cls)) continue;
@@ -387,10 +508,11 @@ export async function fetchLidarHeights(
         const y = gY(i);
         const cand = index.candidates(x, y);
         if (cls === 2 && groundDeltas.length < 50_000 && i % 7 === 0) {
-          // ENU of this point for the DTM comparison (Mercator → lon/lat → ENU)
+          // ENU of this point for the DTM comparison (Mercator → lon/lat →
+          // ENU through the RAW frame — no vector correction on lidar data).
           const lon = x / (DEG * R_MERC);
           const lat = (2 * Math.atan(Math.exp(y / R_MERC)) - Math.PI / 2) / DEG;
-          const [ex, ez] = proj.lonLatToEnu(lon, lat);
+          const [ex, ez] = rawProj.lonLatToEnu(lon, lat);
           if (Math.abs(ex) < groundWm / 2 && Math.abs(ez) < groundHm / 2) {
             groundDeltas.push(
               gZ(i) - dtmAtEnu(grid, ex, ez, groundWm, groundHm)
@@ -407,7 +529,12 @@ export async function fetchLidarHeights(
             y <= t.bbox.y1 &&
             pointInRing(x, y, t.ring)
           ) {
-            t.zs.push(gZ(i));
+            const z = gZ(i);
+            t.zsFirst.push(z);
+            // Single returns = the pulse hit ONE solid surface. Canopy over a
+            // roof splits the pulse (NumberOfReturns > 1), so preferring
+            // singles keeps overhanging trees out of the roof sample.
+            if (gN(i) === 1) t.zsSingle.push(z);
             break;
           }
         }
@@ -421,30 +548,25 @@ export async function fetchLidarHeights(
 
   // Datum tripwire: the cloud's ground class vs our DTM must agree to within
   // a couple of metres or the vertical datums differ (ellipsoidal heights
-  // would read ~30 m off here) and every height below would be wrong.
-  groundDeltas.sort((a, b) => a - b);
-  const datumDeltaM = groundDeltas.length
-    ? groundDeltas[Math.floor(groundDeltas.length / 2)]
-    : 0;
-  if (Math.abs(datumDeltaM) > 5) {
-    throw new Error(
-      `[fetch-lidar] ground-class z sits ${datumDeltaM.toFixed(1)} m off the DTM — vertical datum mismatch; do not use these heights`
-    );
-  }
-  if (Math.abs(datumDeltaM) > 1.5) {
-    console.warn(
-      `[fetch-lidar] ground-vs-DTM median delta ${datumDeltaM.toFixed(2)} m — usable but investigate`
-    );
-  }
+  // would read ~30 m off here) and every height below would be wrong. The
+  // sample floor makes "no ground class at all" a FAILURE, not a free pass.
+  const datumDeltaM = assertDatumSane(groundDeltas);
 
   const q = (n: number) => Math.round(n * 10) / 10;
   const heights: Record<number, number> = {};
   let measured = 0;
+  let canopyFallbacks = 0;
   for (const t of targets) {
-    if (t.zs.length < MIN_POINTS) continue;
+    const { zs, usedFallback } = pickRoofSample(
+      t.zsSingle,
+      t.zsFirst,
+      MIN_POINTS
+    );
+    if (zs.length < MIN_POINTS) continue;
     const dtm = dtmAtEnu(grid, t.cx, t.cz, groundWm, groundHm);
-    const h = percentile(t.zs, 0.9) - dtm;
+    const h = percentile(zs, 0.9) - dtm;
     if (h < MIN_HEIGHT_M || h > MAX_HEIGHT_M) continue;
+    if (usedFallback) canopyFallbacks++;
     heights[t.id] = q(h);
     measured++;
   }
@@ -457,12 +579,15 @@ export async function fetchLidarHeights(
       points: totalPts,
       datumDeltaM: q(datumDeltaM),
       groundSamples: groundDeltas.length,
+      canopyFallbacks,
+      vectorOffsetM,
     },
     heights,
   };
   writeFileSync(join(rawDir, 'lidar-heights.json'), JSON.stringify(out));
   console.log(
-    `[fetch-lidar] measured ${measured}/${targets.length} footprints (p90 first-return − DTM); ground-vs-DTM median ${datumDeltaM.toFixed(2)} m`
+    `[fetch-lidar] measured ${measured}/${targets.length} footprints (p90 single-return − DTM; ` +
+      `${canopyFallbacks} fell back to first returns); ground-vs-DTM median ${datumDeltaM.toFixed(2)} m`
   );
   return {
     buildings: targets.length,

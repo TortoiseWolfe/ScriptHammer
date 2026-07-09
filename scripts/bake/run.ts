@@ -2,8 +2,8 @@
 //
 //   pnpm bake                                       # flagship (sites/chatt.json)
 //   pnpm bake --site <slug>                         # bake an existing site config
-//   pnpm bake --address "2630 E Main St, Chattanooga TN" --radius 800
-//   pnpm bake --center 35.0212,-85.2673 --box 1600x1600 --slug main-st
+//   pnpm bake --address "1 Broad St, Chattanooga TN" --radius 800
+//   pnpm bake --center 35.0563,-85.3111 --box 1600x1600 --slug broad-st
 //
 // --address/--center scaffold a fully-explicit sites/<slug>.json (geocoding
 // happens once, here), then bake it — the config file is the reproducibility
@@ -159,7 +159,14 @@ export async function bake(site: SiteConfig) {
   await fetchTerrain(paths.raw, site.box, grid);
   if (site.lidar) {
     console.log('[bake] fetch-lidar-heights...');
-    console.log(await fetchLidarHeights(paths.raw, site.box, site.lidar));
+    console.log(
+      await fetchLidarHeights(
+        paths.raw,
+        site.box,
+        site.lidar,
+        site.vectorOffsetM
+      )
+    );
   }
   console.log('[bake] fetch-drape...');
   const drape = await fetchDrape(paths.raw, proj, site.mpp, site.drapeSource);

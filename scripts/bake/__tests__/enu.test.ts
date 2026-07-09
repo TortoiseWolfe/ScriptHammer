@@ -83,12 +83,12 @@ describe('createProjection', () => {
 
 describe('boxFromCenter', () => {
   it('round-trips: the derived box has the requested metric extents and centre', () => {
-    const box = boxFromCenter(35.0212, -85.2673, 1600, 900);
+    const box = boxFromCenter(35.0563, -85.3111, 1600, 900);
     const proj = createProjection(box);
     const { widthM, depthM } = proj.groundSize();
     expect(widthM).toBeCloseTo(1600, 6);
     expect(depthM).toBeCloseTo(900, 6);
-    expect(proj.centerLat).toBeCloseTo(35.0212, 10);
-    expect(proj.centerLon).toBeCloseTo(-85.2673, 10);
+    expect(proj.centerLat).toBeCloseTo(35.0563, 10);
+    expect(proj.centerLon).toBeCloseTo(-85.3111, 10);
   });
 });

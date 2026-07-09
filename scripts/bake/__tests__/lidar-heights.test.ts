@@ -9,6 +9,8 @@ import {
   percentile,
   dtmAtEnu,
   FootprintIndex,
+  pickRoofSample,
+  assertDatumSane,
 } from '../fetch-lidar-heights';
 import { resolveHeight } from '../height';
 import { SiteConfigSchema, provenanceFor } from '../site-config';
@@ -40,11 +42,52 @@ describe('keyBounds2d / boxesIntersect', () => {
 });
 
 describe('percentile (nearest-rank on an unsorted sample)', () => {
-  it('p90 of 1..10 (shuffled) is 10; p50 is 6', () => {
+  it('p90 of 1..10 (shuffled) is 9, NOT the max — the outlier-rejection contract at MIN_POINTS', () => {
+    // floor(p·n) would return index 9 (the maximum) at exactly n=10, giving a
+    // single canopy/bird outlier full control of the height precisely at the
+    // measurement floor. Nearest-rank ⌈p·n⌉ keeps one value of headroom.
     const v = [7, 1, 10, 3, 9, 2, 8, 4, 6, 5];
-    expect(percentile(v, 0.9)).toBe(10);
-    expect(percentile(v, 0.5)).toBe(6);
+    expect(percentile(v, 0.9)).toBe(9);
+    expect(percentile(v, 0.5)).toBe(5);
+    expect(percentile(v, 1)).toBe(10);
     expect(percentile([42], 0.9)).toBe(42);
+    expect(percentile([1, 2], 0.9)).toBe(2);
+  });
+});
+
+describe('pickRoofSample (canopy-proof single returns first)', () => {
+  it('prefers single returns when enough exist', () => {
+    const singles = Array.from({ length: 12 }, (_, i) => 200 + i * 0.1);
+    const firsts = [...singles, 230, 231]; // canopy spikes in the first-return set
+    expect(pickRoofSample(singles, firsts, 10)).toEqual({
+      zs: singles,
+      usedFallback: false,
+    });
+  });
+  it('falls back to first returns when singles are too sparse', () => {
+    const singles = [200, 201];
+    const firsts = Array.from({ length: 15 }, () => 205);
+    expect(pickRoofSample(singles, firsts, 10)).toEqual({
+      zs: firsts,
+      usedFallback: true,
+    });
+  });
+});
+
+describe('assertDatumSane (the tripwire cannot pass vacuously)', () => {
+  const good = Array.from({ length: 1000 }, (_, i) => -0.5 + (i % 10) * 0.1);
+  it('returns the median for a healthy sample', () => {
+    expect(Math.abs(assertDatumSane(good))).toBeLessThan(0.5);
+  });
+  it('FAILS below the sample floor — zero ground class must not read as a perfect 0.0', () => {
+    expect(() => assertDatumSane([])).toThrow(/ground-class samples/);
+    expect(() => assertDatumSane(good.slice(0, 499))).toThrow(
+      /ground-class samples/
+    );
+  });
+  it('fails on a datum-scale offset (ellipsoidal z would sit ~30 m off here)', () => {
+    const ell = Array.from({ length: 1000 }, () => -30.2);
+    expect(() => assertDatumSane(ell)).toThrow(/datum mismatch/);
   });
 });
 
