@@ -290,6 +290,57 @@ export async function loadHouse(slug: string): Promise<HouseInfo | null> {
   return house;
 }
 
+// --- Warehouse-sampled buildings (#259) ---------------------------------------
+//
+// Abstracted 3D Warehouse landmarks emitted by scripts/warehouse/emit-models.ts
+// into public/twins/<slug>/models/ (gitignored — local-only until a per-model
+// publish decision). The layer is OPTIONAL by construction: no models.json ⇒
+// null ⇒ layer off, so committed twins render identically in CI/live.
+
+export interface WarehouseModelEntry {
+  slug: string;
+  file: string;
+  title: string;
+  creator: string;
+  warehouseId: string;
+  url: string;
+  /** ENU anchor metres (already projected through the site's vectorOffsetM). */
+  x: number;
+  z: number;
+  yawDeg?: number;
+  scale?: number;
+  yOffset?: number;
+}
+
+export interface WarehouseModelsInfo {
+  site: string;
+  models: WarehouseModelEntry[];
+}
+
+/** Load a twin's sampled-buildings layer; null when the twin has none (404). */
+export async function loadWarehouseModels(
+  slug: string
+): Promise<WarehouseModelsInfo | null> {
+  const res = await fetch(siteAssetUrl(slug, 'models/models.json'));
+  if (!res.ok) return null;
+  const info = (await res.json()) as WarehouseModelsInfo;
+  if (!Array.isArray(info.models)) {
+    throw new Error(`models.json for twin "${slug}" has no models[] array`);
+  }
+  for (const m of info.models) {
+    if (
+      typeof m.file !== 'string' ||
+      typeof m.x !== 'number' ||
+      typeof m.z !== 'number'
+    ) {
+      throw new Error(
+        `models.json for twin "${slug}": entry "${m.slug ?? '?'}" needs file/x/z`
+      );
+    }
+  }
+  return info;
+}
+
 // --- Local-only HUD links ----------------------------------------------------
 //
 // twins/<slug>/links.local.json: [{ "label": "...", "href": "/twins/x/?house" }]

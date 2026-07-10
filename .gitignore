@@ -165,4 +165,8 @@ scripts/__tests__/fixtures/*
 # allowlisted twin. Publishing a consented capture requires its own deliberate
 # `!` entry, same as publishing the twin itself.
 /public/twins/*/house/
+# Warehouse-derived building models (#259) are 3D Warehouse General Model
+# License content — local-only by default (2026-07-10 decision); publishing
+# any model is a deliberate per-model call, same pattern as house/.
+/public/twins/*/models/
 knowledge/spatial

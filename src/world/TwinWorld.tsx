@@ -1,7 +1,11 @@
 'use client';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { TextureLoader, Texture } from 'three';
-import { loadSiteJson, siteAssetUrl } from '@/lib/manifest';
+import {
+  loadSiteJson,
+  loadWarehouseModels,
+  siteAssetUrl,
+} from '@/lib/manifest';
 import type {
   Building,
   Street,
@@ -9,9 +13,11 @@ import type {
   HouseInfo,
   TerrainGrid,
   Manifest,
+  WarehouseModelsInfo,
 } from '@/lib/manifest';
 import Buildings from './Buildings';
 import HouseModel from './HouseModel';
+import WarehouseModels from './WarehouseModels';
 import Terrain from './Terrain';
 import Streets from './Streets';
 import Heroes from './Heroes';
@@ -24,6 +30,8 @@ interface WorldData {
   heroes: Hero[];
   terrain: TerrainGrid;
   drape: Texture;
+  /** Optional Warehouse-sampled buildings layer (#259); null = twin has none. */
+  warehouseModels: WarehouseModelsInfo | null;
 }
 
 export default function TwinWorld({
@@ -59,12 +67,14 @@ export default function TwinWorld({
   useEffect(() => {
     let alive = true;
     (async () => {
-      const [buildings, streets, heroes, terrain] = await Promise.all([
-        loadSiteJson<Building[]>(slug, 'buildings.json'),
-        loadSiteJson<Street[]>(slug, 'streets.json'),
-        loadSiteJson<Hero[]>(slug, 'heroes.json'),
-        loadSiteJson<TerrainGrid>(slug, 'terrain.json'),
-      ]);
+      const [buildings, streets, heroes, terrain, warehouseModels] =
+        await Promise.all([
+          loadSiteJson<Building[]>(slug, 'buildings.json'),
+          loadSiteJson<Street[]>(slug, 'streets.json'),
+          loadSiteJson<Hero[]>(slug, 'heroes.json'),
+          loadSiteJson<TerrainGrid>(slug, 'terrain.json'),
+          loadWarehouseModels(slug),
+        ]);
       // drape.path is a filename relative to the site dir (defensively take the
       // basename so an old dir-prefixed manifest still resolves).
       const drapeFile = manifest.drape.path.split('/').pop() ?? 'drape.jpg';
@@ -72,7 +82,7 @@ export default function TwinWorld({
         siteAssetUrl(slug, drapeFile)
       );
       if (!alive) return;
-      setData({ buildings, streets, heroes, terrain, drape });
+      setData({ buildings, streets, heroes, terrain, drape, warehouseModels });
     })().catch((e: unknown) => {
       // Surface asset failures — a swallowed rejection here renders as an
       // empty sky with no explanation.
@@ -128,6 +138,16 @@ export default function TwinWorld({
         manifest={manifest}
         opacity={buildingsOpacity}
       />
+      {data.warehouseModels ? (
+        <Suspense fallback={null}>
+          <WarehouseModels
+            slug={slug}
+            info={data.warehouseModels}
+            grid={data.terrain}
+            manifest={manifest}
+          />
+        </Suspense>
+      ) : null}
       {scanVisible && house ? (
         <Suspense fallback={null}>
           <HouseModel

@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import {
   loadHouse,
+  loadWarehouseModels,
   loadLocalLinks,
   loadManifest,
   loadSiteJson,
@@ -289,6 +290,63 @@ describe('as-built house assets (#234)', () => {
       .mockResolvedValueOnce({ ok: false, status: 404 });
     vi.stubGlobal('fetch', fetchMock);
     await expect(loadHouse('main-st')).rejects.toThrow(/model\.glb/);
+  });
+});
+
+describe('warehouse-sampled buildings layer (#259)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+  const VALID_MODELS = {
+    site: 'chatt',
+    models: [
+      {
+        slug: 'walnut-street-bridge',
+        file: 'walnut-street-bridge.glb',
+        title: 'Walnut Street Bridge',
+        creator: 'Chattanooga 3D',
+        warehouseId: 'abc123',
+        url: 'https://3dwarehouse.sketchup.com/model/abc123',
+        x: 36.7,
+        z: -2451.4,
+        yawDeg: 0,
+      },
+    ],
+  };
+  it('loadWarehouseModels resolves null when the twin has no layer (404) — CI/live parity', async () => {
+    process.env.NEXT_PUBLIC_BASE_PATH = '';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 404 })
+    );
+    await expect(loadWarehouseModels('chatt')).resolves.toBeNull();
+  });
+  it('loadWarehouseModels returns validated entries', async () => {
+    process.env.NEXT_PUBLIC_BASE_PATH = '';
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => VALID_MODELS,
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const info = await loadWarehouseModels('chatt');
+    expect(info?.models).toHaveLength(1);
+    expect(fetchMock.mock.calls[0][0]).toBe('/twins/chatt/models/models.json');
+  });
+  it('loadWarehouseModels throws on malformed entries (missing x/z/file)', async () => {
+    process.env.NEXT_PUBLIC_BASE_PATH = '';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          site: 'chatt',
+          models: [{ slug: 'broken', file: 'broken.glb', x: 'nope' }],
+        }),
+      })
+    );
+    await expect(loadWarehouseModels('chatt')).rejects.toThrow(/file\/x\/z/);
   });
 });
 
