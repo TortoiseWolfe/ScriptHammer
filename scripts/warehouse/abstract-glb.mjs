@@ -16,7 +16,7 @@
  *   → prune → buildLodNodes(LOD1/LOD2 clones) → meshopt compression.
  *
  * Stage 2 of the crank (see docs/twins/warehouse-flow.md):
- * In:  sites/_warehouse/raw/<slug>.glb               (fetch-glbs.mjs output)
+ * In:  sites/_warehouse/raw/<slug>.glb               (fetch-glbs.ts output)
  * Out: public/twins/<site>/models/<slug>.glb         (SERVED directly — no
  *      intermediate copy; the dir is gitignored/local-only)
  *      sites/_warehouse/report.json                  (before/after stats)
@@ -217,20 +217,29 @@ const dirs = (await readdir(RAW))
   .map((f) => f.slice(0, -4))
   .filter((slug) => !only || slug === only)
   .sort();
+// Freshness must also see edits to THIS SCRIPT (the abstraction recipe):
+// without this, changing simplify ratios or the material sampler silently
+// ships the old abstraction until someone remembers --force.
+const scriptMtime = (await stat(new URL(import.meta.url))).mtimeMs;
+
 const report = [];
 const failed = [];
 for (const slug of dirs) {
   const rawPath = path.join(RAW, `${slug}.glb`);
   const outPath = path.join(OUT, `${slug}.glb`);
 
-  // Idempotent crank: skip models whose served GLB is newer than the raw
-  // cache (unless --force, or a single model was requested with --only).
+  // Idempotent crank: skip models whose served GLB is newer than BOTH the
+  // raw cache and the abstraction script (unless --force / --only).
   if (!only && !args.force) {
     const [rawStat, outStat] = await Promise.all([
       stat(rawPath).catch(() => null),
       stat(outPath).catch(() => null),
     ]);
-    if (rawStat && outStat && outStat.mtimeMs > rawStat.mtimeMs) {
+    if (
+      rawStat &&
+      outStat &&
+      outStat.mtimeMs > Math.max(rawStat.mtimeMs, scriptMtime)
+    ) {
       continue;
     }
   }
@@ -308,6 +317,13 @@ const prior = await readFile(reportPath, 'utf8')
 const bySlug = new Map(prior.map((r) => [r.slug, r]));
 for (const r of report) bySlug.set(r.slug, r);
 for (const f of failed) bySlug.delete(f.slug); // a failed model has no valid stats
+// Prune entries whose raw cache is gone (model removed from curation) — a
+// stale report entry would inflate the budget gate with a model that no
+// longer ships.
+const rawSet = new Set(dirs);
+for (const slug of [...bySlug.keys()]) {
+  if (!rawSet.has(slug) && !only) bySlug.delete(slug);
+}
 const merged = [...bySlug.values()].sort((a, b) => a.slug.localeCompare(b.slug));
 
 await writeFile(

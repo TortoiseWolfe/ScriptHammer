@@ -22,11 +22,12 @@ import {
   existsSync,
   readdirSync,
   rmSync,
+  statSync,
 } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { createProjection } from '../bake/enu';
-import { applyOverrides, type PlacementOverride } from './lib';
+import { applyOverrides, assignSlugs, type PlacementOverride } from './lib';
 
 const { values: args } = parseArgs({
   options: { site: { type: 'string', default: 'chatt' } },
@@ -56,36 +57,70 @@ const byId = new Map<string, any>(inventory.models.map((m: any) => [m.id, m]));
 const outDir = path.resolve(`public/twins/${site}/models`);
 mkdirSync(outDir, { recursive: true });
 
-const slugify = (s: string) =>
-  s
-    .toLowerCase()
-    .replace(/["'’]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 48);
+// --- Massing suppression (#259 iter 4, flicker fix #1) ----------------------
+// A sampled building and its extruded massing box co-occupy the same volume
+// (probe: 65/134 anchors literally inside a box ring) → coplanar-wall
+// z-fighting. Hide the box under every placed model, like the house scan's
+// hideBuildingIds. PIP + a near-miss buffer for anchors just outside their
+// footprint (geocode jitter).
 
-// Distinct buildings can share a generic title ("Building in Chattanooga,
-// TN, USA" ×15) — suffix the Warehouse id ONLY on collision so unique slugs
-// stay stable. MIRRORED in fetch-glbs.mjs; the two must agree.
-function assignSlugs(ids: string[]): Map<string, string> {
-  const counts = new Map<string, number>();
-  for (const id of ids) {
-    const m = byId.get(id);
-    if (!m) continue;
-    const base = slugify(m.title);
-    counts.set(base, (counts.get(base) ?? 0) + 1);
+interface BakedBuilding {
+  id: number; // OSM way id — numeric throughout (buildings.json, Building.id)
+  ring: number[]; // flat ENU [x,z,...]
+}
+
+function pointInRing(x: number, z: number, ring: number[]): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 2; i < ring.length; j = i, i += 2) {
+    const xi = ring[i];
+    const zi = ring[i + 1];
+    const xj = ring[j];
+    const zj = ring[j + 1];
+    if (zi > z !== zj > z && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) {
+      inside = !inside;
+    }
   }
-  const slugs = new Map<string, string>();
-  for (const id of ids) {
-    const m = byId.get(id);
-    if (!m) continue;
-    const base = slugify(m.title);
-    slugs.set(
-      id,
-      (counts.get(base) ?? 0) > 1 ? `${base}-${id.slice(0, 8)}` : base
+  return inside;
+}
+
+function distToRing(x: number, z: number, ring: number[]): number {
+  let best = Infinity;
+  for (let i = 0, j = ring.length - 2; i < ring.length; j = i, i += 2) {
+    const ax = ring[j];
+    const az = ring[j + 1];
+    const bx = ring[i];
+    const bz = ring[i + 1];
+    const abx = bx - ax;
+    const abz = bz - az;
+    const len2 = abx * abx + abz * abz || 1;
+    const t = Math.max(
+      0,
+      Math.min(1, ((x - ax) * abx + (z - az) * abz) / len2)
     );
+    const px = ax + t * abx;
+    const pz = az + t * abz;
+    best = Math.min(best, Math.hypot(x - px, z - pz));
   }
-  return slugs;
+  return best;
+}
+
+const HIDE_BUFFER_M = 10;
+
+function boxesUnder(
+  x: number,
+  z: number,
+  buildings: BakedBuilding[]
+): number[] {
+  const out: number[] = [];
+  for (const b of buildings) {
+    if (
+      pointInRing(x, z, b.ring) ||
+      distToRing(x, z, b.ring) <= HIDE_BUFFER_M
+    ) {
+      out.push(b.id);
+    }
+  }
+  return out;
 }
 
 interface EmittedModel {
@@ -110,10 +145,18 @@ interface EmittedModel {
 }
 
 const allIds = curatedFile.neighborhoods.flatMap((n) => n.ids);
-const slugById = assignSlugs(allIds);
+const slugById = assignSlugs(allIds, byId);
 const { widthM, depthM } = proj.groundSize();
 
+// Baked massing footprints for the suppression pass (flicker fix).
+const bakedBuildings: BakedBuilding[] = JSON.parse(
+  readFileSync(path.resolve(`public/twins/${site}/buildings.json`), 'utf8')
+);
+
+const SIZE_WARN_BYTES = 1_000_000;
+
 const models: EmittedModel[] = [];
+const hideBuildingIds = new Set<number>();
 let excluded = 0;
 for (const hood of curatedFile.neighborhoods) {
   for (const id of hood.ids) {
@@ -160,6 +203,19 @@ for (const hood of curatedFile.neighborhoods) {
       console.log(`[emit] ${slug}: excluded by override`);
       continue;
     }
+    // Budget honesty at the gate that ships (review PR3): a served GLB
+    // over the per-building ceiling is loud, not silent.
+    const glbBytes = statSync(path.join(outDir, `${slug}.glb`)).size;
+    if (glbBytes > SIZE_WARN_BYTES) {
+      console.warn(
+        `[emit] WARNING ${slug}: served GLB ${(glbBytes / 1e6).toFixed(2)}MB exceeds the ${SIZE_WARN_BYTES / 1e6}MB per-building budget`
+      );
+    }
+    // Suppress the massing box(es) under the TUNED anchor so the sampled
+    // building and its extruded twin never z-fight.
+    for (const bid of boxesUnder(tuned.x, tuned.z, bakedBuildings)) {
+      hideBuildingIds.add(bid);
+    }
     models.push(tuned);
   }
   console.log(
@@ -187,6 +243,8 @@ writeFileSync(
         key,
         label,
       })),
+      // Massing boxes to hide while this layer renders (z-fighting fix).
+      hideBuildingIds: [...hideBuildingIds].sort((a, b) => a - b),
       models,
     },
     null,
@@ -194,5 +252,5 @@ writeFileSync(
   )
 );
 console.log(
-  `\n[emit] ${models.length} models (${excluded} excluded) → public/twins/${site}/models/ (local-only)`
+  `\n[emit] ${models.length} models (${excluded} excluded), ${hideBuildingIds.size} massing boxes suppressed → public/twins/${site}/models/`
 );

@@ -77,7 +77,11 @@ export function deriveFraming(m: Manifest): Framing {
     panMaxZ: H / 2 + panMargin,
     fogNear: f.fogNear ?? 0.26 * L,
     fogFar: f.fogFar ?? 1.55 * L,
-    cameraNear: 1,
+    // near=5, not 1: a near:1/far:~8000 range starves 24-bit depth precision
+    // at the corridor's ~2.4km downtown distance — a direct z-fighting
+    // aggravator (#259 iter-4 review). Closest legitimate approach is the
+    // property view's minR=8, so 5 never clips.
+    cameraNear: 5,
     cameraFar: f.cameraFar ?? Math.max(2000, 1.4 * L),
     homeFocus,
     homeRadius,

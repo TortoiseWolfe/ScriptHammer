@@ -6,19 +6,24 @@
 // distance. Grounding follows the HouseModel pattern: bbox bottom seated on
 // the terrain at the anchor, yOffset as the fine-tune.
 //
-// Iteration 2: live placement OVERRIDES (the ?edit editor's localStorage
-// state) merge over the emitted entries — the same semantics as the durable
-// scripts/warehouse/overrides-*.json merged at emit time (dx/dz add to the
-// anchor; yaw/scale/yOffset replace; exclude hides). Selection highlights via
-// emissive tint (safe: every model owns its GLB's materials, and LOD clones
-// share them, so all levels highlight together).
+// CLONE-ON-MOUNT (iter-4 review C1+C2): useGLTF returns a CACHED, SHARED
+// gltf — mutating its materials (selection highlight) or re-parenting its
+// nodes (<primitive>) corrupts the cache the moment a file is reused. Every
+// instance therefore deep-clones the scene AND its materials up front;
+// highlight mutation and re-parenting are then per-instance-safe.
+//
+// Live placement overrides (the Edit mode's localStorage state) merge via
+// the SHARED applyOverrides from src/lib/placement.ts — the same function
+// the emit stage uses, so the live preview and the emitted artifact are
+// bit-identical (the review found the hand-copied version had already
+// drifted on rounding).
 //
 // useGLTF is called with useDraco=false, useMeshopt=true — explicit intent:
 // the GLBs are EXT_meshopt_compression (decoder bundled in three-stdlib, no
 // public/ wasm, no CDN), and drei's default draco path points at a gstatic
 // CDN this offline-capable static site must not depend on.
-import { useEffect, useMemo } from 'react';
-import { Box3, Color } from 'three';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Box3, Color, DoubleSide, Group } from 'three';
 import type { Mesh, MeshStandardMaterial, Object3D } from 'three';
 import type { ThreeEvent } from '@react-three/fiber';
 import { Detailed, useGLTF } from '@react-three/drei';
@@ -30,30 +35,18 @@ import type {
   WarehouseModelEntry,
   WarehouseModelsInfo,
 } from '@/lib/manifest';
+import { applyOverrides } from '@/lib/placement';
 import { elevationAt, minElevation } from './terrainSample';
 
 const LOD_NAMES = ['LOD0', 'LOD1', 'LOD2'] as const;
 const LOD_DISTANCES = [0, 150, 400];
-const HIGHLIGHT = new Color(0x3377ff);
-const BLACK = new Color(0x000000);
+// SketchUp geometry has mixed winding; buildings must read from every angle.
+// Raising hysteresis damps LOD boundary dithering during orbit (review #4).
+const LOD_HYSTERESIS = 0.25;
+const HIGHLIGHT = new Color(0x66aaff);
 
-/** Merge a live editor override onto an emitted entry (mirrors
- *  scripts/warehouse/lib.ts applyOverrides; null = excluded). */
-export function mergeOverride(
-  entry: WarehouseModelEntry,
-  ov: TwinPlacementOverride | undefined
-): WarehouseModelEntry | null {
-  if (!ov) return entry;
-  if (ov.exclude) return null;
-  return {
-    ...entry,
-    x: entry.x + (ov.dx ?? 0),
-    z: entry.z + (ov.dz ?? 0),
-    yawDeg: ov.yawDeg ?? entry.yawDeg,
-    scale: ov.scale ?? entry.scale,
-    yOffset: ov.yOffset ?? entry.yOffset,
-  };
-}
+/** Ref handle the editor's gizmo attaches to (the placed group). */
+export type ModelGroupRegistry = (slug: string, group: Group | null) => void;
 
 function SampledBuilding({
   slug,
@@ -62,6 +55,7 @@ function SampledBuilding({
   manifest,
   selected,
   onSelect,
+  registerGroup,
 }: {
   slug: string;
   entry: WarehouseModelEntry;
@@ -69,35 +63,51 @@ function SampledBuilding({
   manifest: Manifest;
   selected: boolean;
   onSelect?: (slug: string) => void;
+  registerGroup?: ModelGroupRegistry;
 }) {
   const gltf = useGLTF(siteAssetUrl(slug, `models/${entry.file}`), false, true);
 
+  // Per-instance clone: scene graph AND materials (Object3D.clone shares
+  // materials — both must clone for highlight mutation to be instance-safe).
   const { lods, bottomY } = useMemo(() => {
-    gltf.scene.traverse((o) => {
+    const scene = gltf.scene.clone(true);
+    scene.traverse((o) => {
       const mesh = o as Mesh;
       if (mesh.isMesh) {
         mesh.castShadow = true;
         mesh.receiveShadow = true;
+        const mats = Array.isArray(mesh.material)
+          ? mesh.material
+          : [mesh.material];
+        const cloned = mats.map((m) => {
+          const c = (m as MeshStandardMaterial).clone();
+          // Mixed-winding SketchUp shells: without DoubleSide, walls vanish
+          // by view angle (83/233 shipped materials are single-sided).
+          c.side = DoubleSide;
+          return c;
+        });
+        mesh.material = Array.isArray(mesh.material) ? cloned : cloned[0];
       }
     });
-    const found = LOD_NAMES.map((n) => gltf.scene.getObjectByName(n)).filter(
+    const found = LOD_NAMES.map((n) => scene.getObjectByName(n)).filter(
       (o): o is Object3D => Boolean(o)
     );
     // A GLB without LOD nodes (foreign/hand-made) renders whole as one level.
-    const lods = found.length === LOD_NAMES.length ? found : [gltf.scene];
+    const lods = found.length === LOD_NAMES.length ? found : [scene];
     // Ground on LOD0's extent — all levels share the footprint.
     const box = new Box3().setFromObject(lods[0]);
     return { lods, bottomY: box.min.y };
   }, [gltf]);
 
-  // Grounding is recomputed when the editor nudges the anchor: the building
+  // Grounding recomputes when the editor nudges the anchor: the building
   // keeps its feet on the terrain as it moves.
   const groundY = useMemo(
     () => elevationAt(grid, manifest, entry.x, entry.z) - minElevation(grid),
     [grid, manifest, entry.x, entry.z]
   );
 
-  // Selection highlight — emissive tint on this model's own materials.
+  // Selection highlight on the per-instance materials, with cleanup so an
+  // unmount-while-selected never strands a tint.
   useEffect(() => {
     const mats = new Set<MeshStandardMaterial>();
     for (const lod of lods) {
@@ -113,11 +123,29 @@ function SampledBuilding({
     }
     for (const m of mats) {
       if (m.emissive) {
-        m.emissive.copy(selected ? HIGHLIGHT : BLACK);
-        m.emissiveIntensity = selected ? 0.4 : 0;
+        m.emissive.copy(selected ? HIGHLIGHT : new Color(0x000000));
+        m.emissiveIntensity = selected ? 1.0 : 0;
       }
     }
+    return () => {
+      for (const m of mats) {
+        if (m.emissive) {
+          m.emissive.setHex(0x000000);
+          m.emissiveIntensity = 0;
+        }
+      }
+    };
   }, [lods, selected]);
+
+  // Only the SELECTED building registers its group (the gizmo's attach
+  // point). React flushes all effect cleanups before creates, so on a
+  // selection switch the old building's null lands before the new group.
+  const groupRef = useRef<Group>(null);
+  useEffect(() => {
+    if (!registerGroup || !selected) return;
+    registerGroup(entry.slug, groupRef.current);
+    return () => registerGroup(entry.slug, null);
+  }, [registerGroup, entry.slug, selected]);
 
   const scale = entry.scale ?? 1;
   const position: [number, number, number] = [
@@ -131,41 +159,37 @@ function SampledBuilding({
     0,
   ];
   // R3F's synthetic click carries screen-space movement since pointer-down
-  // (`delta`); a drag that ends on a building must not select it. The Rig's
-  // native drag listeners are a separate channel and unaffected either way.
+  // (`delta`); a drag that ends on a building must not select it — but the
+  // old 5px gate rejected nearly every real click after an orbit settle
+  // (review: THE primary "edits don't apply" cause). 12px matches typical
+  // click jitter while still excluding deliberate drags.
   const handleClick = onSelect
     ? (e: ThreeEvent<MouseEvent>) => {
-        if (e.delta > 5) return;
+        if (e.delta > 12) return;
         e.stopPropagation();
         onSelect(entry.slug);
       }
     : undefined;
 
-  if (lods.length === 1) {
-    return (
-      <group onClick={handleClick}>
-        <primitive
-          object={lods[0]}
-          position={position}
-          rotation={rotation}
-          scale={scale}
-        />
-      </group>
-    );
-  }
+  // The OUTER group carries the placement transform in both branches — one
+  // consistent attach point for selection, the highlight, and the gizmo.
   return (
-    <group onClick={handleClick}>
-      <Detailed
-        distances={LOD_DISTANCES}
-        hysteresis={0.1}
-        position={position}
-        rotation={rotation}
-        scale={scale}
-      >
-        {lods.map((o) => (
-          <primitive key={o.name} object={o} />
-        ))}
-      </Detailed>
+    <group
+      ref={groupRef}
+      onClick={handleClick}
+      position={position}
+      rotation={rotation}
+      scale={scale}
+    >
+      {lods.length === 1 ? (
+        <primitive object={lods[0]} />
+      ) : (
+        <Detailed distances={LOD_DISTANCES} hysteresis={LOD_HYSTERESIS}>
+          {lods.map((o, i) => (
+            <primitive key={`${i}-${o.name}`} object={o} />
+          ))}
+        </Detailed>
+      )}
     </group>
   );
 }
@@ -178,6 +202,7 @@ export default function WarehouseModels({
   overrides,
   selected,
   onSelect,
+  registerGroup,
 }: {
   slug: string;
   info: WarehouseModelsInfo;
@@ -188,26 +213,33 @@ export default function WarehouseModels({
   /** Slug of the editor-selected building (emissive highlight). */
   selected?: string | null;
   onSelect?: (slug: string) => void;
+  /** Lets the editor's gizmo find the selected building's group. */
+  registerGroup?: ModelGroupRegistry;
 }) {
   const placed = useMemo(
     () =>
       info.models
-        .map((entry) => mergeOverride(entry, overrides?.[entry.slug]))
+        .map((entry) => applyOverrides(entry, overrides?.[entry.slug]))
         .filter((e): e is WarehouseModelEntry => e !== null),
     [info.models, overrides]
   );
   return (
     <>
       {placed.map((entry) => (
-        <SampledBuilding
-          key={entry.slug}
-          slug={slug}
-          entry={entry}
-          grid={grid}
-          manifest={manifest}
-          selected={selected === entry.slug}
-          onSelect={onSelect}
-        />
+        // Per-model boundary: the city streams in progressively instead of
+        // all-or-nothing — one slow (or hung) GLB can no longer hold every
+        // other building (and the editor's selection/gizmo) in fallback.
+        <Suspense key={entry.slug} fallback={null}>
+          <SampledBuilding
+            slug={slug}
+            entry={entry}
+            grid={grid}
+            manifest={manifest}
+            selected={selected === entry.slug}
+            onSelect={onSelect}
+            registerGroup={registerGroup}
+          />
+        </Suspense>
       ))}
     </>
   );

@@ -82,6 +82,8 @@ export default function PlacementEditor({
   entry,
   override,
   overrideCount,
+  gizmoMode,
+  onGizmoMode,
   onChange,
   onReset,
   onExport,
@@ -92,6 +94,9 @@ export default function PlacementEditor({
   override: TwinPlacementOverride;
   /** How many models currently carry local overrides (export scope hint). */
   overrideCount: number;
+  /** In-scene gizmo handle set (Move = ground-plane drag, Rotate = yaw ring). */
+  gizmoMode?: 'translate' | 'rotate';
+  onGizmoMode?: (mode: 'translate' | 'rotate') => void;
   onChange: (patch: TwinPlacementOverride) => void;
   onReset: () => void;
   /** Returns the JSON that was exported (already on the clipboard). */
@@ -124,6 +129,40 @@ export default function PlacementEditor({
       {entry ? (
         <>
           <div style={{ fontSize: 13, opacity: 0.9 }}>{entry.title}</div>
+          {gizmoMode && onGizmoMode ? (
+            <div
+              role="group"
+              aria-label="Gizmo mode"
+              style={{ display: 'flex', gap: 6 }}
+            >
+              {(
+                [
+                  ['translate', 'Move'],
+                  ['rotate', 'Rotate'],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  style={{
+                    ...btn,
+                    flex: 1,
+                    ...(gizmoMode === key
+                      ? {
+                          background: 'rgba(102,170,255,0.25)',
+                          // Full shorthand — mixing `border` (from btn) with
+                          // `borderColor` trips React's style-conflict error.
+                          border: '1px solid rgba(102,170,255,0.6)',
+                        }
+                      : {}),
+                  }}
+                  aria-pressed={gizmoMode === key}
+                  onClick={() => onGizmoMode(key)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <Row
             label="Yaw"
             value={`${(override.yawDeg ?? entry.yawDeg ?? 0).toFixed(0)}°`}
@@ -211,7 +250,7 @@ export default function PlacementEditor({
             </button>
           </div>
           <div style={{ fontSize: 11, opacity: 0.55 }}>
-            Keys: [ ] yaw · − = height · arrows nudge
+            Drag the gizmo, or keys: [ ] yaw · − = height · arrows nudge
           </div>
         </>
       ) : (

@@ -14,7 +14,7 @@ import type {
 } from '@/lib/manifest';
 import Buildings from './Buildings';
 import HouseModel from './HouseModel';
-import WarehouseModels from './WarehouseModels';
+import WarehouseModels, { type ModelGroupRegistry } from './WarehouseModels';
 import Terrain from './Terrain';
 import Streets from './Streets';
 import Heroes from './Heroes';
@@ -40,6 +40,7 @@ export default function TwinWorld({
   modelOverrides,
   selectedModel,
   onSelectModel,
+  registerModelGroup,
   onHouseGround,
   onGroundReady,
   onError,
@@ -60,6 +61,8 @@ export default function TwinWorld({
   modelOverrides?: Record<string, TwinPlacementOverride>;
   selectedModel?: string | null;
   onSelectModel?: (slug: string) => void;
+  /** Surfaces the selected building's group for the editor's gizmo. */
+  registerModelGroup?: ModelGroupRegistry;
   /** Reports the terrain height (runtime Y) under the house anchor once the
    *  grid loads — lets the composition root aim the camera at the parcel. */
   onHouseGround?: (y: number) => void;
@@ -111,15 +114,20 @@ export default function TwinWorld({
     onGroundReady((x, z) => elevationAt(data.terrain, manifest, x, z) - min);
   }, [data, manifest, onGroundReady]);
 
-  // While the as-built scan is shown, its massing boxes step aside so the two
-  // don't z-fight on the parcel (identity changes only on toggle).
+  // Massing boxes step aside wherever a higher-fidelity layer occupies the
+  // same volume, so the two never z-fight: the as-built scan's parcel boxes
+  // (while shown) and every sampled Warehouse building's box(es) — the
+  // latter emitted per-anchor by point-in-polygon at emit time.
   const scanVisible = showHouse && !!house;
   const visibleBuildings = useMemo(() => {
     if (!data) return [];
-    if (!scanVisible || !house?.hideBuildingIds?.length) return data.buildings;
-    const hide = new Set(house.hideBuildingIds);
+    const hide = new Set<number>(warehouseModels?.hideBuildingIds ?? []);
+    if (scanVisible && house?.hideBuildingIds?.length) {
+      for (const id of house.hideBuildingIds) hide.add(id);
+    }
+    if (hide.size === 0) return data.buildings;
     return data.buildings.filter((b) => !hide.has(b.id));
-  }, [data, scanVisible, house]);
+  }, [data, scanVisible, house, warehouseModels]);
 
   if (!data) return null;
   return (
@@ -152,6 +160,7 @@ export default function TwinWorld({
             overrides={modelOverrides}
             selected={selectedModel}
             onSelect={onSelectModel}
+            registerGroup={registerModelGroup}
           />
         </Suspense>
       ) : null}
