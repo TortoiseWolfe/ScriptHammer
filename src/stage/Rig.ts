@@ -85,6 +85,12 @@ export class Rig {
   focus: Vector3;
   /** Pending fly-to glide target for the orbit pivot (null = none). */
   tFocus: Vector3 | null;
+  /** While true, idle-drift is suppressed — the camera holds its subject
+   *  (set while the editor has a building selected). */
+  holdFocus: boolean;
+  /** While false, pointer input is ignored — the editor's transform gizmo
+   *  sets this during drags so moving a building doesn't orbit the camera. */
+  inputEnabled: boolean;
   theta: number;
   phi: number;
   radius: number;
@@ -175,6 +181,8 @@ export class Rig {
     // orbit state
     this.focus = new Vector3(0, 0, 0);
     this.tFocus = null;
+    this.holdFocus = false;
+    this.inputEnabled = true;
     this.theta = 0.7;
     this.phi = 0.62;
     this.radius = 120;
@@ -314,6 +322,7 @@ export class Rig {
   }
 
   _down(e: MouseEvent): void {
+    if (!this.inputEnabled) return;
     this.idle = 0;
     this.dragging = true;
     this._lx = e.clientX;
@@ -321,6 +330,7 @@ export class Rig {
     if (this.mode === 'tour') this.setMode('orbit');
   }
   _move(e: MouseEvent): void {
+    if (!this.inputEnabled) return;
     this.idle = 0;
     const mx =
       e.movementX != null ? e.movementX : e.clientX - (this._lx || e.clientX);
@@ -346,6 +356,7 @@ export class Rig {
     }
   }
   _wheel(e: WheelEvent): void {
+    if (!this.inputEnabled) return;
     if (this.mode !== 'orbit' && this.mode !== 'follow') return;
     e.preventDefault();
     this.idle = 0;
@@ -372,7 +383,10 @@ export class Rig {
     if (m === this.mode) return;
     // preserve view continuity across the switch
     if (m === 'orbit') {
-      this._syncOrbitFromCam();
+      // A pending fly-to owns focus/radius (flyTo set tFocus/tRadius before
+      // the React mode-change effect fires) — sync only the angles then, or
+      // the glide's target radius gets clobbered by the camera's distance.
+      this._syncOrbitFromCam(this.tFocus !== null);
     }
     if (m === 'walk') {
       this.yaw = this._camYaw();
@@ -399,11 +413,12 @@ export class Rig {
     const e = new Euler().setFromQuaternion(this.cam.quaternion, 'YXZ');
     return e.x;
   }
-  _syncOrbitFromCam(): void {
+  _syncOrbitFromCam(anglesOnly = false): void {
     const off = new Vector3().subVectors(this.cam.position, this.focus);
     let r = off.length();
     if (r < 1) r = this.radius;
-    this.radius = this.tRadius = clamp(r, this.o.minR, this.o.maxR);
+    if (!anglesOnly)
+      this.radius = this.tRadius = clamp(r, this.o.minR, this.o.maxR);
     this.theta = this.tTheta = Math.atan2(off.x, off.z);
     this.phi = this.tPhi = clamp(
       Math.acos(clamp(off.y / r, -1, 1)),
@@ -588,7 +603,10 @@ export class Rig {
       if (d < 0.5) this.tFocus = null;
     }
 
-    if (this.idle > 3.0) this.tTheta += this.o.idleDrift * 0.002 * dt * 60; // gentle drift
+    // Ambient idle-drift — suppressed while the editor holds a subject
+    // (drifting away from a just-selected building undercuts the fly-to).
+    if (this.idle > 3.0 && !this.holdFocus)
+      this.tTheta += this.o.idleDrift * 0.002 * dt * 60; // gentle drift
     this.theta = damp(this.theta, this.tTheta, 6, dt);
     this.phi = damp(this.phi, this.tPhi, 6, dt);
     this.radius = damp(this.radius, this.tRadius, 5, dt);

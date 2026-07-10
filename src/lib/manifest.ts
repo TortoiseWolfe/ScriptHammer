@@ -326,20 +326,18 @@ export interface WarehouseModelsInfo {
   site: string;
   /** Ordered directory groups; entries reference these by `neighborhood`. */
   neighborhoods?: { key: string; label: string }[];
+  /** Massing-box ids (numeric OSM way ids, like Building.id) to hide while
+   *  this layer renders — emitted per placed anchor (point-in-polygon vs
+   *  buildings.json) so a sampled building and its extruded twin never
+   *  z-fight. */
+  hideBuildingIds?: number[];
   models: WarehouseModelEntry[];
 }
 
-/** Live placement adjustment from the ?edit editor (localStorage-backed) —
- *  same semantics as scripts/warehouse/overrides-*.json merged at emit time:
- *  dx/dz add to the anchor, yawDeg/scale/yOffset replace, exclude hides. */
-export interface TwinPlacementOverride {
-  yawDeg?: number;
-  scale?: number;
-  yOffset?: number;
-  dx?: number;
-  dz?: number;
-  exclude?: boolean;
-}
+/** Live placement adjustment from the Edit mode (localStorage-backed) —
+ *  IDENTICAL semantics to the committed overrides file because both run
+ *  through the one shared applyOverrides (src/lib/placement.ts). */
+export type { PlacementOverride as TwinPlacementOverride } from './placement';
 
 /** Load a twin's sampled-buildings layer; null when the twin has none (404). */
 export async function loadWarehouseModels(

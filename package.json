@@ -93,7 +93,7 @@
     "gitleaks:staged": "gitleaks protect --staged --config .gitleaks.toml",
     "bake": "tsx scripts/bake/run.ts",
     "warehouse:inventory": "node scripts/warehouse/inventory.mjs",
-    "warehouse:sync": "node scripts/warehouse/fetch-glbs.mjs && node scripts/warehouse/abstract-glb.mjs && tsx scripts/warehouse/emit-models.ts",
+    "warehouse:sync": "tsx scripts/warehouse/fetch-glbs.ts && node scripts/warehouse/abstract-glb.mjs && tsx scripts/warehouse/emit-models.ts",
     "warehouse:qc": "node scripts/warehouse/qc-sheet.mjs"
   },
   "dependencies": {

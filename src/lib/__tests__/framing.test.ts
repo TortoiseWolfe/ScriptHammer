@@ -57,8 +57,11 @@ describe('deriveFraming — formulas at chatt dimensions', () => {
     expect(f.fogNear).toBeCloseTo(0.26 * L, 6); // ≈1506
     expect(f.fogFar).toBeCloseTo(1.55 * L, 6); // ≈8976
   });
-  it('camera planes (old: near 1, far 8000)', () => {
-    expect(f.cameraNear).toBe(1);
+  it('camera planes (near 5 for depth precision — #259 iter 4, far ≈8000)', () => {
+    // near:1 over an ~8km far plane starved 24-bit depth downtown (z-fight
+    // aggravator). Closest legitimate approach is the property view's
+    // minR=8, so 5 never clips.
+    expect(f.cameraNear).toBe(5);
     expect(f.cameraFar).toBeCloseTo(1.4 * L, 6); // ≈8108
   });
   it('home orbit (old: radius 2600, phi 0.62, theta 0) + authored focus', () => {

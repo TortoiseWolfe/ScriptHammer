@@ -7,20 +7,23 @@
 // framing derived from the model's true extents (src/lib/framing.ts).
 
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { NoToneMapping, LinearSRGBColorSpace, type Vector3 } from 'three';
+import {
+  NoToneMapping,
+  LinearSRGBColorSpace,
+  type DirectionalLight,
+  type Group,
+  type Vector3,
+} from 'three';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import StageCore, { StageHandle } from '@/stage/StageCore';
 import { Rig, RigMode, RigWaypoint } from '@/stage/Rig';
 import TwinWorld from '@/world/TwinWorld';
 import Trolley from '@/agents/trolley';
-import Hud, {
-  HudCaption,
-  HudDirectoryGroup,
-  HudLink,
-  HudOption,
-  HudSlider,
-} from '@/stage/Hud';
+import Hud, { HudCaption, HudLink, HudOption, HudSlider } from '@/stage/Hud';
 import PlacementEditor from './PlacementEditor';
+import WarehouseGizmo from './WarehouseGizmo';
+import { useWarehouseEditor } from './useWarehouseEditor';
+import type { ModelGroupRegistry } from '@/world/WarehouseModels';
 import { computeDay } from '@/stage/lightRig';
 import { PALETTES, applyProfile } from '@/packs/themes';
 import {
@@ -127,6 +130,8 @@ function SceneInner({
   modelOverrides,
   selectedModel,
   onSelectModel,
+  patchOverride,
+  gizmoMode,
 }: {
   slug: string;
   manifest: Manifest;
@@ -155,6 +160,9 @@ function SceneInner({
   modelOverrides?: Record<string, TwinPlacementOverride>;
   selectedModel?: string | null;
   onSelectModel?: (slug: string) => void;
+  /** Present in edit mode: the gizmo writes drag deltas through this. */
+  patchOverride?: (patch: TwinPlacementOverride) => void;
+  gizmoMode?: 'translate' | 'rotate';
 }) {
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
@@ -204,10 +212,12 @@ function SceneInner({
   // ortho→Miniature keeps rigMode 'orbit' but must still re-frame cleanly.
   useEffect(() => {
     const rigMode: RigMode = mode === 'ortho' ? 'orbit' : mode;
-    if (rigMode === 'orbit') {
+    if (rigMode === 'orbit' && !rig.tFocus) {
       // Enter Miniature from a clean, guaranteed-good overhead frame rather than
       // syncing from a possibly-buried tour camera: pull up and look down at the
-      // home focus so the whole diorama reads as a toy model.
+      // home focus so the whole diorama reads as a toy model. Skipped while a
+      // fly-to glide is pending (directory/editor flyToModel switched the mode
+      // and set rig.tFocus synchronously) — the glide owns focus/radius then.
       const { homeFocus, homeRadius, homePhi, homeTheta } = framing;
       rig.focus.set(...homeFocus);
       rig.radius = rig.tRadius = homeRadius;
@@ -259,6 +269,61 @@ function SceneInner({
     registerRig?.(rig);
   }, [rig, registerRig]);
 
+  // Gizmo plumbing (#259 iter 4): the selected building registers its placed
+  // group (WarehouseModels only registers the selected one); the gizmo
+  // attaches to it and writes drag deltas back as placement overrides. While
+  // a handle drags, the Rig ignores pointer input so moving a building
+  // doesn't also orbit the camera.
+  const [gizmoTarget, setGizmoTarget] = useState<Group | null>(null);
+  const registerModelGroup = useCallback<ModelGroupRegistry>(
+    (_slug, group) => setGizmoTarget(group),
+    []
+  );
+  const gizmoBase = useMemo(() => {
+    if (!selectedModel || !warehouseModels) return null;
+    const m = warehouseModels.models.find((e) => e.slug === selectedModel);
+    // dx/dz are deltas from the UN-overridden emitted anchor.
+    return m ? { x: m.x, z: m.z } : null;
+  }, [selectedModel, warehouseModels]);
+  const handleGizmoDragging = useCallback(
+    (dragging: boolean) => {
+      rig.inputEnabled = !dragging;
+    },
+    [rig]
+  );
+
+  // Shadow fit (#259 iter-4 review): three's defaults — 512² map, ±5 m ortho
+  // frustum — over a multi-km scene meant every surface sampled the same few
+  // texels, reading as acne/shimmer while orbiting. Fit the frustum to the
+  // ground extents (symmetric half-span: valid for any sun azimuth), scale
+  // the map, and lean on normalBias (surface-slope offset, no peter-panning
+  // at these texel sizes). Imperative because shadow-camera props applied
+  // post-mount don't refresh the projection matrix, and resizing mapSize
+  // must dispose the already-allocated map.
+  const sunRef = useRef<DirectionalLight | null>(null);
+  useEffect(() => {
+    const sun = sunRef.current;
+    if (!sun) return;
+    const half = Math.max(framing.panMaxX, framing.panMaxZ);
+    const cam = sun.shadow.camera;
+    cam.left = -half;
+    cam.right = half;
+    cam.top = half;
+    cam.bottom = -half;
+    cam.near = 1;
+    cam.far = Math.hypot(d.sunPos[0], d.sunPos[1], d.sunPos[2]) + half;
+    cam.updateProjectionMatrix();
+    if (
+      sun.shadow.mapSize.x !== 2048 &&
+      sun.shadow.map // resize after allocation → must drop the old target
+    ) {
+      sun.shadow.map.dispose();
+      sun.shadow.map = null;
+    }
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.normalBias = 1;
+  }, [framing, d]);
+
   // Honest perf sampling (#259). renderer.info auto-resets after EVERY
   // gl.render — with the EffectComposer chain the last post pass would report
   // 1 call / 2 triangles. So: autoReset off; this priority-0 frame runs BEFORE
@@ -278,17 +343,21 @@ function SceneInner({
     acc.frames += 1;
     acc.t += dt;
     if (acc.t >= 0.5) {
-      const fps = acc.frames / acc.t;
-      onFps?.(fps);
-      (
-        window as unknown as { __twinPerf?: Record<string, number> }
-      ).__twinPerf = {
-        fps: Math.round(fps),
-        calls: gl.info.render.calls,
-        triangles: gl.info.render.triangles,
-        geometries: gl.info.memory.geometries,
-        textures: gl.info.memory.textures,
-      };
+      // Only construct the sample when someone is listening (the FPS HUD /
+      // scripted probes) — no per-half-second garbage on the default path.
+      if (onFps) {
+        const fps = acc.frames / acc.t;
+        onFps(fps);
+        (
+          window as unknown as { __twinPerf?: Record<string, number> }
+        ).__twinPerf = {
+          fps: Math.round(fps),
+          calls: gl.info.render.calls,
+          triangles: gl.info.render.triangles,
+          geometries: gl.info.memory.geometries,
+          textures: gl.info.memory.textures,
+        };
+      }
       acc.frames = 0;
       acc.t = 0;
     }
@@ -347,6 +416,7 @@ function SceneInner({
       <ambientLight intensity={d.ambient} />
       <hemisphereLight args={[d.hemiSky, d.hemiGround, d.hemiIntensity]} />
       <directionalLight
+        ref={sunRef}
         position={d.sunPos}
         intensity={d.sunIntensity}
         color={d.sunColor}
@@ -363,10 +433,20 @@ function SceneInner({
         modelOverrides={modelOverrides}
         selectedModel={selectedModel}
         onSelectModel={onSelectModel}
+        registerModelGroup={patchOverride ? registerModelGroup : undefined}
         onHouseGround={onHouseGround}
         onGroundReady={handleGroundReady}
         onError={onWorldError}
       />
+      {gizmoTarget && gizmoBase && patchOverride ? (
+        <WarehouseGizmo
+          target={gizmoTarget}
+          base={gizmoBase}
+          mode={gizmoMode ?? 'translate'}
+          onCommit={patchOverride}
+          onDragging={handleGizmoDragging}
+        />
+      ) : null}
       {site.trolley && (
         <Trolley
           polyline={site.trolley}
@@ -521,108 +601,28 @@ function TwinCanvasInner({
   const [worldError, setWorldError] = useState<string | null>(null);
 
   // --- Warehouse layer: directory + placement editor (#259) ---
-  // Edit mode is a dock toggle (iteration 3); ?edit pre-enables it for
-  // scripted/deep-link access. Only meaningful when the models layer exists.
-  const [editRequested, setEditRequested] = useState(
-    () =>
-      typeof window !== 'undefined' &&
-      new URLSearchParams(window.location.search).has('edit')
-  );
-  const editMode = editRequested && !!warehouseModels;
-  const [directoryOpen, setDirectoryOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<string | null>(null);
-  const overridesKey = `twin-edit:${slug}`;
-  const [modelOverrides, setModelOverrides] = useState<
-    Record<string, TwinPlacementOverride>
-  >(() => {
-    if (typeof window === 'undefined') return {};
-    try {
-      return JSON.parse(window.localStorage.getItem(overridesKey) ?? '{}');
-    } catch {
-      return {};
-    }
-  });
-  useEffect(() => {
-    // Persist live edits; an empty map clears the key.
-    if (!editMode) return;
-    if (Object.keys(modelOverrides).length === 0) {
-      window.localStorage.removeItem(overridesKey);
-    } else {
-      window.localStorage.setItem(overridesKey, JSON.stringify(modelOverrides));
-    }
-  }, [modelOverrides, editMode, overridesKey]);
-
-  const rigRef = useRef<Rig | null>(null);
-  const registerRig = useCallback((r: Rig) => {
-    rigRef.current = r;
-  }, []);
-
-  const directory = useMemo<HudDirectoryGroup[] | undefined>(() => {
-    if (!warehouseModels) return undefined;
-    const groups =
-      warehouseModels.neighborhoods?.map((n) => ({
-        key: n.key,
-        label: n.label,
-        entries: [] as HudDirectoryGroup['entries'],
-      })) ?? [];
-    const byKey = new Map(groups.map((g) => [g.key, g]));
-    const other: HudDirectoryGroup = {
-      key: 'other',
-      label: 'Other',
-      entries: [],
-    };
-    for (const m of warehouseModels.models) {
-      const g = (m.neighborhood && byKey.get(m.neighborhood)) || other;
-      g.entries.push({
-        slug: m.slug,
-        title: m.title,
-        creator: m.creator,
-        url: m.url,
-        rating: m.rating,
-        reviewCount: m.reviewCount,
-      });
-    }
-    if (other.entries.length) groups.push(other);
-    return groups.filter((g) => g.entries.length > 0);
-  }, [warehouseModels]);
-
-  const flyToModel = useCallback(
-    (modelSlug: string) => {
-      const entry = warehouseModels?.models.find((m) => m.slug === modelSlug);
-      if (!entry) return;
-      setSelectedModel(modelSlug);
-      // Fly-to lives on the orbit rig; switch modes first if needed. The
-      // mode-change effect re-frames the rig on entry, so the glide is kicked
-      // off on the next tick to win that race.
-      setMode((prev) => (prev === 'orbit' ? prev : 'orbit'));
-      const dx = entry.x + (modelOverrides[modelSlug]?.dx ?? 0);
-      const dz = entry.z + (modelOverrides[modelSlug]?.dz ?? 0);
-      setTimeout(() => rigRef.current?.flyTo(dx, dz, 140), 60);
-    },
-    [warehouseModels, modelOverrides]
-  );
-
-  const patchOverride = useCallback(
-    (patch: TwinPlacementOverride) => {
-      if (!selectedModel) return;
-      setModelOverrides((prev) => ({
-        ...prev,
-        [selectedModel]: { ...prev[selectedModel], ...patch },
-      }));
-    },
-    [selectedModel]
-  );
-
-  // ?select=<slug> deep-link (the QC sheet's "open in viewer"): pre-select
-  // and fly to a model once the layer has loaded. One-shot.
-  const deepLinked = useRef(false);
-  useEffect(() => {
-    if (deepLinked.current || !warehouseModels) return;
-    const sel = new URLSearchParams(window.location.search).get('select');
-    if (!sel) return;
-    deepLinked.current = true;
-    flyToModel(sel);
-  }, [warehouseModels, flyToModel]);
+  // The whole editor surface (edit mode, selection, overrides + persistence,
+  // directory data, fly-to, hotkeys) lives in the hook; this component just
+  // wires its returns to the HUD, the scene, and the panel.
+  const requestOrbit = useCallback(() => setMode('orbit'), []);
+  const {
+    registerRig,
+    editMode,
+    toggleEdit,
+    directory,
+    directoryOpen,
+    toggleDirectory,
+    selectedModel,
+    setSelectedModel,
+    gizmoMode,
+    setGizmoMode,
+    modelOverrides,
+    patchOverride,
+    resetSelected,
+    clearAll,
+    exportOverrides,
+    flyToModel,
+  } = useWarehouseEditor({ slug, warehouseModels, requestOrbit });
   // Layer fade for judging footprint registration against the aerial (the
   // buildings/heroes layer fades; streets stay as the reference).
   const [buildingsOpacity, setBuildingsOpacity] = useState(1);
@@ -648,6 +648,7 @@ function TwinCanvasInner({
     handleRef.current = h;
   }, []);
 
+  // Shell keys only — the editor's nudge keys live in useWarehouseEditor.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;
@@ -660,37 +661,10 @@ function TwinCanvasInner({
         const opt = modes[Number(m[1]) - 1];
         if (opt) setMode(opt.key as CameraMode);
       }
-      // ?edit adjustment keys (arrows are free — the Rig owns WASD).
-      if (editMode && selectedModel) {
-        const ov = modelOverrides[selectedModel] ?? {};
-        const nudge = e.shiftKey ? 2 : 0.5;
-        if (e.code === 'BracketLeft')
-          patchOverride({ yawDeg: (ov.yawDeg ?? 0) - (e.shiftKey ? 15 : 1) });
-        else if (e.code === 'BracketRight')
-          patchOverride({ yawDeg: (ov.yawDeg ?? 0) + (e.shiftKey ? 15 : 1) });
-        else if (e.code === 'Minus')
-          patchOverride({
-            yOffset: Math.round(((ov.yOffset ?? 0) - 0.25) * 100) / 100,
-          });
-        else if (e.code === 'Equal')
-          patchOverride({
-            yOffset: Math.round(((ov.yOffset ?? 0) + 0.25) * 100) / 100,
-          });
-        else if (e.code === 'ArrowLeft')
-          patchOverride({ dx: Math.round(((ov.dx ?? 0) - nudge) * 10) / 10 });
-        else if (e.code === 'ArrowRight')
-          patchOverride({ dx: Math.round(((ov.dx ?? 0) + nudge) * 10) / 10 });
-        else if (e.code === 'ArrowUp')
-          patchOverride({ dz: Math.round(((ov.dz ?? 0) - nudge) * 10) / 10 });
-        else if (e.code === 'ArrowDown')
-          patchOverride({ dz: Math.round(((ov.dz ?? 0) + nudge) * 10) / 10 });
-        else return;
-        if (e.code.startsWith('Arrow')) e.preventDefault(); // no page scroll
-      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [modes, editMode, selectedModel, modelOverrides, patchOverride]);
+  }, [modes]);
 
   // Route-scoped chrome control: hide the global cookie/PWA popups that would
   // overlap the diorama HUD. Keeps ScriptHammer's top nav (the diorama insets
@@ -714,7 +688,10 @@ function TwinCanvasInner({
       }}
     >
       <Canvas
-        shadows
+        // "percentage" = PCFShadowMap. three r184 deprecated PCFSoftShadowMap
+        // (R3F's `shadows` bool default) and silently substitutes PCF anyway,
+        // warning on EVERY shadow render — same map, no console spam.
+        shadows="percentage"
         dpr={[1, 1.75]}
         gl={{
           toneMapping: NoToneMapping,
@@ -746,7 +723,9 @@ function TwinCanvasInner({
           house={house}
           showHouse={view === 'asbuilt'}
           buildingsOpacity={buildingsOpacity}
-          crisp={houseFocused}
+          // Tilt-shift blur off for close-up study AND while editing — 0.5 m
+          // nudges are invisible through the miniature blur.
+          crisp={houseFocused || editMode}
           paletteKey={paletteKey}
           day={day}
           mode={mode}
@@ -761,6 +740,8 @@ function TwinCanvasInner({
           modelOverrides={modelOverrides}
           selectedModel={selectedModel}
           onSelectModel={editMode ? setSelectedModel : undefined}
+          patchOverride={editMode ? patchOverride : undefined}
+          gizmoMode={gizmoMode}
         />
       </Canvas>
       {houseFocused && house ? (
@@ -854,13 +835,11 @@ function TwinCanvasInner({
         }
         directory={directory}
         directoryOpen={directoryOpen}
-        onDirectoryToggle={() => setDirectoryOpen((v) => !v)}
+        onDirectoryToggle={toggleDirectory}
         onDirectorySelect={flyToModel}
         directoryActive={selectedModel}
         editActive={editMode}
-        onEditToggle={
-          warehouseModels ? () => setEditRequested((v) => !v) : undefined
-        }
+        onEditToggle={warehouseModels ? toggleEdit : undefined}
         showFps={showFps}
         fps={fps}
       />
@@ -872,21 +851,12 @@ function TwinCanvasInner({
           }
           override={(selectedModel && modelOverrides[selectedModel]) || {}}
           overrideCount={Object.keys(modelOverrides).length}
+          gizmoMode={gizmoMode}
+          onGizmoMode={setGizmoMode}
           onChange={patchOverride}
-          onReset={() => {
-            if (!selectedModel) return;
-            setModelOverrides((prev) => {
-              const next = { ...prev };
-              delete next[selectedModel];
-              return next;
-            });
-          }}
-          onExport={async () => {
-            await navigator.clipboard.writeText(
-              JSON.stringify(modelOverrides, null, 2)
-            );
-          }}
-          onClearAll={() => setModelOverrides({})}
+          onReset={resetSelected}
+          onExport={exportOverrides}
+          onClearAll={clearAll}
         />
       ) : null}
     </div>
