@@ -197,13 +197,17 @@ export default function Hud({
         </div>
       ) : null}
 
-      {/* Site directory panel ("yellow pages") — scrollable grouped list */}
+      {/* Site directory panel ("yellow pages") — scrollable grouped list.
+          While the placement editor is open it docks LEFT: both panels are
+          load-bearing in the edit loop (pick in the directory → tune in the
+          editor) and used to overlap on the right, making directory rows
+          unclickable. */}
       {directory && directoryOpen ? (
         <div
           style={{
             position: 'absolute',
-            top: showFps ? 64 : 16,
-            right: 16,
+            top: editActive ? 84 : showFps ? 64 : 16,
+            ...(editActive ? { left: 16 } : { right: 16 }),
             width: 300,
             maxHeight: 'min(60vh, 560px)',
             overflowY: 'auto',

@@ -99,11 +99,12 @@ export default function PlacementEditor({
   onGizmoMode?: (mode: 'translate' | 'rotate') => void;
   onChange: (patch: TwinPlacementOverride) => void;
   onReset: () => void;
-  /** Returns the JSON that was exported (already on the clipboard). */
-  onExport: () => Promise<void>;
+  /** Resolves false when the clipboard write was refused (the JSON is then
+   *  logged to the console as the fallback channel). */
+  onExport: () => Promise<boolean>;
   onClearAll: () => void;
 }) {
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<'ok' | 'fail' | false>(false);
 
   return (
     <div
@@ -118,6 +119,9 @@ export default function PlacementEditor({
         display: 'flex',
         flexDirection: 'column',
         gap: 8,
+        // Short viewports must scroll the panel, not lose its bottom buttons.
+        maxHeight: 'min(70vh, 640px)',
+        overflowY: 'auto',
       }}
     >
       <div style={{ fontSize: 14, fontWeight: 700 }}>
@@ -269,14 +273,30 @@ export default function PlacementEditor({
         <button
           style={{ ...btn, flex: 1 }}
           onClick={async () => {
-            await onExport();
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            const ok = await onExport();
+            setCopied(ok ? 'ok' : 'fail');
+            setTimeout(() => setCopied(false), ok ? 2000 : 4000);
           }}
         >
-          {copied ? 'Copied ✓' : 'Export JSON'}
+          {copied === 'ok'
+            ? 'Copied ✓'
+            : copied === 'fail'
+              ? 'Copy failed — JSON in console'
+              : 'Export JSON'}
         </button>
-        <button style={btn} onClick={onClearAll}>
+        <button
+          style={btn}
+          onClick={() => {
+            if (
+              overrideCount === 0 ||
+              window.confirm(
+                `Discard ${overrideCount} local placement edit${overrideCount === 1 ? '' : 's'}?`
+              )
+            ) {
+              onClearAll();
+            }
+          }}
+        >
           Clear local
         </button>
       </div>

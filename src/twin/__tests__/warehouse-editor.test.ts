@@ -4,7 +4,12 @@
 // removes the key entirely, exclude survives round-trips.
 
 import { describe, it, expect } from 'vitest';
-import { patchOverrides, resetOverride } from '../useWarehouseEditor';
+import {
+  flyToFrame,
+  parseStoredOverrides,
+  patchOverrides,
+  resetOverride,
+} from '../useWarehouseEditor';
 import { applyOverrides } from '@/lib/placement';
 
 describe('patchOverrides', () => {
@@ -72,5 +77,77 @@ describe('reducer output → applyOverrides round-trip', () => {
     expect(applyOverrides(entry, excluded['hunter-museum'])).toBeNull();
     const restored = resetOverride(excluded, 'hunter-museum');
     expect(applyOverrides(entry, restored['hunter-museum'])).toEqual(entry);
+  });
+});
+
+// #259 iter 5 — size-aware fly-to framing.
+describe('flyToFrame', () => {
+  it('falls back to the fixed iter-4 radii without dimensions', () => {
+    const entry = { x: 100, z: -200 };
+    expect(flyToFrame(entry, undefined, true).radius).toBe(80);
+    expect(flyToFrame(entry, undefined, false).radius).toBe(140);
+  });
+
+  it('scales the radius to the model extent, clamped 60–600', () => {
+    const bridge = {
+      x: 0,
+      z: 0,
+      dim: [777, 41, 452] as [number, number, number],
+    };
+    expect(flyToFrame(bridge, undefined, true).radius).toBe(600); // clamp hi
+    const statue = { x: 0, z: 0, dim: [6, 8, 5] as [number, number, number] };
+    expect(flyToFrame(statue, undefined, true).radius).toBe(60); // clamp lo
+    const building = {
+      x: 0,
+      z: 0,
+      dim: [100, 30, 80] as [number, number, number],
+    };
+    expect(flyToFrame(building, undefined, true).radius).toBe(120); // 100×1.2
+    expect(flyToFrame(building, undefined, false).radius).toBe(180); // 100×1.8
+  });
+
+  it('aims at the bbox centre, not the anchor (campus-corner origins)', () => {
+    const entry = {
+      x: 100,
+      z: -200,
+      centerOffset: [50, 30] as [number, number],
+    };
+    const f = flyToFrame(entry, undefined, true);
+    expect(f.x).toBeCloseTo(150, 1);
+    expect(f.z).toBeCloseTo(-170, 1);
+  });
+
+  it('rotates the centre offset by the effective yaw and adds dx/dz', () => {
+    const entry = {
+      x: 0,
+      z: 0,
+      centerOffset: [10, 0] as [number, number],
+    };
+    // +90° about Y swings local +X toward −Z.
+    const f = flyToFrame(entry, { yawDeg: 90, dx: 2, dz: -3 }, true);
+    expect(f.x).toBeCloseTo(2, 1);
+    expect(f.z).toBeCloseTo(-13, 1);
+  });
+});
+
+// #259 iter 5 — versioned localStorage envelope.
+describe('parseStoredOverrides', () => {
+  it('reads the v1 envelope', () => {
+    expect(
+      parseStoredOverrides(
+        JSON.stringify({ v: 1, overrides: { a: { dx: 2 } } })
+      )
+    ).toEqual({ a: { dx: 2 } });
+  });
+
+  it('accepts a legacy bare map', () => {
+    expect(parseStoredOverrides(JSON.stringify({ a: { yawDeg: 15 } }))).toEqual(
+      { a: { yawDeg: 15 } }
+    );
+  });
+
+  it('degrades to empty on garbage or null', () => {
+    expect(parseStoredOverrides('not json')).toEqual({});
+    expect(parseStoredOverrides(null)).toEqual({});
   });
 });
