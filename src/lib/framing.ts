@@ -24,11 +24,10 @@ export interface Framing {
   homePhi: number; // style defaults (0.62 / 0); per-site overridable
   homeTheta: number;
   initialCameraPos: [number, number, number];
-  topdown: { center: [number, number]; height: number };
-  /** True-orthographic top-down frame: the whole drape extent, north-up.
-   *  Unlike `topdown` (perspective fov 62, box tops splay outward from
-   *  center), an orthographic projection is the only honest way to eyeball
-   *  footprint-vs-aerial registration. */
+  /** True-orthographic top-down frame: the whole drape extent, north-up —
+   *  an orthographic projection is the only honest way to eyeball
+   *  footprint-vs-aerial registration. (The old perspective `?topdown`
+   *  diagnostic was retired in #259 iter 5; this superseded it.) */
   ortho: OrthoFrame;
 }
 
@@ -42,8 +41,9 @@ export interface OrthoFrame {
 // ~35° from vertical: the tilted-overhead diorama angle.
 const HOME_PHI = 0.62;
 const HOME_THETA = 0;
-// StageCore's ?topdown diagnostic renders at fov 62.
-const TOPDOWN_FOV_DEG = 62;
+// The overhead frame's hover height is derived from a fov-62 fit (the height
+// only needs to clear the content; this site-scaled formula always does).
+const OVERHEAD_FOV_DEG = 62;
 
 export function deriveFraming(m: Manifest): Framing {
   const W = m.groundWm;
@@ -88,22 +88,16 @@ export function deriveFraming(m: Manifest): Framing {
     homePhi,
     homeTheta,
     initialCameraPos,
-    topdown: {
-      center: [homeFocus[0], 0],
-      // Fit the long extent in the topdown diagnostic's vertical fov, +5%.
-      height:
-        (1.05 * (L / 2)) / Math.tan(((TOPDOWN_FOV_DEG / 2) * Math.PI) / 180),
-    },
     ortho: {
       // The full drape extent around the world origin (the box centre): in
       // this frame the aerial fills its exact world rectangle, so what you
       // see IS the georegistration. Height only needs to clear the content;
-      // the topdown formula is site-scaled and always does.
+      // the fov-62 fit formula is site-scaled and always does.
       center: [0, 0],
       halfW: W / 2,
       halfH: H / 2,
       height:
-        (1.05 * (L / 2)) / Math.tan(((TOPDOWN_FOV_DEG / 2) * Math.PI) / 180),
+        (1.05 * (L / 2)) / Math.tan(((OVERHEAD_FOV_DEG / 2) * Math.PI) / 180),
     },
   };
 }

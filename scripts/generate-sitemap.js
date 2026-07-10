@@ -55,7 +55,6 @@ const disallowedPaths = [
   '/account/',
   '/profile/',
   '/messages/',
-  '/conversations/',
   '/payment-demo/',
 ];
 
