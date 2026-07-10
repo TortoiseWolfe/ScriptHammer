@@ -70,6 +70,10 @@ with per-card **Exclude** checkboxes that build paste-ready overrides JSON.
 ## Licensing posture
 
 3D Warehouse General Model License: use-in-project OK, redistribution of the
-model files is restricted → all GLBs stay local-only (gitignored) and every
-`models.json` entry carries creator + source URL (surfaced in the Directory).
-Publishing any model is a deliberate per-model decision.
+model files is restricted. Default: GLBs stay local-only (gitignored).
+Publishing is a deliberate per-site decision — **chatt's sampled city is
+published (2026-07-10, owner decision)**: the served GLBs are heavily
+transformative abstractions (154:1 reduction, photo textures replaced by
+sampled flat colors), and every `models.json` entry carries creator + source
+URL, surfaced in the viewer's Directory as the attribution page. Raw source
+GLBs (`sites/_warehouse/raw/`) are never committed.

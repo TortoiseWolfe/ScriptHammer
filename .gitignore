@@ -173,7 +173,12 @@ scripts/__tests__/fixtures/*
 # Published per the 2026-07-10 consent decision (anonymized portfolio piece):
 !/public/twins/east-main-street-chattanooga/house/
 # Warehouse-derived building models (#259) are 3D Warehouse General Model
-# License content — local-only by default (2026-07-10 decision); publishing
-# any model is a deliberate per-model call, same pattern as house/.
+# License content — local-only by default; publishing is a deliberate
+# per-site call, same pattern as house/.
 /public/twins/*/models/
+# Published 2026-07-10 (owner decision): chatt's sampled city ships — the
+# GLBs are heavily transformative abstractions (154:1, textures replaced by
+# sampled flat colors) and the in-viewer Directory credits every creator
+# with a link back to the Warehouse source page.
+!/public/twins/chatt/models/
 knowledge/spatial

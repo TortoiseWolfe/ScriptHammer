@@ -296,9 +296,10 @@ export async function loadHouse(slug: string): Promise<HouseInfo | null> {
 // --- Warehouse-sampled buildings (#259) ---------------------------------------
 //
 // Abstracted 3D Warehouse landmarks emitted by scripts/warehouse/emit-models.ts
-// into public/twins/<slug>/models/ (gitignored — local-only until a per-model
-// publish decision). The layer is OPTIONAL by construction: no models.json ⇒
-// null ⇒ layer off, so committed twins render identically in CI/live.
+// into public/twins/<slug>/models/ (gitignored by default; publishing is a
+// per-site decision recorded in .gitignore). The layer is OPTIONAL by
+// construction: no models.json ⇒ null ⇒ layer off, so twins without a
+// published set render identically in CI/live.
 
 export interface WarehouseModelEntry {
   slug: string;

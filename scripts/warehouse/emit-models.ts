@@ -9,9 +9,9 @@
 // output of the in-viewer Edit mode), carries provenance + ratings, and
 // writes public/twins/<site>/models/models.json.
 //
-// public/twins/*/models/ is gitignored (2026-07-10 distribution decision:
-// local-only until a per-model publish call is made). The runtime treats
-// models.json as an optional asset — absent file ⇒ layer off.
+// public/twins/*/models/ is gitignored by DEFAULT; publishing is a per-site
+// decision recorded in .gitignore (chatt is published, 2026-07-10). The
+// runtime treats models.json as an optional asset — absent file ⇒ layer off.
 //
 // Run:  docker compose exec scripthammer pnpm exec tsx scripts/warehouse/emit-models.ts [--site chatt]
 
