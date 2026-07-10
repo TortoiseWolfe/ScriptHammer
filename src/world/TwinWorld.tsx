@@ -1,11 +1,7 @@
 'use client';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { TextureLoader, Texture } from 'three';
-import {
-  loadSiteJson,
-  loadWarehouseModels,
-  siteAssetUrl,
-} from '@/lib/manifest';
+import { loadSiteJson, siteAssetUrl } from '@/lib/manifest';
 import type {
   Building,
   Street,
@@ -13,6 +9,7 @@ import type {
   HouseInfo,
   TerrainGrid,
   Manifest,
+  TwinPlacementOverride,
   WarehouseModelsInfo,
 } from '@/lib/manifest';
 import Buildings from './Buildings';
@@ -30,8 +27,6 @@ interface WorldData {
   heroes: Hero[];
   terrain: TerrainGrid;
   drape: Texture;
-  /** Optional Warehouse-sampled buildings layer (#259); null = twin has none. */
-  warehouseModels: WarehouseModelsInfo | null;
 }
 
 export default function TwinWorld({
@@ -41,6 +36,10 @@ export default function TwinWorld({
   house,
   showHouse = false,
   buildingsOpacity = 1,
+  warehouseModels,
+  modelOverrides,
+  selectedModel,
+  onSelectModel,
   onHouseGround,
   onGroundReady,
   onError,
@@ -54,6 +53,13 @@ export default function TwinWorld({
   showHouse?: boolean;
   /** Buildings/heroes layer fade (1 = opaque) — registration diagnostics. */
   buildingsOpacity?: number;
+  /** Warehouse-sampled buildings layer (#259) — loaded by the composition
+   *  root (the HUD directory shares it); null/undefined = layer off. */
+  warehouseModels?: WarehouseModelsInfo | null;
+  /** Live ?edit overrides + selection, forwarded to the models layer. */
+  modelOverrides?: Record<string, TwinPlacementOverride>;
+  selectedModel?: string | null;
+  onSelectModel?: (slug: string) => void;
   /** Reports the terrain height (runtime Y) under the house anchor once the
    *  grid loads — lets the composition root aim the camera at the parcel. */
   onHouseGround?: (y: number) => void;
@@ -67,14 +73,12 @@ export default function TwinWorld({
   useEffect(() => {
     let alive = true;
     (async () => {
-      const [buildings, streets, heroes, terrain, warehouseModels] =
-        await Promise.all([
-          loadSiteJson<Building[]>(slug, 'buildings.json'),
-          loadSiteJson<Street[]>(slug, 'streets.json'),
-          loadSiteJson<Hero[]>(slug, 'heroes.json'),
-          loadSiteJson<TerrainGrid>(slug, 'terrain.json'),
-          loadWarehouseModels(slug),
-        ]);
+      const [buildings, streets, heroes, terrain] = await Promise.all([
+        loadSiteJson<Building[]>(slug, 'buildings.json'),
+        loadSiteJson<Street[]>(slug, 'streets.json'),
+        loadSiteJson<Hero[]>(slug, 'heroes.json'),
+        loadSiteJson<TerrainGrid>(slug, 'terrain.json'),
+      ]);
       // drape.path is a filename relative to the site dir (defensively take the
       // basename so an old dir-prefixed manifest still resolves).
       const drapeFile = manifest.drape.path.split('/').pop() ?? 'drape.jpg';
@@ -82,7 +86,7 @@ export default function TwinWorld({
         siteAssetUrl(slug, drapeFile)
       );
       if (!alive) return;
-      setData({ buildings, streets, heroes, terrain, drape, warehouseModels });
+      setData({ buildings, streets, heroes, terrain, drape });
     })().catch((e: unknown) => {
       // Surface asset failures — a swallowed rejection here renders as an
       // empty sky with no explanation.
@@ -138,13 +142,16 @@ export default function TwinWorld({
         manifest={manifest}
         opacity={buildingsOpacity}
       />
-      {data.warehouseModels ? (
+      {warehouseModels ? (
         <Suspense fallback={null}>
           <WarehouseModels
             slug={slug}
-            info={data.warehouseModels}
+            info={warehouseModels}
             grid={data.terrain}
             manifest={manifest}
+            overrides={modelOverrides}
+            selected={selectedModel}
+            onSelect={onSelectModel}
           />
         </Suspense>
       ) : null}

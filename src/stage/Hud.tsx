@@ -33,6 +33,23 @@ export interface HudSlider {
   onChange: (value: number) => void;
 }
 
+/** One entry in the site directory panel ("yellow pages"). */
+export interface HudDirectoryEntry {
+  slug: string;
+  title: string;
+  /** Creator credit line (attribution). */
+  creator?: string;
+  /** Fully-resolved external link for the source/credit (optional). */
+  url?: string;
+}
+
+/** A named group of directory entries (e.g. a neighborhood). */
+export interface HudDirectoryGroup {
+  key: string;
+  label: string;
+  entries: HudDirectoryEntry[];
+}
+
 export interface HudProps {
   title: string;
   subtitle?: string;
@@ -51,6 +68,15 @@ export interface HudProps {
   links?: HudLink[];
   /** Optional layer sliders (e.g. building-fade for registration checks). */
   sliders?: HudSlider[];
+  /** Optional site directory ("yellow pages"): grouped, scrollable list of
+   *  named places; selecting one typically flies the camera to it. */
+  directory?: HudDirectoryGroup[];
+  /** Open/close state + toggle live with the caller (like every dock). */
+  directoryOpen?: boolean;
+  onDirectoryToggle?: () => void;
+  onDirectorySelect?: (slug: string) => void;
+  /** Highlighted directory entry (e.g. the editor's selection). */
+  directoryActive?: string | null;
   caption?: HudCaption | null;
   showFps: boolean;
   fps?: number;
@@ -103,6 +129,11 @@ export default function Hud({
   onView,
   links,
   sliders,
+  directory,
+  directoryOpen,
+  onDirectoryToggle,
+  onDirectorySelect,
+  directoryActive,
   caption,
   showFps,
   fps,
@@ -154,6 +185,94 @@ export default function Hud({
           }}
         >
           {fps != null ? `${Math.round(fps)} fps` : '— fps'}
+        </div>
+      ) : null}
+
+      {/* Site directory panel ("yellow pages") — scrollable grouped list */}
+      {directory && directoryOpen ? (
+        <div
+          style={{
+            position: 'absolute',
+            top: showFps ? 64 : 16,
+            right: 16,
+            width: 300,
+            maxHeight: 'min(60vh, 560px)',
+            overflowY: 'auto',
+            ...glass,
+            padding: '10px 8px',
+            pointerEvents: 'auto',
+          }}
+        >
+          {directory.map((group) => (
+            <div key={group.key} style={{ marginBottom: 8 }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  opacity: 0.7,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.6,
+                  padding: '6px 8px 4px',
+                }}
+              >
+                {group.label} · {group.entries.length}
+              </div>
+              {group.entries.map((e) => (
+                <div
+                  key={e.slug}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onDirectorySelect?.(e.slug)}
+                    style={{
+                      ...dockButtonBase,
+                      flex: 1,
+                      textAlign: 'left',
+                      minHeight: 44,
+                      background:
+                        directoryActive === e.slug
+                          ? 'rgba(255,255,255,0.18)'
+                          : 'transparent',
+                    }}
+                  >
+                    <span style={{ display: 'block', fontSize: 13 }}>
+                      {e.title}
+                    </span>
+                    {e.creator ? (
+                      <span
+                        style={{ display: 'block', fontSize: 11, opacity: 0.6 }}
+                      >
+                        {e.creator}
+                      </span>
+                    ) : null}
+                  </button>
+                  {e.url ? (
+                    <a
+                      href={e.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`${e.title} source`}
+                      style={{
+                        ...dockButtonBase,
+                        minHeight: 44,
+                        display: 'flex',
+                        alignItems: 'center',
+                        textDecoration: 'none',
+                        opacity: 0.6,
+                      }}
+                    >
+                      ↗
+                    </a>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
       ) : null}
 
@@ -281,6 +400,19 @@ export default function Hud({
                   {l.label}
                 </a>
               ))}
+            </div>
+          ) : null}
+
+          {directory && onDirectoryToggle ? (
+            <div style={{ ...glass, display: 'flex', gap: 4, padding: 4 }}>
+              <button
+                type="button"
+                style={dockButtonStyle(!!directoryOpen)}
+                aria-pressed={!!directoryOpen}
+                onClick={onDirectoryToggle}
+              >
+                Directory
+              </button>
             </div>
           ) : null}
 

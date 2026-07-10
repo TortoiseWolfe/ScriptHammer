@@ -83,6 +83,8 @@ export class Rig {
   avatar: RigAvatar;
 
   focus: Vector3;
+  /** Pending fly-to glide target for the orbit pivot (null = none). */
+  tFocus: Vector3 | null;
   theta: number;
   phi: number;
   radius: number;
@@ -172,6 +174,7 @@ export class Rig {
 
     // orbit state
     this.focus = new Vector3(0, 0, 0);
+    this.tFocus = null;
     this.theta = 0.7;
     this.phi = 0.62;
     this.radius = 120;
@@ -438,6 +441,18 @@ export class Rig {
       this._emitCaption();
     }
   }
+  /** Glide the orbit pivot to ENU (x, z) — #259 directory fly-to. Only
+   *  meaningful in orbit mode (the pivot drives nothing elsewhere). */
+  flyTo(x: number, z: number, radius?: number): void {
+    this.tFocus = new Vector3(
+      clamp(x, this.o.panMinX, this.o.panMaxX),
+      this.focus.y,
+      clamp(z, this.o.panMinZ, this.o.panMaxZ)
+    );
+    if (radius !== undefined)
+      this.tRadius = clamp(radius, this.o.minR, this.o.maxR);
+    this.idle = 0;
+  }
   _emitCaption(): void {
     let cap: RigWaypoint | null = null;
     if (this.mode === 'tour' && this.waypoints[this.wp])
@@ -543,6 +558,7 @@ export class Rig {
     if (this.down('KeyD')) wish.add(panR);
     if (this.down('KeyA')) wish.sub(panR);
     if (wish.lengthSq() > 0) {
+      this.tFocus = null; // manual pan cancels a pending fly-to glide
       // Pan speed scales with zoom (radius) so it feels consistent close & far.
       const panSpeed = this.o.moveSpeed * (this.radius / 600);
       wish.normalize().multiplyScalar(panSpeed * dt);
@@ -557,6 +573,19 @@ export class Rig {
         this.o.panMaxZ
       );
       this.idle = 0; // suppress idle-drift while the user is actively panning
+    }
+
+    // Fly-to glide (#259 directory): damp the pivot toward tFocus, matching
+    // the tTheta/tPhi/tRadius pattern below so the camera eases instead of
+    // snapping. Cleared on arrival (or by a manual pan above).
+    if (this.tFocus) {
+      this.focus.x = damp(this.focus.x, this.tFocus.x, 4, dt);
+      this.focus.z = damp(this.focus.z, this.tFocus.z, 4, dt);
+      this.idle = 0;
+      const d =
+        Math.abs(this.focus.x - this.tFocus.x) +
+        Math.abs(this.focus.z - this.tFocus.z);
+      if (d < 0.5) this.tFocus = null;
     }
 
     if (this.idle > 3.0) this.tTheta += this.o.idleDrift * 0.002 * dt * 60; // gentle drift

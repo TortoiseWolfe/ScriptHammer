@@ -33,18 +33,41 @@ const slugify = (s) =>
     .replace(/^-+|-+$/g, '')
     .slice(0, 48);
 
+// Distinct buildings can share a generic title ("Building in Chattanooga,
+// TN, USA" ×15) — suffix the Warehouse id ONLY on collision so unique slugs
+// stay stable. MIRRORED in emit-models.ts; the two must agree.
+function assignSlugs(ids, lookup) {
+  const counts = new Map();
+  for (const id of ids) {
+    const m = lookup.get(id);
+    if (!m) continue;
+    const base = slugify(m.title);
+    counts.set(base, (counts.get(base) ?? 0) + 1);
+  }
+  const slugs = new Map();
+  for (const id of ids) {
+    const m = lookup.get(id);
+    if (!m) continue;
+    const base = slugify(m.title);
+    slugs.set(id, counts.get(base) > 1 ? `${base}-${id.slice(0, 8)}` : base);
+  }
+  return slugs;
+}
+
 const inventory = JSON.parse(await readFile(path.join(ROOT, 'inventory.json'), 'utf8'));
 // The curated list is COMMITTED (Warehouse entity ids only — no model data):
 // the repeatability crank is "edit this file, run fetch → abstract → emit".
-const curated = JSON.parse(
+// Shape: { neighborhoods: [{ key, label, ids: [] }] } (iteration 2).
+const curatedFile = JSON.parse(
   await readFile(path.resolve('scripts/warehouse/curated-chatt.json'), 'utf8')
 );
+const curated = curatedFile.neighborhoods.flatMap((n) => n.ids);
 const byId = new Map(inventory.models.map((m) => [m.id, m]));
+const slugById = assignSlugs(curated, byId);
 
 let ok = 0;
 let skipped = 0;
-for (const item of curated) {
-  const id = typeof item === 'string' ? item : item.id;
+for (const id of curated) {
   const m = byId.get(id);
   if (!m) {
     console.error(`[fetch] ${id}: not in inventory.json — regenerate the inventory`);
@@ -54,7 +77,7 @@ for (const item of curated) {
     console.error(`[fetch] ${m.title}: no public glb — needs the DAE fallback path`);
     continue;
   }
-  const slug = (typeof item === 'object' && item.slug) || slugify(m.title);
+  const slug = slugById.get(id);
   const dir = path.join(ROOT, 'models', slug);
   await mkdir(dir, { recursive: true });
   const glbPath = path.join(dir, 'raw.glb');

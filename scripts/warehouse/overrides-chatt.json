@@ -1,0 +1,7 @@
+{
+  "_readme": "Hand-tuned placement overrides for the chatt twin's sampled buildings (#259). Keyed by model slug; fields: yawDeg | scale | yOffset (replace), dx | dz (additive ENU-metre nudges), exclude (drop from emit). Produced by the in-viewer placement editor's Export button (?edit) — paste its clipboard JSON here, then re-run scripts/warehouse/emit-models.ts.",
+  "4th-and-market-street-downtown-chattanooga": {
+    "exclude": true,
+    "_why": "pathological source GLB: 3.4MB for 400 tris even after texture stripping; also fails meshopt encode AND re-read. Anonymous corner block, not a landmark."
+  }
+}
