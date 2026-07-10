@@ -1,0 +1,44 @@
+{
+  "box": {
+    "swLat": 35.01405965610782,
+    "swLon": -85.27600592960293,
+    "neLat": 35.028481743892186,
+    "neLon": -85.25847447039708
+  },
+  "groundWm": 1600,
+  "groundHm": 1600,
+  "cosLat": 0.8198392747048137,
+  "drape": {
+    "path": "drape.jpg",
+    "width": 6400,
+    "height": 5265,
+    "mpp": 0.25
+  },
+  "provenance": "\u00a9 OpenStreetMap \u00b7 USGS 3DEP 1m \u00b7 TDOT Aerial Surveys \u00b7 Microsoft Buildings \u00b7 USGS 3DEP Lidar",
+  "fetchedAt": "2026-07-09T18:46:43.709Z",
+  "ruleHistogram": {
+    "height": 0,
+    "levels": 5,
+    "override": 0,
+    "lidar": 687,
+    "ms": 5,
+    "fallback": 58
+  },
+  "registration": {
+    "offsetM": {
+      "x": 0,
+      "z": 0
+    },
+    "score": 72.9,
+    "score0": 72.9,
+    "confidence": 2.7,
+    "districtSpreadM": 4,
+    "flaggedCount": 76
+  },
+  "site": {
+    "slug": "east-main-street-chattanooga",
+    "name": "1887 Victorian \u2014 As-Built",
+    "water": false,
+    "subtitle": "residential LiDAR capture \u00b7 portfolio demo"
+  }
+}

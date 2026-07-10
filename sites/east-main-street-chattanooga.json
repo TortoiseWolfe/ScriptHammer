@@ -1,0 +1,32 @@
+{
+  "slug": "east-main-street-chattanooga",
+  "name": "1887 Victorian \u2014 As-Built",
+  "box": {
+    "swLat": 35.01405965610782,
+    "swLon": -85.27600592960293,
+    "neLat": 35.028481743892186,
+    "neLon": -85.25847447039708
+  },
+  "mpp": 0.25,
+  "terrain": {
+    "cols": 390,
+    "rows": 321,
+    "dataset": "3dep1m"
+  },
+  "carveWater": true,
+  "heroes": [],
+  "heights": {
+    "overrides": {},
+    "fallbackClampM": 100
+  },
+  "drapeSource": "tnmap",
+  "vectorOffsetM": {
+    "x": -0.5,
+    "z": 0
+  },
+  "lidar": {
+    "ept": "https://s3-us-west-2.amazonaws.com/usgs-lidar-public/USGS_LPC_TN_27County_blk4_2015_LAS_2018",
+    "maxDepth": 11
+  },
+  "subtitle": "residential LiDAR capture \u00b7 portfolio demo"
+}

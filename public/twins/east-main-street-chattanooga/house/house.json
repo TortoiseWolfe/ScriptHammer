@@ -1,0 +1,23 @@
+{
+  "label": "1887 Victorian \u2014 As-Built",
+  "x": -7.1,
+  "z": 9.2,
+  "rotationDeg": 59,
+  "details": {
+    "Built": "1887",
+    "Type": "Single-family Victorian",
+    "Stories": "2.5",
+    "Living area": "2,480 sqft",
+    "Lot": "0.34 ac (15,000 sqft)",
+    "Capture": "Polycam iPhone LiDAR (2 fragments, 268k verts)",
+    "Ground truth": "USGS 3DEP 1 m (terrain \u0394 0.3 m @ 4 m grid)"
+  },
+  "hideBuildingIds": [1015680447],
+  "parts": {
+    "scan_2": {
+      "pivot": [-0.531, 0.426, 0.48],
+      "yawDeg": 249.25,
+      "position": [-0.23, 1.02, 3.14]
+    }
+  }
+}

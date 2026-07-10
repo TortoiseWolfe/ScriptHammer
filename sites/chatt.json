@@ -9,20 +9,57 @@
     "neLon": -85.3
   },
   "mpp": 0.6,
-  "terrain": { "cols": 198, "rows": 644, "dataset": "3dep1m" },
+  "terrain": {
+    "cols": 198,
+    "rows": 644,
+    "dataset": "3dep1m"
+  },
   "carveWater": true,
   "heroes": [
-    { "slug": "aquarium", "wayId": 173782782 },
-    { "slug": "walnut_st_bridge", "wayId": 164158074 },
-    { "slug": "courthouse", "wayId": 79292898 },
-    { "slug": "republic_centre", "wayId": 66951392 },
+    {
+      "slug": "aquarium",
+      "wayId": 173782782
+    },
+    {
+      "slug": "walnut_st_bridge",
+      "wayId": 164158074
+    },
+    {
+      "slug": "courthouse",
+      "wayId": 79292898
+    },
+    {
+      "slug": "republic_centre",
+      "wayId": 66951392
+    },
     {
       "slug": "hunter_museum",
-      "anchor": { "lat": 35.0558416, "lon": -85.3062145 }
+      "anchor": {
+        "lat": 35.0558416,
+        "lon": -85.3062145
+      }
     },
-    { "slug": "tivoli", "anchor": { "lat": 35.0455, "lon": -85.3078 } },
-    { "slug": "dome_building", "anchor": { "lat": 35.0466, "lon": -85.3086 } },
-    { "slug": "choo_choo", "anchor": { "lat": 35.0093, "lon": -85.3086 } }
+    {
+      "slug": "tivoli",
+      "anchor": {
+        "lat": 35.0455,
+        "lon": -85.3078
+      }
+    },
+    {
+      "slug": "dome_building",
+      "anchor": {
+        "lat": 35.0466,
+        "lon": -85.3086
+      }
+    },
+    {
+      "slug": "choo_choo",
+      "anchor": {
+        "lat": 35.0093,
+        "lon": -85.3086
+      }
+    }
   ],
   "heights": {
     "overrides": {
@@ -51,14 +88,14 @@
       "look": [-273, 20, -2424],
       "dwell": 5,
       "name": "Tennessee Aquarium",
-      "blurb": "Opened 1992 — the world's largest freshwater aquarium at the time."
+      "blurb": "Opened 1992 \u2014 the world's largest freshwater aquarium at the time."
     },
     {
       "pos": [-40, 240, -2360],
       "look": [68, 18, -2726],
       "dwell": 5,
       "name": "Walnut Street Bridge",
-      "blurb": "1890 truss bridge, 2,376 ft — one of the longest pedestrian bridges in the world."
+      "blurb": "1890 truss bridge, 2,376 ft \u2014 one of the longest pedestrian bridges in the world."
     },
     {
       "pos": [20, 250, -2560],
@@ -72,14 +109,14 @@
       "look": [-382, 30, -1614],
       "dwell": 5,
       "name": "Republic Centre",
-      "blurb": "At 300 ft / 21 floors, Chattanooga's tallest building — the downtown skyline's anchor."
+      "blurb": "At 300 ft / 21 floors, Chattanooga's tallest building \u2014 the downtown skyline's anchor."
     },
     {
       "pos": [120, 300, 120],
       "look": [40, 20, -600],
       "dwell": 4.5,
       "name": "Downtown Core",
-      "blurb": "The Broad & Market Street grid — the dense heart of downtown, laid out in 1839."
+      "blurb": "The Broad & Market Street grid \u2014 the dense heart of downtown, laid out in 1839."
     },
     {
       "pos": [40, 320, 2900],
@@ -95,11 +132,22 @@
   ],
   "palette": "toy",
   "day": 0.4,
-  "framing": { "homeFocus": [-100, 0, -2000] },
+  "framing": {
+    "homeFocus": [-100, 0, -2000]
+  },
   "drapeSource": "tnmap",
-  "vectorOffsetM": { "x": 0.5, "z": 0 },
+  "vectorOffsetM": {
+    "x": 0.5,
+    "z": 0
+  },
   "lidar": {
     "ept": "https://s3-us-west-2.amazonaws.com/usgs-lidar-public/USGS_LPC_TN_27County_blk4_2015_LAS_2018",
     "maxDepth": 10
-  }
+  },
+  "links": [
+    {
+      "label": "As-built demo",
+      "href": "/twins/east-main-street-chattanooga/?house"
+    }
+  ]
 }

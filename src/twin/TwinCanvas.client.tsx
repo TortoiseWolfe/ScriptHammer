@@ -476,11 +476,16 @@ function TwinCanvasInner({
     if (houseFocused) {
       out.push({ label: site.name, href: getInternalUrl(`/twins/${slug}/`) });
     }
+    // Committed site links (e.g. the published portfolio property page)
+    // render before any private local-only links.
+    for (const l of site.links ?? []) {
+      out.push({ label: l.label, href: getInternalUrl(l.href) });
+    }
     for (const l of localLinks) {
       out.push({ label: l.label, href: getInternalUrl(l.href) });
     }
     return out;
-  }, [house, houseFocused, localLinks, site.name, slug]);
+  }, [house, houseFocused, localLinks, site.name, site.links, slug]);
 
   // ?ortho opens straight into the compare view (scripted captures); an
   // optional `cx,cz,halfH` value zooms it onto a district.

@@ -39,6 +39,9 @@ export interface SiteInfo {
   trolley?: number[]; // flat ENU [x,z,...]; absent => no trolley agent
   framing?: SiteFraming;
   water?: boolean; // bake result: the carve found water => render the water mesh
+  /** Committed HUD nav buttons (app-internal hrefs; basePath applied at
+   *  runtime). Private demo links use links.local.json instead. */
+  links?: { label: string; href: string }[];
 }
 
 export interface Manifest {
