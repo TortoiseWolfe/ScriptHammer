@@ -80,6 +80,9 @@ function condense(e) {
     description: (e.description ?? '').slice(0, 200),
     downloads: e.downloads ?? 0,
     views: e.views ?? 0,
+    reviewCount: e.reviewCount ?? 0,
+    averageRating: null, // filled below for reviewed in-box models
+    thumbnailUrl: binaries.bot_st?.contentUrl ?? null, // public render, QC sheet
     glbPublic: Boolean(glb?.contentUrl?.includes('/content/public/')),
     glbBytes: glb?.contentLength ?? glb?.fileSize ?? null,
     glbUrl: glb?.contentUrl ?? null,
@@ -87,6 +90,28 @@ function condense(e) {
     downloadRestricted:
       e.attributes?.legacy?.isDownloadRestricted?.value ?? false,
   };
+}
+
+/** Star ratings live on /entities/{id}/reviews (rating.overall, 1-5). Only
+ *  reviewed IN-BOX models get the extra request — politeness over totality. */
+async function harvestRatings(models) {
+  const reviewed = models.filter((m) => m.inChattBox && m.reviewCount > 0);
+  console.log(`[inventory] rating harvest: ${reviewed.length} reviewed in-box models`);
+  for (const m of reviewed) {
+    try {
+      const j = await apiGet(`/entities/${m.id}/reviews`);
+      const ratings = (j.entries ?? [])
+        .map((r) => Number(r.rating?.overall))
+        .filter((n) => Number.isFinite(n));
+      if (ratings.length) {
+        m.averageRating =
+          Math.round((ratings.reduce((s, n) => s + n, 0) / ratings.length) * 10) / 10;
+      }
+    } catch (err) {
+      console.error(`[inventory] reviews for ${m.id}: ${err.message}`);
+    }
+    await sleep(DELAY_MS);
+  }
 }
 
 const byCreator = await pagedEntities(
@@ -100,6 +125,7 @@ for (const e of [...byCreator.entries, ...byQuery.entries]) {
   if (!union.has(e.id)) union.set(e.id, condense(e));
 }
 const models = [...union.values()];
+await harvestRatings(models);
 
 const geolocated = models.filter((m) => m.location);
 const inBox = models.filter((m) => m.inChattBox);

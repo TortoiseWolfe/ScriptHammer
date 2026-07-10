@@ -312,6 +312,10 @@ export interface WarehouseModelEntry {
   yawDeg?: number;
   scale?: number;
   yOffset?: number;
+  /** Warehouse community signals (QC surface — shown in the Directory). */
+  rating?: number;
+  reviewCount?: number;
+  downloads?: number;
 }
 
 export interface WarehouseModelsInfo {

@@ -515,15 +515,15 @@ function TwinCanvasInner({
   const [fps, setFps] = useState<number | undefined>(undefined);
   const [worldError, setWorldError] = useState<string | null>(null);
 
-  // --- Warehouse layer: directory + ?edit placement editor (#259 iter 2) ---
-  // ?edit activates the editor (harmless on twins without a models layer).
-  const editMode = useMemo(
+  // --- Warehouse layer: directory + placement editor (#259) ---
+  // Edit mode is a dock toggle (iteration 3); ?edit pre-enables it for
+  // scripted/deep-link access. Only meaningful when the models layer exists.
+  const [editRequested, setEditRequested] = useState(
     () =>
       typeof window !== 'undefined' &&
-      new URLSearchParams(window.location.search).has('edit') &&
-      !!warehouseModels,
-    [warehouseModels]
+      new URLSearchParams(window.location.search).has('edit')
   );
+  const editMode = editRequested && !!warehouseModels;
   const [directoryOpen, setDirectoryOpen] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
   const overridesKey = `twin-edit:${slug}`;
@@ -573,6 +573,8 @@ function TwinCanvasInner({
         title: m.title,
         creator: m.creator,
         url: m.url,
+        rating: m.rating,
+        reviewCount: m.reviewCount,
       });
     }
     if (other.entries.length) groups.push(other);
@@ -605,6 +607,17 @@ function TwinCanvasInner({
     },
     [selectedModel]
   );
+
+  // ?select=<slug> deep-link (the QC sheet's "open in viewer"): pre-select
+  // and fly to a model once the layer has loaded. One-shot.
+  const deepLinked = useRef(false);
+  useEffect(() => {
+    if (deepLinked.current || !warehouseModels) return;
+    const sel = new URLSearchParams(window.location.search).get('select');
+    if (!sel) return;
+    deepLinked.current = true;
+    flyToModel(sel);
+  }, [warehouseModels, flyToModel]);
   // Layer fade for judging footprint registration against the aerial (the
   // buildings/heroes layer fades; streets stay as the reference).
   const [buildingsOpacity, setBuildingsOpacity] = useState(1);
@@ -839,6 +852,10 @@ function TwinCanvasInner({
         onDirectoryToggle={() => setDirectoryOpen((v) => !v)}
         onDirectorySelect={flyToModel}
         directoryActive={selectedModel}
+        editActive={editMode}
+        onEditToggle={
+          warehouseModels ? () => setEditRequested((v) => !v) : undefined
+        }
         showFps={showFps}
         fps={fps}
       />

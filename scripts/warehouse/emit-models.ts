@@ -1,12 +1,13 @@
-// Emit the abstracted Warehouse models into the chatt twin (issue #259).
+// Emit the twin's models.json descriptor (issue #259).
 //
-// Reads the local-only pipeline outputs (sites/_warehouse/), projects each
+// Stage 3 of the crank (see docs/twins/warehouse-flow.md): the served GLBs
+// were already written by abstract-glb.mjs — this stage ONLY projects each
 // curated model's Warehouse geolocation through the SAME lon/lat→ENU
 // chokepoint the bake uses (createProjection + the site's measured
 // vectorOffsetM, so imported buildings shift with every other vector layer),
-// merges hand-tuned placement overrides (overrides-chatt.json — the durable
-// output of the in-viewer ?edit editor), and writes
-// public/twins/<slug>/models/{<slug>.glb, models.json}.
+// merges hand-tuned placement overrides (overrides-<site>.json — the durable
+// output of the in-viewer Edit mode), carries provenance + ratings, and
+// writes public/twins/<site>/models/models.json.
 //
 // public/twins/*/models/ is gitignored (2026-07-10 distribution decision:
 // local-only until a per-model publish call is made). The runtime treats
@@ -18,8 +19,9 @@ import {
   readFileSync,
   writeFileSync,
   mkdirSync,
-  copyFileSync,
   existsSync,
+  readdirSync,
+  rmSync,
 } from 'node:fs';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
@@ -101,6 +103,10 @@ interface EmittedModel {
   yOffset?: number;
   lat: number;
   lon: number;
+  /** Warehouse community signals (QC surface — shown in the Directory). */
+  rating?: number;
+  reviewCount?: number;
+  downloads?: number;
 }
 
 const allIds = curatedFile.neighborhoods.flatMap((n) => n.ids);
@@ -119,10 +125,10 @@ for (const hood of curatedFile.neighborhoods) {
       continue;
     }
     const slug = slugById.get(id)!;
-    const abstractPath = path.join(WAREHOUSE, 'models', slug, 'abstract.glb');
-    if (!existsSync(abstractPath)) {
+    // The served GLB is written by the abstract stage; emit only verifies.
+    if (!existsSync(path.join(outDir, `${slug}.glb`))) {
       console.error(
-        `[emit] ${slug}: no abstract.glb — run abstract-glb.mjs first`
+        `[emit] ${slug}: no served GLB — run abstract-glb.mjs first`
       );
       continue;
     }
@@ -144,6 +150,9 @@ for (const hood of curatedFile.neighborhoods) {
       yawDeg: 0, // Warehouse GLBs are true-north aligned in principle; overrides tune the rest
       lat: m.location.lat,
       lon: m.location.lon,
+      ...(m.averageRating != null ? { rating: m.averageRating } : {}),
+      ...(m.reviewCount ? { reviewCount: m.reviewCount } : {}),
+      ...(m.downloads ? { downloads: m.downloads } : {}),
     };
     const tuned = applyOverrides(entry, overrides[slug]);
     if (!tuned) {
@@ -151,12 +160,21 @@ for (const hood of curatedFile.neighborhoods) {
       console.log(`[emit] ${slug}: excluded by override`);
       continue;
     }
-    copyFileSync(abstractPath, path.join(outDir, `${slug}.glb`));
     models.push(tuned);
   }
   console.log(
     `[emit] ${hood.key}: ${models.filter((e) => e.neighborhood === hood.key).length} placed`
   );
+}
+
+// The served dir mirrors models.json exactly: sweep GLBs that are no longer
+// listed (excluded models, renamed slugs) — all regenerable from raw/.
+const listed = new Set(models.map((m) => m.file));
+for (const f of readdirSync(outDir)) {
+  if (f.endsWith('.glb') && !listed.has(f)) {
+    rmSync(path.join(outDir, f));
+    console.log(`[emit] swept unlisted ${f}`);
+  }
 }
 
 writeFileSync(
