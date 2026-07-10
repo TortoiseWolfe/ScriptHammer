@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background plus title come EARLY so the validator's 2000-char
+       G-024/SECTION-001 scan window catches them (pattern from 047). -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">COMBINED ARMS - DEPLOY SCREEN - /game/combined-arms</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP 1280x720 -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Ticket bar: both team ticket pools plus wave countdown -->
+    <rect x="32" y="76" width="620" height="44" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <circle cx="56" cy="98" r="9" fill="#3b82f6"/>
+    <text x="74" y="104" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">BLUFOR 287</text>
+    <text x="342" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">TICKETS</text>
+    <circle cx="628" cy="98" r="9" fill="#ea580c"/>
+    <text x="612" y="104" text-anchor="end" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1f2937">263 OPFOR</text>
+
+    <rect x="1032" y="76" width="216" height="44" rx="8" fill="#8b5cf6"/>
+    <text x="1140" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#f5f0e6">NEXT WAVE 0:07</text>
+
+    <!-- Deploy map: stylized North Chattanooga play area -->
+    <rect x="32" y="136" width="880" height="440" rx="8" fill="#cfe0c3" stroke="#b8a080"/>
+    <!-- River band along the south edge -->
+    <path d="M32 500 L912 476 L912 576 L32 576 Z" fill="#7fb2e5"/>
+    <text x="470" y="552" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-style="italic" fill="#1f2937">Tennessee River</text>
+    <!-- Coolidge Park lawn -->
+    <ellipse cx="470" cy="400" rx="220" ry="80" fill="#a7c987"/>
+    <text x="470" y="452" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Coolidge Park lawn</text>
+    <!-- Frazier Ave strip across the north -->
+    <rect x="60" y="196" width="820" height="52" rx="6" fill="#d9c49a" stroke="#b8a080"/>
+    <text x="470" y="228" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Frazier Ave strip</text>
+    <!-- Lane hints: two lanes plus center -->
+    <path d="M120 260 L120 470" stroke="#8f9c7a" stroke-width="3" stroke-dasharray="8 8" fill="none"/>
+    <path d="M820 260 L820 460" stroke="#8f9c7a" stroke-width="3" stroke-dasharray="8 8" fill="none"/>
+    <path d="M470 260 L470 350" stroke="#8f9c7a" stroke-width="3" stroke-dasharray="8 8" fill="none"/>
+
+    <!-- Home bases: NW and SE -->
+    <rect x="60" y="152" width="96" height="36" rx="6" fill="#3b82f6"/>
+    <text x="108" y="176" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#f5f0e6">HQ NW</text>
+    <rect x="784" y="524" width="96" height="36" rx="6" fill="#ea580c"/>
+    <text x="832" y="548" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#f5f0e6">HQ SE</text>
+
+    <!-- Flags A-E in a two-lanes-plus-center lattice.
+         Owner colors: blue BLUFOR, orange OPFOR, grey neutral.
+         Spawnable (owned) flags ring green. -->
+    <circle cx="120" cy="222" r="22" fill="#3b82f6" stroke="#22c55e" stroke-width="4"/>
+    <text x="120" y="229" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#f5f0e6">A</text>
+    <circle cx="820" cy="222" r="22" fill="#ea580c"/>
+    <text x="820" y="229" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#f5f0e6">B</text>
+    <circle cx="470" cy="380" r="22" fill="#3b82f6" stroke="#22c55e" stroke-width="4"/>
+    <text x="470" y="387" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#f5f0e6">C</text>
+    <circle cx="180" cy="470" r="22" fill="#9ca3af"/>
+    <text x="180" y="477" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#f5f0e6">D</text>
+    <circle cx="760" cy="452" r="22" fill="#9ca3af"/>
+    <text x="760" y="459" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#f5f0e6">E</text>
+
+    <!-- Squad-leader spawn icon near flag C -->
+    <path d="M560 340 L570 360 L592 362 L576 377 L581 398 L560 387 L539 398 L544 377 L528 362 L550 360 Z" fill="#22c55e" stroke="#1f2937" stroke-width="1.5"/>
+    <text x="560" y="418" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">SQUAD LEADER</text>
+
+    <!-- Right column: spawn point list.
+         Rows 4+5 show the SQ-4 combat-denial state in BOTH server-flag
+         variants: A = visible countdown, B = opaque unavailable. -->
+    <text x="944" y="156" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1f2937">SPAWN POINT</text>
+    <rect x="944" y="168" width="304" height="48" rx="8" fill="#8b5cf6"/>
+    <text x="964" y="198" font-family="system-ui, sans-serif" font-size="15" font-weight="700" fill="#f5f0e6">Flag A - Frazier West</text>
+    <rect x="944" y="224" width="304" height="48" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="964" y="254" font-family="system-ui, sans-serif" font-size="15" fill="#374151">Flag C - Park Center</text>
+    <rect x="944" y="280" width="304" height="48" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="964" y="310" font-family="system-ui, sans-serif" font-size="15" fill="#374151">HQ NW - Home base</text>
+    <rect x="944" y="336" width="304" height="48" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="964" y="366" font-family="system-ui, sans-serif" font-size="15" fill="#374151">Squad leader - spawn in <tspan font-weight="700" fill="#dc2626">0:05</tspan></text>
+    <text x="1232" y="366" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">VAR A</text>
+    <rect x="944" y="392" width="304" height="48" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="964" y="422" font-family="system-ui, sans-serif" font-size="15" fill="#4b5563">Squad leader - unavailable</text>
+    <text x="1232" y="422" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">VAR B</text>
+    <rect x="944" y="448" width="304" height="48" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="964" y="478" font-family="system-ui, sans-serif" font-size="15" fill="#374151">Flag B - enemy held</text>
+
+    <!-- Deploy button -->
+    <rect x="944" y="504" width="304" height="72" rx="8" fill="#22c55e"/>
+    <text x="1096" y="548" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="#f5f0e6">DEPLOY</text>
+
+    <!-- Class selection row: 4 buttons, each 44px+ tall -->
+    <text x="32" y="608" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#1f2937">CLASS</text>
+    <rect x="96" y="588" width="204" height="44" rx="8" fill="#8b5cf6"/>
+    <text x="198" y="616" text-anchor="middle" font-family="system-ui, sans-serif" font-size="15" font-weight="700" fill="#f5f0e6">ASSAULT</text>
+    <rect x="312" y="588" width="204" height="44" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="414" y="616" text-anchor="middle" font-family="system-ui, sans-serif" font-size="15" fill="#374151">MEDIC</text>
+    <rect x="528" y="588" width="204" height="44" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="630" y="616" text-anchor="middle" font-family="system-ui, sans-serif" font-size="15" fill="#374151">SUPPORT</text>
+    <rect x="744" y="588" width="204" height="44" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="846" y="616" text-anchor="middle" font-family="system-ui, sans-serif" font-size="15" fill="#374151">RECON</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <!-- Callouts -->
+    <g class="callout"><circle cx="330" cy="300" r="14" fill="#dc2626"/><text x="330" y="305" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="924" cy="414" r="14" fill="#dc2626"/><text x="924" y="419" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="924" cy="540" r="14" fill="#dc2626"/><text x="924" y="545" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="970" cy="595" r="14" fill="#dc2626"/><text x="970" y="600" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+    <g class="callout"><circle cx="700" cy="98" r="14" fill="#dc2626"/><text x="700" y="103" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">5</text></g>
+  </g>
+
+  <!-- MOBILE 360x720 -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <text x="180" y="102" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1f2937">Deploy</text>
+    <text x="20" y="130" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">BLU 287</text>
+    <rect x="120" y="114" width="120" height="24" rx="4" fill="#dcc8a8"/>
+    <text x="180" y="131" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">WAVE 0:07</text>
+    <text x="340" y="130" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">263 OPF</text>
+
+    <!-- Mobile map -->
+    <rect x="16" y="148" width="328" height="260" rx="8" fill="#cfe0c3" stroke="#b8a080"/>
+    <path d="M16 360 L344 344 L344 408 L16 408 Z" fill="#7fb2e5"/>
+    <rect x="32" y="180" width="296" height="30" rx="4" fill="#d9c49a"/>
+    <circle cx="66" cy="195" r="15" fill="#3b82f6" stroke="#22c55e" stroke-width="3"/>
+    <text x="66" y="200" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f5f0e6">A</text>
+    <circle cx="294" cy="195" r="15" fill="#ea580c"/>
+    <text x="294" y="200" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f5f0e6">B</text>
+    <circle cx="180" cy="280" r="15" fill="#3b82f6" stroke="#22c55e" stroke-width="3"/>
+    <text x="180" y="285" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f5f0e6">C</text>
+    <circle cx="80" cy="330" r="15" fill="#9ca3af"/>
+    <text x="80" y="335" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f5f0e6">D</text>
+    <circle cx="280" cy="322" r="15" fill="#9ca3af"/>
+    <text x="280" y="327" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f5f0e6">E</text>
+    <path d="M228 250 L233 260 L244 261 L236 269 L238 279 L228 274 L218 279 L220 269 L212 261 L223 260 Z" fill="#22c55e" stroke="#1f2937"/>
+
+    <!-- Class row: 4 touch targets 44px+ -->
+    <rect x="16" y="424" width="76" height="44" rx="8" fill="#8b5cf6"/>
+    <text x="54" y="451" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#f5f0e6">AST</text>
+    <rect x="100" y="424" width="76" height="44" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="138" y="451" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">MED</text>
+    <rect x="184" y="424" width="76" height="44" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="222" y="451" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">SUP</text>
+    <rect x="268" y="424" width="76" height="44" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="306" y="451" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">REC</text>
+
+    <!-- Spawn selection chips: healthy leader-spawn path (SQ-2) -->
+    <rect x="16" y="480" width="328" height="44" rx="8" fill="#8b5cf6"/>
+    <text x="180" y="507" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#f5f0e6">Spawn: Flag A - Frazier West</text>
+    <rect x="16" y="532" width="328" height="44" rx="8" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="180" y="559" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Spawn: Squad leader (alive)</text>
+
+    <!-- Deploy button -->
+    <rect x="16" y="588" width="328" height="52" rx="8" fill="#22c55e"/>
+    <text x="180" y="620" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#f5f0e6">DEPLOY</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+
+    <!-- Mobile callouts -->
+    <g class="callout"><circle cx="320" cy="248" r="11" fill="#dc2626"/><text x="320" y="253" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="180" cy="330" r="11" fill="#dc2626"/><text x="180" y="335" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Group 1: Conquest map lattice -->
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Conquest map: 5 flags, 2 lanes + center</text>
+      <a href="#us-001" transform="translate(340, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <a href="#cq-3" transform="translate(402, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">CQ-3</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">North Chattanooga lattice. Blue BLUFOR, orange</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">OPFOR, grey neutral; green ring = spawnable.</text>
+    </g>
+
+    <!-- Group 2: Leader spawn + SQ-4 combat denial -->
+    <g transform="translate(520, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Leader spawn + denial</text>
+      <a href="#us-002" transform="translate(210, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <a href="#sq-2" transform="translate(272, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">SQ-2</text></a>
+      <a href="#sq-4" transform="translate(334, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">SQ-4</text></a>
+      <a href="#cq-5" transform="translate(396, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">CQ-5</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Living leader is a spawn point; leader damage</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">denies it 8 s - countdown or opaque (flag).</text>
+    </g>
+
+    <!-- Group 3: Spawn list mirrors map -->
+    <g transform="translate(1020, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Spawn list + DEPLOY commit</text>
+      <a href="#us-002" transform="translate(250, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <a href="#cq-5" transform="translate(312, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">CQ-5</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">List mirrors map picks; enemy-held rows are</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">disabled. DEPLOY locks class + spawn choice.</text>
+    </g>
+
+    <!-- Group 4: Class selection -->
+    <g transform="translate(20, 116)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Class row: Assault / Medic / Support / Recon</text>
+      <a href="#us-003" transform="translate(390, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">4 kit buttons, 44px min touch target. Selected</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">kit persists across deaths until changed.</text>
+    </g>
+
+    <!-- Group 5: Tickets + spawn waves -->
+    <g transform="translate(520, 116)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">5</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Ticket pools + wave countdown</text>
+      <a href="#us-001" transform="translate(280, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <a href="#cq-4" transform="translate(342, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">CQ-4</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Both team tickets live at top. Spawns release</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">in shared waves; countdown shows next window.</text>
+    </g>
+
+    <!-- Column 4 note (mobile parity) -->
+    <g transform="translate(1020, 116)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Mobile parity</text>
+      <a href="#us-002" transform="translate(130, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Same flow stacked: map, class row, spawn chips,</text>
+      <text x="0" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">full-width DEPLOY. All targets 44px or larger.</text>
+    </g>
+  </g>
+
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#4b5563">048:01 | Combined Arms Deploy Screen | ScriptHammer</text>
+</svg>
