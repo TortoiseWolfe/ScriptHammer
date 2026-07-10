@@ -22,7 +22,7 @@
  * Run:  docker compose exec scripthammer node scripts/warehouse/abstract-glb.mjs [--only <slug>] [--ratio 0.4]
  */
 
-import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { readdir, readFile, writeFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import sharp from 'sharp';
@@ -45,6 +45,7 @@ import { MeshoptDecoder, MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer
 const { values: args } = parseArgs({
   options: {
     only: { type: 'string' },
+    force: { type: 'boolean', default: false }, // bypass the freshness skip
     ratio: { type: 'string', default: '0.4' }, // LOD0 keep-ratio of welded base
   },
 });
@@ -79,7 +80,22 @@ const srgbToLinear = (b) => {
  */
 async function sampleMaterials(doc) {
   for (const mat of doc.getRoot().listMaterials()) {
-    const tex = mat.getBaseColorTexture();
+    // 2011-era SketchUp exports often use KHR_materials_pbrSpecularGlossiness,
+    // whose diffuse texture the core getters never see — it would survive
+    // prune() and bloat a 400-triangle building to multi-MB. Sample its
+    // diffuse as the dominant color, then drop the extension entirely.
+    const sg = mat.getExtension('KHR_materials_pbrSpecularGlossiness');
+    const tex = mat.getBaseColorTexture() ?? sg?.getDiffuseTexture?.() ?? null;
+    if (sg) {
+      const df = sg.getDiffuseFactor?.();
+      if (df) mat.setBaseColorFactor(df);
+      mat.setExtension('KHR_materials_pbrSpecularGlossiness', null);
+      // Detaching only unlinks the extension from the material — the SG
+      // property OBJECT survives, still holding its diffuse/specular textures
+      // (parents "PBRSpecularGlossiness+Root"), invisible to prune() and the
+      // Root-only orphan sweep. Dispose it so its textures actually orphan.
+      sg.dispose();
+    }
     if (tex) {
       try {
         const raw = await sharp(Buffer.from(tex.getImage())).resize(1, 1).raw().toBuffer();
@@ -113,6 +129,16 @@ function dropNonTriangles(doc) {
         mesh.removePrimitive(prim);
         prim.dispose();
       }
+    }
+  }
+}
+
+/** prune() leaves textures whose only parent is the Root — sweep them
+ *  explicitly (2011-era GLBs carry dozens of orphaned facade photos). */
+function dropOrphanTextures(doc) {
+  for (const tex of doc.getRoot().listTextures()) {
+    if (tex.listParents().every((p) => p.propertyType === 'Root')) {
+      tex.dispose();
     }
   }
 }
@@ -183,46 +209,109 @@ const dirs = (await readdir(path.join(ROOT, 'models'), { withFileTypes: true }))
   .map((d) => d.name);
 
 const report = [];
+const failed = [];
 for (const slug of dirs) {
   const rawPath = path.join(ROOT, 'models', slug, 'raw.glb');
   const outPath = path.join(ROOT, 'models', slug, 'abstract.glb');
-  const rawBytes = (await readFile(rawPath)).length;
 
-  const doc = await io.read(rawPath);
-  const before = stats(doc, rawBytes);
+  // Idempotent crank: skip models whose abstract.glb is newer than raw.glb
+  // (unless --force, or a single model was requested with --only).
+  if (!only && !args.force) {
+    const [rawStat, outStat] = await Promise.all([
+      stat(rawPath).catch(() => null),
+      stat(outPath).catch(() => null),
+    ]);
+    if (rawStat && outStat && outStat.mtimeMs > rawStat.mtimeMs) {
+      continue;
+    }
+  }
 
-  dropNonTriangles(doc);
-  await sampleMaterials(doc);
-  await doc.transform(
-    dedup(),
-    palette({ min: 2 }),
-    flatten(),
-    join(),
-    weld(),
-    simplify({ simplifier: MeshoptSimplifier, ratio: LOD0.ratio, error: LOD0.error }),
-    prune()
-  );
-  const lodTris = buildLodNodes(doc);
-  await doc.transform(prune(), meshopt({ encoder: MeshoptEncoder, level: 'medium' }));
+  // Runs the full sampling chain. `ratio` tightens on oversize retries;
+  // `compress=false` falls back to a plain GLB when the meshopt encoder
+  // asserts on a pathological vertex buffer (post-abstraction models are
+  // small enough that plain output is acceptable).
+  async function process(ratio, compress) {
+    const rawBytes = (await readFile(rawPath)).length;
+    const doc = await io.read(rawPath);
+    const before = stats(doc, rawBytes);
 
-  await io.write(outPath, doc);
-  const outBytes = (await readFile(outPath)).length;
-  const after = { ...stats(doc, outBytes), lodTriangles: lodTris };
+    dropNonTriangles(doc);
+    await sampleMaterials(doc);
+    await doc.transform(
+      dedup(),
+      palette({ min: 2 }),
+      flatten(),
+      join(),
+      weld(),
+      simplify({ simplifier: MeshoptSimplifier, ratio, error: LOD0.error }),
+      prune()
+    );
+    const lodTris = buildLodNodes(doc);
+    await doc.transform(prune());
+    dropOrphanTextures(doc);
+    if (compress) {
+      await doc.transform(meshopt({ encoder: MeshoptEncoder, level: 'medium' }));
+    }
+    await io.write(outPath, doc);
+    const outBytes = (await readFile(outPath)).length;
+    return { before, lodTris, outBytes, compressed: compress };
+  }
 
-  report.push({ slug, before, after });
-  console.log(
-    `[abstract] ${slug}: ${(before.glbBytes / 1e6).toFixed(1)}MB/${(before.triangles / 1e3).toFixed(0)}k tris → ` +
-      `${(outBytes / 1e6).toFixed(2)}MB (LOD0 ${(lodTris.LOD0 / 1e3).toFixed(1)}k / LOD1 ${(lodTris.LOD1 / 1e3).toFixed(1)}k / LOD2 ${(lodTris.LOD2 / 1e3).toFixed(1)}k tris, ` +
-      `${after.materials} mats, ${after.textures} tex)`
-  );
+  try {
+    let mode = 'meshopt';
+    let result;
+    try {
+      result = await process(LOD0.ratio, true);
+    } catch {
+      // Meshopt encoder assertion — retry uncompressed.
+      mode = 'plain';
+      result = await process(LOD0.ratio, false);
+    }
+    // Oversize guard: one auto-retry with a much tighter simplify budget.
+    if (result.outBytes > 1_000_000) {
+      mode += '+tightened';
+      result = await process(LOD0.ratio * 0.3, result.compressed);
+    }
+
+    const { before, lodTris, outBytes } = result;
+    const after = { ...stats(await io.read(outPath), outBytes), lodTriangles: lodTris, mode };
+
+    report.push({ slug, before, after });
+    console.log(
+      `[abstract] ${slug}: ${(before.glbBytes / 1e6).toFixed(1)}MB/${(before.triangles / 1e3).toFixed(0)}k tris → ` +
+        `${(outBytes / 1e6).toFixed(2)}MB (LOD0 ${(lodTris.LOD0 / 1e3).toFixed(1)}k / LOD1 ${(lodTris.LOD1 / 1e3).toFixed(1)}k / LOD2 ${(lodTris.LOD2 / 1e3).toFixed(1)}k tris, ` +
+        `${after.materials} mats, ${after.textures} tex, ${mode})`
+    );
+  } catch (err) {
+    // One pathological model must not kill a 135-model batch. No abstract.glb
+    // is written, so emit skips it; the failure is loud in the report.
+    failed.push({ slug, error: String(err?.message ?? err).slice(0, 200) });
+    console.error(`[abstract] ${slug}: FAILED — ${err?.message ?? err}`);
+  }
 }
 
+// Merge with the previous report: freshness-skipped models keep their prior
+// entries; re-processed slugs replace them.
+const reportPath = path.join(ROOT, 'report.json');
+const prior = await readFile(reportPath, 'utf8')
+  .then((t) => JSON.parse(t).models ?? [])
+  .catch(() => []);
+const bySlug = new Map(prior.map((r) => [r.slug, r]));
+for (const r of report) bySlug.set(r.slug, r);
+for (const f of failed) bySlug.delete(f.slug); // a failed model has no valid stats
+const merged = [...bySlug.values()].sort((a, b) => a.slug.localeCompare(b.slug));
+
 await writeFile(
-  path.join(ROOT, 'report.json'),
-  JSON.stringify({ generated: new Date().toISOString(), lod0: LOD0, models: report }, null, 2)
+  reportPath,
+  JSON.stringify(
+    { generated: new Date().toISOString(), lod0: LOD0, failed, models: merged },
+    null,
+    2
+  )
 );
-const totalOut = report.reduce((s, r) => s + r.after.glbBytes, 0);
-const totalIn = report.reduce((s, r) => s + r.before.glbBytes, 0);
+const totalOut = merged.reduce((s, r) => s + r.after.glbBytes, 0);
+const totalIn = merged.reduce((s, r) => s + r.before.glbBytes, 0);
 console.log(
-  `\n[abstract] ${report.length} models: ${(totalIn / 1e6).toFixed(1)}MB → ${(totalOut / 1e6).toFixed(1)}MB total; report → sites/_warehouse/report.json`
+  `\n[abstract] ${report.length} processed (+${merged.length - report.length} cached, ${failed.length} FAILED): ` +
+    `${(totalIn / 1e6).toFixed(1)}MB → ${(totalOut / 1e6).toFixed(1)}MB total; report → sites/_warehouse/report.json`
 );

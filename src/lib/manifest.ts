@@ -304,6 +304,8 @@ export interface WarehouseModelEntry {
   creator: string;
   warehouseId: string;
   url: string;
+  /** Curation grouping key (e.g. "riverfront") — drives the directory panel. */
+  neighborhood?: string;
   /** ENU anchor metres (already projected through the site's vectorOffsetM). */
   x: number;
   z: number;
@@ -314,7 +316,21 @@ export interface WarehouseModelEntry {
 
 export interface WarehouseModelsInfo {
   site: string;
+  /** Ordered directory groups; entries reference these by `neighborhood`. */
+  neighborhoods?: { key: string; label: string }[];
   models: WarehouseModelEntry[];
+}
+
+/** Live placement adjustment from the ?edit editor (localStorage-backed) —
+ *  same semantics as scripts/warehouse/overrides-*.json merged at emit time:
+ *  dx/dz add to the anchor, yawDeg/scale/yOffset replace, exclude hides. */
+export interface TwinPlacementOverride {
+  yawDeg?: number;
+  scale?: number;
+  yOffset?: number;
+  dx?: number;
+  dz?: number;
+  exclude?: boolean;
 }
 
 /** Load a twin's sampled-buildings layer; null when the twin has none (404). */

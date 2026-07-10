@@ -13,16 +13,30 @@ import StageCore, { StageHandle } from '@/stage/StageCore';
 import { Rig, RigMode, RigWaypoint } from '@/stage/Rig';
 import TwinWorld from '@/world/TwinWorld';
 import Trolley from '@/agents/trolley';
-import Hud, { HudCaption, HudLink, HudOption, HudSlider } from '@/stage/Hud';
+import Hud, {
+  HudCaption,
+  HudDirectoryGroup,
+  HudLink,
+  HudOption,
+  HudSlider,
+} from '@/stage/Hud';
+import PlacementEditor from './PlacementEditor';
 import { computeDay } from '@/stage/lightRig';
 import { PALETTES, applyProfile } from '@/packs/themes';
-import { loadHouse, loadLocalLinks, loadManifest } from '@/lib/manifest';
+import {
+  loadHouse,
+  loadLocalLinks,
+  loadManifest,
+  loadWarehouseModels,
+} from '@/lib/manifest';
 import type {
   HouseInfo,
   Manifest,
   PaletteKey,
   TourWaypoint,
   TwinLink,
+  TwinPlacementOverride,
+  WarehouseModelsInfo,
 } from '@/lib/manifest';
 import { deriveFraming, type Framing, type OrthoFrame } from '@/lib/framing';
 import { getInternalUrl } from '@/config/project.config';
@@ -107,7 +121,12 @@ function SceneInner({
   onHouseGround,
   onWorldError,
   registerHandle,
+  registerRig,
   onFps,
+  warehouseModels,
+  modelOverrides,
+  selectedModel,
+  onSelectModel,
 }: {
   slug: string;
   manifest: Manifest;
@@ -127,8 +146,15 @@ function SceneInner({
   onHouseGround?: (y: number) => void;
   onWorldError: (message: string) => void;
   registerHandle: (h: StageHandle) => void;
+  /** Lifts the Rig to the composition root (directory fly-to), mirroring the
+   *  registerHandle pattern. */
+  registerRig?: (rig: Rig) => void;
   /** ~2 Hz averaged frame rate for the HUD counter (#259 perf work). */
   onFps?: (fps: number) => void;
+  warehouseModels?: WarehouseModelsInfo | null;
+  modelOverrides?: Record<string, TwinPlacementOverride>;
+  selectedModel?: string | null;
+  onSelectModel?: (slug: string) => void;
 }) {
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
@@ -227,6 +253,11 @@ function SceneInner({
     () => ({ bricks: PALETTES[paletteKey].bricks }),
     [paletteKey]
   );
+
+  // Lift the Rig for directory fly-to (mirrors registerHandle).
+  useEffect(() => {
+    registerRig?.(rig);
+  }, [rig, registerRig]);
 
   // Honest perf sampling (#259). renderer.info auto-resets after EVERY
   // gl.render — with the EffectComposer chain the last post pass would report
@@ -328,6 +359,10 @@ function SceneInner({
         house={house}
         showHouse={showHouse}
         buildingsOpacity={buildingsOpacity}
+        warehouseModels={warehouseModels}
+        modelOverrides={modelOverrides}
+        selectedModel={selectedModel}
+        onSelectModel={onSelectModel}
         onHouseGround={onHouseGround}
         onGroundReady={handleGroundReady}
         onError={onWorldError}
@@ -362,12 +397,14 @@ function TwinCanvasInner({
   manifest,
   house,
   localLinks,
+  warehouseModels,
   focus,
 }: {
   slug: string;
   manifest: Manifest;
   house: HouseInfo | null;
   localLinks: TwinLink[];
+  warehouseModels: WarehouseModelsInfo | null;
   focus: TwinFocus;
 }) {
   const site = manifest.site;
@@ -477,6 +514,97 @@ function TwinCanvasInner({
   const [showFps, setShowFps] = useState(false);
   const [fps, setFps] = useState<number | undefined>(undefined);
   const [worldError, setWorldError] = useState<string | null>(null);
+
+  // --- Warehouse layer: directory + ?edit placement editor (#259 iter 2) ---
+  // ?edit activates the editor (harmless on twins without a models layer).
+  const editMode = useMemo(
+    () =>
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).has('edit') &&
+      !!warehouseModels,
+    [warehouseModels]
+  );
+  const [directoryOpen, setDirectoryOpen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const overridesKey = `twin-edit:${slug}`;
+  const [modelOverrides, setModelOverrides] = useState<
+    Record<string, TwinPlacementOverride>
+  >(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      return JSON.parse(window.localStorage.getItem(overridesKey) ?? '{}');
+    } catch {
+      return {};
+    }
+  });
+  useEffect(() => {
+    // Persist live edits; an empty map clears the key.
+    if (!editMode) return;
+    if (Object.keys(modelOverrides).length === 0) {
+      window.localStorage.removeItem(overridesKey);
+    } else {
+      window.localStorage.setItem(overridesKey, JSON.stringify(modelOverrides));
+    }
+  }, [modelOverrides, editMode, overridesKey]);
+
+  const rigRef = useRef<Rig | null>(null);
+  const registerRig = useCallback((r: Rig) => {
+    rigRef.current = r;
+  }, []);
+
+  const directory = useMemo<HudDirectoryGroup[] | undefined>(() => {
+    if (!warehouseModels) return undefined;
+    const groups =
+      warehouseModels.neighborhoods?.map((n) => ({
+        key: n.key,
+        label: n.label,
+        entries: [] as HudDirectoryGroup['entries'],
+      })) ?? [];
+    const byKey = new Map(groups.map((g) => [g.key, g]));
+    const other: HudDirectoryGroup = {
+      key: 'other',
+      label: 'Other',
+      entries: [],
+    };
+    for (const m of warehouseModels.models) {
+      const g = (m.neighborhood && byKey.get(m.neighborhood)) || other;
+      g.entries.push({
+        slug: m.slug,
+        title: m.title,
+        creator: m.creator,
+        url: m.url,
+      });
+    }
+    if (other.entries.length) groups.push(other);
+    return groups.filter((g) => g.entries.length > 0);
+  }, [warehouseModels]);
+
+  const flyToModel = useCallback(
+    (modelSlug: string) => {
+      const entry = warehouseModels?.models.find((m) => m.slug === modelSlug);
+      if (!entry) return;
+      setSelectedModel(modelSlug);
+      // Fly-to lives on the orbit rig; switch modes first if needed. The
+      // mode-change effect re-frames the rig on entry, so the glide is kicked
+      // off on the next tick to win that race.
+      setMode((prev) => (prev === 'orbit' ? prev : 'orbit'));
+      const dx = entry.x + (modelOverrides[modelSlug]?.dx ?? 0);
+      const dz = entry.z + (modelOverrides[modelSlug]?.dz ?? 0);
+      setTimeout(() => rigRef.current?.flyTo(dx, dz, 140), 60);
+    },
+    [warehouseModels, modelOverrides]
+  );
+
+  const patchOverride = useCallback(
+    (patch: TwinPlacementOverride) => {
+      if (!selectedModel) return;
+      setModelOverrides((prev) => ({
+        ...prev,
+        [selectedModel]: { ...prev[selectedModel], ...patch },
+      }));
+    },
+    [selectedModel]
+  );
   // Layer fade for judging footprint registration against the aerial (the
   // buildings/heroes layer fades; streets stay as the reference).
   const [buildingsOpacity, setBuildingsOpacity] = useState(1);
@@ -514,10 +642,37 @@ function TwinCanvasInner({
         const opt = modes[Number(m[1]) - 1];
         if (opt) setMode(opt.key as CameraMode);
       }
+      // ?edit adjustment keys (arrows are free — the Rig owns WASD).
+      if (editMode && selectedModel) {
+        const ov = modelOverrides[selectedModel] ?? {};
+        const nudge = e.shiftKey ? 2 : 0.5;
+        if (e.code === 'BracketLeft')
+          patchOverride({ yawDeg: (ov.yawDeg ?? 0) - (e.shiftKey ? 15 : 1) });
+        else if (e.code === 'BracketRight')
+          patchOverride({ yawDeg: (ov.yawDeg ?? 0) + (e.shiftKey ? 15 : 1) });
+        else if (e.code === 'Minus')
+          patchOverride({
+            yOffset: Math.round(((ov.yOffset ?? 0) - 0.25) * 100) / 100,
+          });
+        else if (e.code === 'Equal')
+          patchOverride({
+            yOffset: Math.round(((ov.yOffset ?? 0) + 0.25) * 100) / 100,
+          });
+        else if (e.code === 'ArrowLeft')
+          patchOverride({ dx: Math.round(((ov.dx ?? 0) - nudge) * 10) / 10 });
+        else if (e.code === 'ArrowRight')
+          patchOverride({ dx: Math.round(((ov.dx ?? 0) + nudge) * 10) / 10 });
+        else if (e.code === 'ArrowUp')
+          patchOverride({ dz: Math.round(((ov.dz ?? 0) - nudge) * 10) / 10 });
+        else if (e.code === 'ArrowDown')
+          patchOverride({ dz: Math.round(((ov.dz ?? 0) + nudge) * 10) / 10 });
+        else return;
+        if (e.code.startsWith('Arrow')) e.preventDefault(); // no page scroll
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [modes]);
+  }, [modes, editMode, selectedModel, modelOverrides, patchOverride]);
 
   // Route-scoped chrome control: hide the global cookie/PWA popups that would
   // overlap the diorama HUD. Keeps ScriptHammer's top nav (the diorama insets
@@ -582,7 +737,12 @@ function TwinCanvasInner({
           onHouseGround={houseFocused ? setHouseGroundY : undefined}
           onWorldError={setWorldError}
           registerHandle={registerHandle}
+          registerRig={registerRig}
           onFps={showFps ? setFps : undefined}
+          warehouseModels={warehouseModels}
+          modelOverrides={modelOverrides}
+          selectedModel={selectedModel}
+          onSelectModel={editMode ? setSelectedModel : undefined}
         />
       </Canvas>
       {houseFocused && house ? (
@@ -674,9 +834,39 @@ function TwinCanvasInner({
         caption={
           mode === 'tour' ? caption : (MODE_HINTS[mode] ?? null) // embodied modes explain their controls
         }
+        directory={directory}
+        directoryOpen={directoryOpen}
+        onDirectoryToggle={() => setDirectoryOpen((v) => !v)}
+        onDirectorySelect={flyToModel}
+        directoryActive={selectedModel}
         showFps={showFps}
         fps={fps}
       />
+      {editMode ? (
+        <PlacementEditor
+          entry={
+            warehouseModels?.models.find((m) => m.slug === selectedModel) ??
+            null
+          }
+          override={(selectedModel && modelOverrides[selectedModel]) || {}}
+          overrideCount={Object.keys(modelOverrides).length}
+          onChange={patchOverride}
+          onReset={() => {
+            if (!selectedModel) return;
+            setModelOverrides((prev) => {
+              const next = { ...prev };
+              delete next[selectedModel];
+              return next;
+            });
+          }}
+          onExport={async () => {
+            await navigator.clipboard.writeText(
+              JSON.stringify(modelOverrides, null, 2)
+            );
+          }}
+          onClearAll={() => setModelOverrides({})}
+        />
+      ) : null}
     </div>
   );
 }
@@ -699,6 +889,8 @@ export default function TwinCanvas({
   const [manifest, setManifest] = useState<Manifest | null>(null);
   const [house, setHouse] = useState<HouseInfo | null>(null);
   const [localLinks, setLocalLinks] = useState<TwinLink[]>([]);
+  const [warehouseModels, setWarehouseModels] =
+    useState<WarehouseModelsInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -706,6 +898,7 @@ export default function TwinCanvas({
     setManifest(null);
     setHouse(null);
     setLocalLinks([]);
+    setWarehouseModels(null);
     setError(null);
     Promise.all([
       loadManifest(slug),
@@ -716,11 +909,17 @@ export default function TwinCanvas({
         return null;
       }),
       loadLocalLinks(slug),
+      // Optional sampled-buildings layer (#259) — same warn-don't-break rule.
+      loadWarehouseModels(slug).catch((e: unknown) => {
+        console.warn('[twin] warehouse models ignored:', e);
+        return null;
+      }),
     ])
-      .then(([m, h, links]) => {
+      .then(([m, h, links, wm]) => {
         if (!alive) return;
         setHouse(h);
         setLocalLinks(links);
+        setWarehouseModels(wm);
         setManifest(m);
       })
       .catch((e: unknown) => {
@@ -756,6 +955,7 @@ export default function TwinCanvas({
       manifest={manifest}
       house={house}
       localLinks={localLinks}
+      warehouseModels={warehouseModels}
       focus={effectiveFocus}
     />
   );
