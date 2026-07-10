@@ -246,13 +246,26 @@ docker compose exec scripthammer pnpm run prime
 2. Import Leaflet CSS only in map components
 3. Restart container after CSS changes
 
-### Port 3000 In Use
+### Dev Server Port (pinned)
 
-```bash
-docker compose down
-lsof -i :3000
-kill -9 <PID>
-```
+`SH_PORT` in `.env` pins the host port so the dev URL survives container
+restarts and self-heal events (issue #230). On this machine the convention is
+`SH_PORT=3002` (3000 is held by the RescueDogs container):
+`http://127.0.0.1:3002/ScriptHammer/`
+
+If `SH_PORT` is unset, Docker assigns an ephemeral port per restart — find it
+with `docker compose port scripthammer 3000`. "Port in use" means another
+instance pinned the same port — change `SH_PORT` in `.env`; don't kill host
+processes.
+
+### 500s on Every Route (.next corruption)
+
+Signature: `Cannot read properties of undefined (reading '/_app')` / ENOENT
+`vendor-chunks` after bakes or branch switches while the dev server runs.
+The entrypoint supervisor self-heals (issue #230): after ~60s of sustained
+HTTP 5xx it recycles `.next` and relaunches `next dev` in-place — port
+unchanged, back to 200 within ~2 minutes (watch for `[self-heal]` in
+`docker compose logs`). Manual fallback: `docker compose restart scripthammer`.
 
 ## Test Users
 

@@ -119,8 +119,8 @@ RUN chown -R node:node /app/node_modules \
     && chown -R node:node /app/.next /app/.next-acceptance
 
 # Entrypoint needs root for chmod, copy before USER switch
-COPY docker/docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+COPY docker/docker-entrypoint.sh docker/healthcheck.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh /usr/local/bin/healthcheck.sh
 
 # Switch to node user BEFORE copying app files (Bret Fisher pattern).
 # Official node:22-slim already includes the node user — no useradd needed.

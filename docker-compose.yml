@@ -72,11 +72,15 @@ services:
       - GIT_COMMITTER_NAME=${GIT_AUTHOR_NAME}
       - GIT_COMMITTER_EMAIL=${GIT_AUTHOR_EMAIL}
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3000/']
+      # basePath-aware; reads NEXT_PUBLIC_BASE_PATH at exec time. See #230.
+      test: ['CMD', '/usr/local/bin/healthcheck.sh']
       interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      timeout: 10s # > the script's internal curl --max-time 8
+      # 6 × 30s = 3 min of consecutive fails before "unhealthy" — outlasts
+      # one self-heal cycle (~60s detect + ~90s recompile), so a normal
+      # recovery never flips the container unhealthy.
+      retries: 6
+      start_period: 180s # pnpm install + first-route cold compile on WSL2
     init: true
     restart: unless-stopped
 
