@@ -4,6 +4,16 @@
 // *.local.json, house/) is gitignored and therefore out of scope by
 // construction.
 //
+// SCOPE NARROWED 2026-07-10 (the #234 consent decision): the capture is
+// published as an anonymized PORTFOLIO PIECE at the owner's direction, with
+// the scrub bar set to "what someone on the street would know" — the
+// exterior is in plain view from a public road. The twin (location, terrain,
+// street name in the slug, coordinates) is therefore publishable; what stays
+// protected is the IDENTITY LINKAGE: the printed street address (house
+// number + street). The earlier street-name and bare-coordinate patterns
+// were removed because the committed site config/manifest necessarily carry
+// them.
+//
 // The protected strings are assembled from fragments below so THIS committed
 // file doesn't contain them either.
 
@@ -16,9 +26,6 @@ const SELF = 'tests/unit/no-client-address.test.ts';
 // Fragment assembly — do not inline these into literals.
 const HOUSE_NUM = ['26', '30'].join('');
 const STREET = ['East', 'Main'].join(' ');
-const LON_FRAG = ['85.', '2673'].join('');
-const LAT_FRAG_A = ['35.', '02117'].join('');
-const LAT_FRAG_B = ['35.', '0212'].join('');
 
 const PATTERNS: { name: string; re: RegExp }[] = [
   {
@@ -27,16 +34,6 @@ const PATTERNS: { name: string; re: RegExp }[] = [
       `${HOUSE_NUM}\\s*,?\\s*(E|${STREET.split(' ')[0]})[.\\s]*${STREET.split(' ')[1]}`,
       'i'
     ),
-  },
-  { name: 'street name', re: new RegExp(`${STREET}\\s+Street`, 'i') },
-  { name: 'parcel longitude', re: new RegExp(LON_FRAG.replace('.', '\\.')) },
-  {
-    name: 'parcel latitude (7dp)',
-    re: new RegExp(LAT_FRAG_A.replace('.', '\\.')),
-  },
-  {
-    name: 'parcel latitude (4dp)',
-    re: new RegExp(`${LAT_FRAG_B.replace('.', '\\.')}\\b`),
   },
 ];
 

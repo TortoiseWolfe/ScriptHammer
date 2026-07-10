@@ -155,8 +155,13 @@ scripts/__tests__/fixtures/*
 *.local.json
 /sites/*
 !/sites/chatt.json
+# #234 consent decision (2026-07-10): the as-built capture is published as an
+# anonymized portfolio piece (street-visible scrub bar) — deliberately
+# allowlisted, same pattern as chatt.
+!/sites/east-main-street-chattanooga.json
 /public/twins/*
 !/public/twins/chatt/
+!/public/twins/east-main-street-chattanooga/
 # Every site's raw upstream cache is large and local-only (regenerable via
 # `pnpm bake`) — the wildcard also covers any future allowlisted site.
 /public/twins/*/_raw/
@@ -165,6 +170,8 @@ scripts/__tests__/fixtures/*
 # allowlisted twin. Publishing a consented capture requires its own deliberate
 # `!` entry, same as publishing the twin itself.
 /public/twins/*/house/
+# Published per the 2026-07-10 consent decision (anonymized portfolio piece):
+!/public/twins/east-main-street-chattanooga/house/
 # Warehouse-derived building models (#259) are 3D Warehouse General Model
 # License content — local-only by default (2026-07-10 decision); publishing
 # any model is a deliberate per-model call, same pattern as house/.

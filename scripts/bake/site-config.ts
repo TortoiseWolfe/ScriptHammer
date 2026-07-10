@@ -122,6 +122,12 @@ export const SiteConfigSchema = z.object({
   palette: z.enum(['trueToLife', 'toy']).optional(),
   day: z.number().min(0).max(1).optional(),
   framing: FramingSchema.optional(),
+  /** Committed HUD nav buttons (e.g. a published portfolio property page).
+   *  href is app-internal (basePath applied at runtime). Private demo links
+   *  belong in links.local.json instead — never here. */
+  links: z
+    .array(z.object({ label: z.string().min(1), href: z.string().min(1) }))
+    .optional(),
   /** Aerial source. NAIP is US-only; non-US sites need 'esri'; 'tnmap' is
    *  Tennessee's TDOT statewide ortho (0.15 m, engineering-grade georef). */
   drapeSource: z.enum(['naip', 'esri', 'tnmap']).default('naip'),
@@ -157,6 +163,7 @@ export function siteManifestBlock(site: SiteConfig) {
     ...(site.tour != null && { tour: site.tour }),
     ...(site.trolley != null && { trolley: site.trolley }),
     ...(site.framing != null && { framing: site.framing }),
+    ...(site.links != null && { links: site.links }),
   };
 }
 
