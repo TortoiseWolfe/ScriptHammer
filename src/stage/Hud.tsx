@@ -41,6 +41,9 @@ export interface HudDirectoryEntry {
   creator?: string;
   /** Fully-resolved external link for the source/credit (optional). */
   url?: string;
+  /** Community rating (e.g. 1–5 stars) + how many reviews back it. */
+  rating?: number;
+  reviewCount?: number;
 }
 
 /** A named group of directory entries (e.g. a neighborhood). */
@@ -77,6 +80,10 @@ export interface HudProps {
   onDirectorySelect?: (slug: string) => void;
   /** Highlighted directory entry (e.g. the editor's selection). */
   directoryActive?: string | null;
+  /** Optional edit-mode toggle (placement editor). Button renders only when
+   *  the handler is provided. */
+  editActive?: boolean;
+  onEditToggle?: () => void;
   caption?: HudCaption | null;
   showFps: boolean;
   fps?: number;
@@ -134,6 +141,8 @@ export default function Hud({
   onDirectoryToggle,
   onDirectorySelect,
   directoryActive,
+  editActive,
+  onEditToggle,
   caption,
   showFps,
   fps,
@@ -243,11 +252,14 @@ export default function Hud({
                     <span style={{ display: 'block', fontSize: 13 }}>
                       {e.title}
                     </span>
-                    {e.creator ? (
+                    {e.creator || e.rating != null ? (
                       <span
                         style={{ display: 'block', fontSize: 11, opacity: 0.6 }}
                       >
                         {e.creator}
+                        {e.rating != null
+                          ? ` · ★${e.rating.toFixed(1)}${e.reviewCount ? ` (${e.reviewCount})` : ''}`
+                          : ''}
                       </span>
                     ) : null}
                   </button>
@@ -403,16 +415,28 @@ export default function Hud({
             </div>
           ) : null}
 
-          {directory && onDirectoryToggle ? (
+          {(directory && onDirectoryToggle) || onEditToggle ? (
             <div style={{ ...glass, display: 'flex', gap: 4, padding: 4 }}>
-              <button
-                type="button"
-                style={dockButtonStyle(!!directoryOpen)}
-                aria-pressed={!!directoryOpen}
-                onClick={onDirectoryToggle}
-              >
-                Directory
-              </button>
+              {directory && onDirectoryToggle ? (
+                <button
+                  type="button"
+                  style={dockButtonStyle(!!directoryOpen)}
+                  aria-pressed={!!directoryOpen}
+                  onClick={onDirectoryToggle}
+                >
+                  Directory
+                </button>
+              ) : null}
+              {onEditToggle ? (
+                <button
+                  type="button"
+                  style={dockButtonStyle(!!editActive)}
+                  aria-pressed={!!editActive}
+                  onClick={onEditToggle}
+                >
+                  Edit
+                </button>
+              ) : null}
             </div>
           ) : null}
 

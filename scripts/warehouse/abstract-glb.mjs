@@ -15,14 +15,16 @@
  *   → dedup → palette → flatten → join → weld → simplify(LOD0 base)
  *   → prune → buildLodNodes(LOD1/LOD2 clones) → meshopt compression.
  *
- * In:  sites/_warehouse/models/<slug>/raw.glb        (fetch-glbs.mjs output)
- * Out: sites/_warehouse/models/<slug>/abstract.glb   (local-only, gitignored)
+ * Stage 2 of the crank (see docs/twins/warehouse-flow.md):
+ * In:  sites/_warehouse/raw/<slug>.glb               (fetch-glbs.mjs output)
+ * Out: public/twins/<site>/models/<slug>.glb         (SERVED directly — no
+ *      intermediate copy; the dir is gitignored/local-only)
  *      sites/_warehouse/report.json                  (before/after stats)
  *
- * Run:  docker compose exec scripthammer node scripts/warehouse/abstract-glb.mjs [--only <slug>] [--ratio 0.4]
+ * Run:  docker compose exec scripthammer node scripts/warehouse/abstract-glb.mjs [--site chatt] [--only <slug>] [--force]
  */
 
-import { readdir, readFile, writeFile, stat } from 'node:fs/promises';
+import { readdir, readFile, writeFile, stat, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import sharp from 'sharp';
@@ -45,12 +47,17 @@ import { MeshoptDecoder, MeshoptEncoder, MeshoptSimplifier } from 'meshoptimizer
 const { values: args } = parseArgs({
   options: {
     only: { type: 'string' },
+    site: { type: 'string', default: 'chatt' }, // served GLBs land in this twin
     force: { type: 'boolean', default: false }, // bypass the freshness skip
     ratio: { type: 'string', default: '0.4' }, // LOD0 keep-ratio of welded base
   },
 });
 
 const ROOT = path.resolve('sites/_warehouse');
+// Iteration-3 flow collapse: read the raw cache, write the SERVED GLB
+// directly (no intermediate abstract.glb copy) — one model = raw → served.
+const RAW = path.join(ROOT, 'raw');
+const OUT = path.resolve(`public/twins/${args.site}/models`);
 const LOD0 = { ratio: Number(args.ratio), error: 0.005 };
 const LODS = [
   { name: 'LOD1', ratio: 0.15, error: 0.02 },
@@ -204,18 +211,20 @@ function buildLodNodes(doc) {
 }
 
 const only = args.only;
-const dirs = (await readdir(path.join(ROOT, 'models'), { withFileTypes: true }))
-  .filter((d) => d.isDirectory() && (!only || d.name === only))
-  .map((d) => d.name);
-
+await mkdir(OUT, { recursive: true });
+const dirs = (await readdir(RAW))
+  .filter((f) => f.endsWith('.glb'))
+  .map((f) => f.slice(0, -4))
+  .filter((slug) => !only || slug === only)
+  .sort();
 const report = [];
 const failed = [];
 for (const slug of dirs) {
-  const rawPath = path.join(ROOT, 'models', slug, 'raw.glb');
-  const outPath = path.join(ROOT, 'models', slug, 'abstract.glb');
+  const rawPath = path.join(RAW, `${slug}.glb`);
+  const outPath = path.join(OUT, `${slug}.glb`);
 
-  // Idempotent crank: skip models whose abstract.glb is newer than raw.glb
-  // (unless --force, or a single model was requested with --only).
+  // Idempotent crank: skip models whose served GLB is newer than the raw
+  // cache (unless --force, or a single model was requested with --only).
   if (!only && !args.force) {
     const [rawStat, outStat] = await Promise.all([
       stat(rawPath).catch(() => null),
