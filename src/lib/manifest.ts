@@ -316,6 +316,13 @@ export interface WarehouseModelEntry {
   yawDeg?: number;
   scale?: number;
   yOffset?: number;
+  /** Post-abstraction LOD0 bbox size [x, y, z] metres (#259 iter 5) — drives
+   *  size-aware fly-to framing. Optional: absent on sets emitted without a
+   *  local report.json; consumers must fall back. */
+  dim?: [number, number, number];
+  /** Bbox-centre XZ offset from the model origin, pre-yaw — some sources
+   *  anchor at a campus corner, not the building. */
+  centerOffset?: [number, number];
   /** Warehouse community signals (QC surface — shown in the Directory). */
   rating?: number;
   reviewCount?: number;

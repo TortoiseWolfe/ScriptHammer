@@ -70,17 +70,14 @@ describe('deriveFraming — formulas at chatt dimensions', () => {
     expect(f.homeTheta).toBe(0);
     expect(f.homeFocus).toEqual([-100, 0, -2000]); // authored override
   });
-  it('topdown frame fits the long extent at fov 62 (old: -100/5000)', () => {
-    expect(f.topdown.center).toEqual([-100, 0]);
-    const expected = (1.05 * (L / 2)) / Math.tan((31 * Math.PI) / 180);
-    expect(f.topdown.height).toBeCloseTo(expected, 6); // ≈5060
-  });
   it('ortho frame IS the drape extent: box-centred half-extents, north-up (#233)', () => {
     expect(f.ortho.center).toEqual([0, 0]); // world origin = box centre, NOT homeFocus
     expect(f.ortho.halfW).toBeCloseTo(1460 / 2, 6);
     expect(f.ortho.halfH).toBeCloseTo(L / 2, 6);
-    // hover height reuses the site-scaled topdown formula (always clears content)
-    expect(f.ortho.height).toBeCloseTo(f.topdown.height, 6);
+    // hover height: fov-62 fit of the long extent, +5% (site-scaled, always
+    // clears the content). Was shared with the retired ?topdown diagnostic.
+    const expected = (1.05 * (L / 2)) / Math.tan((31 * Math.PI) / 180);
+    expect(f.ortho.height).toBeCloseTo(expected, 6); // ≈5060
   });
   it('initial camera = first tour shot when a tour exists', () => {
     expect(f.initialCameraPos).toEqual([-40, 240, -1980]);
@@ -91,7 +88,7 @@ describe('deriveFraming — defaults and overrides', () => {
   it('defaults homeFocus to the origin (box centre)', () => {
     const f = deriveFraming(chattManifest({ framing: undefined }));
     expect(f.homeFocus).toEqual([0, 0, 0]);
-    expect(f.topdown.center).toEqual([0, 0]);
+    expect(f.ortho.center).toEqual([0, 0]);
   });
   it('starts at the home orbit position for a tour-less site', () => {
     const f = deriveFraming(

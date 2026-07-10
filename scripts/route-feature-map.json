@@ -109,11 +109,6 @@
       "as_is_filename": "as-is-messages-setup.svg"
     },
     {
-      "route": "/conversations",
-      "feature_path": "features/core-features/009-user-messaging-system",
-      "as_is_filename": "as-is-conversations.svg"
-    },
-    {
       "route": "/blog",
       "feature_path": "features/core-features/010-unified-blog-content",
       "as_is_filename": "as-is-blog.svg"

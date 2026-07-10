@@ -12,6 +12,8 @@
  *
  * Chain per model (order matters):
  *   sampleMaterials (textures → dominant baseColorFactor, matte)
+ *   → cullContextNodes (drop site-context planes — MUST precede flatten/join,
+ *     see scripts/warehouse/cull.mjs; per-slug grants in abstract-<site>.json)
  *   → dedup → palette → flatten → join → weld → simplify(LOD0 base)
  *   → prune → buildLodNodes(LOD1/LOD2 clones) → meshopt compression.
  *
@@ -28,7 +30,8 @@ import { readdir, readFile, writeFile, stat, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import sharp from 'sharp';
-import { NodeIO } from '@gltf-transform/core';
+import { NodeIO, getBounds } from '@gltf-transform/core';
+import { cullAndPrune, trianglesUnder } from './cull.mjs';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import {
   dedup,
@@ -59,10 +62,28 @@ const ROOT = path.resolve('sites/_warehouse');
 const RAW = path.join(ROOT, 'raw');
 const OUT = path.resolve(`public/twins/${args.site}/models`);
 const LOD0 = { ratio: Number(args.ratio), error: 0.005 };
+// LOD2 was ratio 0.04 / error 0.08 — on the big context planes that shredded
+// into serrated blobs ("junk geometry", iter-5 review). 0.08/0.05 stays under
+// the committed 150k totalLod2Triangles ceiling by construction: LOD2@0.08 ≤
+// LOD1@0.15 per model, and the LOD1 total is ~128k.
 const LODS = [
   { name: 'LOD1', ratio: 0.15, error: 0.02 },
-  { name: 'LOD2', ratio: 0.04, error: 0.08 },
+  { name: 'LOD2', ratio: 0.08, error: 0.05 },
 ];
+// An LOD2 that lands under this is a silhouette-free shard blob — ship the
+// LOD1 geometry at that level instead (33 models today).
+const LOD2_SHARD_FLOOR_TRIS = 120;
+
+// Per-slug pipeline config (#259 iter 5): culling grants (keepAll for the
+// bridges), dropNodes regexes, expected extents for QC, LOD ratio overrides.
+// Committed next to the curation list; absent file = no per-slug config.
+const abstractCfg = await readFile(
+  path.resolve(`scripts/warehouse/abstract-${args.site}.json`),
+  'utf8'
+)
+  .then((t) => JSON.parse(t))
+  .catch(() => ({}));
+const cfgFor = (slug) => abstractCfg[slug] ?? {};
 
 await MeshoptDecoder.ready;
 await MeshoptEncoder.ready;
@@ -165,22 +186,10 @@ function stats(doc, glbBytes) {
   };
 }
 
-function trianglesUnder(node) {
-  let tris = 0;
-  node.traverse((n) => {
-    const mesh = n.getMesh?.();
-    if (!mesh) return;
-    for (const prim of mesh.listPrimitives()) {
-      const idx = prim.getIndices();
-      const pos = prim.getAttribute('POSITION');
-      tris += Math.floor((idx ? idx.getCount() : (pos?.getCount() ?? 0)) / 3);
-    }
-  });
-  return tris;
-}
-
-/** Wrap the scene under LOD0 and add simplified LOD1/LOD2 clones (shared materials). */
-function buildLodNodes(doc) {
+/** Wrap the scene under LOD0 and add simplified LOD1/LOD2 clones (shared
+ *  materials). Per-slug `lodRatios` override the global keep-ratios; an LOD2
+ *  that simplifies below the shard floor ships LOD1's geometry instead. */
+function buildLodNodes(doc, cfg = {}) {
   const scene = doc.getRoot().getDefaultScene() ?? doc.getRoot().listScenes()[0];
   const lod0 = doc.createNode('LOD0');
   for (const child of [...scene.listChildren()]) {
@@ -190,21 +199,46 @@ function buildLodNodes(doc) {
   scene.addChild(lod0);
 
   const lodTris = { LOD0: trianglesUnder(lod0) };
+  const built = {};
   for (const { name, ratio, error } of LODS) {
+    const useRatio = cfg.lodRatios?.[name.toLowerCase()] ?? ratio;
     const lodN = doc.createNode(name);
     lod0.traverse((node) => {
       const mesh = node.getMesh?.();
       if (!mesh) return;
       const clone = mesh.clone();
       for (const prim of clone.listPrimitives()) {
-        simplifyPrimitive(prim, { simplifier: MeshoptSimplifier, ratio, error });
+        simplifyPrimitive(prim, {
+          simplifier: MeshoptSimplifier,
+          ratio: useRatio,
+          error,
+        });
       }
       const holder = doc.createNode(`${name}-${node.getName() || 'mesh'}`);
       holder.setMesh(clone);
       holder.setMatrix(node.getWorldMatrix());
       lodN.addChild(holder);
     });
+    // Shard floor: a far level reduced to a handful of stretched triangles
+    // reads as junk, not a silhouette. Rebuild it from the previous level's
+    // geometry (LOD1, else LOD0 stays the only source of truth).
+    if (name === 'LOD2' && trianglesUnder(lodN) < LOD2_SHARD_FLOOR_TRIS) {
+      for (const child of [...lodN.listChildren()]) {
+        child.traverse((n) => n.getMesh?.() && n.setMesh(null));
+        child.dispose();
+      }
+      const src = built.LOD1 ?? lod0;
+      src.traverse((node) => {
+        const mesh = node.getMesh?.();
+        if (!mesh) return;
+        const holder = doc.createNode(`${name}-${node.getName() || 'mesh'}`);
+        holder.setMesh(mesh); // share, don't clone — same geometry, no bloat
+        holder.setMatrix(node.getWorldMatrix());
+        lodN.addChild(holder);
+      });
+    }
     scene.addChild(lodN);
+    built[name] = lodN;
     lodTris[name] = trianglesUnder(lodN);
   }
   return lodTris;
@@ -217,10 +251,18 @@ const dirs = (await readdir(RAW))
   .map((f) => f.slice(0, -4))
   .filter((slug) => !only || slug === only)
   .sort();
-// Freshness must also see edits to THIS SCRIPT (the abstraction recipe):
-// without this, changing simplify ratios or the material sampler silently
-// ships the old abstraction until someone remembers --force.
-const scriptMtime = (await stat(new URL(import.meta.url))).mtimeMs;
+// Freshness must also see edits to the abstraction RECIPE — this script, the
+// cull module, and the per-slug config: without this, changing simplify
+// ratios, culling rules, or a slug's grant silently ships the old
+// abstraction until someone remembers --force.
+const recipeMtimes = await Promise.all(
+  [
+    new URL(import.meta.url),
+    new URL('./cull.mjs', import.meta.url),
+    path.resolve(`scripts/warehouse/abstract-${args.site}.json`),
+  ].map((p) => stat(p).then((s) => s.mtimeMs).catch(() => 0))
+);
+const scriptMtime = Math.max(...recipeMtimes);
 
 const report = [];
 const failed = [];
@@ -252,9 +294,13 @@ for (const slug of dirs) {
     const rawBytes = (await readFile(rawPath)).length;
     const doc = await io.read(rawPath);
     const before = stats(doc, rawBytes);
+    const cfg = cfgFor(slug);
 
     dropNonTriangles(doc);
     await sampleMaterials(doc);
+    // Context culling (iter 5): strip site-context planes while source nodes
+    // are still separate — flatten/join below merges everything.
+    const culled = await cullAndPrune(doc, cfg);
     await doc.transform(
       dedup(),
       palette({ min: 2 }),
@@ -264,15 +310,34 @@ for (const slug of dirs) {
       simplify({ simplifier: MeshoptSimplifier, ratio, error: LOD0.error }),
       prune()
     );
-    const lodTris = buildLodNodes(doc);
+    const lodTris = buildLodNodes(doc, cfg);
     await doc.transform(prune());
     dropOrphanTextures(doc);
+    // Post-abstraction bounds of the geometry that actually ships (LOD0 —
+    // all levels share the footprint): feeds QC extent badges, the extents
+    // test, size-aware fly-to, and future footprint-rect massing suppression.
+    const scene =
+      doc.getRoot().getDefaultScene() ?? doc.getRoot().listScenes()[0];
+    const lod0Node = scene
+      .listChildren()
+      .find((n) => n.getName() === 'LOD0');
+    const bbox = getBounds(lod0Node ?? scene);
+    const dimensions = {
+      x: Number((bbox.max[0] - bbox.min[0]).toFixed(2)),
+      y: Number((bbox.max[1] - bbox.min[1]).toFixed(2)),
+      z: Number((bbox.max[2] - bbox.min[2]).toFixed(2)),
+    };
+    const center = {
+      x: Number(((bbox.max[0] + bbox.min[0]) / 2).toFixed(2)),
+      y: Number(((bbox.max[1] + bbox.min[1]) / 2).toFixed(2)),
+      z: Number(((bbox.max[2] + bbox.min[2]) / 2).toFixed(2)),
+    };
     if (compress) {
       await doc.transform(meshopt({ encoder: MeshoptEncoder, level: 'medium' }));
     }
     await io.write(outPath, doc);
     const outBytes = (await readFile(outPath)).length;
-    return { before, lodTris, outBytes, compressed: compress };
+    return { before, lodTris, outBytes, compressed: compress, culled, dimensions, center };
   }
 
   try {
@@ -291,14 +356,31 @@ for (const slug of dirs) {
       result = await process(LOD0.ratio * 0.3, result.compressed);
     }
 
-    const { before, lodTris, outBytes } = result;
-    const after = { ...stats(await io.read(outPath), outBytes), lodTriangles: lodTris, mode };
+    const { before, lodTris, outBytes, culled, dimensions, center } = result;
+    const after = {
+      ...stats(await io.read(outPath), outBytes),
+      lodTriangles: lodTris,
+      dimensions,
+      center,
+      mode,
+    };
 
-    report.push({ slug, before, after });
+    report.push({ slug, before, after, culled });
+    const cullNote = culled.aborted
+      ? ', CULL ABORTED (mostly context — curation call)'
+      : culled.culledNodes > 0
+        ? `, culled ${culled.culledNodes} context nodes/${(culled.culledTriangles / 1e3).toFixed(1)}k tris (${Math.round(Math.max(culled.preDims.x, culled.preDims.z))}m → ${Math.round(Math.max(culled.postDims.x, culled.postDims.z))}m)`
+        : '';
+    if (culled.aborted) {
+      console.warn(
+        `[abstract] WARNING ${slug}: cull guard refused — >80% of geometry is context; exclude via overrides or grant via abstract-${args.site}.json`
+      );
+    }
     console.log(
       `[abstract] ${slug}: ${(before.glbBytes / 1e6).toFixed(1)}MB/${(before.triangles / 1e3).toFixed(0)}k tris → ` +
         `${(outBytes / 1e6).toFixed(2)}MB (LOD0 ${(lodTris.LOD0 / 1e3).toFixed(1)}k / LOD1 ${(lodTris.LOD1 / 1e3).toFixed(1)}k / LOD2 ${(lodTris.LOD2 / 1e3).toFixed(1)}k tris, ` +
-        `${after.materials} mats, ${after.textures} tex, ${mode})`
+        `${Math.round(dimensions.x)}×${Math.round(dimensions.y)}×${Math.round(dimensions.z)}m, ` +
+        `${after.materials} mats, ${after.textures} tex, ${mode}${cullNote})`
     );
   } catch (err) {
     // One pathological model must not kill a 135-model batch. No abstract.glb

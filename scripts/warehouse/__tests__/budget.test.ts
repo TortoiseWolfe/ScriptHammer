@@ -38,7 +38,9 @@ describe.skipIf(!present)('#259 sampled-building budget ceilings', () => {
             materials: number;
             textures: number;
             lodTriangles: Record<string, number>;
+            dimensions?: { x: number; y: number; z: number };
           };
+          culled?: { aborted?: boolean };
         }[];
       })
     : { models: [] };
@@ -96,5 +98,44 @@ describe.skipIf(!present)('#259 sampled-building budget ceilings', () => {
         expect.arrayContaining(['LOD0', 'LOD1', 'LOD2'])
       );
     }
+  });
+
+  // #259 iter 5 — the extents gate. The review measured 91/134 shipping
+  // models carrying SketchUp site context (>150m XZ; buildings are 20–100m).
+  // Post-cull, every SHIPPING model is either building-sized or carries an
+  // explicit documented grant in abstract-chatt.json (bridges, districts,
+  // block-scale complexes). An ungranted oversize here is context leaking
+  // back in — fix the model or grant it deliberately, never silently.
+  const abstractCfg = JSON.parse(
+    readFileSync(path.resolve('scripts/warehouse/abstract-chatt.json'), 'utf8')
+  ) as Record<string, { keepAll?: boolean; maxExtentM?: number }>;
+  const MAX_UNGRANTED_EXTENT_M = 150;
+
+  it('every shipping model is building-sized or explicitly granted', () => {
+    const violations: string[] = [];
+    for (const m of report.models) {
+      const d = m.after.dimensions;
+      if (!d) continue; // pre-iter-5 report entry — regenerate to cover
+      const xz = Math.max(d.x, d.z);
+      const grant = abstractCfg[m.slug] ?? {};
+      const granted =
+        grant.keepAll === true ||
+        (typeof grant.maxExtentM === 'number' && xz <= grant.maxExtentM);
+      if (xz > MAX_UNGRANTED_EXTENT_M && !granted) {
+        violations.push(`${m.slug}: ${Math.round(xz)}m XZ extent, no grant`);
+      }
+    }
+    expect(violations, 'ungranted oversize models (site context?)').toEqual([]);
+  });
+
+  it('no shipping model hit the cull abort guard without a grant', () => {
+    const aborted = report.models
+      .filter((m) => m.culled?.aborted)
+      .filter((m) => {
+        const g = abstractCfg[m.slug] ?? {};
+        return !(g.keepAll || typeof g.maxExtentM === 'number');
+      })
+      .map((m) => m.slug);
+    expect(aborted, 'guard-aborted models needing curation/grant').toEqual([]);
   });
 });

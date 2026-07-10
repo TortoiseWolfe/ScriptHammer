@@ -54,6 +54,30 @@ const inventory = JSON.parse(
 );
 const byId = new Map<string, any>(inventory.models.map((m: any) => [m.id, m]));
 
+// Post-abstraction dimensions from the local report (#259 iter 5) — feeds
+// size-aware fly-to and QC. Report absent (fresh clone) ⇒ warn once and omit;
+// the runtime falls back to fixed-radius framing.
+interface ReportDims {
+  dimensions?: { x: number; y: number; z: number };
+  center?: { x: number; y: number; z: number };
+}
+let dimsBySlug = new Map<string, ReportDims>();
+try {
+  const rep = JSON.parse(
+    readFileSync(path.join(WAREHOUSE, 'report.json'), 'utf8')
+  );
+  dimsBySlug = new Map(
+    (rep.models ?? []).map((m: { slug: string; after?: ReportDims }) => [
+      m.slug,
+      { dimensions: m.after?.dimensions, center: m.after?.center },
+    ])
+  );
+} catch {
+  console.warn(
+    '[emit] no sites/_warehouse/report.json — models.json will omit dim/centerOffset (runtime falls back)'
+  );
+}
+
 const outDir = path.resolve(`public/twins/${site}/models`);
 mkdirSync(outDir, { recursive: true });
 
@@ -138,6 +162,11 @@ interface EmittedModel {
   yOffset?: number;
   lat: number;
   lon: number;
+  /** Post-abstraction LOD0 bbox size [x, y, z] metres (#259 iter 5). */
+  dim?: [number, number, number];
+  /** Bbox-centre XZ offset from the model origin, pre-yaw — fly-to aims at
+   *  the building, not the (sometimes campus-corner) anchor. */
+  centerOffset?: [number, number];
   /** Warehouse community signals (QC surface — shown in the Directory). */
   rating?: number;
   reviewCount?: number;
@@ -180,6 +209,7 @@ for (const hood of curatedFile.neighborhoods) {
       console.error(`[emit] ${slug}: anchor outside the ${site} ground — skip`);
       continue;
     }
+    const d = dimsBySlug.get(slug);
     const entry: EmittedModel = {
       slug,
       file: `${slug}.glb`,
@@ -193,6 +223,10 @@ for (const hood of curatedFile.neighborhoods) {
       yawDeg: 0, // Warehouse GLBs are true-north aligned in principle; overrides tune the rest
       lat: m.location.lat,
       lon: m.location.lon,
+      ...(d?.dimensions
+        ? { dim: [d.dimensions.x, d.dimensions.y, d.dimensions.z] }
+        : {}),
+      ...(d?.center ? { centerOffset: [d.center.x, d.center.z] } : {}),
       ...(m.averageRating != null ? { rating: m.averageRating } : {}),
       ...(m.reviewCount ? { reviewCount: m.reviewCount } : {}),
       ...(m.downloads ? { downloads: m.downloads } : {}),

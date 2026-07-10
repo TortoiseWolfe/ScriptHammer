@@ -33,9 +33,39 @@ const modelsJson = JSON.parse(
 const overrides = JSON.parse(
   await readFile(path.resolve(`scripts/warehouse/overrides-${site}.json`), 'utf8')
 );
+// Per-slug pipeline grants (#259 iter 5) — a granted extent isn't flagged.
+const abstractCfg = await readFile(
+  path.resolve(`scripts/warehouse/abstract-${site}.json`),
+  'utf8'
+)
+  .then((t) => JSON.parse(t))
+  .catch(() => ({}));
 
 const invById = new Map(inventory.models.map((m) => [m.id, m]));
 const statsBySlug = new Map(report.models.map((m) => [m.slug, m.after]));
+
+// Extent badge (#259 iter 5): the review found 91/134 models shipping site
+// context (>150m XZ); after culling, anything still oversized and ungranted
+// is a curation decision waiting to happen — flag it and sort it first.
+const EXTENT_WARN_M = 150;
+const EXTENT_RED_M = 300;
+function extentBadge(slug, st) {
+  const d = st.dimensions;
+  if (!d) return { level: 0, html: '' };
+  const xz = Math.max(d.x, d.z);
+  const grant = abstractCfg[slug] ?? {};
+  const granted =
+    grant.keepAll === true ||
+    (typeof grant.maxExtentM === 'number' && xz <= grant.maxExtentM);
+  const dims = `${Math.round(d.x)}×${Math.round(d.y)}×${Math.round(d.z)}m`;
+  if (granted || xz <= EXTENT_WARN_M)
+    return { level: 0, html: `<span class="meta">${dims}</span>` };
+  const cls = xz > EXTENT_RED_M ? 'ext-red' : 'ext-warn';
+  return {
+    level: xz > EXTENT_RED_M ? 2 : 1,
+    html: `<span class="badge ${cls}">${dims} — context?</span>`,
+  };
+}
 
 const esc = (s) =>
   String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -49,21 +79,29 @@ const cards = modelsJson.models
       m.rating != null ? `★${m.rating.toFixed(1)}${m.reviewCount ? ` (${m.reviewCount})` : ''}` : '—';
     const tris = st.lodTriangles?.LOD0 != null ? `${(st.lodTriangles.LOD0 / 1e3).toFixed(1)}k tris` : '';
     const kb = st.glbBytes != null ? `${Math.round(st.glbBytes / 1024)} KB` : '';
-    return `
+    const badge = extentBadge(m.slug, st);
+    return {
+      level: badge.level,
+      html: `
     <div class="card" data-slug="${esc(m.slug)}">
       <img loading="lazy" src="${esc(inv.thumbnailUrl ?? '')}" alt="${esc(m.title)}">
       <div class="body">
         <strong>${esc(m.title)}</strong>
         <span class="meta">${esc(m.creator)} · ${rating} · ${m.downloads ?? 0} dl</span>
         <span class="meta">${esc(m.neighborhood)} · ${tris} · ${kb}</span>
+        ${badge.html}
         <span class="links">
           <a href="${esc(m.url)}" target="_blank" rel="noreferrer">Warehouse ↗</a>
           <a href="http://127.0.0.1:3002/ScriptHammer/${site}/?edit&amp;select=${esc(m.slug)}" target="_blank">Viewer ↗</a>
         </span>
         <label><input type="checkbox" class="exclude" ${excluded ? 'checked' : ''}> Exclude</label>
       </div>
-    </div>`;
+    </div>`,
+    };
   })
+  // Flagged cards first (red, then amber), so remaining offenders are one scroll.
+  .sort((a, b) => b.level - a.level)
+  .map((c) => c.html)
   .join('\n');
 
 const html = `<!doctype html>
@@ -77,6 +115,9 @@ const html = `<!doctype html>
   .card img { width: 100%; aspect-ratio: 4/3; object-fit: cover; background: #0d1017; }
   .card .body { padding: 8px 10px; display: flex; flex-direction: column; gap: 3px; }
   .meta { font-size: 12px; opacity: .7; } .links a { color: #7db3ff; font-size: 12px; margin-right: 10px; }
+  .badge { font-size: 12px; font-weight: 600; border-radius: 4px; padding: 1px 6px; width: fit-content; }
+  .ext-warn { background: #7a5b1b; color: #ffd97a; }
+  .ext-red { background: #6e2320; color: #ffb3ad; }
   label { font-size: 12px; margin-top: 4px; user-select: none; }
   .card:has(.exclude:checked) { outline: 2px solid #e5534b; opacity: .55; }
   #out { position: sticky; bottom: 0; background: #1c2230; padding: 10px; border-radius: 10px; margin-top: 16px; }

@@ -99,9 +99,9 @@ test.describe('Capture Decryption Logs', () => {
         await pageA.waitForTimeout(5000);
       } else {
         console.log(
-          '[Test] No existing conversation found, navigating to /conversations'
+          '[Test] No existing conversation found, navigating to /messages'
         );
-        await pageA.goto('/conversations');
+        await pageA.goto('/messages?tab=chats');
         await pageA.waitForLoadState('networkidle');
         await pageA.waitForTimeout(3000);
       }
@@ -117,11 +117,11 @@ test.describe('Capture Decryption Logs', () => {
 
       // This is a diagnostic capture test — its purpose is to print logs
       // for human inspection, not enforce behavior. Real assertion: the
-      // signed-in page made it to /conversations or an existing thread
+      // signed-in page made it to /messages or an existing thread
       // (proves the auth + decryption pipeline didn't crash before logs
       // could be captured). consoleLogs is an array, even when empty.
       expect(Array.isArray(consoleLogs)).toBe(true);
-      expect(pageA.url()).toMatch(/messages|conversations/);
+      expect(pageA.url()).toMatch(/messages/);
     } finally {
       await contextA.close();
     }

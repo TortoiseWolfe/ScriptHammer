@@ -131,6 +131,7 @@ function SceneInner({
   selectedModel,
   onSelectModel,
   patchOverride,
+  onGizmoLive,
   gizmoMode,
 }: {
   slug: string;
@@ -162,6 +163,8 @@ function SceneInner({
   onSelectModel?: (slug: string) => void;
   /** Present in edit mode: the gizmo writes drag deltas through this. */
   patchOverride?: (patch: TwinPlacementOverride) => void;
+  /** Display-only live values while a gizmo handle drags (null = ended). */
+  onGizmoLive?: (patch: TwinPlacementOverride | null) => void;
   gizmoMode?: 'translate' | 'rotate';
 }) {
   const camera = useThree((s) => s.camera);
@@ -405,7 +408,6 @@ function SceneInner({
     <StageCore
       lens={lens}
       grade={grade}
-      topdown={framing.topdown}
       ortho={ortho}
       registerHandle={registerHandle}
     >
@@ -444,6 +446,7 @@ function SceneInner({
           base={gizmoBase}
           mode={gizmoMode ?? 'translate'}
           onCommit={patchOverride}
+          onLive={onGizmoLive}
           onDragging={handleGizmoDragging}
         />
       ) : null}
@@ -505,7 +508,7 @@ function TwinCanvasInner({
     // the geocoded address point, which Nominatim pins on the street — so
     // aiming the camera from the origin's direction reads as "standing on the
     // street looking at the property" for any site. Routing through
-    // deriveFraming keeps initialCameraPos and ?topdown consistent.
+    // deriveFraming keeps initialCameraPos and the ortho frame consistent.
     const streetTheta =
       house.x === 0 && house.z === 0 ? 0 : Math.atan2(-house.x, -house.z);
     return deriveFraming({
@@ -617,12 +620,34 @@ function TwinCanvasInner({
     gizmoMode,
     setGizmoMode,
     modelOverrides,
+    liveDrag,
+    setLiveDrag,
     patchOverride,
     resetSelected,
     clearAll,
     exportOverrides,
     flyToModel,
   } = useWarehouseEditor({ slug, warehouseModels, requestOrbit });
+  // Click-away deselect (iter 5): pointer-missed fires for clicks that hit
+  // no scene object — but an orbit DRAG that ends over empty sky must not
+  // deselect, so gate on the same 12px travel grain as the select gate.
+  const pointerDownPos = useRef<{ x: number; y: number } | null>(null);
+  useEffect(() => {
+    const down = (e: PointerEvent) => {
+      pointerDownPos.current = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener('pointerdown', down);
+    return () => window.removeEventListener('pointerdown', down);
+  }, []);
+  const handlePointerMissed = useCallback(
+    (e: MouseEvent) => {
+      if (!editMode) return;
+      const d = pointerDownPos.current;
+      if (d && Math.hypot(e.clientX - d.x, e.clientY - d.y) > 12) return;
+      setSelectedModel(null);
+    },
+    [editMode, setSelectedModel]
+  );
   // Layer fade for judging footprint registration against the aerial (the
   // buildings/heroes layer fades; streets stay as the reference).
   const [buildingsOpacity, setBuildingsOpacity] = useState(1);
@@ -637,10 +662,12 @@ function TwinCanvasInner({
     ],
     [buildingsOpacity]
   );
-  // Property page gets solar noon — the close-up reads the scan's baked photo
-  // textures, which need max light. (computeDay's brightness is sin(π·t),
-  // peaking at 0.5 — a Math.max on t would DARKEN dusk-authored sites.)
-  const day = houseFocused ? 0.5 : (site.day ?? 0.4);
+  // Property page AND edit mode get solar noon — the close-up reads baked
+  // photo textures, and nobody can tune placement on dusk-black buildings
+  // (iter-5 audit: the single highest-impact editor fix). computeDay's
+  // brightness is sin(π·t), peaking at 0.5 — a Math.max on t would DARKEN
+  // dusk-authored sites.
+  const day = houseFocused || editMode ? 0.5 : (site.day ?? 0.4);
   const handleRef = useRef<StageHandle | null>(null);
   // Stable identity — an inline arrow would re-run StageCore's registerHandle
   // effect (whose cleanup disposes the composer) on every re-render.
@@ -692,6 +719,7 @@ function TwinCanvasInner({
         // (R3F's `shadows` bool default) and silently substitutes PCF anyway,
         // warning on EVERY shadow render — same map, no console spam.
         shadows="percentage"
+        onPointerMissed={handlePointerMissed}
         dpr={[1, 1.75]}
         gl={{
           toneMapping: NoToneMapping,
@@ -741,6 +769,7 @@ function TwinCanvasInner({
           selectedModel={selectedModel}
           onSelectModel={editMode ? setSelectedModel : undefined}
           patchOverride={editMode ? patchOverride : undefined}
+          onGizmoLive={editMode ? setLiveDrag : undefined}
           gizmoMode={gizmoMode}
         />
       </Canvas>
@@ -849,7 +878,15 @@ function TwinCanvasInner({
             warehouseModels?.models.find((m) => m.slug === selectedModel) ??
             null
           }
-          override={(selectedModel && modelOverrides[selectedModel]) || {}}
+          // Live gizmo values overlay the committed override while dragging
+          // (display-only; the commit lands on release).
+          override={
+            (selectedModel && {
+              ...modelOverrides[selectedModel],
+              ...(liveDrag ?? {}),
+            }) ||
+            {}
+          }
           overrideCount={Object.keys(modelOverrides).length}
           gizmoMode={gizmoMode}
           onGizmoMode={setGizmoMode}

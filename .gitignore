@@ -181,4 +181,8 @@ scripts/__tests__/fixtures/*
 # sampled flat colors) and the in-viewer Directory credits every creator
 # with a link back to the Warehouse source page.
 !/public/twins/chatt/models/
+# Dir re-include + contents re-include is the robust pair: without the `**`
+# line, files under the dir can still match the ignore rule on some git
+# versions (models.json was tracked-but-ignore-matching until iter 5).
+!/public/twins/chatt/models/**
 knowledge/spatial

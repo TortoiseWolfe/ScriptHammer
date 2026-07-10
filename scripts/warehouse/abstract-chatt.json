@@ -1,0 +1,73 @@
+{
+  "_readme": "Per-slug abstraction-pass config (#259 iter 5), consumed by abstract-glb.mjs — distinct from overrides-chatt.json (runtime placement). keepAll: skip context culling entirely (bridges: a 700m deck is geometrically indistinguishable from a context plane, so the grant is the contract). maxExtentM: expected post-cull XZ extent — QC badges and the extents test only flag above it. dropFlatContext:false disables the heuristic rules for one slug. dropNodes: case-insensitive regex list matched against source node names, removed pre-flatten (surgical escape hatch). lodRatios: {lod1,lod2} per-slug simplify keep-ratio overrides.",
+  "market-street-bridge-chattanooga": { "keepAll": true, "maxExtentM": 1000 },
+  "walnut-street-bridge": { "keepAll": true, "maxExtentM": 1000 },
+  "the-olgiati-bridge": { "keepAll": true, "maxExtentM": 1100 },
+  "veterans-bridge": { "keepAll": true, "maxExtentM": 1100 },
+  "chattanooga-choo-choo-hotel-1": { "maxExtentM": 450 },
+  "arriving-home-by-dennis-oppenheim": {
+    "dropFlatContext": false,
+    "maxExtentM": 250,
+    "_why": "riverfront art installation — a genuinely long, low piece; the cull guard correctly refused to treat it as context"
+  },
+  "celestial-clockwork-by-rey-alfonso": {
+    "dropFlatContext": false,
+    "maxExtentM": 250,
+    "_why": "public art — mostly-flat by nature; guard-abort is correct, grant silences it"
+  },
+  "market-court-chattanooga-tn": {
+    "dropFlatContext": false,
+    "maxExtentM": 250,
+    "_why": "low court/plaza model — guard-abort is correct, grant silences it"
+  },
+  "at-t-field-model": {
+    "dropNodes": ["^2668$"],
+    "maxExtentM": 200,
+    "_why": "node 2668 is the whole neighborhood baked into ONE 425×39×288m mesh (too tall for the sheet heuristic, unsplittable) — drop by name; the stadium itself is node 2670 (~161m)"
+  },
+  "the-chattanooga-carnegie-law-library": {
+    "dropNodes": ["^Image$"],
+    "maxExtentM": 300,
+    "_why": "Image is a flat 83×79m ground-photo plane; the rest is small pieces scattered across the block (extent = spread, not a sheet)"
+  },
+  "the-chattanooga-convention-center": {
+    "maxExtentM": 300,
+    "_why": "the convention center genuinely is ~290m long"
+  },
+  "bluff-view-art-district": {
+    "maxExtentM": 300,
+    "_why": "deliberately a district sample (multiple small buildings)"
+  },
+  "poise-by-angela-conner": {
+    "maxExtentM": 280,
+    "_why": "sculpture garden spread along the riverfront"
+  },
+  "need-a-bigger-hammer-by-jeff-hackney": {
+    "maxExtentM": 250,
+    "_why": "public art spread"
+  },
+  "riverset-apartment-complex-bld-1": {
+    "maxExtentM": 210,
+    "_why": "apartment complex — genuinely ~196m"
+  },
+  "riverset-apartment-complex-bld-2": {
+    "maxExtentM": 210,
+    "_why": "apartment complex — genuinely ~196m"
+  },
+  "the-chattanoogan-hotel": {
+    "maxExtentM": 200,
+    "_why": "full-block hotel complex"
+  },
+  "unum-provident": {
+    "maxExtentM": 180,
+    "_why": "full-block office campus (was 479m pre-cull; the 174m remainder is the real complex)"
+  },
+  "warehouse-row": {
+    "maxExtentM": 180,
+    "_why": "it IS a row — ~174m of connected warehouses"
+  },
+  "138-market-street": {
+    "maxExtentM": 180,
+    "_why": "block-scale building group (~169m)"
+  }
+}
