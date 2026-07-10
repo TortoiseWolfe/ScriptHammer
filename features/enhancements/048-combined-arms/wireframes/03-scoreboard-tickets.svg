@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background plus title come EARLY so the validator's 2000-char
+       G-024/SECTION-001 scan window catches them (pattern from 047). -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">COMBINED ARMS - SCOREBOARD AND TICKETS - /game/combined-arms</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <!-- DESKTOP 1280x720 -->
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <!-- Match timer + flag-ownership strip -->
+    <rect x="500" y="80" width="280" height="40" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="640" y="106" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1f2937">MATCH 12:47</text>
+    <!-- Flag strip A-E colored by owner -->
+    <g transform="translate(500, 130)">
+      <circle cx="28" cy="18" r="16" fill="#3b82f6"/>
+      <text x="28" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f5f0e6">A</text>
+      <circle cx="84" cy="18" r="16" fill="#3b82f6"/>
+      <text x="84" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f5f0e6">B</text>
+      <circle cx="140" cy="18" r="16" fill="#3b82f6"/>
+      <text x="140" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f5f0e6">C</text>
+      <circle cx="196" cy="18" r="16" fill="#9ca3af"/>
+      <text x="196" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f5f0e6">D</text>
+      <circle cx="252" cy="18" r="16" fill="#ea580c"/>
+      <text x="252" y="24" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f5f0e6">E</text>
+    </g>
+
+    <!-- BLUFOR column: tickets + bleed arrow -->
+    <g transform="translate(32, 96)">
+      <rect x="0" y="0" width="440" height="56" rx="8" fill="#3b82f6"/>
+      <text x="16" y="36" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#f5f0e6">BLUFOR 287</text>
+      <path d="M300 28 L328 28 M316 16 L328 28 L316 40" stroke="#f5f0e6" stroke-width="3" fill="none"/>
+      <text x="346" y="34" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#f5f0e6">+0 / min</text>
+
+      <!-- Squad ALPHA group -->
+      <rect x="0" y="72" width="440" height="36" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="16" y="96" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">ALPHA SQUAD</text>
+      <text x="250" y="96" font-family="system-ui, sans-serif" font-size="14" fill="#374151">SCORE</text>
+      <text x="330" y="96" font-family="system-ui, sans-serif" font-size="14" fill="#374151">K/D</text>
+      <text x="386" y="96" font-family="system-ui, sans-serif" font-size="14" fill="#374151">REV</text>
+      <rect x="0" y="112" width="440" height="32" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <path d="M12 120 L15 126 L22 127 L17 131 L18 138 L12 134 L6 138 L7 131 L2 127 L9 126 Z" fill="#f59e0b"/>
+      <text x="30" y="133" font-family="system-ui, sans-serif" font-size="14" fill="#374151">RiverRunner</text>
+      <text x="250" y="133" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">1240</text>
+      <text x="330" y="133" font-family="system-ui, sans-serif" font-size="14" fill="#374151">14/6</text>
+      <text x="386" y="133" font-family="system-ui, sans-serif" font-size="14" fill="#374151">2</text>
+      <rect x="0" y="148" width="440" height="32" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="30" y="169" font-family="system-ui, sans-serif" font-size="14" fill="#374151">LawnMower</text>
+      <text x="250" y="169" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">1105</text>
+      <text x="330" y="169" font-family="system-ui, sans-serif" font-size="14" fill="#374151">6/4</text>
+      <text x="386" y="169" font-family="system-ui, sans-serif" font-size="14" fill="#374151">9</text>
+      <rect x="0" y="184" width="440" height="32" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="30" y="205" font-family="system-ui, sans-serif" font-size="14" fill="#374151">BridgeCamp</text>
+      <text x="250" y="205" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">860</text>
+      <text x="330" y="205" font-family="system-ui, sans-serif" font-size="14" fill="#374151">11/9</text>
+      <text x="386" y="205" font-family="system-ui, sans-serif" font-size="14" fill="#374151">0</text>
+
+      <!-- Squad BRAVO group -->
+      <rect x="0" y="232" width="440" height="36" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="16" y="256" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">BRAVO SQUAD</text>
+      <rect x="0" y="272" width="440" height="32" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <path d="M12 280 L15 286 L22 287 L17 291 L18 298 L12 294 L6 298 L7 291 L2 287 L9 286 Z" fill="#f59e0b"/>
+      <text x="30" y="293" font-family="system-ui, sans-serif" font-size="14" fill="#374151">MoccasinBend</text>
+      <text x="250" y="293" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">720</text>
+      <text x="330" y="293" font-family="system-ui, sans-serif" font-size="14" fill="#374151">8/7</text>
+      <text x="386" y="293" font-family="system-ui, sans-serif" font-size="14" fill="#374151">1</text>
+      <rect x="0" y="308" width="440" height="32" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="30" y="329" font-family="system-ui, sans-serif" font-size="14" fill="#374151">SignalMtn</text>
+      <text x="250" y="329" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">655</text>
+      <text x="330" y="329" font-family="system-ui, sans-serif" font-size="14" fill="#374151">5/8</text>
+      <text x="386" y="329" font-family="system-ui, sans-serif" font-size="14" fill="#374151">4</text>
+
+      <!-- Unassigned players -->
+      <rect x="0" y="356" width="440" height="32" rx="6" fill="#dcc8a8" stroke="#b8a080" stroke-dasharray="6 4"/>
+      <text x="16" y="377" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Unassigned: 2 players</text>
+    </g>
+
+    <!-- OPFOR column: tickets bleeding down -->
+    <g transform="translate(808, 96)">
+      <rect x="0" y="0" width="440" height="56" rx="8" fill="#ea580c"/>
+      <text x="16" y="36" font-family="system-ui, sans-serif" font-size="20" font-weight="bold" fill="#f5f0e6">OPFOR 263</text>
+      <path d="M300 16 L300 40 M288 28 L300 40 L312 28" stroke="#f5f0e6" stroke-width="3" fill="none"/>
+      <text x="330" y="34" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#f5f0e6">-12/min BLEED</text>
+
+      <!-- Squad CHARLIE group -->
+      <rect x="0" y="72" width="440" height="36" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="16" y="96" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">CHARLIE SQUAD</text>
+      <text x="250" y="96" font-family="system-ui, sans-serif" font-size="14" fill="#374151">SCORE</text>
+      <text x="330" y="96" font-family="system-ui, sans-serif" font-size="14" fill="#374151">K/D</text>
+      <text x="386" y="96" font-family="system-ui, sans-serif" font-size="14" fill="#374151">REV</text>
+      <rect x="0" y="112" width="440" height="32" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <path d="M12 120 L15 126 L22 127 L17 131 L18 138 L12 134 L6 138 L7 131 L2 127 L9 126 Z" fill="#f59e0b"/>
+      <text x="30" y="133" font-family="system-ui, sans-serif" font-size="14" fill="#374151">HillClimber</text>
+      <text x="250" y="133" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">1310</text>
+      <text x="330" y="133" font-family="system-ui, sans-serif" font-size="14" fill="#374151">17/5</text>
+      <text x="386" y="133" font-family="system-ui, sans-serif" font-size="14" fill="#374151">0</text>
+      <rect x="0" y="148" width="440" height="32" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="30" y="169" font-family="system-ui, sans-serif" font-size="14" fill="#374151">MarketSt</text>
+      <text x="250" y="169" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">905</text>
+      <text x="330" y="169" font-family="system-ui, sans-serif" font-size="14" fill="#374151">9/9</text>
+      <text x="386" y="169" font-family="system-ui, sans-serif" font-size="14" fill="#374151">3</text>
+      <rect x="0" y="184" width="440" height="32" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="30" y="205" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Aquarium</text>
+      <text x="250" y="205" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">780</text>
+      <text x="330" y="205" font-family="system-ui, sans-serif" font-size="14" fill="#374151">7/10</text>
+      <text x="386" y="205" font-family="system-ui, sans-serif" font-size="14" fill="#374151">6</text>
+
+      <!-- Squad DELTA group -->
+      <rect x="0" y="232" width="440" height="36" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+      <text x="16" y="256" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">DELTA SQUAD</text>
+      <rect x="0" y="272" width="440" height="32" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <path d="M12 280 L15 286 L22 287 L17 291 L18 298 L12 294 L6 298 L7 291 L2 287 L9 286 Z" fill="#f59e0b"/>
+      <text x="30" y="293" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Lookout</text>
+      <text x="250" y="293" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">610</text>
+      <text x="330" y="293" font-family="system-ui, sans-serif" font-size="14" fill="#374151">6/6</text>
+      <text x="386" y="293" font-family="system-ui, sans-serif" font-size="14" fill="#374151">2</text>
+      <rect x="0" y="308" width="440" height="32" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+      <text x="30" y="329" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Sculpture</text>
+      <text x="250" y="329" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">540</text>
+      <text x="330" y="329" font-family="system-ui, sans-serif" font-size="14" fill="#374151">4/9</text>
+      <text x="386" y="329" font-family="system-ui, sans-serif" font-size="14" fill="#374151">1</text>
+    </g>
+
+    <!-- Spawn-flip toast banner -->
+    <rect x="360" y="536" width="560" height="52" rx="8" fill="#22c55e"/>
+    <text x="640" y="562" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="bold" fill="#f5f0e6">FLAG B CAPTURED BY BLUFOR</text>
+    <text x="640" y="580" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#f5f0e6">Spawn map updated - B now selectable on deploy</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <!-- Callouts -->
+    <g class="callout"><circle cx="478" cy="105" r="14" fill="#dc2626"/><text x="478" y="110" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="806" cy="148" r="14" fill="#dc2626"/><text x="806" y="153" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="290" cy="470" r="14" fill="#dc2626"/><text x="290" y="475" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="950" cy="562" r="14" fill="#dc2626"/><text x="950" y="567" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+    <g class="callout"><circle cx="1165" cy="78" r="14" fill="#dc2626"/><text x="1165" y="83" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">5</text></g>
+  </g>
+
+  <!-- MOBILE 360x720 -->
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <text x="180" y="102" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#1f2937">Scoreboard - 12:47</text>
+
+    <!-- Flag strip -->
+    <g transform="translate(80, 116)">
+      <circle cx="20" cy="16" r="14" fill="#3b82f6"/>
+      <text x="20" y="21" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f5f0e6">A</text>
+      <circle cx="60" cy="16" r="14" fill="#3b82f6"/>
+      <text x="60" y="21" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f5f0e6">B</text>
+      <circle cx="100" cy="16" r="14" fill="#3b82f6"/>
+      <text x="100" y="21" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f5f0e6">C</text>
+      <circle cx="140" cy="16" r="14" fill="#9ca3af"/>
+      <text x="140" y="21" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f5f0e6">D</text>
+      <circle cx="180" cy="16" r="14" fill="#ea580c"/>
+      <text x="180" y="21" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f5f0e6">E</text>
+    </g>
+
+    <!-- Ticket pools with bleed arrows -->
+    <rect x="16" y="152" width="160" height="44" rx="8" fill="#3b82f6"/>
+    <text x="32" y="180" font-family="system-ui, sans-serif" font-size="15" font-weight="bold" fill="#f5f0e6">BLU 287</text>
+    <path d="M126 166 L146 166 M138 158 L146 166 L138 174" stroke="#f5f0e6" stroke-width="2.5" fill="none"/>
+    <rect x="184" y="152" width="160" height="44" rx="8" fill="#ea580c"/>
+    <text x="200" y="180" font-family="system-ui, sans-serif" font-size="15" font-weight="bold" fill="#f5f0e6">OPF 263</text>
+    <path d="M310 160 L310 180 M302 172 L310 180 L318 172" stroke="#f5f0e6" stroke-width="2.5" fill="none"/>
+
+    <!-- Team tabs -->
+    <rect x="16" y="208" width="164" height="36" rx="8" fill="#8b5cf6"/>
+    <text x="98" y="232" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#f5f0e6">BLUFOR</text>
+    <rect x="188" y="208" width="156" height="36" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="266" y="232" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">OPFOR</text>
+
+    <!-- Squad list (scrollable) -->
+    <rect x="16" y="256" width="328" height="30" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="28" y="276" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">ALPHA</text>
+    <text x="200" y="276" font-family="system-ui, sans-serif" font-size="14" fill="#374151">SCORE</text>
+    <text x="270" y="276" font-family="system-ui, sans-serif" font-size="14" fill="#374151">K/D</text>
+    <rect x="16" y="290" width="328" height="30" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <path d="M33 297 L36 303 L42 304 L37.5 308 L39 314 L33 311 L27 314 L28.5 308 L24 304 L30 303 Z" fill="#f59e0b"/>
+    <text x="48" y="310" font-family="system-ui, sans-serif" font-size="14" fill="#374151">RiverRunner</text>
+    <text x="200" y="310" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">1240</text>
+    <text x="270" y="310" font-family="system-ui, sans-serif" font-size="14" fill="#374151">14/6</text>
+    <rect x="16" y="324" width="328" height="30" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="28" y="344" font-family="system-ui, sans-serif" font-size="14" fill="#374151">LawnMower</text>
+    <text x="200" y="344" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">1105</text>
+    <text x="270" y="344" font-family="system-ui, sans-serif" font-size="14" fill="#374151">6/4</text>
+    <rect x="16" y="358" width="328" height="30" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="28" y="378" font-family="system-ui, sans-serif" font-size="14" fill="#374151">BridgeCamp</text>
+    <text x="200" y="378" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">860</text>
+    <text x="270" y="378" font-family="system-ui, sans-serif" font-size="14" fill="#374151">11/9</text>
+    <rect x="16" y="398" width="328" height="30" rx="6" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="28" y="418" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#1f2937">BRAVO</text>
+    <rect x="16" y="432" width="328" height="30" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <path d="M33 439 L36 445 L42 446 L37.5 450 L39 456 L33 453 L27 456 L28.5 450 L24 446 L30 445 Z" fill="#f59e0b"/>
+    <text x="48" y="452" font-family="system-ui, sans-serif" font-size="14" fill="#374151">MoccasinBend</text>
+    <text x="200" y="452" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">720</text>
+    <text x="270" y="452" font-family="system-ui, sans-serif" font-size="14" fill="#374151">8/7</text>
+    <rect x="16" y="466" width="328" height="30" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="28" y="486" font-family="system-ui, sans-serif" font-size="14" fill="#374151">SignalMtn</text>
+    <text x="200" y="486" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">655</text>
+    <text x="270" y="486" font-family="system-ui, sans-serif" font-size="14" fill="#374151">5/8</text>
+
+    <!-- Spawn-flip toast -->
+    <rect x="16" y="520" width="328" height="60" rx="8" fill="#22c55e"/>
+    <text x="180" y="546" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="bold" fill="#f5f0e6">FLAG B CAPTURED BY BLUFOR</text>
+    <text x="180" y="566" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#f5f0e6">Spawn map updated</text>
+
+    <text x="180" y="618" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Swipe between team columns</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+
+    <!-- Mobile callouts -->
+    <g class="callout"><circle cx="300" cy="130" r="11" fill="#dc2626"/><text x="300" y="135" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="320" cy="600" r="11" fill="#dc2626"/><text x="320" y="605" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <!-- ANNOTATION PANEL -->
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Group 1: Flag strip + timer -->
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Flag strip A-E + match timer</text>
+      <a href="#us-001" transform="translate(270, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <a href="#cq-3" transform="translate(332, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">CQ-3</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Icons recolor by owner: blue BLUFOR, orange</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">OPFOR, grey neutral. Timer counts remaining.</text>
+    </g>
+
+    <!-- Group 2: Ticket pools + bleed -->
+    <g transform="translate(520, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Ticket pools with bleed arrows</text>
+      <a href="#us-001" transform="translate(280, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <a href="#cq-4" transform="translate(342, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">CQ-4</text></a>
+      <a href="#sc-006" transform="translate(404, 5)"><rect width="56" height="22" rx="11" fill="#ea580c"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">SC-006</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Teams start at 300. Minority hold bleeds 1/5 s;</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">zero CPs bleeds 1/2 s. First team to zero loses.</text>
+    </g>
+
+    <!-- Group 3: Per-squad groupings -->
+    <g transform="translate(1020, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Per-squad member rows</text>
+      <a href="#us-002" transform="translate(230, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-002</text></a>
+      <a href="#sq-6" transform="translate(292, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">SQ-6</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Grouped by squad, leader starred. Columns:</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">score, K/D, revives - teamwork scores visibly.</text>
+    </g>
+
+    <!-- Group 4: Spawn-flip toast -->
+    <g transform="translate(20, 116)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Spawn-flip toast on capture</text>
+      <a href="#us-003" transform="translate(260, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-003</text></a>
+      <a href="#cq-5" transform="translate(322, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">CQ-5</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Flag B flips to BLUFOR: toast announces the new</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">spawn option and the deploy map recolors live.</text>
+    </g>
+
+    <!-- Group 5: Bleed-side emphasis -->
+    <g transform="translate(520, 116)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">5</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Losing side bleed emphasis</text>
+      <a href="#us-001" transform="translate(260, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <a href="#cq-4" transform="translate(322, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">CQ-4</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">OPFOR bleeds -12/min (1 ticket/5 s) while BLUFOR</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">holds 3 of 5 flags - majority forces the bleed.</text>
+    </g>
+
+    <!-- Column 4 note -->
+    <g transform="translate(1020, 116)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Overlay behavior</text>
+      <a href="#us-001" transform="translate(155, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Hold Tab (desktop) or tap scores (mobile) to</text>
+      <text x="0" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">show; gameplay continues behind the overlay.</text>
+    </g>
+  </g>
+
+  <!-- Signature -->
+  <text x="40" y="1060" font-family="system-ui, sans-serif" font-size="18" font-weight="bold" fill="#4b5563">048:03 | Combined Arms Scoreboard | ScriptHammer</text>
+</svg>
