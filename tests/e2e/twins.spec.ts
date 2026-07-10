@@ -110,7 +110,8 @@ test.describe('/twins/[slug] — digital-twin viewer', () => {
         !lower.includes('cloudflare') &&
         !lower.includes('webgl') &&
         !lower.includes('links.local.json') &&
-        !lower.includes('house/house.json')
+        !lower.includes('house/house.json') &&
+        !lower.includes('models/models.json')
       );
     });
     expect(relevant).toEqual([]);
@@ -133,7 +134,8 @@ test.describe('/twins/[slug] — digital-twin viewer', () => {
     //  - the game-3d.spec.ts noise set (favicon, keyless analytics, extension
     //    leaks, Cloudflare cookie warnings, GPU-less WebGL noise), plus
     //  - the twin's OPTIONAL per-site assets (#234): links.local.json and
-    //    house/house.json are absence-probed by design on static hosting, and
+    //    house/house.json, and models/models.json (#259 sampled buildings)
+    //    are absence-probed by design on static hosting, and
     //    the browser logs each 404 as a console error. Those two paths 404ing
     //    is the NORMAL state for any twin without a private demo link or an
     //    as-built capture (i.e. every committed twin).
@@ -147,7 +149,8 @@ test.describe('/twins/[slug] — digital-twin viewer', () => {
         !lower.includes('cloudflare') &&
         !lower.includes('webgl') &&
         !lower.includes('links.local.json') &&
-        !lower.includes('house/house.json')
+        !lower.includes('house/house.json') &&
+        !lower.includes('models/models.json')
       );
     });
     expect(relevant).toEqual([]);

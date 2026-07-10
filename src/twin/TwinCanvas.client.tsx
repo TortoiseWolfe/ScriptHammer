@@ -107,6 +107,7 @@ function SceneInner({
   onHouseGround,
   onWorldError,
   registerHandle,
+  onFps,
 }: {
   slug: string;
   manifest: Manifest;
@@ -126,6 +127,8 @@ function SceneInner({
   onHouseGround?: (y: number) => void;
   onWorldError: (message: string) => void;
   registerHandle: (h: StageHandle) => void;
+  /** ~2 Hz averaged frame rate for the HUD counter (#259 perf work). */
+  onFps?: (fps: number) => void;
 }) {
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
@@ -225,8 +228,40 @@ function SceneInner({
     [paletteKey]
   );
 
+  // Honest perf sampling (#259). renderer.info auto-resets after EVERY
+  // gl.render — with the EffectComposer chain the last post pass would report
+  // 1 call / 2 triangles. So: autoReset off; this priority-0 frame runs BEFORE
+  // StageCore's priority-1 authoritative render, meaning the totals read here
+  // are the full PREVIOUS frame (scene + shadow + post passes); read, then
+  // reset for the frame about to render.
+  const perfAcc = useRef({ frames: 0, t: 0 });
+  useEffect(() => {
+    gl.info.autoReset = false;
+    return () => {
+      gl.info.autoReset = true;
+    };
+  }, [gl]);
   useFrame((_, dt) => {
     rig.update(dt);
+    const acc = perfAcc.current;
+    acc.frames += 1;
+    acc.t += dt;
+    if (acc.t >= 0.5) {
+      const fps = acc.frames / acc.t;
+      onFps?.(fps);
+      (
+        window as unknown as { __twinPerf?: Record<string, number> }
+      ).__twinPerf = {
+        fps: Math.round(fps),
+        calls: gl.info.render.calls,
+        triangles: gl.info.render.triangles,
+        geometries: gl.info.memory.geometries,
+        textures: gl.info.memory.textures,
+      };
+      acc.frames = 0;
+      acc.t = 0;
+    }
+    gl.info.reset();
   });
 
   // Ride mode (#follow): the trolley registers itself as the Rig's boarded
@@ -440,6 +475,7 @@ function TwinCanvasInner({
     hasTour ? { name: site.tour![0].name, blurb: site.tour![0].blurb } : null
   );
   const [showFps, setShowFps] = useState(false);
+  const [fps, setFps] = useState<number | undefined>(undefined);
   const [worldError, setWorldError] = useState<string | null>(null);
   // Layer fade for judging footprint registration against the aerial (the
   // buildings/heroes layer fades; streets stay as the reference).
@@ -546,6 +582,7 @@ function TwinCanvasInner({
           onHouseGround={houseFocused ? setHouseGroundY : undefined}
           onWorldError={setWorldError}
           registerHandle={registerHandle}
+          onFps={showFps ? setFps : undefined}
         />
       </Canvas>
       {houseFocused && house ? (
@@ -638,6 +675,7 @@ function TwinCanvasInner({
           mode === 'tour' ? caption : (MODE_HINTS[mode] ?? null) // embodied modes explain their controls
         }
         showFps={showFps}
+        fps={fps}
       />
     </div>
   );
