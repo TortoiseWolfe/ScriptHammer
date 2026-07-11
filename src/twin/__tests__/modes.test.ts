@@ -26,4 +26,20 @@ describe('modesForSite — every dock entry must DO something on the site', () =
       'ortho',
     ]);
   });
+
+  // #259 iter 7 — Walk and Top-down are `secondary` (rendered in the HUD's ⋯
+  // overflow, not the primary bar). The array order/length are untouched so
+  // the position-based digit-key shortcuts don't drift.
+  it('marks exactly Walk and Top-down as secondary', () => {
+    const secondary = modesForSite(true, true)
+      .filter((m) => m.secondary)
+      .map((m) => m.key);
+    expect(secondary).toEqual(['walk', 'ortho']);
+  });
+  it('keeps the primary modes non-secondary', () => {
+    const primary = modesForSite(true, true)
+      .filter((m) => !m.secondary)
+      .map((m) => m.key);
+    expect(primary).toEqual(['tour', 'orbit', 'follow']);
+  });
 });

@@ -1,5 +1,7 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
+
 // Chattanooga Mini — generic glass HUD, ported from cm/cm-hud.js.
 // Every piece of copy (wordmark, subtitle, mode labels, palette labels,
 // caption, provenance) arrives via props. This component owns ZERO
@@ -10,6 +12,11 @@
 export interface HudOption {
   key: string;
   label: string;
+  /** When true this option lives in the overflow ("⋯ More") popover instead
+   *  of the primary bar — for controls that matter but shouldn't crowd the
+   *  root surface (e.g. Walk / Top-down camera modes). The full array order is
+   *  preserved so position-based shortcuts (digit keys) stay stable. */
+  secondary?: boolean;
 }
 
 export interface HudCaption {
@@ -84,6 +91,14 @@ export interface HudProps {
    *  the handler is provided. */
   editActive?: boolean;
   onEditToggle?: () => void;
+  /** Optional on/off switches shown ONLY in the overflow popover (e.g. an FPS
+   *  counter). Generic: label + state + handler, no app-specific strings. */
+  toggles?: {
+    key: string;
+    label: string;
+    active: boolean;
+    onToggle: () => void;
+  }[];
   caption?: HudCaption | null;
   showFps: boolean;
   fps?: number;
@@ -121,6 +136,35 @@ function dockButtonStyle(active: boolean): React.CSSProperties {
   };
 }
 
+// A cluster of related buttons inside the consolidated bar.
+const groupRow: React.CSSProperties = {
+  display: 'flex',
+  gap: 4,
+  alignItems: 'center',
+};
+
+// Hairline between semantic groups — structure the eye reads as sections of
+// one instrument rather than gaps between floating slabs.
+const dividerStyle: React.CSSProperties = {
+  width: 1,
+  alignSelf: 'stretch',
+  margin: '4px 6px',
+  background: 'rgba(255, 255, 255, 0.14)',
+};
+
+const overflowSection: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 6,
+};
+
+const overflowLabel: React.CSSProperties = {
+  fontSize: 10.5,
+  letterSpacing: 0.5,
+  textTransform: 'uppercase',
+  opacity: 0.55,
+};
+
 export default function Hud({
   title,
   subtitle,
@@ -143,10 +187,42 @@ export default function Hud({
   directoryActive,
   editActive,
   onEditToggle,
+  toggles,
   caption,
   showFps,
   fps,
 }: HudProps) {
+  // Camera modes split into the primary bar and the overflow popover. The
+  // FULL `modes` array order is untouched — only where each renders changes —
+  // so callers' position-based shortcuts (digit keys) keep working.
+  const primaryModes = modes.filter((m) => !m.secondary);
+  const secondaryModes = modes.filter((m) => m.secondary);
+
+  const hasOverflow =
+    secondaryModes.length > 0 ||
+    palettes.length > 0 ||
+    (sliders?.length ?? 0) > 0 ||
+    (toggles?.length ?? 0) > 0;
+
+  const [overflowOpen, setOverflowOpen] = useState(false);
+  const overflowRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!overflowOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!overflowRef.current?.contains(e.target as Node))
+        setOverflowOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOverflowOpen(false);
+    };
+    window.addEventListener('pointerdown', onPointerDown);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('pointerdown', onPointerDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [overflowOpen]);
+
   return (
     <div
       style={{
@@ -322,22 +398,26 @@ export default function Hud({
           </div>
         ) : null}
 
+        {/* One consolidated control bar (was six separate pills). Semantic
+            groups — camera · content · authoring · links — read as sections of
+            a single instrument, divided by hairlines rather than gaps between
+            floating slabs. Secondary controls (extra camera modes, palette,
+            diagnostics) live behind the ⋯ button so the root surface stays
+            calm. */}
         <div
           style={{
+            ...glass,
             display: 'flex',
-            gap: 12,
+            flexWrap: 'wrap',
+            justifyContent: 'center',
             alignItems: 'center',
+            padding: 4,
+            maxWidth: 'calc(100vw - 32px)',
           }}
         >
-          <div
-            style={{
-              ...glass,
-              display: 'flex',
-              gap: 4,
-              padding: 4,
-            }}
-          >
-            {modes.map((m) => (
+          {/* Camera modes (primary) */}
+          <div style={groupRow}>
+            {primaryModes.map((m) => (
               <button
                 key={m.key}
                 type="button"
@@ -350,128 +430,206 @@ export default function Hud({
             ))}
           </div>
 
+          {/* Content view toggle (Massing / As-built) */}
           {views && views.length > 0 && onView ? (
-            <div
-              style={{
-                ...glass,
-                display: 'flex',
-                gap: 4,
-                padding: 4,
-              }}
-            >
-              {views.map((v) => (
-                <button
-                  key={v.key}
-                  type="button"
-                  style={dockButtonStyle(v.key === activeView)}
-                  aria-pressed={v.key === activeView}
-                  onClick={() => onView(v.key)}
-                >
-                  {v.label}
-                </button>
-              ))}
-            </div>
+            <>
+              <span style={dividerStyle} aria-hidden="true" />
+              <div style={groupRow}>
+                {views.map((v) => (
+                  <button
+                    key={v.key}
+                    type="button"
+                    style={dockButtonStyle(v.key === activeView)}
+                    aria-pressed={v.key === activeView}
+                    onClick={() => onView(v.key)}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            </>
           ) : null}
 
-          <div
-            style={{
-              ...glass,
-              display: 'flex',
-              gap: 4,
-              padding: 4,
-            }}
-          >
-            {palettes.map((p) => (
-              <button
-                key={p.key}
-                type="button"
-                style={dockButtonStyle(p.key === activePalette)}
-                aria-pressed={p.key === activePalette}
-                onClick={() => onPalette(p.key)}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
-
-          {links && links.length > 0 ? (
-            <div
-              style={{
-                ...glass,
-                display: 'flex',
-                gap: 4,
-                padding: 4,
-              }}
-            >
-              {links.map((l) => (
-                <a
-                  key={l.href}
-                  href={l.href}
-                  style={{
-                    ...dockButtonStyle(false),
-                    textDecoration: 'none',
-                    display: 'inline-block',
-                  }}
-                >
-                  {l.label}
-                </a>
-              ))}
-            </div>
-          ) : null}
-
+          {/* Navigation + authoring (Directory / Edit) */}
           {(directory && onDirectoryToggle) || onEditToggle ? (
-            <div style={{ ...glass, display: 'flex', gap: 4, padding: 4 }}>
-              {directory && onDirectoryToggle ? (
-                <button
-                  type="button"
-                  style={dockButtonStyle(!!directoryOpen)}
-                  aria-pressed={!!directoryOpen}
-                  onClick={onDirectoryToggle}
-                >
-                  Directory
-                </button>
-              ) : null}
-              {onEditToggle ? (
-                <button
-                  type="button"
-                  style={dockButtonStyle(!!editActive)}
-                  aria-pressed={!!editActive}
-                  onClick={onEditToggle}
-                >
-                  Edit
-                </button>
-              ) : null}
-            </div>
+            <>
+              <span style={dividerStyle} aria-hidden="true" />
+              <div style={groupRow}>
+                {directory && onDirectoryToggle ? (
+                  <button
+                    type="button"
+                    style={dockButtonStyle(!!directoryOpen)}
+                    aria-pressed={!!directoryOpen}
+                    onClick={onDirectoryToggle}
+                  >
+                    Directory
+                  </button>
+                ) : null}
+                {onEditToggle ? (
+                  <button
+                    type="button"
+                    style={dockButtonStyle(!!editActive)}
+                    aria-pressed={!!editActive}
+                    onClick={onEditToggle}
+                  >
+                    Edit
+                  </button>
+                ) : null}
+              </div>
+            </>
           ) : null}
 
-          {sliders && sliders.length > 0
-            ? sliders.map((s) => (
-                <label
-                  key={s.key}
-                  style={{
-                    ...glass,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '6px 12px',
-                    fontSize: 12,
-                    cursor: 'pointer',
-                  }}
+          {/* Links */}
+          {links && links.length > 0 ? (
+            <>
+              <span style={dividerStyle} aria-hidden="true" />
+              <div style={groupRow}>
+                {links.map((l) => (
+                  <a
+                    key={l.href}
+                    href={l.href}
+                    style={{
+                      ...dockButtonStyle(false),
+                      textDecoration: 'none',
+                      display: 'inline-block',
+                    }}
+                  >
+                    {l.label}
+                  </a>
+                ))}
+              </div>
+            </>
+          ) : null}
+
+          {/* Overflow: the controls that matter but shouldn't crowd the root */}
+          {hasOverflow ? (
+            <>
+              <span style={dividerStyle} aria-hidden="true" />
+              <div
+                ref={overflowRef}
+                style={{ position: 'relative', display: 'flex' }}
+              >
+                <button
+                  type="button"
+                  style={dockButtonStyle(overflowOpen)}
+                  aria-haspopup="menu"
+                  aria-expanded={overflowOpen}
+                  aria-label="More controls"
+                  onClick={() => setOverflowOpen((v) => !v)}
                 >
-                  <span style={{ opacity: 0.8 }}>{s.label}</span>
-                  <input
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    value={s.value}
-                    aria-label={s.label}
-                    onChange={(e) => s.onChange(Number(e.target.value))}
-                    style={{ width: 96, accentColor: '#f0ead8' }}
-                  />
-                </label>
-              ))
-            : null}
+                  ⋯
+                </button>
+                {overflowOpen ? (
+                  <div
+                    role="menu"
+                    style={{
+                      ...glass,
+                      position: 'absolute',
+                      bottom: 'calc(100% + 8px)',
+                      right: 0,
+                      minWidth: 220,
+                      maxWidth: 'calc(100vw - 32px)',
+                      padding: 10,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 10,
+                    }}
+                  >
+                    {secondaryModes.length > 0 ? (
+                      <div style={overflowSection}>
+                        <div style={overflowLabel}>Camera</div>
+                        <div style={groupRow}>
+                          {secondaryModes.map((m) => (
+                            <button
+                              key={m.key}
+                              type="button"
+                              style={dockButtonStyle(m.key === activeMode)}
+                              aria-pressed={m.key === activeMode}
+                              onClick={() => {
+                                onMode(m.key);
+                                setOverflowOpen(false);
+                              }}
+                            >
+                              {m.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {palettes.length > 0 ? (
+                      <div style={overflowSection}>
+                        <div style={overflowLabel}>Look</div>
+                        <div style={groupRow}>
+                          {palettes.map((p) => (
+                            <button
+                              key={p.key}
+                              type="button"
+                              style={dockButtonStyle(p.key === activePalette)}
+                              aria-pressed={p.key === activePalette}
+                              onClick={() => onPalette(p.key)}
+                            >
+                              {p.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {sliders && sliders.length > 0 ? (
+                      <div style={overflowSection}>
+                        {sliders.map((s) => (
+                          <label
+                            key={s.key}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: 8,
+                              fontSize: 12,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <span style={{ opacity: 0.8 }}>{s.label}</span>
+                            <input
+                              type="range"
+                              min={0}
+                              max={1}
+                              step={0.05}
+                              value={s.value}
+                              aria-label={s.label}
+                              onChange={(e) =>
+                                s.onChange(Number(e.target.value))
+                              }
+                              style={{ width: 110, accentColor: '#f0ead8' }}
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    {toggles && toggles.length > 0 ? (
+                      <div style={overflowSection}>
+                        <div style={groupRow}>
+                          {toggles.map((t) => (
+                            <button
+                              key={t.key}
+                              type="button"
+                              style={dockButtonStyle(t.active)}
+                              aria-pressed={t.active}
+                              onClick={t.onToggle}
+                            >
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            </>
+          ) : null}
         </div>
 
         <div style={{ fontSize: 10.5, opacity: 0.6 }}>{provenance}</div>
