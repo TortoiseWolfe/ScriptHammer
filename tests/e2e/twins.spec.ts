@@ -88,9 +88,16 @@ test.describe('/twins/[slug] — digital-twin viewer', () => {
       timeout: 15000,
     });
     // Top-down is a secondary mode — it lives in the HUD's ⋯ overflow (#259
-    // iter 7). Open the overflow, then assert Top-down is reachable there.
-    const openOverflow = () =>
-      page.getByRole('button', { name: 'More controls' }).click();
+    // iter 7). The ⋯ button TOGGLES, so an idempotent open (click only when
+    // collapsed, then wait for the expanded state) avoids racing the popover's
+    // click-outside listener and double-toggling it shut.
+    const overflow = page.getByRole('button', { name: 'More controls' });
+    const openOverflow = async () => {
+      if ((await overflow.getAttribute('aria-expanded')) !== 'true') {
+        await overflow.click();
+      }
+      await expect(overflow).toHaveAttribute('aria-expanded', 'true');
+    };
     await openOverflow();
     await expect(page.getByRole('button', { name: 'Top-down' })).toBeVisible();
     test.skip(
@@ -101,9 +108,11 @@ test.describe('/twins/[slug] — digital-twin viewer', () => {
     // Round-trip through the dock: leave and re-enter Top-down. This drives
     // the ortho render branch (frustum, colorspace flip, fog restore) and the
     // rig re-frame on exit — a NaN frustum or render-loop throw would surface
-    // as console errors below. Miniature is in the primary bar; re-entering
-    // Top-down means reopening the overflow (picking a mode closes it).
+    // as console errors below. Miniature is in the primary bar; clicking it
+    // also dismisses the overflow (click-outside), so re-enter Top-down by
+    // reopening the overflow, waited on its expanded state.
     await page.getByRole('button', { name: 'Miniature' }).click();
+    await expect(overflow).toHaveAttribute('aria-expanded', 'false');
     await openOverflow();
     await page.getByRole('button', { name: 'Top-down' }).click();
     await page.waitForTimeout(1500);
