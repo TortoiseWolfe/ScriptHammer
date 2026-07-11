@@ -88,6 +88,8 @@ export default function PlacementEditor({
   onReset,
   onExport,
   onClearAll,
+  saveAvailable = false,
+  onSaveToFile,
 }: {
   /** The selected building's EFFECTIVE values (entry merged with override). */
   entry: WarehouseModelEntry | null;
@@ -103,8 +105,13 @@ export default function PlacementEditor({
    *  logged to the console as the fallback channel). */
   onExport: () => Promise<boolean>;
   onClearAll: () => void;
+  /** Local dev only: the overrides sidecar is answering, so edits can be
+   *  written straight to the model file. */
+  saveAvailable?: boolean;
+  onSaveToFile?: () => Promise<boolean>;
 }) {
   const [copied, setCopied] = useState<'ok' | 'fail' | false>(false);
+  const [saved, setSaved] = useState<'ok' | 'fail' | false>(false);
 
   return (
     <div
@@ -254,7 +261,8 @@ export default function PlacementEditor({
             </button>
           </div>
           <div style={{ fontSize: 11, opacity: 0.55 }}>
-            Drag the gizmo, or keys: [ ] yaw · − = height · arrows nudge
+            Click a building to select · drag the gizmo, or keys: [ ] yaw · − =
+            height · arrows nudge
           </div>
         </>
       ) : (
@@ -262,6 +270,14 @@ export default function PlacementEditor({
           Click a sampled building to select it.
         </div>
       )}
+      {/* Persistence status — names WHERE edits live so "is there a save?"
+          has a visible answer. Edits always auto-save to this browser; on
+          local dev the Save button also writes them into the model file. */}
+      <div style={{ fontSize: 11, opacity: 0.6, lineHeight: 1.4 }}>
+        {saveAvailable
+          ? 'Edits auto-save in this browser. Save to the model file, then re-bake to apply.'
+          : 'Edits auto-save in this browser only (static site — can’t write the model file).'}
+      </div>
       <div
         style={{
           display: 'flex',
@@ -270,20 +286,45 @@ export default function PlacementEditor({
           paddingTop: 8,
         }}
       >
-        <button
-          style={{ ...btn, flex: 1 }}
-          onClick={async () => {
-            const ok = await onExport();
-            setCopied(ok ? 'ok' : 'fail');
-            setTimeout(() => setCopied(false), ok ? 2000 : 4000);
-          }}
-        >
-          {copied === 'ok'
-            ? 'Copied ✓'
-            : copied === 'fail'
-              ? 'Copy failed — JSON in console'
-              : 'Export JSON'}
-        </button>
+        {saveAvailable && onSaveToFile ? (
+          <button
+            style={{
+              ...btn,
+              flex: 1,
+              background:
+                saved === 'ok'
+                  ? 'rgba(102,200,120,0.3)'
+                  : 'rgba(102,170,255,0.28)',
+              border: '1px solid rgba(102,170,255,0.6)',
+            }}
+            onClick={async () => {
+              const ok = await onSaveToFile();
+              setSaved(ok ? 'ok' : 'fail');
+              setTimeout(() => setSaved(false), ok ? 2500 : 4000);
+            }}
+          >
+            {saved === 'ok'
+              ? 'Saved to model file ✓'
+              : saved === 'fail'
+                ? 'Save failed — is the dev server up?'
+                : 'Save to model file'}
+          </button>
+        ) : (
+          <button
+            style={{ ...btn, flex: 1 }}
+            onClick={async () => {
+              const ok = await onExport();
+              setCopied(ok ? 'ok' : 'fail');
+              setTimeout(() => setCopied(false), ok ? 2000 : 4000);
+            }}
+          >
+            {copied === 'ok'
+              ? 'Copied ✓'
+              : copied === 'fail'
+                ? 'Copy failed — JSON in console'
+                : 'Copy JSON'}
+          </button>
+        )}
         <button
           style={btn}
           onClick={() => {

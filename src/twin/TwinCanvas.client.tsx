@@ -626,6 +626,8 @@ function TwinCanvasInner({
     resetSelected,
     clearAll,
     exportOverrides,
+    saveAvailable,
+    saveToFile,
     flyToModel,
   } = useWarehouseEditor({ slug, warehouseModels, requestOrbit });
   // Click-away deselect (iter 5): pointer-missed fires for clicks that hit
@@ -894,6 +896,8 @@ function TwinCanvasInner({
           onReset={resetSelected}
           onExport={exportOverrides}
           onClearAll={clearAll}
+          saveAvailable={saveAvailable}
+          onSaveToFile={saveToFile}
         />
       ) : null}
     </div>

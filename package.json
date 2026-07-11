@@ -21,8 +21,9 @@
   ],
   "private": true,
   "scripts": {
-    "dev": "node scripts/detect-project.js && bash scripts/sync-wireframes.sh && next dev",
+    "dev": "node scripts/detect-project.js && bash scripts/sync-wireframes.sh && concurrently -k -n next,overrides -c blue,magenta \"next dev\" \"node scripts/dev/overrides-server.mjs\"",
     "dev:clean": "rm -rf .next && node scripts/detect-project.js && next dev",
+    "overrides-server": "node scripts/dev/overrides-server.mjs",
     "docker:clean": "./scripts/clean-start.sh",
     "docker:dev": "docker compose up",
     "docker:down": "docker compose down",
