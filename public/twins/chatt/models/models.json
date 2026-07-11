@@ -1,5 +1,5 @@
 {
-  "generated": "2026-07-10T20:56:27.183Z",
+  "generated": "2026-07-11T06:40:44.233Z",
   "site": "chatt",
   "neighborhoods": [
     {
@@ -404,8 +404,8 @@
       "yawDeg": 0,
       "lat": 35.056337744877226,
       "lon": -85.3090564270345,
-      "dim": [195.65, 28.27, 110.2],
-      "centerOffset": [-4.82, -9.75],
+      "dim": [195.72, 28.27, 110.2],
+      "centerOffset": [-4.79, -9.75],
       "rating": 5,
       "reviewCount": 2,
       "downloads": 215
@@ -649,8 +649,8 @@
       "yawDeg": 0,
       "lat": 35.056337744877226,
       "lon": -85.3090564270345,
-      "dim": [195.65, 30.67, 110.2],
-      "centerOffset": [-4.82, -9.75],
+      "dim": [195.72, 30.67, 110.2],
+      "centerOffset": [-4.79, -9.75],
       "rating": 5,
       "reviewCount": 2,
       "downloads": 116
@@ -736,8 +736,8 @@
       "yawDeg": 0,
       "lat": 35.045966440169394,
       "lon": -85.30923208326807,
-      "dim": [6.09, 6.29, 6.07],
-      "centerOffset": [0.39, -0.26],
+      "dim": [6.06, 6.29, 6.07],
+      "centerOffset": [0.37, -0.26],
       "rating": 5,
       "reviewCount": 5,
       "downloads": 4575

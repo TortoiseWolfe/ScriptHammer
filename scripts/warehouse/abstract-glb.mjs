@@ -32,6 +32,7 @@ import { parseArgs } from 'node:util';
 import sharp from 'sharp';
 import { NodeIO, getBounds } from '@gltf-transform/core';
 import { cullAndPrune, trianglesUnder } from './cull.mjs';
+import { dedupeFaces } from './dedupe-faces.mjs';
 import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 import {
   dedup,
@@ -307,9 +308,20 @@ for (const slug of dirs) {
       flatten(),
       join(),
       weld(),
+      // Remove SketchUp's reversed/duplicate coplanar faces (#259 iter 6):
+      // every wall is modeled twice with opposite winding; weld() snaps the
+      // twins coincident and this drops one, so the shell is a single clean
+      // layer that renders correctly as FrontSide (no DoubleSide, no z-fight —
+      // that was the "shit faces at some angles"). Runs BEFORE simplify so
+      // both the LOD0 base and the LOD clones inherit clean geometry.
+      dedupeFaces(),
       simplify({ simplifier: MeshoptSimplifier, ratio, error: LOD0.error }),
       prune()
     );
+    const faceDedup = doc.getRoot().getExtras().faceDedup ?? {
+      removedPairs: 0,
+      removedDegenerate: 0,
+    };
     const lodTris = buildLodNodes(doc, cfg);
     await doc.transform(prune());
     dropOrphanTextures(doc);
@@ -337,7 +349,7 @@ for (const slug of dirs) {
     }
     await io.write(outPath, doc);
     const outBytes = (await readFile(outPath)).length;
-    return { before, lodTris, outBytes, compressed: compress, culled, dimensions, center };
+    return { before, lodTris, outBytes, compressed: compress, culled, faceDedup, dimensions, center };
   }
 
   try {
@@ -356,7 +368,8 @@ for (const slug of dirs) {
       result = await process(LOD0.ratio * 0.3, result.compressed);
     }
 
-    const { before, lodTris, outBytes, culled, dimensions, center } = result;
+    const { before, lodTris, outBytes, culled, faceDedup, dimensions, center } =
+      result;
     const after = {
       ...stats(await io.read(outPath), outBytes),
       lodTriangles: lodTris,
@@ -365,7 +378,7 @@ for (const slug of dirs) {
       mode,
     };
 
-    report.push({ slug, before, after, culled });
+    report.push({ slug, before, after, culled, faceDedup });
     const cullNote = culled.aborted
       ? ', CULL ABORTED (mostly context — curation call)'
       : culled.culledNodes > 0
@@ -376,11 +389,15 @@ for (const slug of dirs) {
         `[abstract] WARNING ${slug}: cull guard refused — >80% of geometry is context; exclude via overrides or grant via abstract-${args.site}.json`
       );
     }
+    const dedupNote =
+      faceDedup.removedPairs > 0 || faceDedup.removedDegenerate > 0
+        ? `, deduped ${faceDedup.removedPairs} reversed faces/${faceDedup.removedDegenerate} degenerate`
+        : '';
     console.log(
       `[abstract] ${slug}: ${(before.glbBytes / 1e6).toFixed(1)}MB/${(before.triangles / 1e3).toFixed(0)}k tris → ` +
         `${(outBytes / 1e6).toFixed(2)}MB (LOD0 ${(lodTris.LOD0 / 1e3).toFixed(1)}k / LOD1 ${(lodTris.LOD1 / 1e3).toFixed(1)}k / LOD2 ${(lodTris.LOD2 / 1e3).toFixed(1)}k tris, ` +
         `${Math.round(dimensions.x)}×${Math.round(dimensions.y)}×${Math.round(dimensions.z)}m, ` +
-        `${after.materials} mats, ${after.textures} tex, ${mode}${cullNote})`
+        `${after.materials} mats, ${after.textures} tex, ${mode}${cullNote}${dedupNote})`
     );
   } catch (err) {
     // One pathological model must not kill a 135-model batch. No abstract.glb

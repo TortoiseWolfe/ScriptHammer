@@ -23,7 +23,7 @@
 // public/ wasm, no CDN), and drei's default draco path points at a gstatic
 // CDN this offline-capable static site must not depend on.
 import { Suspense, useEffect, useMemo, useRef } from 'react';
-import { Box3, Color, DoubleSide, Group } from 'three';
+import { Box3, Color, FrontSide, Group } from 'three';
 import type { Mesh, MeshStandardMaterial, Object3D } from 'three';
 import type { ThreeEvent } from '@react-three/fiber';
 import { Detailed, useGLTF } from '@react-three/drei';
@@ -81,9 +81,13 @@ function SampledBuilding({
           : [mesh.material];
         const cloned = mats.map((m) => {
           const c = (m as MeshStandardMaterial).clone();
-          // Mixed-winding SketchUp shells: without DoubleSide, walls vanish
-          // by view angle (83/233 shipped materials are single-sided).
-          c.side = DoubleSide;
+          // FrontSide (#259 iter 6): the bake now removes SketchUp's reversed
+          // duplicate faces (dedupe-faces.mjs), so the shell is a single
+          // consistent layer. DoubleSide used to be needed to stop single-
+          // sided walls vanishing, but it also rendered the interior/reversed
+          // duplicates — the "shit faces at some angles". With the duplicates
+          // gone, FrontSide culls backfaces correctly and the mess is gone.
+          c.side = FrontSide;
           return c;
         });
         mesh.material = Array.isArray(mesh.material) ? cloned : cloned[0];
