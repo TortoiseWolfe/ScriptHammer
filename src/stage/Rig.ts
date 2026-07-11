@@ -22,6 +22,27 @@ function damp(cur: number, tgt: number, lambda: number, dt: number): number {
 function clamp(v: number, a: number, b: number): number {
   return Math.min(b, Math.max(a, v));
 }
+
+// Pointer travel (px) a press must exceed before it becomes a camera drag.
+// Below this the press stays a "click": the ray never moves, so the object
+// under the cursor at pointerdown still matches at click and R3F fires the
+// mesh onClick (direct building selection). Without the dead-zone the rig
+// orbited on the first sub-pixel move, changing the hit object and making
+// R3F silently drop every click (#259 iter 6 — the "can't click a building"
+// bug). 5px is below normal click jitter.
+const DRAG_DEADZONE_PX = 5;
+
+/** True once a press has traveled far enough to count as a drag. Pure,
+ *  exported for unit tests. */
+export function dragArmed(
+  downX: number,
+  downY: number,
+  x: number,
+  y: number,
+  threshold = DRAG_DEADZONE_PX
+): boolean {
+  return Math.hypot(x - downX, y - downY) > threshold;
+}
 function angLerp(cur: number, tgt: number, lambda: number, dt: number): number {
   let d = ((tgt - cur + Math.PI) % (Math.PI * 2)) - Math.PI;
   if (d < -Math.PI) d += Math.PI * 2;
@@ -130,6 +151,11 @@ export class Rig {
   _bound: boolean;
   _lx?: number;
   _ly?: number;
+  // Drag dead-zone (#259 iter 6): press origin + whether travel has armed a
+  // camera drag. A press under DRAG_DEADZONE_PX stays a click so R3F can pick.
+  _downX?: number;
+  _downY?: number;
+  _dragArmed: boolean;
 
   // bound listener refs (set in bind(), removed in dispose())
   _kd?: (e: KeyboardEvent) => void;
@@ -207,6 +233,7 @@ export class Rig {
     this.keys = {};
     this.vkeys = {}; // real + virtual (playtest)
     this.dragging = false;
+    this._dragArmed = false;
     this.locked = false;
     this.followObj = null; // {position, heading?} — trolley when boarded
 
@@ -255,6 +282,7 @@ export class Rig {
     };
     this._mu = () => {
       this.dragging = false;
+      this._dragArmed = false;
     };
     this._wh = (e: WheelEvent) => {
       this._wheel(e);
@@ -325,13 +353,38 @@ export class Rig {
     if (!this.inputEnabled) return;
     this.idle = 0;
     this.dragging = true;
-    this._lx = e.clientX;
-    this._ly = e.clientY;
+    this._dragArmed = false; // stays a click until travel exceeds the dead-zone
+    this._downX = this._lx = e.clientX;
+    this._downY = this._ly = e.clientY;
     if (this.mode === 'tour') this.setMode('orbit');
   }
   _move(e: MouseEvent): void {
     if (!this.inputEnabled) return;
     this.idle = 0;
+    // Pointer-lock look (walk mode) uses relative movementX and has no click
+    // semantics — never gate it. The click-drag orbit/walk-drag paths must
+    // wait for the dead-zone so a stationary click stays pickable.
+    const lockLook = this.mode === 'walk' && this.locked;
+    if (this.dragging && !this._dragArmed && !lockLook) {
+      if (
+        dragArmed(
+          this._downX ?? e.clientX,
+          this._downY ?? e.clientY,
+          e.clientX,
+          e.clientY
+        )
+      ) {
+        // Arm now; reseed the last-position so the first armed frame applies
+        // only the post-arm delta, not the whole accumulated travel.
+        this._dragArmed = true;
+        this._lx = e.clientX;
+        this._ly = e.clientY;
+      } else {
+        this._lx = e.clientX;
+        this._ly = e.clientY;
+        return; // under the dead-zone: no camera movement
+      }
+    }
     const mx =
       e.movementX != null ? e.movementX : e.clientX - (this._lx || e.clientX);
     const my =
@@ -343,12 +396,13 @@ export class Rig {
       if (this.locked) {
         this.yaw -= mx * this.o.mouseSens;
         this.pitch = clamp(this.pitch - my * this.o.mouseSens, -1.2, 1.0);
-      } else if (this.dragging) {
+      } else if (this.dragging && this._dragArmed) {
         this.yaw -= mx * this.o.dragSens;
         this.pitch = clamp(this.pitch - my * this.o.dragSens, -1.2, 1.0);
       }
     } else if (
       this.dragging &&
+      this._dragArmed &&
       (this.mode === 'orbit' || this.mode === 'follow')
     ) {
       this.tTheta -= mx * this.o.dragSens;
