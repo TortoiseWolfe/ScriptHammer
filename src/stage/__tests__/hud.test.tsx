@@ -59,4 +59,47 @@ describe('Hud', () => {
       /<a[^>]+href="\/x\/twins\/y\/house\/"[^>]*>Property page/
     );
   });
+
+  // #259 iter 7 — secondary modes live behind the ⋯ overflow, not the bar.
+  it('keeps secondary modes out of the primary bar behind a ⋯ trigger', () => {
+    const html = renderToStaticMarkup(
+      <Hud
+        title="T"
+        provenance="P"
+        modes={[
+          { key: 'orbit', label: 'Miniature' },
+          { key: 'walk', label: 'Walk', secondary: true },
+        ]}
+        activeMode="orbit"
+        onMode={() => {}}
+        palettes={[{ key: 'toy', label: 'Toy' }]}
+        activePalette="toy"
+        onPalette={() => {}}
+        showFps={false}
+      />
+    );
+    // Primary label present, secondary label absent (popover is closed in SSR)
+    expect(html).toContain('Miniature');
+    expect(html).not.toContain('Walk');
+    // The overflow trigger is present and closed
+    expect(html).toMatch(/aria-haspopup="menu"/);
+    expect(html).toMatch(/aria-expanded="false"/);
+  });
+
+  it('renders no ⋯ trigger when nothing is secondary or overflow-only', () => {
+    const html = renderToStaticMarkup(
+      <Hud
+        title="T"
+        provenance="P"
+        modes={[{ key: 'orbit', label: 'Miniature' }]}
+        activeMode="orbit"
+        onMode={() => {}}
+        palettes={[]}
+        activePalette=""
+        onPalette={() => {}}
+        showFps={false}
+      />
+    );
+    expect(html).not.toMatch(/aria-haspopup="menu"/);
+  });
 });

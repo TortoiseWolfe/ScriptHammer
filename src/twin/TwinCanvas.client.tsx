@@ -21,6 +21,7 @@ import TwinWorld from '@/world/TwinWorld';
 import Trolley from '@/agents/trolley';
 import Hud, { HudCaption, HudLink, HudOption, HudSlider } from '@/stage/Hud';
 import PlacementEditor from './PlacementEditor';
+import SelectedBuildingCard from './SelectedBuildingCard';
 import WarehouseGizmo from './WarehouseGizmo';
 import { useWarehouseEditor } from './useWarehouseEditor';
 import type { ModelGroupRegistry } from '@/world/WarehouseModels';
@@ -62,12 +63,17 @@ export function modesForSite(
   hasTour: boolean,
   hasTrolley: boolean
 ): HudOption[] {
+  // Walk and Top-down are `secondary` — real modes, but niche (Walk is
+  // disorienting at diorama scale; Top-down is a registration diagnostic), so
+  // the HUD tucks them in the ⋯ overflow. The array ORDER and LENGTH are
+  // unchanged so the position-based digit-key shortcuts below keep mapping to
+  // the same modes.
   return [
     ...(hasTour ? [{ key: 'tour', label: 'Tour' }] : []),
     { key: 'orbit', label: 'Miniature' },
     ...(hasTrolley ? [{ key: 'follow', label: 'Ride' }] : []),
-    { key: 'walk', label: 'Walk' },
-    { key: 'ortho', label: 'Top-down' },
+    { key: 'walk', label: 'Walk', secondary: true },
+    { key: 'ortho', label: 'Top-down', secondary: true },
   ];
 }
 
@@ -683,8 +689,16 @@ function TwinCanvasInner({
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
       if (e.code === 'Backquote') setShowFps((v) => !v);
-      // Digit keys map by position into the mode dock (so `1` is never a dead
-      // key on tour-less sites).
+      // Escape clears the selected-building card in normal view. In edit mode
+      // the editor hook owns Escape (deselect there), so this defers.
+      if (e.code === 'Escape' && !editMode && selectedModel) {
+        setSelectedModel(null);
+        return;
+      }
+      // Digit keys map by position into the FULL mode list — including the
+      // `secondary` modes now tucked in the ⋯ overflow (Walk, Top-down). They
+      // keep their existing digits so muscle memory is preserved even though
+      // they moved out of the primary bar.
       const m = /^Digit([1-5])$/.exec(e.code);
       if (m) {
         const opt = modes[Number(m[1]) - 1];
@@ -693,7 +707,7 @@ function TwinCanvasInner({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [modes]);
+  }, [modes, editMode, selectedModel, setSelectedModel]);
 
   // Route-scoped chrome control: hide the global cookie/PWA popups that would
   // overlap the diorama HUD. Keeps ScriptHammer's top nav (the diorama insets
@@ -702,6 +716,11 @@ function TwinCanvasInner({
     document.body.classList.add('twin-fullscreen');
     return () => document.body.classList.remove('twin-fullscreen');
   }, []);
+
+  // The full entry for the selected building (drives the info card).
+  const selectedEntry = selectedModel
+    ? (warehouseModels?.models.find((m) => m.slug === selectedModel) ?? null)
+    : null;
 
   return (
     // Inset below the 64px sticky GlobalNav (h-16) so the diorama + HUD sit
@@ -769,7 +788,10 @@ function TwinCanvasInner({
           warehouseModels={warehouseModels}
           modelOverrides={modelOverrides}
           selectedModel={selectedModel}
-          onSelectModel={editMode ? setSelectedModel : undefined}
+          // Selection works in NORMAL viewing too (not only edit mode) so a
+          // click surfaces the building's info card; edit-only wiring stays
+          // gated below.
+          onSelectModel={warehouseModels ? setSelectedModel : undefined}
           patchOverride={editMode ? patchOverride : undefined}
           onGizmoLive={editMode ? setLiveDrag : undefined}
           gizmoMode={gizmoMode}
@@ -871,9 +893,27 @@ function TwinCanvasInner({
         directoryActive={selectedModel}
         editActive={editMode}
         onEditToggle={warehouseModels ? toggleEdit : undefined}
+        toggles={[
+          {
+            key: 'fps',
+            label: 'FPS counter',
+            active: showFps,
+            onToggle: () => setShowFps((v) => !v),
+          },
+        ]}
         showFps={showFps}
         fps={fps}
       />
+      {/* Selected-building info card (normal view): rating, downloads, and a
+          "may look rough" flag when the model is oversized. In edit mode the
+          PlacementEditor (top-right) owns the selection UI, so the card only
+          shows outside editing. */}
+      {!editMode && selectedEntry ? (
+        <SelectedBuildingCard
+          entry={selectedEntry}
+          onDismiss={() => setSelectedModel(null)}
+        />
+      ) : null}
       {editMode ? (
         <PlacementEditor
           entry={
