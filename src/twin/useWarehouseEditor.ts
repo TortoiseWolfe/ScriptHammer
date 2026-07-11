@@ -227,15 +227,17 @@ export function useWarehouseEditor({
     }
   }, [modelOverrides]);
 
-  // Local dev save-to-file (#259 iter 6): on localhost, probe the dev
-  // overrides sidecar (scripts/dev/overrides-server.mjs). When it answers,
-  // the editor can write edits straight into overrides-<site>.json so the
-  // next bake picks them up — no export/paste. On the static live site the
-  // sidecar isn't there (a browser can't write repo files), so the Save
-  // button never appears and localStorage remains the only persistence.
+  // Local dev save-to-file (#259 iter 6): in EDIT mode on localhost, probe the
+  // dev overrides sidecar (scripts/dev/overrides-server.mjs). When it answers,
+  // the editor can write edits straight into overrides-<site>.json so the next
+  // bake picks them up — no export/paste. On the static live site the sidecar
+  // isn't there (a browser can't write repo files), so the Save button never
+  // appears and localStorage remains the only persistence. Gated on editMode
+  // so a normal (non-edit) twin load never fires the probe — no stray
+  // ERR_CONNECTION_REFUSED on the common path, only when someone is editing.
   const [saveAvailable, setSaveAvailable] = useState(false);
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !editMode) return;
     const host = window.location.hostname;
     if (host !== 'localhost' && host !== '127.0.0.1') return;
     let alive = true;
@@ -246,7 +248,7 @@ export function useWarehouseEditor({
     return () => {
       alive = false;
     };
-  }, []);
+  }, [editMode]);
 
   /** Write the current overrides straight into overrides-<site>.json via the
    *  dev sidecar. Returns true on success. */
