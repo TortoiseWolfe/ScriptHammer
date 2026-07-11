@@ -15,6 +15,10 @@ import type {
   WarehouseModelsInfo,
 } from '@/lib/manifest';
 
+// The dev-only overrides sidecar (scripts/dev/overrides-server.mjs). Fixed
+// localhost port; only ever reached when the twin is served from localhost.
+const OVERRIDES_SERVER = 'http://127.0.0.1:3099';
+
 /** Pure override-patch semantics — exported for unit tests. */
 export function patchOverrides(
   prev: Record<string, TwinPlacementOverride>,
@@ -223,6 +227,44 @@ export function useWarehouseEditor({
     }
   }, [modelOverrides]);
 
+  // Local dev save-to-file (#259 iter 6): in EDIT mode on localhost, probe the
+  // dev overrides sidecar (scripts/dev/overrides-server.mjs). When it answers,
+  // the editor can write edits straight into overrides-<site>.json so the next
+  // bake picks them up — no export/paste. On the static live site the sidecar
+  // isn't there (a browser can't write repo files), so the Save button never
+  // appears and localStorage remains the only persistence. Gated on editMode
+  // so a normal (non-edit) twin load never fires the probe — no stray
+  // ERR_CONNECTION_REFUSED on the common path, only when someone is editing.
+  const [saveAvailable, setSaveAvailable] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined' || !editMode) return;
+    const host = window.location.hostname;
+    if (host !== 'localhost' && host !== '127.0.0.1') return;
+    let alive = true;
+    fetch(`${OVERRIDES_SERVER}/health`)
+      .then((r) => r.ok)
+      .then((ok) => alive && setSaveAvailable(ok))
+      .catch(() => {}); // sidecar not running → button stays hidden
+    return () => {
+      alive = false;
+    };
+  }, [editMode]);
+
+  /** Write the current overrides straight into overrides-<site>.json via the
+   *  dev sidecar. Returns true on success. */
+  const saveToFile = useCallback(async () => {
+    try {
+      const res = await fetch(`${OVERRIDES_SERVER}/twin-overrides/${slug}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(modelOverrides),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }, [modelOverrides, slug]);
+
   // Hold the camera on the selected building (suppresses idle-drift, R2).
   useEffect(() => {
     if (!rig) return;
@@ -306,6 +348,8 @@ export function useWarehouseEditor({
     resetSelected,
     clearAll,
     exportOverrides,
+    saveAvailable,
+    saveToFile,
     flyToModel,
   };
 }

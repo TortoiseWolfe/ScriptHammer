@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PerspectiveCamera } from 'three';
-import { Rig } from '../Rig';
+import { Rig, dragArmed } from '../Rig';
 
 function makeRig() {
   const cam = new PerspectiveCamera(34, 1.6, 1, 2400);
@@ -93,5 +93,50 @@ describe('Rig', () => {
     // the pivot must have translated in the ground plane (not stayed fixed)
     const moved = Math.abs(rig.focus.z - z0) > 1 || Math.abs(rig.focus.x) > 1;
     expect(moved).toBe(true);
+  });
+
+  // #259 iter 6 — drag dead-zone so a stationary click stays pickable (R3F
+  // drops a mesh onClick when the camera orbits between pointerdown and click).
+  describe('drag dead-zone', () => {
+    it('dragArmed only past the threshold', () => {
+      expect(dragArmed(100, 100, 102, 101)).toBe(false); // ~2px
+      expect(dragArmed(100, 100, 100, 104)).toBe(false); // 4px, under 5
+      expect(dragArmed(100, 100, 110, 100)).toBe(true); // 10px
+      expect(dragArmed(100, 100, 100, 100, 0)).toBe(false); // zero travel
+    });
+
+    it('a stationary click applies NO camera rotation', () => {
+      rig.setMode('orbit');
+      const theta0 = rig.tTheta;
+      const phi0 = rig.tPhi;
+      rig._down({ clientX: 400, clientY: 300 } as MouseEvent);
+      // jitter within the dead-zone
+      rig._move({ clientX: 402, clientY: 301 } as MouseEvent);
+      rig._move({ clientX: 401, clientY: 302 } as MouseEvent);
+      expect(rig.tTheta).toBe(theta0);
+      expect(rig.tPhi).toBe(phi0);
+      expect(rig._dragArmed).toBe(false);
+    });
+
+    it('a supra-threshold drag DOES orbit and arms', () => {
+      rig.setMode('orbit');
+      const theta0 = rig.tTheta;
+      rig._down({ clientX: 400, clientY: 300 } as MouseEvent);
+      rig._move({ clientX: 440, clientY: 300 } as MouseEvent); // 40px → arms
+      rig._move({ clientX: 480, clientY: 300 } as MouseEvent); // keeps dragging
+      expect(rig._dragArmed).toBe(true);
+      expect(rig.tTheta).not.toBe(theta0);
+    });
+
+    it('mouseup disarms so the next click is clean', () => {
+      rig.bind(); // _mu is assigned in bind()
+      rig.setMode('orbit');
+      rig._down({ clientX: 0, clientY: 0 } as MouseEvent);
+      rig._move({ clientX: 50, clientY: 0 } as MouseEvent); // arm
+      expect(rig._dragArmed).toBe(true);
+      rig._mu!();
+      expect(rig._dragArmed).toBe(false);
+      expect(rig.dragging).toBe(false);
+    });
   });
 });

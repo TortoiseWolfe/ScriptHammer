@@ -111,7 +111,8 @@ test.describe('/twins/[slug] — digital-twin viewer', () => {
         !lower.includes('webgl') &&
         !lower.includes('links.local.json') &&
         !lower.includes('house/house.json') &&
-        !lower.includes('models/models.json')
+        !lower.includes('models/models.json') &&
+        !lower.includes('127.0.0.1:3099')
       );
     });
     expect(relevant).toEqual([]);
@@ -138,7 +139,12 @@ test.describe('/twins/[slug] — digital-twin viewer', () => {
     //    are absence-probed by design on static hosting, and
     //    the browser logs each 404 as a console error. Those two paths 404ing
     //    is the NORMAL state for any twin without a private demo link or an
-    //    as-built capture (i.e. every committed twin).
+    //    as-built capture (i.e. every committed twin), and
+    //  - 127.0.0.1:3099 is the dev-only overrides sidecar (#259 iter 6). The
+    //    editor probes it on localhost; when it's absent (CI, live site, any
+    //    machine not running `pnpm run overrides-server`) the browser logs an
+    //    ERR_CONNECTION_REFUSED. That absence is the normal case — the Save
+    //    button simply stays hidden.
     const relevant = errors.filter((e) => {
       const lower = e.toLowerCase();
       return (
@@ -150,7 +156,8 @@ test.describe('/twins/[slug] — digital-twin viewer', () => {
         !lower.includes('webgl') &&
         !lower.includes('links.local.json') &&
         !lower.includes('house/house.json') &&
-        !lower.includes('models/models.json')
+        !lower.includes('models/models.json') &&
+        !lower.includes('127.0.0.1:3099')
       );
     });
     expect(relevant).toEqual([]);
