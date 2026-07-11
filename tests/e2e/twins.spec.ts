@@ -87,6 +87,11 @@ test.describe('/twins/[slug] — digital-twin viewer', () => {
     await expect(page.getByText(WORDMARK).first()).toBeVisible({
       timeout: 15000,
     });
+    // Top-down is a secondary mode — it lives in the HUD's ⋯ overflow (#259
+    // iter 7). Open the overflow, then assert Top-down is reachable there.
+    const openOverflow = () =>
+      page.getByRole('button', { name: 'More controls' }).click();
+    await openOverflow();
     await expect(page.getByRole('button', { name: 'Top-down' })).toBeVisible();
     test.skip(
       !(await webglAvailable(page)),
@@ -96,8 +101,10 @@ test.describe('/twins/[slug] — digital-twin viewer', () => {
     // Round-trip through the dock: leave and re-enter Top-down. This drives
     // the ortho render branch (frustum, colorspace flip, fog restore) and the
     // rig re-frame on exit — a NaN frustum or render-loop throw would surface
-    // as console errors below.
+    // as console errors below. Miniature is in the primary bar; re-entering
+    // Top-down means reopening the overflow (picking a mode closes it).
     await page.getByRole('button', { name: 'Miniature' }).click();
+    await openOverflow();
     await page.getByRole('button', { name: 'Top-down' }).click();
     await page.waitForTimeout(1500);
     const relevant = errors.filter((e) => {
