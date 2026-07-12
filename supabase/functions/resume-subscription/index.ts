@@ -25,8 +25,9 @@
  *   - service-role client used for the subscription lookup + update (bypasses
  *     RLS so we can read/write the row regardless of policy state) — but we DO
  *     check `template_user_id === caller_user_id` manually before proceeding
- *   - Only subscriptions in status='canceled' may be resumed; any other status
- *     is rejected with 400 to avoid double-activation or resuming dead subs
+ *   - Only subscriptions in status='canceling' (cancel-at-period-end, still live)
+ *     or 'canceled' (fully ended) may be resumed; any other status is rejected
+ *     with 400 to avoid double-activation or resuming dead subs (#242)
  *   - Stripe: clears `cancel_at_period_end` on the provider subscription
  *   - PayPal: activates the provider subscription via the Billing API; a fresh
  *     OAuth2 access token is minted per request (self-contained helper below)
@@ -138,9 +139,19 @@ serve(async (req) => {
       );
     }
 
-    // Only canceled subscriptions can be resumed.
-    if (subscription.status !== 'canceled') {
-      return jsonResponse(req, { error: 'subscription is not canceled' }, 400);
+    // #242: 'canceling' (Stripe cancel-at-period-end, still live) and 'canceled'
+    // (fully ended, or PayPal immediate cancel) are both resumable. Resuming a
+    // 'canceling' sub is the common "undo my cancellation" case — the sub is
+    // still active at Stripe, we just clear cancel_at_period_end below.
+    if (
+      subscription.status !== 'canceled' &&
+      subscription.status !== 'canceling'
+    ) {
+      return jsonResponse(
+        req,
+        { error: 'subscription is not canceled or canceling' },
+        400
+      );
     }
 
     // Reactivate with the provider.

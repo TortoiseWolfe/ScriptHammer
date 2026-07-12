@@ -359,14 +359,18 @@ async function handleSubscriptionEvent(
   const toDateString = (secs: number | undefined | null) =>
     secs ? new Date(secs * 1000).toISOString().split('T')[0] : null;
 
-  // Local model: status 'canceled' = user canceled (access until period end).
-  // Stripe represents that as status=active + cancel_at_period_end=true and
-  // fires .updated for it — without this mapping that event would clobber the
-  // 'canceled' status cancel-subscription just wrote (and make resume 400).
+  // #242: Local 'canceling' = user canceled-at-period-end but STILL LIVE at
+  // Stripe through the paid period. Stripe represents that as status=active +
+  // cancel_at_period_end=true and fires .updated for it. Map it to 'canceling'
+  // (NOT 'canceled') so the row keeps occupying the one-live-per-user slot until
+  // Stripe finally fires customer.subscription.deleted at true period end (which
+  // handleSubscriptionDeleted maps to 'canceled'). Previously this mapped to
+  // 'canceled' immediately, dropping the row out of the live index and letting
+  // the user start a second subscription while the first was still billing.
   const mappedStatus = mapStripeSubscriptionStatus(subscription.status);
   const localStatus =
     subscription.cancel_at_period_end && mappedStatus === 'active'
-      ? 'canceled'
+      ? 'canceling'
       : mappedStatus;
 
   const subscriptionData = {
