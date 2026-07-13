@@ -231,28 +231,75 @@ async function handlePaymentCompleted(
 
   if (!intent) return { handled: false };
 
-  const { data: paymentResult, error } = await supabase
+  // #239: RECONCILE onto the ONE payment_results row for this intent — do NOT
+  // blind-INSERT. create-paypal-order already wrote a 'pending' row for this
+  // intent (transaction_id = PayPal ORDER id), and the buyer-redirect capture
+  // (capture-paypal-order) may have already flipped it to 'succeeded'. This
+  // webhook carries the PayPal CAPTURE id (resource.id) — a DIFFERENT value from
+  // the order id — so the old blind INSERT produced a SECOND 'succeeded' row for
+  // a single payment, double-counting PayPal in admin revenue. Update the
+  // existing row instead (mirrors how the Stripe path keeps one row per payment).
+  const chargedAmount = Math.round(
+    parseFloat(resource.amount?.value || '0') * 100
+  );
+  const chargedCurrency =
+    resource.amount?.currency_code?.toLowerCase() || 'usd';
+  const providerFee = resource.transaction_fee
+    ? Math.round(parseFloat(resource.transaction_fee.value) * 100)
+    : null;
+
+  const { data: existing } = await supabase
+    .from('payment_results')
+    .select('id')
+    .eq('intent_id', intent.id)
+    .eq('provider', 'paypal')
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
+    // Authoritative webhook confirmation: mark succeeded + fill the amounts and
+    // the verified flag. Keep verification_method as 'webhook' to record that
+    // the out-of-band notification confirmed it (a prior 'redirect' is upgraded).
+    const { data: updated, error: updateError } = await supabase
+      .from('payment_results')
+      .update({
+        status: 'succeeded',
+        charged_amount: chargedAmount,
+        charged_currency: chargedCurrency,
+        provider_fee: providerFee,
+        webhook_verified: true,
+        verification_method: 'webhook',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', existing.id)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+    return { handled: true, related_payment_id: updated.id };
+  }
+
+  // Defensive fallback: no row exists for this intent (payment never went
+  // through create-paypal-order). Insert one so the payment is still recorded.
+  const { data: inserted, error: insertError } = await supabase
     .from('payment_results')
     .insert({
       intent_id: intent.id,
       provider: 'paypal',
       transaction_id: resource.id,
       status: 'succeeded',
-      charged_amount: Math.round(
-        parseFloat(resource.amount?.value || '0') * 100
-      ),
-      charged_currency: resource.amount?.currency_code?.toLowerCase() || 'usd',
-      provider_fee: resource.transaction_fee
-        ? Math.round(parseFloat(resource.transaction_fee.value) * 100)
-        : null,
+      charged_amount: chargedAmount,
+      charged_currency: chargedCurrency,
+      provider_fee: providerFee,
       webhook_verified: true,
       verification_method: 'webhook',
     })
     .select()
     .single();
 
-  if (error) throw error;
-  return { handled: true, related_payment_id: paymentResult.id };
+  if (insertError) throw insertError;
+  return { handled: true, related_payment_id: inserted.id };
 }
 
 async function handleSubscriptionEvent(

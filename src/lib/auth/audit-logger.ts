@@ -12,6 +12,8 @@ const logger = createLogger('lib:auth:audit-logger');
 
 export type AuditEventType =
   | 'sign_in'
+  | 'sign_in_success' // #241: successful sign-in (what admin_auth_stats reads)
+  | 'sign_in_failed' // #241: failed sign-in (what the failed-attempt detector reads)
   | 'sign_out'
   | 'sign_up'
   | 'password_change'
@@ -59,19 +61,25 @@ export async function logAuthEvent(entry: AuditLogEntry): Promise<void> {
     const userAgent =
       typeof navigator !== 'undefined' ? navigator.userAgent : undefined;
 
-    // Prepare log entry
-    const logEntry = {
-      user_id: entry.user_id || null,
-      event_type: entry.event_type,
-      event_data: (entry.event_data as Json) || null,
-      ip_address: entry.ip_address || null,
-      user_agent: entry.user_agent || userAgent || null,
-      success: entry.success !== undefined ? entry.success : true,
-      error_message: entry.error_message || null,
-    };
-
-    // Insert audit log
-    const { error } = await supabase.from('auth_audit_logs').insert(logEntry);
+    // #241: write via the log_auth_event RPC, NOT a direct table insert. The
+    // auth_audit_logs INSERT policy only permits service_role, so the old
+    // client-side `.from('auth_audit_logs').insert()` was silently RLS-rejected
+    // for every real sign-in and failed login. The SECURITY DEFINER RPC bypasses
+    // RLS while enforcing that a caller can only log for itself or anonymously.
+    // ip_address is intentionally omitted — clients can't observe their own
+    // public IP reliably, and a spoofable client-supplied IP is worse than none;
+    // server-side paths that need it can populate it out of band.
+    const { error } = await supabase.rpc('log_auth_event', {
+      p_event_type: entry.event_type,
+      // Omit optionals (leave undefined) rather than pass null — the RPC's
+      // DEFAULT NULL fills them in. A NULL p_user_id is the correct anonymous
+      // case for a failed login (no session yet).
+      p_user_id: entry.user_id || undefined,
+      p_event_data: (entry.event_data as Json) ?? undefined,
+      p_success: entry.success !== undefined ? entry.success : true,
+      p_error_message: entry.error_message || undefined,
+      p_user_agent: entry.user_agent || userAgent || undefined,
+    });
 
     if (error) {
       logger.error('Failed to log audit event', {

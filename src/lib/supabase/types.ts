@@ -966,6 +966,10 @@ export type Database = {
         Returns: Json;
       };
       cleanup_old_audit_logs: { Args: never; Returns: undefined };
+      is_admin: {
+        Args: { check_user_id?: string };
+        Returns: boolean;
+      };
       is_conversation_member: {
         Args: { check_user_id?: string; conv_id: string };
         Returns: boolean;
@@ -973,6 +977,17 @@ export type Database = {
       is_conversation_owner: {
         Args: { check_user_id?: string; conv_id: string };
         Returns: boolean;
+      };
+      log_auth_event: {
+        Args: {
+          p_error_message?: string;
+          p_event_data?: Json;
+          p_event_type: string;
+          p_success?: boolean;
+          p_user_agent?: string;
+          p_user_id?: string;
+        };
+        Returns: undefined;
       };
       record_failed_attempt: {
         Args: {

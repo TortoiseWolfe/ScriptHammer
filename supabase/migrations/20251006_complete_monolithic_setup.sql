@@ -100,6 +100,19 @@ CREATE INDEX IF NOT EXISTS idx_payment_results_transaction_id ON payment_results
 CREATE INDEX IF NOT EXISTS idx_payment_results_status ON payment_results(status);
 CREATE INDEX IF NOT EXISTS idx_payment_results_created_at ON payment_results(created_at DESC);
 
+-- #239: defense-in-depth against double-counting a single payment. Each
+-- payment_intent may yield AT MOST ONE 'succeeded' result. Previously the
+-- PayPal redirect-capture and the out-of-band webhook each wrote their own
+-- 'succeeded' row (keyed on different transaction_ids — order id vs capture id),
+-- inflating admin revenue. The paypal-webhook handler now reconciles onto the
+-- existing row, but this partial unique index makes a regression impossible: a
+-- second 'succeeded' INSERT for the same intent hits 23505 instead of silently
+-- duplicating. Partial (WHERE status='succeeded') so pending/failed rows and
+-- retries via a NEW intent are unaffected.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_results_one_succeeded_per_intent
+  ON payment_results(intent_id)
+  WHERE status = 'succeeded';
+
 COMMENT ON TABLE payment_results IS 'Outcome of payment attempts with webhook verification';
 
 -- Subscriptions
@@ -111,7 +124,11 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   customer_email TEXT NOT NULL,
   plan_amount INTEGER NOT NULL CHECK (plan_amount >= 100),
   plan_interval TEXT NOT NULL CHECK (plan_interval IN ('month', 'year')),
-  status TEXT NOT NULL CHECK (status IN ('active', 'past_due', 'grace_period', 'canceled', 'expired')),
+  -- #242: 'canceling' = user canceled-at-period-end but the sub is STILL LIVE at
+  -- the provider through the paid period. It counts as live (see the one-live
+  -- partial index below) so a second subscription can't be started during the
+  -- window; the terminal provider event flips it to 'canceled' at period end.
+  status TEXT NOT NULL CHECK (status IN ('active', 'past_due', 'grace_period', 'canceling', 'canceled', 'expired')),
   current_period_start TEXT,
   current_period_end TEXT,
   next_billing_date TEXT,
@@ -128,14 +145,30 @@ CREATE INDEX IF NOT EXISTS idx_subscriptions_customer_email ON subscriptions(cus
 CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
 CREATE INDEX IF NOT EXISTS idx_subscriptions_next_billing_date ON subscriptions(next_billing_date) WHERE status = 'active';
 CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_provider_id ON subscriptions(provider, provider_subscription_id);
+
+-- #242: idempotently extend the status CHECK to include 'canceling' on EXISTING
+-- DBs (the CREATE TABLE IF NOT EXISTS above only applies the inline CHECK on a
+-- fresh table). Mirrors the auth_audit_logs event_type extension pattern.
+ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_status_check;
+ALTER TABLE subscriptions ADD CONSTRAINT subscriptions_status_check
+  CHECK (status IN ('active', 'past_due', 'grace_period', 'canceling', 'canceled', 'expired'));
+
 -- Duplicate-subscription guard (#5): a user may hold at most ONE live
 -- subscription at a time. Server-side root-cause enforcement — the webhook
 -- upsert that would create a second live row hits this and is rejected (23505),
 -- which the handlers catch and acknowledge gracefully. No trigger / SECURITY
 -- DEFINER needed.
+--
+-- #242: 'canceling' is included in the live set. A cancel-at-period-end sub
+-- (still active at the provider through the paid period) must keep occupying
+-- the one-live slot, so a user can't start a SECOND subscription while the
+-- first is still billing at the provider. Previously cancel wrote 'canceled'
+-- immediately, dropping the row out of this index and letting a second sub slip
+-- in. DROP + CREATE so the predicate change applies to existing DBs too.
+DROP INDEX IF EXISTS idx_subscriptions_one_live_per_user;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_subscriptions_one_live_per_user
   ON subscriptions(template_user_id)
-  WHERE status IN ('active', 'grace_period', 'past_due');
+  WHERE status IN ('active', 'grace_period', 'past_due', 'canceling');
 
 COMMENT ON TABLE subscriptions IS 'Recurring payment subscriptions';
 
@@ -672,6 +705,60 @@ DROP POLICY IF EXISTS "Service role can insert audit logs" ON auth_audit_logs;
 CREATE POLICY "Service role can insert audit logs" ON auth_audit_logs
   FOR INSERT TO service_role WITH CHECK (true);
 
+-- log_auth_event(): the client-callable write path for auth audit events (#241).
+--
+-- Before this, sign-in / failed-sign-in events were written by a client-side
+-- `.from('auth_audit_logs').insert()` running as the authenticated/anon role —
+-- but the ONLY INSERT policy on the table is service_role, so RLS silently
+-- rejected every one of those writes. Result: the audit log was empty for all
+-- real sign-ins and failed logins (only the SECURITY DEFINER signup trigger got
+-- through), and the "too many failed attempts" detector — which reads
+-- event_type='sign_in_failed' — could never fire.
+--
+-- Rather than open a broad client INSERT policy on a security-sensitive table
+-- (which would let clients forge arbitrary audit rows), we expose a narrow
+-- SECURITY DEFINER RPC. It bypasses RLS to insert, but ENFORCES that a caller
+-- may only attribute an event to themselves (user_id = auth.uid()) or leave it
+-- unattributed (user_id IS NULL — the legitimate case for a FAILED login, where
+-- no session exists yet). The event_type CHECK on the table is the vocabulary
+-- guard; callers must use 'sign_in_success' / 'sign_in_failed' (what the admin
+-- stats + failed-attempt detector read), not 'sign_in'.
+CREATE OR REPLACE FUNCTION public.log_auth_event(
+  p_event_type   TEXT,
+  p_user_id      UUID DEFAULT NULL,
+  p_event_data   JSONB DEFAULT NULL,
+  p_success      BOOLEAN DEFAULT TRUE,
+  p_error_message TEXT DEFAULT NULL,
+  p_user_agent   TEXT DEFAULT NULL
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  -- Anti-forgery: a client may only log for itself or anonymously. Never allow
+  -- attributing an event to a DIFFERENT user. (auth.uid() is NULL for anon.)
+  IF p_user_id IS NOT NULL AND p_user_id IS DISTINCT FROM auth.uid() THEN
+    RAISE EXCEPTION 'log_auth_event: cannot log an event for another user';
+  END IF;
+
+  INSERT INTO auth_audit_logs (
+    user_id, event_type, event_data, success, error_message, user_agent
+  ) VALUES (
+    p_user_id, p_event_type, p_event_data,
+    COALESCE(p_success, TRUE), p_error_message, left(p_user_agent, 500)
+  );
+END;
+$$;
+-- Revoke the implicit PUBLIC grant Postgres puts on new functions, then grant
+-- explicitly to the client roles that need it — least privilege for a function
+-- that writes to a security table.
+REVOKE EXECUTE ON FUNCTION public.log_auth_event(TEXT, UUID, JSONB, BOOLEAN, TEXT, TEXT)
+  FROM public;
+GRANT EXECUTE ON FUNCTION public.log_auth_event(TEXT, UUID, JSONB, BOOLEAN, TEXT, TEXT)
+  TO authenticated, anon;
+
 -- Admin read-only policies (Feature: Admin Dashboard)
 -- Uses JWT custom claims from auth.users.raw_app_meta_data (Supabase RBAC best practice)
 -- NEVER subquery user_profiles from its own policy — causes infinite recursion
@@ -692,40 +779,131 @@ CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$
 $$;
 ALTER FUNCTION auth.jwt() OWNER TO supabase_auth_admin;
 
+-- ============================================================================
+-- Admin authorization: SINGLE SOURCE OF TRUTH (#240)
+--
+-- Previously admin status lived in TWO places that could disagree:
+--   1. user_profiles.is_admin (column) — read by the client UI gate
+--      (admin-auth-service.checkIsAdmin), and
+--   2. auth.users.raw_app_meta_data->>'is_admin' → the JWT app_metadata claim —
+--      read by every RLS policy and admin RPC guard.
+-- Nothing synced them, producing "hollow admins" (column set, claim not → UI
+-- shows the section but every RPC returns '{}'/zero rows) and "lingering
+-- admins" (claim revoked but the already-minted JWT keeps working until
+-- re-login).
+--
+-- Fix: user_profiles.is_admin is now the ONE authority.
+--   • custom_access_token_hook() DERIVES the app_metadata.is_admin claim FROM
+--     the column at every token mint — so the claim can never drift from the
+--     column, and RLS-policy-level filtering stays fast for normal operation.
+--   • is_admin() re-reads the column LIVE (SECURITY DEFINER, bypasses
+--     user_profiles' own RLS to avoid recursion — same pattern as
+--     is_conversation_member below). The admin RPC guards call is_admin()
+--     instead of trusting the JWT claim, so revoking the column cuts off
+--     sensitive-data access on the very next request — no waiting for token
+--     refresh (closes the "lingering admin" gap the hook alone can't).
+--   • The client gate (admin-auth-service.checkIsAdmin) also calls is_admin(),
+--     so the UI and the data can never disagree.
+--
+-- OUT-OF-BAND STEP (project config, not SQL — do via the Management API auth
+-- config or Dashboard → Authentication → Hooks): register
+-- public.custom_access_token_hook as the project's "Custom Access Token" hook.
+-- Until that is done, the hook function exists but is not invoked; is_admin()
+-- still makes the RPC guards correct on its own.
+-- ============================================================================
+
+-- is_admin(): the live authority. Reads the user_profiles.is_admin column
+-- directly. SECURITY DEFINER so it can read the column regardless of the
+-- caller's RLS on user_profiles (and without recursing into that table's own
+-- admin policy). Defaults to auth.uid() so guards can call is_admin() bare.
+CREATE OR REPLACE FUNCTION public.is_admin(check_user_id UUID DEFAULT auth.uid())
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE(
+    (SELECT is_admin FROM user_profiles WHERE id = check_user_id),
+    false
+  );
+$$;
+GRANT EXECUTE ON FUNCTION public.is_admin(UUID) TO authenticated, anon;
+
+-- custom_access_token_hook(): Supabase Auth calls this at token-mint time
+-- (login + refresh) with the pending JWT claims. We merge the derived
+-- is_admin flag (from the user_profiles column) into app_metadata so the
+-- claim is always a projection of the column, never a hand-set second store.
+-- Signature/return shape per Supabase's custom-access-token-hook contract:
+-- receive { user_id, claims, ... }, return the (possibly modified) event.
+CREATE OR REPLACE FUNCTION public.custom_access_token_hook(event jsonb)
+RETURNS jsonb
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  claims        jsonb;
+  app_metadata  jsonb;
+  admin_flag    boolean;
+BEGIN
+  SELECT COALESCE(is_admin, false) INTO admin_flag
+  FROM user_profiles
+  WHERE id = (event->>'user_id')::uuid;
+
+  admin_flag := COALESCE(admin_flag, false);
+
+  claims := COALESCE(event->'claims', '{}'::jsonb);
+  app_metadata := COALESCE(claims->'app_metadata', '{}'::jsonb);
+  app_metadata := jsonb_set(app_metadata, '{is_admin}', to_jsonb(admin_flag), true);
+  claims := jsonb_set(claims, '{app_metadata}', app_metadata, true);
+
+  RETURN jsonb_set(event, '{claims}', claims, true);
+END;
+$$;
+
+-- Grants per Supabase's auth-hook requirement: only the auth admin role may
+-- execute the hook; it must NOT be callable by client roles.
+GRANT EXECUTE ON FUNCTION public.custom_access_token_hook(jsonb) TO supabase_auth_admin;
+REVOKE EXECUTE ON FUNCTION public.custom_access_token_hook(jsonb) FROM authenticated, anon, public;
+-- The auth admin role needs to read the column the hook derives from.
+GRANT SELECT ON public.user_profiles TO supabase_auth_admin;
+
 DROP POLICY IF EXISTS "Admin can view all profiles" ON user_profiles;
 CREATE POLICY "Admin can view all profiles" ON user_profiles
   FOR SELECT USING (
-    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
+    is_admin()  -- #240: live column authority (was: JWT claim, which could drift/linger)
   );
 
 DROP POLICY IF EXISTS "Admin can view all audit logs" ON auth_audit_logs;
 CREATE POLICY "Admin can view all audit logs" ON auth_audit_logs
   FOR SELECT USING (
-    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
+    is_admin()  -- #240: live column authority (was: JWT claim, which could drift/linger)
   );
 
 DROP POLICY IF EXISTS "Admin can view all payment intents" ON payment_intents;
 CREATE POLICY "Admin can view all payment intents" ON payment_intents
   FOR SELECT USING (
-    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
+    is_admin()  -- #240: live column authority (was: JWT claim, which could drift/linger)
   );
 
 DROP POLICY IF EXISTS "Admin can view all payment results" ON payment_results;
 CREATE POLICY "Admin can view all payment results" ON payment_results
   FOR SELECT USING (
-    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
+    is_admin()  -- #240: live column authority (was: JWT claim, which could drift/linger)
   );
 
 DROP POLICY IF EXISTS "Admin can view all subscriptions" ON subscriptions;
 CREATE POLICY "Admin can view all subscriptions" ON subscriptions
   FOR SELECT USING (
-    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
+    is_admin()  -- #240: live column authority (was: JWT claim, which could drift/linger)
   );
 
 DROP POLICY IF EXISTS "Admin can view all rate limits" ON rate_limit_attempts;
 CREATE POLICY "Admin can view all rate limits" ON rate_limit_attempts
   FOR SELECT USING (
-    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
+    is_admin()  -- #240: live column authority (was: JWT claim, which could drift/linger)
   );
 
 -- The three admin-read policies for user_connections / conversations / messages
@@ -748,7 +926,7 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
+  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
     RETURN '{}'::json;
   END IF;
 
@@ -787,7 +965,7 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
+  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
     RETURN '{}'::json;
   END IF;
 
@@ -824,7 +1002,7 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
+  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
     RETURN '{}'::json;
   END IF;
 
@@ -847,7 +1025,7 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
+  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
     RETURN '{}'::json;
   END IF;
 
@@ -904,7 +1082,7 @@ DECLARE
   v_pattern TEXT;
   v_total   BIGINT;
 BEGIN
-  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
+  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
     RETURN '{}'::json;
   END IF;
 
@@ -980,7 +1158,7 @@ DECLARE
   v_refunded      BIGINT;
   v_revenue_cents BIGINT;
 BEGIN
-  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
+  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
     RETURN '{}'::json;
   END IF;
 
@@ -1086,7 +1264,7 @@ DECLARE
   v_succeeded BIGINT;
   v_bursts    JSON;
 BEGIN
-  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
+  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
     RETURN '{}'::json;
   END IF;
 
@@ -1209,7 +1387,7 @@ DECLARE
   v_active_senders BIGINT;
   v_convs_created  BIGINT;
 BEGIN
-  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
+  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
     RETURN '{}'::json;
   END IF;
 
@@ -1322,7 +1500,7 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
+  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
     RETURN '{}'::json;
   END IF;
 
@@ -1405,7 +1583,7 @@ DECLARE
   v_start TIMESTAMPTZ;
   v_end   TIMESTAMPTZ;
 BEGIN
-  IF NOT COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) THEN
+  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
     RETURN '{}'::json;
   END IF;
 
@@ -1844,19 +2022,19 @@ CREATE POLICY "Users cannot delete messages" ON messages
 DROP POLICY IF EXISTS "Admin can view all connections" ON user_connections;
 CREATE POLICY "Admin can view all connections" ON user_connections
   FOR SELECT USING (
-    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
+    is_admin()  -- #240: live column authority (was: JWT claim, which could drift/linger)
   );
 
 DROP POLICY IF EXISTS "Admin can view conversation metadata" ON conversations;
 CREATE POLICY "Admin can view conversation metadata" ON conversations
   FOR SELECT USING (
-    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
+    is_admin()  -- #240: live column authority (was: JWT claim, which could drift/linger)
   );
 
 DROP POLICY IF EXISTS "Admin can view message metadata" ON messages;
 CREATE POLICY "Admin can view message metadata" ON messages
   FOR SELECT USING (
-    COALESCE((auth.jwt()->'app_metadata'->>'is_admin')::boolean, false) = true
+    is_admin()  -- #240: live column authority (was: JWT claim, which could drift/linger)
   );
 
 COMMENT ON TABLE messages IS 'E2E encrypted messages with 15-minute edit window';

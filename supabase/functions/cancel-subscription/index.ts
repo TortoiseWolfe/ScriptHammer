@@ -176,12 +176,24 @@ serve(async (req) => {
       );
     }
 
-    // Mark our row canceled. service-role bypasses RLS for the write.
+    // #242: mark our row per how the provider actually treats the cancel.
+    //   - Stripe: cancel_at_period_end keeps the sub ACTIVE at Stripe through
+    //     the paid period, so our row must stay LIVE too — status 'canceling'.
+    //     Writing 'canceled' immediately (the old behavior) dropped the row out
+    //     of the one-live-per-user index and let the user start a SECOND sub
+    //     while the first was still billing. The terminal
+    //     customer.subscription.deleted webhook flips 'canceling' → 'canceled'
+    //     at true period end.
+    //   - PayPal: the billing API cancels IMMEDIATELY (no period-end grace), so
+    //     'canceled' is correct right away.
+    // service-role bypasses RLS for the write.
     const nowIso = new Date().toISOString();
+    const canceledStatus =
+      subscription.provider === 'stripe' ? 'canceling' : 'canceled';
     const { error: updateError } = await supabase
       .from('subscriptions')
       .update({
-        status: 'canceled',
+        status: canceledStatus,
         canceled_at: nowIso,
         cancellation_reason: 'user_requested',
         updated_at: nowIso,

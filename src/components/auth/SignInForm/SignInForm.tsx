@@ -88,9 +88,11 @@ export default function SignInForm({
       // Record failed attempt on server (REQ-SEC-003)
       await recordFailedAttempt(email, 'sign_in');
 
-      // Log failed sign-in attempt (T033)
+      // Log failed sign-in attempt (T033). #241: use 'sign_in_failed' — the
+      // event_type the admin failed-attempt stats + burst detector actually
+      // read (they never matched the old 'sign_in'+success:false shape).
       await logAuthEvent({
-        event_type: 'sign_in',
+        event_type: 'sign_in_failed',
         event_data: { email, provider: 'email' },
         success: false,
         error_message: signInError.message,
@@ -118,9 +120,10 @@ export default function SignInForm({
         data: { user: freshUser },
       } = await supabaseClient.auth.getUser();
       if (freshUser) {
+        // #241: 'sign_in_success' — what admin_auth_stats.logins_today counts.
         await logAuthEvent({
           user_id: freshUser.id,
-          event_type: 'sign_in',
+          event_type: 'sign_in_success',
           event_data: { email, provider: 'email' },
         });
       }
@@ -243,10 +246,13 @@ export default function SignInForm({
       className={`space-y-4${className ? ` ${className}` : ''}`}
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6">
-        <label className="label sm:w-36 sm:shrink-0 sm:text-right" htmlFor="email">
+        <label
+          className="label sm:w-36 sm:shrink-0 sm:text-right"
+          htmlFor="email"
+        >
           <span className="label-text">Email</span>
         </label>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <input
             id="email"
             type="email"
@@ -262,10 +268,13 @@ export default function SignInForm({
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6">
-        <label className="label sm:w-36 sm:shrink-0 sm:text-right" htmlFor="password">
+        <label
+          className="label sm:w-36 sm:shrink-0 sm:text-right"
+          htmlFor="password"
+        >
           <span className="label-text">Password</span>
         </label>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <input
             id="password"
             type="password"
