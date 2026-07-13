@@ -2235,6 +2235,99 @@ CREATE TRIGGER before_message_insert
 COMMENT ON FUNCTION update_conversation_timestamp() IS 'Auto-update conversation.last_message_at';
 COMMENT ON FUNCTION assign_sequence_number() IS 'Auto-increment message sequence numbers';
 
+-- ============================================================================
+-- #281: Column-level UPDATE guard on public.messages (BEFORE UPDATE row trigger)
+-- ----------------------------------------------------------------------------
+-- RLS gates ROWS, not COLUMNS. The two permissive UPDATE policies on messages
+-- ("Users can edit own messages" + "Recipients can mark messages as read")
+-- OR-combine, and authenticated/anon hold table-level UPDATE with no column
+-- grants. So a non-sender participant who satisfies the mark-read policy could
+-- rewrite ANY column (ciphertext, IV, key_version, edited, deleted) — forging
+-- another user's message. Reproduced live with a raw anon client (#281). This
+-- trigger enforces the column-level contract RLS structurally cannot express;
+-- the two RLS policies stay unchanged (they still gate rows + the 15-min edit
+-- window in "Users can edit own messages" WITH CHECK — do NOT delete them).
+--
+-- EXEMPTION (verified live): auth.uid()/auth.role() read the request.jwt.claims
+-- GUC, which SURVIVES unchanged into a SECURITY DEFINER body — DEFINER swaps the
+-- executing ROLE, not the request GUC. So an authenticated end-user ALWAYS has a
+-- non-null uid here; "auth.uid() IS NULL" alone is NOT a system-context signal.
+-- We exempt ONLY when uid IS NULL *and* the role is a trusted service/system role
+-- (or absent) — a combination reachable solely by service_role and no-JWT admin
+-- contexts, never by an authenticated or anon attacker (who always carries a sub,
+-- so a forged "role":"service_role" claim can never reach the early return).
+--
+-- Idempotent (CREATE OR REPLACE FUNCTION + DROP TRIGGER IF EXISTS + CREATE
+-- TRIGGER); mirrors the assign_sequence_number() house pattern.
+-- ============================================================================
+CREATE OR REPLACE FUNCTION enforce_message_update_columns()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_uid  uuid := auth.uid();   -- JWT sub; NULL only when no sub claim is present
+  v_role text := auth.role();  -- JWT role; NULL when no role claim is present
+BEGIN
+  -- Privileged/system contexts bypass RLS entirely; let them bypass this guard
+  -- too. Requires BOTH a NULL uid AND a trusted role (or no role) so a real
+  -- end-user who forges "role":"service_role" (still carrying their sub) can
+  -- NEVER reach this early return.
+  IF v_uid IS NULL
+     AND (v_role IS NULL
+          OR v_role IN ('service_role', 'supabase_admin', 'supabase_auth_admin', 'postgres'))
+  THEN
+    RETURN NEW;
+  END IF;
+
+  -- Structurally-immutable columns: NO end-user (sender OR recipient) may ever
+  -- change these. IS DISTINCT FROM is NULL-safe. No legit app UPDATE writes them.
+  IF NEW.id                  IS DISTINCT FROM OLD.id
+     OR NEW.conversation_id     IS DISTINCT FROM OLD.conversation_id
+     OR NEW.sender_id           IS DISTINCT FROM OLD.sender_id
+     OR NEW.created_at          IS DISTINCT FROM OLD.created_at
+     OR NEW.sequence_number     IS DISTINCT FROM OLD.sequence_number
+     OR NEW.client_generated_id IS DISTINCT FROM OLD.client_generated_id
+     OR NEW.is_system_message   IS DISTINCT FROM OLD.is_system_message
+     OR NEW.system_message_type IS DISTINCT FROM OLD.system_message_type
+  THEN
+    RAISE EXCEPTION
+      'messages: immutable column changed (id/conversation_id/sender_id/created_at/sequence_number/client_generated_id/system flags)'
+      USING ERRCODE = '42501'; -- insufficient_privilege
+  END IF;
+
+  -- SENDER path: may change content columns. The 15-minute window (C10) stays
+  -- enforced by the unchanged "Users can edit own messages" WITH CHECK.
+  IF v_uid = OLD.sender_id THEN
+    RETURN NEW;
+  END IF;
+
+  -- NON-SENDER (recipient) path: may change ONLY read_at and/or delivered_at.
+  IF NEW.encrypted_content       IS DISTINCT FROM OLD.encrypted_content
+     OR NEW.initialization_vector IS DISTINCT FROM OLD.initialization_vector
+     OR NEW.key_version           IS DISTINCT FROM OLD.key_version
+     OR NEW.edited                IS DISTINCT FROM OLD.edited
+     OR NEW.edited_at             IS DISTINCT FROM OLD.edited_at
+     OR NEW.deleted               IS DISTINCT FROM OLD.deleted
+  THEN
+    RAISE EXCEPTION
+      'messages: non-sender may update only read_at/delivered_at (#281)'
+      USING ERRCODE = '42501';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION enforce_message_update_columns() IS
+  '#281: column-level UPDATE guard. RLS gates rows not columns and the two permissive UPDATE policies OR-combine, so a non-sender participant could rewrite ciphertext. Non-senders may change only read_at/delivered_at; nobody may change immutable id/conversation_id/sender_id/created_at/sequence_number/client_generated_id/system flags; exempt only when auth.uid() IS NULL AND role is service/admin (never an authenticated or anon attacker, since they always carry a JWT sub).';
+
+DROP TRIGGER IF EXISTS before_message_update_column_guard ON messages;
+CREATE TRIGGER before_message_update_column_guard
+  BEFORE UPDATE ON messages
+  FOR EACH ROW EXECUTE FUNCTION enforce_message_update_columns();
+
 -- Grant permissions for messaging tables
 GRANT ALL ON user_connections TO authenticated, service_role;
 GRANT ALL ON conversations TO authenticated, service_role;
