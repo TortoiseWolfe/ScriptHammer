@@ -77,6 +77,16 @@ test.describe('/twins/[slug] — digital-twin viewer', () => {
   test('Top-down compare mode (#233): dock button + ?ortho render without errors', async ({
     page,
   }) => {
+    // This is the heaviest twin spec: it loads the ?ortho WebGL compare route
+    // (scene compile + drape texture + the full baked city) AND drives a
+    // seven-step overflow round-trip (open ⋯ → Top-down → canvas → Miniature →
+    // reopen ⋯ → Top-down). The config allows a single navigation up to 60s
+    // (navigationTimeout), which alone can exceed the default 30s TEST cap on a
+    // cold CI chromium runner — the exact cause of the chromium-gen 6/6 flake
+    // (timed out at the 30s wall while the UI itself rendered correctly). Triple
+    // the budget so the wall-clock matches the route's real cost. `test.slow()`
+    // is the idiomatic Playwright marker, used across the rest of this suite.
+    test.slow();
     const errors: string[] = [];
     page.on('console', (msg) => {
       if (msg.type() === 'error')
