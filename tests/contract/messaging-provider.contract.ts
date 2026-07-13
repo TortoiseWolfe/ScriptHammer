@@ -162,14 +162,12 @@ export function runMessagingProviderContract(config: ConformanceConfig): void {
       expect(row?.encrypted_content).toBe('ZWRpdGVk');
     });
 
-    // KNOWN-FAILING on Supabase — see TortoiseWolfe/ScriptHammer#281.
-    // The intended contract (C9) is "only the sender can edit a message." Live
-    // Supabase currently VIOLATES this: the column-blind "Recipients can mark
-    // messages as read" UPDATE policy OR-combines with the edit policy, so a
-    // non-sender participant can rewrite ciphertext. This assertion encodes the
-    // intended contract and is skipped until #281's column-guard trigger lands
-    // (at which point flip .skip → the .NET provider must satisfy it too).
-    it.skip('C9: a non-sender cannot edit the message (BLOCKED by #281)', async () => {
+    // C9: "only the sender can edit a message." Enforced on Supabase by the
+    // #281 column-guard trigger (enforce_message_update_columns) — the two
+    // permissive UPDATE policies OR-combine and RLS can't scope columns, so the
+    // trigger is what blocks a non-sender rewriting ciphertext. The .NET provider
+    // must satisfy this same assertion server-side (it has no RLS/trigger).
+    it('C9: a non-sender cannot edit the message', async () => {
       const { id } = await h.seedMessage({
         senderId: h.userAId,
         ciphertext: 'b3JpZ2luYWw=', // base64("original")
