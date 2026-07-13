@@ -1,4 +1,6 @@
 {
   "jwt_exp": 7200,
-  "rate_limit_verify": 100
+  "rate_limit_verify": 100,
+  "hook_custom_access_token_enabled": true,
+  "hook_custom_access_token_uri": "pg-functions://postgres/public/custom_access_token_hook"
 }
