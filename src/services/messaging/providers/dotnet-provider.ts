@@ -64,6 +64,13 @@ export class DotnetMessagingProvider implements MessagingDataProvider {
     return notImplemented('getProfiles');
   }
 
+  async getMessageById(
+    _ctx: AuthContext,
+    _messageId: string
+  ): Promise<MessageRow | null> {
+    return notImplemented('getMessageById');
+  }
+
   async sendMessage(
     _ctx: AuthContext,
     _payload: SendMessagePayload

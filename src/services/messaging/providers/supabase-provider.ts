@@ -1,22 +1,32 @@
 /**
  * SupabaseMessagingProvider (#266)
  *
- * The Supabase implementation of {@link MessagingDataProvider}. Wraps the
- * PostgREST `.from(...)` data-access calls that today live inline in
+ * The Supabase implementation of {@link MessagingDataProvider}. Holds the
+ * PostgREST `.from(...)` data-access calls that used to live inline in
  * `message-service.ts`. Uses the session-bound `createClient()` singleton, so
  * Postgres RLS still enforces the authorization contract automatically — this
  * provider must NEVER use a service-role client (that would bypass RLS, the
- * exact hack the project forbids).
+ * exact hack the project forbids). The queries here are byte-identical to what
+ * `message-service.ts` issued before the extraction.
  *
- * NOTE: This is the Step-1 scaffold — method bodies are filled in Step 2 by
- * extracting the query blocks out of `message-service.ts` verbatim. Until then,
- * calling a data method throws so no half-migrated path can silently ship.
+ * Encryption stays ABOVE this seam: the provider moves ciphertext rows only.
  *
  * @module services/messaging/providers/supabase-provider
  */
 
+import { createClient } from '@/lib/supabase/client';
+import {
+  createMessagingClient,
+  type MessageRow,
+} from '@/lib/supabase/messaging-client';
+import {
+  ConnectionError,
+  ValidationError,
+  type UserProfile,
+} from '@/types/messaging';
 import type {
   AuthContext,
+  ChangeEvent,
   ConversationMeta,
   EditMessagePayload,
   GetMessagesParams,
@@ -24,22 +34,43 @@ import type {
   MessagingDataProvider,
   MessagingRealtimeProvider,
   SendMessagePayload,
+  SubscribeOptions,
+  Subscription,
 } from './types';
-import type { MessageRow } from '@/lib/supabase/messaging-client';
-import type { UserProfile } from '@/types/messaging';
-
-function notImplemented(method: string): never {
-  throw new Error(
-    `SupabaseMessagingProvider.${method} is not implemented yet (#266 Step 2).`
-  );
-}
 
 /**
- * Realtime provider scaffold — Step 2/5 wires this to `supabase.channel(...)`.
+ * Realtime provider backed by Supabase `postgres_changes`. Fires the raw change
+ * event to the caller, who refetches through the authorization-scoped data
+ * methods (the 3 hooks already work this way, so C29 holds by construction).
  */
 class SupabaseRealtimeProvider implements MessagingRealtimeProvider {
-  subscribe(): never {
-    notImplemented('realtime.subscribe');
+  subscribe(
+    _ctx: AuthContext,
+    opts: SubscribeOptions,
+    onChange: (e: ChangeEvent) => void
+  ): Subscription {
+    const supabase = createClient();
+    const channel = supabase
+      .channel(opts.channelKey)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: opts.table },
+        (payload) => {
+          onChange({
+            eventType: payload.eventType as ChangeEvent['eventType'],
+            new: (payload.new as Record<string, unknown>) ?? null,
+            old: (payload.old as Record<string, unknown>) ?? null,
+          });
+        }
+      )
+      .subscribe();
+
+    return {
+      unsubscribe: () => {
+        channel.unsubscribe();
+        supabase.removeChannel(channel);
+      },
+    };
   }
 }
 
@@ -49,65 +80,395 @@ export class SupabaseMessagingProvider implements MessagingDataProvider {
 
   async getConversationMeta(
     _ctx: AuthContext,
-    _conversationId: string
+    conversationId: string
   ): Promise<ConversationMeta | null> {
-    return notImplemented('getConversationMeta');
+    const msgClient = createMessagingClient(createClient());
+    const { data } = await msgClient
+      .from('conversations')
+      .select(
+        'participant_1_id, participant_2_id, is_group, current_key_version, created_by'
+      )
+      .eq('id', conversationId)
+      .maybeSingle();
+    return data ?? null;
   }
 
   async getProfiles(
     _ctx: AuthContext,
-    _userIds: string[]
+    userIds: string[]
   ): Promise<UserProfile[]> {
-    return notImplemented('getProfiles');
+    if (userIds.length === 0) return [];
+    const msgClient = createMessagingClient(createClient());
+    const { data } = await msgClient
+      .from('user_profiles')
+      .select('id, username, display_name, avatar_url')
+      .in('id', userIds);
+    return (data ?? []) as UserProfile[];
   }
 
-  async sendMessage(
+  async getMessageById(
     _ctx: AuthContext,
-    _payload: SendMessagePayload
-  ): Promise<MessageRow> {
-    return notImplemented('sendMessage');
+    messageId: string
+  ): Promise<MessageRow | null> {
+    const msgClient = createMessagingClient(createClient());
+    const { data, error } = await msgClient
+      .from('messages')
+      .select('*')
+      .eq('id', messageId)
+      .single();
+    if (error || !data) return null;
+    return data;
   }
 
+  /**
+   * Persist a ciphertext message with the atomic sequence-assignment retry loop
+   * moved verbatim from `message-service.ts`. This IS the C13 behavior — on a
+   * .NET backend it must be reproduced with a per-conversation advisory lock (or
+   * unique-constraint + retry), NOT a naive SELECT MAX+1.
+   *
+   * Throws on non-recoverable failure so the caller can fall through to the
+   * offline queue (the service owns that fallback).
+   */
+  async sendMessage(
+    ctx: AuthContext,
+    payload: SendMessagePayload
+  ): Promise<MessageRow> {
+    const msgClient = createMessagingClient(createClient());
+
+    // Atomic sequence number assignment with separate retry budgets:
+    //   - 23505 unique-constraint conflicts: 3 attempts (race with
+    //     another tab inserting at the same sequence_number)
+    //   - Network failures: 3 attempts with exponential backoff
+    //     (1s, 2s, 4s) before propagating so the caller can queue offline
+    //
+    // The two counters must not bleed into each other — reset networkAttempt on
+    // every non-network outcome so each new sequence-number attempt gets its own
+    // budget.
+    let conflictRetries = 3;
+    let networkAttempt = 0;
+    const NETWORK_ATTEMPT_LIMIT = 3;
+    const networkDelays = [1000, 2000, 4000];
+    const isNetworkErrorMessage = (errMsg: string): boolean =>
+      errMsg.includes('Failed to fetch') ||
+      errMsg.includes('NetworkError') ||
+      errMsg.includes('fetch failed') ||
+      errMsg.includes('Load failed') ||
+      errMsg.includes('cancelled') ||
+      errMsg.includes('aborted');
+    let message: MessageRow | null = null;
+    let lastFailureReason: 'conflict' | 'network' | 'unknown' = 'unknown';
+    while (conflictRetries > 0) {
+      const { data: lastMessage } = await msgClient
+        .from('messages')
+        .select('sequence_number')
+        .eq('conversation_id', payload.conversationId)
+        .order('sequence_number', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      const nextSequenceNumber = lastMessage
+        ? lastMessage.sequence_number + 1
+        : 1;
+
+      // delivered_at is NOT set here. It stays NULL until the recipient's
+      // ConversationView fetches the row and calls markAsDelivered.
+      let inserted: MessageRow | null = null;
+      let insertError: { code?: string; message: string } | null = null;
+      try {
+        const result = await msgClient
+          .from('messages')
+          .insert({
+            conversation_id: payload.conversationId,
+            sender_id: ctx.userId,
+            encrypted_content: payload.ciphertext,
+            initialization_vector: payload.iv,
+            sequence_number: nextSequenceNumber,
+            key_version: payload.keyVersion,
+            deleted: false,
+            edited: false,
+            // #245: NULL for live sends; a stable UUID for offline flushes so
+            // replays dedupe against uniq_messages_client_generated_id.
+            client_generated_id: payload.clientGeneratedId ?? null,
+          })
+          .select()
+          .single();
+        inserted = result.data;
+        insertError = result.error;
+      } catch (fetchErr) {
+        // Network-level failure. Retry with backoff; never spends conflictRetries.
+        lastFailureReason = 'network';
+        networkAttempt++;
+        if (networkAttempt < NETWORK_ATTEMPT_LIMIT) {
+          await new Promise((r) =>
+            setTimeout(r, networkDelays[networkAttempt - 1] || 4000)
+          );
+          continue;
+        }
+        // Out of network retries — propagate so the caller queues offline.
+        throw fetchErr;
+      }
+
+      if (!insertError) {
+        message = inserted;
+        break;
+      }
+
+      // Unique-constraint violation — retry with a fresh sequence number.
+      // Reset network budget: a 23505 means we DID reach the server.
+      if (insertError.code === '23505') {
+        lastFailureReason = 'conflict';
+        networkAttempt = 0;
+        conflictRetries--;
+        continue;
+      }
+
+      // Network/fetch failures may arrive as insertError rather than a throw.
+      const errMsg = insertError.message || '';
+      if (isNetworkErrorMessage(errMsg)) {
+        lastFailureReason = 'network';
+        networkAttempt++;
+        if (networkAttempt < NETWORK_ATTEMPT_LIMIT) {
+          await new Promise((r) =>
+            setTimeout(r, networkDelays[networkAttempt - 1] || 4000)
+          );
+          continue;
+        }
+        throw new ConnectionError(
+          'Failed to send message after network retries: ' + errMsg
+        );
+      }
+
+      // Other errors — throw.
+      throw new ConnectionError(
+        'Failed to send message: ' + insertError.message
+      );
+    }
+
+    if (!message) {
+      const reasonText =
+        lastFailureReason === 'network'
+          ? 'network failures'
+          : lastFailureReason === 'conflict'
+            ? 'sequence number conflict'
+            : 'unknown error';
+      throw new ConnectionError(
+        'Failed to send message after retries: ' + reasonText
+      );
+    }
+
+    // Update conversation's last_message_at
+    await msgClient
+      .from('conversations')
+      .update({ last_message_at: new Date().toISOString() })
+      .eq('id', payload.conversationId);
+
+    return message;
+  }
+
+  /**
+   * Paginated ciphertext fetch (newest-first, one extra row to compute
+   * hasMore). Throws on DB error so the caller can attempt its cache fallback.
+   * Decryption stays above this seam.
+   */
   async getMessages(
     _ctx: AuthContext,
-    _params: GetMessagesParams
+    params: GetMessagesParams
   ): Promise<MessagesPage> {
-    return notImplemented('getMessages');
+    const msgClient = createMessagingClient(createClient());
+    const { conversationId, cursor, limit } = params;
+
+    // Note: deleted messages are NOT filtered out — they render as placeholders
+    // so sequence numbers and threading stay intact.
+    let query = msgClient
+      .from('messages')
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .order('sequence_number', { ascending: false })
+      .limit(limit + 1); // one extra to check hasMore
+
+    if (cursor !== null) {
+      query = query.lt('sequence_number', cursor);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      throw new ConnectionError('Failed to fetch messages: ' + error.message);
+    }
+
+    const rows = data ?? [];
+    const hasMore = rows.length > limit;
+    return { rows: hasMore ? rows.slice(0, limit) : rows, hasMore };
   }
 
+  /**
+   * Apply an edited ciphertext to a message row. The sender-only (C9) and
+   * 15-minute-window (C10) pre-conditions are checked by the caller against the
+   * row from {@link getMessageById}; on Supabase, RLS re-enforces both on this
+   * UPDATE (USING sender_id = auth.uid(); WITH CHECK the 15-min window).
+   */
   async editMessage(
     _ctx: AuthContext,
-    _payload: EditMessagePayload
+    payload: EditMessagePayload
   ): Promise<void> {
-    return notImplemented('editMessage');
+    const msgClient = createMessagingClient(createClient());
+    const { error } = await msgClient
+      .from('messages')
+      .update({
+        encrypted_content: payload.ciphertext,
+        initialization_vector: payload.iv,
+        key_version: payload.keyVersion,
+        edited: true,
+        edited_at: new Date().toISOString(),
+      })
+      .eq('id', payload.messageId);
+
+    if (error) {
+      throw new ConnectionError('Failed to update message: ' + error.message);
+    }
   }
 
-  async deleteMessage(_ctx: AuthContext, _messageId: string): Promise<void> {
-    return notImplemented('deleteMessage');
+  /**
+   * Soft-delete a message (C12 — never physically removed). The sender-only +
+   * window pre-conditions are checked by the caller; RLS re-enforces on UPDATE.
+   */
+  async deleteMessage(_ctx: AuthContext, messageId: string): Promise<void> {
+    const msgClient = createMessagingClient(createClient());
+    const { error } = await msgClient
+      .from('messages')
+      .update({ deleted: true })
+      .eq('id', messageId);
+
+    if (error) {
+      throw new ConnectionError('Failed to delete message: ' + error.message);
+    }
   }
 
-  async markAsRead(_ctx: AuthContext, _messageIds: string[]): Promise<void> {
-    return notImplemented('markAsRead');
+  /**
+   * (C11) Only marks messages that are not already read. RLS restricts this to
+   * non-sender participants of the conversation.
+   */
+  async markAsRead(_ctx: AuthContext, messageIds: string[]): Promise<void> {
+    if (messageIds.length === 0) return;
+    const msgClient = createMessagingClient(createClient());
+    const { error } = await msgClient
+      .from('messages')
+      .update({ read_at: new Date().toISOString() })
+      .in('id', messageIds)
+      .is('read_at', null); // Only update if not already read
+
+    if (error) {
+      throw new ConnectionError(
+        'Failed to mark messages as read: ' + error.message
+      );
+    }
   }
 
   async markAsDelivered(
     _ctx: AuthContext,
-    _messageIds: string[]
+    messageIds: string[]
   ): Promise<void> {
-    return notImplemented('markAsDelivered');
+    if (messageIds.length === 0) return;
+    const msgClient = createMessagingClient(createClient());
+    const { error } = await msgClient
+      .from('messages')
+      .update({ delivered_at: new Date().toISOString() })
+      .in('id', messageIds)
+      .is('delivered_at', null); // Only update if not already delivered
+
+    // Delivery receipts are best-effort — surface the error to the caller,
+    // which logs it silently (delivery must never break the UI).
+    if (error) {
+      throw new ConnectionError(
+        'Failed to mark messages as delivered: ' + error.message
+      );
+    }
+  }
+
+  /**
+   * (C5) Per-user archive. 1:1 flips the conversation-level
+   * archived_by_participant_N column; groups flip the per-member
+   * conversation_members.archived flag. Fetches the conversation shape to pick
+   * the path, matching the original message-service logic byte-for-byte.
+   */
+  private async setArchived(
+    conversationId: string,
+    userId: string,
+    value: boolean
+  ): Promise<void> {
+    const msgClient = createMessagingClient(createClient());
+    const verb = value ? 'archive' : 'unarchive';
+
+    const { data: conversation, error: fetchError } = await msgClient
+      .from('conversations')
+      .select('participant_1_id, participant_2_id, is_group')
+      .eq('id', conversationId)
+      .single();
+
+    if (fetchError || !conversation) {
+      throw new ValidationError('Conversation not found', 'conversationId');
+    }
+
+    // Groups archive per-member via conversation_members.archived.
+    if (conversation.is_group) {
+      const { error: memberError, data: memberData } = await msgClient
+        .from('conversation_members')
+        .update({ archived: value })
+        .eq('conversation_id', conversationId)
+        .eq('user_id', userId)
+        .is('left_at', null)
+        .select();
+
+      if (memberError) {
+        throw new ConnectionError(
+          `Failed to ${verb} group conversation: ` + memberError.message
+        );
+      }
+      if (!memberData || memberData.length === 0) {
+        throw new ValidationError(
+          'You are not a member of this conversation',
+          'conversationId'
+        );
+      }
+      return;
+    }
+
+    // 1:1 — pick the participant column for this user.
+    let updateColumn: string;
+    if (conversation.participant_1_id === userId) {
+      updateColumn = 'archived_by_participant_1';
+    } else if (conversation.participant_2_id === userId) {
+      updateColumn = 'archived_by_participant_2';
+    } else {
+      throw new ValidationError(
+        'You are not a participant in this conversation',
+        'conversationId'
+      );
+    }
+
+    const { error: updateError } = await msgClient
+      .from('conversations')
+      .update({ [updateColumn]: value })
+      .eq('id', conversationId)
+      .select();
+
+    if (updateError) {
+      throw new ConnectionError(
+        `Failed to ${verb} conversation: ` + updateError.message
+      );
+    }
   }
 
   async archiveConversation(
-    _ctx: AuthContext,
-    _conversationId: string
+    ctx: AuthContext,
+    conversationId: string
   ): Promise<void> {
-    return notImplemented('archiveConversation');
+    await this.setArchived(conversationId, ctx.userId, true);
   }
 
   async unarchiveConversation(
-    _ctx: AuthContext,
-    _conversationId: string
+    ctx: AuthContext,
+    conversationId: string
   ): Promise<void> {
-    return notImplemented('unarchiveConversation');
+    await this.setArchived(conversationId, ctx.userId, false);
   }
 }

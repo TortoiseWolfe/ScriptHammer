@@ -189,6 +189,16 @@ export interface MessagingDataProvider {
   getProfiles(ctx: AuthContext, userIds: string[]): Promise<UserProfile[]>;
 
   /**
+   * Fetch a single message row by id (used by the edit/delete pre-checks).
+   * Returns null if not found or not visible to the caller.
+   * (C7) Membership/participant-scoped read.
+   */
+  getMessageById(
+    ctx: AuthContext,
+    messageId: string
+  ): Promise<MessageRow | null>;
+
+  /**
    * Persist a ciphertext message and return the stored row (with its assigned
    * sequence_number).
    * (C8) Sender must be the caller AND an active participant/member.
