@@ -794,6 +794,41 @@ export class KeyManagementService {
     }
   }
 
+  /**
+   * Resolve the public key a user held at a specific instant, INCLUDING revoked
+   * keys (#243). Returns the newest key whose created_at <= atIso — i.e. the key
+   * that was active during [created_at, next-key.created_at). Used to unwrap a
+   * historical group key (whose row predates a creator key rotation) when the
+   * row has no stored creator_public_key (legacy rows). Deliberately does NOT
+   * filter revoked=false — the whole point is to reach a rotated-away key.
+   *
+   * @param userId - key owner
+   * @param atIso  - ISO timestamp (a group_keys.created_at) to resolve against
+   * @returns the historical public JWK, or null if none predates atIso
+   */
+  async getUserPublicKeyAt(
+    userId: string,
+    atIso: string
+  ): Promise<JsonWebKey | null> {
+    const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
+    const { data, error } = await msgClient
+      .from('user_encryption_keys')
+      .select('public_key')
+      .eq('user_id', userId)
+      .lte('created_at', atIso)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error && error.code !== 'PGRST116') {
+      throw new ConnectionError(
+        'Failed to get historical user public key: ' + error.message
+      );
+    }
+    return (data?.public_key as unknown as JsonWebKey) ?? null;
+  }
+
   /** Clear the public key cache (call after key reset) */
   clearPublicKeyCache(): void {
     this.publicKeyCache.clear();

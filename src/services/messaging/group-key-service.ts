@@ -12,6 +12,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { createMessagingClient } from '@/lib/supabase/messaging-client';
+import type { Json } from '@/lib/supabase/types';
 import { encryptionService } from '@/lib/messaging/encryption';
 import { keyManagementService } from '@/services/messaging/key-service';
 import { createLogger } from '@/lib/logger';
@@ -294,10 +295,12 @@ export class GroupKeyService {
     const msgClient = createMessagingClient(this.supabase);
 
     try {
-      // Fetch encrypted key from database
+      // Fetch encrypted key from database. creator_public_key (#243) is the
+      // creator's public JWK captured at wrap time; created_at anchors the
+      // legacy fallback below.
       const { data: keyData, error: fetchError } = await msgClient
         .from('group_keys')
-        .select('encrypted_key, created_by')
+        .select('encrypted_key, created_by, creator_public_key, created_at')
         .eq('conversation_id', conversationId)
         .eq('user_id', user.id)
         .eq('key_version', keyVersion)
@@ -314,10 +317,21 @@ export class GroupKeyService {
         );
       }
 
-      // Get the key creator's public key
-      const creatorPublicKey = await keyManagementService.getUserPublicKey(
-        keyData.created_by
-      );
+      // #243: unwrap against the creator's public key FROM WRAP TIME, not their
+      // current (possibly rotated) key. Prefer the JWK stored on the row; fall
+      // back for legacy rows (pre-#243) to the creator's key active at the row's
+      // created_at, resolved over the retained key history (INCLUDING revoked
+      // keys). created_by may be NULL (#247 erasure) — in that case only the
+      // stored JWK can help; the fallback can't resolve a null user.
+      let creatorPublicKey =
+        (keyData.creator_public_key as unknown as JsonWebKey | null) ?? null;
+
+      if (!creatorPublicKey && keyData.created_by) {
+        creatorPublicKey = await keyManagementService.getUserPublicKeyAt(
+          keyData.created_by,
+          keyData.created_at
+        );
+      }
       if (!creatorPublicKey) {
         throw new GroupKeyError('Key creator public key not found');
       }
@@ -414,6 +428,7 @@ export class GroupKeyService {
           key_version: number;
           encrypted_key: string;
           created_by: string;
+          creator_public_key: Json;
         }> = [];
 
         for (const member of batch) {
@@ -443,6 +458,9 @@ export class GroupKeyService {
               key_version: keyVersion,
               encrypted_key: encryptedKey,
               created_by: user.id,
+              // #243: capture the creator's public JWK used to wrap THIS key, so
+              // unwrapping survives the creator later rotating their personal keys.
+              creator_public_key: currentKeys.publicKeyJwk as unknown as Json,
             });
 
             successful.push(member.user_id);
@@ -683,6 +701,9 @@ export class GroupKeyService {
               key_version: keyVersion,
               encrypted_key: encryptedKey,
               created_by: user.id,
+              // #243: same as distributeGroupKey — retried rows must also record
+              // the wrap-time creator key, or they re-brick on creator rotation.
+              creator_public_key: currentKeys.publicKeyJwk as unknown as Json,
             });
 
             // Update member status to active

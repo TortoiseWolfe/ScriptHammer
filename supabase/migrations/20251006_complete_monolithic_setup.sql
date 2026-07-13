@@ -2230,8 +2230,28 @@ ALTER TABLE conversations DROP CONSTRAINT IF EXISTS check_group_participants;
 ALTER TABLE conversations ADD CONSTRAINT check_group_participants CHECK (
   (is_group = false AND participant_1_id IS NOT NULL AND participant_2_id IS NOT NULL)
   OR
-  (is_group = true AND participant_1_id IS NULL AND participant_2_id IS NULL AND created_by IS NOT NULL)
+  -- #247: created_by may be NULL for a group whose creator has been deleted
+  -- (right-to-erasure). The group survives for its remaining members; the
+  -- creator FK is SET NULL below rather than blocking the delete. RLS access
+  -- to such a group falls back to membership (is_conversation_member), so a
+  -- null creator never locks members out.
+  (is_group = true AND participant_1_id IS NULL AND participant_2_id IS NULL)
 );
+
+-- #247: account deletion was BLOCKED for any user who created a group or
+-- distributed group keys, because conversations.created_by and
+-- group_keys.created_by were ON DELETE NO ACTION (the default) — a
+-- right-to-erasure request could not be fulfilled. Re-point both FKs to
+-- ON DELETE SET NULL: deleting the creator preserves the group and every
+-- OTHER member's key rows (created_by is only an audit pointer), while the
+-- rest of the user's data still cascades away via the CASCADE FKs
+-- (participant_*, user_id, sender_id). SET NULL (not CASCADE) is deliberate —
+-- CASCADE on created_by would delete other members' group_keys and destroy the
+-- group for everyone. Idempotent: drop the NO-ACTION constraint, re-add as SET NULL.
+ALTER TABLE conversations DROP CONSTRAINT IF EXISTS conversations_created_by_fkey;
+ALTER TABLE conversations
+  ADD CONSTRAINT conversations_created_by_fkey
+  FOREIGN KEY (created_by) REFERENCES user_profiles(id) ON DELETE SET NULL;
 
 -- T007: Add key_version column to messages table
 ALTER TABLE messages
@@ -2275,6 +2295,63 @@ CREATE TABLE IF NOT EXISTS conversation_members (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_active_membership
   ON conversation_members(conversation_id, user_id) WHERE left_at IS NULL;
 
+-- #247: prevent OWNER-LESS orphaned groups. When #247 made account deletion
+-- possible for group creators, a new hole opened: deleting a group's sole owner
+-- cascade-deletes their conversation_members row (user_id FK is ON DELETE
+-- CASCADE), leaving the group with surviving members but NO owner. Every
+-- owner-gated op (rename / remove-member / delete-group / transfer-ownership,
+-- all gated on role='owner' in group-service.ts) then fails for every survivor,
+-- and ownership can never be re-established — the group is permanently stuck.
+-- The app's leaveGroup() blocks a sole owner from leaving without transferring,
+-- but a raw `DELETE FROM user_profiles` (the erasure path, gdpr-service.ts:437)
+-- bypasses that guard. Enforce the invariant at the DB layer so EVERY deletion
+-- path is covered: when an active owner's membership row is removed, if the
+-- group still has other active members and no other active owner, promote the
+-- earliest-joined survivor to owner.
+CREATE OR REPLACE FUNCTION reassign_group_owner_on_member_removal()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  -- Only act when an ACTIVE OWNER is leaving (hard delete OR soft-leave).
+  IF OLD.role <> 'owner' OR OLD.left_at IS NOT NULL THEN
+    RETURN OLD;
+  END IF;
+
+  -- If another active owner still exists, nothing to do.
+  IF EXISTS (
+    SELECT 1 FROM conversation_members
+    WHERE conversation_id = OLD.conversation_id
+      AND user_id <> OLD.user_id
+      AND role = 'owner'
+      AND left_at IS NULL
+  ) THEN
+    RETURN OLD;
+  END IF;
+
+  -- Promote the earliest-joined remaining active member (if any).
+  UPDATE conversation_members
+  SET role = 'owner'
+  WHERE id = (
+    SELECT id FROM conversation_members
+    WHERE conversation_id = OLD.conversation_id
+      AND user_id <> OLD.user_id
+      AND left_at IS NULL
+    ORDER BY joined_at ASC, id ASC
+    LIMIT 1
+  );
+
+  RETURN OLD;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS before_owner_membership_removed ON conversation_members;
+CREATE TRIGGER before_owner_membership_removed
+  BEFORE DELETE ON conversation_members
+  FOR EACH ROW EXECUTE FUNCTION reassign_group_owner_on_member_removal();
+
 -- T010: Create group_keys table
 CREATE TABLE IF NOT EXISTS group_keys (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2283,9 +2360,36 @@ CREATE TABLE IF NOT EXISTS group_keys (
   key_version INTEGER NOT NULL DEFAULT 1,
   encrypted_key TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  created_by UUID NOT NULL REFERENCES user_profiles(id),
+  -- #247: nullable on fresh DBs; the created_by FK is SET NULL (see below) so a
+  -- creator can be erased without deleting other members' key rows.
+  created_by UUID REFERENCES user_profiles(id),
   CONSTRAINT unique_group_key_version UNIQUE (conversation_id, user_id, key_version)
 );
+
+-- #247: on EXISTING DBs the created_by column is NOT NULL + the FK is NO ACTION,
+-- which blocks erasing a user who distributed group keys. Make it nullable and
+-- re-point the FK to ON DELETE SET NULL so deleting the distributor nulls only
+-- the audit pointer and preserves every member's key row (the group keeps
+-- working). Idempotent.
+ALTER TABLE group_keys ALTER COLUMN created_by DROP NOT NULL;
+ALTER TABLE group_keys DROP CONSTRAINT IF EXISTS group_keys_created_by_fkey;
+ALTER TABLE group_keys
+  ADD CONSTRAINT group_keys_created_by_fkey
+  FOREIGN KEY (created_by) REFERENCES user_profiles(id) ON DELETE SET NULL;
+
+-- #243: the group key is ECDH-wrapped using the creator's key pair at wrap time.
+-- Unwrapping requires the creator's public key FROM THAT MOMENT — but the reader
+-- used getUserPublicKey (current, non-revoked) key, so once the creator rotated
+-- their personal keys the ECDH secret no longer matched and group history bricked
+-- for EVERY member ("Encrypted with previous keys"). Capture the creator's public
+-- JWK on the row at wrap time and unwrap against it. Nullable: legacy rows (and
+-- any where created_by was later SET NULL by #247 erasure) fall back to a
+-- time-window resolver over the retained key history. A one-shot backfill
+-- (run via the Management API, since the "Keys are immutable" UPDATE policy
+-- blocks client updates) repairs already-bricked rows.
+ALTER TABLE group_keys ADD COLUMN IF NOT EXISTS creator_public_key JSONB;
+COMMENT ON COLUMN group_keys.creator_public_key IS
+  'Public ECDH JWK of created_by at wrap time; unwrap against THIS, not the creator''s current (possibly rotated) key (#243). Nullable for legacy rows.';
 
 -- T011: Add indexes for conversation_members and group_keys tables
 -- CHK026: Indexes for fast member list lookup

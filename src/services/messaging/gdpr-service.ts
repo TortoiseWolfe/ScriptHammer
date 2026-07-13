@@ -19,6 +19,7 @@ import {
 } from '@/lib/supabase/messaging-client';
 import { encryptionService } from '@/lib/messaging/encryption';
 import { keyManagementService } from './key-service';
+import { decryptGroupMessages } from './group-message-decrypt';
 import { messagingDb } from '@/lib/messaging/database';
 import {
   AuthenticationError,
@@ -44,7 +45,13 @@ export interface UserDataExport {
   }>;
   conversations: Array<{
     conversation_id: string;
-    participant: string;
+    // #248: is_group discriminates 1:1 from group conversations. `participant`
+    // is the other party for 1:1; groups carry group_name + the member roster.
+    // Additive — existing 1:1 consumers keep reading `participant`.
+    is_group: boolean;
+    participant?: string;
+    group_name?: string | null;
+    members?: Array<{ user_id: string; username: string | null }>;
     messages: Array<{
       id: string;
       sender: 'you' | string;
@@ -175,7 +182,8 @@ export class GDPRService {
         };
       });
 
-      // 3. Get all conversations
+      // 3a. Get all 1:1 conversations (participant columns are NULL for groups,
+      // so this .or never matches a group — that was the #248 blind spot).
       // Type for joined conversation with participant usernames
       type ConversationWithParticipants = {
         id: string;
@@ -205,6 +213,74 @@ export class GDPRService {
         throw new ConnectionError(
           'Failed to fetch conversations: ' + (err.message || 'Unknown error')
         );
+      }
+
+      // 3b. #248: Get all GROUP conversations the user is an active member of.
+      // Groups are enumerated via conversation_members (NOT participant columns,
+      // which are NULL for groups), matching the live conversation-list path.
+      type GroupExportRow = {
+        id: string;
+        group_name: string | null;
+        members: Array<{ user_id: string; username: string | null }>;
+      };
+      const groupConversations: GroupExportRow[] = [];
+      const { data: memberships, error: membershipsError } = await msgClient
+        .from('conversation_members')
+        .select('conversation_id')
+        .eq('user_id', user.id)
+        .is('left_at', null);
+
+      if (membershipsError) {
+        throw new ConnectionError(
+          'Failed to fetch group memberships: ' + membershipsError.message
+        );
+      }
+
+      const groupIds = (memberships || []).map(
+        (m: { conversation_id: string }) => m.conversation_id
+      );
+      if (groupIds.length > 0) {
+        const { data: groups, error: groupsError } = await msgClient
+          .from('conversations')
+          .select('id, group_name')
+          .in('id', groupIds)
+          .eq('is_group', true);
+
+        if (groupsError) {
+          throw new ConnectionError(
+            'Failed to fetch group conversations: ' + groupsError.message
+          );
+        }
+
+        for (const g of groups || []) {
+          // Roster: active members + their usernames.
+          const { data: memberRows } = await msgClient
+            .from('conversation_members')
+            .select(
+              'user_id, member:user_profiles!conversation_members_user_id_fkey(username)'
+            )
+            .eq('conversation_id', g.id)
+            .is('left_at', null);
+          const members = (memberRows || []).map((row: any) => ({
+            user_id: row.user_id,
+            username: row.member?.username ?? null,
+          }));
+          groupConversations.push({
+            id: g.id,
+            group_name: g.group_name ?? null,
+            members,
+          });
+        }
+      }
+
+      // #248 (verifier fix): the export page has no EncryptionKeyGate, so on a
+      // cold load the in-memory group key material is absent and every group
+      // message would export as a placeholder. Restore keys from cache before
+      // decrypting groups — the same thing EncryptionKeyGate does for the live
+      // messaging view. (The 1:1 path reads the private key from IndexedDB
+      // directly, so it isn't affected.)
+      if (groupConversations.length > 0) {
+        await keyManagementService.restoreKeysFromCache(user.id);
       }
 
       // 4. For each conversation, get and decrypt messages
@@ -247,6 +323,7 @@ export class GDPRService {
           // Cannot decrypt messages without keys - skip this conversation
           exportConversations.push({
             conversation_id: conv.id,
+            is_group: false,
             participant: otherUsername,
             messages: messages.map((msg: any) => ({
               id: msg.id,
@@ -318,8 +395,79 @@ export class GDPRService {
 
         exportConversations.push({
           conversation_id: conv.id,
+          is_group: false,
           participant: otherUsername,
           messages: decryptedMessages,
+        });
+      }
+
+      // #248: decrypt + append GROUP conversations, reusing the exact group-key
+      // path the live view uses (decryptGroupMessages resolves the group key per
+      // message key_version). System messages surface their plaintext marker;
+      // undecryptable messages degrade to a placeholder without aborting.
+      for (const group of groupConversations) {
+        const { data: groupMessages, error: groupMsgError } = await msgClient
+          .from('messages')
+          .select('*')
+          .eq('conversation_id', group.id)
+          .order('sequence_number', { ascending: true });
+
+        if (groupMsgError) {
+          throw new ConnectionError(
+            'Failed to fetch group messages: ' + groupMsgError.message
+          );
+        }
+
+        // Sender display names for the roster + per-message attribution.
+        const senderIds = [
+          ...new Set((groupMessages || []).map((m: any) => m.sender_id)),
+        ];
+        const nameById = new Map<string, string>();
+        for (const m of group.members) {
+          if (m.username) nameById.set(m.user_id, m.username);
+        }
+        const missing = senderIds.filter((id) => !nameById.has(id));
+        if (missing.length > 0) {
+          const { data: senderProfiles } = await msgClient
+            .from('user_profiles')
+            .select('id, username')
+            .in('id', missing);
+          senderProfiles?.forEach((p: any) =>
+            nameById.set(p.id, p.username || 'Unknown')
+          );
+        }
+
+        const decrypted = await decryptGroupMessages(
+          group.id,
+          (groupMessages || []) as any
+        );
+
+        const groupExportMessages = decrypted.map(({ row, content }) => {
+          const isOwn = row.sender_id === user.id;
+          if (isOwn) {
+            totalMessagesSent++;
+          } else {
+            totalMessagesReceived++;
+          }
+          return {
+            id: row.id,
+            sender: isOwn
+              ? ('you' as const)
+              : nameById.get(row.sender_id) || 'Unknown',
+            content,
+            timestamp: row.created_at,
+            edited: row.edited,
+            deleted: row.deleted,
+            edited_at: row.edited_at,
+          };
+        });
+
+        exportConversations.push({
+          conversation_id: group.id,
+          is_group: true,
+          group_name: group.group_name,
+          members: group.members,
+          messages: groupExportMessages,
         });
       }
 

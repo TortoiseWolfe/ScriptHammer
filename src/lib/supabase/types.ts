@@ -286,7 +286,8 @@ export type Database = {
         Row: {
           conversation_id: string;
           created_at: string;
-          created_by: string;
+          created_by: string | null; // #247: SET NULL on creator erasure
+          creator_public_key: Json | null; // #243: creator's wrap-time public JWK
           encrypted_key: string;
           id: string;
           key_version: number;
@@ -295,7 +296,8 @@ export type Database = {
         Insert: {
           conversation_id: string;
           created_at?: string;
-          created_by: string;
+          created_by?: string | null;
+          creator_public_key?: Json | null;
           encrypted_key: string;
           id?: string;
           key_version?: number;
@@ -304,7 +306,8 @@ export type Database = {
         Update: {
           conversation_id?: string;
           created_at?: string;
-          created_by?: string;
+          created_by?: string | null;
+          creator_public_key?: Json | null;
           encrypted_key?: string;
           id?: string;
           key_version?: number;

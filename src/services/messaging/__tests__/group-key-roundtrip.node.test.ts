@@ -96,4 +96,67 @@ describe('group-key fixture round-trip (real crypto)', () => {
     );
     expect(decrypted).toBe(plaintext);
   });
+
+  it('#243: group history survives the creator rotating their personal keys', async () => {
+    const kds = new KeyDerivationService();
+    const gks = new GroupKeyService();
+    const password = 'TestPassword123!';
+
+    const creatorSalt = kds.generateSalt();
+    const memberSalt = kds.generateSalt();
+
+    // Creator's ORIGINAL keypair — the one that wraps the group key. This is the
+    // JWK we now persist as group_keys.creator_public_key.
+    const creatorOld = await kds.deriveKeyPair({ password, salt: creatorSalt });
+    const member = await kds.deriveKeyPair({ password, salt: memberSalt });
+
+    const groupKey = await gks.generateGroupKey();
+    const encryptedKey = await gks.encryptGroupKeyForMember(
+      groupKey,
+      member.publicKeyJwk,
+      creatorOld.privateKey
+    );
+
+    // The creator ROTATES their personal keys (new salt → a different keypair).
+    // getUserPublicKey would now return creatorNew.publicKeyJwk — the pre-#243
+    // reader used this and bricked history.
+    const creatorNew = await kds.deriveKeyPair({
+      password,
+      salt: kds.generateSalt(),
+    });
+    expect(
+      kds.verifyPublicKey(creatorOld.publicKeyJwk, creatorNew.publicKeyJwk)
+    ).toBe(false);
+
+    // PIN THE BUG: unwrapping with the creator's NEW (rotated) public key fails
+    // — the ECDH secret no longer matches what wrapped the key.
+    await expect(
+      gks.decryptGroupKey(
+        encryptedKey,
+        creatorNew.publicKeyJwk,
+        member.privateKey
+      )
+    ).rejects.toThrow();
+
+    // THE FIX: unwrapping with the stored wrap-time creator public key
+    // (creator_public_key on the row) still succeeds after rotation.
+    const unwrapped = await gks.decryptGroupKey(
+      encryptedKey,
+      creatorOld.publicKeyJwk,
+      member.privateKey
+    );
+    const originalBytes = new Uint8Array(await gks.exportKeyBytes(groupKey));
+    const unwrappedBytes = new Uint8Array(await gks.exportKeyBytes(unwrapped));
+    expect(unwrappedBytes).toEqual(originalBytes);
+
+    // And a message encrypted before the rotation still decrypts — history intact.
+    const plaintext = 'message from before the rotation';
+    const { ciphertext, iv } = await encryptionService.encryptMessage(
+      plaintext,
+      groupKey
+    );
+    expect(
+      await encryptionService.decryptMessage(ciphertext, iv, unwrapped)
+    ).toBe(plaintext);
+  });
 });
