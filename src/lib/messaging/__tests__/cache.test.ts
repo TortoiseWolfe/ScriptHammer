@@ -46,6 +46,7 @@ describe('CacheService', () => {
     key_version: 1,
     is_system_message: false,
     system_message_type: null,
+    client_generated_id: null,
   });
 
   describe('cacheMessages', () => {

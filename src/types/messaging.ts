@@ -50,6 +50,7 @@ export interface Message {
   key_version: number;
   is_system_message: boolean;
   system_message_type: string | null;
+  client_generated_id: string | null; // #245: offline-queue idempotency key (NULL for live sends)
 }
 
 export interface UserEncryptionKey {

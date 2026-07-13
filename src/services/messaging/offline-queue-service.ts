@@ -201,35 +201,81 @@ export class OfflineQueueService {
             .limit(1)
             .maybeSingle();
 
-          const nextSequenceNumber = lastMessage
+          let nextSequenceNumber = lastMessage
             ? lastMessage.sequence_number + 1
             : 1;
 
-          // Insert message to Supabase. delivered_at left NULL — same rule
-          // as message-service.ts: the recipient stamps delivery, not the
-          // sender's queue flush.
-          const { data: message, error: insertError } = await msgClient
-            .from('messages')
-            .insert({
-              conversation_id: queuedMsg.conversation_id,
-              sender_id: queuedMsg.sender_id,
-              encrypted_content: queuedMsg.encrypted_content,
-              initialization_vector: queuedMsg.initialization_vector,
-              sequence_number: nextSequenceNumber,
-              // Preserve the group-key version the content was encrypted under
-              // (undefined for 1:1 → the column defaults to 1).
-              ...(queuedMsg.key_version != null
-                ? { key_version: queuedMsg.key_version }
-                : {}),
-              deleted: false,
-              edited: false,
-            })
-            .select()
-            .single();
+          // #245: UPSERT keyed on the queued message's stable client id so a
+          // replayed flush (reconnect storm, or a prior flush that inserted
+          // server-side but died before writing synced:1) is a no-op instead of
+          // a duplicate. ignoreDuplicates → ON CONFLICT DO NOTHING; the row is
+          // returned on first insert and absent (data:null, no error) on a
+          // dedup skip. delivered_at left NULL — the recipient stamps delivery.
+          //
+          // #246: a residual unique_sequence 23505 (the atomic #244 trigger makes
+          // this rare, but not impossible under heavy contention) is TRANSIENT —
+          // retry it in-loop with a fresh MAX+1 read, exactly like the live-send
+          // path, instead of burning a permanent-fail retry. The trigger
+          // overrides sequence_number anyway; the read only avoids a guaranteed
+          // re-collide.
+          let inserted: unknown = null;
+          let delivered = false;
+          let conflictRetries = 3;
+          while (conflictRetries > 0) {
+            const { data, error: insertError } = await msgClient
+              .from('messages')
+              .upsert(
+                {
+                  conversation_id: queuedMsg.conversation_id,
+                  sender_id: queuedMsg.sender_id,
+                  encrypted_content: queuedMsg.encrypted_content,
+                  initialization_vector: queuedMsg.initialization_vector,
+                  sequence_number: nextSequenceNumber,
+                  client_generated_id: queuedMsg.id,
+                  ...(queuedMsg.key_version != null
+                    ? { key_version: queuedMsg.key_version }
+                    : {}),
+                  deleted: false,
+                  edited: false,
+                },
+                { onConflict: 'client_generated_id', ignoreDuplicates: true }
+              )
+              .select()
+              .maybeSingle();
 
-          if (insertError) {
+            if (!insertError) {
+              // data === null means ON CONFLICT DO NOTHING fired → this message
+              // was ALREADY delivered by a prior flush. Either way (fresh row or
+              // idempotent skip) it is delivered exactly once — mark synced.
+              inserted = data;
+              delivered = true;
+              break;
+            }
+            // #246: transient sequence collision → retry with a fresh read.
+            if (insertError.code === '23505') {
+              conflictRetries--;
+              const { data: last } = await msgClient
+                .from('messages')
+                .select('sequence_number')
+                .eq('conversation_id', queuedMsg.conversation_id)
+                .order('sequence_number', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+              nextSequenceNumber = last ? last.sequence_number + 1 : 1;
+              continue;
+            }
+            // Any other error is non-idempotent → surface to the outer catch,
+            // which increments the retry budget and re-tries on the next sync.
             throw new ConnectionError(
               'Failed to insert message: ' + insertError.message
+            );
+          }
+
+          if (!delivered) {
+            // Exhausted conflict retries — treat as a transient failure so the
+            // NEXT sync retries (do NOT permanent-fail on a sequence collision).
+            throw new ConnectionError(
+              'Failed to insert message after sequence-conflict retries'
             );
           }
 

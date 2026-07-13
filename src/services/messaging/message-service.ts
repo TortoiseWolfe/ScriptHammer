@@ -364,6 +364,8 @@ export class MessageService {
           key_version: keyVersion,
           is_system_message: false,
           system_message_type: null,
+          // #245: the queued id IS the idempotency key the sync flush will send.
+          client_generated_id: messageId,
         };
 
         return {
@@ -547,6 +549,8 @@ export class MessageService {
           key_version: keyVersion,
           is_system_message: false,
           system_message_type: null,
+          // #245: the queued id IS the idempotency key the sync flush will send.
+          client_generated_id: messageId,
         };
 
         return {

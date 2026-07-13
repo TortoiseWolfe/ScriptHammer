@@ -339,6 +339,7 @@ export type Database = {
       };
       messages: {
         Row: {
+          client_generated_id: string | null; // #245: offline-queue idempotency key
           conversation_id: string;
           created_at: string;
           deleted: boolean;
@@ -356,6 +357,7 @@ export type Database = {
           system_message_type: string | null;
         };
         Insert: {
+          client_generated_id?: string | null;
           conversation_id: string;
           created_at?: string;
           deleted?: boolean;
@@ -373,6 +375,7 @@ export type Database = {
           system_message_type?: string | null;
         };
         Update: {
+          client_generated_id?: string | null;
           conversation_id?: string;
           created_at?: string;
           deleted?: boolean;
