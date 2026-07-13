@@ -50,6 +50,11 @@ export default defineConfig({
       // but the CI instance doesn't have the right schema for these tests.
       // Run locally with: docker compose --profile supabase up && pnpm test:rls
       'tests/rls/**',
+      // #266 provider-conformance runners are live cross-user round-trips (same
+      // infra needs as tests/rls/**). They run via `pnpm test:rls`
+      // (vitest.rls.config.ts), never in the default jsdom/mock suite.
+      'tests/contract/messaging-provider.supabase.test.ts',
+      'tests/contract/messaging-provider.dotnet.test.ts',
       // Exclude remaining contract/integration tests requiring service role key
       'tests/contract/auth/sign-out.contract.test.ts',
       'tests/contract/auth/sign-in.contract.test.ts',

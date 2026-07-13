@@ -13,7 +13,13 @@ import path from 'path';
  */
 export default defineConfig({
   test: {
-    include: ['tests/rls/**/*.test.ts'],
+    include: [
+      'tests/rls/**/*.test.ts',
+      // #266 provider-conformance runners are live cross-user round-trips —
+      // same infra needs as the RLS suite (live Supabase + service role +
+      // stale-user cleanup + sequential execution).
+      'tests/contract/messaging-provider.*.test.ts',
+    ],
     globals: true,
     testTimeout: 30000,
     hookTimeout: 30000,
