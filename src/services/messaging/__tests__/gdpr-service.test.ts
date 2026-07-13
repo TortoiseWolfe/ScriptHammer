@@ -148,6 +148,19 @@ describe('GDPRService', () => {
           };
         }
 
+        // #248: no group memberships in the 1:1-only tests → the group export
+        // branch is a no-op. Mock must expose .eq().is() (the real query is
+        // .select('conversation_id').eq('user_id').is('left_at', null)).
+        if (table === 'conversation_members') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                is: vi.fn().mockResolvedValue({ data: [], error: null }),
+              }),
+            }),
+          };
+        }
+
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockResolvedValue({ data: [], error: null }),
@@ -332,6 +345,19 @@ describe('GDPRService', () => {
           };
         }
 
+        // #248: no group memberships in the 1:1-only tests → the group export
+        // branch is a no-op. Mock must expose .eq().is() (the real query is
+        // .select('conversation_id').eq('user_id').is('left_at', null)).
+        if (table === 'conversation_members') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                is: vi.fn().mockResolvedValue({ data: [], error: null }),
+              }),
+            }),
+          };
+        }
+
         return {
           select: vi.fn().mockReturnValue({
             eq: vi.fn().mockResolvedValue({ data: [], error: null }),
@@ -376,6 +402,210 @@ describe('GDPRService', () => {
       expect(result.conversations[0].messages[0].content).toBe(
         '[Message could not be decrypted]'
       );
+    });
+
+    it('includes GROUP conversations and their decrypted messages (#248)', async () => {
+      mockSupabase.auth.getSession.mockResolvedValue({
+        data: {
+          session: { user: { id: 'user-123', email: 'test@example.com' } },
+        },
+        error: null,
+      });
+
+      mockSupabase.from.mockImplementation((table: string) => {
+        if (table === 'user_profiles') {
+          return {
+            select: vi.fn().mockImplementation((cols: string) => {
+              // sender-name lookup: .select('id, username').in('id', [...])
+              if (cols?.includes('id, username')) {
+                return {
+                  in: vi.fn().mockResolvedValue({
+                    data: [{ id: 'user-999', username: 'alice' }],
+                    error: null,
+                  }),
+                };
+              }
+              return {
+                eq: vi.fn().mockReturnValue({
+                  single: vi.fn().mockResolvedValue({
+                    data: { username: 'testuser', display_name: 'Test User' },
+                    error: null,
+                  }),
+                }),
+              };
+            }),
+          };
+        }
+        if (table === 'user_connections') {
+          return {
+            select: vi.fn().mockReturnValue({
+              or: vi.fn().mockResolvedValue({ data: [], error: null }),
+            }),
+          };
+        }
+        if (table === 'conversations') {
+          return {
+            select: vi.fn().mockImplementation((cols: string) => {
+              // group hydration: .select('id, group_name').in('id',[...]).eq('is_group',true)
+              if (cols?.includes('group_name')) {
+                return {
+                  in: vi.fn().mockReturnValue({
+                    eq: vi.fn().mockResolvedValue({
+                      data: [{ id: 'group-1', group_name: 'My Group' }],
+                      error: null,
+                    }),
+                  }),
+                };
+              }
+              // 1:1 enumeration: .select(...).or(...) → none
+              return {
+                or: vi.fn().mockResolvedValue({ data: [], error: null }),
+              };
+            }),
+          };
+        }
+        if (table === 'conversation_members') {
+          return {
+            select: vi.fn().mockImplementation((cols: string) => {
+              // roster: .select('user_id, member:...').eq('conversation_id').is('left_at')
+              if (cols?.includes('member:')) {
+                return {
+                  eq: vi.fn().mockReturnValue({
+                    is: vi.fn().mockResolvedValue({
+                      data: [
+                        {
+                          user_id: 'user-123',
+                          member: { username: 'testuser' },
+                        },
+                        { user_id: 'user-999', member: { username: 'alice' } },
+                      ],
+                      error: null,
+                    }),
+                  }),
+                };
+              }
+              // membership enumeration: .select('conversation_id').eq('user_id').is('left_at')
+              return {
+                eq: vi.fn().mockReturnValue({
+                  is: vi.fn().mockResolvedValue({
+                    data: [{ conversation_id: 'group-1' }],
+                    error: null,
+                  }),
+                }),
+              };
+            }),
+          };
+        }
+        if (table === 'messages') {
+          return {
+            select: vi.fn().mockReturnValue({
+              eq: vi.fn().mockReturnValue({
+                order: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: 'gmsg-1',
+                      conversation_id: 'group-1',
+                      sender_id: 'user-123',
+                      encrypted_content: 'enc',
+                      initialization_vector: 'iv',
+                      key_version: 1,
+                      is_system_message: false,
+                      created_at: '2025-02-01T10:00:00Z',
+                      edited: false,
+                      deleted: false,
+                      edited_at: null,
+                    },
+                    {
+                      id: 'gmsg-2',
+                      conversation_id: 'group-1',
+                      sender_id: 'user-999',
+                      encrypted_content: 'enc2',
+                      initialization_vector: 'iv2',
+                      key_version: 1,
+                      is_system_message: false,
+                      created_at: '2025-02-01T10:01:00Z',
+                      edited: false,
+                      deleted: false,
+                      edited_at: null,
+                    },
+                  ],
+                  error: null,
+                }),
+              }),
+            }),
+          };
+        }
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        };
+      });
+
+      vi.mocked(
+        keyManagementService.keyManagementService.restoreKeysFromCache
+      ).mockResolvedValue(true);
+
+      // Stub the shared group-decrypt helper: prove the export threads its
+      // output through (the real crypto is covered by the group-key roundtrip
+      // test + live verification).
+      const groupDecrypt = await import('../group-message-decrypt');
+      vi.spyOn(groupDecrypt, 'decryptGroupMessages').mockResolvedValue([
+        {
+          row: {
+            id: 'gmsg-1',
+            sender_id: 'user-123',
+            created_at: '2025-02-01T10:00:00Z',
+            edited: false,
+            deleted: false,
+            edited_at: null,
+          } as any,
+          content: 'hi from me',
+          decryptionError: false,
+        },
+        {
+          row: {
+            id: 'gmsg-2',
+            sender_id: 'user-999',
+            created_at: '2025-02-01T10:01:00Z',
+            edited: false,
+            deleted: false,
+            edited_at: null,
+          } as any,
+          content: 'reply from alice',
+          decryptionError: false,
+        },
+      ]);
+
+      const result = await gdprService.exportUserData();
+
+      const group = result.conversations.find((c) => c.is_group);
+      expect(group).toBeDefined();
+      expect(group).toMatchObject({
+        conversation_id: 'group-1',
+        is_group: true,
+        group_name: 'My Group',
+      });
+      expect(group!.members).toEqual(
+        expect.arrayContaining([
+          { user_id: 'user-123', username: 'testuser' },
+          { user_id: 'user-999', username: 'alice' },
+        ])
+      );
+      expect(group!.messages).toEqual([
+        expect.objectContaining({ sender: 'you', content: 'hi from me' }),
+        expect.objectContaining({
+          sender: 'alice',
+          content: 'reply from alice',
+        }),
+      ]);
+      // one sent (me), one received (alice)
+      expect(result.statistics.total_messages_sent).toBe(1);
+      expect(result.statistics.total_messages_received).toBe(1);
+      // keys restored before group decrypt (cold-load guard, #248 verifier fix)
+      expect(
+        keyManagementService.keyManagementService.restoreKeysFromCache
+      ).toHaveBeenCalledWith('user-123');
     });
   });
 

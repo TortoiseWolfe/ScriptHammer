@@ -54,6 +54,7 @@ vi.mock('@/services/messaging/key-service', () => ({
   keyManagementService: {
     getCurrentKeys: vi.fn(),
     getUserPublicKey: vi.fn(),
+    getUserPublicKeyAt: vi.fn(), // #243: legacy-row fallback resolver
   },
 }));
 
@@ -277,9 +278,16 @@ describe('GroupKeyService', () => {
     });
 
     it('fetches + decrypts when not cached', async () => {
+      // #243: the row now carries the creator's wrap-time public JWK, and the
+      // unwrap path uses THAT (not getUserPublicKey / the creator's current key).
       mockMessagingFrom.mockReturnValue(
         createMockQueryBuilder(
-          { encrypted_key: 'ZmFrZQ==', created_by: MEMBER_1_ID },
+          {
+            encrypted_key: 'ZmFrZQ==',
+            created_by: MEMBER_1_ID,
+            creator_public_key: { kty: 'EC', crv: 'P-256', x: 'x', y: 'y' },
+            created_at: '2025-01-01T00:00:00Z',
+          },
           null
         ) as any
       );
@@ -288,9 +296,9 @@ describe('GroupKeyService', () => {
 
       expect(key).toBeDefined();
       expect(mockMessagingFrom).toHaveBeenCalledWith('group_keys');
-      expect(keyManagementService.getUserPublicKey).toHaveBeenCalledWith(
-        MEMBER_1_ID
-      );
+      // #243: primary path uses the stored creator_public_key — it must NOT call
+      // getUserPublicKey (that's only the legacy fallback for rows without it).
+      expect(keyManagementService.getUserPublicKey).not.toHaveBeenCalled();
       expect(mockDecrypt).toHaveBeenCalled();
 
       // Second call should now be served from cache (no further DB hit)
@@ -301,6 +309,36 @@ describe('GroupKeyService', () => {
       );
       expect(cached).toBe(key);
       expect(mockMessagingFrom).not.toHaveBeenCalled();
+    });
+
+    it('#243: legacy row (no creator_public_key) resolves via getUserPublicKeyAt', async () => {
+      mockMessagingFrom.mockReturnValue(
+        createMockQueryBuilder(
+          {
+            encrypted_key: 'ZmFrZQ==',
+            created_by: MEMBER_1_ID,
+            creator_public_key: null, // legacy row, pre-#243
+            created_at: '2025-01-01T00:00:00Z',
+          },
+          null
+        ) as any
+      );
+      vi.mocked(keyManagementService.getUserPublicKeyAt).mockResolvedValue({
+        kty: 'EC',
+        crv: 'P-256',
+        x: 'x',
+        y: 'y',
+      } as JsonWebKey);
+
+      const key = await service.getGroupKeyForConversation(CONVERSATION_ID, 3);
+
+      expect(key).toBeDefined();
+      // Falls back to the time-window resolver anchored on the row's created_at.
+      expect(keyManagementService.getUserPublicKeyAt).toHaveBeenCalledWith(
+        MEMBER_1_ID,
+        '2025-01-01T00:00:00Z'
+      );
+      expect(mockDecrypt).toHaveBeenCalled();
     });
 
     it('throws AuthenticationError when not signed in', async () => {
