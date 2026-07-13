@@ -18,7 +18,10 @@ import { createClient } from '@/lib/supabase/client';
 import {
   createMessagingClient,
   type MessageRow,
+  type MessagingClient,
 } from '@/lib/supabase/messaging-client';
+import type { Database } from '@/lib/supabase/types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   ConnectionError,
   ValidationError,
@@ -44,12 +47,14 @@ import type {
  * methods (the 3 hooks already work this way, so C29 holds by construction).
  */
 class SupabaseRealtimeProvider implements MessagingRealtimeProvider {
+  constructor(private readonly injectedClient?: SupabaseClient<Database>) {}
+
   subscribe(
     _ctx: AuthContext,
     opts: SubscribeOptions,
     onChange: (e: ChangeEvent) => void
   ): Subscription {
-    const supabase = createClient();
+    const supabase = this.injectedClient ?? createClient();
     const channel = supabase
       .channel(opts.channelKey)
       .on(
@@ -76,13 +81,30 @@ class SupabaseRealtimeProvider implements MessagingRealtimeProvider {
 
 export class SupabaseMessagingProvider implements MessagingDataProvider {
   readonly name = 'supabase' as const;
-  readonly realtime: MessagingRealtimeProvider = new SupabaseRealtimeProvider();
+  readonly realtime: MessagingRealtimeProvider;
+
+  /**
+   * @param injectedClient - Optional Supabase client. Defaults to the app's
+   *   session-bound `createClient()` singleton (so RLS applies to the signed-in
+   *   user in the browser). Tests inject a per-user authenticated client to
+   *   drive the provider as different users — matching the AdminPaymentService
+   *   constructor-injection precedent. NEVER inject a service-role client in
+   *   production paths: that bypasses RLS.
+   */
+  constructor(private readonly injectedClient?: SupabaseClient<Database>) {
+    this.realtime = new SupabaseRealtimeProvider(injectedClient);
+  }
+
+  /** The messaging-typed client this provider issues queries through. */
+  private client(): MessagingClient {
+    return createMessagingClient(this.injectedClient ?? createClient());
+  }
 
   async getConversationMeta(
     _ctx: AuthContext,
     conversationId: string
   ): Promise<ConversationMeta | null> {
-    const msgClient = createMessagingClient(createClient());
+    const msgClient = this.client();
     const { data } = await msgClient
       .from('conversations')
       .select(
@@ -98,7 +120,7 @@ export class SupabaseMessagingProvider implements MessagingDataProvider {
     userIds: string[]
   ): Promise<UserProfile[]> {
     if (userIds.length === 0) return [];
-    const msgClient = createMessagingClient(createClient());
+    const msgClient = this.client();
     const { data } = await msgClient
       .from('user_profiles')
       .select('id, username, display_name, avatar_url')
@@ -110,7 +132,7 @@ export class SupabaseMessagingProvider implements MessagingDataProvider {
     _ctx: AuthContext,
     messageId: string
   ): Promise<MessageRow | null> {
-    const msgClient = createMessagingClient(createClient());
+    const msgClient = this.client();
     const { data, error } = await msgClient
       .from('messages')
       .select('*')
@@ -133,7 +155,7 @@ export class SupabaseMessagingProvider implements MessagingDataProvider {
     ctx: AuthContext,
     payload: SendMessagePayload
   ): Promise<MessageRow> {
-    const msgClient = createMessagingClient(createClient());
+    const msgClient = this.client();
 
     // Atomic sequence number assignment with separate retry budgets:
     //   - 23505 unique-constraint conflicts: 3 attempts (race with
@@ -274,7 +296,7 @@ export class SupabaseMessagingProvider implements MessagingDataProvider {
     _ctx: AuthContext,
     params: GetMessagesParams
   ): Promise<MessagesPage> {
-    const msgClient = createMessagingClient(createClient());
+    const msgClient = this.client();
     const { conversationId, cursor, limit } = params;
 
     // Note: deleted messages are NOT filtered out — they render as placeholders
@@ -310,7 +332,7 @@ export class SupabaseMessagingProvider implements MessagingDataProvider {
     _ctx: AuthContext,
     payload: EditMessagePayload
   ): Promise<void> {
-    const msgClient = createMessagingClient(createClient());
+    const msgClient = this.client();
     const { error } = await msgClient
       .from('messages')
       .update({
@@ -332,7 +354,7 @@ export class SupabaseMessagingProvider implements MessagingDataProvider {
    * window pre-conditions are checked by the caller; RLS re-enforces on UPDATE.
    */
   async deleteMessage(_ctx: AuthContext, messageId: string): Promise<void> {
-    const msgClient = createMessagingClient(createClient());
+    const msgClient = this.client();
     const { error } = await msgClient
       .from('messages')
       .update({ deleted: true })
@@ -349,7 +371,7 @@ export class SupabaseMessagingProvider implements MessagingDataProvider {
    */
   async markAsRead(_ctx: AuthContext, messageIds: string[]): Promise<void> {
     if (messageIds.length === 0) return;
-    const msgClient = createMessagingClient(createClient());
+    const msgClient = this.client();
     const { error } = await msgClient
       .from('messages')
       .update({ read_at: new Date().toISOString() })
@@ -368,7 +390,7 @@ export class SupabaseMessagingProvider implements MessagingDataProvider {
     messageIds: string[]
   ): Promise<void> {
     if (messageIds.length === 0) return;
-    const msgClient = createMessagingClient(createClient());
+    const msgClient = this.client();
     const { error } = await msgClient
       .from('messages')
       .update({ delivered_at: new Date().toISOString() })
@@ -395,7 +417,7 @@ export class SupabaseMessagingProvider implements MessagingDataProvider {
     userId: string,
     value: boolean
   ): Promise<void> {
-    const msgClient = createMessagingClient(createClient());
+    const msgClient = this.client();
     const verb = value ? 'archive' : 'unarchive';
 
     const { data: conversation, error: fetchError } = await msgClient
