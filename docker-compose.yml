@@ -406,6 +406,46 @@ services:
       - GIT_COMMITTER_NAME=${GIT_AUTHOR_NAME}
       - GIT_COMMITTER_EMAIL=${GIT_AUTHOR_EMAIL}
 
+  # ──────────────────────────────────────────────────────────────────────
+  # .NET messaging backend (profile: dotnet) — #266/#265 enterprise arc.
+  #   An ASP.NET Core + EF Core alternative API over the SAME messaging tables
+  #   (points at supabase-db). Flip NEXT_PUBLIC_BACKEND_PROVIDER=dotnet +
+  #   NEXT_PUBLIC_DOTNET_API_URL=http://localhost:5099 to route messaging
+  #   through it. Validates the Supabase JWT (HS256, SUPABASE_JWT_SECRET) and
+  #   enforces the C1–C29 authorization contract in C# (no in-DB auth.uid()).
+  #   Run: docker compose --profile supabase --profile dotnet up
+  # ──────────────────────────────────────────────────────────────────────
+  dotnet-messaging:
+    profiles: ['dotnet']
+    build:
+      context: ./dotnet-messaging
+      target: dev
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:${SH_DOTNET_PORT:-5099}:8080'
+    # No hard depends_on supabase-db: the DB is chosen by
+    # ConnectionStrings__DefaultConnection (local supabase-db by default, or any
+    # external Postgres), so the profile works standalone. Run the local stack
+    # too when you want the bundled DB:
+    #   docker compose --profile supabase --profile dotnet up
+    environment:
+      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_ENVIRONMENT: Development
+      DOTNET_WATCH_SUPPRESS_MSBUILD_INCREMENTALISM: '1'
+      # Reach the local Supabase Postgres by service DNS (same messaging schema).
+      ConnectionStrings__DefaultConnection: 'Host=supabase-db;Port=5432;Database=postgres;Username=postgres;Password=${POSTGRES_PASSWORD:-your-super-secret-and-long-postgres-password}'
+      # Same HS256 secret GoTrue/PostgREST validate against.
+      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      CORS_ORIGINS: 'http://localhost:3000,http://localhost:3002,http://127.0.0.1:3002'
+    volumes:
+      - ./dotnet-messaging:/app
+    healthcheck:
+      test: ['CMD', 'sh', '-c', 'wget -q -O- http://localhost:8080/health || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
 volumes:
   node_modules:
     name: '${COMPOSE_PROJECT_NAME:-scripthammer}_node_modules'
