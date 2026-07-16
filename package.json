@@ -61,7 +61,7 @@
     "sprint:status": "node scripts/sprint-planning.js status",
     "prepare": "husky",
     "lint:staged": "lint-staged",
-    "clean:next": "rm -rf .next/* .next/.* 2>/dev/null || true",
+    "clean:next": "DIR=\"${NEXT_DIST_DIR:-.next}\"; rm -rf \"$DIR\"/* \"$DIR\"/.* 2>/dev/null || true",
     "type-check": "tsc --noEmit",
     "ci:validate": "./scripts/validate-ci.sh",
     "validate:breakpoints": "tsx scripts/validate-breakpoints.ts",
