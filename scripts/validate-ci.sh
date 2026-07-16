@@ -1,8 +1,12 @@
 #!/bin/bash
 
 # CI Validation Script
-# Runs all CI checks locally to catch issues before pushing to GitHub
-# This mirrors the GitHub Actions CI workflow
+# Runs the CI checks locally to catch issues before pushing to GitHub.
+#
+# Approximates the GitHub Actions pipeline; it is not a mirror of it. ci.yml has
+# steps this lacks (detect-project, test:scripts), and the chunk-parse check
+# below lives in deploy.yml rather than ci.yml. Treat a green run here as "very
+# likely green in CI", not a guarantee.
 
 set -e  # Exit on any error
 
@@ -22,11 +26,12 @@ else
     IN_DOCKER=false
 fi
 
-# Clean up .next directory before starting to avoid permission issues
-if [ "$IN_DOCKER" = false ]; then
-    echo -e "${YELLOW}🧹 Cleaning build artifacts...${NC}"
-    docker compose exec -T scripthammer rm -rf .next 2>/dev/null || true
-fi
+# NOTE: do NOT add a `rm -rf .next` here. This script used to open with one
+# (exec'd into the live dev container, so it wiped the running dev server's
+# .next and 500'd every route on every push — #293). Its stated reason,
+# "avoid permission issues", was obsolete: docker/Dockerfile:117-119 pre-creates
+# /app/.next node-owned. Nothing below needs a clean .next — `next build` cleans
+# its own distDir (cleanDistDir), and it now runs in its own container anyway.
 
 # Function to run a check
 run_check() {
@@ -55,6 +60,23 @@ run_check() {
     fi
 }
 
+# Same, but runs the command verbatim on the host rather than exec'ing it into
+# the dev container — for steps that drive docker themselves.
+run_host_check() {
+    local name=$1
+    local command=$2
+
+    echo -e "\n${YELLOW}🔍 Running: ${name}${NC}"
+    echo "--------------------------------"
+
+    if $command; then
+        echo -e "${GREEN}✅ ${name} passed${NC}"
+    else
+        echo -e "${RED}❌ ${name} failed${NC}"
+        exit 1
+    fi
+}
+
 # 1. Lint check
 run_check "ESLint" "pnpm lint"
 
@@ -69,8 +91,32 @@ if [ "$1" != "--quick" ]; then
     run_check "Test coverage" "pnpm test:coverage"
 fi
 
-# 5. Production build
-run_check "Production build" "pnpm build"
+# 5. Production build — in its OWN container (#293).
+#
+# This must never be `docker compose exec scripthammer pnpm build`. That is the
+# dev server's container; `next dev` and `next build` both own /app/.next, so the
+# build wipes what the dev server is serving and every route 500s until it
+# recompiles. That is what this script did on every push for months.
+#
+# The `builder` service is the same image with its own .next volume, so the two
+# cannot collide. out/ still lands on the bind mount, so the chunk check below
+# sees this build's output exactly as it would in CI.
+if [ "$IN_DOCKER" = true ]; then
+    # Already inside a container. That is fine — UNLESS it is the one serving
+    # `next dev`, which is precisely the collision above. Check for the dev
+    # server rather than for "am I in Docker": running this inside the builder
+    # container is legitimate, running it inside the dev container is the bug.
+    if pgrep -f 'next-server|next/dist/bin/next' >/dev/null 2>&1; then
+        echo -e "\n${RED}❌ Refusing to build inside the dev-server container (#293).${NC}"
+        echo -e "   It would wipe the .next this container is serving from and"
+        echo -e "   500 every route. Run it from the host instead:"
+        echo -e "     ${YELLOW}./scripts/validate-ci.sh $*${NC}"
+        exit 1
+    fi
+    run_check "Production build" "pnpm build"
+else
+    run_host_check "Production build" "docker compose run --rm builder pnpm build"
+fi
 
 # 5b. Browser-parseability of emitted chunks (#294). `next build` succeeds even
 # when it emits a chunk the browser cannot PARSE (e.g. an inlined WASM binary as

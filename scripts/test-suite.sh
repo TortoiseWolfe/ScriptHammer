@@ -158,7 +158,16 @@ fi
 # 7. Build Test
 print_header "7. Production Build"
 echo "Testing production build..."
-if $CMD_PREFIX pnpm run build > /tmp/build-output.txt 2>&1; then
+# In its OWN container (#293), not $CMD_PREFIX: `docker compose exec scripthammer
+# pnpm build` wipes the .next the dev server is serving from, which is why this
+# step used to be followed by a container restart. See docker-compose.yml.
+# (The in-docker path can't drive docker; there it stays a plain build.)
+if in_docker; then
+    BUILD_CMD="pnpm run build"
+else
+    BUILD_CMD="docker compose run --rm builder pnpm run build"
+fi
+if $BUILD_CMD > /tmp/build-output.txt 2>&1; then
     print_result "Production Build" "pass" "Build completed successfully"
 else
     print_result "Production Build" "fail" "Build failed"
@@ -169,21 +178,10 @@ fi
 # 8. Accessibility Tests (only if server is running)
 print_header "8. Accessibility Tests"
 
-# Production build corrupts .next permissions - restart container to fix
-if ! in_docker; then
-    echo "Restarting container to restore dev server after build..."
-    docker compose restart scripthammer > /dev/null 2>&1
-
-    # Wait for dev server to be ready
-    echo "Waiting for dev server to recover..."
-    for i in $(seq 1 30); do
-        if curl -s http://localhost:3000 | grep -q "html" 2>/dev/null; then
-            echo "Dev server ready."
-            break
-        fi
-        sleep 2
-    done
-fi
+# NOTE: step 7 used to be followed by a `docker compose restart scripthammer`
+# here, to "restore dev server after build" — the build ran in the dev container
+# and clobbered its .next. That was misfiled as a permissions problem; it was
+# #293. The build now runs in its own container, so there is nothing to restore.
 
 echo "Checking if dev server is available..."
 if curl -s http://localhost:3000 > /dev/null 2>&1; then
