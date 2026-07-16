@@ -57,12 +57,20 @@ sudo chown -R $USER:$USER .next
 sudo rm -rf node_modules
 
 # ✅ CORRECT - Use Docker
-docker compose exec scripthammer rm -rf .next
 docker compose exec scripthammer rm -rf node_modules
 docker compose down && docker compose up
 ```
 
 **Why**: The container runs as your user (UID/GID from .env). Docker commands execute with correct permissions automatically.
+
+**Never `rm -rf .next` in the dev container.** That is the dev server's live build
+directory — deleting it 500s every route until it recompiles (#293). It used to be
+recommended here, which is how the habit spread into the hooks and CI scripts. To
+clear the dev cache, restart the container (the entrypoint does it for you):
+
+```bash
+docker compose restart scripthammer
+```
 
 **Permission errors? Always try:**
 
@@ -81,6 +89,12 @@ docker compose exec scripthammer pnpm run dev
 # Run tests
 docker compose exec scripthammer pnpm test
 docker compose exec scripthammer pnpm run test:suite    # Full suite
+
+# Production build — its OWN container, never `exec scripthammer` (#293).
+# `next dev` and `next build` both own /app/.next; building in the dev
+# container wipes what it is serving and 500s every route. The `builder`
+# service is the same image with its own .next volume.
+docker compose run --rm builder pnpm build
 
 # Storybook
 docker compose exec scripthammer pnpm run storybook
