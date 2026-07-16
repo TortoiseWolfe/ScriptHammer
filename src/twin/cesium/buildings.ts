@@ -203,44 +203,59 @@ export function buildingsToWgs84(
 }
 
 /**
- * The ellipsoidal height a building's massing box extrudes FROM: the MINIMUM
- * ground under its own footprint.
+ * The vertical span a building's massing box occupies: ellipsoidal metres from
+ * `baseM` (below every vertex) to `topM` (clear of every vertex by heightM).
  *
- * One base per building, so the box stays level — OSM footprints are
- * flat-bottomed by construction and following terrain per-vertex would shear
- * them. But the base must be the ring's MIN, not its centroid.
+ * TWO FAILURE MODES, and the naive fixes each pick one:
  *
- * This sampled the CENTROID and defended it in a comment. Half of that was
- * right (level) and half was wrong (height): on a slope, one height for a
- * footprint spanning metres of elevation floats the downhill half and buries the
- * uphill half. chatt's baked box holds 55.5 m of relief and the wide DEM reaches
- * 649.5 m, so the moment real hillsides entered the view buildings visibly hung
- * in the air (reported: way 174322222, 10.7 m, rule=lidar, on a hillside INSIDE
- * the baked box — not a wide-grid resolution artifact).
+ *   centroid base, +height   -> FLOATS. One height for a footprint spanning
+ *                               metres of elevation hangs the downhill half in
+ *                               the air. Measured: 7966 of 8031 buildings.
+ *   min base, +height        -> BURIES. On ground that climbs more than the
+ *                               building is tall — Tennessee bluffs, and chatt
+ *                               reaches 649.5 m — the whole box vanishes under
+ *                               the hill. Reported live: a 11.9 m government
+ *                               building (way 66419703) swallowed by a bluff.
  *
- * Min is the right trade, not a compromise: the worst case becomes a building
- * cut into its uphill slope, which is what real buildings on hills do and what
- * every 3D city renderer does. Floating reads as broken; buried reads as a
- * building on a hill.
+ * Both were mine, in that order. The answer is not to choose:
  *
- * NOTE the caller adds `heightM` to this — the building's own height, NOT
- * stretched to the max ground. Stretching to close the visual gap would silently
- * inflate the 1328 lidar MEASUREMENTS this layer exists to show.
+ *   base = MIN ground under the ring   -> nothing can float
+ *   top  = MAX ground under the ring + heightM  -> nothing can bury; the height
+ *                                                  visible above the UPHILL
+ *                                                  grade is exactly heightM
  *
- * `sampleEllipsoidal` returns ellipsoidal metres (orthometric + geoid), and is
- * the same definition of ground the terrain provider renders — see
- * cesium/terrain.ts. They must agree or the fix is cosmetic.
+ * The rendered box is therefore (maxGround − minGround) + heightM tall, the
+ * extra being a below-grade skirt on the downhill side. That is what buildings
+ * on slopes actually look like, and what 3D city renderers do.
+ *
+ * This does NOT inflate the measurement. I previously rejected this approach
+ * reasoning that extruding past heightM would "silently inflate the 1328 lidar
+ * measurements" — conflating two different things. The card reports heightM, the
+ * measured roof-above-ground. The geometry additionally accounts for the ground
+ * varying under the footprint. Reporting and rendering are not the same number,
+ * and forcing them to be identical is what buried the buildings.
+ *
+ * One base per building keeps each box level: OSM footprints are flat-bottomed
+ * by construction and following terrain per-vertex would shear them.
+ *
+ * `sampleEllipsoidal` is the same definition of ground the terrain provider
+ * renders (cesium/terrain.ts) — they must agree or this is cosmetic.
  */
-export function groundEllipsoidHeightM(
+export function groundSpanM(
   b: AtlasBuilding,
   sampleEllipsoidal: (lon: number, lat: number) => number
-): number {
+): { baseM: number; topM: number } {
   let min = Infinity;
+  let max = -Infinity;
   for (let i = 0; i < b.lonLat.length; i += 2) {
     const g = sampleEllipsoidal(b.lonLat[i], b.lonLat[i + 1]);
     if (g < min) min = g;
+    if (g > max) max = g;
   }
-  // Degenerate ring (no vertices) — fall back to the ellipsoid rather than
-  // extruding from Infinity and vanishing the building.
-  return Number.isFinite(min) ? min : 0;
+  // Degenerate ring (no vertices): sit on the ellipsoid rather than extruding
+  // from Infinity and vanishing the building.
+  if (!Number.isFinite(min) || !Number.isFinite(max)) {
+    return { baseM: 0, topM: b.heightM };
+  }
+  return { baseM: min, topM: max + b.heightM };
 }

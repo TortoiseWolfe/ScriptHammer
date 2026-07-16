@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  groundEllipsoidHeightM,
+  groundSpanM,
   typeBucket,
   unbucketedLadderTypes,
   heightBand,
@@ -129,60 +129,70 @@ describe('classify', () => {
   });
 });
 
-describe('groundEllipsoidHeightM', () => {
-  // A 20 m square footprint. lonLat is flat [lon, lat, ...].
-  const D = 0.0002; // ~20 m
-  const sq = (lon0: number, lat0: number): AtlasBuilding =>
+describe('groundSpanM', () => {
+  const D = 0.0002; // ~20 m square footprint
+  const sq = (lon0: number, lat0: number, h = 10): AtlasBuilding =>
     b({
+      heightM: h,
       lonLat: [lon0, lat0, lon0 + D, lat0, lon0 + D, lat0 + D, lon0, lat0 + D],
     });
-  // Ground rises 100 m per 0.001 deg of longitude — a steep hillside.
+  // Ground climbs 100 m per 0.001 deg lon => 20 m across this footprint. A
+  // Tennessee bluff: steeper than a 10 m building is tall, which is exactly the
+  // case the min-base rule buried.
   const slope = (lon: number) => 1000 + (lon - -85.3) * 100000;
+  const vertices = (bld: AtlasBuilding) => {
+    const out: { lon: number; lat: number }[] = [];
+    for (let i = 0; i < bld.lonLat.length; i += 2)
+      out.push({ lon: bld.lonLat[i], lat: bld.lonLat[i + 1] });
+    return out;
+  };
 
-  it('THE INVARIANT: the base never sits above the ground under any vertex', () => {
-    // This is the whole bug. A base above any of its own vertices means that
-    // corner of the building is hanging in the air.
+  // BOTH invariants, together. Every previous fix satisfied one and broke the
+  // other: centroid+height floated 7966 of 8031 buildings; min+height then
+  // buried them under bluffs. Asserting only one is how that happened twice.
+  it('INVARIANT 1: the base is under every vertex — nothing can float', () => {
     const bld = sq(-85.3, 35.03);
-    const base = groundEllipsoidHeightM(bld, (lon) => slope(lon));
-    for (let i = 0; i < bld.lonLat.length; i += 2) {
-      expect(base).toBeLessThanOrEqual(slope(bld.lonLat[i]) + 1e-9);
+    const { baseM } = groundSpanM(bld, (lon: number) => slope(lon));
+    for (const v of vertices(bld)) {
+      expect(baseM).toBeLessThanOrEqual(slope(v.lon) + 1e-9);
     }
   });
 
-  it('returns the ring MIN on a slope, not the centroid mean', () => {
-    const bld = sq(-85.3, 35.03);
-    const base = groundEllipsoidHeightM(bld, (lon) => slope(lon));
-    const min = slope(-85.3);
-    const mean = slope(-85.3 + D / 2); // what the old centroid version returned
-    expect(base).toBeCloseTo(min, 6);
-    expect(base).toBeLessThan(mean);
-    // and the gap is exactly what used to float: 10 m over a 20 m footprint here
-    expect(mean - base).toBeCloseTo(10, 6);
+  it('INVARIANT 2: the top clears every vertex by heightM — nothing can bury', () => {
+    const bld = sq(-85.3, 35.03, 10); // 10 m building on 20 m of climb
+    const { topM } = groundSpanM(bld, (lon: number) => slope(lon));
+    for (const v of vertices(bld)) {
+      expect(topM).toBeGreaterThanOrEqual(slope(v.lon) + bld.heightM - 1e-9);
+    }
   });
 
-  it('equals the centroid on flat ground (no penalty where it does not matter)', () => {
-    const base = groundEllipsoidHeightM(sq(-85.3, 35.03), () => 176);
-    expect(base).toBe(176);
+  it('the height visible above the UPHILL grade is exactly heightM', () => {
+    const bld = sq(-85.3, 35.03, 10);
+    const { topM } = groundSpanM(bld, (lon: number) => slope(lon));
+    const maxGround = Math.max(...vertices(bld).map((v) => slope(v.lon)));
+    expect(topM - maxGround).toBeCloseTo(10, 6);
   });
 
-  it('samples every vertex — a min hiding in one corner still wins', () => {
-    const bld = sq(-85.3, 35.03);
-    const seen: number[] = [];
-    groundEllipsoidHeightM(bld, (lon, lat) => {
-      seen.push(lon);
-      // dip under exactly one corner, the last one visited
-      return lon === -85.3 && lat === 35.03 + D ? 1 : 500;
-    });
-    expect(seen.length).toBe(4);
-    expect(
-      groundEllipsoidHeightM(bld, (lon, lat) =>
-        lon === -85.3 && lat === 35.03 + D ? 1 : 500
-      )
-    ).toBe(1);
+  it('the extra box height is exactly the ground range — a below-grade skirt', () => {
+    const bld = sq(-85.3, 35.03, 10);
+    const { baseM, topM } = groundSpanM(bld, (lon: number) => slope(lon));
+    const gs = vertices(bld).map((v) => slope(v.lon));
+    const range = Math.max(...gs) - Math.min(...gs);
+    expect(topM - baseM).toBeCloseTo(range + 10, 6);
+    expect(range).toBeCloseTo(20, 6); // the bluff really is 20 m across this footprint
   });
 
-  it('a degenerate ring falls back to the ellipsoid, not Infinity', () => {
+  it('on flat ground the box is exactly heightM — no penalty where slope is nil', () => {
+    const { baseM, topM } = groundSpanM(sq(-85.3, 35.03, 10), () => 176);
+    expect(baseM).toBe(176);
+    expect(topM).toBe(186);
+  });
+
+  it('a degenerate ring sits on the ellipsoid, not Infinity', () => {
     // Extruding from Infinity vanishes the building instead of failing loudly.
-    expect(groundEllipsoidHeightM(b({ lonLat: [] }), () => 176)).toBe(0);
+    expect(groundSpanM(b({ lonLat: [], heightM: 9 }), () => 176)).toEqual({
+      baseM: 0,
+      topM: 9,
+    });
   });
 });

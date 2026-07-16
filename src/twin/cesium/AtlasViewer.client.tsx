@@ -28,7 +28,7 @@ import { createBakedTerrainProvider, sampleEllipsoidalM } from './terrain';
 import { fetchLiveBuildings, atlasBoxFor } from './overpass';
 import {
   buildingsToWgs84,
-  groundEllipsoidHeightM,
+  groundSpanM,
   classify,
   RULE_LABELS,
   unbucketedLadderTypes,
@@ -474,7 +474,9 @@ function addBuildings(
 ): Cesium.Primitive {
   const instances: Cesium.GeometryInstance[] = [];
   for (const b of list) {
-    const base = groundEllipsoidHeightM(b, sample);
+    // base = under every vertex (never floats); top = over the highest vertex
+    // by the building's full height (never buries). See groundSpanM.
+    const { baseM, topM } = groundSpanM(b, sample);
     const { color } = classify(b, mode);
     try {
       instances.push(
@@ -483,8 +485,8 @@ function addBuildings(
             polygonHierarchy: new Cesium.PolygonHierarchy(
               Cesium.Cartesian3.fromDegreesArray(b.lonLat)
             ),
-            height: base,
-            extrudedHeight: base + b.heightM,
+            height: baseM,
+            extrudedHeight: topM,
             vertexFormat: Cesium.PerInstanceColorAppearance.VERTEX_FORMAT,
           }),
           attributes: {
