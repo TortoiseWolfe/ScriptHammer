@@ -278,7 +278,7 @@ test.describe('Broken Links Detection', () => {
 
   test('check meta tag images and resources', async ({ page, baseURL }) => {
     baseUrl = baseURL || 'http://localhost:3000';
-    const pagesToCheck = ['/', '/blog', '/blog/scripthammer-intro'];
+    const pagesToCheck = ['/', '/blog', '/blog/scripthammer-intro', '/chatt'];
     const brokenResources: BrokenLink[] = [];
 
     for (const pagePath of pagesToCheck) {

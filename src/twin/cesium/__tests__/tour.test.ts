@@ -4,6 +4,7 @@ import {
   landmarkStops,
   cornerStops,
   resolveGround,
+  shouldAutoStart,
 } from '../tour';
 import type { AtlasBuilding } from '../buildings';
 import type { Manifest, TerrainGrid } from '@/lib/manifest';
@@ -188,5 +189,31 @@ describe('resolveGround', () => {
     );
     expect(all).toHaveLength(5);
     for (const s of all) expect(s.heightM).toBeGreaterThan(ground + 2);
+  });
+});
+
+describe('shouldAutoStart', () => {
+  it('plays on arrival — the tour is the best thing on the page', () => {
+    expect(
+      shouldAutoStart({ hasStops: true, notour: false, reducedMotion: false })
+    ).toBe(true);
+  });
+
+  it('?notour suppresses it — you cannot work on the atlas if it flies every reload', () => {
+    expect(
+      shouldAutoStart({ hasStops: true, notour: true, reducedMotion: false })
+    ).toBe(false);
+  });
+
+  it('NEVER auto-flies under reduced motion (WCAG 2.3.3) — the button still offers it', () => {
+    expect(
+      shouldAutoStart({ hasStops: true, notour: false, reducedMotion: true })
+    ).toBe(false);
+  });
+
+  it('no stops, no autoplay — never a tour that flies nowhere', () => {
+    expect(
+      shouldAutoStart({ hasStops: false, notour: false, reducedMotion: false })
+    ).toBe(false);
   });
 });

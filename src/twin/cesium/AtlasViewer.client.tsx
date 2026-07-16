@@ -31,8 +31,10 @@ import {
   cornerStops,
   resolveGround,
   describeTargets,
+  shouldAutoStart,
   type TourStop,
 } from './tour';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import {
   buildingsToWgs84,
   groundSpanM,
@@ -109,6 +111,23 @@ export default function AtlasViewer({ slug }: { slug: string }) {
   const tourAbort = useRef<{ cancelled: boolean } | null>(null);
   const rebuildTourRef = useRef<((l: AtlasBuilding[]) => void) | null>(null);
   const hiRef = useRef<Cesium.Primitive | null>(null);
+  // matchMedia, no provider — the SAME hook Scene.tsx:85 uses to gate
+  // auto-orbit. AccessibilityContext's settings.reduceMotion throws without a
+  // provider and no 3D code reads it (#292 task-4 brief).
+  const reducedMotion = useReducedMotion();
+  // The main effect below only depends on [slug] (see colorByRef's comment
+  // above); buildTour needs the LIVE value at the moment it fires, so it's
+  // mirrored into a ref rather than added as an effect dependency, which
+  // would tear the viewer down whenever the OS preference changes mid-visit.
+  const reducedMotionRef = useRef(reducedMotion);
+  useEffect(() => {
+    reducedMotionRef.current = reducedMotion;
+  }, [reducedMotion]);
+  // The tour plays itself once, the first time stops exist (#292). This
+  // guards against firing twice: buildTour runs again once the live/wide
+  // building fetch resolves (rebuildTourRef), and a rebuild must not restart
+  // a tour the user already cancelled by dragging or clicking stop.
+  const autoStartedRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   // 'wide' = widened via the baked buildings-wide.json (the default path,
   // #292); 'live' = widened via a real Overpass request (?live). Distinct
@@ -424,6 +443,26 @@ export default function AtlasViewer({ slug }: { slug: string }) {
             goTo,
             step,
           };
+          // Auto-start (#292): fire once, the first time stops exist — not on
+          // page load, since there are none until buildTour runs the first
+          // time. The ref guard means the SECOND buildTour call (after the
+          // live/wide fetch resolves) never re-attempts, whether or not the
+          // first attempt actually played.
+          if (!autoStartedRef.current) {
+            autoStartedRef.current = true;
+            const notour = new URLSearchParams(window.location.search).has(
+              'notour'
+            );
+            if (
+              shouldAutoStart({
+                hasStops: tourRef.current.stops.length > 0,
+                notour,
+                reducedMotion: reducedMotionRef.current,
+              })
+            ) {
+              tourRef.current.play(tourRef.current.stops);
+            }
+          }
         };
         buildTour(placed);
         rebuildTourRef.current = buildTour;
@@ -515,6 +554,44 @@ export default function AtlasViewer({ slug }: { slug: string }) {
     };
   }, [slug]);
 
+  // Abort the tour on user interaction — registered on `document`, NOT the
+  // Cesium ScreenSpaceEventHandler above. That handler is created only after
+  // the live-fetch await the effect above budgets at 60s+, while auto-start
+  // fires well before it (inside buildTour, right after the baked layer
+  // renders) — an abort hooked to the Cesium handler would be inert for
+  // exactly the window the tour is playing. This is the same
+  // needs-no-Cesium-object pattern Scene.tsx:~112 uses for auto-orbit.
+  //
+  // Events whose target is inside the HUD panel or the tour caption are
+  // ignored: those are the tour's OWN controls (Play, corners, prev/next,
+  // stop, colour mode). Without this, clicking Play would itself dispatch
+  // the pointerdown that reaches this listener BEFORE the click starts the
+  // tour, and — more importantly — clicking prev/next/stop while a tour is
+  // playing would race the caption's own state update against this effect's
+  // stop(). Interacting with the GLOBE (dragging, wheel-zooming, tapping the
+  // canvas) is what should end the tour; interacting with the tour's own
+  // chrome should not.
+  useEffect(() => {
+    const isInsideTourChrome = (target: EventTarget | null) =>
+      target instanceof Element &&
+      !!target.closest(
+        '[data-testid="atlas-hud"], [data-testid="atlas-tour-caption"]'
+      );
+    const abort = (e: Event) => {
+      if (isInsideTourChrome(e.target)) return;
+      tourRef.current?.stop();
+    };
+    const opts = { passive: true } as const;
+    document.addEventListener('pointerdown', abort, opts);
+    document.addEventListener('wheel', abort, opts);
+    document.addEventListener('touchstart', abort, opts);
+    return () => {
+      document.removeEventListener('pointerdown', abort);
+      document.removeEventListener('wheel', abort);
+      document.removeEventListener('touchstart', abort);
+    };
+  }, []);
+
   // From the legend — the ONE tally. A second count source is what made the
   // headline read '0 buildings' over a correct 8031-building legend.
   const total = legend.reduce((a, r) => a + r.n, 0);
@@ -570,22 +647,32 @@ export default function AtlasViewer({ slug }: { slug: string }) {
                   </button>
                 ))}
               </div>
-              <div className="mt-2 flex gap-1" data-testid="atlas-tour">
+              <div className="mt-2" data-testid="atlas-tour">
+                {/* Full-width primary, not a chip: this was a btn-xs min-h-0
+                    control — below the 44px touch target CLAUDE.md mandates —
+                    fifth in a row of near-identical chips, guarding the best
+                    thing on the page. It now auto-plays on arrival too (#292
+                    shouldAutoStart); this button is how you replay it or start
+                    it after ?notour suppressed the auto-flight. */}
                 <button
-                  className="btn btn-xs min-h-0"
+                  className="btn btn-primary btn-sm min-h-11 w-full"
                   onClick={() => tourRef.current?.play(tourRef.current.stops)}
                   disabled={!tourRef.current?.stops.length}
                 >
-                  ▶ tour
+                  ▶ Play tour
                 </button>
-                <button
-                  className="btn btn-xs min-h-0"
-                  title="Fly the four baked-box corners — where the fine/wide DEM seam, the drape edge and lidar coverage all end"
-                  onClick={() => tourRef.current?.play(tourRef.current.corners)}
-                  disabled={!tourRef.current?.corners.length}
-                >
-                  ⊹ corners
-                </button>
+                <div className="mt-2 flex gap-1">
+                  <button
+                    className="btn btn-xs min-h-0"
+                    title="Fly the four baked-box corners — where the fine/wide DEM seam, the drape edge and lidar coverage all end"
+                    onClick={() =>
+                      tourRef.current?.play(tourRef.current.corners)
+                    }
+                    disabled={!tourRef.current?.corners.length}
+                  >
+                    ⊹ corners
+                  </button>
+                </div>
                 {/* Stop lives on the caption now, next to prev/next — the
                     controls belong where you are reading, not in the launcher. */}
               </div>
