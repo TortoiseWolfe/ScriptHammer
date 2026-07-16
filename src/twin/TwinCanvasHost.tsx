@@ -9,11 +9,13 @@
 // TWO RENDERERS, ONE ROUTE (Build Plan: "Cesium is the atlas, Three.js is the
 // exhibit ... the data is the bridge, not the engine"). Both read the SAME baked
 // artifacts from public/twins/<slug>/; they differ only in what they are good at.
-// `?atlas` selects the Cesium view. It is opt-in while the atlas is built out —
-// the diorama stays the default until the atlas is at parity, so nothing
-// regresses in the meantime.
+// The atlas is the default (#292) — it is the better view of the city. `?diorama`
+// opts out to the R3F exhibit; the diorama's own features (?ortho, ?house, ?edit)
+// imply it too, since they are diorama-only. `?atlas` stays a no-op alias so
+// links shared before the flip keep working. See ./renderer-select.ts.
 import dynamic from 'next/dynamic';
 import { getAssetUrl } from '@/config/project.config';
+import { selectRenderer } from './renderer-select';
 import type { TwinFocus } from './TwinCanvas.client';
 
 const TwinCanvas = dynamic(() => import('./TwinCanvas.client'), {
@@ -54,9 +56,14 @@ export default function TwinCanvasHost({
   // bailout under output:'export'. Safe to read during render here because both
   // branches are dynamic(ssr:false) and therefore render null server-side, so
   // there is no hydration mismatch to create.
-  const atlas =
-    typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).has('atlas');
-  if (atlas) return <AtlasViewer slug={slug} />;
-  return <TwinCanvas slug={slug} focus={focus} />;
+  const params =
+    typeof window === 'undefined'
+      ? new URLSearchParams()
+      : new URLSearchParams(window.location.search);
+  // focus='house' is the as-built property framing (#234) — diorama-only, and it
+  // arrives as a prop rather than a param.
+  if (focus === 'house' || selectRenderer(params) === 'diorama') {
+    return <TwinCanvas slug={slug} focus={focus} />;
+  }
+  return <AtlasViewer slug={slug} />;
 }
