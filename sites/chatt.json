@@ -140,13 +140,6 @@
     "x": 0.5,
     "z": 0
   },
-  "geoidOffsetM": -29.657,
-  "atlasBox": {
-    "swLat": 35.028,
-    "swLon": -85.345,
-    "neLat": 35.076,
-    "neLon": -85.283
-  },
   "lidar": {
     "ept": "https://s3-us-west-2.amazonaws.com/usgs-lidar-public/USGS_LPC_TN_27County_blk4_2015_LAS_2018",
     "maxDepth": 10

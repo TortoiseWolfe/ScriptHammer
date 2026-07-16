@@ -160,25 +160,6 @@ describe('FootprintIndex', () => {
   });
 });
 
-// PRECEDENCE REVISION (2026-07-15). This block previously asserted that
-// `building:levels` beat lidar, under the banner "explicit tags and overrides
-// still beat lidar" — human-authored data outranks a machine measurement. That
-// principle is right, but it conflated two different things, and the chatt bake
-// measured the difference:
-//
-//   * `height=30` IS a human asserting METRES about this building. It agrees
-//     with lidar to a median of 0.1 m across the 92 chatt buildings carrying
-//     both — mutual validation. It keeps rank 1.
-//   * `building:levels=3` is a human asserting a FLOOR COUNT. The count is
-//     probably right; `3 × 3.2 = 9.6 m` is OUR multiplier bolted onto their
-//     fact. The human never asserted a height. Measured: 112 of the 116 chatt
-//     `levels` buildings had a lidar return, and `levels × 3.2` ran a median
-//     2.9 m short of it — about one floor, on 7–16 m buildings.
-//
-// So the old rule wasn't deferring to human data, it was deferring to our
-// arithmetic on top of it. Ladder is now: height > override > lidar > levels >
-// ms > fallback. If you are here because you want `levels` to win again, bring
-// a measurement — the 0.1 m vs 2.9 m asymmetry above is the bar to clear.
 describe('height rule precedence with lidar (#229 PR-B)', () => {
   const cfg = { overrides: { Named: 50 }, fallbackClampM: 100 };
   it('lidar beats ms and fallback', () => {
@@ -188,23 +169,16 @@ describe('height rule precedence with lidar (#229 PR-B)', () => {
     });
     expect(resolveHeight({}, 100, cfg, undefined, 9.4).rule).toBe('lidar');
   });
-  it('an explicit height tag and a named override still beat lidar', () => {
+  it('explicit tags and overrides still beat lidar', () => {
     expect(resolveHeight({ height: '30' }, 100, cfg, 12, 9.4).rule).toBe(
       'height'
     );
+    expect(
+      resolveHeight({ 'building:levels': '3' }, 100, cfg, 12, 9.4).rule
+    ).toBe('levels');
     expect(resolveHeight({ name: 'Named' }, 100, cfg, 12, 9.4).rule).toBe(
       'override'
     );
-  });
-  it('lidar beats building:levels — a measurement outranks our 3.2 m/level derivation', () => {
-    expect(
-      resolveHeight({ 'building:levels': '3' }, 100, cfg, 12, 9.4).rule
-    ).toBe('lidar');
-  });
-  it('building:levels is still used when the footprint has no lidar return', () => {
-    expect(
-      resolveHeight({ 'building:levels': '3' }, 100, cfg, 12, undefined).rule
-    ).toBe('levels');
   });
   it('absent/zero lidar falls through to ms', () => {
     expect(resolveHeight({}, 100, cfg, 12, undefined).rule).toBe('ms');

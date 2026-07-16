@@ -33,11 +33,6 @@ const eslintConfig = [
       '.pnpm-store/**',
       'dist/**',
       'public/mockServiceWorker.js',
-      // Generated vendor output: scripts/sync-cesium.sh copies ~8MB of prebuilt
-      // CesiumJS runtime assets here from node_modules. Its Workers/ bundles are
-      // minified but not named *.min.js, so the patterns below miss them and
-      // ESLint reports no-this-alias against Cesium's own compiled output.
-      'public/cesium/**',
       '*.min.js',
       '**/*.min.js',
     ],
