@@ -1,7 +1,8 @@
 #!/bin/sh
-# Clean .next directory contents before running pre-commit checks
-echo "🧹 Cleaning .next directory before checks..."
-rm -rf .next/* .next/.* 2>/dev/null || true
+# NOTE: this hook must never touch .next. CLAUDE.md tells you to commit from
+# inside the container, where .next is the running dev server's — wiping it here
+# 500s every route on every commit (#293). Nothing below reads .next anyway:
+# gitleaks scans staged blobs, lint-staged runs eslint/prettier on staged files.
 
 # Function to run gitleaks on staged files
 run_gitleaks_staged() {
