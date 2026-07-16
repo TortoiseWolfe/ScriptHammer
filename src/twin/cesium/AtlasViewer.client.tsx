@@ -27,6 +27,12 @@ import {
 import { createBakedTerrainProvider, sampleEllipsoidalM } from './terrain';
 import { fetchLiveBuildings, atlasBoxFor } from './overpass';
 import {
+  landmarkStops,
+  cornerStops,
+  resolveGround,
+  type TourStop,
+} from './tour';
+import {
   buildingsToWgs84,
   groundSpanM,
   classify,
@@ -85,6 +91,16 @@ export default function AtlasViewer({ slug }: { slug: string }) {
   // every toggle.
   const colorByRef = useRef<ColorBy>('provenance');
   const rebuildRef = useRef<((m: ColorBy) => void) | null>(null);
+  const [tourStop, setTourStop] = useState<TourStop | null>(null);
+  const tourRef = useRef<{
+    stops: TourStop[];
+    corners: TourStop[];
+    play: (list: TourStop[]) => void;
+    stop: () => void;
+    goTo: (s: TourStop) => void;
+  } | null>(null);
+  const tourAbort = useRef<{ cancelled: boolean } | null>(null);
+  const rebuildTourRef = useRef<((l: AtlasBuilding[]) => void) | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [live, setLive] = useState<'baked' | 'loading' | 'live' | 'offline'>(
     'baked'
@@ -238,6 +254,7 @@ export default function AtlasViewer({ slug }: { slug: string }) {
               geoidOffsetM: number;
               manifest: typeof manifest;
               placed: { current: AtlasBuilding[] };
+              tour: { current: unknown };
             };
           }
         ).__atlas = {
@@ -246,6 +263,7 @@ export default function AtlasViewer({ slug }: { slug: string }) {
           geoidOffsetM: manifest.geoidOffsetM ?? 0,
           manifest,
           placed: placedRef,
+          tour: tourRef,
         };
         primRef.current = addBuildings(
           viewer,
@@ -259,6 +277,59 @@ export default function AtlasViewer({ slug }: { slug: string }) {
           primRef.current = addBuildings(viewer!, placedRef.current, sample, m);
           setLegend(legendOf(placedRef.current, m));
         };
+
+        // ── Tour ────────────────────────────────────────────────────────────
+        const v2 = viewer;
+        const goTo = (st: TourStop) => {
+          v2.camera.flyTo({
+            destination: Cesium.Cartesian3.fromDegrees(
+              st.lon,
+              st.lat,
+              st.heightM
+            ),
+            orientation: {
+              heading: st.headingRad,
+              pitch: st.pitchRad,
+              roll: 0,
+            },
+            duration: 2.5,
+          });
+        };
+        const stopTour = () => {
+          if (tourAbort.current) tourAbort.current.cancelled = true;
+          tourAbort.current = null;
+          setTourStop(null);
+        };
+        const play = async (list: TourStop[]) => {
+          stopTour();
+          const token = { cancelled: false };
+          tourAbort.current = token;
+          for (const st of list) {
+            if (token.cancelled || disposed) return;
+            setTourStop(st);
+            goTo(st);
+            await new Promise((r) => setTimeout(r, 2500 + st.dwell * 1000));
+          }
+          if (!token.cancelled) setTourStop(null);
+        };
+        // Any camera input cancels — a tour you cannot escape is a trap.
+        v2.camera.moveStart.addEventListener(() => {
+          if (tourAbort.current) stopTour();
+        });
+        const buildTour = (list: AtlasBuilding[]) => {
+          tourRef.current = {
+            stops: landmarkStops(manifest, fine),
+            // Corner stops are placed against LIVE terrain, not the authored ENU
+            // frame — resolveGround uses the same ground definition the terrain
+            // provider renders, so a stop cannot end up inside a hill.
+            corners: resolveGround(cornerStops(manifest, fine, list), sample),
+            play,
+            stop: stopTour,
+            goTo,
+          };
+        };
+        buildTour(placed);
+        rebuildTourRef.current = buildTour;
         setReady(true);
         setStatus('');
 
@@ -294,6 +365,7 @@ export default function AtlasViewer({ slug }: { slug: string }) {
             colorByRef.current
           );
           setLegend(legendOf(placedLive, colorByRef.current));
+          rebuildTourRef.current?.(placedLive); // corners follow the live extremes
           // Bind the non-null viewer the enclosing block already proved — the
           // closure outlives this scope and TS cannot narrow `viewer` inside it.
           const v = viewer;
@@ -384,6 +456,31 @@ export default function AtlasViewer({ slug }: { slug: string }) {
                   </button>
                 ))}
               </div>
+              <div className="mt-2 flex gap-1" data-testid="atlas-tour">
+                <button
+                  className="btn btn-xs min-h-0"
+                  onClick={() => tourRef.current?.play(tourRef.current.stops)}
+                  disabled={!tourRef.current?.stops.length}
+                >
+                  ▶ tour
+                </button>
+                <button
+                  className="btn btn-xs min-h-0"
+                  title="Fly the four baked-box corners — where the fine/wide DEM seam, the drape edge and lidar coverage all end"
+                  onClick={() => tourRef.current?.play(tourRef.current.corners)}
+                  disabled={!tourRef.current?.corners.length}
+                >
+                  ⊹ corners
+                </button>
+                {tourStop && (
+                  <button
+                    className="btn btn-xs btn-error min-h-0"
+                    onClick={() => tourRef.current?.stop()}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
               <ul className="mt-2 space-y-0.5">
                 {legend.map((row) => (
                   <li
@@ -403,6 +500,15 @@ export default function AtlasViewer({ slug }: { slug: string }) {
           )}
         </div>
       </div>
+
+      {tourStop && (
+        <div className="bg-base-100/90 rounded-box absolute bottom-6 left-1/2 z-10 w-[28rem] max-w-[calc(100%-2rem)] -translate-x-1/2 p-3 shadow-lg backdrop-blur">
+          <div className="text-sm font-semibold">{tourStop.name}</div>
+          <div className="text-base-content/70 mt-1 text-[11px] leading-snug">
+            {tourStop.blurb}
+          </div>
+        </div>
+      )}
 
       {selected && (
         <div className="bg-base-100/90 rounded-box absolute top-3 right-3 z-10 w-64 p-3 shadow-lg backdrop-blur">
