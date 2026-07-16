@@ -94,7 +94,17 @@ const ENDPOINTS = [
 
 /**
  * Fetch every building in the atlas box and resolve its height, preferring the
- * bake. Throws if every mirror fails — the caller keeps the baked layer.
+ * bake. Two distinct paths, picked by whether `?live` is on the URL:
+ *
+ *   default — fetches the bake-time join shipped as buildings-wide.json (a
+ *     same-origin static asset; no Overpass call, no mirrors, nothing to be
+ *     "unreachable"). Throws if that fetch fails, which the caller
+ *     (AtlasViewer.client.tsx) treats as "this site never baked one" rather
+ *     than a real failure — buildings-wide.json is OPTIONAL, exactly like
+ *     terrain-wide.json.
+ *   ?live — queries the Overpass mirrors directly, for picking up a fix made
+ *     on openstreetmap.org since the last bake. Throws if every mirror
+ *     fails — the caller keeps the baked layer and reports it 'offline'.
  */
 export async function fetchLiveBuildings(
   slug: string,

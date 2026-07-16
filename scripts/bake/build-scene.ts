@@ -505,7 +505,10 @@ export async function buildScene(
 
   // Ship the wide atlas buildings alongside it (#292). Same join
   // fetchLiveBuildings runs live at request time, computed once here so the
-  // atlas's default path needs no public API. Absent for sites with no
+  // atlas's default path needs no Overpass call. It still calls a public API
+  // on every load regardless — services.arcgisonline.com for base imagery,
+  // unthrottled and token-free (AtlasViewer.client.tsx) — this step only
+  // removes Overpass, not every third party. Absent for sites with no
   // atlasBox (no osm-wide.json was fetched).
   const osmWidePath = join(rawDir, 'osm-wide.json');
   if (existsSync(osmWidePath)) {

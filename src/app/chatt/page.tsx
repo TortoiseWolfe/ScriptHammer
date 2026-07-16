@@ -3,6 +3,7 @@
 import type { Metadata } from 'next';
 import TwinCanvasHost from '@/twin/TwinCanvasHost';
 import { generateMetadata as buildMetadata } from '@/utils/metadata';
+import { siteHasAtlas } from '@/lib/twinManifest.server';
 
 export const metadata: Metadata = {
   ...buildMetadata({
@@ -19,6 +20,10 @@ export const metadata: Metadata = {
   alternates: { canonical: '/twins/chatt/' },
 };
 
-export default function ChattPage() {
-  return <TwinCanvasHost slug="chatt" />;
+export default async function ChattPage() {
+  // Read from the manifest, not hardcoded true: this stays correct even if a
+  // future rebake ever drops chatt's atlasBox (#292 B1a) — same fact the
+  // canonical /twins/chatt route derives.
+  const hasAtlas = await siteHasAtlas('chatt');
+  return <TwinCanvasHost slug="chatt" hasAtlas={hasAtlas} />;
 }

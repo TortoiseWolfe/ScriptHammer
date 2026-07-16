@@ -1,6 +1,10 @@
 // Bake-time twin of src/twin/cesium/overpass.ts's fetchLiveBuildings (#292).
 // Same join, same output type — computed once at bake instead of on every
-// page load. The atlas's default path then needs no public API.
+// page load. The atlas's default path then needs no Overpass call — but it
+// is NOT API-free: AtlasViewer.client.tsx still hits
+// services.arcgisonline.com for base imagery on every load, unthrottled and
+// token-free. That dependency was never Overpass's and this bake step does
+// nothing to remove it.
 //
 // NOT a wide buildings.json: that artifact is ENU-projected and clipped to
 // site.box (build-scene.ts drops anything whose centroid fails inBox).

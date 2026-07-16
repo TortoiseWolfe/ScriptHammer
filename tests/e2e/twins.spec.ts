@@ -239,8 +239,19 @@ test.describe('/chatt — the atlas is the default (#292)', () => {
     // is driven by the real numeric value rather than string shape (e.g. a
     // hypothetical "01 buildings" parses to 1, a legitimate nonzero count,
     // and correctly passes here).
+    //
+    // The trailing " · " is load-bearing (#292 review, fix-now minor #3), NOT
+    // decorative: the SAME status div's ternary sibling renders
+    // `projecting ${buildings.length} buildings…` while still loading
+    // (AtlasViewer.client.tsx's setStatus call before `ready`), which also
+    // matches a bare /\d[\d,]* buildings/. Today this test only passes on the
+    // READY state because React batches both setStatus calls with no `await`
+    // between them — an innocuous-looking added `await` would make it start
+    // passing on the LOADING text instead, silently. Requiring the middot
+    // that only the ready-state string has (`${total} buildings · ${...}`)
+    // makes the assertion correct regardless of that timing.
     await page.goto('/chatt/');
-    const headline = page.getByText(/\d[\d,]* buildings/).first();
+    const headline = page.getByText(/\d[\d,]* buildings · /).first();
     await expect(headline).toBeVisible({ timeout: 20000 });
     const text = await headline.textContent();
     const count = Number(text?.match(/\d[\d,]*/)?.[0].replace(/,/g, ''));
@@ -268,5 +279,62 @@ test.describe('/chatt — the atlas is the default (#292)', () => {
     await expect(page.getByText('Atlas —').first()).toBeVisible({
       timeout: 20000,
     });
+  });
+});
+
+test.describe('/twins/east-main-street-chattanooga — no atlasBox, no atlas (#292 B1)', () => {
+  // east-main-street-chattanooga is a single as-built house (#234) with no
+  // atlasBox in its manifest — the atlas has nothing to add to a one-house
+  // exhibit ("Cesium is the atlas, Three.js is the exhibit"), so TwinPage's
+  // hasAtlas gate (src/lib/twinManifest.server.ts) routes it to the diorama
+  // regardless of query params (src/twin/renderer-select.ts's
+  // selectRendererFor). This is deliberately NOT /chatt/ — chatt DOES have an
+  // atlasBox and buildings-wide.json, so a console-error check there is
+  // already verified clean and would give a false green over a B1 routing
+  // regression: a regression that made every slug default to the atlas again
+  // would surface here as a buildings-wide.json 404 (this site never baked
+  // one) and/or the wrong renderer, neither of which /chatt/ can catch.
+  test('no unexpected console.error on load, and buildings-wide.json is never requested', async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error')
+        errors.push(`${msg.text()} [${msg.location()?.url ?? ''}]`);
+    });
+    const requestUrls: string[] = [];
+    page.on('request', (req) => requestUrls.push(req.url()));
+
+    await page.goto('/twins/east-main-street-chattanooga/');
+    // Diorama chrome, not the atlas HUD — proves the hasAtlas gate routed
+    // here correctly, not just that the page loaded without erroring.
+    await expect(
+      page.getByRole('button', { name: DIORAMA_SIGNAL })
+    ).toBeVisible({ timeout: 15000 });
+
+    // This site never baked buildings-wide.json (no atlasBox) — the atlas
+    // code path (src/twin/cesium/overpass.ts) must never even be reached.
+    expect(requestUrls.some((u) => u.includes('buildings-wide.json'))).toBe(
+      false
+    );
+
+    // Same allowlist as the diorama's console-error spec above (game-3d.spec.ts
+    // noise set + the twin's OPTIONAL per-site assets).
+    const relevant = errors.filter((e) => {
+      const lower = e.toLowerCase();
+      return (
+        !lower.includes('favicon') &&
+        !lower.includes('analytics') &&
+        !lower.includes('chrome-extension') &&
+        !lower.includes('cf_bm') &&
+        !lower.includes('cloudflare') &&
+        !lower.includes('webgl') &&
+        !lower.includes('links.local.json') &&
+        !lower.includes('house/house.json') &&
+        !lower.includes('models/models.json') &&
+        !lower.includes('127.0.0.1:3099')
+      );
+    });
+    expect(relevant).toEqual([]);
   });
 });
