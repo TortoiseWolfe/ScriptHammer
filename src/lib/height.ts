@@ -19,7 +19,12 @@ export interface HeightsConfig {
 }
 
 // Fallback level priors by building tag value (the COMMON path — ~74% of buildings).
-const LEVEL_PRIORS: Record<string, number> = {
+//
+// Exported so the atlas legend buckets `building=*` with the SAME vocabulary the
+// ladder reasons about. A type the ladder knows but the legend does not (or the
+// reverse) means the two describe the city differently — see
+// src/twin/cesium/buildings.ts.
+export const LEVEL_PRIORS: Record<string, number> = {
   house: 1,
   detached: 1,
   garage: 1,

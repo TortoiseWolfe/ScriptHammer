@@ -5,6 +5,7 @@
 // so it lives apart from the viewer where it can be tested without WebGL.
 
 import { createProjection, type GeoBox } from '@/lib/enu';
+import { LEVEL_PRIORS } from '@/lib/height';
 import type { Building, Manifest } from '@/lib/manifest';
 
 /** Height-provenance palette. The atlas can show WHERE a height came from —
@@ -35,7 +36,126 @@ export interface AtlasBuilding {
   lonLat: number[];
   heightM: number;
   rule: string;
-  cssColor: string;
+  /** Live OSM tags. Absent on baked-only buildings: buildings.json carries
+   *  geometry + height and deliberately no tags — the live layer is the tag
+   *  source (#292). */
+  tags?: Record<string, string>;
+}
+
+// ── What a building IS ───────────────────────────────────────────────────────
+//
+// MEASURED IN THE BAKED BOX (_raw/osm.json, ~1547 buildings):
+//   1316  building=yes   <- 85%. "A building exists here", nothing more.
+//     37  house    31 retail   27 apartments   22 detached   17 office
+//     13  parking  10 church    9 garage  ... 26 distinct values, long tail of 1-8
+//   148 have a name | 229 have an address | 128 have building:levels
+//
+// So "everything is labelled building" is mostly TRUE OF OSM, not a rendering
+// bug: 85% of downtown genuinely has no structure type recorded. That is why
+// `type` is NOT the default colour mode — it would paint 85% of the city one
+// colour and read as more broken, not less.
+//
+// It is still worth having, because it shows exactly how much of the city is
+// unmapped — which is the Build Plan's contribution loop ("Missing building name
+// or height? Tag it on openstreetmap.org and it appears in the twin on next
+// load"). The untyped bucket is the ask, rendered.
+
+export type ColorBy = 'provenance' | 'type' | 'height';
+
+/** Coarse buckets over OSM's `building=*`. Keys are checked against LEVEL_PRIORS
+ *  by test: a value the height ladder reasons about must land in a bucket, or
+ *  the legend and the ladder are describing different cities. */
+const TYPE_BUCKETS: Record<string, string> = {
+  house: 'residential',
+  detached: 'residential',
+  terrace: 'residential',
+  residential: 'residential',
+  apartments: 'residential',
+  dormitory: 'residential',
+  hotel: 'residential',
+  retail: 'commercial',
+  commercial: 'commercial',
+  office: 'commercial',
+  industrial: 'industrial',
+  warehouse: 'industrial',
+  greenhouse: 'industrial',
+  garage: 'ancillary',
+  shed: 'ancillary',
+  hut: 'ancillary',
+  parking: 'ancillary',
+  roof: 'ancillary',
+  pavilion: 'ancillary',
+  church: 'civic',
+  school: 'civic',
+  university: 'civic',
+  government: 'civic',
+  public: 'civic',
+  hospital: 'civic',
+  civic: 'civic',
+  grandstand: 'civic',
+};
+
+export const TYPE_COLORS: Record<string, string> = {
+  residential: '#4bc470',
+  commercial: '#56b8e6',
+  civic: '#b48ae8',
+  industrial: '#e8a04f',
+  ancillary: '#8a8ab0',
+  untyped: '#3f3f5e', // building=yes / no tag — deliberately drab: it is a gap
+};
+export const TYPE_LABELS: Record<string, string> = {
+  residential: 'residential',
+  commercial: 'commercial',
+  civic: 'civic / institutional',
+  industrial: 'industrial',
+  ancillary: 'garage / parking / shed',
+  untyped: 'untyped in OSM (building=yes)',
+};
+
+export function typeBucket(tags?: Record<string, string>): string {
+  const b = tags?.building;
+  if (!b || b === 'yes') return 'untyped';
+  return TYPE_BUCKETS[b] ?? 'untyped';
+}
+
+/** Every type the height ladder has a prior for must be bucketed. */
+export function unbucketedLadderTypes(): string[] {
+  return Object.keys(LEVEL_PRIORS).filter(
+    (k) => k !== 'yes' && !TYPE_BUCKETS[k]
+  );
+}
+
+export const HEIGHT_BANDS: { max: number; key: string; color: string }[] = [
+  { max: 8, key: '0-8 m', color: '#383a5e' },
+  { max: 18, key: '8-18 m', color: '#464a7d' },
+  { max: 35, key: '18-35 m', color: '#54609c' },
+  { max: 60, key: '35-60 m', color: '#4f86c0' },
+  { max: Infinity, key: '60 m+', color: '#56b8e6' },
+];
+export function heightBand(m: number): { key: string; color: string } {
+  return (
+    HEIGHT_BANDS.find((b) => m < b.max) ?? HEIGHT_BANDS[HEIGHT_BANDS.length - 1]
+  );
+}
+
+/** The one place a colour mode turns a building into a legend key + colour. */
+export function classify(
+  b: AtlasBuilding,
+  mode: ColorBy
+): { key: string; color: string; label: string } {
+  if (mode === 'type') {
+    const k = typeBucket(b.tags);
+    return { key: k, color: TYPE_COLORS[k], label: TYPE_LABELS[k] };
+  }
+  if (mode === 'height') {
+    const band = heightBand(b.heightM);
+    return { key: band.key, color: band.color, label: band.key };
+  }
+  return {
+    key: b.rule,
+    color: RULE_COLORS[b.rule] ?? RULE_COLORS.fallback,
+    label: RULE_LABELS[b.rule] ?? b.rule,
+  };
 }
 
 /**
@@ -77,13 +197,7 @@ export function buildingsToWgs84(
       lonLat[i + 1] = lat;
     }
     if (!ok) continue;
-    out.push({
-      id: b.id,
-      lonLat,
-      heightM: b.height,
-      rule: b.rule,
-      cssColor: RULE_COLORS[b.rule] ?? RULE_COLORS.fallback,
-    });
+    out.push({ id: b.id, lonLat, heightM: b.height, rule: b.rule });
   }
   return out;
 }
