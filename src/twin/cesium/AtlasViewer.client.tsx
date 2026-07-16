@@ -108,6 +108,7 @@ export default function AtlasViewer({ slug }: { slug: string }) {
   } | null>(null);
   const tourAbort = useRef<{ cancelled: boolean } | null>(null);
   const rebuildTourRef = useRef<((l: AtlasBuilding[]) => void) | null>(null);
+  const hiRef = useRef<Cesium.Primitive | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [live, setLive] = useState<'baked' | 'loading' | 'live' | 'offline'>(
     'baked'
@@ -290,7 +291,53 @@ export default function AtlasViewer({ slug }: { slug: string }) {
         // 1.2s, not 2.5s. Seven stops at 2.5s fly + 5s dwell was 52 seconds of
         // sitting still with no way out.
         const FLY_S = 1.2;
+        // HIGHLIGHT.chatt is 8031 near-identical boxes; a caption saying "13.5 m,
+        // measured" is useless if you cannot tell WHICH box it means. Yellow is
+        // deliberately outside the provenance palette (blue/green/orange/red/
+        // yellow-ochre) — a selection colour must not read as a data value.
+        const HI = Cesium.Color.fromCssColorString('#ffe14d');
+        const highlight = (st: TourStop) => {
+          if (hiRef.current) {
+            v2.scene.primitives.remove(hiRef.current);
+            hiRef.current = null;
+          }
+          if (!st.target) return;
+          const b = placedRef.current.find((x) => x.id === st.target!.id);
+          if (!b) return;
+          const { baseM, topM } = groundSpanM(b, sample);
+          try {
+            hiRef.current = v2.scene.primitives.add(
+              new Cesium.Primitive({
+                geometryInstances: new Cesium.GeometryInstance({
+                  geometry: new Cesium.PolygonGeometry({
+                    polygonHierarchy: new Cesium.PolygonHierarchy(
+                      Cesium.Cartesian3.fromDegreesArray(b.lonLat)
+                    ),
+                    // A hair above the massing box: same span, nudged, so it
+                    // reads as a highlight rather than z-fighting with itself.
+                    height: baseM,
+                    extrudedHeight: topM + 0.5,
+                    vertexFormat:
+                      Cesium.PerInstanceColorAppearance.VERTEX_FORMAT,
+                  }),
+                  attributes: {
+                    color: Cesium.ColorGeometryInstanceAttribute.fromColor(HI),
+                  },
+                }),
+                appearance: new Cesium.PerInstanceColorAppearance({
+                  translucent: false,
+                  closed: true,
+                }),
+                asynchronous: false, // must appear WITH the caption, not after
+              })
+            );
+          } catch {
+            // self-intersecting ring — skip the highlight, keep the stop
+          }
+        };
+
         const goTo = (st: TourStop) => {
+          highlight(st);
           v2.camera.flyTo({
             destination: Cesium.Cartesian3.fromDegrees(
               st.lon,
@@ -308,6 +355,10 @@ export default function AtlasViewer({ slug }: { slug: string }) {
         const stopTour = () => {
           if (tourAbort.current) tourAbort.current.cancelled = true;
           tourAbort.current = null;
+          if (hiRef.current) {
+            v2.scene.primitives.remove(hiRef.current);
+            hiRef.current = null;
+          }
           setTour(null);
         };
         // Autoplay and the prev/next buttons drive the SAME path — two ways to

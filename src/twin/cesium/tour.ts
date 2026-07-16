@@ -271,8 +271,13 @@ export function describeTargets(
       }
     }
     if (!best) return s;
+    const c = centroid(best);
     return {
       ...s,
+      // Re-aim at the TARGET, not the authored aim point. A stop that names a
+      // building and then centres something else is worse than no name: the
+      // caption says one thing and the screen shows another.
+      lookAt: { ...s.lookAt, lon: c.lon, lat: c.lat },
       target: {
         id: best.id,
         name: best.tags?.name,
