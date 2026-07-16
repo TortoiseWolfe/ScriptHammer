@@ -4,10 +4,12 @@
  *   - TWO RENDERERS, ONE ROUTE. /chatt/ and /twins/[slug]/ now default to the
  *     Cesium ATLAS (panel heading "Atlas — {slug}", a live building count,
  *     and data-testid="atlas-tour"). The R3F DIORAMA — the wordmark
- *     "Chattanooga Mini" and the Tour | Miniature | Ride | Directory | Edit |
- *     As-built demo dock — is now reached only via ?diorama (or one of its
- *     diorama-only implying params: ?ortho, ?house, ?edit). See
- *     src/twin/renderer-select.ts.
+ *     "Chattanooga Mini", the Tour | Miniature | Ride | Directory | Edit
+ *     <button> dock, and (for twins with a per-site link) an "As-built demo"
+ *     <a href> rendered alongside it (src/stage/Hud.tsx:487-499 — an anchor,
+ *     not a button; don't reach for getByRole('button', ...) on it) — is now
+ *     reached only via ?diorama (or one of its diorama-only implying params:
+ *     ?ortho, ?house, ?edit). See src/twin/renderer-select.ts.
  *   - Diorama specs below assert the DOCK, never the wordmark. Verified live:
  *     the wordmark renders underneath the sticky global nav (its rect sits at
  *     z-10 vs the nav's z-50, top ≈ 27px) and elementFromPoint at its own
@@ -54,15 +56,6 @@ test.describe('/twins/[slug]?diorama — the R3F exhibit (opt-in since #292)', (
     await page.goto('/twins/chatt/?diorama');
     // The dock renders only after the manifest fetch + validateManifest
     // succeed — generous timeout for cold static hosting.
-    await expect(
-      page.getByRole('button', { name: DIORAMA_SIGNAL })
-    ).toBeVisible({
-      timeout: 15000,
-    });
-  });
-
-  test('/chatt/?diorama alias renders the same twin', async ({ page }) => {
-    await page.goto('/chatt/?diorama');
     await expect(
       page.getByRole('button', { name: DIORAMA_SIGNAL })
     ).toBeVisible({
@@ -236,10 +229,22 @@ test.describe('/chatt — the atlas is the default (#292)', () => {
   test('the atlas reports a real building count, not an empty scene', async ({
     page,
   }) => {
+    // /\d[\d,]* buildings/ would ALSO match "0 buildings" — \d takes the
+    // leading 0 and [\d,]* matches empty. AtlasViewer.client.tsx:518-519
+    // documents that exact bug shipping once already ("a second count source
+    // is what made the headline read '0 buildings' over a correct
+    // 8031-building legend"). So find the element with the loose pattern
+    // (still fails loudly if no count renders at all), then parse the number
+    // out and assert it's actually > 0 — that states the intent plainly and
+    // is driven by the real numeric value rather than string shape (e.g. a
+    // hypothetical "01 buildings" parses to 1, a legitimate nonzero count,
+    // and correctly passes here).
     await page.goto('/chatt/');
-    await expect(page.getByText(/\d[\d,]* buildings/).first()).toBeVisible({
-      timeout: 20000,
-    });
+    const headline = page.getByText(/\d[\d,]* buildings/).first();
+    await expect(headline).toBeVisible({ timeout: 20000 });
+    const text = await headline.textContent();
+    const count = Number(text?.match(/\d[\d,]*/)?.[0].replace(/,/g, ''));
+    expect(count).toBeGreaterThan(0);
   });
 
   test('?diorama still reaches the exhibit', async ({ page }) => {
