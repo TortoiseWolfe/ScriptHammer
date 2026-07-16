@@ -146,6 +146,44 @@ export const SiteConfigSchema = z.object({
       message: 'vectorOffsetM must be within 15 m of zero',
     })
     .optional(),
+  /** Geoid separation N at the site centre, metres (h = H + N).
+   *
+   *  Baked terrain is USGS 3DEP, whose heights are ORTHOMETRIC (NAVD88) —
+   *  fetch-lidar-heights.ts re-measures that delta every bake as a datum
+   *  tripwire. Anything that wants heights above the WGS84 ELLIPSOID (a globe
+   *  renderer; anything georeferenced) must add N. Around Chattanooga N is
+   *  ~-29.7 m, so skipping it sinks the whole site ~30 m — the "#1 gotcha" of
+   *  the Chattanooga Build Plan, and the bug its own reference viewer ships.
+   *
+   *  PINNED, never computed at bake time — same discipline as `lidar.ept`.
+   *  Resolve once from NGS and paste the number:
+   *    https://geodesy.noaa.gov/api/geoid/ght?lat=<lat>&lon=<lon>&model=13
+   *  Omitted => 0 => the local-ENU diorama is unaffected (it never leaves the
+   *  box, so a constant vertical shift is invisible to it). */
+  geoidOffsetM: z.number().finite().gte(-110).lte(90).optional(),
+  /** The civic extent the ATLAS layer covers, when it is wider than `box`.
+   *
+   *  `box` is composed for the DIORAMA — chatt's is a 1.46 km-wide north-south
+   *  corridor framed for its tour. The atlas wants the city: the design
+   *  project's own editorial extent is "downtown + North Shore + Southside",
+   *  3.6x the area and 3.9x the buildings (#292).
+   *
+   *  Drives two things, and they must agree: which OSM buildings the atlas
+   *  fetches live, and how far the wide terrain DEM reaches. Terrain that stops
+   *  short of the buildings is the 176 m plateau this exists to fix.
+   *
+   *  ALWAYS UNIONED WITH `box` at bake time — never replaces it. Taking the
+   *  civic extent verbatim once silently cut the southern corridor, dropping
+   *  lidar-measured buildings 1328 -> 1043 and losing the Choo Choo.
+   *  Omitted => the atlas covers exactly `box`. */
+  atlasBox: z
+    .object({
+      swLat: z.number().finite(),
+      swLon: z.number().finite(),
+      neLat: z.number().finite(),
+      neLon: z.number().finite(),
+    })
+    .optional(),
 });
 
 export type SiteConfig = z.infer<typeof SiteConfigSchema>;
@@ -279,4 +317,40 @@ export function provenanceFor(
     ...(msHeights ? ['Microsoft Buildings'] : []),
     ...(lidar ? ['USGS 3DEP Lidar'] : []),
   ].join(' · ');
+}
+
+/**
+ * The atlas extent: the site's editorial `atlasBox` UNIONED with `box`.
+ *
+ * The union is a DATA INVARIANT, enforced here rather than in the viewer, so
+ * every consumer (live-OSM fetch, wide DEM, manifest) gets the same answer.
+ * Taking a civic extent verbatim once cut chatt's southern corridor — lidar
+ * 1328 -> 1043 and the Choo Choo gone — because the design project's box starts
+ * at lat 35.028 while the bake starts at 35.0078. The atlas must never cover
+ * less than the bake.
+ */
+export function atlasBoxFor(site: { box: GeoBox; atlasBox?: GeoBox }): GeoBox {
+  const b = site.box;
+  if (!site.atlasBox) return b;
+  const a = site.atlasBox;
+  return {
+    swLat: Math.min(a.swLat, b.swLat),
+    swLon: Math.min(a.swLon, b.swLon),
+    neLat: Math.max(a.neLat, b.neLat),
+    neLon: Math.max(a.neLon, b.neLon),
+  };
+}
+
+/**
+ * Grid for the WIDE atlas DEM. ~30 m posting: it exists to remove a 176 m cliff
+ * at the baked box edge, not to add detail — the fine grid already covers the
+ * site at ~9 m. Reuses the 3DEP degree-square discipline (pixel centres must
+ * land on grid nodes or the terrain mis-registers, and unlike the drape that
+ * error is not self-correcting).
+ */
+export function wideTerrainGridFor(box: GeoBox): {
+  cols: number;
+  rows: number;
+} {
+  return terrainGridFor3Dep(box, 30);
 }
