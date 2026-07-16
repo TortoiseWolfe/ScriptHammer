@@ -529,7 +529,21 @@ export default function AtlasViewer({ slug }: { slug: string }) {
       {tour && (
         <div
           data-testid="atlas-tour-caption"
-          className="bg-base-100/90 rounded-box absolute bottom-6 left-1/2 z-10 w-[30rem] max-w-[calc(100%-2rem)] -translate-x-1/2 p-3 shadow-lg backdrop-blur"
+          /* FIXED, not absolute — and that is the actual bug, not the offset.
+             This container is `relative h-screen` but sits BELOW the ~65px nav,
+             so it is 100vh tall starting at y=65: its bottom edge is ~65px past
+             the viewport. `absolute bottom-28` therefore measured 112px up from
+             a bottom that is off-screen, landing the caption at ~47px — right
+             under the cookie consent banner (`fixed inset-x-0 ... z-[60]`,
+             CookieConsent.tsx:68). Raising the offset could never fix it;
+             viewport-relative positioning does.
+
+             HOW THIS HID: every probe read the caption via textContent, which
+             returns obscured text exactly as happily as visible text. The checks
+             passed while the owner saw nothing, four times. The test that
+             matters is elementFromPoint at the caption's own centre — is it
+             actually on top? — not whether the node exists. */
+          className="bg-base-100/90 rounded-box fixed bottom-28 left-1/2 z-[55] w-[30rem] max-w-[calc(100vw-2rem)] -translate-x-1/2 p-3 shadow-lg backdrop-blur"
         >
           <div className="flex items-center gap-2">
             <button
