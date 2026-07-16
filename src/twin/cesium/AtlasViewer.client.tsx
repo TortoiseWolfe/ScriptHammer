@@ -73,7 +73,6 @@ export default function AtlasViewer({ slug }: { slug: string }) {
   const viewerRef = useRef<Cesium.Viewer | null>(null);
   const [status, setStatus] = useState('starting globe…');
   const [ready, setReady] = useState(false);
-  const [counts, setCounts] = useState<Record<string, number>>({});
   const [selected, setSelected] = useState<AtlasPickId | null>(null);
   const [colorBy, setColorBy] = useState<ColorBy>('provenance');
   const [legend, setLegend] = useState<
@@ -147,18 +146,29 @@ export default function AtlasViewer({ slug }: { slug: string }) {
         const framing = await loadManifest(slug);
         if (disposed) return;
         {
-          const b = framing.box;
+          // Frame the ATLAS extent, not `box`.
+          //
+          // `box` is the DIORAMA's 1.46 x 5.79 km corridor. Everything else now
+          // works at atlasBox scale (5.66 x 7.57 km — terrain, and 8031 live
+          // buildings), so framing `box` put the ground centre of frame at
+          // ~35.050: the river sat at the top edge and the whole North Shore was
+          // horizon haze. The buildings were all there and mostly unseeable.
+          const b = framing.atlasBox ?? framing.box;
           const midLon = (b.swLon + b.neLon) / 2;
           const depthDeg = b.neLat - b.swLat;
+          const depthM = depthDeg * 110941;
+          // Pull back far enough that the far edge clears the horizon at this
+          // pitch: ground-distance to frame centre is alt/tan(pitch), so an
+          // altitude of ~depth*0.55 puts centre-of-frame near the box middle.
           viewer.camera.setView({
             destination: Cesium.Cartesian3.fromDegrees(
               midLon,
-              b.swLat - depthDeg * 0.25,
-              Math.max(2500, depthDeg * 110941 * 0.55)
+              b.swLat - depthDeg * 0.28,
+              Math.max(2500, depthM * 0.62)
             ),
             orientation: {
               heading: 0, // north, up the long axis
-              pitch: Cesium.Math.toRadians(-32),
+              pitch: Cesium.Math.toRadians(-34),
               roll: 0,
             },
           });
@@ -196,6 +206,38 @@ export default function AtlasViewer({ slug }: { slug: string }) {
         // Baked first: the offline floor. Renders immediately, needs no
         // network, and is what remains if Overpass is unreachable.
         placedRef.current = placed;
+        // Publish the probe handle HERE — before the live fetch, not after it.
+        //
+        // Cesium is an ES module so there is no window.Cesium for a capture
+        // script to reach through, and the claims that matter for this layer
+        // (is the terrain real, do buildings sit ON it, is the camera framing
+        // the right box) need an oblique camera and height queries. Published
+        // after the Overpass round-trip, the handle was simply absent for 60s+
+        // — worse under a 429 mirror fallback — so probes saw `undefined` and
+        // read it as "broken" rather than "not yet".
+        //
+        // `placed` is a ref, not a snapshot: Cesium frees
+        // Primitive.geometryInstances once built, so the rendered geometry is
+        // unreadable afterwards and this is the ONLY way to ask where the
+        // buildings actually are. That question is what caught the camera
+        // framing the diorama box while the data covered the atlas box.
+        (
+          window as unknown as {
+            __atlas?: {
+              viewer: Cesium.Viewer;
+              sampleEllipsoidalM: (lon: number, lat: number) => number;
+              geoidOffsetM: number;
+              manifest: typeof manifest;
+              placed: { current: AtlasBuilding[] };
+            };
+          }
+        ).__atlas = {
+          viewer,
+          sampleEllipsoidalM: sample,
+          geoidOffsetM: manifest.geoidOffsetM ?? 0,
+          manifest,
+          placed: placedRef,
+        };
         primRef.current = addBuildings(
           viewer,
           placed,
@@ -270,27 +312,6 @@ export default function AtlasViewer({ slug }: { slug: string }) {
             typeof id?.atlasId === 'number' ? (id as AtlasPickId) : null
           );
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-
-        // Scripted-probe handle, same idea as TwinCanvas's window.__twinPerf:
-        // Cesium is an ES module here, so there is no window.Cesium for a
-        // capture script to reach through. The verification that matters for
-        // this layer — is the terrain real, do buildings sit ON it, does the
-        // datum hold — needs an oblique camera and a height query, and neither
-        // is reachable from the DOM. Exposing the viewer is what makes those
-        // claims checkable instead of asserted.
-        (
-          window as unknown as {
-            __atlas?: {
-              viewer: Cesium.Viewer;
-              sampleEllipsoidalM: (lon: number, lat: number) => number;
-              geoidOffsetM: number;
-            };
-          }
-        ).__atlas = {
-          viewer,
-          sampleEllipsoidalM: sample,
-          geoidOffsetM: manifest.geoidOffsetM ?? 0,
-        };
       } catch (e) {
         if (!disposed) setError(e instanceof Error ? e.message : String(e));
       }
@@ -305,7 +326,9 @@ export default function AtlasViewer({ slug }: { slug: string }) {
     };
   }, [slug]);
 
-  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  // From the legend — the ONE tally. A second count source is what made the
+  // headline read '0 buildings' over a correct 8031-building legend.
+  const total = legend.reduce((a, r) => a + r.n, 0);
 
   return (
     <div className="bg-base-300 relative h-screen w-full">

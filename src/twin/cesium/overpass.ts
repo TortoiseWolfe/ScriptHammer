@@ -41,42 +41,20 @@ export interface OverpassBox {
 }
 
 /**
- * The atlas's civic extent, per slug.
+ * The atlas extent, from the manifest.
  *
- * chatt's is the Phase 0 viewer's own BBOX verbatim — "downtown + North Shore +
- * Southside", a deliberate editorial choice by the design project, not a number
- * I picked. Absent => fall back to the baked box (correct for any site without
- * an atlas extent yet).
+ * `manifest.atlasBox` is emitted by the bake ALREADY UNIONED with `box`
+ * (scripts/bake/site-config.ts atlasBoxFor) — the union is a data invariant, not
+ * viewer logic, because the same extent must drive the live-OSM fetch AND the
+ * wide DEM. Terrain that stops short of the buildings is a cliff; buildings that
+ * stop short of the terrain is a bald patch.
  *
- * BELONGS IN THE SITE CONFIG + MANIFEST, like vectorOffsetM/geoidOffsetM. It is
- * here because adding it to the bake means a rebake, and the value is editorial
- * rather than derived. Tracked on #292.
+ * This used to be a per-slug ATLAS_BBOX constant here, with the union redone
+ * locally. Absent (pre-2026-07 bakes) => the baked box.
  */
-const ATLAS_BBOX: Record<string, OverpassBox> = {
-  chatt: { s: 35.028, w: -85.345, n: 35.076, e: -85.283 },
-};
-
-/**
- * The atlas extent: the UNION of the editorial civic box and the baked box.
- *
- * Union, not replacement. Caught live: the demo's bbox starts at lat 35.028
- * while the bake starts at 35.0078, so taking the demo's box verbatim widened
- * east–west but silently CHOPPED THE SOUTHERN CORRIDOR — dropping measured
- * lidar buildings from 1328 to 1043 and cutting off the Choo Choo (35.0093),
- * which is a tour landmark. The atlas must never render less of the bake than
- * the bake has.
- */
-export function atlasBoxFor(slug: string, manifest: Manifest): OverpassBox {
-  const { swLat, swLon, neLat, neLon } = manifest.box;
-  const baked = { s: swLat, w: swLon, n: neLat, e: neLon };
-  const civic = ATLAS_BBOX[slug];
-  if (!civic) return baked;
-  return {
-    s: Math.min(civic.s, baked.s),
-    w: Math.min(civic.w, baked.w),
-    n: Math.max(civic.n, baked.n),
-    e: Math.max(civic.e, baked.e),
-  };
+export function atlasBoxFor(_slug: string, manifest: Manifest): OverpassBox {
+  const b = manifest.atlasBox ?? manifest.box;
+  return { s: b.swLat, w: b.swLon, n: b.neLat, e: b.neLon };
 }
 
 /** Fallback height config for buildings OUTSIDE the bake, where we have no
