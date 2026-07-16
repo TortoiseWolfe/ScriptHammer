@@ -7,10 +7,17 @@ set -e
 
 echo "Initializing ScriptHammer container..."
 
+# Is the command we were handed the long-running dev server? The dispatch at the
+# bottom of this file asks the same question; both must agree.
+is_dev_server() {
+  [ "$1" = "pnpm" ] && [ "$2" = "run" ] && [ "$3" = "dev" ]
+}
+
 clean_next() {
-  if [ -d "/app/.next" ]; then
+  DIR="/app/${NEXT_DIST_DIR:-.next}"
+  if [ -d "$DIR" ]; then
     # Named volume may be owned by root — clean contents, not the mount point
-    rm -rf /app/.next/* /app/.next/.* 2>/dev/null || true
+    rm -rf "$DIR"/* "$DIR"/.* 2>/dev/null || true
   fi
 }
 
@@ -19,23 +26,41 @@ echo "Checking dependencies..."
 pnpm install --frozen-lockfile
 echo "Dependencies are up-to-date"
 
-# Clean .next directory to prevent stale cache issues
-echo "Cleaning .next directory..."
-clean_next
+# Clean .next ONLY when we are the dev server (#293).
+#
+# This used to run unconditionally, on every container start — including
+# `docker compose run --rm scripthammer pnpm build`, which mounts the SAME .next
+# named volume as the ALREADY-RUNNING dev container. So a one-off build wiped the
+# live dev server's manifests and chunks out from under it, and every route
+# 500'd with ChunkLoadError / "Cannot read properties of undefined (reading
+# 'call')" / ENOENT routes-manifest.json — on pages the build never touched.
+# Four times in one session, each "fixed" by a restart that never addressed why.
+#
+# The dispatch at the bottom already treats one-shot commands differently
+# ("keep plain exec semantics"); it just did not gate the clean. A one-shot
+# command must leave .next exactly as it found it.
+if is_dev_server "$@"; then
+  echo "Cleaning .next directory..."
+  clean_next
 
-# Ensure .next exists and is writable (handles fresh named volumes)
-if [ ! -w "/app/.next" ]; then
-  echo "  .next volume not writable by node user — this is expected on first run"
-  echo "  Hint: run 'docker compose down -v' and 'docker compose up' to reset volumes"
-fi
+  # Ensure .next exists and is writable (handles fresh named volumes)
+  if [ ! -w "/app/.next" ]; then
+    echo "  .next volume not writable by node user — this is expected on first run"
+    echo "  Hint: run 'docker compose down -v' and 'docker compose up' to reset volumes"
+  fi
 
-mkdir -p /app/.next 2>/dev/null || true
-echo "Fresh .next directory configured"
+  mkdir -p /app/.next 2>/dev/null || true
+  echo "Fresh .next directory configured"
 
-if [ -f ".next/BUILD_ID" ]; then
-    echo "Found existing build cache"
+  if [ -f ".next/BUILD_ID" ]; then
+      echo "Found existing build cache"
+  else
+      echo "No build cache found (will be created on first run)"
+  fi
 else
-    echo "No build cache found (will be created on first run)"
+  # A build/test/one-off. A dev server may be live on this same volume.
+  echo "One-shot command — leaving ${NEXT_DIST_DIR:-.next}/ untouched (#293)"
+  echo "  Build into a separate dir with NEXT_DIST_DIR=.next-build to keep dev fully isolated."
 fi
 
 echo "Container initialized successfully"

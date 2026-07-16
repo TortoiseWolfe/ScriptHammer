@@ -80,9 +80,10 @@ async function fetchBatch(
 export async function fetch3DepTerrain(
   outDir: string,
   box: GeoBox,
-  opts: { cols: number; rows: number }
+  opts: { cols: number; rows: number; filename?: string }
 ) {
   const { cols, rows } = opts;
+  const filename = opts.filename ?? 'terrain.json';
   mkdirSync(outDir, { recursive: true });
   if (cols > 8000 || rows > 8000) {
     throw new Error(
@@ -148,7 +149,7 @@ export async function fetch3DepTerrain(
   );
 
   const out = { cols, rows, heights };
-  writeFileSync(join(outDir, 'terrain.json'), JSON.stringify(out));
+  writeFileSync(join(outDir, filename), JSON.stringify(out));
   return out;
 }
 
@@ -215,12 +216,13 @@ export async function parseDemTiff(
 export async function fetchTerrain(
   outDir: string,
   box: GeoBox,
-  opts: { cols: number; rows: number; dataset?: string }
+  opts: { cols: number; rows: number; dataset?: string; filename?: string }
 ) {
   const { cols, rows } = opts;
   const dataset = opts.dataset ?? 'ned10m';
+  const filename = opts.filename ?? 'terrain.json';
   if (dataset === '3dep1m') {
-    return fetch3DepTerrain(outDir, box, { cols, rows });
+    return fetch3DepTerrain(outDir, box, { cols, rows, filename });
   }
   mkdirSync(outDir, { recursive: true });
   const grid = buildGrid(box, cols, rows);
@@ -248,6 +250,6 @@ export async function fetchTerrain(
     console.warn(`${msg}; coerced to 0 m`);
   }
   const out = { cols, rows, heights };
-  writeFileSync(join(outDir, 'terrain.json'), JSON.stringify(out));
+  writeFileSync(join(outDir, filename), JSON.stringify(out));
   return out;
 }

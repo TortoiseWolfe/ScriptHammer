@@ -20,6 +20,8 @@ import { buildScene } from './build-scene';
 import { createProjection } from './enu';
 import {
   defaultTerrainGrid,
+  atlasBoxFor as atlasBoxForSite,
+  wideTerrainGridFor,
   loadSiteConfig,
   sitePaths,
   type SiteConfig,
@@ -157,6 +159,24 @@ export async function bake(site: SiteConfig) {
     dataset: 'ned10m' as const,
   };
   await fetchTerrain(paths.raw, site.box, grid);
+
+  // Wide coarse DEM over the atlas extent (#292). The fine grid covers only
+  // `box` — 20% of the atlas view — and everything outside it rendered as bare
+  // ellipsoid, i.e. a 176 m plateau edge right through the default camera.
+  // 3DEP's raster export server-resamples in ONE request; the point-query
+  // datasets would need ~475 throttled batches for the same grid.
+  const atlasBox = atlasBoxForSite(site);
+  const wide = wideTerrainGridFor(atlasBox);
+  if (atlasBox !== site.box) {
+    console.log(
+      `[bake] fetch-terrain (wide atlas DEM ${wide.cols}x${wide.rows})...`
+    );
+    await fetchTerrain(paths.raw, atlasBox, {
+      ...wide,
+      dataset: '3dep1m',
+      filename: 'terrain-wide.json',
+    });
+  }
   if (site.lidar) {
     console.log('[bake] fetch-lidar-heights...');
     console.log(
@@ -190,6 +210,8 @@ export async function bake(site: SiteConfig) {
     'streets.json',
     'heroes.json',
     'terrain.json',
+    // Wide atlas DEM (#292). Optional — sites without an atlasBox have none.
+    'terrain-wide.json',
     'manifest.json',
     'drape.jpg',
   ]) {
