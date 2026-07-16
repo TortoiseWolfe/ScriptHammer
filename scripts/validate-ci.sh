@@ -72,6 +72,13 @@ fi
 # 5. Production build
 run_check "Production build" "pnpm build"
 
+# 5b. Browser-parseability of emitted chunks (#294). `next build` succeeds even
+# when it emits a chunk the browser cannot PARSE (e.g. an inlined WASM binary as
+# a template literal with octal escapes). That passes every check above and only
+# fails at browser parse time — killing client JS on every route. This gate is
+# the one that catches it.
+run_check "Chunk parse check (#294)" "node scripts/check-chunks-parse.mjs"
+
 # 6. Storybook build (optional - can be slow)
 if [ "$1" != "--quick" ]; then
     run_check "Storybook build" "pnpm build-storybook"

@@ -84,6 +84,14 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
+      # Last line of defense before shipping (#294): `pnpm build` above can emit a
+      # chunk the browser cannot PARSE (an inlined WASM template literal with
+      # octal escapes) while itself succeeding. That would deploy a site whose
+      # client JS is dead on every route, as it did for hours. Fail the deploy
+      # instead.
+      - name: Verify chunks parse in a browser (#294)
+        run: node scripts/check-chunks-parse.mjs
+
       - name: Build Storybook
         run: pnpm run build-storybook
 
