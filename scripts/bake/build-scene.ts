@@ -14,6 +14,7 @@ import {
   provenanceFor,
   siteManifestBlock,
   type SiteConfig,
+  atlasBoxFor,
 } from './site-config';
 import {
   matchMsHeights,
@@ -422,6 +423,21 @@ export async function buildScene(
     ),
     fetchedAt: new Date().toISOString(),
     ruleHistogram,
+    // The two georeferencing constants a globe consumer cannot recover from the
+    // artifacts alone.
+    //
+    // vectorOffsetM: the correction APPLIED to every ring by createProjection.
+    // `registration` below is the RESIDUAL after applying it, not the value —
+    // so without this, inverting a baked ring back to lon/lat silently lands
+    // ~0.5 m off on chatt and there is nothing to catch it.
+    //
+    // geoidOffsetM: terrain/height data here is NAVD88 orthometric; a globe
+    // wants ellipsoidal. See site-config.ts.
+    vectorOffsetM: proj.offsetM,
+    geoidOffsetM: site.geoidOffsetM ?? 0,
+    // Unioned here, not in the viewer: the atlas must never cover less than the
+    // bake, and every consumer (live-OSM fetch, wide DEM, runtime) must agree.
+    atlasBox: atlasBoxFor(site),
     ...(registration ? { registration } : {}),
     // `site.water` is a bake RESULT (did the carve find water?), filled in
     // below — the runtime uses it to gate the water mesh, so a waterless site
@@ -476,6 +492,15 @@ export async function buildScene(
   }
   manifest.site.water = carvedSamples > 0;
   writeFileSync(join(outDir, 'terrain.json'), JSON.stringify(carvedGrid));
+
+  // Ship the wide atlas DEM alongside it (#292). Copied, not carved: the water
+  // carve is a box-scoped drape operation, and the wide grid exists to remove
+  // the 176 m cliff at the box edge, not to add detail — the fine grid above
+  // covers the site itself. Absent for sites with no atlasBox.
+  const wideRaw = join(rawDir, 'terrain-wide.json');
+  if (existsSync(wideRaw)) {
+    copyFileSync(wideRaw, join(outDir, 'terrain-wide.json'));
+  }
   writeFileSync(
     join(outDir, 'manifest.json'),
     JSON.stringify(manifest, null, 2)

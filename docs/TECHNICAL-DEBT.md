@@ -31,6 +31,57 @@ This document tracks known technical issues, workarounds, and future concerns th
 
 ## Current Issues
 
+### 11. pnpm override: `@spz-loader/core` pinned to 0.3.0 (#294)
+
+**Date Added**: 2026-07-16
+**Severity**: Medium (the pin itself is safe; removing it blindly re-breaks production)
+**Impact**: Build correctness — without it, the shared vendor chunk does not parse and client JS is dead on every route.
+
+**Why this exists** (`package.json` → `pnpm.overrides`, which cannot carry a comment):
+
+`@spz-loader/core` is a Gaussian-splat loader we never import. It arrives transitively:
+`cesium@1.143.0` → `@cesium/engine@26.1.0` → `@spz-loader/core` **"0.3.1"** (an exact pin — no
+semver range can move it, so an override is the only lever; cesium 1.143.0 is already `latest`).
+
+`@spz-loader/core@0.3.1` ships a 167KB Emscripten WASM inlined as a **template literal**. As
+published it is valid (`node --check` exits 0 — it escapes NUL as `\x00` when a digit follows).
+**SWC's codegen breaks it**: it escapes NUL as `\x00` before followers `1-9` but misses the
+follower `0`, emitting `\0` + literal `0`. The parser reads `\00` as an octal escape — illegal
+inside a template literal. `next build` succeeds; the browser refuses the chunk. This took
+production down for ~5 hours (#294).
+
+`0.3.1` only differs because spz-loader's build used an unpinned `emscripten/emsdk` tag, and
+Emscripten 4.0.18 flipped `SINGLE_FILE` encoding from base64 to raw binary UTF-8.
+
+**Why 0.3.0**: it is **immune by construction** — base64 payload, so there are no NUL bytes for
+SWC to mis-escape. API-identical (`export * from './spz-wasm'`), no dependencies of its own,
+single version in the tree. Only loss is a `.slice()`-vs-view perf tweak on splat loads, and
+splats are unstarted (Build Plan Phase 4).
+
+**Verified A/B** (same branch, same machine, only the override differing):
+
+|           | `node scripts/check-chunks-parse.mjs`                                     |
+| --------- | ------------------------------------------------------------------------- |
+| spz 0.3.1 | exit **1** — "Octal escape sequences are not allowed in template strings" |
+| spz 0.3.0 | exit **0** — all 83 chunks parse                                          |
+
+**Removal criteria** — delete the override when ANY of these lands, then re-run the A/B above:
+
+1. SWC fixes template-literal NUL escaping. **The bug is currently UNFILED**; versions 1.3.100 →
+   1.15.43 are all broken. Repro: `` `\x000z` `` → SWC emits `` `\00z` ``.
+2. `@spz-loader/core` adopts `-sSINGLE_FILE_BINARY_ENCODE=0` (base64) — see
+   [spz-loader#89](https://github.com/drumath2237/spz-loader/issues/89) (open, no response).
+3. Cesium drops or repins the dependency — see
+   [CesiumGS/cesium#13379](https://github.com/CesiumGS/cesium/issues/13379). **Note that thread's
+   leading theory is wrong**: it blames the package for being spec-invalid; `node --check` on the
+   published file disproves that. The defect is SWC's _output_.
+
+**Guard**: `scripts/check-chunks-parse.mjs` runs in `validate-ci.sh` and `deploy.yml`, so a
+regression fails the build instead of shipping. Do not remove that gate.
+
+**Caveat**: overrides are global. If anything else in the tree ever wants 0.3.1, it will be
+silently downgraded too. Today `@cesium/engine` is the only consumer.
+
 ### 7. Disqus Theme Integration
 
 **Date Added**: 2025-09-28
