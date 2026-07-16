@@ -517,10 +517,16 @@ export async function buildScene(
         geometry?: { lat: number; lon: number }[];
       }[];
     };
+    // Same scalar as manifest.cosLat below (proj.mPerDegLon / 111320, from
+    // createProjection(site.box) — the NARROW baked box). buildWideBuildings'
+    // OSM data spans the wide atlasBox, but resolveHeight's rule-6 area bonus
+    // must use the SAME flat-earth scalar the runtime join reads off the
+    // manifest, or the two silently diverge on un-baked buildings near a
+    // tier threshold.
     const wideBuildings = buildWideBuildings(
       osmWide,
       buildings,
-      atlasBoxFor(site)
+      proj.mPerDegLon / 111320
     );
     writeFileSync(
       join(outDir, 'buildings-wide.json'),

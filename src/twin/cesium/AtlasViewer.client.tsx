@@ -110,9 +110,24 @@ export default function AtlasViewer({ slug }: { slug: string }) {
   const rebuildTourRef = useRef<((l: AtlasBuilding[]) => void) | null>(null);
   const hiRef = useRef<Cesium.Primitive | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [live, setLive] = useState<'baked' | 'loading' | 'live' | 'offline'>(
-    'baked'
-  );
+  // 'wide' = widened via the baked buildings-wide.json (the default path,
+  // #292); 'live' = widened via a real Overpass request (?live). Distinct
+  // states so the HUD below can say which one actually happened instead of
+  // reporting 'live' for both, which was Task 1's regression (#292 review).
+  const [live, setLive] = useState<
+    'baked' | 'loading' | 'wide' | 'live' | 'offline'
+  >('baked');
+  // window.location.search, NOT useSearchParams — same convention as
+  // TwinCanvasHost's ?atlas and TwinCanvas's ?house/?ortho; useSearchParams
+  // forces a Suspense bailout under output:'export'. Safe to read during
+  // render here because AtlasViewer only ever renders behind TwinCanvasHost's
+  // dynamic(ssr:false) branch, so there is no hydration mismatch to create.
+  // This is the SAME signal fetchLiveBuildings (overpass.ts) checks
+  // internally to pick its path — read here too so the HUD reports what
+  // actually happened rather than assuming.
+  const isLiveQuery =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('live');
 
   useEffect(() => {
     const el = mountRef.current;
@@ -419,6 +434,14 @@ export default function AtlasViewer({ slug }: { slug: string }) {
         // 1.46 km diorama corridor — 1,547 of the area's 6,099 OSM buildings.
         // Baked heights win on the overlap (1328 are lidar-measured); the rest
         // resolve through the SAME ladder via src/lib/height.ts.
+        //
+        // Read fresh here (not the render-scope `isLiveQuery`) so this effect
+        // doesn't have to list it as a dependency — the query string cannot
+        // change without a navigation, which already remounts this effect via
+        // `slug`.
+        const isLiveQuery = new URLSearchParams(window.location.search).has(
+          'live'
+        );
         try {
           setLive('loading');
           const live = await fetchLiveBuildings(
@@ -456,7 +479,10 @@ export default function AtlasViewer({ slug }: { slug: string }) {
             primRef.current = addBuildings(v, placedRef.current, sample, m);
             setLegend(legendOf(placedRef.current, m));
           };
-          setLive('live');
+          // fetchLiveBuildings resolves on BOTH paths (the default fetch of
+          // buildings-wide.json AND the ?live Overpass query) — isLiveQuery
+          // is what actually distinguishes them, not the fact it resolved.
+          setLive(isLiveQuery ? 'live' : 'wide');
         } catch {
           // Additive by design: keep the baked layer and say so, rather than
           // failing the view over a third-party endpoint.
@@ -513,11 +539,17 @@ export default function AtlasViewer({ slug }: { slug: string }) {
                 ? `${total} buildings · ${
                     live === 'live'
                       ? 'live OSM + baked lidar'
-                      : live === 'loading'
-                        ? 'baked · widening to live OSM…'
-                        : live === 'offline'
-                          ? 'baked only (Overpass unreachable)'
-                          : 'baked'
+                      : live === 'wide'
+                        ? 'baked OSM + baked lidar'
+                        : live === 'loading'
+                          ? isLiveQuery
+                            ? 'baked · widening to live OSM…'
+                            : 'baked · widening to baked OSM…'
+                          : live === 'offline'
+                            ? isLiveQuery
+                              ? 'baked only (Overpass unreachable)'
+                              : 'baked only (buildings-wide.json unreachable)'
+                            : 'baked'
                   } · 3DEP · no token`
                 : status}
           </div>

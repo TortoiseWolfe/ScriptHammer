@@ -40,6 +40,7 @@
 
 import { getAssetUrl } from '@/config/project.config';
 import { resolveHeight } from '@/lib/height';
+import { OUTSIDE_HEIGHTS, ringAreaM2 } from '@/lib/live-building-heights';
 import type { Building, Manifest } from '@/lib/manifest';
 
 export interface OverpassBox {
@@ -66,11 +67,6 @@ export function atlasBoxFor(_slug: string, manifest: Manifest): OverpassBox {
   return { s: b.swLat, w: b.swLon, n: b.neLat, e: b.neLon };
 }
 
-/** Fallback height config for buildings OUTSIDE the bake, where we have no
- *  per-site override list. The clamp is generous: it only binds rule-6 guesses,
- *  and this box reaches beyond the downtown towers. */
-const OUTSIDE_HEIGHTS = { overrides: {}, fallbackClampM: 91.44 };
-
 export interface LiveBuilding {
   /** OSM way/relation id. */
   id: number;
@@ -89,19 +85,6 @@ interface OverpassElement {
   id: number;
   tags?: Record<string, string>;
   geometry?: { lat: number; lon: number }[];
-}
-
-/** Shoelace area of a lon/lat ring, in m2 — resolveHeight's rule-6 prior needs
- *  a footprint area. Local flat-earth scaling is plenty at this size. */
-function ringAreaM2(lonLat: number[], cosLat: number): number {
-  let a = 0;
-  const n = lonLat.length / 2;
-  for (let i = 0; i < n; i++) {
-    const j = (i + 1) % n;
-    a += lonLat[i * 2] * lonLat[j * 2 + 1] - lonLat[j * 2] * lonLat[i * 2 + 1];
-  }
-  // deg2 -> m2 at this latitude
-  return Math.abs(a / 2) * 111320 * 111320 * cosLat;
 }
 
 const ENDPOINTS = [

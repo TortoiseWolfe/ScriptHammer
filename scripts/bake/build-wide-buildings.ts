@@ -6,8 +6,8 @@
 // site.box (build-scene.ts drops anything whose centroid fails inBox).
 // LiveBuilding.lonLat is raw OSM lon/lat on purpose — no ENU round-trip, so
 // no projection error and no vectorOffsetM to unwind.
-import { metersPerDegree, type GeoBox } from './enu';
-import { resolveHeight, type HeightsConfig } from './height';
+import { resolveHeight } from './height';
+import { OUTSIDE_HEIGHTS, ringAreaM2 } from './live-building-heights';
 import type { LiveBuilding } from '../../src/twin/cesium/overpass';
 
 interface OsmElement {
@@ -23,29 +23,6 @@ interface BakedBuilding {
   rule: string;
 }
 
-/** Same fallback config fetchLiveBuildings uses for buildings the bake never
- *  measured: no per-site override list at this remove, and a clamp generous
- *  enough to reach past the downtown towers. */
-const OUTSIDE_HEIGHTS: HeightsConfig = {
-  overrides: {},
-  fallbackClampM: 91.44,
-};
-
-/** Shoelace area of a lon/lat ring, in m2 — resolveHeight's rule-6 fallback
- *  needs a footprint area. Ported from src/twin/cesium/overpass.ts's private
- *  ringAreaM2 (not exported there). Local flat-earth scaling is plenty at
- *  this size. */
-function ringAreaM2(lonLat: number[], cosLat: number): number {
-  let a = 0;
-  const n = lonLat.length / 2;
-  for (let i = 0; i < n; i++) {
-    const j = (i + 1) % n;
-    a += lonLat[i * 2] * lonLat[j * 2 + 1] - lonLat[j * 2] * lonLat[i * 2 + 1];
-  }
-  // deg2 -> m2 at this latitude
-  return Math.abs(a / 2) * 111320 * 111320 * cosLat;
-}
-
 /**
  * Join the wide-atlas OSM buildings against the bake's measured heights —
  * exactly the join fetchLiveBuildings runs live at request time, computed
@@ -53,19 +30,20 @@ function ringAreaM2(lonLat: number[], cosLat: number): number {
  * height (lidar, for most of the bake's footprints — a real measurement of
  * that exact roof); buildings outside it resolve through the SAME
  * resolveHeight ladder the bake runs, via their live OSM tags.
+ *
+ * `cosLat` MUST be the exact scalar the runtime join uses: manifest.cosLat
+ * (`proj.mPerDegLon / 111320`, from `createProjection(site.box)` — the
+ * NARROW baked box, not the wide atlasBox this function's OSM data spans).
+ * Callers should pass that same computation, not derive their own from the
+ * wide box — a second, box-dependent cosLat here is exactly how this and the
+ * live path would silently compute different rule-6 area-bonus tiers for the
+ * same un-baked building.
  */
 export function buildWideBuildings(
   osm: { elements: OsmElement[] },
   baked: BakedBuilding[],
-  box: GeoBox
+  cosLat: number
 ): LiveBuilding[] {
-  // The same scalar the runtime join uses (manifest.cosLat =
-  // proj.mPerDegLon / 111320, from createProjection(site.box)): one
-  // flat-earth scale factor for the whole extent, not a per-building
-  // recomputation.
-  const centerLat = (box.swLat + box.neLat) / 2;
-  const cosLat = metersPerDegree(centerLat).mPerDegLon / 111320;
-
   const bakedById = new Map(baked.map((b) => [b.id, b]));
   const out: LiveBuilding[] = [];
 
