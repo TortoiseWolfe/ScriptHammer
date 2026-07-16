@@ -3,12 +3,18 @@
 // priors stay here.
 
 export interface HeightsConfig {
-  /** OSM `name` tag (character-exact) -> metres. Safety net BEHIND explicit
-   * height/levels tags (rules 1-2 win). Keys must match the OSM `name` tag
-   * EXACTLY: a colloquial-name list matches NOTHING and becomes dead code
-   * (verified against _raw/osm.json, #229). */
+  /** OSM `name` tag (character-exact) -> metres. A researched per-site value:
+   * it outranks every DERIVED height (lidar/levels/ms/fallback) but yields to
+   * an explicit OSM `height` tag, which is a human assertion about the same
+   * building made closer to the source. Keys must match the OSM `name` tag
+   * EXACTLY — a colloquial name matches nothing and is silently dead.
+   *
+   * chatt reality check (2026-07-15): 7 of its 9 keys DO match real OSM names;
+   * all 7 also carry a `height` tag, so this rule resolves 0 buildings. That is
+   * the safety net working — OSM already has them — NOT the name-matching
+   * failure the pre-#229 comment here used to claim. */
   overrides: Record<string, number>;
-  /** Cap for rule-4 fallback heights (typically the site's tallest tower). */
+  /** Cap for the last-resort fallback (typically the site's tallest tower). */
   fallbackClampM: number;
 }
 
@@ -52,28 +58,42 @@ export function resolveHeight(
   meters: number;
   rule: 'height' | 'levels' | 'override' | 'lidar' | 'ms' | 'fallback';
 } {
-  // Rule 1: explicit height tag (may carry a unit suffix). Fall through on bad values.
+  // Rule 1: explicit height tag (may carry a unit suffix). Fall through on bad
+  // values. A human asserted this about this building; it also cross-validates
+  // against the lidar below — median |lidar − height| = 0.1 m across the 92
+  // chatt buildings carrying both, which is why this outranks the measurement.
   if (tags.height) {
     const m = parseFloat(tags.height);
     if (!Number.isNaN(m) && m > 0) return { meters: m, rule: 'height' };
   }
-  // Rule 2: building:levels. Fall through on bad values.
+  // Rule 2: named override — our researched per-site value. It must beat every
+  // DERIVED height below, or it is not an override.
+  if (tags.name && cfg.overrides[tags.name] != null) {
+    return { meters: cfg.overrides[tags.name], rule: 'override' };
+  }
+  // Rule 3: lidar-measured height (#229 PR-B) — a direct per-footprint
+  // measurement (first-return p90 − DTM).
+  //
+  // ORDERING (fixed 2026-07-15): this used to sit BELOW `levels`, so a
+  // floor-count guess outranked a real measurement of the same roof. It was
+  // inserted after the pre-existing rules purely to avoid disturbing them —
+  // the sibling comment in fetch-lidar-heights.ts only ever reasoned about
+  // lidar-vs-ms — and no test pinned the order. Measured on chatt: 112 of the
+  // 116 `levels` buildings HAD a lidar height available, and `levels × 3.2`
+  // ran a median 2.9 m short of it (~one floor, on 7–16 m buildings). A
+  // measurement beats a derivation.
+  if (lidarHeightM != null && lidarHeightM > 0) {
+    return { meters: lidarHeightM, rule: 'lidar' };
+  }
+  // Rule 4: building:levels — a derivation, not a measurement. Only reached
+  // when lidar has no return for this footprint. Fall through on bad values.
   if (tags['building:levels']) {
     const lv = parseFloat(tags['building:levels']);
     if (!Number.isNaN(lv) && lv > 0)
       return { meters: lv * LEVEL_M, rule: 'levels' };
   }
-  // Rule 3: named override
-  if (tags.name && cfg.overrides[tags.name] != null) {
-    return { meters: cfg.overrides[tags.name], rule: 'override' };
-  }
-  // Rule 4: lidar-measured height (#229 PR-B) — a direct per-footprint
-  // measurement (first-return p90 − DTM) beats the ML estimate below.
-  if (lidarHeightM != null && lidarHeightM > 0) {
-    return { meters: lidarHeightM, rule: 'lidar' };
-  }
-  // Rule 5: Microsoft ML-measured height — real data displaces only the
-  // guessy fallback; explicit tags and human overrides above still win.
+  // Rule 5: Microsoft ML-measured height — an estimate; real data displaces
+  // only the guessy fallback. Everything above still wins.
   if (msHeightM != null && msHeightM > 0) {
     return { meters: msHeightM, rule: 'ms' };
   }

@@ -14,13 +14,13 @@
     "height": 7938,
     "mpp": 0.6
   },
-  "provenance": "\u00a9 OpenStreetMap \u00b7 USGS 3DEP 1m \u00b7 TDOT Aerial Surveys \u00b7 Microsoft Buildings \u00b7 USGS 3DEP Lidar",
-  "fetchedAt": "2026-07-09T18:45:28.605Z",
+  "provenance": "© OpenStreetMap · USGS 3DEP 1m · TDOT Aerial Surveys · Microsoft Buildings · USGS 3DEP Lidar",
+  "fetchedAt": "2026-07-16T02:20:27.671Z",
   "ruleHistogram": {
     "height": 96,
-    "levels": 116,
+    "levels": 4,
     "override": 0,
-    "lidar": 1216,
+    "lidar": 1328,
     "ms": 43,
     "fallback": 39
   },
@@ -54,14 +54,14 @@
         "look": [-273, 20, -2424],
         "dwell": 5,
         "name": "Tennessee Aquarium",
-        "blurb": "Opened 1992 \u2014 the world's largest freshwater aquarium at the time."
+        "blurb": "Opened 1992 — the world's largest freshwater aquarium at the time."
       },
       {
         "pos": [-40, 240, -2360],
         "look": [68, 18, -2726],
         "dwell": 5,
         "name": "Walnut Street Bridge",
-        "blurb": "1890 truss bridge, 2,376 ft \u2014 one of the longest pedestrian bridges in the world."
+        "blurb": "1890 truss bridge, 2,376 ft — one of the longest pedestrian bridges in the world."
       },
       {
         "pos": [20, 250, -2560],
@@ -75,14 +75,14 @@
         "look": [-382, 30, -1614],
         "dwell": 5,
         "name": "Republic Centre",
-        "blurb": "At 300 ft / 21 floors, Chattanooga's tallest building \u2014 the downtown skyline's anchor."
+        "blurb": "At 300 ft / 21 floors, Chattanooga's tallest building — the downtown skyline's anchor."
       },
       {
         "pos": [120, 300, 120],
         "look": [40, 20, -600],
         "dwell": 4.5,
         "name": "Downtown Core",
-        "blurb": "The Broad & Market Street grid \u2014 the dense heart of downtown, laid out in 1839."
+        "blurb": "The Broad & Market Street grid — the dense heart of downtown, laid out in 1839."
       },
       {
         "pos": [40, 320, 2900],
@@ -99,12 +99,12 @@
     "framing": {
       "homeFocus": [-100, 0, -2000]
     },
-    "water": true,
     "links": [
       {
         "label": "As-built demo",
         "href": "/twins/east-main-street-chattanooga/?house"
       }
-    ]
+    ],
+    "water": true
   }
 }
