@@ -104,8 +104,14 @@ const nextConfig: NextConfig = {
               name: 'leaflet',
               priority: 20,
             },
+            // `cesium` is a THIN RE-EXPORT SHELL. Since the monorepo split the
+            // real code lives in scoped packages — @cesium/engine (28MB),
+            // @cesium/widgets, @cesium/wasm-splats — so a
+            // /node_modules/cesium/ test matches almost nothing (verified: it
+            // caught only widgets.css) and the whole library lands in the
+            // initial vendor chunk anyway. The scope is what matters here.
             cesium: {
-              test: /[\\/]node_modules[\\/]cesium[\\/]/,
+              test: /[\\/]node_modules[\\/](cesium|@cesium)[\\/]/,
               name: 'cesium',
               priority: 20,
             },
