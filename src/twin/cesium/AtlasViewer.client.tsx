@@ -30,6 +30,7 @@ import {
   landmarkStops,
   cornerStops,
   resolveGround,
+  describeTargets,
   type TourStop,
 } from './tour';
 import {
@@ -37,6 +38,7 @@ import {
   groundSpanM,
   classify,
   RULE_LABELS,
+  RULE_COLORS,
   unbucketedLadderTypes,
   type AtlasBuilding,
   type ColorBy,
@@ -91,13 +93,18 @@ export default function AtlasViewer({ slug }: { slug: string }) {
   // every toggle.
   const colorByRef = useRef<ColorBy>('provenance');
   const rebuildRef = useRef<((m: ColorBy) => void) | null>(null);
-  const [tourStop, setTourStop] = useState<TourStop | null>(null);
+  // Index-based, not just "the current stop": a tour you can only watch is a
+  // demo. Prev/next must know where they are in which list.
+  const [tour, setTour] = useState<{ list: TourStop[]; i: number } | null>(
+    null
+  );
   const tourRef = useRef<{
     stops: TourStop[];
     corners: TourStop[];
     play: (list: TourStop[]) => void;
     stop: () => void;
     goTo: (s: TourStop) => void;
+    step: (d: number) => void;
   } | null>(null);
   const tourAbort = useRef<{ cancelled: boolean } | null>(null);
   const rebuildTourRef = useRef<((l: AtlasBuilding[]) => void) | null>(null);
@@ -280,6 +287,9 @@ export default function AtlasViewer({ slug }: { slug: string }) {
 
         // ── Tour ────────────────────────────────────────────────────────────
         const v2 = viewer;
+        // 1.2s, not 2.5s. Seven stops at 2.5s fly + 5s dwell was 52 seconds of
+        // sitting still with no way out.
+        const FLY_S = 1.2;
         const goTo = (st: TourStop) => {
           v2.camera.flyTo({
             destination: Cesium.Cartesian3.fromDegrees(
@@ -292,40 +302,61 @@ export default function AtlasViewer({ slug }: { slug: string }) {
               pitch: st.pitchRad,
               roll: 0,
             },
-            duration: 2.5,
+            duration: FLY_S,
           });
         };
         const stopTour = () => {
           if (tourAbort.current) tourAbort.current.cancelled = true;
           tourAbort.current = null;
-          setTourStop(null);
+          setTour(null);
+        };
+        // Autoplay and the prev/next buttons drive the SAME path — two ways to
+        // move that disagree is how "next" lands somewhere the caption is not
+        // describing.
+        const step = (d: number) => {
+          if (tourAbort.current) {
+            tourAbort.current.cancelled = true; // stepping by hand ends autoplay
+            tourAbort.current = null;
+          }
+          setTour((cur) => {
+            if (!cur) return cur;
+            const n = cur.list.length;
+            const idx = (((cur.i + d) % n) + n) % n; // wraps both ways
+            goTo(cur.list[idx]);
+            return { list: cur.list, i: idx };
+          });
         };
         const play = async (list: TourStop[]) => {
-          stopTour();
+          if (tourAbort.current) tourAbort.current.cancelled = true;
           const token = { cancelled: false };
           tourAbort.current = token;
-          for (const st of list) {
+          for (let i = 0; i < list.length; i++) {
             if (token.cancelled || disposed) return;
-            setTourStop(st);
-            goTo(st);
-            await new Promise((r) => setTimeout(r, 2500 + st.dwell * 1000));
+            setTour({ list, i });
+            goTo(list[i]);
+            // Dwell capped: the authored 5s was tuned for a cinematic diorama
+            // flythrough, not for reading a data card.
+            const dwellMs = Math.min(list[i].dwell, 2.5) * 1000;
+            await new Promise((r) => setTimeout(r, FLY_S * 1000 + dwellMs));
           }
-          if (!token.cancelled) setTourStop(null);
+          if (!token.cancelled) tourAbort.current = null;
         };
-        // Any camera input cancels — a tour you cannot escape is a trap.
-        v2.camera.moveStart.addEventListener(() => {
-          if (tourAbort.current) stopTour();
-        });
         const buildTour = (list: AtlasBuilding[]) => {
+          const cos = manifest.cosLat;
           tourRef.current = {
-            stops: landmarkStops(manifest, fine),
+            stops: describeTargets(landmarkStops(manifest, fine), list, cos),
             // Corner stops are placed against LIVE terrain, not the authored ENU
             // frame — resolveGround uses the same ground definition the terrain
             // provider renders, so a stop cannot end up inside a hill.
-            corners: resolveGround(cornerStops(manifest, fine, list), sample),
+            corners: describeTargets(
+              resolveGround(cornerStops(manifest, fine, list), sample),
+              list,
+              cos
+            ),
             play,
             stop: stopTour,
             goTo,
+            step,
           };
         };
         buildTour(placed);
@@ -472,14 +503,8 @@ export default function AtlasViewer({ slug }: { slug: string }) {
                 >
                   ⊹ corners
                 </button>
-                {tourStop && (
-                  <button
-                    className="btn btn-xs btn-error min-h-0"
-                    onClick={() => tourRef.current?.stop()}
-                  >
-                    ✕
-                  </button>
-                )}
+                {/* Stop lives on the caption now, next to prev/next — the
+                    controls belong where you are reading, not in the launcher. */}
               </div>
               <ul className="mt-2 space-y-0.5">
                 {legend.map((row) => (
@@ -501,12 +526,89 @@ export default function AtlasViewer({ slug }: { slug: string }) {
         </div>
       </div>
 
-      {tourStop && (
-        <div className="bg-base-100/90 rounded-box absolute bottom-6 left-1/2 z-10 w-[28rem] max-w-[calc(100%-2rem)] -translate-x-1/2 p-3 shadow-lg backdrop-blur">
-          <div className="text-sm font-semibold">{tourStop.name}</div>
-          <div className="text-base-content/70 mt-1 text-[11px] leading-snug">
-            {tourStop.blurb}
+      {tour && (
+        <div
+          data-testid="atlas-tour-caption"
+          className="bg-base-100/90 rounded-box absolute bottom-6 left-1/2 z-10 w-[30rem] max-w-[calc(100%-2rem)] -translate-x-1/2 p-3 shadow-lg backdrop-blur"
+        >
+          <div className="flex items-center gap-2">
+            <button
+              className="btn btn-xs min-h-0"
+              onClick={() => tourRef.current?.step(-1)}
+              aria-label="Previous stop"
+            >
+              ⏮
+            </button>
+            <button
+              className="btn btn-xs min-h-0"
+              onClick={() => tourRef.current?.step(1)}
+              aria-label="Next stop"
+            >
+              ⏭
+            </button>
+            <span className="text-base-content/50 font-mono text-[10px]">
+              {tour.i + 1}/{tour.list.length}
+            </span>
+            <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+              {tour.list[tour.i].name}
+            </span>
+            <button
+              className="btn btn-xs min-h-0"
+              onClick={() => tourRef.current?.stop()}
+              aria-label="End tour"
+            >
+              ✕
+            </button>
           </div>
+
+          {/* WHY this stop exists. Corner stops carry what they test; landmarks
+              carry their history. The first version showed only a name, which
+              says where the camera is — not what is on screen or why. */}
+          <div className="text-base-content/70 mt-1.5 text-[11px] leading-snug">
+            {tour.list[tour.i].blurb}
+          </div>
+
+          {/* WHAT you are looking at, and whether to trust it. An atlas whose
+              colours encode provenance should say so in words at the stop. */}
+          {tour.list[tour.i].target && (
+            <div className="border-base-300 mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-2 text-[11px]">
+              <span className="font-mono">
+                {tour.list[tour.i].target!.heightM.toFixed(1)} m
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span
+                  className="inline-block h-2 w-2 rounded-full"
+                  style={{
+                    background:
+                      RULE_COLORS[tour.list[tour.i].target!.rule] ??
+                      RULE_COLORS.fallback,
+                  }}
+                />
+                <span className="text-base-content/60">
+                  {RULE_LABELS[tour.list[tour.i].target!.rule] ??
+                    tour.list[tour.i].target!.rule}
+                </span>
+              </span>
+              <span className="text-base-content/60">
+                <span className="font-mono">
+                  {tour.list[tour.i].target!.nearby}
+                </span>{' '}
+                within 150 m ·{' '}
+                <span className="font-mono">
+                  {tour.list[tour.i].target!.nearbyMeasured}
+                </span>{' '}
+                measured
+              </span>
+              <a
+                className="link link-primary"
+                href={`https://www.openstreetmap.org/way/${tour.list[tour.i].target!.id}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                OSM →
+              </a>
+            </div>
+          )}
         </div>
       )}
 

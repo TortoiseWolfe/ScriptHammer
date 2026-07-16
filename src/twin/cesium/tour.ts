@@ -25,7 +25,25 @@ export interface TourStop {
   /** Where the camera aims — kept so a probe can assert it clears terrain too.
    *  A stop whose aim point is inside a hill is a stop looking at dirt. */
   lookAt: { lon: number; lat: number; heightM: number };
+  /** What you are actually looking at. A tour that says "Ross's Landing" and
+   *  nothing else tells you where the camera is, not what is on screen or
+   *  whether to trust it — which is the whole point of an atlas whose colours
+   *  encode provenance. Filled by describeTargets(). */
+  target?: {
+    id: number;
+    name?: string;
+    heightM: number;
+    /** Height provenance: lidar / height / levels / ms / fallback. */
+    rule: string;
+    /** Buildings within TARGET_RADIUS_M of the aim point, and how many of those
+     *  are lidar-MEASURED — the stop's data quality at a glance. */
+    nearby: number;
+    nearbyMeasured: number;
+  };
 }
+
+/** Radius counted around a stop's aim point. ~1 downtown block. */
+const TARGET_RADIUS_M = 150;
 
 /**
  * THE DATUM CONVERSION. Diorama ENU y -> ellipsoidal metres.
@@ -214,4 +232,55 @@ export function resolveGround(
           },
         }
   );
+}
+
+/**
+ * Annotate each stop with what it is pointed AT: the nearest building to the aim
+ * point, plus how many buildings sit within a block of it and how many of those
+ * are lidar-measured.
+ *
+ * Separate from stop construction so both stay pure and testable, and so it can
+ * re-run when the live set lands without recomputing camera poses.
+ */
+export function describeTargets(
+  stops: TourStop[],
+  buildings: AtlasBuilding[],
+  cosLat: number
+): TourStop[] {
+  // deg -> m, locally flat. Plenty at a 150 m radius.
+  const M_PER_DEG_LAT = 110941;
+  const mPerDegLon = 111320 * cosLat;
+  const distM = (aLon: number, aLat: number, bLon: number, bLat: number) =>
+    Math.hypot((aLon - bLon) * mPerDegLon, (aLat - bLat) * M_PER_DEG_LAT);
+
+  return stops.map((s) => {
+    let best: AtlasBuilding | null = null;
+    let bestD = Infinity;
+    let nearby = 0;
+    let nearbyMeasured = 0;
+    for (const b of buildings) {
+      const c = centroid(b);
+      const d = distM(c.lon, c.lat, s.lookAt.lon, s.lookAt.lat);
+      if (d < bestD) {
+        bestD = d;
+        best = b;
+      }
+      if (d <= TARGET_RADIUS_M) {
+        nearby++;
+        if (b.rule === 'lidar') nearbyMeasured++;
+      }
+    }
+    if (!best) return s;
+    return {
+      ...s,
+      target: {
+        id: best.id,
+        name: best.tags?.name,
+        heightM: best.heightM,
+        rule: best.rule,
+        nearby,
+        nearbyMeasured,
+      },
+    };
+  });
 }
