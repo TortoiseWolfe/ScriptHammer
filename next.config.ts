@@ -86,10 +86,27 @@ const nextConfig: NextConfig = {
               priority: 5,
               reuseExistingChunk: true,
             },
-            // Heavy libraries in separate chunks
+            // Heavy libraries in separate chunks.
+            //
+            // NOT optional. The `vendor` group above has a FIXED name, so
+            // webpack merges every node_modules module it claims — async ones
+            // included — into ONE chunk, and that chunk is initial because
+            // react/next are statically imported everywhere. A `dynamic(...,
+            // { ssr: false })` boundary does NOT rescue a library from it.
+            // These priority-20 groups are the only reason leaflet/cesium stay
+            // off the homepage: they claim their modules before `vendor` (10)
+            // can. Delete one and its library silently ships on every route.
+            //
+            // three.js has no such group and IS in the 2.26MB initial vendor
+            // chunk today — a pre-existing bug, tracked separately.
             leaflet: {
               test: /[\\/]node_modules[\\/](leaflet|react-leaflet)[\\/]/,
               name: 'leaflet',
+              priority: 20,
+            },
+            cesium: {
+              test: /[\\/]node_modules[\\/]cesium[\\/]/,
+              name: 'cesium',
               priority: 20,
             },
           },
