@@ -146,6 +146,21 @@ export const SiteConfigSchema = z.object({
       message: 'vectorOffsetM must be within 15 m of zero',
     })
     .optional(),
+  /** Geoid separation N at the site centre, metres (h = H + N).
+   *
+   *  Baked terrain is USGS 3DEP, whose heights are ORTHOMETRIC (NAVD88) —
+   *  fetch-lidar-heights.ts re-measures that delta every bake as a datum
+   *  tripwire. Anything that wants heights above the WGS84 ELLIPSOID (a globe
+   *  renderer; anything georeferenced) must add N. Around Chattanooga N is
+   *  ~-29.7 m, so skipping it sinks the whole site ~30 m — the "#1 gotcha" of
+   *  the Chattanooga Build Plan, and the bug its own reference viewer ships.
+   *
+   *  PINNED, never computed at bake time — same discipline as `lidar.ept`.
+   *  Resolve once from NGS and paste the number:
+   *    https://geodesy.noaa.gov/api/geoid/ght?lat=<lat>&lon=<lon>&model=13
+   *  Omitted => 0 => the local-ENU diorama is unaffected (it never leaves the
+   *  box, so a constant vertical shift is invisible to it). */
+  geoidOffsetM: z.number().finite().gte(-110).lte(90).optional(),
 });
 
 export type SiteConfig = z.infer<typeof SiteConfigSchema>;

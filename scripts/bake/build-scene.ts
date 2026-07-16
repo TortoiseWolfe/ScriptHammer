@@ -422,6 +422,18 @@ export async function buildScene(
     ),
     fetchedAt: new Date().toISOString(),
     ruleHistogram,
+    // The two georeferencing constants a globe consumer cannot recover from the
+    // artifacts alone.
+    //
+    // vectorOffsetM: the correction APPLIED to every ring by createProjection.
+    // `registration` below is the RESIDUAL after applying it, not the value —
+    // so without this, inverting a baked ring back to lon/lat silently lands
+    // ~0.5 m off on chatt and there is nothing to catch it.
+    //
+    // geoidOffsetM: terrain/height data here is NAVD88 orthometric; a globe
+    // wants ellipsoidal. See site-config.ts.
+    vectorOffsetM: proj.offsetM,
+    geoidOffsetM: site.geoidOffsetM ?? 0,
     ...(registration ? { registration } : {}),
     // `site.water` is a bake RESULT (did the carve find water?), filled in
     // below — the runtime uses it to gate the water mesh, so a waterless site

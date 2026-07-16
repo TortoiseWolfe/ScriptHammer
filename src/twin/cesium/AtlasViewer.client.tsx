@@ -18,7 +18,13 @@
 import { useEffect, useRef, useState } from 'react';
 import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
-import { loadManifest, loadSiteJson, type Building } from '@/lib/manifest';
+import {
+  loadManifest,
+  loadSiteJson,
+  type Building,
+  type TerrainGrid,
+} from '@/lib/manifest';
+import { createBakedTerrainProvider, sampleEllipsoidalM } from './terrain';
 import {
   buildingsToWgs84,
   groundEllipsoidHeightM,
@@ -26,14 +32,6 @@ import {
   RULE_LABELS,
   type AtlasBuilding,
 } from './buildings';
-
-/** sites/chatt.json's measured #233 correction. The manifest does not carry the
- *  APPLIED offset (only the residual), so the atlas cannot read it from the
- *  artifact yet — see the note in buildings.ts. Keyed by slug so an unknown site
- *  gets zero rather than chatt's number. */
-const VECTOR_OFFSET_M: Record<string, { x: number; z: number }> = {
-  chatt: { x: 0.5, z: 0 },
-};
 
 /** The `id` payload attached to each building GeometryInstance, and what
  *  scene.pick() hands back. Distinct from a Cesium Entity — Primitive ids are
@@ -72,6 +70,7 @@ export default function AtlasViewer({ slug }: { slug: string }) {
               maximumLevel: 19,
             })
           ),
+          // Replaced with the baked 3DEP provider once the grid loads.
           terrainProvider: new Cesium.EllipsoidTerrainProvider(),
           baseLayerPicker: false,
           geocoder: false,
@@ -93,25 +92,32 @@ export default function AtlasViewer({ slug }: { slug: string }) {
           Cesium.Color.fromCssColorString('#16162a');
 
         setStatus('loading baked site…');
-        const manifest = await loadManifest(slug);
-        const buildings = await loadSiteJson<Building[]>(
-          slug,
-          'buildings.json'
-        );
+        const [manifest, buildings, terrain] = await Promise.all([
+          loadManifest(slug),
+          loadSiteJson<Building[]>(slug, 'buildings.json'),
+          loadSiteJson<TerrainGrid>(slug, 'terrain.json'),
+        ]);
         if (disposed) return;
+
+        // USGS 3DEP, already on disk — no ion token, and finer than the World
+        // Terrain the Build Plan spends a token on in its Phase 1.
+        viewer.terrainProvider = createBakedTerrainProvider(manifest, terrain);
+        const sample = (lon: number, lat: number) =>
+          sampleEllipsoidalM(manifest, terrain, lon, lat);
 
         setStatus(`projecting ${buildings.length} buildings…`);
         const placed = buildingsToWgs84(
           manifest,
           buildings,
-          VECTOR_OFFSET_M[slug] ?? { x: 0, z: 0 }
+          // From the manifest now, not a per-slug constant in this file.
+          manifest.vectorOffsetM ?? { x: 0, z: 0 }
         );
 
-        const base = groundEllipsoidHeightM();
         const instances: Cesium.GeometryInstance[] = [];
         const tally: Record<string, number> = {};
         for (const b of placed) {
           tally[b.rule] = (tally[b.rule] ?? 0) + 1;
+          const base = groundEllipsoidHeightM(b, sample);
           try {
             instances.push(
               new Cesium.GeometryInstance({
@@ -175,6 +181,27 @@ export default function AtlasViewer({ slug }: { slug: string }) {
           );
         }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
 
+        // Scripted-probe handle, same idea as TwinCanvas's window.__twinPerf:
+        // Cesium is an ES module here, so there is no window.Cesium for a
+        // capture script to reach through. The verification that matters for
+        // this layer — is the terrain real, do buildings sit ON it, does the
+        // datum hold — needs an oblique camera and a height query, and neither
+        // is reachable from the DOM. Exposing the viewer is what makes those
+        // claims checkable instead of asserted.
+        (
+          window as unknown as {
+            __atlas?: {
+              viewer: Cesium.Viewer;
+              sampleEllipsoidalM: (lon: number, lat: number) => number;
+              geoidOffsetM: number;
+            };
+          }
+        ).__atlas = {
+          viewer,
+          sampleEllipsoidalM: sample,
+          geoidOffsetM: manifest.geoidOffsetM ?? 0,
+        };
+
         setReady(true);
         setStatus('');
       } catch (e) {
@@ -209,7 +236,7 @@ export default function AtlasViewer({ slug }: { slug: string }) {
             {error
               ? `error: ${error}`
               : ready
-                ? `${total} baked buildings · Esri imagery · no token`
+                ? `${total} baked buildings · 3DEP terrain · Esri · no token`
                 : status}
           </div>
           {ready && (

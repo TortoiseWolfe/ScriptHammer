@@ -15,7 +15,7 @@
     "mpp": 0.6
   },
   "provenance": "© OpenStreetMap · USGS 3DEP 1m · TDOT Aerial Surveys · Microsoft Buildings · USGS 3DEP Lidar",
-  "fetchedAt": "2026-07-16T02:20:27.671Z",
+  "fetchedAt": "2026-07-16T02:57:57.667Z",
   "ruleHistogram": {
     "height": 96,
     "levels": 4,
@@ -24,6 +24,11 @@
     "ms": 43,
     "fallback": 39
   },
+  "vectorOffsetM": {
+    "x": 0.5,
+    "z": 0
+  },
+  "geoidOffsetM": -29.657,
   "registration": {
     "offsetM": {
       "x": 0,

@@ -89,25 +89,34 @@ export function buildingsToWgs84(
 }
 
 /**
- * Ground elevation, in metres above the WGS84 ELLIPSOID, that a building's
- * footprint should extrude from.
+ * Ground elevation in metres above the WGS84 ELLIPSOID for a building's
+ * footprint, given a terrain sampler.
  *
  * This is the Build Plan's own "#1 gotcha", and its Phase 0 viewer walks
  * straight into it: that viewer extrudes every building at `height: 0` in a
  * Cesium.Primitive, then loads Cesium World Terrain as soon as a token is
- * pasted. Ground in Chattanooga is ~175 m above the ellipsoid, so the buildings
+ * pasted. Ground in Chattanooga is ~175 m above the ellipsoid, so its buildings
  * sink underground the moment the terrain arrives. (Its author half-knew — the
  * traffic layer hardcodes `hasTerrain ? 210 : 3` to dodge exactly this.)
  *
- * With NO terrain provider the globe surface IS the ellipsoid, so 0 is correct
- * and this is a no-op. When the baked 3DEP terrain lands, this becomes
- * `terrainElevation(lon, lat) + geoidOffsetM` — 3DEP heights are NAVD88
- * ORTHOMETRIC (see scripts/bake/fetch-lidar-heights.ts, which re-measures the
- * delta every bake as a datum tripwire) and Cesium wants ellipsoidal, so the
- * geoid separation (N ≈ −30.5 m here) has to be applied. Routing every base
- * height through one function now means that becomes a single change, not a
- * hunt for the places that assumed zero.
+ * Sampling the building's own centroid rather than a per-vertex height keeps
+ * each massing box level: OSM footprints are flat-bottomed by construction, and
+ * following the terrain per-vertex would shear them on a slope. The site has
+ * 55.5 m of relief, so a single global constant would not do.
+ *
+ * `sampleEllipsoidal` returns ellipsoidal metres (orthometric + geoid), so the
+ * datum is already resolved by the time it gets here — see cesium/terrain.ts.
  */
-export function groundEllipsoidHeightM(): number {
-  return 0;
+export function groundEllipsoidHeightM(
+  b: AtlasBuilding,
+  sampleEllipsoidal: (lon: number, lat: number) => number
+): number {
+  let lon = 0;
+  let lat = 0;
+  const n = b.lonLat.length / 2;
+  for (let i = 0; i < b.lonLat.length; i += 2) {
+    lon += b.lonLat[i];
+    lat += b.lonLat[i + 1];
+  }
+  return sampleEllipsoidal(lon / n, lat / n);
 }

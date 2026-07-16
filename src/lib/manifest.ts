@@ -53,6 +53,18 @@ export interface Manifest {
   provenance: string;
   fetchedAt: string;
   ruleHistogram: Record<string, number>;
+  /** The #233 vector correction APPLIED to every baked ring (metres, +x east
+   *  / +z south). Distinct from `registration.offsetM`, which is the RESIDUAL
+   *  measured after applying it. Anything inverting ENU back to lon/lat must
+   *  subtract this or it lands off by exactly this much, silently.
+   *  Absent on pre-2026-07 bakes => treat as {x:0,z:0}. */
+  vectorOffsetM?: { x: number; z: number };
+  /** Geoid separation N at the site centre (h = H + N). Baked terrain and
+   *  lidar heights are NAVD88 ORTHOMETRIC; a globe renderer needs ellipsoidal,
+   *  so it adds this. ~-29.7 m at Chattanooga — omit it and the site sinks 30 m.
+   *  The local-ENU diorama ignores it (a constant shift is invisible inside the
+   *  box). Absent on pre-2026-07 bakes => treat as 0. */
+  geoidOffsetM?: number;
   /** #233 bake-measured footprint-vs-aerial registration. offsetM is the
    *  RESIDUAL misregistration of this bake's geometry (a bake with a pinned
    *  vectorOffsetM should report ~0). Absent on pre-#233 bakes and on
