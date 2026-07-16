@@ -65,6 +65,11 @@ export interface Manifest {
    *  The local-ENU diorama ignores it (a constant shift is invisible inside the
    *  box). Absent on pre-2026-07 bakes => treat as 0. */
   geoidOffsetM?: number;
+  /** The extent the ATLAS layer covers — ALWAYS a superset of `box` (the bake
+   *  unions them; see scripts/bake/site-config.ts atlasBoxFor). Drives both the
+   *  live-OSM fetch and the wide DEM, which must agree: terrain that stops short
+   *  of the buildings is a cliff. Absent on pre-2026-07 bakes => use `box`. */
+  atlasBox?: { swLat: number; swLon: number; neLat: number; neLon: number };
   /** #233 bake-measured footprint-vs-aerial registration. offsetM is the
    *  RESIDUAL misregistration of this bake's geometry (a bake with a pinned
    *  vectorOffsetM should report ~0). Absent on pre-#233 bakes and on

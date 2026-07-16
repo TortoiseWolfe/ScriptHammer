@@ -44,12 +44,12 @@ const MAX_LEVEL = 15;
  * box extend the boundary elevation instead of falling off a cliff to zero.
  */
 export function sampleOrthometricM(
-  manifest: Manifest,
+  box: { swLat: number; swLon: number; neLat: number; neLon: number },
   grid: TerrainGrid,
   lon: number,
   lat: number
 ): number {
-  const { swLat, swLon, neLat, neLon } = manifest.box;
+  const { swLat, swLon, neLat, neLon } = box;
   const { cols, rows, heights } = grid;
 
   // Fractional grid coords. Row 0 = south (buildGrid's convention), col 0 = west.
@@ -70,37 +70,74 @@ export function sampleOrthometricM(
   return top * (1 - ty) + bot * ty;
 }
 
+export interface TerrainSet {
+  /** ~9 m over the baked box. */
+  fine: TerrainGrid;
+  /** ~30 m over manifest.atlasBox. Absent on sites with no atlasBox, or on
+   *  pre-2026-07 bakes — the ladder degrades to fine + clamp. */
+  wide?: TerrainGrid;
+}
+
+function inBox(
+  b: { swLat: number; swLon: number; neLat: number; neLon: number },
+  lon: number,
+  lat: number
+): boolean {
+  return lon >= b.swLon && lon <= b.neLon && lat >= b.swLat && lat <= b.neLat;
+}
+
 export function isInBakedBox(
   manifest: Manifest,
   lon: number,
   lat: number
 ): boolean {
-  const { swLat, swLon, neLat, neLon } = manifest.box;
-  return lon >= swLon && lon <= neLon && lat >= swLat && lat <= neLat;
+  return inBox(manifest.box, lon, lat);
+}
+
+export function atlasBoxOf(manifest: Manifest) {
+  return manifest.atlasBox ?? manifest.box;
 }
 
 /**
- * Ellipsoidal height at lon/lat — what Cesium and every georeferenced consumer
- * wants. The ONE place the geoid separation is applied, and the ONE definition
- * of "ground" in the atlas.
+ * Ellipsoidal ground height. THE single definition of "ground" in the atlas —
+ * the terrain provider and the building extrusion both call it, and they must
+ * agree or buildings float (learned once already).
  *
- * Outside the baked box it returns 0 (the ellipsoid), NOT the edge-clamped
- * value. That must match what the terrain provider serves out there, or the two
- * disagree and anything placed by this function floats: the live-OSM layer
- * (#292) extends well past the bake, and with edge-clamping its buildings would
- * extrude from ~176 m while the ground under them rendered at 0. One
- * definition, used by both, is what keeps them on the deck.
+ *   1. inside the baked box  -> fine grid  (~9 m, 3DEP)
+ *   2. inside atlasBox       -> wide grid  (~30 m, 3DEP)
+ *   3. outside               -> CLAMP to the wide grid's nearest edge
+ *
+ * Step 3 is deliberate and was wrong before. This returned 0 (bare ellipsoid)
+ * outside the box, which put a 176 m CLIFF at the baked-box edge — the site read
+ * as a plateau — because ground here is ~176 m above the ellipsoid. I had
+ * originally clamped, then removed it reasoning it would "smear Chattanooga's
+ * elevation across the county". That was the wrong trade: flat-at-roughly-176 m
+ * is far closer to truth than dropping the surrounds to ~30 m above sea level,
+ * and clamping is CONTINUOUS, so there is no step anywhere in or near the view.
+ * It does fabricate flatness far from the site; that region is off-camera and
+ * getting it right means global terrain (an ion token — #292).
+ *
+ * The geoid offset applies identically to both grids: both are NAVD88
+ * orthometric.
  */
 export function sampleEllipsoidalM(
   manifest: Manifest,
-  grid: TerrainGrid,
+  terrain: TerrainSet,
   lon: number,
   lat: number
 ): number {
-  if (!isInBakedBox(manifest, lon, lat)) return 0;
-  return (
-    sampleOrthometricM(manifest, grid, lon, lat) + (manifest.geoidOffsetM ?? 0)
-  );
+  const geoid = manifest.geoidOffsetM ?? 0;
+  if (isInBakedBox(manifest, lon, lat)) {
+    return sampleOrthometricM(manifest.box, terrain.fine, lon, lat) + geoid;
+  }
+  const wide = terrain.wide;
+  if (!wide) {
+    // No wide DEM: clamp the fine grid rather than drop to the ellipsoid.
+    return sampleOrthometricM(manifest.box, terrain.fine, lon, lat) + geoid;
+  }
+  // sampleOrthometricM already clamps at the grid edges, so this covers both
+  // "inside atlasBox" and "outside it" (case 3) with one call.
+  return sampleOrthometricM(atlasBoxOf(manifest), wide, lon, lat) + geoid;
 }
 
 /**
@@ -138,13 +175,17 @@ export class BakedTerrainProvider {
   private readonly inner: Cesium.CustomHeightmapTerrainProvider;
   private readonly box: Cesium.Rectangle;
 
-  constructor(manifest: Manifest, grid: TerrainGrid) {
-    const { swLat, swLon, neLat, neLon } = manifest.box;
+  constructor(manifest: Manifest, terrain: TerrainSet) {
+    // Availability follows the ATLAS box, not the baked box: the wide DEM
+    // covers it, and terrain that stops where the buildings do not is the
+    // plateau. MAX_LEVEL still bounds refinement — that is what stopped 826
+    // tiles pinning the load queue forever, and a wider window must not undo it.
+    const a = atlasBoxOf(manifest);
     this.tilingScheme = new Cesium.GeographicTilingScheme();
-    this.box = Cesium.Rectangle.fromDegrees(swLon, swLat, neLon, neLat);
+    this.box = Cesium.Rectangle.fromDegrees(a.swLon, a.swLat, a.neLon, a.neLat);
     this.inner = createInnerHeightmapProvider(
       manifest,
-      grid,
+      terrain,
       this.tilingScheme
     );
 
@@ -208,19 +249,27 @@ export class BakedTerrainProvider {
 
 export function createBakedTerrainProvider(
   manifest: Manifest,
-  grid: TerrainGrid
+  terrain: TerrainSet
 ): Cesium.TerrainProvider {
   return new BakedTerrainProvider(
     manifest,
-    grid
+    terrain
   ) as unknown as Cesium.TerrainProvider;
 }
 
 function createInnerHeightmapProvider(
   manifest: Manifest,
-  grid: TerrainGrid,
+  terrain: TerrainSet,
   tilingScheme: Cesium.GeographicTilingScheme
 ): Cesium.CustomHeightmapTerrainProvider {
+  const a = atlasBoxOf(manifest);
+  // Hoisted: the callback runs per tile and this never changes.
+  const atlasRect = Cesium.Rectangle.fromDegrees(
+    a.swLon,
+    a.swLat,
+    a.neLon,
+    a.neLat
+  );
   const { swLat, swLon, neLat, neLon } = manifest.box;
 
   return new Cesium.CustomHeightmapTerrainProvider({
@@ -229,10 +278,12 @@ function createInnerHeightmapProvider(
     tilingScheme,
     callback: (x: number, y: number, level: number) => {
       const rect = tilingScheme.tileXYToRectangle(x, y, level);
-      // Cheap reject: a tile that cannot touch the box is flat ellipsoid. Most
-      // of the planet takes this path.
-      const box = Cesium.Rectangle.fromDegrees(swLon, swLat, neLon, neLat);
-      if (!Cesium.Rectangle.intersection(rect, box, new Cesium.Rectangle())) {
+      // Cheap reject: a tile that cannot touch the atlas extent is flat
+      // ellipsoid. Availability already stops Cesium ASKING for most of these,
+      // but the callback must still be cheap for the ones on the boundary.
+      if (
+        !Cesium.Rectangle.intersection(rect, atlasRect, new Cesium.Rectangle())
+      ) {
         return new Float64Array(TILE_SAMPLES * TILE_SAMPLES);
       }
       const out = new Float64Array(TILE_SAMPLES * TILE_SAMPLES);
@@ -253,7 +304,7 @@ function createInnerHeightmapProvider(
           // how buildings end up floating over ellipsoid ground.
           out[r * TILE_SAMPLES + c] = sampleEllipsoidalM(
             manifest,
-            grid,
+            terrain,
             lon,
             lat
           );

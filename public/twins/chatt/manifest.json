@@ -15,7 +15,7 @@
     "mpp": 0.6
   },
   "provenance": "© OpenStreetMap · USGS 3DEP 1m · TDOT Aerial Surveys · Microsoft Buildings · USGS 3DEP Lidar",
-  "fetchedAt": "2026-07-16T02:57:57.667Z",
+  "fetchedAt": "2026-07-16T04:18:32.369Z",
   "ruleHistogram": {
     "height": 96,
     "levels": 4,
@@ -29,6 +29,12 @@
     "z": 0
   },
   "geoidOffsetM": -29.657,
+  "atlasBox": {
+    "swLat": 35.0078,
+    "swLon": -85.345,
+    "neLat": 35.076,
+    "neLon": -85.283
+  },
   "registration": {
     "offsetM": {
       "x": 0,

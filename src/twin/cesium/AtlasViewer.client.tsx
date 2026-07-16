@@ -166,10 +166,17 @@ export default function AtlasViewer({ slug }: { slug: string }) {
 
         setStatus('loading baked site…');
         const manifest = framing;
-        const [buildings, terrain] = await Promise.all([
+        const [buildings, fine, wide] = await Promise.all([
           loadSiteJson<Building[]>(slug, 'buildings.json'),
           loadSiteJson<TerrainGrid>(slug, 'terrain.json'),
+          // Coarse DEM over the atlas extent. Optional: a site with no atlasBox
+          // (or a pre-2026-07 bake) has none, and the ladder degrades to
+          // fine + clamp rather than dropping a 176 m cliff at the box edge.
+          loadSiteJson<TerrainGrid>(slug, 'terrain-wide.json').catch(
+            () => undefined
+          ),
         ]);
+        const terrain = { fine, wide };
         if (disposed) return;
 
         // USGS 3DEP, already on disk — no ion token, and finer than the World
