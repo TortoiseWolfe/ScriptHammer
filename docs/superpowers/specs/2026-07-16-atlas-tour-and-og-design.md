@@ -33,15 +33,24 @@ baked chatt box     1.46 x 5.79 km =  8.5 km2   1,547 OSM buildings
 
 The baked box was composed for the tilt-shift **diorama** — a 1.46 km north–south corridor framed for the Ross's Landing → Choo Choo tour. The atlas widens at runtime only because the bake hands it the diorama's slice.
 
-**Exact precedent exists.** `1b3b0b4` ("kill the atlas terrain plateau — wide DEM over the atlas extent") already made this move for terrain, adding `terrain-wide.json`. The atlas got a wide _terrain_ bake and never got a wide _buildings_ bake. Do the symmetric thing.
+**Precedent exists for the plumbing — but NOT for the payload.** `1b3b0b4` ("kill the atlas terrain plateau — wide DEM over the atlas extent") added `terrain-wide.json`, and its five mechanical moves are the template for _wiring_ a second wide artifact: parameterize the fetcher's output filename, add the artifact to `run.ts`'s temp→out promotion list, copy raw→out in `build-scene.ts`.
 
-The bake already speaks Overpass — `scripts/bake/overpass.ts`, `scripts/bake/fetch-osm.ts`. They are pointed at the wrong box, not missing.
+**The payload is where the analogy breaks, and this is the crux of the task.** `terrain-wide.json` is the _same shape_ as `terrain.json` over a bigger box — a straight copy. Buildings are not:
 
-- **Emit** `public/twins/chatt/buildings-wide.json` over the atlas extent, mirroring `terrain-wide.json` (including `run.ts`'s temp→out promotion list).
-- **Cost:** ~8,031 buildings ≈ 1.75 MB uncompressed, **~314 KB gzipped** — comparable to the already-committed `terrain.json` (898 KB).
-- **The join is preserved.** `Building.id` IS the OSM way id. Inside the baked box, keep the bake's measured height + rule (lidar for 1,328 roofs); outside, `resolveHeight()` on the tags via the same ladder. The wide bake runs that join at bake time instead of in the browser.
-- **Runtime Overpass becomes opt-in** (`?live`), not deleted. Fresh data stays available for anyone who wants it; the default never depends on a public API.
+- `buildings.json` entries are **ENU-projected and box-clipped**. `build-scene.ts:296-300` actively **drops** any building whose footprint centroid falls outside `site.box` (`inBox`, defined against `site.box` half-extents). Its `ring` is `number[]` in ENU metres, requiring `vectorOffsetM` to unwind.
+- The atlas's runtime type deliberately does **not** do that. `src/twin/cesium/overpass.ts:68-70` on `LiveBuilding.lonLat`: _"Flat [lon, lat, ...] straight from OSM — no ENU round-trip, so no projection error and no vectorOffsetM to unwind."_
+
+So **do not emit a wide `buildings.json`.** Emit a **baked `LiveBuilding[]`** — precisely what `fetchLiveBuildings()` returns today, computed at bake time instead of in the browser:
+
+- **Emit** `public/twins/chatt/buildings-wide.json` typed `LiveBuilding[]` (`{ id, lonLat, heightM, rule, baked, tags }`), over `atlasBoxFor(site)`.
+- **The runtime change is then minimal**: `fetchLiveBuildings` keeps its signature and return type; the atlas fetches the JSON instead of calling Overpass. Same type, same join, same consumer. `?live` re-enables the network path.
+- **`sites/chatt.json` already has `atlasBox`** — `atlasBoxFor(site)` unions it with `box`. **No new config.** Note the guard idiom `atlasBox !== site.box` is _reference identity_, valid only because `atlasBoxFor` returns the same object when `atlasBox` is absent — preserve that contract.
+- **`fetchOsm` hardcodes `osm.json`** (`scripts/bake/fetch-osm.ts:35`) and needs the same `filename?` parameterization `fetch-terrain.ts` got in `1b3b0b4`.
+- **The join is preserved.** `Building.id` IS the OSM way id. Inside the baked box use the bake's measured height + rule (lidar for 1,328 roofs); outside, `resolveHeight()` on the live tags via the same ladder — exactly what the runtime does now, moved to bake time.
+- **Cost:** ~8,031 buildings ≈ 1.75 MB uncompressed, **~314 KB gzipped** — next to the already-committed `terrain.json` (898 KB).
 - **Trade-off, accepted:** wide data goes stale between bakes. Building footprints do not change hourly.
+
+**`run.ts`'s promotion list is a silent-failure trap.** Its own commit message: _"that allowlist is the atomic-swap guard, and a file missing from it is silently dropped, which cost two rebakes to notice."_ Append `'buildings-wide.json'` to the list at `scripts/bake/run.ts:208-221`.
 
 Per `lesson_bake_byte_comparability_prettier`: verify the rebake **semantically** (manifest modulo `fetchedAt`/`site`/`drape.path`; `drape.jpg` is the byte-identity check), not by byte-diffing prettified artifacts.
 
@@ -79,9 +88,20 @@ The atlas renders **"Atlas — chatt"**. The string "Chattanooga Mini" appears n
 - `?notour` suppresses it. (Bookmark it while working on the atlas; otherwise every reload flies the camera.)
 - Any globe interaction — drag, zoom, click — aborts immediately. A camera that fights the mouse is worse than no tour. Manual stepping already cancels autoplay (`AtlasViewer.client.tsx:368-371`); extend the same abort to camera input.
 
+**The obvious hook is a trap.** `AtlasViewer.client.tsx` creates its `ScreenSpaceEventHandler` at `:466` — **after** the live-fetch `await` at `:424-429`, which the code's own comment budgets at 60s+. Auto-start fires off `setReady(true)` at `:415`. So between `:415` and `:466` the tour is playing with **no Cesium input handler registered**, and an abort hooked there would be inert for exactly the window auto-start is most likely running. Register the abort on `document` (`pointerdown`, `wheel`, `touchstart`) instead — the pattern `Scene.tsx:~112` already uses; it needs no Cesium object and can be registered immediately. Piece 1 shortens that await to a local fetch, but the ordering bug must not survive on the `?live` path.
+
 **Sequencing:** auto-start hangs off the **tour-built** signal (`rebuildTourRef`), **not** page load — there are no stops until buildings resolve. After piece 1 that is a local fetch rather than a public API, which is precisely why the flip waits for it. If no stops resolve, nothing auto-plays and the button simply sits there. No spinner, no error toast.
 
-**Reduced motion:** `prefers-reduced-motion: reduce` **or** `data-reduce-motion="true"` (`src/styles/reduced-motion.css`, FR-022 / WCAG 2.3.3) **suppresses auto-start**. Non-negotiable — auto-flying a camera is the vestibular trigger that system exists to prevent. If such a user _clicks_ Play they get the **normal flight**: they asked for it, and the flight is the button's essential function. (Rejected: instant `camera.setView` cuts.)
+**Reduced motion** — **use `useReducedMotion()`, not AccessibilityContext.** There are two disjoint mechanisms in this repo and only one is right here:
+
+| API                                            | shape                         | provider                      | used by                                                        |
+| ---------------------------------------------- | ----------------------------- | ----------------------------- | -------------------------------------------------------------- |
+| `useReducedMotion()`                           | `boolean`, `matchMedia`       | none needed                   | `Scene.tsx:85` — gates **auto-orbit**. The identical use case. |
+| `settings.reduceMotion` (AccessibilityContext) | `'reduce' \| 'no-preference'` | **throws without a provider** | 2 files, neither 3D                                            |
+
+Use `useReducedMotion()`. Note also that `src/styles/reduced-motion.css` **cannot** help — it nulls four Tailwind keyframe classes and has no reach over a `camera.flyTo`. Suppressing auto-start is a code decision, not a CSS one.
+
+When it returns true, **auto-start is suppressed** — non-negotiable, WCAG 2.3.3; auto-flying a camera is the vestibular trigger that whole system exists to prevent. If such a user _clicks_ Play they get the **normal flight**: they asked for it, and the flight is the button's essential function. (Rejected: instant `camera.setView` cuts.)
 
 **The button** — `AtlasViewer.client.tsx:541-556`:
 
