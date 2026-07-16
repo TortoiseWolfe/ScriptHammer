@@ -203,34 +203,44 @@ export function buildingsToWgs84(
 }
 
 /**
- * Ground elevation in metres above the WGS84 ELLIPSOID for a building's
- * footprint, given a terrain sampler.
+ * The ellipsoidal height a building's massing box extrudes FROM: the MINIMUM
+ * ground under its own footprint.
  *
- * This is the Build Plan's own "#1 gotcha", and its Phase 0 viewer walks
- * straight into it: that viewer extrudes every building at `height: 0` in a
- * Cesium.Primitive, then loads Cesium World Terrain as soon as a token is
- * pasted. Ground in Chattanooga is ~175 m above the ellipsoid, so its buildings
- * sink underground the moment the terrain arrives. (Its author half-knew — the
- * traffic layer hardcodes `hasTerrain ? 210 : 3` to dodge exactly this.)
+ * One base per building, so the box stays level — OSM footprints are
+ * flat-bottomed by construction and following terrain per-vertex would shear
+ * them. But the base must be the ring's MIN, not its centroid.
  *
- * Sampling the building's own centroid rather than a per-vertex height keeps
- * each massing box level: OSM footprints are flat-bottomed by construction, and
- * following the terrain per-vertex would shear them on a slope. The site has
- * 55.5 m of relief, so a single global constant would not do.
+ * This sampled the CENTROID and defended it in a comment. Half of that was
+ * right (level) and half was wrong (height): on a slope, one height for a
+ * footprint spanning metres of elevation floats the downhill half and buries the
+ * uphill half. chatt's baked box holds 55.5 m of relief and the wide DEM reaches
+ * 649.5 m, so the moment real hillsides entered the view buildings visibly hung
+ * in the air (reported: way 174322222, 10.7 m, rule=lidar, on a hillside INSIDE
+ * the baked box — not a wide-grid resolution artifact).
  *
- * `sampleEllipsoidal` returns ellipsoidal metres (orthometric + geoid), so the
- * datum is already resolved by the time it gets here — see cesium/terrain.ts.
+ * Min is the right trade, not a compromise: the worst case becomes a building
+ * cut into its uphill slope, which is what real buildings on hills do and what
+ * every 3D city renderer does. Floating reads as broken; buried reads as a
+ * building on a hill.
+ *
+ * NOTE the caller adds `heightM` to this — the building's own height, NOT
+ * stretched to the max ground. Stretching to close the visual gap would silently
+ * inflate the 1328 lidar MEASUREMENTS this layer exists to show.
+ *
+ * `sampleEllipsoidal` returns ellipsoidal metres (orthometric + geoid), and is
+ * the same definition of ground the terrain provider renders — see
+ * cesium/terrain.ts. They must agree or the fix is cosmetic.
  */
 export function groundEllipsoidHeightM(
   b: AtlasBuilding,
   sampleEllipsoidal: (lon: number, lat: number) => number
 ): number {
-  let lon = 0;
-  let lat = 0;
-  const n = b.lonLat.length / 2;
+  let min = Infinity;
   for (let i = 0; i < b.lonLat.length; i += 2) {
-    lon += b.lonLat[i];
-    lat += b.lonLat[i + 1];
+    const g = sampleEllipsoidal(b.lonLat[i], b.lonLat[i + 1]);
+    if (g < min) min = g;
   }
-  return sampleEllipsoidal(lon / n, lat / n);
+  // Degenerate ring (no vertices) — fall back to the ellipsoid rather than
+  // extruding from Infinity and vanishing the building.
+  return Number.isFinite(min) ? min : 0;
 }

@@ -130,6 +130,15 @@ export default function AtlasViewer({ slug }: { slug: string }) {
         viewerRef.current = viewer;
         viewer.scene.globe.baseColor =
           Cesium.Color.fromCssColorString('#16162a');
+        // Cesium defaults this to FALSE: primitives draw over the globe
+        // regardless of depth, so a building behind a ridge paints on top of it
+        // and reads as hovering in mid-air. Invisible while the terrain was flat;
+        // obvious the moment the wide DEM put real hillsides in the view.
+        //
+        // Trade-off for later: this also depth-tests billboards/labels, so the
+        // splat pins and live-layer markers (#292) will need
+        // disableDepthTestDistance when they land. The atlas has none today.
+        viewer.scene.globe.depthTestAgainstTerrain = true;
 
         // FRAME THE SITE FIRST — before any await.
         //

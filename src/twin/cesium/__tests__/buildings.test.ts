@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  groundEllipsoidHeightM,
   typeBucket,
   unbucketedLadderTypes,
   heightBand,
@@ -125,5 +126,63 @@ describe('classify', () => {
       expect(c.color).toMatch(/^#[0-9a-f]{6}$/i);
       expect(c.label).toBeTruthy();
     }
+  });
+});
+
+describe('groundEllipsoidHeightM', () => {
+  // A 20 m square footprint. lonLat is flat [lon, lat, ...].
+  const D = 0.0002; // ~20 m
+  const sq = (lon0: number, lat0: number): AtlasBuilding =>
+    b({
+      lonLat: [lon0, lat0, lon0 + D, lat0, lon0 + D, lat0 + D, lon0, lat0 + D],
+    });
+  // Ground rises 100 m per 0.001 deg of longitude — a steep hillside.
+  const slope = (lon: number) => 1000 + (lon - -85.3) * 100000;
+
+  it('THE INVARIANT: the base never sits above the ground under any vertex', () => {
+    // This is the whole bug. A base above any of its own vertices means that
+    // corner of the building is hanging in the air.
+    const bld = sq(-85.3, 35.03);
+    const base = groundEllipsoidHeightM(bld, (lon) => slope(lon));
+    for (let i = 0; i < bld.lonLat.length; i += 2) {
+      expect(base).toBeLessThanOrEqual(slope(bld.lonLat[i]) + 1e-9);
+    }
+  });
+
+  it('returns the ring MIN on a slope, not the centroid mean', () => {
+    const bld = sq(-85.3, 35.03);
+    const base = groundEllipsoidHeightM(bld, (lon) => slope(lon));
+    const min = slope(-85.3);
+    const mean = slope(-85.3 + D / 2); // what the old centroid version returned
+    expect(base).toBeCloseTo(min, 6);
+    expect(base).toBeLessThan(mean);
+    // and the gap is exactly what used to float: 10 m over a 20 m footprint here
+    expect(mean - base).toBeCloseTo(10, 6);
+  });
+
+  it('equals the centroid on flat ground (no penalty where it does not matter)', () => {
+    const base = groundEllipsoidHeightM(sq(-85.3, 35.03), () => 176);
+    expect(base).toBe(176);
+  });
+
+  it('samples every vertex — a min hiding in one corner still wins', () => {
+    const bld = sq(-85.3, 35.03);
+    const seen: number[] = [];
+    groundEllipsoidHeightM(bld, (lon, lat) => {
+      seen.push(lon);
+      // dip under exactly one corner, the last one visited
+      return lon === -85.3 && lat === 35.03 + D ? 1 : 500;
+    });
+    expect(seen.length).toBe(4);
+    expect(
+      groundEllipsoidHeightM(bld, (lon, lat) =>
+        lon === -85.3 && lat === 35.03 + D ? 1 : 500
+      )
+    ).toBe(1);
+  });
+
+  it('a degenerate ring falls back to the ellipsoid, not Infinity', () => {
+    // Extruding from Infinity vanishes the building instead of failing loudly.
+    expect(groundEllipsoidHeightM(b({ lonLat: [] }), () => 176)).toBe(0);
   });
 });
