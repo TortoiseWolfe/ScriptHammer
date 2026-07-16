@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import type { Projection } from './enu';
 import { resolveHeight } from './height';
+import { buildWideBuildings } from './build-wide-buildings';
 import { drapePixelSize, type DrapeSource } from './fetch-drape';
 import {
   provenanceFor,
@@ -501,6 +502,32 @@ export async function buildScene(
   if (existsSync(wideRaw)) {
     copyFileSync(wideRaw, join(outDir, 'terrain-wide.json'));
   }
+
+  // Ship the wide atlas buildings alongside it (#292). Same join
+  // fetchLiveBuildings runs live at request time, computed once here so the
+  // atlas's default path needs no public API. Absent for sites with no
+  // atlasBox (no osm-wide.json was fetched).
+  const osmWidePath = join(rawDir, 'osm-wide.json');
+  if (existsSync(osmWidePath)) {
+    const osmWide = JSON.parse(readFileSync(osmWidePath, 'utf8')) as {
+      elements: {
+        type: string;
+        id: number;
+        tags?: Record<string, string>;
+        geometry?: { lat: number; lon: number }[];
+      }[];
+    };
+    const wideBuildings = buildWideBuildings(
+      osmWide,
+      buildings,
+      atlasBoxFor(site)
+    );
+    writeFileSync(
+      join(outDir, 'buildings-wide.json'),
+      JSON.stringify(wideBuildings)
+    );
+  }
+
   writeFileSync(
     join(outDir, 'manifest.json'),
     JSON.stringify(manifest, null, 2)

@@ -32,10 +32,15 @@ export function buildOsmQL(box: GeoBox): string {
   ].join('\n');
 }
 
-export async function fetchOsm(outDir: string, box: GeoBox) {
+export async function fetchOsm(
+  outDir: string,
+  box: GeoBox,
+  opts: { filename?: string } = {}
+) {
+  const filename = opts.filename ?? 'osm.json';
   mkdirSync(outDir, { recursive: true });
   const data = await overpassQuery(buildOsmQL(box));
-  writeFileSync(join(outDir, 'osm.json'), JSON.stringify(data));
+  writeFileSync(join(outDir, filename), JSON.stringify(data));
   const buildings = data.elements.filter(
     (e) => e.type === 'way' && e.tags?.building
   ).length;

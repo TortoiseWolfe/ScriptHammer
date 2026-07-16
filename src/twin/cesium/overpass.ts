@@ -29,7 +29,16 @@
 // This is a runtime third-party call, which the diorama's "zero runtime
 // third-party calls" rule forbids. Deliberate and scoped: it is additive, and
 // the baked floor still renders when Overpass is unreachable.
+//
+// #292: the atlas is about to become the DEFAULT renderer, not opt-in — an
+// unthrottled 43 km2 Overpass query on every page load is not tolerable
+// against a free community API. scripts/bake/build-wide-buildings.ts runs
+// this SAME join once at bake time and ships the result as
+// buildings-wide.json; the default path here just fetches that file. The
+// live Overpass query below still runs behind ?live, e.g. to pick up a fix
+// made on openstreetmap.org since the last bake.
 
+import { getAssetUrl } from '@/config/project.config';
 import { resolveHeight } from '@/lib/height';
 import type { Building, Manifest } from '@/lib/manifest';
 
@@ -110,6 +119,17 @@ export async function fetchLiveBuildings(
   baked: Building[],
   signal?: AbortSignal
 ): Promise<LiveBuilding[]> {
+  // window.location.search, NOT useSearchParams — same convention as
+  // TwinCanvasHost's ?atlas and TwinCanvas's ?house/?ortho; useSearchParams
+  // forces a Suspense bailout under output:'export'.
+  const isLive = new URLSearchParams(window.location.search).has('live');
+  if (!isLive) {
+    const url = getAssetUrl(`/twins/${slug}/buildings-wide.json`);
+    const r = await fetch(url, { signal });
+    if (!r.ok) throw new Error(`buildings-wide.json -> HTTP ${r.status}`);
+    return (await r.json()) as LiveBuilding[];
+  }
+
   const box = atlasBoxFor(slug, manifest);
   const q =
     `[out:json][timeout:90];(` +

@@ -177,6 +177,12 @@ export async function bake(site: SiteConfig) {
       filename: 'terrain-wide.json',
     });
   }
+  // Wide OSM for the atlas (#292). Guard is reference identity — atlasBoxFor
+  // returns site.box itself when the site has no atlasBox.
+  if (atlasBox !== site.box) {
+    console.log('[bake] fetch-osm (wide atlas extent)...');
+    await fetchOsm(paths.raw, atlasBox, { filename: 'osm-wide.json' });
+  }
   if (site.lidar) {
     console.log('[bake] fetch-lidar-heights...');
     console.log(
@@ -212,6 +218,8 @@ export async function bake(site: SiteConfig) {
     'terrain.json',
     // Wide atlas DEM (#292). Optional — sites without an atlasBox have none.
     'terrain-wide.json',
+    // Wide atlas buildings (#292). Optional — sites without an atlasBox have none.
+    'buildings-wide.json',
     'manifest.json',
     'drape.jpg',
   ]) {
