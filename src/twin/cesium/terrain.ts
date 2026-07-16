@@ -70,15 +70,34 @@ export function sampleOrthometricM(
   return top * (1 - ty) + bot * ty;
 }
 
-/** Ellipsoidal height at lon/lat — what Cesium and every georeferenced
- *  consumer actually wants. This is the ONE place the geoid separation is
- *  applied. */
+export function isInBakedBox(
+  manifest: Manifest,
+  lon: number,
+  lat: number
+): boolean {
+  const { swLat, swLon, neLat, neLon } = manifest.box;
+  return lon >= swLon && lon <= neLon && lat >= swLat && lat <= neLat;
+}
+
+/**
+ * Ellipsoidal height at lon/lat — what Cesium and every georeferenced consumer
+ * wants. The ONE place the geoid separation is applied, and the ONE definition
+ * of "ground" in the atlas.
+ *
+ * Outside the baked box it returns 0 (the ellipsoid), NOT the edge-clamped
+ * value. That must match what the terrain provider serves out there, or the two
+ * disagree and anything placed by this function floats: the live-OSM layer
+ * (#292) extends well past the bake, and with edge-clamping its buildings would
+ * extrude from ~176 m while the ground under them rendered at 0. One
+ * definition, used by both, is what keeps them on the deck.
+ */
 export function sampleEllipsoidalM(
   manifest: Manifest,
   grid: TerrainGrid,
   lon: number,
   lat: number
 ): number {
+  if (!isInBakedBox(manifest, lon, lat)) return 0;
   return (
     sampleOrthometricM(manifest, grid, lon, lat) + (manifest.geoidOffsetM ?? 0)
   );
@@ -224,19 +243,20 @@ function createInnerHeightmapProvider(
         const lat = Cesium.Math.toDegrees(
           Cesium.Math.lerp(rect.north, rect.south, r / (TILE_SAMPLES - 1))
         );
-        const inLat = lat >= swLat && lat <= neLat;
         for (let c = 0; c < TILE_SAMPLES; c++) {
           const lon = Cesium.Math.toDegrees(
             Cesium.Math.lerp(rect.west, rect.east, c / (TILE_SAMPLES - 1))
           );
-          // Outside the baked box we have no data. 0 = the ellipsoid, which is
-          // what Cesium would render there anyway without this provider — NOT
-          // the edge-clamped value, which would smear Chattanooga's elevation
-          // across the surrounding county.
-          out[r * TILE_SAMPLES + c] =
-            inLat && lon >= swLon && lon <= neLon
-              ? sampleEllipsoidalM(manifest, grid, lon, lat)
-              : 0;
+          // sampleEllipsoidalM already returns 0 outside the box — the single
+          // definition of "ground" the building layer also uses. Do not
+          // re-implement the box test here; the two drifting apart is exactly
+          // how buildings end up floating over ellipsoid ground.
+          out[r * TILE_SAMPLES + c] = sampleEllipsoidalM(
+            manifest,
+            grid,
+            lon,
+            lat
+          );
         }
       }
       return out;

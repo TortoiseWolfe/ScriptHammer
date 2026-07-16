@@ -25,6 +25,7 @@ import {
   type TerrainGrid,
 } from '@/lib/manifest';
 import { createBakedTerrainProvider, sampleEllipsoidalM } from './terrain';
+import { fetchLiveBuildings, atlasBoxFor } from './overpass';
 import {
   buildingsToWgs84,
   groundEllipsoidHeightM,
@@ -50,12 +51,16 @@ export default function AtlasViewer({ slug }: { slug: string }) {
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [selected, setSelected] = useState<AtlasPickId | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [live, setLive] = useState<'baked' | 'loading' | 'live' | 'offline'>(
+    'baked'
+  );
 
   useEffect(() => {
     const el = mountRef.current;
     if (!el) return;
     let disposed = false;
     let viewer: Cesium.Viewer | null = null;
+    const ac = new AbortController();
 
     (async () => {
       try {
@@ -113,48 +118,42 @@ export default function AtlasViewer({ slug }: { slug: string }) {
           manifest.vectorOffsetM ?? { x: 0, z: 0 }
         );
 
-        const instances: Cesium.GeometryInstance[] = [];
-        const tally: Record<string, number> = {};
-        for (const b of placed) {
-          tally[b.rule] = (tally[b.rule] ?? 0) + 1;
-          const base = groundEllipsoidHeightM(b, sample);
-          try {
-            instances.push(
-              new Cesium.GeometryInstance({
-                geometry: new Cesium.PolygonGeometry({
-                  polygonHierarchy: new Cesium.PolygonHierarchy(
-                    Cesium.Cartesian3.fromDegreesArray(b.lonLat)
-                  ),
-                  height: base,
-                  extrudedHeight: base + b.heightM,
-                  vertexFormat: Cesium.PerInstanceColorAppearance.VERTEX_FORMAT,
-                }),
-                attributes: {
-                  color: Cesium.ColorGeometryInstanceAttribute.fromColor(
-                    Cesium.Color.fromCssColorString(b.cssColor)
-                  ),
-                },
-                id: { atlasId: b.id, heightM: b.heightM, rule: b.rule },
-              })
-            );
-          } catch {
-            // A self-intersecting OSM ring throws inside PolygonGeometry; drop
-            // the building rather than the whole layer.
-          }
-        }
-        if (disposed) return;
+        // Baked first: the offline floor. Renders immediately, needs no
+        // network, and is what remains if Overpass is unreachable.
+        let prim = addBuildings(viewer, placed, sample);
+        setCounts(tallyOf(placed));
+        setReady(true);
+        setStatus('');
 
-        viewer.scene.primitives.add(
-          new Cesium.Primitive({
-            geometryInstances: instances,
-            appearance: new Cesium.PerInstanceColorAppearance({
-              translucent: false,
-              closed: true,
-            }),
-            asynchronous: true,
-          })
-        );
-        setCounts(tally);
+        // Then widen to the live civic extent (#292). The baked box is a
+        // 1.46 km diorama corridor — 1,547 of the area's 6,099 OSM buildings.
+        // Baked heights win on the overlap (1328 are lidar-measured); the rest
+        // resolve through the SAME ladder via src/lib/height.ts.
+        try {
+          setLive('loading');
+          const live = await fetchLiveBuildings(
+            slug,
+            manifest,
+            buildings,
+            ac.signal
+          );
+          if (disposed) return;
+          const placedLive = live.map((b) => ({
+            id: b.id,
+            lonLat: b.lonLat,
+            heightM: b.heightM,
+            rule: b.rule,
+            cssColor: RULE_COLORS[b.rule] ?? RULE_COLORS.fallback,
+          }));
+          viewer.scene.primitives.remove(prim);
+          prim = addBuildings(viewer, placedLive, sample);
+          setCounts(tallyOf(placedLive));
+          setLive('live');
+        } catch {
+          // Additive by design: keep the baked layer and say so, rather than
+          // failing the view over a third-party endpoint.
+          if (!disposed) setLive('offline');
+        }
 
         // Frame the site from its own baked box — no hardcoded camera.
         const { box } = manifest;
@@ -201,9 +200,6 @@ export default function AtlasViewer({ slug }: { slug: string }) {
           sampleEllipsoidalM: sample,
           geoidOffsetM: manifest.geoidOffsetM ?? 0,
         };
-
-        setReady(true);
-        setStatus('');
       } catch (e) {
         if (!disposed) setError(e instanceof Error ? e.message : String(e));
       }
@@ -211,6 +207,7 @@ export default function AtlasViewer({ slug }: { slug: string }) {
 
     return () => {
       disposed = true;
+      ac.abort();
       const v = viewerRef.current;
       viewerRef.current = null;
       if (v && !v.isDestroyed()) v.destroy();
@@ -236,7 +233,15 @@ export default function AtlasViewer({ slug }: { slug: string }) {
             {error
               ? `error: ${error}`
               : ready
-                ? `${total} baked buildings · 3DEP terrain · Esri · no token`
+                ? `${total} buildings · ${
+                    live === 'live'
+                      ? 'live OSM + baked lidar'
+                      : live === 'loading'
+                        ? 'baked · widening to live OSM…'
+                        : live === 'offline'
+                          ? 'baked only (Overpass unreachable)'
+                          : 'baked'
+                  } · 3DEP · no token`
                 : status}
           </div>
           {ready && (
@@ -297,4 +302,56 @@ export default function AtlasViewer({ slug }: { slug: string }) {
       )}
     </div>
   );
+}
+
+/** One construction path for both the baked and the live building sets, so the
+ *  two cannot drift in how they extrude, colour, or pick. */
+function addBuildings(
+  viewer: Cesium.Viewer,
+  list: AtlasBuilding[],
+  sample: (lon: number, lat: number) => number
+): Cesium.Primitive {
+  const instances: Cesium.GeometryInstance[] = [];
+  for (const b of list) {
+    const base = groundEllipsoidHeightM(b, sample);
+    try {
+      instances.push(
+        new Cesium.GeometryInstance({
+          geometry: new Cesium.PolygonGeometry({
+            polygonHierarchy: new Cesium.PolygonHierarchy(
+              Cesium.Cartesian3.fromDegreesArray(b.lonLat)
+            ),
+            height: base,
+            extrudedHeight: base + b.heightM,
+            vertexFormat: Cesium.PerInstanceColorAppearance.VERTEX_FORMAT,
+          }),
+          attributes: {
+            color: Cesium.ColorGeometryInstanceAttribute.fromColor(
+              Cesium.Color.fromCssColorString(b.cssColor)
+            ),
+          },
+          id: { atlasId: b.id, heightM: b.heightM, rule: b.rule },
+        })
+      );
+    } catch {
+      // A self-intersecting OSM ring throws inside PolygonGeometry; drop the
+      // building rather than the whole layer.
+    }
+  }
+  return viewer.scene.primitives.add(
+    new Cesium.Primitive({
+      geometryInstances: instances,
+      appearance: new Cesium.PerInstanceColorAppearance({
+        translucent: false,
+        closed: true,
+      }),
+      asynchronous: true,
+    })
+  );
+}
+
+function tallyOf(list: AtlasBuilding[]): Record<string, number> {
+  const t: Record<string, number> = {};
+  for (const b of list) t[b.rule] = (t[b.rule] ?? 0) + 1;
+  return t;
 }
