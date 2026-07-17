@@ -648,7 +648,18 @@ export default function AtlasViewer({ slug }: { slug: string }) {
         data-testid="atlas-hud"
         className="pointer-events-none absolute top-[var(--nav-h)] left-0 z-10 p-3"
       >
-        <div className="bg-base-100/85 rounded-box pointer-events-auto p-3 shadow-lg backdrop-blur">
+        {/* max-w-64 (#307). The panel is intrinsically sized, so its width was
+            set by its single longest line -- the status line below, at 383px of
+            `8031 buildings · baked OSM + baked lidar · 3DEP · no token`. Every
+            other row needs <=222px, so ~40% of the panel was empty space
+            existing to hold one string of pipeline provenance: the line least
+            about Chattanooga was dictating the size of the thing that describes
+            it. Capping the width makes that line wrap instead of dictate.
+            Measured: 407x304 -> ~256x336, about -30% area.
+            A cap, not a fixed width: the panel must still shrink for short
+            slugs, and must still grow taller (never clip) when
+            --font-scale-factor reaches 2.125. */}
+        <div className="bg-base-100/85 rounded-box pointer-events-auto max-w-64 p-3 shadow-lg backdrop-blur">
           <div className="text-sm font-semibold">Atlas — {slug}</div>
           <div className="text-base-content/60 font-mono text-[11px]">
             {error

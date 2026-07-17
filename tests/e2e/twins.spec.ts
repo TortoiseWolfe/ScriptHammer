@@ -295,6 +295,57 @@ test.describe('/chatt — the atlas is the default (#292)', () => {
     ).toBe(true);
   });
 
+  test('the HUD is capped in width and wraps rather than clips (#307)', async ({
+    page,
+  }) => {
+    // The panel is intrinsically sized, so before #307 its width was set by its
+    // single longest line — 383px of `8031 buildings · baked OSM + baked lidar ·
+    // 3DEP · no token` — while every other row needed <=222px. ~40% of the panel
+    // was empty, held open by one string of pipeline provenance.
+    //
+    // A width cap's real hazard is CLIPPING, so that is what this asserts, and
+    // it asserts it at the accessibility system's maximum font scale (2.125,
+    // AccessibilityContext.tsx) where the wrap is under the most pressure. A
+    // test that only checked the width at default scale would pass while the
+    // legend ran off the edge for anyone using large type.
+    await page.goto('/chatt/?notour');
+    await expect(page.getByText('Atlas —').first()).toBeVisible({
+      timeout: 20000,
+    });
+
+    const measure = () =>
+      page.evaluate(() => {
+        const panel = document.querySelector(
+          '[data-testid="atlas-hud"]'
+        )?.firstElementChild;
+        if (!panel) return null;
+        const clipped = [...panel.querySelectorAll('*')].filter(
+          (e) =>
+            e.scrollWidth > e.clientWidth + 1 &&
+            getComputedStyle(e).overflow !== 'visible'
+        ).length;
+        return { w: Math.round(panel.getBoundingClientRect().width), clipped };
+      });
+
+    const atDefault = await measure();
+    expect(atDefault).not.toBeNull();
+    // 256 = max-w-64. Allow a little slack for font metrics across runners.
+    expect(
+      atDefault!.w,
+      'the HUD must not be as wide as its longest line'
+    ).toBeLessThanOrEqual(264);
+    expect(atDefault!.clipped, 'nothing in the HUD may be clipped').toBe(0);
+
+    await page.evaluate(() =>
+      document.documentElement.style.setProperty('--font-scale-factor', '2.125')
+    );
+    const atMaxScale = await measure();
+    expect(
+      atMaxScale!.clipped,
+      'the HUD must wrap, not clip, at the max accessibility font scale'
+    ).toBe(0);
+  });
+
   test('the atlas keeps its cookie banner and drops the PWA popup (#301)', async ({
     page,
   }) => {
