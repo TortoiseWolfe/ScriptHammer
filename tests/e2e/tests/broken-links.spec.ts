@@ -278,6 +278,11 @@ test.describe('Broken Links Detection', () => {
 
   test('check meta tag images and resources', async ({ page, baseURL }) => {
     baseUrl = baseURL || 'http://localhost:3000';
+    // og:image is built from an absolute production deployUrl (src/utils/metadata.tsx),
+    // not a path into the build under test — so this list may only contain pages whose
+    // OG image is already live in production. A page merging in the same PR that adds
+    // its OG image will 404 here during CI (image isn't deployed yet) and fail this test
+    // on otherwise-correct code. Add new pages only after their image has shipped to prod.
     const pagesToCheck = ['/', '/blog', '/blog/scripthammer-intro'];
     const brokenResources: BrokenLink[] = [];
 

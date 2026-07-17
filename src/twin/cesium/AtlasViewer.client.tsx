@@ -31,8 +31,10 @@ import {
   cornerStops,
   resolveGround,
   describeTargets,
+  shouldAutoStart,
   type TourStop,
 } from './tour';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import {
   buildingsToWgs84,
   groundSpanM,
@@ -109,14 +111,51 @@ export default function AtlasViewer({ slug }: { slug: string }) {
   const tourAbort = useRef<{ cancelled: boolean } | null>(null);
   const rebuildTourRef = useRef<((l: AtlasBuilding[]) => void) | null>(null);
   const hiRef = useRef<Cesium.Primitive | null>(null);
+  // matchMedia, no provider — the SAME hook Scene.tsx:85 uses to gate
+  // auto-orbit. AccessibilityContext's settings.reduceMotion throws without a
+  // provider and no 3D code reads it (#292 task-4 brief).
+  const reducedMotion = useReducedMotion();
+  // The main effect below only depends on [slug] (see colorByRef's comment
+  // above); buildTour needs the LIVE value at the moment it fires, so it's
+  // mirrored into a ref rather than added as an effect dependency, which
+  // would tear the viewer down whenever the OS preference changes mid-visit.
+  const reducedMotionRef = useRef(reducedMotion);
+  useEffect(() => {
+    reducedMotionRef.current = reducedMotion;
+  }, [reducedMotion]);
+  // The tour plays itself once, the first time stops exist (#292). This
+  // guards against firing twice: buildTour runs again once the live/wide
+  // building fetch resolves (rebuildTourRef), and a rebuild must not restart
+  // a tour the user already cancelled by dragging or clicking stop.
+  const autoStartedRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
-  const [live, setLive] = useState<'baked' | 'loading' | 'live' | 'offline'>(
-    'baked'
-  );
+  // 'wide' = widened via the baked buildings-wide.json (the default path,
+  // #292); 'live' = widened via a real Overpass request (?live). Distinct
+  // states so the HUD below can say which one actually happened instead of
+  // reporting 'live' for both, which was Task 1's regression (#292 review).
+  const [live, setLive] = useState<
+    'baked' | 'loading' | 'wide' | 'live' | 'offline'
+  >('baked');
+  // window.location.search, NOT useSearchParams — same convention as
+  // TwinCanvasHost's ?atlas and TwinCanvas's ?house/?ortho; useSearchParams
+  // forces a Suspense bailout under output:'export'. Safe to read during
+  // render here because AtlasViewer only ever renders behind TwinCanvasHost's
+  // dynamic(ssr:false) branch, so there is no hydration mismatch to create.
+  // This is the SAME signal fetchLiveBuildings (overpass.ts) checks
+  // internally to pick its path — read here too so the HUD reports what
+  // actually happened rather than assuming.
+  const isLiveQuery =
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).has('live');
 
   useEffect(() => {
     const el = mountRef.current;
     if (!el) return;
+    // Reset the auto-start guard on every slug change (#292 review, fix-now
+    // minor #1) — without this, navigating from one twin to another inside
+    // the same session left autoStartedRef permanently true, silently
+    // suppressing the new site's auto-play tour.
+    autoStartedRef.current = false;
     let disposed = false;
     let viewer: Cesium.Viewer | null = null;
     const ac = new AbortController();
@@ -409,16 +448,46 @@ export default function AtlasViewer({ slug }: { slug: string }) {
             goTo,
             step,
           };
+          // Auto-start (#292): fire once, the first time stops exist — not on
+          // page load, since there are none until buildTour runs the first
+          // time. The ref guard means the SECOND buildTour call (after the
+          // live/wide fetch resolves) never re-attempts, whether or not the
+          // first attempt actually played.
+          if (!autoStartedRef.current) {
+            autoStartedRef.current = true;
+            const notour = new URLSearchParams(window.location.search).has(
+              'notour'
+            );
+            if (
+              shouldAutoStart({
+                hasStops: tourRef.current.stops.length > 0,
+                notour,
+                reducedMotion: reducedMotionRef.current,
+              })
+            ) {
+              tourRef.current.play(tourRef.current.stops);
+            }
+          }
         };
         buildTour(placed);
         rebuildTourRef.current = buildTour;
         setReady(true);
         setStatus('');
 
-        // Then widen to the live civic extent (#292). The baked box is a
-        // 1.46 km diorama corridor — 1,547 of the area's 6,099 OSM buildings.
-        // Baked heights win on the overlap (1328 are lidar-measured); the rest
-        // resolve through the SAME ladder via src/lib/height.ts.
+        // Then widen to the baked civic extent (#292's default path — this
+        // only becomes a LIVE Overpass fetch behind ?live). The baked box is a
+        // 1.46 km diorama corridor; buildings-wide.json widens it to the full
+        // atlas extent — 8031 buildings, 1510 of which keep their baked height
+        // (1328 of those measured from USGS 3DEP lidar). The rest resolve
+        // through the SAME ladder via src/lib/height.ts.
+        //
+        // Read fresh here (not the render-scope `isLiveQuery`) so this effect
+        // doesn't have to list it as a dependency — the query string cannot
+        // change without a navigation, which already remounts this effect via
+        // `slug`.
+        const isLiveQuery = new URLSearchParams(window.location.search).has(
+          'live'
+        );
         try {
           setLive('loading');
           const live = await fetchLiveBuildings(
@@ -456,11 +525,20 @@ export default function AtlasViewer({ slug }: { slug: string }) {
             primRef.current = addBuildings(v, placedRef.current, sample, m);
             setLegend(legendOf(placedRef.current, m));
           };
-          setLive('live');
+          // fetchLiveBuildings resolves on BOTH paths (the default fetch of
+          // buildings-wide.json AND the ?live Overpass query) — isLiveQuery
+          // is what actually distinguishes them, not the fact it resolved.
+          setLive(isLiveQuery ? 'live' : 'wide');
         } catch {
-          // Additive by design: keep the baked layer and say so, rather than
-          // failing the view over a third-party endpoint.
-          if (!disposed) setLive('offline');
+          // buildings-wide.json is OPTIONAL, exactly like terrain-wide.json
+          // (loadSiteJson('terrain-wide.json').catch(() => undefined) above) —
+          // a site with no atlasBox never had one baked, and that is the
+          // NORMAL state for such a site, not a failure. Only a real ?live
+          // Overpass failure (every mirror down) is 'offline'; the default
+          // path's baked layer simply stays 'baked', with no "unreachable"
+          // claim (#292 review B1b — defence-in-depth alongside B1a, which
+          // keeps a site with no atlasBox off the atlas entirely).
+          if (!disposed) setLive(isLiveQuery ? 'offline' : 'baked');
         }
 
         const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
@@ -489,6 +567,44 @@ export default function AtlasViewer({ slug }: { slug: string }) {
     };
   }, [slug]);
 
+  // Abort the tour on GLOBE interaction — registered on the Cesium mount
+  // element (mountRef), NOT `document`, and NOT the Cesium
+  // ScreenSpaceEventHandler above. That handler is created only after the
+  // live-fetch await the effect above budgets at 60s+, while auto-start fires
+  // well before it (inside buildTour, right after the baked layer renders) —
+  // an abort hooked to the Cesium handler would be inert for exactly the
+  // window the tour is playing. This is the same needs-no-Cesium-object
+  // pattern Scene.tsx:~112 uses for auto-orbit.
+  //
+  // #292 review B2: this used to listen on `document` and allowlist two
+  // testids as "the tour's own chrome" — but `document` sees EVERY page
+  // interaction, not just the globe's, including things nowhere near this
+  // component: CookieConsent's "Accept All" (src/app/layout.tsx renders it as
+  // a sibling of the twin route, fixed z-[60]), GlobalNav, PWAInstall
+  // (fixed, floating over the globe), CountdownBanner, SetupBanner. A
+  // first-time visitor — exactly who the auto-playing tour and the OG card
+  // exist to hook — loses the tour the moment they click the cookie banner
+  // that's already on screen. The spec asks for "globe interaction — drag,
+  // zoom, click"; mountRef IS the globe (the div Cesium.Viewer was
+  // constructed on) and every one of the chrome panels above is a DOM
+  // SIBLING of it, not a descendant, so listening here scopes correctly by
+  // construction — no allowlist needed, the tour's own HUD/caption panels
+  // are siblings too.
+  useEffect(() => {
+    const el = mountRef.current;
+    if (!el) return;
+    const abort = () => tourRef.current?.stop();
+    const opts = { passive: true } as const;
+    el.addEventListener('pointerdown', abort, opts);
+    el.addEventListener('wheel', abort, opts);
+    el.addEventListener('touchstart', abort, opts);
+    return () => {
+      el.removeEventListener('pointerdown', abort);
+      el.removeEventListener('wheel', abort);
+      el.removeEventListener('touchstart', abort);
+    };
+  }, []);
+
   // From the legend — the ONE tally. A second count source is what made the
   // headline read '0 buildings' over a correct 8031-building legend.
   const total = legend.reduce((a, r) => a + r.n, 0);
@@ -513,11 +629,20 @@ export default function AtlasViewer({ slug }: { slug: string }) {
                 ? `${total} buildings · ${
                     live === 'live'
                       ? 'live OSM + baked lidar'
-                      : live === 'loading'
-                        ? 'baked · widening to live OSM…'
-                        : live === 'offline'
-                          ? 'baked only (Overpass unreachable)'
-                          : 'baked'
+                      : live === 'wide'
+                        ? 'baked OSM + baked lidar'
+                        : live === 'loading'
+                          ? isLiveQuery
+                            ? 'baked · widening to live OSM…'
+                            : 'baked · widening to baked OSM…'
+                          : // 'offline' is only ever set on a ?live request
+                            // whose mirrors all failed (see the catch above) —
+                            // a missing buildings-wide.json on the default
+                            // path is optional-by-design and stays 'baked',
+                            // never a claim of unreachability.
+                            live === 'offline'
+                            ? 'baked only (Overpass unreachable)'
+                            : 'baked'
                   } · 3DEP · no token`
                 : status}
           </div>
@@ -538,22 +663,32 @@ export default function AtlasViewer({ slug }: { slug: string }) {
                   </button>
                 ))}
               </div>
-              <div className="mt-2 flex gap-1" data-testid="atlas-tour">
+              <div className="mt-2" data-testid="atlas-tour">
+                {/* Full-width primary, not a chip: this was a btn-xs min-h-0
+                    control — below the 44px touch target CLAUDE.md mandates —
+                    fifth in a row of near-identical chips, guarding the best
+                    thing on the page. It now auto-plays on arrival too (#292
+                    shouldAutoStart); this button is how you replay it or start
+                    it after ?notour suppressed the auto-flight. */}
                 <button
-                  className="btn btn-xs min-h-0"
+                  className="btn btn-primary btn-sm min-h-11 w-full"
                   onClick={() => tourRef.current?.play(tourRef.current.stops)}
                   disabled={!tourRef.current?.stops.length}
                 >
-                  ▶ tour
+                  ▶ Play tour
                 </button>
-                <button
-                  className="btn btn-xs min-h-0"
-                  title="Fly the four baked-box corners — where the fine/wide DEM seam, the drape edge and lidar coverage all end"
-                  onClick={() => tourRef.current?.play(tourRef.current.corners)}
-                  disabled={!tourRef.current?.corners.length}
-                >
-                  ⊹ corners
-                </button>
+                <div className="mt-2 flex gap-1">
+                  <button
+                    className="btn btn-xs min-h-0"
+                    title="Fly the four baked-box corners — where the fine/wide DEM seam, the drape edge and lidar coverage all end"
+                    onClick={() =>
+                      tourRef.current?.play(tourRef.current.corners)
+                    }
+                    disabled={!tourRef.current?.corners.length}
+                  >
+                    ⊹ corners
+                  </button>
+                </div>
                 {/* Stop lives on the caption now, next to prev/next — the
                     controls belong where you are reading, not in the launcher. */}
               </div>

@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import sharp from 'sharp';
 import type { Projection } from './enu';
 import { resolveHeight } from './height';
+import { buildWideBuildings } from './build-wide-buildings';
 import { drapePixelSize, type DrapeSource } from './fetch-drape';
 import {
   provenanceFor,
@@ -501,6 +502,41 @@ export async function buildScene(
   if (existsSync(wideRaw)) {
     copyFileSync(wideRaw, join(outDir, 'terrain-wide.json'));
   }
+
+  // Ship the wide atlas buildings alongside it (#292). Same join
+  // fetchLiveBuildings runs live at request time, computed once here so the
+  // atlas's default path needs no Overpass call. It still calls a public API
+  // on every load regardless — services.arcgisonline.com for base imagery,
+  // unthrottled and token-free (AtlasViewer.client.tsx) — this step only
+  // removes Overpass, not every third party. Absent for sites with no
+  // atlasBox (no osm-wide.json was fetched).
+  const osmWidePath = join(rawDir, 'osm-wide.json');
+  if (existsSync(osmWidePath)) {
+    const osmWide = JSON.parse(readFileSync(osmWidePath, 'utf8')) as {
+      elements: {
+        type: string;
+        id: number;
+        tags?: Record<string, string>;
+        geometry?: { lat: number; lon: number }[];
+      }[];
+    };
+    // Same scalar as manifest.cosLat below (proj.mPerDegLon / 111320, from
+    // createProjection(site.box) — the NARROW baked box). buildWideBuildings'
+    // OSM data spans the wide atlasBox, but resolveHeight's rule-6 area bonus
+    // must use the SAME flat-earth scalar the runtime join reads off the
+    // manifest, or the two silently diverge on un-baked buildings near a
+    // tier threshold.
+    const wideBuildings = buildWideBuildings(
+      osmWide,
+      buildings,
+      proj.mPerDegLon / 111320
+    );
+    writeFileSync(
+      join(outDir, 'buildings-wide.json'),
+      JSON.stringify(wideBuildings)
+    );
+  }
+
   writeFileSync(
     join(outDir, 'manifest.json'),
     JSON.stringify(manifest, null, 2)

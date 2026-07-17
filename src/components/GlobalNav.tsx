@@ -125,7 +125,7 @@ export function GlobalNav() {
     { href: '/', label: 'Home' },
     { href: '/blog', label: 'Blog' },
     { href: '/docs', label: 'Docs' },
-    { href: '/chatt', label: 'Twin' },
+    { href: '/chatt', label: '3D Map' },
     { href: '/wireframes', label: 'Wireframes' },
   ];
 

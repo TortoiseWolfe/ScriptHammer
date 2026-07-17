@@ -29,8 +29,18 @@
 // This is a runtime third-party call, which the diorama's "zero runtime
 // third-party calls" rule forbids. Deliberate and scoped: it is additive, and
 // the baked floor still renders when Overpass is unreachable.
+//
+// #292: the atlas is about to become the DEFAULT renderer, not opt-in — an
+// unthrottled 43 km2 Overpass query on every page load is not tolerable
+// against a free community API. scripts/bake/build-wide-buildings.ts runs
+// this SAME join once at bake time and ships the result as
+// buildings-wide.json; the default path here just fetches that file. The
+// live Overpass query below still runs behind ?live, e.g. to pick up a fix
+// made on openstreetmap.org since the last bake.
 
+import { getAssetUrl } from '@/config/project.config';
 import { resolveHeight } from '@/lib/height';
+import { OUTSIDE_HEIGHTS, ringAreaM2 } from '@/lib/live-building-heights';
 import type { Building, Manifest } from '@/lib/manifest';
 
 export interface OverpassBox {
@@ -57,11 +67,6 @@ export function atlasBoxFor(_slug: string, manifest: Manifest): OverpassBox {
   return { s: b.swLat, w: b.swLon, n: b.neLat, e: b.neLon };
 }
 
-/** Fallback height config for buildings OUTSIDE the bake, where we have no
- *  per-site override list. The clamp is generous: it only binds rule-6 guesses,
- *  and this box reaches beyond the downtown towers. */
-const OUTSIDE_HEIGHTS = { overrides: {}, fallbackClampM: 91.44 };
-
 export interface LiveBuilding {
   /** OSM way/relation id. */
   id: number;
@@ -82,19 +87,6 @@ interface OverpassElement {
   geometry?: { lat: number; lon: number }[];
 }
 
-/** Shoelace area of a lon/lat ring, in m2 — resolveHeight's rule-6 prior needs
- *  a footprint area. Local flat-earth scaling is plenty at this size. */
-function ringAreaM2(lonLat: number[], cosLat: number): number {
-  let a = 0;
-  const n = lonLat.length / 2;
-  for (let i = 0; i < n; i++) {
-    const j = (i + 1) % n;
-    a += lonLat[i * 2] * lonLat[j * 2 + 1] - lonLat[j * 2] * lonLat[i * 2 + 1];
-  }
-  // deg2 -> m2 at this latitude
-  return Math.abs(a / 2) * 111320 * 111320 * cosLat;
-}
-
 const ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
@@ -102,7 +94,17 @@ const ENDPOINTS = [
 
 /**
  * Fetch every building in the atlas box and resolve its height, preferring the
- * bake. Throws if every mirror fails — the caller keeps the baked layer.
+ * bake. Two distinct paths, picked by whether `?live` is on the URL:
+ *
+ *   default — fetches the bake-time join shipped as buildings-wide.json (a
+ *     same-origin static asset; no Overpass call, no mirrors, nothing to be
+ *     "unreachable"). Throws if that fetch fails, which the caller
+ *     (AtlasViewer.client.tsx) treats as "this site never baked one" rather
+ *     than a real failure — buildings-wide.json is OPTIONAL, exactly like
+ *     terrain-wide.json.
+ *   ?live — queries the Overpass mirrors directly, for picking up a fix made
+ *     on openstreetmap.org since the last bake. Throws if every mirror
+ *     fails — the caller keeps the baked layer and reports it 'offline'.
  */
 export async function fetchLiveBuildings(
   slug: string,
@@ -110,6 +112,17 @@ export async function fetchLiveBuildings(
   baked: Building[],
   signal?: AbortSignal
 ): Promise<LiveBuilding[]> {
+  // window.location.search, NOT useSearchParams — same convention as
+  // TwinCanvasHost's ?atlas and TwinCanvas's ?house/?ortho; useSearchParams
+  // forces a Suspense bailout under output:'export'.
+  const isLive = new URLSearchParams(window.location.search).has('live');
+  if (!isLive) {
+    const url = getAssetUrl(`/twins/${slug}/buildings-wide.json`);
+    const r = await fetch(url, { signal });
+    if (!r.ok) throw new Error(`buildings-wide.json -> HTTP ${r.status}`);
+    return (await r.json()) as LiveBuilding[];
+  }
+
   const box = atlasBoxFor(slug, manifest);
   const q =
     `[out:json][timeout:90];(` +

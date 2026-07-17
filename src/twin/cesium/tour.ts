@@ -289,3 +289,18 @@ export function describeTargets(
     };
   });
 }
+
+/**
+ * Should the tour play itself on arrival? (#292)
+ *
+ * Reduced motion is the hard no: auto-flying a camera is exactly the vestibular
+ * trigger WCAG 2.3.3 exists for. A user who CLICKS play still gets the normal
+ * flight — they asked for it, and the flight is the button's whole function.
+ */
+export function shouldAutoStart(o: {
+  hasStops: boolean;
+  notour: boolean;
+  reducedMotion: boolean;
+}): boolean {
+  return o.hasStops && !o.notour && !o.reducedMotion;
+}

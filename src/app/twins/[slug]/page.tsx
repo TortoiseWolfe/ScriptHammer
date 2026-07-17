@@ -6,6 +6,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import type { Metadata } from 'next';
 import TwinCanvasHost from '@/twin/TwinCanvasHost';
+import { siteHasAtlas } from '@/lib/twinManifest.server';
 
 export const dynamicParams = false;
 
@@ -58,5 +59,9 @@ export default async function TwinPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  return <TwinCanvasHost slug={slug} />;
+  // A site with no atlasBox (e.g. east-main-street-chattanooga, a single
+  // as-built house) has nothing for the atlas to add — route it to the
+  // diorama regardless of query params (#292 B1a).
+  const hasAtlas = await siteHasAtlas(slug);
+  return <TwinCanvasHost slug={slug} hasAtlas={hasAtlas} />;
 }
