@@ -119,8 +119,8 @@
       "blurb": "The Broad & Market Street grid \u2014 the dense heart of downtown, laid out in 1839."
     },
     {
-      "pos": [40, 320, 2900],
-      "look": [-55, 20, 2720],
+      "pos": [120, 330, 200],
+      "look": [95, 20, -371],
       "dwell": 6,
       "name": "Chattanooga Choo Choo",
       "blurb": "Historic Terminal Station (1909), immortalized by the 1941 Glenn Miller hit. Now a hotel + gardens on the Southside."
