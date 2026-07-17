@@ -39,13 +39,17 @@ import {
   buildingsToWgs84,
   groundSpanM,
   classify,
-  RULE_LABELS,
-  RULE_COLORS,
   unbucketedLadderTypes,
   DEFAULT_COLOR_BY,
   type AtlasBuilding,
   type ColorBy,
 } from './buildings';
+import {
+  BuildingCard,
+  prettyType,
+  addressOf,
+  type BuildingCardModel,
+} from './BuildingCard';
 
 /** The `id` payload attached to each building GeometryInstance, and what
  *  scene.pick() hands back. Distinct from a Cesium Entity — Primitive ids are
@@ -64,20 +68,6 @@ const COLOR_MODES: { id: ColorBy; label: string }[] = [
   { id: 'type', label: 'type' },
   { id: 'height', label: 'height' },
 ];
-
-/** `semidetached_house` -> `semidetached house`; `yes` is not a type. */
-function prettyType(tags?: Record<string, string>): string | null {
-  const b = tags?.building;
-  if (!b || b === 'yes') return null;
-  return b.replace(/_/g, ' ');
-}
-function addressOf(tags?: Record<string, string>): string | null {
-  if (!tags) return null;
-  const a = [tags['addr:housenumber'], tags['addr:street']]
-    .filter(Boolean)
-    .join(' ');
-  return a || null;
-}
 
 export default function AtlasViewer({ slug }: { slug: string }) {
   const mountRef = useRef<HTMLDivElement | null>(null);
@@ -751,165 +741,57 @@ export default function AtlasViewer({ slug }: { slug: string }) {
         </div>
       </div>
 
-      {tour && (
-        <div
-          data-testid="atlas-tour-caption"
-          /* FIXED, not absolute — and that is the actual bug, not the offset.
-             This container is `relative h-screen` but sits BELOW the ~65px nav,
-             so it is 100vh tall starting at y=65: its bottom edge is ~65px past
-             the viewport. `absolute bottom-28` therefore measured 112px up from
-             a bottom that is off-screen, landing the caption at ~47px — right
-             under the cookie consent banner (`fixed inset-x-0 ... z-[60]`,
-             CookieConsent.tsx:68). Raising the offset could never fix it;
-             viewport-relative positioning does.
-
-             HOW THIS HID: every probe read the caption via textContent, which
-             returns obscured text exactly as happily as visible text. The checks
-             passed while the owner saw nothing, four times. The test that
-             matters is elementFromPoint at the caption's own centre — is it
-             actually on top? — not whether the node exists. */
-          className="bg-base-100/90 rounded-box fixed bottom-28 left-1/2 z-[55] w-[30rem] max-w-[calc(100vw-2rem)] -translate-x-1/2 p-3 shadow-lg backdrop-blur"
-        >
-          <div className="flex items-center gap-2">
-            <button
-              className="btn btn-xs min-h-0"
-              onClick={() => tourRef.current?.step(-1)}
-              aria-label="Previous stop"
-            >
-              ⏮
-            </button>
-            <button
-              className="btn btn-xs min-h-0"
-              onClick={() => tourRef.current?.step(1)}
-              aria-label="Next stop"
-            >
-              ⏭
-            </button>
-            <span className="text-base-content/50 font-mono text-[10px]">
-              {tour.i + 1}/{tour.list.length}
-            </span>
-            <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-              {tour.list[tour.i].name}
-            </span>
-            <button
-              className="btn btn-xs min-h-0"
-              onClick={() => tourRef.current?.stop()}
-              aria-label="End tour"
-            >
-              ✕
-            </button>
-          </div>
-
-          {/* WHY this stop exists. Corner stops carry what they test; landmarks
-              carry their history. The first version showed only a name, which
-              says where the camera is — not what is on screen or why. */}
-          <div className="text-base-content/70 mt-1.5 text-[11px] leading-snug">
-            {tour.list[tour.i].blurb}
-          </div>
-
-          {/* WHAT you are looking at, and whether to trust it. An atlas whose
-              colours encode provenance should say so in words at the stop. */}
-          {tour.list[tour.i].target && (
-            <div className="border-base-300 mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 border-t pt-2 text-[11px]">
-              <span className="font-mono">
-                {tour.list[tour.i].target!.heightM.toFixed(1)} m
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span
-                  className="inline-block h-2 w-2 rounded-full"
-                  style={{
-                    background:
-                      RULE_COLORS[tour.list[tour.i].target!.rule] ??
-                      RULE_COLORS.fallback,
-                  }}
-                />
-                <span className="text-base-content/60">
-                  {RULE_LABELS[tour.list[tour.i].target!.rule] ??
-                    tour.list[tour.i].target!.rule}
-                </span>
-              </span>
-              <span className="text-base-content/60">
-                <span className="font-mono">
-                  {tour.list[tour.i].target!.nearby}
-                </span>{' '}
-                within 150 m ·{' '}
-                <span className="font-mono">
-                  {tour.list[tour.i].target!.nearbyMeasured}
-                </span>{' '}
-                measured
-              </span>
-              <a
-                className="link link-primary"
-                href={`https://www.openstreetmap.org/way/${tour.list[tour.i].target!.id}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                OSM →
-              </a>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Same nav offset as the HUD (#301) — +0.75rem matches the HUD's p-3, so
-          both overlays sit on the same 77px line. Before this they were both
-          12px from DIFFERENT origins and never agreed. */}
-      {selected && (
-        <div className="bg-base-100/90 rounded-box absolute top-[calc(var(--nav-h)+0.75rem)] right-3 z-10 w-64 p-3 shadow-lg backdrop-blur">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 text-sm font-semibold">
-              {selected.tags?.name ??
-                (prettyType(selected.tags)
-                  ? prettyType(selected.tags)!.replace(/^./, (c) =>
-                      c.toUpperCase()
-                    )
-                  : 'Untyped building')}
-            </div>
-            <button
-              className="btn btn-xs min-h-0"
-              onClick={() => setSelected(null)}
-              aria-label="Close"
-            >
-              ✕
-            </button>
-          </div>
-          <div className="mt-2 font-mono text-2xl">
-            {selected.heightM.toFixed(1)} m
-          </div>
-          <div className="text-base-content/70 mt-1 text-[11px]">
-            {RULE_LABELS[selected.rule] ?? selected.rule}
-          </div>
-          {/* Only rows we actually have. 85% of the box is building=yes with no
-              name/address, so rendering empty rows would be noise on most
-              clicks — and the absence IS the civic ask. */}
-          <div className="mt-2 space-y-1">
-            {prettyType(selected.tags) && (
-              <Row k="Type" v={prettyType(selected.tags)!} />
-            )}
-            {selected.tags?.['building:levels'] && (
-              <Row k="Levels" v={selected.tags['building:levels']} />
-            )}
-            {addressOf(selected.tags) && (
-              <Row k="Address" v={addressOf(selected.tags)!} />
-            )}
-          </div>
-          {!selected.tags?.name && !prettyType(selected.tags) && (
-            <div className="border-warning text-base-content/60 mt-2 border-l-2 pl-2 text-[11px] leading-snug">
-              Untyped in OpenStreetMap (
-              <span className="font-mono">building=yes</span>). 85% of downtown
-              is. Tag it and it appears here on the next load.
-            </div>
-          )}
-          <a
-            className="link link-primary mt-2 block text-[11px]"
-            href={`https://www.openstreetmap.org/way/${selected.atlasId}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            OSM way {selected.atlasId} →
-          </a>
-        </div>
-      )}
+      {/* One card for the tour caption AND the click-to-inspect card (#303) —
+          a tour stop IS a selected building. `selected` wins if both are set (a
+          manual click over autoplay); in practice a click's pointerdown stops
+          the tour before its LEFT_CLICK selects (see the mountRef listener), so
+          they do not coexist. */}
+      {(() => {
+        let model: BuildingCardModel | null = null;
+        if (selected) {
+          const typed = prettyType(selected.tags);
+          model = {
+            name:
+              selected.tags?.name ??
+              (typed
+                ? typed.replace(/^./, (c) => c.toUpperCase())
+                : 'Untyped building'),
+            onClose: () => setSelected(null),
+            facts: {
+              heightM: selected.heightM,
+              rule: selected.rule,
+              osmWayId: selected.atlasId,
+            },
+            // {} not undefined: a baked-only building has no tags but is still a
+            // click, so the "untyped — tag it" ask (which keys off tags !==
+            // undefined) still shows.
+            tags: selected.tags ?? {},
+          };
+        } else if (tour) {
+          const stop = tour.list[tour.i];
+          model = {
+            name: stop.name,
+            onClose: () => tourRef.current?.stop(),
+            facts: stop.target
+              ? {
+                  heightM: stop.target.heightM,
+                  rule: stop.target.rule,
+                  osmWayId: stop.target.id,
+                }
+              : undefined,
+            tour: {
+              index: tour.i,
+              total: tour.list.length,
+              blurb: stop.blurb,
+              onPrev: () => tourRef.current?.step(-1),
+              onNext: () => tourRef.current?.step(1),
+              nearby: stop.target?.nearby ?? 0,
+              nearbyMeasured: stop.target?.nearbyMeasured ?? 0,
+            },
+          };
+        }
+        return model ? <BuildingCard model={model} /> : null;
+      })()}
     </div>
   );
 }
@@ -985,13 +867,4 @@ function legendOf(
     else m.set(c.key, { ...c, n: 1 });
   }
   return [...m.values()].sort((a, b) => b.n - a.n);
-}
-
-function Row({ k, v }: { k: string; v: string }) {
-  return (
-    <div className="grid grid-cols-[64px_1fr] gap-2 text-[11px]">
-      <span className="text-base-content/50">{k}</span>
-      <span className="font-mono break-words">{v}</span>
-    </div>
-  );
 }
