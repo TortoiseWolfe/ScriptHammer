@@ -29,12 +29,20 @@ export function useColorblindMode() {
     (type: ColorblindType, patterns: boolean) => {
       try {
         const root = document.documentElement;
-        const body = document.body;
 
-        // Apply SVG filter
+        // The filter goes on <html>, NOT <body> (#305). A filter other than
+        // `none` makes its element a containing block for position:fixed
+        // descendants; the CSS Filter Effects spec exempts only the ROOT
+        // element, and <body> is not the root. On <body> this silently
+        // un-fixed every fixed element on the page for colorblind users --
+        // the tour caption, the diorama shell, the cookie banner, /messages --
+        // each one anchoring to <body> and scrolling with the document.
+        // Measured: a `fixed top:64;bottom:0` probe on a page scrolled to 150
+        // read top:64/bottom:630 with the filter on <html>, and
+        // top:-86/bottom:721 with it on <body>. The root filter still paints
+        // the whole tree, so this costs nothing.
         const filterValue = COLORBLIND_FILTER_IDS[type] || 'none';
-        root.style.setProperty('--colorblind-filter', filterValue);
-        body.style.filter = filterValue;
+        root.style.filter = filterValue;
 
         // Apply pattern classes
         if (patterns && type !== ColorblindType.NONE) {
