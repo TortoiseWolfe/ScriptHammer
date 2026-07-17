@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="A playable civic digital twin of Chattanooga — neighborhood tiles, the Tennessee River, and a live city-health score">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#16162a"/>
+      <stop offset="1" stop-color="#1a1a2e"/>
+    </linearGradient>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#25254a"/>
+      <stop offset="1" stop-color="#1f1f3d"/>
+    </linearGradient>
+    <linearGradient id="tileHot" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b3a52"/>
+      <stop offset="1" stop-color="#213043"/>
+    </linearGradient>
+    <linearGradient id="river" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+  </defs>
+
+  <!-- backdrop -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- faint dot grid -->
+  <g fill="#25254a" opacity="0.35">
+    <g id="row">
+      <circle cx="40" cy="40" r="1.6"/><circle cx="90" cy="40" r="1.6"/><circle cx="140" cy="40" r="1.6"/><circle cx="190" cy="40" r="1.6"/><circle cx="240" cy="40" r="1.6"/><circle cx="290" cy="40" r="1.6"/><circle cx="340" cy="40" r="1.6"/><circle cx="390" cy="40" r="1.6"/><circle cx="440" cy="40" r="1.6"/><circle cx="490" cy="40" r="1.6"/>
+    </g>
+    <use href="#row" y="50"/><use href="#row" y="100"/><use href="#row" y="150"/><use href="#row" y="200"/><use href="#row" y="250"/><use href="#row" y="300"/><use href="#row" y="350"/><use href="#row" y="400"/><use href="#row" y="450"/><use href="#row" y="500"/><use href="#row" y="550"/>
+  </g>
+
+  <!-- ================= RIGHT: the board ================= -->
+  <g transform="translate(640,70)">
+    <!-- glow under the river -->
+    <path d="M20,120 C 120,120 170,150 250,180 C 330,210 360,300 440,340 C 500,370 520,430 500,470"
+          fill="none" stroke="#38bdf8" stroke-width="34" stroke-linecap="round" opacity="0.18" filter="url(#soft)"/>
+
+    <!-- neighborhood tiles -->
+    <g stroke="#33335e" stroke-width="2">
+      <rect x="0"   y="0"   width="150" height="110" rx="14" fill="url(#tile)"/>
+      <rect x="170" y="0"   width="150" height="110" rx="14" fill="url(#tileHot)"/>
+      <rect x="340" y="0"   width="150" height="110" rx="14" fill="url(#tile)"/>
+      <rect x="0"   y="130" width="150" height="110" rx="14" fill="url(#tile)"/>
+      <rect x="170" y="130" width="150" height="110" rx="14" fill="url(#tileHot)"/>
+      <rect x="340" y="130" width="150" height="110" rx="14" fill="url(#tile)"/>
+      <rect x="0"   y="260" width="150" height="110" rx="14" fill="url(#tileHot)"/>
+      <rect x="170" y="260" width="150" height="110" rx="14" fill="url(#tile)"/>
+      <rect x="340" y="260" width="150" height="110" rx="14" fill="url(#tile)"/>
+    </g>
+
+    <!-- Tennessee River across the board -->
+    <path d="M20,120 C 120,120 170,150 250,180 C 330,210 360,300 440,340 C 500,370 520,430 500,470"
+          fill="none" stroke="url(#river)" stroke-width="15" stroke-linecap="round" opacity="0.9"/>
+    <path d="M20,120 C 120,120 170,150 250,180 C 330,210 360,300 440,340 C 500,370 520,430 500,470"
+          fill="none" stroke="#bae6fd" stroke-width="5" stroke-linecap="round" opacity="0.8"/>
+
+    <!-- placed "game piece" markers -->
+    <g font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-weight="700" font-size="20" text-anchor="middle">
+      <g transform="translate(245,55)"><rect x="-19" y="-19" width="38" height="38" rx="9" fill="#22c55e"/><text y="7" fill="#0f1a12">P</text></g>
+      <g transform="translate(415,185)"><rect x="-19" y="-19" width="38" height="38" rx="9" fill="#e8d4b8"/><text y="7" fill="#2a2412">H</text></g>
+      <g transform="translate(75,315)"><rect x="-19" y="-19" width="38" height="38" rx="9" fill="#38bdf8"/><text y="7" fill="#08222e">B</text></g>
+    </g>
+
+    <!-- board caption -->
+    <text x="0" y="410" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17" letter-spacing="3" fill="#8b93a7">◍  CHATTANOOGA · LIVE DIGITAL TWIN</text>
+  </g>
+
+  <!-- ================= LEFT: the message ================= -->
+  <g transform="translate(72,86)">
+    <!-- eyebrow -->
+    <text x="0" y="0" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="20" letter-spacing="6" fill="#38bdf8">A CIVIC BRAINSTORM</text>
+
+    <!-- title -->
+    <text x="0" y="86" font-family="Space Grotesk, Segoe UI, system-ui, sans-serif" font-weight="700" font-size="76" fill="#e2e8f0">What if your</text>
+    <text x="0" y="162" font-family="Space Grotesk, Segoe UI, system-ui, sans-serif" font-weight="700" font-size="76" fill="#e2e8f0">city were</text>
+    <text x="0" y="238" font-family="Space Grotesk, Segoe UI, system-ui, sans-serif" font-weight="700" font-size="76" fill="#38bdf8">playable?</text>
+
+    <!-- score readout -->
+    <g transform="translate(0,300)">
+      <text x="0" y="0" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="17" letter-spacing="3" fill="#8b93a7">CITY HEALTH</text>
+      <text x="0" y="70" font-family="Space Grotesk, Segoe UI, system-ui, sans-serif" font-weight="700" font-size="88" fill="#e2e8f0">82</text>
+      <text x="132" y="70" font-family="Space Grotesk, Segoe UI, system-ui, sans-serif" font-weight="500" font-size="30" fill="#8b93a7">/ 100</text>
+      <text x="238" y="52" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-weight="700" font-size="20" fill="#22c55e">▲ +7</text>
+    </g>
+
+    <!-- metric bars -->
+    <g transform="translate(0,392)" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" fill="#aeb6c6">
+      <g transform="translate(0,0)">
+        <text x="0" y="4">Equity ★</text>
+        <rect x="118" y="-8" width="300" height="10" rx="5" fill="#25254a"/>
+        <rect x="118" y="-8" width="228" height="10" rx="5" fill="#e8d4b8"/>
+      </g>
+      <g transform="translate(0,34)">
+        <text x="0" y="4">Air</text>
+        <rect x="118" y="-8" width="300" height="10" rx="5" fill="#25254a"/>
+        <rect x="118" y="-8" width="255" height="10" rx="5" fill="#22c55e"/>
+      </g>
+      <g transform="translate(0,68)">
+        <text x="0" y="4">Transit</text>
+        <rect x="118" y="-8" width="300" height="10" rx="5" fill="#25254a"/>
+        <rect x="118" y="-8" width="186" height="10" rx="5" fill="#38bdf8"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- footer strip -->
+  <rect x="0" y="596" width="1200" height="34" fill="#0f0f22"/>
+  <text x="72" y="618" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="16" letter-spacing="2" fill="#8b93a7">scripthammer.com/chatt  ·  open data · no backend · yours to shape</text>
+</svg>
