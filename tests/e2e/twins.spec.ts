@@ -220,11 +220,61 @@ test.describe('/chatt — the atlas is the default (#292)', () => {
   // DOM chrome, never the canvas: CI has no guaranteed WebGL, so a canvas
   // assertion test.skip()s into a false green — the #288 failure mode. The
   // panel is a DOM sibling of the canvas and renders without a GPU.
-  test('/chatt/ renders the atlas by default', async ({ page }) => {
+  // TWO TESTS, NOT ONE, AND THE SPLIT IS THE POINT (#310).
+  //
+  // This used to be a single `/chatt/ renders the atlas by default` asserting
+  // `Atlas —` is visible. But `Atlas — {slug}` renders UNCONDITIONALLY — the
+  // status line beside it is a ternary whose first branch is `error: ${error}`.
+  // Probed on headless firefox, which has no WebGL:
+  //
+  //   hudText: "Atlas — chatt   error: The browser supports WebGL, but
+  //             initialization failed."
+  //
+  // So the test whose whole job was proving the atlas renders was GREEN over a
+  // completely dead atlas. Same family as toBeVisible() ignoring occlusion
+  // (#299) and the placeholder client_id a test asserted toBeTruthy() on
+  // (#288): a green assertion above a broken product.
+  //
+  // The mount and the scene are different claims, so they are different tests.
+  test('the atlas MODULE mounts on /chatt (no WebGL needed)', async ({
+    page,
+  }) => {
+    // Deliberately unconditional and deliberately weak: it proves the Cesium
+    // chunk loaded and AtlasViewer evaluated and mounted. That is exactly what
+    // catches a #294-class dead vendor chunk (which took prod down for five
+    // hours), and it catches it on EVERY browser, including ones with no WebGL.
+    // It does NOT prove the scene works — see the next test for that.
     await page.goto('/chatt/');
     await expect(page.getByText('Atlas —').first()).toBeVisible({
       timeout: 20000,
     });
+  });
+
+  test('the atlas SCENE initialises without erroring', async ({ page }) => {
+    // The claim the test above cannot make. Gated on WebGL because headless
+    // firefox/webkit on CI have none, and Cesium's Viewer ctor throws there —
+    // the same gate `the R3F canvas mounts when WebGL is available` already
+    // uses. Chromium has swiftshader, so this assertion really runs on every PR
+    // rather than skipping everywhere (skipping into a false green is #288's
+    // failure mode, so the gate must stay narrow: only tests that need `ready`).
+    await page.goto('/chatt/');
+    await expect(page.getByText('Atlas —').first()).toBeVisible({
+      timeout: 20000,
+    });
+    test.skip(
+      !(await webglAvailable(page)),
+      'WebGL unavailable in this browser/runner; Cesium cannot initialise'
+    );
+
+    // The status line IS the error surface — `error: ${e.message}` is its first
+    // ternary branch. Asserting on it is what makes this test unable to pass on
+    // the dead atlas the old one passed on.
+    const hud = page.getByTestId('atlas-hud');
+    await expect(hud).not.toContainText('error:', { timeout: 20000 });
+    // And the positive signal: the chips only render behind `{ready && …}`.
+    await expect(
+      page.getByRole('button', { name: 'type', exact: true })
+    ).toBeVisible({ timeout: 20000 });
   });
 
   // ── #301 ──────────────────────────────────────────────────────────────────
@@ -265,6 +315,16 @@ test.describe('/chatt — the atlas is the default (#292)', () => {
     page,
   }) => {
     await page.goto('/chatt/?notour');
+    // The chip lives behind `{ready && …}`, so it needs a live Cesium scene
+    // (#310). Headless firefox/webkit have no WebGL; the atlas correctly shows
+    // its error state there and no chip exists to be occluded.
+    await expect(page.getByText('Atlas —').first()).toBeVisible({
+      timeout: 20000,
+    });
+    test.skip(
+      !(await webglAvailable(page)),
+      'WebGL unavailable in this browser/runner; the type chip renders only behind `ready`'
+    );
     const chip = page.getByRole('button', { name: 'type', exact: true });
     await expect(chip).toBeVisible({ timeout: 20000 });
 
@@ -438,6 +498,18 @@ test.describe('/chatt — the atlas is the default (#292)', () => {
     // that only the ready-state string has (`${total} buildings · ${...}`)
     // makes the assertion correct regardless of that timing.
     await page.goto('/chatt/');
+    // Needs a live scene (#310): the ready-state headline only exists once
+    // Cesium initialises, and headless firefox/webkit have no WebGL — which is
+    // why this test, not the atlas, was red on main for four runs after #297.
+    // Do NOT "fix" that by loosening the assertion: this is the test that
+    // catches "0 buildings" over a correct 8031-building legend.
+    await expect(page.getByText('Atlas —').first()).toBeVisible({
+      timeout: 20000,
+    });
+    test.skip(
+      !(await webglAvailable(page)),
+      'WebGL unavailable in this browser/runner; the count renders only behind `ready`'
+    );
     const headline = page.getByText(/\d[\d,]* buildings · /).first();
     await expect(headline).toBeVisible({ timeout: 20000 });
     const text = await headline.textContent();
