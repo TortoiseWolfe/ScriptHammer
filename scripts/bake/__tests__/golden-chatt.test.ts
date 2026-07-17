@@ -142,9 +142,18 @@ describe('golden: sites/chatt.json', () => {
     expect(site.carveWater).toBe(true);
   });
 
-  it('tour traverses the whole corridor: both north (z<0) and south (z>0) stops (#216)', () => {
-    expect(site.tour!.some((w) => w.look[2] < -2000)).toBe(true); // north
-    expect(site.tour!.some((w) => w.look[2] > 2000)).toBe(true); // south
+  it('tour traverses the downtown corridor, top to bottom (#216, #302)', () => {
+    const zs = site.tour!.map((w) => w.look[2]);
+    // The interesting corridor runs from the north riverfront (Coolidge Park,
+    // z ~ -2960) down to the Chattanooga Choo Choo (z ~ -371) — a ~2.6 km span.
+    // The stops must cover it, not bunch in one block.
+    expect(Math.min(...zs)).toBeLessThan(-2000); // reaches the north riverfront
+    expect(Math.max(...zs) - Math.min(...zs)).toBeGreaterThan(2000); // wide span
+    // The old assertion here required a stop with look.z > 2000 (a "south"
+    // stop). That stop was the Chattanooga Choo Choo MISPLACED ~3 km south in
+    // Alton Park (#302). The real station geocodes to lat 35.0372 — NORTH of
+    // the box center (35.0339), i.e. z ~ -371 — and the box's southern half has
+    // no tour-worthy landmark, so requiring a z>2000 stop was asserting the bug.
     for (const w of site.tour!) expect(w.blurb.length).toBeGreaterThan(0);
   });
 
