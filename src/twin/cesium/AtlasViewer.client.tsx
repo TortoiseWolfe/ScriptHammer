@@ -42,6 +42,7 @@ import {
   RULE_LABELS,
   RULE_COLORS,
   unbucketedLadderTypes,
+  DEFAULT_COLOR_BY,
   type AtlasBuilding,
   type ColorBy,
 } from './buildings';
@@ -84,7 +85,7 @@ export default function AtlasViewer({ slug }: { slug: string }) {
   const [status, setStatus] = useState('starting globe…');
   const [ready, setReady] = useState(false);
   const [selected, setSelected] = useState<AtlasPickId | null>(null);
-  const [colorBy, setColorBy] = useState<ColorBy>('provenance');
+  const [colorBy, setColorBy] = useState<ColorBy>(DEFAULT_COLOR_BY);
   const [legend, setLegend] = useState<
     { key: string; label: string; color: string; n: number }[]
   >([]);
@@ -93,7 +94,7 @@ export default function AtlasViewer({ slug }: { slug: string }) {
   // The effect below runs once; these let it read/publish the live colour mode
   // without taking `colorBy` as a dependency and tearing the viewer down on
   // every toggle.
-  const colorByRef = useRef<ColorBy>('provenance');
+  const colorByRef = useRef<ColorBy>(DEFAULT_COLOR_BY);
   const rebuildRef = useRef<((m: ColorBy) => void) | null>(null);
   // Index-based, not just "the current stop": a tour you can only watch is a
   // demo. Prev/next must know where they are in which list.
