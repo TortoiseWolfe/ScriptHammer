@@ -62,6 +62,29 @@ export interface AtlasBuilding {
 
 export type ColorBy = 'provenance' | 'type' | 'height';
 
+/**
+ * What the atlas colours by before anyone touches a chip.
+ *
+ * `type`, because it is the only mode that describes the CITY. `provenance`
+ * describes our own pipeline — lidar vs OSM tag vs estimate — which is honest
+ * and useful, but it is metadata about how we know a height, not about the
+ * place. `height` re-states what the 3D geometry already shows: tall buildings
+ * are visibly tall. Only `type` tells a visitor where Chattanooga lives, works
+ * and makes things.
+ *
+ * 72% of buildings come back `untyped in OSM (building=yes)`, and that argues
+ * FOR this default rather than against it — see the note above: "the untyped
+ * bucket is the ask, rendered". Grey is the contribution loop made legible.
+ *
+ * Lives here, next to the type it instantiates, rather than in the viewer:
+ * AtlasViewer holds the default in BOTH a useState and a useRef (the ref lets
+ * the main effect read the live mode without depending on `colorBy` and tearing
+ * the viewer down on every toggle). Two literals there would disagree only on
+ * first paint — the hardest place to notice. One constant, imported twice, makes
+ * that impossible. Pinned by __tests__/buildings.test.ts.
+ */
+export const DEFAULT_COLOR_BY: ColorBy = 'type';
+
 /** Coarse buckets over OSM's `building=*`. Keys are checked against LEVEL_PRIORS
  *  by test: a value the height ladder reasons about must land in a bucket, or
  *  the legend and the ladder are describing different cities. */

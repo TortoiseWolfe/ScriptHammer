@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  DEFAULT_COLOR_BY,
   groundSpanM,
   typeBucket,
   unbucketedLadderTypes,
@@ -8,6 +9,7 @@ import {
   TYPE_COLORS,
   RULE_COLORS,
   type AtlasBuilding,
+  type ColorBy,
 } from '../buildings';
 
 const b = (over: Partial<AtlasBuilding> = {}): AtlasBuilding => ({
@@ -194,5 +196,20 @@ describe('groundSpanM', () => {
       baseM: 0,
       topM: 9,
     });
+  });
+});
+
+describe('DEFAULT_COLOR_BY', () => {
+  it('colours by TYPE on arrival — the only mode that describes the city', () => {
+    // `provenance` describes our pipeline (lidar vs tag vs estimate) and
+    // `height` re-states what the geometry already shows. Only `type` tells a
+    // visitor where the city lives, works and makes things. Flipping this back
+    // is a product decision, so it should break a test, not slip through.
+    expect(DEFAULT_COLOR_BY).toBe('type');
+  });
+
+  it('is a real ColorBy — a typo here would silently colour nothing', () => {
+    const modes: ColorBy[] = ['provenance', 'type', 'height'];
+    expect(modes).toContain(DEFAULT_COLOR_BY);
   });
 });
