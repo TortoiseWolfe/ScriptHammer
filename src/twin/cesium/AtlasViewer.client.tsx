@@ -611,15 +611,42 @@ export default function AtlasViewer({ slug }: { slug: string }) {
   const total = legend.reduce((a, r) => a + r.n, 0);
 
   return (
-    <div className="bg-base-300 relative h-screen w-full">
+    // THE SCENE IS THE PAGE (#301). `fixed; inset:0`, not `relative h-screen`.
+    //
+    // `relative h-screen` made this 100vh tall starting at y=65 (below the
+    // sticky nav) inside a document that also renders pb-14 + a footer, so the
+    // body measured 871 against a 630 viewport -- 241px of scroll. Scrolling
+    // slid this container up under the sticky nav while the HUD (z-10) lost to
+    // the nav (z-50), which is how the `type` chip became unreachable and why
+    // it "rendered fine now and randomly glitched later": the variable was
+    // scroll position, not time.
+    //
+    // Taking the scene out of flow collapses the flex-1 wrapper to free space,
+    // so the body is exactly the viewport and THE PAGE CANNOT SCROLL -- the HUD
+    // cannot hide because there is no scroll to hide it. Measured live:
+    // scrollHeight 871 -> 630 == innerHeight. It also un-clips the globe's
+    // bottom, the other half of this same bug, and retires the 100dvh question:
+    // `inset:0` computes no length, so there is no unit to be unstable on
+    // mobile.
+    //
+    // No z-index, deliberately: a positioned element with z-index:auto paints
+    // at step 8 and the nav's z-50 at step 9, so the scene lands BEHIND the
+    // chrome by construction. Adding z-0 here would only invite someone to
+    // "fix" it later.
+    //
+    // bg-base-300 stays: it is the pre-WebGL / error backdrop.
+    <div className="bg-base-300 fixed inset-0">
       <div ref={mountRef} className="absolute inset-0" />
 
       {/* DOM chrome, not canvas — CI has no guaranteed WebGL (playwright.config
           sets no launchOptions.args), so the E2E spec asserts on this and gates
           the canvas behind a WebGL probe. Same tactic as twins.spec.ts. */}
+      {/* top-[--nav-h], not top-0: the container now starts at y=0, BEHIND the
+          nav. This puts the panel back at y=77 -- the exact panelTop the owner
+          already accepts at scroll 0, now unconditional. */}
       <div
         data-testid="atlas-hud"
-        className="pointer-events-none absolute top-0 left-0 z-10 p-3"
+        className="pointer-events-none absolute top-[var(--nav-h)] left-0 z-10 p-3"
       >
         <div className="bg-base-100/85 rounded-box pointer-events-auto p-3 shadow-lg backdrop-blur">
           <div className="text-sm font-semibold">Atlas — {slug}</div>
@@ -813,8 +840,11 @@ export default function AtlasViewer({ slug }: { slug: string }) {
         </div>
       )}
 
+      {/* Same nav offset as the HUD (#301) — +0.75rem matches the HUD's p-3, so
+          both overlays sit on the same 77px line. Before this they were both
+          12px from DIFFERENT origins and never agreed. */}
       {selected && (
-        <div className="bg-base-100/90 rounded-box absolute top-3 right-3 z-10 w-64 p-3 shadow-lg backdrop-blur">
+        <div className="bg-base-100/90 rounded-box absolute top-[calc(var(--nav-h)+0.75rem)] right-3 z-10 w-64 p-3 shadow-lg backdrop-blur">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 text-sm font-semibold">
               {selected.tags?.name ??

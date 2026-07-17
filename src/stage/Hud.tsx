@@ -224,10 +224,25 @@ export default function Hud({
   }, [overflowOpen]);
 
   return (
+    // Inset between the nav and the footer strip (#301, #299) -- NOT inset:0.
+    //
+    // The scene behind this is now full-viewport, so this wrapper is what keeps
+    // the HUD out from under the chrome. `inset: 0` put the wordmark (top:16)
+    // at y=16, permanently beneath the 65px nav: nobody had ever seen the
+    // page's own title, and `toBeVisible()` asserted it WAS visible for months
+    // because it checks CSS and not occlusion (#299). It now lands at y=81.
+    //
+    // bottom clears the compact footer strip, which is fixed at bottom:0 -- the
+    // dock below is absolute bottom:16 and would otherwise sit under it.
+    // var(--twin-footer-h) folds in env(safe-area-inset-bottom), so one token
+    // clears the strip AND the iOS home indicator.
     <div
       style={{
         position: 'fixed',
-        inset: 0,
+        top: 'var(--nav-h)',
+        right: 0,
+        bottom: 'var(--twin-footer-h)',
+        left: 0,
         pointerEvents: 'none',
         fontFamily:
           'ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif',

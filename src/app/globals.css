@@ -208,6 +208,25 @@
   /* Base scale factor - controlled by accessibility settings */
   --font-scale-factor: 1;
 
+  /* The sticky GlobalNav's real border-box height (#301).
+     GlobalNav.tsx:172's inner div is h-16 (4rem) and :170's header adds
+     border-b, so the header measures 65px -- confirmed live. Every existing
+     hard-coded call site says 64 and is therefore 1px short
+     (TwinCanvas.client.tsx, messages/page.tsx:78,
+     messages/new-group/page.tsx:417, wireframes/page.tsx:23). Migrating those
+     is deliberately out of #301's scope; this var exists because the twin
+     chrome spans two styling idioms -- AtlasViewer uses Tailwind classes,
+     stage/Hud.tsx uses inline style objects -- and a CSS var is the only thing
+     both can share (a TS constant cannot appear in a class name).
+     4rem is safe: --font-scale-factor scales the --text-* tokens only, never
+     the root font-size, so h-16 is 64px at every accessibility setting. */
+  --nav-h: calc(4rem + 1px);
+
+  /* The twin routes' compact footer strip (src/twin/TwinFooter.tsx): 44px of
+     content -- CLAUDE.md's touch-target floor -- plus the iOS home indicator.
+     layout.tsx:68 sets viewportFit:'cover', so env() is non-zero there. */
+  --twin-footer-h: calc(2.75rem + env(safe-area-inset-bottom));
+
   /* Font loading optimization to reduce CLS */
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -832,12 +851,91 @@ p:not([class*='text-']) {
   background-color: var(--color-base-100, inherit) !important;
 }
 
-/* Digital-twin diorama (/twins/[slug], /chatt): the TwinCanvas client adds
-   .twin-fullscreen to <body> on mount. Hide the global cookie-consent +
-   PWA-install popups that would otherwise overlap the immersive diorama HUD.
-   The top nav stays visible; the diorama insets below it. Reverts on unmount
-   (other routes unaffected). */
-body.twin-fullscreen [aria-label='Cookie consent banner'],
+/* Twin routes (/twins/[slug], /chatt). TwinCanvasHost adds .twin-fullscreen to
+   <body> on mount for BOTH renderers, and .twin-diorama for the diorama only;
+   both revert on unmount, so other routes are unaffected.
+
+   Until #301 this was added by TwinCanvas (the diorama) alone, so when #292
+   made the atlas the default these rules stopped applying to /chatt entirely
+   -- the flagship route was the one route with no chrome suppression. */
+
+/* The PWA-install popup (fixed top-20 right-4) lands on top of the atlas's
+   target card and the diorama's HUD alike. Neither renderer wants it. */
 body.twin-fullscreen [aria-label='Install Progressive Web App'] {
+  display: none !important;
+}
+
+/* The cookie banner is hidden for the DIORAMA ONLY. Its dock sits at
+   bottom:16 and the ~66px banner buries it. The ATLAS keeps the banner: /chatt
+   is the shared link, and a first-time visitor landing there must still be able
+   to consent to analytics. The banner (z-[60]) covers the atlas's footer strip
+   until dismissed -- accepted; it is dismissible, and consent outranks a strip
+   of credits. */
+body.twin-diorama [aria-label='Cookie consent banner'] {
+  display: none !important;
+}
+
+/* THE NAV FLOATS ON GLASS over the scene (#301).
+   Both renderers are `fixed; inset:0` with z-index:auto, so they paint at step
+   8 and the nav's z-50 at step 9 -- the scene is behind it by construction.
+   This is the atlas's own answer for its critical panels (bg-base-100/90 +
+   backdrop-blur, the tour caption and target card) applied to the nav.
+
+   No !important: globals.css is unlayered (zero @layer) and Tailwind v4 emits
+   utilities into @layer utilities -- unlayered wins regardless of specificity.
+
+   /90 rather than the HUD's /85: measured in GAMMA space (a naive
+   linear-luminance estimate wrongly condemns /85 at ~4.1:1), /90 holds both
+   shipped themes above 10:1 against the worst possible backdrop --
+   scripthammer-dark 10.33:1, scripthammer-light 10.37:1 -- where /85 leaves
+   dark at 8.71:1, a 1.24x margin over AAA that one theme tweak erases. The nav
+   is the only escape hatch from a full-screen scene; it should be the most
+   legible chrome on the page, not the least. The blur does the glass's
+   perceptual work; the transparency only has to say "there's a world back
+   there".
+
+   border-b is deliberately KEPT: a crisp opaque edge is what separates the
+   glass from the scene. shadow-sm (0 1px 2px / 0.05) is invisible over
+   imagery, so it is replaced with stage/Hud.tsx's own glass shadow. */
+body.twin-fullscreen [data-global-nav] {
+  background-color: color-mix(in oklch, var(--color-base-100) 90%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 24px rgb(0 0 0 / 0.35);
+}
+
+/* Every path that removes the blur MUST remove the transparency: a 90% wash
+   over unblurred high-frequency satellite imagery is exactly the case the blur
+   was buying off. Mirrors src/styles/reduced-motion.css's OS-media-query
+   pattern. (forced-colors needs nothing -- the UA forces the background.) */
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  body.twin-fullscreen [data-global-nav],
+  body.twin-fullscreen [data-twin-footer] {
+    background-color: var(--color-base-100);
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  body.twin-fullscreen [data-global-nav],
+  body.twin-fullscreen [data-twin-footer] {
+    background-color: var(--color-base-100);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* The compact footer strip swap (#301). Both lines are needed and they must
+   ship together, or the page briefly shows two contentinfo landmarks.
+   The strip is display:none by default so that pre-hydration -- before
+   TwinCanvasHost's effect adds the body class -- the static shell shows the
+   normal site footer and NOT both. One switch, never a hybrid. */
+[data-twin-footer] {
+  display: none;
+}
+body.twin-fullscreen [data-twin-footer] {
+  display: flex;
+}
+body.twin-fullscreen [data-site-footer] {
   display: none !important;
 }

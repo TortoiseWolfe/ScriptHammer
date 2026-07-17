@@ -18,8 +18,10 @@
 // atlas to add and gets the diorama regardless of any of the above — see the
 // `hasAtlas` prop below and ./renderer-select.ts's selectRendererFor.
 import dynamic from 'next/dynamic';
+import { useEffect } from 'react';
 import { getAssetUrl } from '@/config/project.config';
 import { selectRendererFor } from './renderer-select';
+import { TwinFooter } from './TwinFooter';
 import type { TwinFocus } from './TwinCanvas.client';
 
 const TwinCanvas = dynamic(() => import('./TwinCanvas.client'), {
@@ -74,8 +76,53 @@ export default function TwinCanvasHost({
       : new URLSearchParams(window.location.search);
   // focus='house' is the as-built property framing (#234) — diorama-only, and it
   // arrives as a prop rather than a param.
-  if (focus === 'house' || selectRendererFor(params, hasAtlas) === 'diorama') {
-    return <TwinCanvas slug={slug} focus={focus} />;
-  }
-  return <AtlasViewer slug={slug} />;
+  const isDiorama =
+    focus === 'house' || selectRendererFor(params, hasAtlas) === 'diorama';
+
+  // Route-scoped chrome, owned HERE rather than in either renderer (#301).
+  // It used to live in TwinCanvas.client (the diorama), so when #292 made the
+  // atlas the default, /chatt -- the most-shared route -- silently got NO
+  // chrome suppression at all, which is why the PWA-install button collides
+  // with the atlas's target card. The host is the only place that knows the
+  // route is a twin route BEFORE knowing which renderer won.
+  //
+  // TWO classes because the renderers genuinely want different things:
+  //   twin-fullscreen  both -- the scene is the page; hides the PWA popup.
+  //   twin-diorama     diorama only -- also hides the cookie banner, because
+  //                    the diorama's dock sits at bottom:16 and the ~66px
+  //                    banner buries it. The ATLAS keeps its banner: /chatt is
+  //                    the link we promote, and someone landing there must
+  //                    still be able to consent (owner's call). The banner
+  //                    covers the atlas's footer strip until dismissed --
+  //                    accepted, and it is dismissible.
+  //
+  // Effect, not render: this mutates document.body, and it must not run during
+  // SSG. The host is NOT ssr:false (only its two dynamic imports are), so it
+  // renders server-side, where useEffect does not run. Cleanup on unmount
+  // keeps every other route unaffected; StrictMode's add->remove->add nets to
+  // added, and the host renders exactly one renderer, never both.
+  useEffect(() => {
+    const body = document.body;
+    body.classList.add('twin-fullscreen');
+    if (isDiorama) body.classList.add('twin-diorama');
+    return () => {
+      body.classList.remove('twin-fullscreen');
+      body.classList.remove('twin-diorama');
+    };
+  }, [isDiorama]);
+
+  // TwinFooter renders for both renderers and is NOT ssr:false, so it lands in
+  // the static HTML; globals.css keeps it display:none until the body class is
+  // set, so hydration flips the chrome in one step rather than showing the site
+  // footer and the strip at once.
+  return (
+    <>
+      {isDiorama ? (
+        <TwinCanvas slug={slug} focus={focus} />
+      ) : (
+        <AtlasViewer slug={slug} />
+      )}
+      <TwinFooter />
+    </>
+  );
 }
