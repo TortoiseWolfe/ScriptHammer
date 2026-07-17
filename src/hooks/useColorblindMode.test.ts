@@ -26,16 +26,22 @@ describe('useColorblindMode', () => {
       writable: true,
     });
 
-    // Mock document.documentElement.style
+    // Mock document.documentElement.style — the filter lives on <html>, not
+    // <body> (#305): a filter on <body> makes it a containing block for
+    // position:fixed descendants, which un-fixes the whole page.
     Object.defineProperty(document.documentElement, 'style', {
       value: {
+        filter: '',
         setProperty: vi.fn(),
         removeProperty: vi.fn(),
       },
       writable: true,
     });
 
-    // Mock document.body.style
+    // <body> is mocked purely so the tests can assert it stays UNTOUCHED.
+    // These are jsdom tests: they cannot observe a containing-block change
+    // (that needs layout), which is exactly why this bug shipped. The real
+    // regression guard is tests/e2e/colorblind-fixed.spec.ts.
     Object.defineProperty(document.body, 'style', {
       value: {
         filter: '',
@@ -93,27 +99,29 @@ describe('useColorblindMode', () => {
       expect(result.current.mode).toBe(ColorblindType.DEUTERANOPIA);
     });
 
-    it('should apply filter to document body', () => {
+    it('should apply the filter to the document root', () => {
       const { result } = renderHook(() => useColorblindMode());
 
       act(() => {
         result.current.setColorblindMode(ColorblindType.TRITANOPIA);
       });
 
-      expect(document.body.style.filter).toBe('url(#tritanopia)');
+      expect(document.documentElement.style.filter).toBe('url(#tritanopia)');
     });
 
-    it('should set CSS variable for filter', () => {
+    it('should never put the filter on <body> — it would un-fix the page (#305)', () => {
       const { result } = renderHook(() => useColorblindMode());
 
       act(() => {
-        result.current.setColorblindMode(ColorblindType.ACHROMATOPSIA);
+        result.current.setColorblindMode(ColorblindType.PROTANOPIA);
       });
 
-      expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
-        '--colorblind-filter',
-        'url(#achromatopsia)'
-      );
+      // A filter on <body> makes it the containing block for position:fixed
+      // descendants (only the ROOT element is spec-exempt), so every fixed
+      // element on the page starts scrolling with the document. Measured on a
+      // page scrolled to y=150: a `fixed top:64;bottom:0` probe read
+      // top:-86/bottom:721 on <body> vs top:64/bottom:630 on <html>.
+      expect(document.body.style.filter).toBe('');
     });
 
     it('should remove filter when set to NONE', () => {
@@ -129,11 +137,7 @@ describe('useColorblindMode', () => {
         result.current.setColorblindMode(ColorblindType.NONE);
       });
 
-      expect(document.body.style.filter).toBe('none');
-      expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
-        '--colorblind-filter',
-        'none'
-      );
+      expect(document.documentElement.style.filter).toBe('none');
     });
 
     it('should persist mode to localStorage', () => {
@@ -264,7 +268,7 @@ describe('useColorblindMode', () => {
 
       expect(result.current.mode).toBe(ColorblindType.TRITANOMALY);
       expect(result.current.patternsEnabled).toBe(true);
-      expect(document.body.style.filter).toBe('url(#tritanomaly)');
+      expect(document.documentElement.style.filter).toBe('url(#tritanomaly)');
       expect(document.documentElement.classList.add).toHaveBeenCalledWith(
         'colorblind-patterns'
       );
@@ -310,7 +314,7 @@ describe('useColorblindMode', () => {
           result.current.setColorblindMode(type);
         });
 
-        expect(document.body.style.filter).toBe(`url(#${type})`);
+        expect(document.documentElement.style.filter).toBe(`url(#${type})`);
       });
     });
 
@@ -344,7 +348,7 @@ describe('useColorblindMode', () => {
       });
 
       // Should apply immediately
-      expect(document.body.style.filter).toBe('url(#protanopia)');
+      expect(document.documentElement.style.filter).toBe('url(#protanopia)');
 
       // Change to another mode
       act(() => {
@@ -352,7 +356,7 @@ describe('useColorblindMode', () => {
       });
 
       // Should update immediately
-      expect(document.body.style.filter).toBe('url(#tritanopia)');
+      expect(document.documentElement.style.filter).toBe('url(#tritanopia)');
     });
 
     it('should handle rapid mode changes', () => {
@@ -366,7 +370,7 @@ describe('useColorblindMode', () => {
 
       // Final mode should be applied
       expect(result.current.mode).toBe(ColorblindType.TRITANOPIA);
-      expect(document.body.style.filter).toBe('url(#tritanopia)');
+      expect(document.documentElement.style.filter).toBe('url(#tritanopia)');
     });
   });
 
@@ -439,7 +443,7 @@ describe('useColorblindMode', () => {
       });
 
       // Should handle gracefully - likely default to NONE or ignore
-      expect(document.body.style.filter).toBeDefined();
+      expect(document.documentElement.style.filter).toBeDefined();
     });
   });
 });
