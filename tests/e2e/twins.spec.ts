@@ -32,6 +32,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { FOOTER_LINKS } from '@/config/footer-links';
 
 // The diorama's "it rendered" signal — a dock button, not the (occluded)
 // wordmark. 'Miniature' is unconditional: modesForSite() always includes it,
@@ -226,6 +227,141 @@ test.describe('/chatt — the atlas is the default (#292)', () => {
     });
   });
 
+  // ── #301 ──────────────────────────────────────────────────────────────────
+  // The HUD used to hide under the sticky nav. NOT because of z-index: because
+  // the page SCROLLED. `relative h-screen` below a 65px nav, plus pb-14 and a
+  // footer, made the body 871 tall against a 630 viewport, and 100px of scroll
+  // put the `type` chip behind the nav. It looked perfect at scroll 0, which is
+  // why it read as "renders fine now, randomly glitches later" and why every
+  // screenshot taken without scrolling looked fine.
+  //
+  // These two tests are deliberately different in kind:
+  //   1. STRUCTURAL — the page cannot scroll, so the bug cannot occur. This is
+  //      stronger than any visual assertion and cannot flake.
+  //   2. BEHAVIOURAL — drive the real gesture and hit-test. toBeVisible() is
+  //      useless here: it checks CSS, not occlusion, and passed for months on a
+  //      wordmark buried under this very nav (#299).
+  test('the page cannot scroll, so the HUD cannot hide (#301)', async ({
+    page,
+  }) => {
+    await page.goto('/chatt/?notour');
+    await expect(page.getByText('Atlas —').first()).toBeVisible({
+      timeout: 20000,
+    });
+
+    const m = await page.evaluate(() => {
+      window.scrollTo(0, 500); // must be a no-op
+      return {
+        scrollHeight: document.documentElement.scrollHeight,
+        innerHeight: window.innerHeight,
+        scrollY: Math.round(window.scrollY),
+      };
+    });
+    expect(m.scrollHeight).toBeLessThanOrEqual(m.innerHeight);
+    expect(m.scrollY).toBe(0);
+  });
+
+  test('the type chip is reachable, even after trying to scroll (#301)', async ({
+    page,
+  }) => {
+    await page.goto('/chatt/?notour');
+    const chip = page.getByRole('button', { name: 'type', exact: true });
+    await expect(chip).toBeVisible({ timeout: 20000 });
+
+    const hit = await page.evaluate(() => {
+      window.scrollTo(0, 500);
+      const el = [...document.querySelectorAll('button')].find(
+        (b) => b.textContent?.trim() === 'type'
+      );
+      if (!el) return { found: false };
+      const b = el.getBoundingClientRect();
+      // elementFromPoint at the element's OWN centre — "is it actually on
+      // top?", which is the only question that matters to a user's finger.
+      const top = document.elementFromPoint(
+        Math.round(b.left + b.width / 2),
+        Math.round(b.top + b.height / 2)
+      );
+      return {
+        found: true,
+        ownHit: top ? el === top || el.contains(top) : false,
+        hitInNav: top ? !!top.closest('[data-global-nav]') : false,
+      };
+    });
+    expect(hit.found).toBe(true);
+    expect(hit.hitInNav, 'the nav must not eat the type chip').toBe(false);
+    expect(
+      hit.ownHit,
+      'the type chip must be the topmost element at its centre'
+    ).toBe(true);
+  });
+
+  test('the atlas keeps its cookie banner and drops the PWA popup (#301)', async ({
+    page,
+  }) => {
+    // Deliberate split: /chatt is the shared link, so a first-time visitor must
+    // still be able to consent. Only the diorama hides the banner (its dock sits
+    // at bottom:16 and the banner buries it).
+    await page.goto('/chatt/?notour');
+    await expect(page.getByText('Atlas —').first()).toBeVisible({
+      timeout: 20000,
+    });
+
+    const chrome = await page.evaluate(() => {
+      const disp = (sel: string) => {
+        const el = document.querySelector(sel);
+        return el ? getComputedStyle(el).display : 'absent';
+      };
+      return {
+        body: document.body.className,
+        pwa: disp('[aria-label="Install Progressive Web App"]'),
+        banner: disp('[aria-label="Cookie consent banner"]'),
+      };
+    });
+    expect(chrome.body).toContain('twin-fullscreen');
+    expect(chrome.body).not.toContain('twin-diorama');
+    expect(chrome.pwa, 'PWA popup collides with the target card').not.toBe(
+      'block'
+    );
+    // 'absent' is legitimate: the banner does not render once consent is
+    // stored. What must never happen is our CSS hiding it on the atlas.
+    expect(chrome.banner).not.toBe('none');
+  });
+
+  test('exactly one contentinfo landmark, and it carries the real links (#301)', async ({
+    page,
+  }) => {
+    await page.goto('/chatt/?notour');
+    await expect(page.getByText('Atlas —').first()).toBeVisible({
+      timeout: 20000,
+    });
+
+    const footers = await page.evaluate(() => {
+      const all = [
+        ...document.querySelectorAll('footer, [role="contentinfo"]'),
+      ];
+      const shown = all.filter((f) => getComputedStyle(f).display !== 'none');
+      return {
+        shownCount: shown.length,
+        // Which one survived matters: the site footer hidden and the strip
+        // shown, never the reverse and never both.
+        shownIsStrip: shown[0]?.hasAttribute('data-twin-footer') ?? false,
+        hrefs: shown[0]
+          ? [...shown[0].querySelectorAll('a')].map((a) =>
+              a.getAttribute('href')
+            )
+          : [],
+      };
+    });
+    expect(
+      footers.shownCount,
+      'two contentinfo landmarks is an a11y defect'
+    ).toBe(1);
+    expect(footers.shownIsStrip).toBe(true);
+    // Driven by the shared config, so the strip cannot silently drift from the
+    // site footer's links.
+    expect(footers.hrefs).toEqual(FOOTER_LINKS.map((l) => l.href));
+  });
+
   test('the atlas reports a real building count, not an empty scene', async ({
     page,
   }) => {
@@ -259,17 +395,75 @@ test.describe('/chatt — the atlas is the default (#292)', () => {
   });
 
   test('?diorama still reaches the exhibit', async ({ page }) => {
-    // Not getByText('Chattanooga Mini') — that wordmark renders underneath
-    // the sticky global nav (z-10 vs the nav's z-50) and is occluded on every
-    // real viewport, even though toBeVisible() is CSS-only and reports it
-    // visible. The dock button is confirmed unoccluded; see the header
-    // comment and DIORAMA_SIGNAL above.
+    // The dock, not the wordmark, is the "did it render?" signal — see the
+    // header comment and DIORAMA_SIGNAL above. (The wordmark WAS occluded for
+    // months; #301 fixed that, and the test below now guards it. The dock stays
+    // the signal here because it is what a user actually reaches for.)
     await page.goto('/chatt/?diorama');
     await expect(
       page.getByRole('button', { name: DIORAMA_SIGNAL })
     ).toBeVisible({
       timeout: 20000,
     });
+  });
+
+  test('the diorama wordmark is finally out from under the nav (#299)', async ({
+    page,
+  }) => {
+    // This is the EXACT probe that proved #299 — elementFromPoint at the
+    // wordmark's own centre once returned the nav's logo — now run as the fix's
+    // assertion. toBeVisible() asserted this element was visible for months
+    // while no human had ever seen it: it checks CSS, not occlusion.
+    await page.goto('/chatt/?diorama');
+    await expect(
+      page.getByRole('button', { name: DIORAMA_SIGNAL })
+    ).toBeVisible({ timeout: 20000 });
+
+    const hit = await page.evaluate(() => {
+      const el = [...document.querySelectorAll('div')].find(
+        (d) => d.textContent?.trim() === 'Chattanooga Mini'
+      );
+      if (!el) return { found: false };
+      const b = el.getBoundingClientRect();
+      const top = document.elementFromPoint(
+        Math.round(b.left + b.width / 2),
+        Math.round(b.top + b.height / 2)
+      );
+      return {
+        found: true,
+        rectTop: Math.round(b.top),
+        ownHit: top ? el === top || el.contains(top) : false,
+        hitInNav: top ? !!top.closest('[data-global-nav]') : false,
+      };
+    });
+    expect(hit.found).toBe(true);
+    expect(hit.hitInNav, 'the nav must not bury the page title').toBe(false);
+    expect(
+      hit.ownHit,
+      'the wordmark must be the topmost element at its centre'
+    ).toBe(true);
+  });
+
+  test('the diorama hides the cookie banner its dock sits under (#301)', async ({
+    page,
+  }) => {
+    // The inverse of the atlas's rule, and the reason one class could not serve
+    // both renderers: the dock is absolute bottom:16 and the ~66px banner
+    // buries it.
+    await page.goto('/chatt/?diorama');
+    await expect(
+      page.getByRole('button', { name: DIORAMA_SIGNAL })
+    ).toBeVisible({ timeout: 20000 });
+
+    const chrome = await page.evaluate(() => {
+      const el = document.querySelector('[aria-label="Cookie consent banner"]');
+      return {
+        body: document.body.className,
+        bannerDisplay: el ? getComputedStyle(el).display : 'absent',
+      };
+    });
+    expect(chrome.body).toContain('twin-diorama');
+    expect(chrome.bannerDisplay).not.toBe('block');
   });
 
   test('?atlas remains a working alias for links shared before the flip', async ({

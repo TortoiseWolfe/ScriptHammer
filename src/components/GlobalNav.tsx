@@ -167,7 +167,16 @@ export function GlobalNav() {
   ];
 
   return (
-    <header className="border-base-300 bg-base-100 sticky top-0 z-50 border-b shadow-sm">
+    // data-global-nav is a styling hook for the twin routes' glass treatment
+    // (globals.css, #301). An attribute rather than [aria-label='...'] like the
+    // rules next to it: coupling CSS to an accessible name means renaming the
+    // label silently breaks the styling, and it gives the E2E specs a stable
+    // selector. No logic here is route-aware — the CSS keys off a body class
+    // TwinCanvasHost already sets.
+    <header
+      data-global-nav
+      className="border-base-300 bg-base-100 sticky top-0 z-50 border-b shadow-sm"
+    >
       <nav className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo & Brand */}

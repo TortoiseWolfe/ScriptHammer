@@ -467,9 +467,12 @@ function SceneInner({
   );
 }
 
+// top:0, not 64 (#301): the scene is the page on twin routes and renders
+// BEHIND the glass nav, same as the atlas. The HUD does the insetting now
+// (stage/Hud.tsx), which is also what un-buries its wordmark (#299).
 const shellStyle: React.CSSProperties = {
   position: 'fixed',
-  top: 64,
+  top: 0,
   left: 0,
   right: 0,
   bottom: 0,
@@ -709,13 +712,10 @@ function TwinCanvasInner({
     return () => window.removeEventListener('keydown', onKey);
   }, [modes, editMode, selectedModel, setSelectedModel]);
 
-  // Route-scoped chrome control: hide the global cookie/PWA popups that would
-  // overlap the diorama HUD. Keeps ScriptHammer's top nav (the diorama insets
-  // below it). Class is removed on unmount so other routes are unaffected.
-  useEffect(() => {
-    document.body.classList.add('twin-fullscreen');
-    return () => document.body.classList.remove('twin-fullscreen');
-  }, []);
+  // Route-scoped chrome (`twin-fullscreen` / `twin-diorama`) is set by
+  // TwinCanvasHost, not here (#301). It lived in this file until the atlas
+  // became the default (#292), at which point /chatt got no chrome suppression
+  // at all -- a renderer cannot own something the ROUTE needs.
 
   // The full entry for the selected building (drives the info card).
   const selectedEntry = selectedModel
@@ -723,12 +723,14 @@ function TwinCanvasInner({
     : null;
 
   return (
-    // Inset below the 64px sticky GlobalNav (h-16) so the diorama + HUD sit
-    // under the nav rather than behind it.
+    // The scene is the page (#301): full-viewport, rendering BEHIND the glass
+    // nav, matching the atlas. This used to be `top: 64` to inset below the
+    // nav; the HUD carries that offset now (stage/Hud.tsx), which is what
+    // finally lifts its wordmark out from under the nav (#299).
     <div
       style={{
         position: 'fixed',
-        top: 64,
+        top: 0,
         left: 0,
         right: 0,
         bottom: 0,
