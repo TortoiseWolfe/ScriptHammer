@@ -150,34 +150,9 @@ ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 # Start development server (Storybook can be run separately if needed)
 CMD ["pnpm", "run", "dev"]
 
-# Builder stage for production
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-
-# Build the application
-RUN pnpm run build
-
-# Production image
-FROM base AS runner
-WORKDIR /app
-
-ENV NODE_ENV=production
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-# Copy built application
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-
-USER nextjs
-
-EXPOSE 3000
-
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
-
-CMD ["node", "server.js"]
+# NOTE (#275): the former `builder` + `runner` production stages were removed.
+# ScriptHammer deploys as a STATIC export (output: 'export' → out/ on GitHub
+# Pages), so there is no long-running Node server image: the old `runner` copied
+# `.next/standalone`, which output: 'export' never emits, so it could never
+# build. Production builds run as `pnpm build` in the `dev` image via the
+# `builder` compose service (see docker-compose.yml), writing out/ to the mount.
