@@ -1843,19 +1843,6 @@ DROP POLICY IF EXISTS "Users can view own conversations" ON conversations;
 CREATE POLICY "Users can view own conversations" ON conversations
   FOR SELECT USING (auth.uid() = participant_1_id OR auth.uid() = participant_2_id);
 
--- Users can view GROUP conversations they belong to (Feature 010 / #182).
--- Groups have participant_1_id/participant_2_id NULL, so the 1:1 policy above
--- never matches them. Access = the creator OR any member. The `created_by`
--- clause is load-bearing for createGroup(): its INSERT ... RETURNING reads the
--- new row back BEFORE the creator is added to conversation_members, so a
--- membership-only check would 403 the returning select and break creation.
-DROP POLICY IF EXISTS "Members can view group conversations" ON conversations;
-CREATE POLICY "Members can view group conversations" ON conversations
-  FOR SELECT USING (
-    is_group = true
-    AND (created_by = auth.uid() OR is_conversation_member(id))
-  );
-
 DROP POLICY IF EXISTS "Users can create conversations with connections" ON conversations;
 CREATE POLICY "Users can create conversations with connections" ON conversations
   FOR INSERT WITH CHECK (
@@ -1867,19 +1854,6 @@ CREATE POLICY "Users can create conversations with connections" ON conversations
         (requester_id = participant_2_id AND addressee_id = participant_1_id)
       )
     )
-  );
-
--- Users can create GROUP conversations they own (Feature 010 / #182).
--- Groups have participant_1_id/participant_2_id NULL (CHK023), so the 1:1
--- "auth.uid() = participant_N" policies above can never authorize a group
--- INSERT — without this policy, createGroup()'s conversation insert 403s for
--- every non-admin user and group messaging is unreachable. The creator must
--- be the owner (created_by); per-member access is enforced by the
--- conversation_members policies.
-DROP POLICY IF EXISTS "Users can create group conversations" ON conversations;
-CREATE POLICY "Users can create group conversations" ON conversations
-  FOR INSERT WITH CHECK (
-    is_group = true AND created_by = auth.uid()
   );
 
 -- Admin can create conversations with any user (Feature 002 - welcome messages)
@@ -2599,6 +2573,36 @@ AS $$
   );
 $$;
 
+-- Group-conversation policies RELOCATED here from the 1:1 conversations policy
+-- block (#286). They reference is_group / created_by (added to conversations
+-- below the base table) and is_conversation_member() (defined just above), so
+-- on a fresh single-transaction init they must run AFTER those definitions, not
+-- alongside the other conversations policies. The "1:1 policies earlier" they
+-- mention are the participant-based SELECT/INSERT policies before the base table.
+
+-- Users can view GROUP conversations they belong to (Feature 010 / #182).
+-- Access = the creator OR any member. The `created_by` clause is load-bearing
+-- for createGroup(): its INSERT ... RETURNING reads the new row back BEFORE the
+-- creator is added to conversation_members, so a membership-only check would
+-- 403 the returning select and break creation.
+DROP POLICY IF EXISTS "Members can view group conversations" ON conversations;
+CREATE POLICY "Members can view group conversations" ON conversations
+  FOR SELECT USING (
+    is_group = true
+    AND (created_by = auth.uid() OR is_conversation_member(id))
+  );
+
+-- Users can create GROUP conversations they own (Feature 010 / #182).
+-- Groups have participant_1_id/participant_2_id NULL (CHK023), so the 1:1
+-- "auth.uid() = participant_N" policies earlier can never authorize a group
+-- INSERT. The creator must be the owner (created_by); per-member access is
+-- enforced by the conversation_members policies.
+DROP POLICY IF EXISTS "Users can create group conversations" ON conversations;
+CREATE POLICY "Users can create group conversations" ON conversations
+  FOR INSERT WITH CHECK (
+    is_group = true AND created_by = auth.uid()
+  );
+
 -- SELECT: Members can see other members of their conversations
 DROP POLICY IF EXISTS "Members can view conversation members" ON conversation_members;
 CREATE POLICY "Members can view conversation members" ON conversation_members
@@ -2925,7 +2929,11 @@ END $$;
 -- referenced them, and handle_new_user was orphaned (no trigger fired it).
 -- Dropping handle_new_user/handle_updated_at also clears their
 -- function_search_path_mutable security-advisor flags.
-DROP TRIGGER IF EXISTS profiles_updated_at ON public.profiles;
+-- NOTE (#286): no explicit `DROP TRIGGER ... ON public.profiles` here — its
+-- IF EXISTS guards the TRIGGER, not the TABLE, so it ERRORs on a fresh install
+-- where public.profiles never exists (aborting the single-transaction init).
+-- DROP TABLE ... CASCADE below removes the legacy table and any trigger on it
+-- on an existing (prod) DB.
 DROP TABLE IF EXISTS public.audit_logs CASCADE;
 DROP TABLE IF EXISTS public.profiles CASCADE;
 DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
