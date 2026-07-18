@@ -378,7 +378,11 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
 
     await expect
       .poll(async () => wrapper.getAttribute('data-camera-position'), {
-        timeout: 3000,
+        // 10s (not 3s): on webkit's software WebGL under CI load the render
+        // loop that writes data-camera-position can lag the input event by
+        // >3s. The camera DOES move (these pass on retry) — the poll budget
+        // was just too tight, which flaked SC-004 (#300).
+        timeout: 10000,
         intervals: [100, 200, 500],
       })
       .not.toBe(initial);
@@ -408,7 +412,11 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
 
     await expect
       .poll(async () => wrapper.getAttribute('data-camera-position'), {
-        timeout: 3000,
+        // 10s (not 3s): on webkit's software WebGL under CI load the render
+        // loop that writes data-camera-position can lag the input event by
+        // >3s. The camera DOES move (these pass on retry) — the poll budget
+        // was just too tight, which flaked SC-004 (#300).
+        timeout: 10000,
         intervals: [100, 200, 500],
       })
       .not.toBe(initial);
@@ -467,7 +475,11 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
 
     await expect
       .poll(async () => wrapper.getAttribute('data-camera-position'), {
-        timeout: 3000,
+        // 10s (not 3s): on webkit's software WebGL under CI load the render
+        // loop that writes data-camera-position can lag the input event by
+        // >3s. The camera DOES move (these pass on retry) — the poll budget
+        // was just too tight, which flaked SC-004 (#300).
+        timeout: 10000,
         intervals: [100, 200, 500],
       })
       .not.toBe(initial);
