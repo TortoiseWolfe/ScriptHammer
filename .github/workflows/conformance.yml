@@ -1,0 +1,136 @@
+# RLS + provider-contract conformance gate (#265 / #280).
+#
+# This is the anti-drift alarm the #265 scoping called for. `pnpm test:rls`
+# runs in ZERO other workflows: the default `pnpm test --run` (ci.yml) EXCLUDES
+# tests/rls/** and both messaging-provider contract runners (vitest.config.ts).
+# So until now neither the Supabase RLS policies NOR the two backend providers
+# were gated in CI. This job closes that gap.
+#
+# It spins up a LOCAL, ephemeral dual-provider stack (local Supabase + the .NET
+# messaging server) and runs the full `pnpm test:rls` config against it:
+#   - tests/rls/**                         (the 75 RLS policies, 9 suites)
+#   - messaging-provider.supabase.test.ts  (C7-C14, [supabase])
+#   - messaging-provider.dotnet.test.ts    (C7-C14, [dotnet], live ASP.NET)
+# Verified 107/107 green locally before wiring.
+#
+# NOTE ON CONCURRENCY: unlike e2e.yml, this job does NOT need the repo-wide
+# `e2e-supabase` mutex. That mutex exists because every E2E run shares ONE cloud
+# Supabase project and races the others' cleanup hooks. This job uses its own
+# per-runner ephemeral Postgres, so two concurrent runs cannot race. A per-ref
+# group (cancel superseded runs) is all that's warranted.
+#
+# The creds below are the well-known PUBLIC Supabase self-hosting demo keys
+# (already committed in docker-compose.yml's x-supabase-env anchor) — LOCAL ONLY.
+
+name: Conformance
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/migrations/**'
+      - 'src/services/messaging/**'
+      - 'src/config/backend.config.ts'
+      - 'dotnet-messaging/**'
+      - 'tests/rls/**'
+      - 'tests/contract/**'
+      - 'tests/fixtures/test-users.ts'
+      - 'vitest.rls.config.ts'
+      - 'docker-compose.yml'
+      - '.github/workflows/conformance.yml'
+  workflow_dispatch:
+
+concurrency:
+  # Per-ref only. Each run owns an isolated local stack — no shared backend to
+  # serialize against (contrast e2e.yml's repo-wide e2e-supabase mutex).
+  group: conformance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rls-conformance:
+    name: RLS + provider conformance (local dual-provider stack)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Local demo env (compose + test share the same public demo creds)
+        run: |
+          # Satisfy compose's `.env` (interpolation defaults + any env_file) from
+          # the committed LOCAL-demo template.
+          cp .env.local-supabase .env
+          # The template's Supabase URL targets host.docker.internal (for the
+          # in-container app); the test runs on the RUNNER and reaches the
+          # published ports on localhost. Normalize so a .env load can't hand the
+          # test an unresolvable host.
+          sed -i 's|host\.docker\.internal|localhost|g' .env
+          # Export the anon + service-role keys (from the committed template, so
+          # they're never duplicated here) for the test process, plus the
+          # runner-reachable localhost URLs for the published stack ports. These
+          # are authoritative for the test's process.env.
+          grep -E '^(NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY)=' .env.local-supabase >> "$GITHUB_ENV"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321"
+            echo "DOTNET_API_URL=http://localhost:5099"
+          } >> "$GITHUB_ENV"
+
+      - name: Bring up the dual-provider stack (local Supabase + .NET)
+        run: |
+          # Only the services test:rls actually needs — NOT scripthammer (the
+          # test runs on the runner, not in the app container) and not the
+          # studio/mail/storage/realtime/meta extras.
+          docker compose --profile supabase --profile dotnet up -d --build \
+            supabase-db supabase-kong supabase-auth supabase-rest dotnet-messaging
+
+      - name: Wait for Postgres, Kong+Auth+REST, and the .NET server
+        env:
+          ANON: ${{ env.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        run: |
+          for i in $(seq 1 60); do
+            db=$(docker compose exec -T supabase-db pg_isready -U postgres -d postgres >/dev/null 2>&1 && echo ok || echo no)
+            rest=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 -H "apikey: $ANON" http://localhost:54321/rest/v1/ 2>/dev/null)
+            auth=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 -H "apikey: $ANON" http://localhost:54321/auth/v1/health 2>/dev/null)
+            net=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 http://localhost:5099/health 2>/dev/null)
+            echo "try $i: db=$db rest=$rest auth=$auth dotnet=$net"
+            if [ "$db" = ok ] && [ "$rest" = 200 ] && [ "$auth" = 200 ] && [ "$net" = 200 ]; then
+              echo "stack ready"; break
+            fi
+            if [ "$i" = 60 ]; then
+              echo "::error::stack did not become ready within ~5 min"
+              docker compose logs --tail=80 supabase-db supabase-auth supabase-rest supabase-kong dotnet-messaging
+              exit 1
+            fi
+            sleep 5
+          done
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.16.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate project configuration
+        run: node scripts/detect-project.js
+
+      - name: Run RLS + provider conformance (pnpm test:rls)
+        run: pnpm test:rls
+
+      - name: Dump stack logs on failure
+        if: failure()
+        run: docker compose logs --tail=120 supabase-db supabase-auth supabase-rest supabase-kong dotnet-messaging
+
+      - name: Tear down
+        if: always()
+        run: docker compose --profile supabase --profile dotnet down -v
