@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="820" height="700" viewBox="0 0 820 700" role="img" aria-label="Model City mockup — a SimCity-style board of eight Chattanooga neighborhoods over the Tennessee River, tinted by an equity lens, with a city-health score">
+  <defs>
+    <style>
+      .mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; }
+      .sans { font-family: 'Space Grotesk', system-ui, sans-serif; }
+    </style>
+  </defs>
+
+  <rect width="820" height="700" fill="#DED9CD"/>
+
+  <!-- ===== TOP BAR (city-health score) ===== -->
+  <g>
+    <rect x="20" y="20" width="780" height="58" rx="14" fill="#191C1A"/>
+    <text x="40" y="46" class="sans" font-weight="700" font-size="18" fill="#F5F3EC">Model City</text>
+    <rect x="150" y="33" width="66" height="18" rx="4" fill="#C98A2C"/>
+    <text x="158" y="46" class="mono" font-size="10" letter-spacing="1.5" fill="#191C1A" font-weight="600">GIG CITY</text>
+    <text x="40" y="65" class="mono" font-size="10.5" letter-spacing="1.2" fill="#9BA096">◍ CHATTANOOGA, TN · LIVE DIGITAL TWIN</text>
+    <text x="638" y="40" class="mono" font-size="9.5" letter-spacing="1.6" fill="#9BA096">CITY HEALTH</text>
+    <text x="700" y="66" class="sans" font-weight="700" font-size="34" fill="#F5F3EC" text-anchor="end">82</text>
+    <text x="706" y="66" class="sans" font-size="13" fill="#9BA096">/100</text>
+    <rect x="740" y="46" width="42" height="18" rx="4" fill="#26302A"/>
+    <text x="761" y="59" class="mono" font-size="11" font-weight="600" fill="#7FC79E" text-anchor="middle">+7</text>
+  </g>
+
+  <!-- ===== THE BOARD ===== -->
+  <g transform="translate(50,96)">
+    <rect x="0" y="0" width="720" height="600" rx="10" fill="#EDEAE0"/>
+
+    <!-- Tennessee River -->
+    <path d="M-20,150 C 90,150 150,150 210,182 C 250,205 250,205 300,224 C 360,246 400,244 470,244 C 560,244 560,300 560,372 C 560,470 610,516 760,548" fill="none" stroke="#A9CEDE" stroke-width="36" stroke-linecap="round" opacity="0.9"/>
+    <path d="M-20,150 C 90,150 150,150 210,182 C 250,205 250,205 300,224 C 360,246 400,244 470,244 C 560,244 560,300 560,372 C 560,470 610,516 760,548" fill="none" stroke="#CBE3EB" stroke-width="15" stroke-linecap="round"/>
+
+    <!-- Lookout Mountain -->
+    <path d="M18,600 L58,552 L104,586 L150,548 L196,600 Z" fill="#D2DDC9"/>
+    <text x="60" y="592" class="mono" font-size="10" letter-spacing="1" fill="#5E7157" style="paint-order:stroke;stroke:#EDEAE0;stroke-width:3px">LOOKOUT MTN</text>
+
+    <!-- District tiles (equity-lens fills: amber = higher investment need) -->
+    <g stroke="#D6D1C4" stroke-width="1.5">
+      <rect x="28"  y="28"  width="200" height="150" rx="14" fill="#E5D5BA"/>
+      <rect x="248" y="28"  width="200" height="150" rx="14" fill="#E8DDC9"/>
+      <rect x="468" y="28"  width="200" height="150" rx="14" fill="#DCBE8E"/>
+      <rect x="28"  y="198" width="200" height="150" rx="14" fill="#E2CEAC"/>
+      <rect x="248" y="198" width="200" height="150" rx="14" fill="#D8B177"/>
+      <rect x="468" y="198" width="200" height="150" rx="14" fill="#DAB781"/>
+      <rect x="28"  y="368" width="200" height="150" rx="14" fill="#DFC49A"/>
+      <rect x="248" y="368" width="200" height="150" rx="14" fill="#D2A259"/>
+    </g>
+    <!-- Riverpark greenway (non-interactive) -->
+    <rect x="468" y="368" width="200" height="150" rx="14" fill="#DDE7D2" stroke="#CBD6BE" stroke-width="1.5" stroke-dasharray="4 5"/>
+
+    <g class="sans" font-weight="600" font-size="16" fill="#23261F" style="paint-order:stroke;stroke:#FBFAF6;stroke-width:3px">
+      <text x="44"  y="56">North Shore</text>
+      <text x="264" y="56">Downtown</text>
+      <text x="484" y="56">Highland Park</text>
+      <text x="44"  y="226">Southside</text>
+      <text x="264" y="226">East Lake</text>
+      <text x="484" y="226">Brainerd</text>
+      <text x="44"  y="396">St. Elmo</text>
+      <text x="264" y="396">Alton Park</text>
+    </g>
+    <text x="484" y="396" class="sans" font-weight="600" font-size="15" fill="#5E7157">Riverpark</text>
+    <text x="484" y="416" class="mono" font-size="10" letter-spacing="1" fill="#7E8C72">GREENWAY · PARKS</text>
+
+    <!-- Landmarks -->
+    <circle cx="348" cy="70" r="4.5" fill="#2F6DB0"/>
+    <text x="358" y="74" class="mono" font-size="9.5" fill="#4A6B82">Aquarium</text>
+    <line x1="238" y1="150" x2="238" y2="196" stroke="#8A6318" stroke-width="3" stroke-linecap="round"/>
+    <text x="150" y="192" class="mono" font-size="9" fill="#8A6318">Walnut St Br</text>
+    <text x="600" y="150" class="sans" font-style="italic" font-size="15" fill="#5E8394">Tennessee R.</text>
+    <g transform="translate(690,40)">
+      <circle r="13" fill="none" stroke="#B7AF9C" stroke-width="1.3"/>
+      <text x="0" y="-3" text-anchor="middle" class="mono" font-size="9" fill="#8A8F84">N</text>
+      <path d="M0,-9 L3,2 L0,-1 L-3,2 Z" fill="#B5645C"/>
+    </g>
+
+    <!-- Placed "proposal" markers (the build mechanic) -->
+    <g class="mono" font-weight="600" font-size="12" text-anchor="middle">
+      <g transform="translate(128,300)"><rect x="-13" y="-13" width="26" height="26" rx="7" fill="#2E8B57" stroke="#FBFAF6" stroke-width="2"/><text y="4" fill="#fff">P</text></g>
+      <g transform="translate(348,470)"><rect x="-13" y="-13" width="26" height="26" rx="7" fill="#C98A2C" stroke="#FBFAF6" stroke-width="2"/><text y="4" fill="#fff">H</text></g>
+      <g transform="translate(150,470)"><rect x="-13" y="-13" width="26" height="26" rx="7" fill="#5B7CB0" stroke="#FBFAF6" stroke-width="2"/><text y="4" fill="#fff">B</text></g>
+    </g>
+
+    <!-- Equity-lens legend -->
+    <g transform="translate(546,494)">
+      <rect x="0" y="0" width="164" height="96" rx="9" fill="#FBFAF6" stroke="#E2DDD0" opacity="0.96"/>
+      <text x="12" y="22" class="mono" font-size="9" letter-spacing="1" fill="#8A8F84">EQUITY LENS · INVESTMENT NEED</text>
+      <rect x="12" y="32" width="13" height="13" rx="3" fill="#D2A259"/><text x="32" y="43" class="sans" font-size="11" fill="#4A4E48">Higher need</text>
+      <rect x="12" y="53" width="13" height="13" rx="3" fill="#E0C9A0"/><text x="32" y="64" class="sans" font-size="11" fill="#4A4E48">Mid</text>
+      <rect x="12" y="74" width="13" height="13" rx="3" fill="#ECE8DE" stroke="#D6D1C4"/><text x="32" y="85" class="sans" font-size="11" fill="#4A4E48">Well-served</text>
+    </g>
+  </g>
+</svg>

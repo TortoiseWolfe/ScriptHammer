@@ -309,19 +309,23 @@ test.describe('Offline Message Queue', () => {
       // ===== STEP 5: Verify retry delays =====
       expect(attemptCount).toBeGreaterThanOrEqual(3);
 
-      // Calculate delays between attempts
+      // The provider's networkDelays are [1000, 2000] here, applied with
+      // setTimeout — which guarantees a MINIMUM elapsed time, never a maximum.
+      // Asserting an upper bound (delay < 2000/3000) tests something setTimeout
+      // does not promise: under CI load (esp. firefox) the wall-clock gap
+      // between intercepted attempts routinely overshoots the ceiling, which is
+      // exactly what flaked T148 (#300). Assert the floor + that the second
+      // delay grew — the real "exponential backoff" behavior under test.
       if (retryTimestamps.length >= 2) {
         const delay1 = retryTimestamps[1] - retryTimestamps[0];
-        // First retry should be ~1s (1000ms)
-        expect(delay1).toBeGreaterThanOrEqual(900); // Allow 100ms margin
-        expect(delay1).toBeLessThan(2000);
+        expect(delay1).toBeGreaterThanOrEqual(900); // ~1s floor (100ms margin)
       }
 
       if (retryTimestamps.length >= 3) {
+        const delay1 = retryTimestamps[1] - retryTimestamps[0];
         const delay2 = retryTimestamps[2] - retryTimestamps[1];
-        // Second retry should be ~2s (2000ms)
-        expect(delay2).toBeGreaterThanOrEqual(1800);
-        expect(delay2).toBeLessThan(3000);
+        expect(delay2).toBeGreaterThanOrEqual(1800); // ~2s floor
+        expect(delay2).toBeGreaterThan(delay1); // backoff grew (exponential)
       }
     } finally {
       await viewer.close();
