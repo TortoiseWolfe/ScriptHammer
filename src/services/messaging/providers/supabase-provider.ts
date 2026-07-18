@@ -366,8 +366,10 @@ export class SupabaseMessagingProvider implements MessagingDataProvider {
   }
 
   /**
-   * (C11) Only marks messages that are not already read. RLS restricts this to
-   * non-sender participants of the conversation.
+   * (C11) Only marks messages that are not already read. RLS + the #281
+   * column-guard restrict this to conversation participants and to the `read_at`
+   * column only; a sender self-marking their own message is allowed (benign — a
+   * read receipt carries no security consequence).
    */
   async markAsRead(_ctx: AuthContext, messageIds: string[]): Promise<void> {
     if (messageIds.length === 0) return;
