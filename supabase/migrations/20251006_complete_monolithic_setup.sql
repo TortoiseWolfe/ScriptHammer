@@ -2310,6 +2310,25 @@ GRANT ALL ON user_encryption_keys TO authenticated, service_role;
 GRANT ALL ON conversation_keys TO authenticated, service_role;
 GRANT ALL ON typing_indicators TO authenticated, service_role;
 
+-- ── Least-privilege role for the .NET messaging backend (#321) ──────────────
+-- The ASP.NET Core backend (dotnet-messaging/) must connect as a NON-superuser,
+-- NON-owner role so RLS + the #281 column-guard trigger apply as a live backstop
+-- behind its C# checks (the postgres superuser/owner bypasses both, which is why
+-- the C# checks were previously the sole guard). Per request it runs
+-- `SET LOCAL ROLE authenticated` + sets request.jwt.claims (the PostgREST model),
+-- so auth.uid() resolves in-DB and the participant-scoped RLS policies + the
+-- trigger enforce. It is granted ONLY `authenticated` (NOT service_role), so it
+-- cannot SET ROLE into a BYPASSRLS role. NOINHERIT so it gains authenticated's
+-- privileges only via the explicit per-request SET ROLE. The password is set
+-- per-environment (docker/supabase/roles.sql locally; injected in prod) — never
+-- committed here.
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'dotnet_app') THEN
+    CREATE ROLE dotnet_app LOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;
+  END IF;
+END $$;
+GRANT authenticated TO dotnet_app;
+
 -- ============================================================================
 -- PART 10.5: GROUP CHAT SUPPORT (Feature 010)
 -- ============================================================================

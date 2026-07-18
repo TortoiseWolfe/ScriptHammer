@@ -26,6 +26,11 @@ ALTER ROLE authenticator           WITH PASSWORD :'pgpass';
 ALTER ROLE supabase_auth_admin     WITH PASSWORD :'pgpass';
 ALTER ROLE supabase_storage_admin  WITH PASSWORD :'pgpass';
 ALTER ROLE supabase_read_only_user WITH PASSWORD :'pgpass';
+-- dotnet_app (#321): the least-privilege role the .NET backend logs in as. It is
+-- CREATEd by the app monolithic migration (99999999999999_app_monolithic), which
+-- runs before this /etc/postgresql.schema.sql hook, so it exists by now. Locally
+-- it shares POSTGRES_PASSWORD; prod injects a distinct DOTNET_DB_PASSWORD.
+ALTER ROLE dotnet_app              WITH PASSWORD :'pgpass';
 
 -- ── 2. _realtime schema ────────────────────────────────────────────────────
 -- Not the same thing as the `realtime` schema (no underscore) that base

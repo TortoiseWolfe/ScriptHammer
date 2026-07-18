@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MessagingApi.Data;
+using MessagingApi.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -148,6 +149,10 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+// Set the Postgres RLS actor per authenticated request (#321) — runs after
+// auth (needs HttpContext.User) and before the controllers, so their DB work
+// enlists in the actor's transaction. Anonymous requests (/health) are skipped.
+app.UseMiddleware<RlsActorMiddleware>();
 app.MapControllers();
 
 app.Run();
