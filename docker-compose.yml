@@ -97,10 +97,10 @@ services:
   # A separate container makes the collision structurally impossible instead:
   # same image, same source, but its OWN .next volume. Nothing to remember.
   #
-  # Deliberately NOT `target: builder` — that stage builds at image-build time
-  # against a COPY of the source, and its downstream `runner` is dead anyway
-  # (#275: output:'export' never emits .next/standalone). We want the dev
-  # toolchain run against the live bind mount, which is what `dev` gives us.
+  # Uses `target: dev`, NOT a dedicated build stage: the former `builder`/`runner`
+  # production stages were REMOVED in #275 (output:'export' never emits
+  # .next/standalone, so the standalone `runner` could never build). We run the
+  # dev toolchain against the live bind mount and build via `pnpm build` below.
   #
   # `profiles:` is required, not cosmetic: without it `docker compose up` would
   # start this service too, and it inherits CMD ["pnpm","run","dev"] from the
