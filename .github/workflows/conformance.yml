@@ -87,9 +87,13 @@ jobs:
             supabase-db supabase-kong supabase-auth supabase-rest dotnet-messaging
 
       - name: Wait for Postgres, Kong+Auth+REST, and the .NET server
-        env:
-          ANON: ${{ env.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         run: |
+          # GitHub Actions runs this with `bash -eo pipefail`. The probes below
+          # are EXPECTED to fail on early iterations (services still starting);
+          # `set +e` stops `set -e` from aborting the loop on the first failed
+          # curl/exec so it can actually retry.
+          set +e
+          ANON="$NEXT_PUBLIC_SUPABASE_ANON_KEY"
           for i in $(seq 1 60); do
             db=$(docker compose exec -T supabase-db pg_isready -U postgres -d postgres >/dev/null 2>&1 && echo ok || echo no)
             rest=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 -H "apikey: $ANON" http://localhost:54321/rest/v1/ 2>/dev/null)
