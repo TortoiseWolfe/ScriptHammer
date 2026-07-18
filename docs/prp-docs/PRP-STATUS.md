@@ -13,6 +13,17 @@
 
 ---
 
+## 2026-07-18 — Model City / Chattanooga Digital Twin (feature 049) — PRD + PRP drafted
+
+Concept extracted from the Claude Design prototypes into ScriptHammer docs (no code yet):
+
+- **`model-city-prd.md`** (repo root) — the full vision: one project, three planes over the _existing_ `/chatt` twin (Tools / Play / Docs), equity-weighted, "explainable over accurate."
+- **`docs/prp-docs/model-city-prp.md`** — scoped PRP for the **first slice** (the Model City planning board; alternative slice = the Registry + Civic League civic loop).
+- **Status: Draft** (pre-SpecKit). Next: `./scripts/prp-to-feature.sh model-city 049` → `/speckit.specify`. Live roadmap: issue #115 (queued as the GreenField / Model City arc).
+- Phase 0 (the browser twin) already ships as the `/chatt` Cesium atlas + `scripts/bake/` (#229/#232); the PRD documents net-new (registry / league / board / city-ops / vision) vs. built.
+
+---
+
 ## v0.4.x updates since 2026-04-25 audit
 
 Six PRs landed 2026-05-12 to 2026-05-14 closing the round-10 E2E flake pattern and improving fork-onboarding:

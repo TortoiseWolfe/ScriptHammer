@@ -265,6 +265,18 @@ graph TD
 
 ---
 
+## Enhancements (post-v0.4 audit — not in the 47-feature count above)
+
+| Order | Feature | Name                                  | Status                                                                  | Depends On                |
+| ----- | ------- | ------------------------------------- | ----------------------------------------------------------------------- | ------------------------- |
+| —     | **047** | Three.js Game (`/game/3d`)            | Shipped (PR #95)                                                        | 006                       |
+| —     | **048** | Combined Arms (squad FPS)             | Specified (`features/enhancements/048-combined-arms/`)                  | 047                       |
+| —     | **049** | Model City / Chattanooga Digital Twin | **PRP draft** — `model-city-prd.md` · `docs/prp-docs/model-city-prp.md` | the `/chatt` twin (built) |
+
+Model City's Phase 0 (the browser twin) already ships as the `/chatt` Cesium atlas + `scripts/bake/`; feature **049** builds the net-new registry / Civic League / planning-board planes on top. First slice = the Model City planning board (see the PRP). Live roadmap: issue #115.
+
+---
+
 ## Related Documents
 
 | Document          | Location                               |
