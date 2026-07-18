@@ -200,13 +200,17 @@ export class DotnetMessagingProvider implements MessagingDataProvider {
     const q = new URLSearchParams();
     if (params.cursor !== null) q.set('cursor', String(params.cursor));
     q.set('limit', String(params.limit));
-    return this.request<MessagesPage>(
+    // The server emits snake_case (global JsonNamingPolicy.SnakeCaseLower), so
+    // the pagination flag arrives as `has_more`; map it to the domain's camelCase
+    // `hasMore` (the rows are already snake_case MessageRow, matching the wire).
+    const raw = await this.request<{ rows: MessageRow[]; has_more: boolean }>(
       ctx,
       'GET',
       `/api/messaging/conversations/${encodeURIComponent(
         params.conversationId
       )}/messages?${q.toString()}`
     );
+    return { rows: raw.rows, hasMore: raw.has_more };
   }
 
   /**

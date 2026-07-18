@@ -36,6 +36,12 @@ export interface ConformanceHarness {
   userBId: string;
   conversationId: string;
 
+  /**
+   * A GROUP conversation (is_group=true) with userA + userB as active members;
+   * the outsider is NOT a member. For C1/C2 group-scoping cases.
+   */
+  groupConversationId: string;
+
   /** Provider bound to userA's authenticated session. */
   providerA: MessagingDataProvider;
   ctxA: AuthContext;
@@ -51,11 +57,14 @@ export interface ConformanceHarness {
    * Insert a message row directly via the service client (bypasses RLS +
    * sequence trigger control), returning the row id. `createdAtIso` lets a test
    * backdate a message to exercise the 15-minute edit window (C10).
+   * `conversationId` defaults to the 1:1 conversation; pass the group id for
+   * group cases.
    */
   seedMessage(opts: {
     senderId: string;
     ciphertext?: string;
     createdAtIso?: string;
+    conversationId?: string;
   }): Promise<{ id: string }>;
 
   /** Read a message row directly (service client) for assertions. */
@@ -65,7 +74,17 @@ export interface ConformanceHarness {
     edited: boolean;
     encrypted_content: string;
     read_at: string | null;
+    delivered_at: string | null;
     sequence_number: number;
+  } | null>;
+
+  /** Read a conversation row directly (service client) for archive/meta asserts. */
+  readConversation(id: string): Promise<{
+    id: string;
+    is_group: boolean;
+    participant_1_id: string | null;
+    archived_by_participant_1: boolean;
+    archived_by_participant_2: boolean;
   } | null>;
 }
 
@@ -303,6 +322,135 @@ export function runMessagingProviderContract(config: ConformanceConfig): void {
       });
       const withCgid = all.rows.filter((r) => r.client_generated_id === cgid);
       expect(withCgid.length).toBe(1);
+    });
+
+    // ── C7 — getMessageById is membership-scoped ─────────────────────────
+    it('C7: getMessageById returns the row for a participant, null for an outsider', async () => {
+      const { id } = await h.seedMessage({
+        senderId: h.userAId,
+        ciphertext: 'YnlJZA==', // base64("byId")
+      });
+      const asParticipant = await h.providerA.getMessageById(h.ctxA, id);
+      expect(asParticipant?.id).toBe(id);
+      const asOutsider = await h.providerOutsider.getMessageById(
+        h.ctxOutsider,
+        id
+      );
+      expect(asOutsider).toBeNull();
+    });
+
+    // ── getProfiles — batch display-name/avatar lookup ───────────────────
+    it('getProfiles returns the requested users profiles', async () => {
+      const profiles = await h.providerA.getProfiles(h.ctxA, [
+        h.userAId,
+        h.userBId,
+      ]);
+      const ids = profiles.map((p) => p.id).sort();
+      expect(ids).toEqual([h.userAId, h.userBId].sort());
+    });
+
+    // ── markAsDelivered — participant-scoped receipt (delivered_at only) ──
+    it('markAsDelivered sets delivered_at for a participant', async () => {
+      const { id } = await h.seedMessage({ senderId: h.userAId });
+      await h.providerB.markAsDelivered(h.ctxB, [id]);
+      const row = await h.readMessage(id);
+      expect(row?.delivered_at).not.toBeNull();
+    });
+
+    it('markAsDelivered by a non-participant outsider does not set delivered_at', async () => {
+      const { id } = await h.seedMessage({ senderId: h.userAId });
+      await h.providerOutsider
+        .markAsDelivered(h.ctxOutsider, [id])
+        .catch(() => {
+          /* the row check is authoritative */
+        });
+      const row = await h.readMessage(id);
+      expect(row?.delivered_at).toBeNull();
+    });
+
+    // ── C7 — pagination: newest-first, cursor + hasMore ──────────────────
+    it('C7: getMessages paginates newest-first with a cursor and hasMore', async () => {
+      // The shared conversation already carries several messages from prior
+      // cases; add a few more so a small page definitely reports hasMore.
+      for (let i = 0; i < 3; i++) await h.seedMessage({ senderId: h.userAId });
+
+      const page1 = await h.providerA.getMessages(h.ctxA, {
+        conversationId: h.conversationId,
+        cursor: null,
+        limit: 2,
+      });
+      expect(page1.rows.length).toBe(2);
+      expect(page1.hasMore).toBe(true);
+      // newest-first: descending by sequence_number.
+      expect(page1.rows[0].sequence_number).toBeGreaterThan(
+        page1.rows[1].sequence_number
+      );
+
+      const cursor = page1.rows[page1.rows.length - 1].sequence_number;
+      const page2 = await h.providerA.getMessages(h.ctxA, {
+        conversationId: h.conversationId,
+        cursor,
+        limit: 2,
+      });
+      // The next page is strictly older than the cursor (no overlap, no gap-skip).
+      expect(page2.rows.every((r) => r.sequence_number < cursor)).toBe(true);
+    });
+
+    // ── C5 — archive is a per-participant view flag ──────────────────────
+    it('C5: a participant can archive then unarchive their own view', async () => {
+      await h.providerA.archiveConversation(h.ctxA, h.conversationId);
+      let conv = await h.readConversation(h.conversationId);
+      const aIsP1 = conv?.participant_1_id === h.userAId;
+      const aFlag = () =>
+        aIsP1
+          ? conv?.archived_by_participant_1
+          : conv?.archived_by_participant_2;
+      const otherFlag = () =>
+        aIsP1
+          ? conv?.archived_by_participant_2
+          : conv?.archived_by_participant_1;
+      expect(aFlag()).toBe(true);
+      // The other participant's view is untouched.
+      expect(otherFlag()).toBe(false);
+
+      await h.providerA.unarchiveConversation(h.ctxA, h.conversationId);
+      conv = await h.readConversation(h.conversationId);
+      expect(aFlag()).toBe(false);
+    });
+
+    // ── C1/C2 — group membership scoping ─────────────────────────────────
+    it('C1/C2: a group member can read the group; a non-member cannot', async () => {
+      await h.seedMessage({
+        senderId: h.userAId,
+        conversationId: h.groupConversationId,
+        ciphertext: 'Z3JvdXA=', // base64("group")
+      });
+
+      const metaMember = await h.providerA.getConversationMeta(
+        h.ctxA,
+        h.groupConversationId
+      );
+      expect(metaMember).not.toBeNull();
+      expect(metaMember?.is_group).toBe(true);
+      const pageMember = await h.providerA.getMessages(h.ctxA, {
+        conversationId: h.groupConversationId,
+        cursor: null,
+        limit: 50,
+      });
+      expect(pageMember.rows.length).toBeGreaterThan(0);
+
+      // The outsider is not a member — no metadata, no rows leaked.
+      const metaOutsider = await h.providerOutsider.getConversationMeta(
+        h.ctxOutsider,
+        h.groupConversationId
+      );
+      expect(metaOutsider).toBeNull();
+      const pageOutsider = await h.providerOutsider.getMessages(h.ctxOutsider, {
+        conversationId: h.groupConversationId,
+        cursor: null,
+        limit: 50,
+      });
+      expect(pageOutsider.rows).toEqual([]);
     });
   });
 }

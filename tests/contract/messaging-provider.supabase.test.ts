@@ -103,6 +103,32 @@ if (!hasRlsTestEnvironment()) {
       }
       const conversationId = conv.id;
 
+      // A GROUP conversation with userA (creator) + userB as active members;
+      // the outsider is deliberately NOT a member (C1/C2 scoping).
+      const { data: group, error: groupErr } = await svc
+        .from('conversations')
+        .insert({
+          // Groups carry NULL participants (check_group_participants); membership
+          // is in conversation_members. Access is creator-or-active-member only.
+          participant_1_id: null,
+          participant_2_id: null,
+          is_group: true,
+          current_key_version: 1,
+          created_by: userA.id,
+        })
+        .select()
+        .single();
+      if (groupErr || !group) {
+        throw new Error(
+          `Failed to seed group conversation: ${groupErr?.message ?? 'no row'}`
+        );
+      }
+      const groupConversationId = group.id;
+      await svc.from('conversation_members').insert([
+        { conversation_id: groupConversationId, user_id: userA.id },
+        { conversation_id: groupConversationId, user_id: userB.id },
+      ]);
+
       const a = await buildProviderFor(EMAILS.a);
       const b = await buildProviderFor(EMAILS.b);
       const out = await buildProviderFor(EMAILS.outsider);
@@ -113,9 +139,10 @@ if (!hasRlsTestEnvironment()) {
         senderId,
         ciphertext = 'c2VlZA==',
         createdAtIso,
+        conversationId: convId,
       }) => {
         const row: Record<string, unknown> = {
-          conversation_id: conversationId,
+          conversation_id: convId ?? conversationId,
           sender_id: senderId,
           encrypted_content: ciphertext,
           initialization_vector: 'aXY=',
@@ -138,7 +165,20 @@ if (!hasRlsTestEnvironment()) {
         const { data } = await svc
           .from('messages')
           .select(
-            'id, deleted, edited, encrypted_content, read_at, sequence_number'
+            'id, deleted, edited, encrypted_content, read_at, delivered_at, sequence_number'
+          )
+          .eq('id', id)
+          .maybeSingle();
+        return data ?? null;
+      };
+
+      const readConversation: ConformanceHarness['readConversation'] = async (
+        id
+      ) => {
+        const { data } = await svc
+          .from('conversations')
+          .select(
+            'id, is_group, participant_1_id, archived_by_participant_1, archived_by_participant_2'
           )
           .eq('id', id)
           .maybeSingle();
@@ -150,6 +190,7 @@ if (!hasRlsTestEnvironment()) {
         userAId: userA.id,
         userBId: userB.id,
         conversationId,
+        groupConversationId,
         providerA: a.provider,
         ctxA: a.ctx,
         providerB: b.provider,
@@ -159,13 +200,21 @@ if (!hasRlsTestEnvironment()) {
         ctxOutsider: out.ctx,
         seedMessage,
         readMessage,
+        readConversation,
       };
     },
 
     async teardown(h: ConformanceHarness): Promise<void> {
       const { svc } = h as SupabaseHarness;
       // Cascade: deleting the conversation drops its messages; then the users.
-      await svc.from('conversations').delete().eq('id', h.conversationId);
+      await svc
+        .from('conversation_members')
+        .delete()
+        .eq('conversation_id', h.groupConversationId);
+      await svc
+        .from('conversations')
+        .delete()
+        .in('id', [h.conversationId, h.groupConversationId]);
       await svc
         .from('user_connections')
         .delete()
