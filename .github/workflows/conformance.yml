@@ -76,6 +76,11 @@ jobs:
           {
             echo "NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321"
             echo "DOTNET_API_URL=http://localhost:5099"
+            # Raw Postgres (for the #321 dotnet_app backstop test) — published on
+            # the runner at localhost:54322; in-container the test defaults to
+            # supabase-db:5432.
+            echo "SUPABASE_DB_HOST=localhost"
+            echo "SUPABASE_DB_PORT=54322"
           } >> "$GITHUB_ENV"
 
       - name: Bring up the dual-provider stack (local Supabase + .NET)

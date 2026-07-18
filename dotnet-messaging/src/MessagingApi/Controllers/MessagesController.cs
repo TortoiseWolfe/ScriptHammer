@@ -10,8 +10,10 @@ namespace MessagingApi.Controllers;
 /// <summary>
 /// Per-message endpoints. Re-expresses the messages RLS/trigger contract in C#:
 /// C7 (read scoping), C9 (sender-only edit), C10 (15-min window), C11 (recipient
-/// mark-read), C12 (soft-delete). The Supabase #281 column-guard trigger exempts
-/// this backend's privileged DB connection, so these checks are the sole guard.
+/// mark-read), C12 (soft-delete). Since #321 the backend connects as the
+/// least-privilege dotnet_app role with the RLS actor set per request, so the
+/// Supabase #281 column-guard trigger + RLS now FIRE as a live backstop — these
+/// C# checks are the first layer, no longer the sole guard.
 /// </summary>
 [ApiController]
 [Route("api/messaging")]
