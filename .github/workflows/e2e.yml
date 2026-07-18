@@ -1103,6 +1103,25 @@ jobs:
       - name: Merge reports
         run: pnpm exec playwright merge-reports --reporter=html,github ./all-blob-reports
 
+      - name: Flaky-count honesty gate (#300)
+        if: always()
+        env:
+          # annotate-first: surface flakes loudly (one job-summary table + one
+          # annotation per flake) WITHOUT redding main while #300's four known
+          # flakes are still open. `retries: 2` reports a flake as a PASS, which
+          # is how four rode into main behind green ticks; this makes them
+          # unmissable. Flip to "block" once #300 is clear so no NEW flake can
+          # ride in behind a green tick again.
+          FLAKY_GATE_MODE: annotate
+        run: |
+          # Own json merge (separate from the html/github merge above) → stdout →
+          # file. The json reporter with no outputFile writes clean JSON to
+          # stdout; the redirect captures it. Robust — no dependency on
+          # PLAYWRIGHT_JSON_OUTPUT_NAME. merge-reports reads the blobs read-only,
+          # so a second pass is safe.
+          pnpm exec playwright merge-reports --reporter=json ./all-blob-reports > flaky-report.json
+          node scripts/check-flaky-count.mjs flaky-report.json
+
       - name: Upload HTML report
         uses: actions/upload-artifact@v6
         with:
