@@ -241,8 +241,11 @@ export interface MessagingDataProvider {
 
   /**
    * Mark messages read.
-   * (C11) Only a non-sender participant may set read state; the sender cannot
-   *       self-mark.
+   * (C11) Any conversation participant may set read state, and ONLY the
+   *       `read_at` column is ever mutated (never ciphertext — the #281
+   *       column-guard class). A sender self-marking their own message is
+   *       allowed (benign — a read receipt carries no security consequence);
+   *       non-participants cannot mark. Idempotent: already-read ids are ignored.
    */
   markAsRead(ctx: AuthContext, messageIds: string[]): Promise<void>;
 

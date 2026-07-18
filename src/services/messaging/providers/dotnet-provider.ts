@@ -247,9 +247,11 @@ export class DotnetMessagingProvider implements MessagingDataProvider {
   }
 
   /**
-   * (C11) Server MUST restrict to non-sender participants and to the `read_at`
+   * (C11) Server MUST restrict to conversation participants and to the `read_at`
    *       column only (never let mark-read mutate ciphertext — the #281 class of
-   *       bug). Idempotent: already-read ids are ignored.
+   *       bug). A sender self-marking their own message is allowed (benign — a
+   *       read receipt has no security consequence). Idempotent: already-read
+   *       ids are ignored.
    */
   async markAsRead(ctx: AuthContext, messageIds: string[]): Promise<void> {
     if (messageIds.length === 0) return;
