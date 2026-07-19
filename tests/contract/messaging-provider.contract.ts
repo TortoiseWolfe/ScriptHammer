@@ -3,7 +3,8 @@
  *
  * ONE set of authorization + data-contract assertions, parametrized over a
  * provider factory, so BOTH the Supabase and the .NET providers are measured
- * against the IDENTICAL contract (C1–C29 from the #266 plan). This is the
+ * against the IDENTICAL contract (the 13 named clauses catalogued in
+ * `docs/messaging/AUTHORIZATION-CONTRACT.md`). This is the
  * anti-drift alarm across the Supabase↔.NET seam: if the .NET server ever drops
  * a rule (e.g. the 15-minute edit window), the same test that passes on Supabase
  * goes red on .NET.
@@ -22,6 +23,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import type {
   AuthContext,
+  ChangeEvent,
   MessagingDataProvider,
 } from '@/services/messaging/providers';
 
@@ -451,6 +453,53 @@ export function runMessagingProviderContract(config: ConformanceConfig): void {
         limit: 50,
       });
       expect(pageOutsider.rows).toEqual([]);
+    });
+
+    // ── C29 — realtime is a refetch trigger; the read is the authz boundary ──
+    // The two providers reach C29 differently: Supabase fires RLS-filtered
+    // `postgres_changes` events that DO carry a row payload; the .NET fallback
+    // fires payload-free polling ticks. Neither can be asserted by a single
+    // "payload shape" check, and a live-delivery wait would be flaky AND would
+    // hang the conformance stack (which omits the realtime container). So this
+    // case asserts the guarantee that holds regardless of what realtime delivers:
+    // an outsider's AUTHORIZED refetch surfaces nothing, and any event that did
+    // arrive carries no readable row. See docs/messaging/AUTHORIZATION-CONTRACT.md.
+    it('C29: an outsider subscription never yields a readable row (no-leak by construction)', async () => {
+      const events: ChangeEvent[] = [];
+      const sub = h.providerOutsider.realtime.subscribe(
+        h.ctxOutsider,
+        { table: 'messages', channelKey: `c29-${h.conversationId}` },
+        (e) => events.push(e)
+      );
+      try {
+        expect(typeof sub.unsubscribe).toBe('function');
+
+        // A change the outsider must never obtain via realtime.
+        await h.seedMessage({
+          senderId: h.userAId,
+          ciphertext: 'cmVhbHRpbWU=', // base64("realtime")
+        });
+
+        // The guarantee: the change signal is only a trigger; the scoped read is
+        // the authorization boundary (already proven for participant-vs-outsider
+        // above). Whatever the realtime layer delivered, the outsider's authorized
+        // refetch surfaces nothing.
+        const page = await h.providerOutsider.getMessages(h.ctxOutsider, {
+          conversationId: h.conversationId,
+          cursor: null,
+          limit: 50,
+        });
+        expect(page.rows).toEqual([]);
+
+        // Any event that did arrive must not carry a readable row: the .NET poll
+        // fires payload-free ticks (new === null); Supabase's channel is
+        // RLS-filtered, so an outsider receives no message event at all. Either
+        // way, no ciphertext leaks through the realtime seam.
+        for (const e of events) expect(e.new).toBeNull();
+      } finally {
+        // Safe/idempotent on both providers; needs no realtime container.
+        sub.unsubscribe();
+      }
     });
   });
 }

@@ -316,17 +316,18 @@ See `README.md` for the complete list of available secrets.
 
 ## Documentation
 
-| Topic               | Location                               |
-| ------------------- | -------------------------------------- |
-| Authentication      | `docs/AUTH-SETUP.md`                   |
-| Messaging System    | `docs/messaging/QUICKSTART.md`         |
-| Payment Integration | `docs/features/payment-integration.md` |
-| Security            | `docs/project/SECURITY.md`             |
-| Mobile-First Design | `docs/MOBILE-FIRST.md`                 |
-| Component Creation  | `docs/CREATING_COMPONENTS.md`          |
-| Template Setup      | `docs/TEMPLATE-GUIDE.md`               |
-| Testing Guide       | `docs/project/TESTING.md`              |
-| Forking Guide       | `docs/FORKING.md`                      |
+| Topic               | Location                                   |
+| ------------------- | ------------------------------------------ |
+| Authentication      | `docs/AUTH-SETUP.md`                       |
+| Messaging System    | `docs/messaging/QUICKSTART.md`             |
+| Messaging Contract  | `docs/messaging/AUTHORIZATION-CONTRACT.md` |
+| Payment Integration | `docs/features/payment-integration.md`     |
+| Security            | `docs/project/SECURITY.md`                 |
+| Mobile-First Design | `docs/MOBILE-FIRST.md`                     |
+| Component Creation  | `docs/CREATING_COMPONENTS.md`              |
+| Template Setup      | `docs/TEMPLATE-GUIDE.md`                   |
+| Testing Guide       | `docs/project/TESTING.md`                  |
+| Forking Guide       | `docs/FORKING.md`                          |
 
 ## Supabase Database Migrations (CRITICAL)
 

@@ -10,8 +10,10 @@ Supabase→.NET migration) and the enterprise-readiness epic #280.
 
 The `DotnetMessagingProvider` (in the Next.js app) calls this server's REST API
 (`/api/messaging/...`). Because a .NET backend has no in-database `auth.uid()`,
-this server **re-expresses the RLS authorization contract (C1–C29) explicitly in
-C#**: it validates the Supabase JWT, extracts the caller's `sub`, and enforces
+this server **re-expresses the RLS authorization contract explicitly in C#** (the
+13 named clauses catalogued in
+[`docs/messaging/AUTHORIZATION-CONTRACT.md`](../docs/messaging/AUTHORIZATION-CONTRACT.md)):
+it validates the Supabase JWT, extracts the caller's `sub`, and enforces
 membership scoping, sender-only edit + 15-minute window, recipient-only mark-read,
 soft-delete, etc. — the identical contract the shared conformance suite measures.
 
@@ -72,7 +74,7 @@ Env the server reads: `ConnectionStrings__DefaultConnection`, `SUPABASE_JWT_SECR
 ## Conformance
 
 The shared suite (`tests/contract/messaging-provider.contract.ts`) runs the
-IDENTICAL C1–C29 assertions against this server via the `.dotnet` runner:
+IDENTICAL contract assertions against this server via the `.dotnet` runner:
 
 ```bash
 DOTNET_API_URL=http://127.0.0.1:5099 pnpm test:rls
@@ -87,15 +89,17 @@ turns the same test that passes on Supabase red on .NET.
 the cloud project's Postgres is IPv6-only and unreachable from the container, run
 against a local full Supabase stack instead (see the local-init caveat below).
 
-## Status / known gaps
+## Status
 
-- ✅ Server implements all 10 endpoints + the C1–C29 authorization contract in C#;
+- ✅ Server implements all 10 endpoints + the messaging authorization contract in C#;
   compiles (`dotnet publish -c Release`), boots, connects to Postgres, validates
-  real ES256 Supabase JWTs; the conformance harness drives it end-to-end.
-- ⚠️ A full 12/12 green conformance run needs a container-reachable, seeded
-  Postgres. Cloud Supabase's Postgres is IPv6-only here (unreachable from
-  Docker/WSL2 without IPv6 egress); the local full stack currently fails a fresh
-  single-transaction init on a migration ordering issue (tracked separately).
-- Later slices: connections/groups/keys/GDPR endpoints (v1 wires the message +
-  conversation core, matching the provider's v1 scope), and SignalR realtime
-  (v1 uses the provider's polling fallback).
+  real ES256/HS256 Supabase JWTs. The shared conformance suite drives it end-to-end,
+  and the **Conformance** CI workflow (`.github/workflows/conformance.yml`) gates every
+  PR by running the suite against both backends on a local Supabase + .NET stack.
+- ✅ Runs under a least-privilege `dotnet_app` DB role subject to RLS (#321); the #281
+  column-guard trigger is a live backstop for its writes.
+- Deferred slices (still on direct-Supabase, not behind the provider seam or this
+  server): connections/groups/keys/GDPR endpoints, and SignalR realtime (v1 uses the
+  provider's polling fallback). See
+  [`docs/messaging/AUTHORIZATION-CONTRACT.md`](../docs/messaging/AUTHORIZATION-CONTRACT.md)
+  → deferred backlog.

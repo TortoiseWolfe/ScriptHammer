@@ -15,12 +15,16 @@
  * the ambient session (RLS still applies); the .NET provider carries the
  * bearer token and must re-express every RLS rule as server-side authorization.
  *
- * ## The authorization contract (C1–C29)
- * The messaging security model is 75 Postgres RLS policies + SECURITY DEFINER
- * helpers. Each is catalogued as a numbered rule (C1–C29) in the #266 plan and
- * the shared conformance suite (`tests/contract/messaging-provider.contract.ts`).
- * Method doc blocks below reference the C-rules each method is responsible for.
- * A provider that drops a rule fails the shared suite — that is the anti-drift
+ * ## The authorization contract
+ * The messaging security model is ~75 Postgres RLS policies + SECURITY DEFINER
+ * helpers. The subset both backends must enforce is catalogued as 13 named
+ * clauses (C1, C2, C3, C5, C7–C14, C29) in
+ * `docs/messaging/AUTHORIZATION-CONTRACT.md` and exercised by the shared
+ * conformance suite (`tests/contract/messaging-provider.contract.ts`). (The old
+ * "C1–C29" banner was aspirational — C4, C6 and C15–C28 were never authored; the
+ * contract grows by cataloguing real behaviour, not by numbering to 29.) Method
+ * doc blocks below reference the C-rules each method is responsible for. A
+ * provider that drops a rule fails the shared suite — that is the anti-drift
  * alarm across the Supabase↔.NET seam.
  *
  * ## Encryption stays ABOVE this seam
