@@ -128,8 +128,8 @@ export function GlobalNav() {
     // Two maps of Chattanooga: the Cesium globe atlas, and the Three.js diorama
     // (now the full downtown→East-Main city with the LiDAR house twin embedded —
     // the former standalone "East Main" exhibit folded in, #049).
-    { href: '/chatt', label: 'Atlas' },
     { href: '/chatt?diorama', label: 'Diorama' },
+    { href: '/chatt', label: 'Atlas' },
     { href: '/wireframes', label: 'Wireframes' },
   ];
 
