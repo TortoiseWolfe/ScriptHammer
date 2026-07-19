@@ -4,7 +4,8 @@
  * Gated on `DOTNET_API_URL`. When set, it seeds the SAME way the Supabase runner
  * does (users + connection + 1:1 conversation via the Supabase service client
  * into the shared Postgres), then drives the REAL DotnetMessagingProvider —
- * pointed at the live ASP.NET server — through the IDENTICAL C1–C29 assertions.
+ * pointed at the live ASP.NET server — through the IDENTICAL contract assertions
+ * (the 13 named clauses in `docs/messaging/AUTHORIZATION-CONTRACT.md`).
  * If the .NET backend drops a rule, this suite goes red. That is the whole point:
  * the contract is measured against both backends, not trusted.
  *

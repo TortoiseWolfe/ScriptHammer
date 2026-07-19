@@ -4,20 +4,20 @@
  * The .NET/EF Core implementation of {@link MessagingDataProvider} — a typed
  * REST client to an ASP.NET Core messaging API (KDG-style). Unlike Supabase, a
  * .NET backend has NO in-database `auth.uid()`, so THIS provider and the server
- * behind it must re-express every RLS rule (C1–C29) as EXPLICIT server-side
- * authorization. The bearer token from {@link AuthContext.accessToken}
+ * behind it must re-express every RLS rule (the messaging authorization contract
+ * catalogued in `docs/messaging/AUTHORIZATION-CONTRACT.md`) as EXPLICIT
+ * server-side authorization. The bearer token from {@link AuthContext.accessToken}
  * identifies the caller.
  *
- * ## Status: typed skeleton (Step 4)
- * The REST endpoint shape and the per-method authorization contract are the
- * deliverable — the exact spec for whoever builds the EF Core controllers. The
- * .NET server itself is a separate follow-up; until `NEXT_PUBLIC_DOTNET_API_URL`
- * points at a live server, every method makes a real `fetch` that will fail
- * against a non-existent endpoint (or throws immediately if no base URL is
- * configured). The provider TYPE-checks and the shared conformance suite
- * (`tests/contract/messaging-provider.contract.ts`) can run against it the
- * moment a server exists — it is measured against the identical contract the
- * Supabase provider passes.
+ * ## Status: live (conformance-passing)
+ * The ASP.NET Core server exists (`dotnet-messaging/`), boots, validates real
+ * ES256/HS256 Supabase JWTs, and passes the shared conformance suite
+ * (`tests/contract/messaging-provider.contract.ts`) end-to-end against both
+ * backends — gated in CI by the `Conformance` workflow. Set
+ * `NEXT_PUBLIC_DOTNET_API_URL` to point at it; with no base URL configured every
+ * method throws a clear {@link ConnectionError} (the fork-safe default). v1 wires
+ * the message + conversation core; connections/groups/keys/GDPR remain on
+ * direct-Supabase (see `docs/messaging/AUTHORIZATION-CONTRACT.md` → deferred backlog).
  *
  * ## Endpoint map (the contract for the ASP.NET side)
  *   GET    /api/messaging/conversations/{id}                    → getConversationMeta
