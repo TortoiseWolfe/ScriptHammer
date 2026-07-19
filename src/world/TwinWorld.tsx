@@ -2,6 +2,7 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { TextureLoader, Texture } from 'three';
 import { loadSiteJson, siteAssetUrl, hasWideExtent } from '@/lib/manifest';
+import { createProjection } from '@/lib/enu';
 import type {
   Building,
   Street,
@@ -149,6 +150,19 @@ export default function TwinWorld({
   }
 
   if (!data) return null;
+  // Resolve the scan anchor from its geocoded lat/lon into THIS site's frame
+  // (the true-location placement HouseModel then centres on), falling back to
+  // the hand-tuned x/z when the house has no geo anchor.
+  const geoHouse =
+    house && house.lat != null && house.lon != null
+      ? (() => {
+          const [gx, gz] = createProjection(
+            manifest.box,
+            manifest.vectorOffsetM
+          ).lonLatToEnu(house.lon, house.lat);
+          return { ...house, x: gx, z: gz };
+        })()
+      : house;
   return (
     <>
       <Terrain grid={data.terrain} drape={data.drape} manifest={manifest} />
@@ -183,11 +197,11 @@ export default function TwinWorld({
           />
         </Suspense>
       ) : null}
-      {scanVisible && house ? (
+      {scanVisible && geoHouse ? (
         <Suspense fallback={null}>
           <HouseModel
             slug={slug}
-            house={house}
+            house={geoHouse}
             grid={data.terrain}
             manifest={manifest}
           />

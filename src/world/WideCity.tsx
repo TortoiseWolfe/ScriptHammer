@@ -95,15 +95,23 @@ export default function WideCity({
           loadHouse(EMBED_SLUG),
         ]);
         if (twinHouse) {
-          // Re-project the anchor from the exhibit's own frame into this wide
-          // frame: exhibit ENU → true lon/lat (offset removed) → wide ENU
-          // (this site's offset added). North is −Z in both, so rotationDeg and
-          // the parts registration carry over unchanged.
-          const twinProj = createProjection(
-            twinManifest.box,
-            twinManifest.vectorOffsetM
-          );
-          const [lon, lat] = twinProj.enuToLonLat(twinHouse.x, twinHouse.z);
+          // Anchor the scan by its TRUE location, projected into this wide frame.
+          // Prefer the geocoded lat/lon (survey-honest, no per-frame eyeballing);
+          // fall back to re-projecting the exhibit-frame x/z anchor (exhibit ENU
+          // → lon/lat, offset removed → wide ENU, this site's offset added).
+          // North is −Z in both frames, so rotationDeg + the parts registration
+          // carry over unchanged.
+          let lon: number, lat: number;
+          if (twinHouse.lat != null && twinHouse.lon != null) {
+            lon = twinHouse.lon;
+            lat = twinHouse.lat;
+          } else {
+            const twinProj = createProjection(
+              twinManifest.box,
+              twinManifest.vectorOffsetM
+            );
+            [lon, lat] = twinProj.enuToLonLat(twinHouse.x, twinHouse.z);
+          }
           const [wx, wz] = proj.lonLatToEnu(lon, lat);
           twin = { slug: EMBED_SLUG, house: { ...twinHouse, x: wx, z: wz } };
           if (twinHouse.hideBuildingIds)

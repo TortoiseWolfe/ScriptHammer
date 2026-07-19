@@ -32,7 +32,7 @@ export default function HouseModel({
 }) {
   const { scene } = useGLTF(siteAssetUrl(slug, 'house/model.glb'));
 
-  const { groundY, bottomY } = useMemo(() => {
+  const { groundY, bottomY, centerX, centerZ } = useMemo(() => {
     scene.traverse((o) => {
       const mesh = o as Mesh;
       if (mesh.isMesh) {
@@ -78,20 +78,23 @@ export default function HouseModel({
       groundY:
         elevationAt(grid, manifest, house.x, house.z) - minElevation(grid),
       bottomY: box.min.y,
+      // Scan captures have an arbitrary origin (rarely the footprint centre), so
+      // seating the raw origin at the anchor drops the house on the wrong corner.
+      // Centre the footprint's XZ on the anchor instead (rotate about the house's
+      // own centre), which — paired with a geocoded anchor — lands it true.
+      centerX: (box.min.x + box.max.x) / 2,
+      centerZ: (box.min.z + box.max.z) / 2,
     };
   }, [scene, grid, manifest, house.x, house.z, house.parts]);
 
   const scale = house.scale ?? 1;
   return (
-    <primitive
-      object={scene}
-      position={[
-        house.x,
-        groundY - bottomY * scale + (house.yOffset ?? 0),
-        house.z,
-      ]}
+    <group
+      position={[house.x, groundY + (house.yOffset ?? 0), house.z]}
       rotation={[0, ((house.rotationDeg ?? 0) * Math.PI) / 180, 0]}
       scale={scale}
-    />
+    >
+      <primitive object={scene} position={[-centerX, -bottomY, -centerZ]} />
+    </group>
   );
 }
