@@ -72,8 +72,19 @@ class SupabaseRealtimeProvider implements MessagingRealtimeProvider {
 
     return {
       unsubscribe: () => {
-        channel.unsubscribe();
-        supabase.removeChannel(channel);
+        // Teardown must NEVER throw. When the realtime socket never actually
+        // connected — offline, or a backend/stack without the realtime service
+        // (e.g. the conformance stack) — realtime-js rejects from
+        // removeChannel → disconnect ("this.conn.close is not a function").
+        // That reject is async and, unhandled, hard-fails the whole vitest run.
+        // Unsubscribing a never-connected channel is a no-op, not an error, so
+        // swallow both the sync-throw and async-reject paths.
+        try {
+          void Promise.resolve(channel.unsubscribe()).catch(() => {});
+          void Promise.resolve(supabase.removeChannel(channel)).catch(() => {});
+        } catch {
+          /* no-op: unsubscribe is best-effort teardown */
+        }
       },
     };
   }
