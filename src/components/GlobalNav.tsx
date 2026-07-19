@@ -8,6 +8,7 @@ import { AnimatedLogo } from '@/components/atomic/AnimatedLogo';
 import { ColorblindToggle } from '@/components/molecular/ColorblindToggle';
 import { FontSizeControl } from '@/components/navigation/FontSizeControl';
 import { detectedConfig } from '@/config/project-detected';
+import { getInternalUrl } from '@/config/project.config';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import AvatarDisplay from '@/components/atomic/AvatarDisplay';
@@ -121,15 +122,19 @@ export function GlobalNav() {
     setDeferredPrompt(null);
   };
 
-  const navItems = [
+  // Two maps of Chattanooga: the Three.js diorama and the Cesium globe atlas.
+  // `reload: true` forces a FULL-page navigation (plain <a>) instead of a client
+  // Link — they share ONE route (/chatt) and differ only by ?diorama, but the
+  // renderer (atlas vs diorama) is chosen from the query at MOUNT and is not
+  // reactive, so a client-side query-only nav would keep the current renderer
+  // and you could never switch atlas↔diorama. A hard nav re-reads the query
+  // (and gives each heavy map a fresh WebGL context).
+  const navItems: { href: string; label: string; reload?: boolean }[] = [
     { href: '/', label: 'Home' },
     { href: '/blog', label: 'Blog' },
     { href: '/docs', label: 'Docs' },
-    // Two maps of Chattanooga: the Cesium globe atlas, and the Three.js diorama
-    // (now the full downtown→East-Main city with the LiDAR house twin embedded —
-    // the former standalone "East Main" exhibit folded in, #049).
-    { href: '/chatt?diorama', label: 'Diorama' },
-    { href: '/chatt', label: 'Atlas' },
+    { href: '/chatt?diorama', label: 'Diorama', reload: true },
+    { href: '/chatt', label: 'Atlas', reload: true },
     { href: '/wireframes', label: 'Wireframes' },
   ];
 
@@ -208,20 +213,27 @@ export function GlobalNav() {
 
           {/* Main Navigation */}
           <nav className="hidden items-center gap-1 lg:flex">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`btn btn-ghost btn-sm ${
-                  pathname === item.href ||
-                  (pathname?.startsWith(item.href + '/') && item.href !== '/')
-                    ? 'btn-active'
-                    : ''
-                }`}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              const cls = `btn btn-ghost btn-sm ${
+                pathname === item.href ||
+                (pathname?.startsWith(item.href + '/') && item.href !== '/')
+                  ? 'btn-active'
+                  : ''
+              }`;
+              return item.reload ? (
+                <a
+                  key={item.href}
+                  href={getInternalUrl(item.href)}
+                  className={cls}
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <Link key={item.href} href={item.href} className={cls}>
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Right Section: Auth, Theme & PWA - Mobile-first spacing (PRP-017 T025) */}
@@ -378,12 +390,21 @@ export function GlobalNav() {
               >
                 {navItems.map((item) => (
                   <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={pathname === item.href ? 'active' : ''}
-                    >
-                      {item.label}
-                    </Link>
+                    {item.reload ? (
+                      <a
+                        href={getInternalUrl(item.href)}
+                        className={pathname === item.href ? 'active' : ''}
+                      >
+                        {item.label}
+                      </a>
+                    ) : (
+                      <Link
+                        href={item.href}
+                        className={pathname === item.href ? 'active' : ''}
+                      >
+                        {item.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
                 {user ? (
