@@ -15,14 +15,14 @@
     "mpp": 0.6
   },
   "provenance": "© OpenStreetMap · USGS 3DEP 1m · TDOT Aerial Surveys · Microsoft Buildings · USGS 3DEP Lidar",
-  "fetchedAt": "2026-07-16T04:18:32.369Z",
+  "fetchedAt": "2026-07-19T16:28:11.529Z",
   "ruleHistogram": {
     "height": 96,
     "levels": 4,
     "override": 0,
-    "lidar": 1328,
+    "lidar": 1335,
     "ms": 43,
-    "fallback": 39
+    "fallback": 43
   },
   "vectorOffsetM": {
     "x": 0.5,
@@ -33,18 +33,18 @@
     "swLat": 35.0078,
     "swLon": -85.345,
     "neLat": 35.076,
-    "neLon": -85.283
+    "neLon": -85.255
   },
   "registration": {
     "offsetM": {
       "x": 0,
       "z": 0
     },
-    "score": 140.7,
-    "score0": 140.7,
+    "score": 141,
+    "score0": 141,
     "confidence": 1.9,
     "districtSpreadM": 2.2,
-    "flaggedCount": 151
+    "flaggedCount": 153
   },
   "site": {
     "slug": "chatt",

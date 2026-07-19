@@ -197,6 +197,23 @@ export async function bake(site: SiteConfig) {
   console.log('[bake] fetch-drape...');
   const drape = await fetchDrape(paths.raw, proj, site.mpp, site.drapeSource);
   console.log(drape);
+  // Wide aerial drape over the atlas extent — the Three.js diorama renders the
+  // full atlasBox and needs aligned imagery under it (a bare wide terrain reads
+  // as an olive slab). Baked over the SAME offset projection as the wide
+  // buildings so footprints register on the imagery, at a coarser 1.5 m/px
+  // (~22 MP) since the wide camera is pulled back.
+  if (atlasBox !== site.box) {
+    console.log('[bake] fetch-drape (wide atlas extent)...');
+    const wideProj = createProjection(atlasBox, site.vectorOffsetM);
+    const wideDrape = await fetchDrape(
+      paths.raw,
+      wideProj,
+      1.5,
+      site.drapeSource,
+      'drape-wide.jpg'
+    );
+    console.log(wideDrape);
+  }
   console.log('[bake] build-scene -> temp...');
   if (existsSync(paths.tmp))
     rmSync(paths.tmp, { recursive: true, force: true });
@@ -222,6 +239,9 @@ export async function bake(site: SiteConfig) {
     'buildings-wide.json',
     'manifest.json',
     'drape.jpg',
+    // Wide atlas aerial drape. Optional — sites without an atlasBox have none.
+    // A file missing from this list is silently dropped, so keep it listed.
+    'drape-wide.jpg',
   ]) {
     if (existsSync(`${paths.tmp}/${f}`)) {
       cpSync(`${paths.tmp}/${f}`, `${paths.out}/${f}`);

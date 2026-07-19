@@ -1,7 +1,8 @@
 'use client';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { TextureLoader, Texture } from 'three';
-import { loadSiteJson, siteAssetUrl } from '@/lib/manifest';
+import { loadSiteJson, siteAssetUrl, hasWideExtent } from '@/lib/manifest';
+import { createProjection } from '@/lib/enu';
 import type {
   Building,
   Street,
@@ -16,6 +17,7 @@ import Buildings from './Buildings';
 import HouseModel from './HouseModel';
 import WarehouseModels, { type ModelGroupRegistry } from './WarehouseModels';
 import Terrain from './Terrain';
+import WideCity from './WideCity';
 import Streets from './Streets';
 import Heroes from './Heroes';
 import Water from './Water';
@@ -73,7 +75,12 @@ export default function TwinWorld({
   onError?: (message: string) => void;
 }) {
   const [data, setData] = useState<WorldData | null>(null);
+  // Wide sites (chatt) render the full atlasBox city + embedded twin (WideCity)
+  // instead of the narrow box — data-driven off the baked atlasBox, so
+  // `/chatt?diorama` IS the wide map with no `?wide` param to guess.
+  const wide = useMemo(() => hasWideExtent(manifest), [manifest]);
   useEffect(() => {
+    if (wide) return; // wide mode renders WideCity; skip the narrow-box load
     let alive = true;
     (async () => {
       const [buildings, streets, heroes, terrain] = await Promise.all([
@@ -98,7 +105,7 @@ export default function TwinWorld({
     return () => {
       alive = false;
     };
-  }, [slug, manifest, onError]);
+  }, [slug, manifest, onError, wide]);
 
   useEffect(() => {
     if (!data || !house || !onHouseGround) return;
@@ -129,7 +136,33 @@ export default function TwinWorld({
     return data.buildings.filter((b) => !hide.has(b.id));
   }, [data, scanVisible, house, warehouseModels]);
 
+  // Wide city (chatt) — atlasBox-centred with the embedded LiDAR twin, so it
+  // replaces the narrow layers wholesale. After all hooks (rules-of-hooks).
+  if (wide) {
+    return (
+      <WideCity
+        slug={slug}
+        manifest={manifest}
+        palette={palette}
+        onError={onError}
+      />
+    );
+  }
+
   if (!data) return null;
+  // Resolve the scan anchor from its geocoded lat/lon into THIS site's frame
+  // (the true-location placement HouseModel then centres on), falling back to
+  // the hand-tuned x/z when the house has no geo anchor.
+  const geoHouse =
+    house && house.lat != null && house.lon != null
+      ? (() => {
+          const [gx, gz] = createProjection(
+            manifest.box,
+            manifest.vectorOffsetM
+          ).lonLatToEnu(house.lon, house.lat);
+          return { ...house, x: gx, z: gz };
+        })()
+      : house;
   return (
     <>
       <Terrain grid={data.terrain} drape={data.drape} manifest={manifest} />
@@ -164,11 +197,11 @@ export default function TwinWorld({
           />
         </Suspense>
       ) : null}
-      {scanVisible && house ? (
+      {scanVisible && geoHouse ? (
         <Suspense fallback={null}>
           <HouseModel
             slug={slug}
-            house={house}
+            house={geoHouse}
             grid={data.terrain}
             manifest={manifest}
           />

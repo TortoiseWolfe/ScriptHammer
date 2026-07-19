@@ -24,8 +24,29 @@ function extrude(
 ): BufferGeometry {
   const { center, localRing } = ringToShape(b.ring);
   const shape = new Shape();
-  localRing.forEach(([x, z], i) =>
-    i === 0 ? shape.moveTo(x, z) : shape.lineTo(x, z)
+  // N↔S mirror fix: Terrain builds its plane north-positive (plane +Y = north)
+  // then rotateX(-π/2), so the drape's north sits at world −Z (matching ENU,
+  // where north = −z). The extrude Shape must use the SAME sign. Feeding the raw
+  // ENU z as shape-Y and then applying the same rotateX(-π/2) lands each vertex
+  // at worldZ = 2·cz − z — every mass reflected N↔S about its own centroid
+  // (centroid correct, orientation mirrored; reads as a rotation on the
+  // off-cardinal downtown grid). So negate the shape's Y (ENU z) so shape-north
+  // maps to world +Z like the drape, and REVERSE the ring order to undo the
+  // winding flip the reflection causes — otherwise the extruded walls face
+  // inward (inside-out buildings).
+  // N↔S mirror fix: Terrain builds its plane north-positive (plane +Y = north)
+  // then rotateX(-π/2), so the drape's north sits at world −Z (matching ENU,
+  // where north = −z). The extrude Shape must use the SAME sign. Feeding the raw
+  // ENU z as shape-Y and then applying the same rotateX(-π/2) lands each vertex
+  // at worldZ = 2·cz − z — every mass reflected N↔S about its own centroid
+  // (centroid correct, orientation mirrored; reads as a rotation on the
+  // off-cardinal downtown grid). So negate the shape's Y (ENU z) so shape-north
+  // maps to world +Z like the drape, and REVERSE the ring order to undo the
+  // winding flip the reflection causes — otherwise the extruded walls face
+  // inward (inside-out buildings).
+  const outline = [...localRing].reverse();
+  outline.forEach(([x, z], i) =>
+    i === 0 ? shape.moveTo(x, -z) : shape.lineTo(x, -z)
   );
   shape.closePath();
   // Extrude along +Z by default: build in the shape's local XY then rotate

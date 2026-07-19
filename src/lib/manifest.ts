@@ -123,6 +123,26 @@ export async function loadSiteJson<T>(slug: string, name: string): Promise<T> {
 }
 
 /**
+ * True when this site was baked with a distinct, wider atlas extent (chatt) —
+ * the bake then also emits `buildings-wide.json` / `terrain-wide.json` /
+ * `drape-wide.jpg`, and the diorama renders the full atlasBox city (WideCity)
+ * instead of the narrow `box` corridor. Sites with no atlasBox (the as-built
+ * exhibits) return false and keep the narrow diorama. Data-driven, so
+ * `/chatt?diorama` just IS the wide map with no `?wide` URL param to guess.
+ */
+export function hasWideExtent(m: Manifest): boolean {
+  const a = m.atlasBox;
+  if (!a) return false;
+  const b = m.box;
+  return (
+    a.swLat !== b.swLat ||
+    a.swLon !== b.swLon ||
+    a.neLat !== b.neLat ||
+    a.neLon !== b.neLon
+  );
+}
+
+/**
  * The enforceable bake↔runtime contract: a mis-baked site fails loudly at
  * load with a named reason, not as a black canvas.
  */
@@ -222,7 +242,14 @@ export async function loadManifest(slug: string): Promise<Manifest> {
 export interface HouseInfo {
   /** Property label — HUD link text + as-built page heading. */
   label: string;
-  /** Scan anchor in ENU metres (origin = box centre, north = -Z). */
+  /** Geocoded anchor (true lat/lon of the property). Preferred over x/z when
+   *  present — placement projects it into whatever frame is rendering (the
+   *  narrow exhibit or the wide diorama), so the scan lands at its real
+   *  location in both instead of a hand-tuned per-frame offset (#049). */
+  lat?: number;
+  lon?: number;
+  /** Scan anchor in ENU metres (origin = box centre, north = -Z). Fallback
+   *  when lat/lon are absent. */
   x: number;
   z: number;
   /** Yaw around +Y in degrees (align the scan to the aerial). */
