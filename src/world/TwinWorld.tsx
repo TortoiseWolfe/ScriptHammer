@@ -1,7 +1,7 @@
 'use client';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { TextureLoader, Texture } from 'three';
-import { loadSiteJson, siteAssetUrl } from '@/lib/manifest';
+import { loadSiteJson, siteAssetUrl, hasWideExtent } from '@/lib/manifest';
 import type {
   Building,
   Street,
@@ -16,6 +16,7 @@ import Buildings from './Buildings';
 import HouseModel from './HouseModel';
 import WarehouseModels, { type ModelGroupRegistry } from './WarehouseModels';
 import Terrain from './Terrain';
+import WideCity from './WideCity';
 import Streets from './Streets';
 import Heroes from './Heroes';
 import Water from './Water';
@@ -73,7 +74,12 @@ export default function TwinWorld({
   onError?: (message: string) => void;
 }) {
   const [data, setData] = useState<WorldData | null>(null);
+  // Wide sites (chatt) render the full atlasBox city + embedded twin (WideCity)
+  // instead of the narrow box — data-driven off the baked atlasBox, so
+  // `/chatt?diorama` IS the wide map with no `?wide` param to guess.
+  const wide = useMemo(() => hasWideExtent(manifest), [manifest]);
   useEffect(() => {
+    if (wide) return; // wide mode renders WideCity; skip the narrow-box load
     let alive = true;
     (async () => {
       const [buildings, streets, heroes, terrain] = await Promise.all([
@@ -98,7 +104,7 @@ export default function TwinWorld({
     return () => {
       alive = false;
     };
-  }, [slug, manifest, onError]);
+  }, [slug, manifest, onError, wide]);
 
   useEffect(() => {
     if (!data || !house || !onHouseGround) return;
@@ -128,6 +134,19 @@ export default function TwinWorld({
     if (hide.size === 0) return data.buildings;
     return data.buildings.filter((b) => !hide.has(b.id));
   }, [data, scanVisible, house, warehouseModels]);
+
+  // Wide city (chatt) — atlasBox-centred with the embedded LiDAR twin, so it
+  // replaces the narrow layers wholesale. After all hooks (rules-of-hooks).
+  if (wide) {
+    return (
+      <WideCity
+        slug={slug}
+        manifest={manifest}
+        palette={palette}
+        onError={onError}
+      />
+    );
+  }
 
   if (!data) return null;
   return (

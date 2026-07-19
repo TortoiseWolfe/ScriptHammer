@@ -370,6 +370,14 @@ export async function buildScene(
   const drapePath = join(outDir, 'drape.jpg');
   if (existsSync(join(rawDir, 'drape.jpg')))
     copyFileSync(join(rawDir, 'drape.jpg'), drapePath);
+  // Wide atlas aerial drape — passes straight through raw -> tmp so the atomic
+  // promotion in run.ts picks it up. No manifest entry: WideCity maps it 0-1
+  // across the atlasBox ground it was baked over, so no pixel dims are needed.
+  if (existsSync(join(rawDir, 'drape-wide.jpg')))
+    copyFileSync(
+      join(rawDir, 'drape-wide.jpg'),
+      join(outDir, 'drape-wide.jpg')
+    );
   const drapeSrc = existsSync(join(rawDir, 'drape.jpg'))
     ? join(rawDir, 'drape.jpg')
     : existsSync(drapePath)

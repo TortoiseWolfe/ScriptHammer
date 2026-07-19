@@ -331,7 +331,10 @@ export async function fetchDrape(
   outDir: string,
   proj: Projection,
   mpp = 2,
-  source: DrapeSource = 'naip'
+  source: DrapeSource = 'naip',
+  // Output basename. Defaults to the narrow-box drape; the wide atlasBox drape
+  // reuses this same fetch with 'drape-wide.jpg' over a wider projection.
+  filename = 'drape.jpg'
 ): Promise<{
   width: number;
   height: number;
@@ -379,6 +382,6 @@ export async function fetchDrape(
       .toBuffer();
   }
 
-  writeFileSync(join(outDir, 'drape.jpg'), out);
+  writeFileSync(join(outDir, filename), out);
   return { width, height, bytes: out.length, source, tiles: tiles.length };
 }

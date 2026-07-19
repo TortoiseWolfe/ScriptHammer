@@ -42,6 +42,8 @@ import type {
   TwinPlacementOverride,
   WarehouseModelsInfo,
 } from '@/lib/manifest';
+import { hasWideExtent } from '@/lib/manifest';
+import { createProjection } from '@/lib/enu';
 import { deriveFraming, type Framing, type OrthoFrame } from '@/lib/framing';
 import { getInternalUrl } from '@/config/project.config';
 
@@ -501,8 +503,13 @@ function TwinCanvasInner({
 }) {
   const site = manifest.site;
   const houseFocused = focus === 'house' && !!house;
-  // The property page is a static close-up study — no tour there.
-  const hasTour = (site.tour?.length ?? 0) > 0 && !houseFocused;
+  // Wide sites (chatt) render the full atlasBox city (WideCity) — frame the
+  // ~8x7.6 km extent, and drop the narrow-box tour (its waypoints are box-
+  // centred ENU coords that would fly the camera to the wrong place).
+  const wide = useMemo(() => hasWideExtent(manifest), [manifest]);
+  // The property page is a static close-up study — no tour there; the wide
+  // atlasBox view has no tour either (its waypoints are narrow-box coords).
+  const hasTour = (site.tour?.length ?? 0) > 0 && !houseFocused && !wide;
   const tour = useMemo<TourWaypoint[]>(
     () => (hasTour ? (site.tour ?? []) : []),
     [hasTour, site.tour]
@@ -511,6 +518,21 @@ function TwinCanvasInner({
   // grid loads) — the orbit pivot must sit ON the parcel, not at sea level.
   const [houseGroundY, setHouseGroundY] = useState(0);
   const framing = useMemo(() => {
+    if (wide) {
+      // Frame the whole atlasBox extent (WideCity is atlasBox-centred at the
+      // origin). Feed deriveFraming a manifest sized to the wide box, with the
+      // narrow-tuned framing + tour dropped so homeRadius/maxR/fog/far all scale
+      // up to the ~8 x 7.6 km city instead of the 1.5 km corridor.
+      const { widthM, depthM } = createProjection(
+        manifest.atlasBox ?? manifest.box
+      ).groundSize();
+      return deriveFraming({
+        ...manifest,
+        groundWm: widthM,
+        groundHm: depthM,
+        site: { ...site, tour: undefined, framing: undefined },
+      });
+    }
     if (!houseFocused || !house) return deriveFraming(manifest);
     // Frame the parcel: pivot mid-house on the parcel's terrain, pulled back
     // for a close shot, approaching from the street side. The twin's origin is
@@ -537,7 +559,7 @@ function TwinCanvasInner({
         },
       },
     });
-  }, [manifest, site, house, houseFocused, houseGroundY]);
+  }, [manifest, site, house, houseFocused, houseGroundY, wide]);
   const modes = useMemo<HudOption[]>(
     () => modesForSite(hasTour, site.trolley != null),
     [hasTour, site.trolley]
