@@ -9,6 +9,7 @@ import { ColorblindToggle } from '@/components/molecular/ColorblindToggle';
 import { FontSizeControl } from '@/components/navigation/FontSizeControl';
 import { detectedConfig } from '@/config/project-detected';
 import { getInternalUrl } from '@/config/project.config';
+import { selectRenderer } from '@/twin/renderer-select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import AvatarDisplay from '@/components/atomic/AvatarDisplay';
@@ -32,6 +33,10 @@ export function GlobalNav() {
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  // Client-mount flag so the map nav highlight can read window.location.search
+  // (the query that picks atlas vs diorama) without a hydration mismatch.
+  const [mapMounted, setMapMounted] = useState(false);
+  useEffect(() => setMapMounted(true), []);
 
   useEffect(() => {
     if (!user?.id) {
@@ -138,6 +143,30 @@ export function GlobalNav() {
     { href: '/wireframes', label: 'Wireframes' },
   ];
 
+  // The two map entries share the /chatt pathname and differ only by ?diorama,
+  // so usePathname (query-blind) can't tell them apart — it would light up
+  // "Atlas" even on the diorama. Reflect the ACTUAL renderer instead. Read the
+  // query on the client only (mapMounted) to avoid a hydration mismatch; the map
+  // links full-navigate, so the nav re-mounts and re-reads on every switch.
+  const mapRenderer =
+    mapMounted && typeof window !== 'undefined'
+      ? selectRenderer(new URLSearchParams(window.location.search))
+      : 'atlas';
+  const isActive = (item: { href: string }): boolean => {
+    if (item.href.startsWith('/chatt')) {
+      const onChatt =
+        pathname === '/chatt' || !!pathname?.startsWith('/chatt/');
+      return (
+        onChatt &&
+        (item.href.includes('?diorama') ? 'diorama' : 'atlas') === mapRenderer
+      );
+    }
+    return (
+      pathname === item.href ||
+      (!!pathname?.startsWith(item.href + '/') && item.href !== '/')
+    );
+  };
+
   const themes = [
     'scripthammer-dark',
     'scripthammer-light',
@@ -215,10 +244,7 @@ export function GlobalNav() {
           <nav className="hidden items-center gap-1 lg:flex">
             {navItems.map((item) => {
               const cls = `btn btn-ghost btn-sm ${
-                pathname === item.href ||
-                (pathname?.startsWith(item.href + '/') && item.href !== '/')
-                  ? 'btn-active'
-                  : ''
+                isActive(item) ? 'btn-active' : ''
               }`;
               return item.reload ? (
                 <a
@@ -393,14 +419,14 @@ export function GlobalNav() {
                     {item.reload ? (
                       <a
                         href={getInternalUrl(item.href)}
-                        className={pathname === item.href ? 'active' : ''}
+                        className={isActive(item) ? 'active' : ''}
                       >
                         {item.label}
                       </a>
                     ) : (
                       <Link
                         href={item.href}
-                        className={pathname === item.href ? 'active' : ''}
+                        className={isActive(item) ? 'active' : ''}
                       >
                         {item.label}
                       </Link>
