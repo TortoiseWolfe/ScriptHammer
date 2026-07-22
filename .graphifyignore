@@ -16,3 +16,9 @@ pnpm-lock.yaml
 # it is visible to the scanner; without this graphify re-ingests its own
 # summaries and the graph starts citing itself (AI-quoting-AI feedback loop).
 graphify-out/
+
+
+# graphify installs its own manual here (SKILL.md + references/*.md). Scoped to
+# skills/ deliberately: .claude/commands/ holds this repo's own slash commands,
+# which are legitimate content -- a blanket .claude/ rule would drop them.
+.claude/skills/
