@@ -57,3 +57,5 @@ public/blog-manifest.json
 # Runtime test fixtures — created/deleted by node:test beforeEach/afterEach
 # (see scripts/__tests__/fixtures/README.md). Not hand-maintained source.
 scripts/__tests__/fixtures/
+# graphify — generated; never reformat (prettier re-expands what graphify writes compact)
+graphify-out/
