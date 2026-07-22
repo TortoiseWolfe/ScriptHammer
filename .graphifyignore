@@ -11,3 +11,8 @@ package-lock.json
 pnpm-lock.yaml
 *.min.js
 *.map
+
+# NEVER index our own generated output. graphify-out/wiki/ is committed, so
+# it is visible to the scanner; without this graphify re-ingests its own
+# summaries and the graph starts citing itself (AI-quoting-AI feedback loop).
+graphify-out/
