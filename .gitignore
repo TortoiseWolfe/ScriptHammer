@@ -192,3 +192,8 @@ scripts/__tests__/fixtures/*
 # versions (models.json was tracked-but-ignore-matching until iter 5).
 !/public/twins/chatt/models/**
 knowledge/spatial
+
+# graphify — rest of graphify-out/ is meant to be committed
+graphify-out/cost.json
+graphify-out/20*/
+graphify-out/cache/

@@ -1,0 +1,13 @@
+# graphify — merged on top of .gitignore (can only exclude more, never re-include)
+node_modules/
+.next/
+dist/
+build/
+coverage/
+storybook-static/
+.venv/
+*.lock
+package-lock.json
+pnpm-lock.yaml
+*.min.js
+*.map
