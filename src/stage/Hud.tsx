@@ -24,11 +24,13 @@ export interface HudCaption {
   blurb: string;
 }
 
-/** Navigation button rendered in the dock row (href must be fully resolved —
- *  the HUD is generic and does no basePath prefixing). */
+/** A dock-row entry: either a navigation button (href, fully resolved — the HUD
+ *  does no basePath prefixing) or an in-scene ACTION button (onClick, e.g. the
+ *  embedded-twin fly-to #332). Exactly one of href/onClick is expected. */
 export interface HudLink {
   label: string;
-  href: string;
+  href?: string;
+  onClick?: () => void;
 }
 
 /** Continuous 0..1 control rendered as a labelled range slider (e.g. a layer
@@ -499,19 +501,30 @@ export default function Hud({
             <>
               <span style={dividerStyle} aria-hidden="true" />
               <div style={groupRow}>
-                {links.map((l) => (
-                  <a
-                    key={l.href}
-                    href={l.href}
-                    style={{
-                      ...dockButtonStyle(false),
-                      textDecoration: 'none',
-                      display: 'inline-block',
-                    }}
-                  >
-                    {l.label}
-                  </a>
-                ))}
+                {links.map((l) =>
+                  l.onClick ? (
+                    <button
+                      key={l.label}
+                      type="button"
+                      onClick={l.onClick}
+                      style={dockButtonStyle(false)}
+                    >
+                      {l.label}
+                    </button>
+                  ) : (
+                    <a
+                      key={l.href}
+                      href={l.href}
+                      style={{
+                        ...dockButtonStyle(false),
+                        textDecoration: 'none',
+                        display: 'inline-block',
+                      }}
+                    >
+                      {l.label}
+                    </a>
+                  )
+                )}
               </div>
             </>
           ) : null}

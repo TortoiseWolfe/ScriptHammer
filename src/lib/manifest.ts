@@ -42,6 +42,11 @@ export interface SiteInfo {
   /** Committed HUD nav buttons (app-internal hrefs; basePath applied at
    *  runtime). Private demo links use links.local.json instead. */
   links?: { label: string; href: string }[];
+  /** An as-built exhibit folded into this site's wide diorama (#332): a SEPARATE
+   *  baked slug (`slug`) whose scan is re-projected to `lat`/`lon` in the wide
+   *  frame; `label` names the in-diorama fly-to button. Replaces WideCity's
+   *  hardcoded EMBED_SLUG and retires the exhibit's standalone /twins route. */
+  embeddedTwin?: { slug: string; lat: number; lon: number; label: string };
 }
 
 export interface Manifest {
@@ -220,6 +225,18 @@ export function validateManifest(m: unknown, slug: string): Manifest {
   }
   if (site.water != null && typeof site.water !== 'boolean')
     fail('site.water must be a boolean');
+  if (site.embeddedTwin != null) {
+    const t = site.embeddedTwin as Record<string, unknown>;
+    if (
+      typeof t.slug !== 'string' ||
+      t.slug.length === 0 ||
+      typeof t.label !== 'string' ||
+      t.label.length === 0 ||
+      !Number.isFinite(t.lat) ||
+      !Number.isFinite(t.lon)
+    )
+      fail('site.embeddedTwin needs slug, label, and finite lat/lon');
+  }
   return man;
 }
 

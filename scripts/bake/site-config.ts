@@ -128,6 +128,20 @@ export const SiteConfigSchema = z.object({
   links: z
     .array(z.object({ label: z.string().min(1), href: z.string().min(1) }))
     .optional(),
+  /** An as-built exhibit (a SEPARATE baked slug) to fold into THIS site's wide
+   *  diorama at its true location (#332). `lat`/`lon` anchor the scan in the
+   *  wide frame; `label` names the in-diorama fly-to HUD button. Declaring it
+   *  here (a) replaces WideCity's hardcoded EMBED_SLUG and (b) retires the
+   *  exhibit's standalone /twins route — a slug that is any site's embeddedTwin
+   *  is embed-only, so generateStaticParams stops building a page for it. */
+  embeddedTwin: z
+    .object({
+      slug: z.string().regex(/^[a-z0-9][a-z0-9-]*$/),
+      lat: z.number().gte(-90).lte(90),
+      lon: z.number().gte(-180).lte(180),
+      label: z.string().min(1),
+    })
+    .optional(),
   /** Aerial source. NAIP is US-only; non-US sites need 'esri'; 'tnmap' is
    *  Tennessee's TDOT statewide ortho (0.15 m, engineering-grade georef). */
   drapeSource: z.enum(['naip', 'esri', 'tnmap']).default('naip'),
@@ -202,6 +216,7 @@ export function siteManifestBlock(site: SiteConfig) {
     ...(site.trolley != null && { trolley: site.trolley }),
     ...(site.framing != null && { framing: site.framing }),
     ...(site.links != null && { links: site.links }),
+    ...(site.embeddedTwin != null && { embeddedTwin: site.embeddedTwin }),
   };
 }
 

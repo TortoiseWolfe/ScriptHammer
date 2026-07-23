@@ -46,6 +46,7 @@ export default function TwinWorld({
   onHouseGround,
   onGroundReady,
   onError,
+  onTwinPlaced,
 }: {
   slug: string;
   manifest: Manifest;
@@ -73,6 +74,9 @@ export default function TwinWorld({
    *  instead of at sea level, and so does the camera that follows them. */
   onGroundReady?: (groundAt: (x: number, z: number) => number) => void;
   onError?: (message: string) => void;
+  /** Wide sites only: reports the embedded twin's wide-frame position + label
+   *  once placed, so the HUD can offer an in-diorama fly-to (#332). */
+  onTwinPlaced?: (t: { x: number; z: number; label: string }) => void;
 }) {
   const [data, setData] = useState<WorldData | null>(null);
   // Wide sites (chatt) render the full atlasBox city + embedded twin (WideCity)
@@ -145,6 +149,7 @@ export default function TwinWorld({
         manifest={manifest}
         palette={palette}
         onError={onError}
+        onTwinPlaced={onTwinPlaced}
       />
     );
   }

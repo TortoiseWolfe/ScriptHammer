@@ -2,12 +2,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { TextureLoader, Texture } from 'three';
 import { createProjection } from '@/lib/enu';
-import {
-  loadSiteJson,
-  siteAssetUrl,
-  loadHouse,
-  loadManifest,
-} from '@/lib/manifest';
+import { loadSiteJson, siteAssetUrl, loadHouse } from '@/lib/manifest';
 import type {
   Building,
   TerrainGrid,
@@ -26,11 +21,6 @@ interface WideLiveBuilding {
   heightM: number;
   rule: string;
 }
-
-/** The as-built LiDAR exhibit to fold into the wide city: a separate baked slug
- *  whose house scan is re-projected into this site's frame and stood at its real
- *  location (the "merge these two views into one" ask, #049). */
-const EMBED_SLUG = 'east-main-street-chattanooga';
 
 interface WideData {
   grid: TerrainGrid;
@@ -57,11 +47,15 @@ export default function WideCity({
   manifest,
   palette,
   onError,
+  onTwinPlaced,
 }: {
   slug: string;
   manifest: Manifest;
   palette: BuildingPalette;
   onError?: (message: string) => void;
+  /** Reports the embedded twin's wide-frame position + label once placed, so
+   *  the HUD can offer an in-diorama fly-to instead of a separate page (#332). */
+  onTwinPlaced?: (t: { x: number; z: number; label: string }) => void;
 }) {
   const [data, setData] = useState<WideData | null>(null);
 
@@ -85,40 +79,28 @@ export default function WideCity({
         groundHm: depthM,
       };
 
-      // Fold in the LiDAR exhibit twin. It is a bonus layer — a missing/failed
-      // exhibit must not blank the whole city, so this is best-effort.
+      // Fold in the LiDAR exhibit twin, declared per-site in config (#332): the
+      // site names its embedded exhibit slug + its true lat/lon, so no
+      // embeddedTwin => no twin (other wide sites render none). A bonus layer —
+      // a missing/failed exhibit must not blank the whole city, so best-effort.
       let twin: WideData['twin'] = null;
       let hide = new Set<number>();
-      try {
-        const [twinManifest, twinHouse] = await Promise.all([
-          loadManifest(EMBED_SLUG),
-          loadHouse(EMBED_SLUG),
-        ]);
-        if (twinHouse) {
-          // Anchor the scan by its TRUE location, projected into this wide frame.
-          // Prefer the geocoded lat/lon (survey-honest, no per-frame eyeballing);
-          // fall back to re-projecting the exhibit-frame x/z anchor (exhibit ENU
-          // → lon/lat, offset removed → wide ENU, this site's offset added).
-          // North is −Z in both frames, so rotationDeg + the parts registration
-          // carry over unchanged.
-          let lon: number, lat: number;
-          if (twinHouse.lat != null && twinHouse.lon != null) {
-            lon = twinHouse.lon;
-            lat = twinHouse.lat;
-          } else {
-            const twinProj = createProjection(
-              twinManifest.box,
-              twinManifest.vectorOffsetM
-            );
-            [lon, lat] = twinProj.enuToLonLat(twinHouse.x, twinHouse.z);
+      const embed = manifest.site.embeddedTwin;
+      if (embed) {
+        try {
+          const twinHouse = await loadHouse(embed.slug);
+          if (twinHouse) {
+            // Anchor the scan by its TRUE location (config lat/lon), projected
+            // into this wide frame. North is −Z in both frames, so rotationDeg
+            // + the parts registration carry over unchanged.
+            const [wx, wz] = proj.lonLatToEnu(embed.lon, embed.lat);
+            twin = { slug: embed.slug, house: { ...twinHouse, x: wx, z: wz } };
+            if (twinHouse.hideBuildingIds)
+              hide = new Set(twinHouse.hideBuildingIds);
           }
-          const [wx, wz] = proj.lonLatToEnu(lon, lat);
-          twin = { slug: EMBED_SLUG, house: { ...twinHouse, x: wx, z: wz } };
-          if (twinHouse.hideBuildingIds)
-            hide = new Set(twinHouse.hideBuildingIds);
+        } catch (e) {
+          console.warn('[WideCity] embedded twin skipped:', e);
         }
-      } catch (e) {
-        console.warn('[WideCity] embedded twin skipped:', e);
       }
 
       // Massing box under the scan steps aside so the two never z-fight (OSM ids
@@ -135,6 +117,12 @@ export default function WideCity({
         });
       if (!alive) return;
       setData({ grid, buildings, drape, wideManifest, twin });
+      if (twin && embed)
+        onTwinPlaced?.({
+          x: twin.house.x,
+          z: twin.house.z,
+          label: embed.label,
+        });
     })().catch((e: unknown) => {
       // A swallowed rejection here renders as an empty sky with no explanation.
       if (alive) onError?.(e instanceof Error ? e.message : String(e));
@@ -142,7 +130,7 @@ export default function WideCity({
     return () => {
       alive = false;
     };
-  }, [slug, manifest, onError]);
+  }, [slug, manifest, onError, onTwinPlaced]);
 
   if (!data) return null;
   return (

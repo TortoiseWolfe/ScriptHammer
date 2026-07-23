@@ -198,6 +198,18 @@ export function useWarehouseEditor({
     [warehouseModels, modelOverrides, requestOrbit, rig, editMode]
   );
 
+  // Generic camera jump for non-model HUD actions (e.g. the embedded twin's
+  // in-diorama fly-to, #332). flyToModel's tail without the model selection —
+  // a pure pivot glide to an ENU (x,z) at an optional radius. Synchronous for
+  // the same reason (sets tFocus/tRadius before the mode switch can clobber).
+  const flyTo = useCallback(
+    (x: number, z: number, radius?: number) => {
+      requestOrbit();
+      rig?.flyTo(x, z, radius);
+    },
+    [requestOrbit, rig]
+  );
+
   const patchOverride = useCallback(
     (patch: TwinPlacementOverride) => {
       if (!selectedModel) return;
@@ -351,5 +363,6 @@ export function useWarehouseEditor({
     saveAvailable,
     saveToFile,
     flyToModel,
+    flyTo,
   };
 }

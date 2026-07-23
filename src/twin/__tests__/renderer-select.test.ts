@@ -49,9 +49,9 @@ describe('selectRendererFor', () => {
     expect(selectRendererFor(q('?diorama'), true)).toBe('diorama');
   });
 
-  // #292 review B1a: a site with no atlasBox (a single as-built exhibit, e.g.
-  // east-main-street-chattanooga) has nothing for the atlas to add — it must
-  // always render the diorama, no matter what the URL asks for.
+  // #292 review B1a: a site with no atlasBox (a single as-built exhibit) has
+  // nothing for the atlas to add — it must always render the diorama, no
+  // matter what the URL asks for.
   it('forces the diorama when the site has no atlasBox, even with no params', () => {
     expect(selectRendererFor(q(''), false)).toBe('diorama');
   });
