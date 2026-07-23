@@ -193,8 +193,8 @@ scripts/__tests__/fixtures/*
 !/public/twins/chatt/models/**
 knowledge/spatial
 
-# graphify — rest of graphify-out/ is meant to be committed
-graphify-out/cost.json
-graphify-out/20*/
-graphify-out/cache/
-graphify-out/.rebuild.lock
+
+# graphify: local and regenerable — rebuild with /graphify-init or `graphify update .`
+# NOT committed: the post-commit hook rewrites graph.json on every commit and it
+# delta-compresses poorly, so committing it would grow the repo forever.
+graphify-out/
