@@ -192,3 +192,9 @@ scripts/__tests__/fixtures/*
 # versions (models.json was tracked-but-ignore-matching until iter 5).
 !/public/twins/chatt/models/**
 knowledge/spatial
+
+
+# graphify: local and regenerable — rebuild with /graphify-init or `graphify update .`
+# NOT committed: the post-commit hook rewrites graph.json on every commit and it
+# delta-compresses poorly, so committing it would grow the repo forever.
+graphify-out/

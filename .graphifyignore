@@ -1,0 +1,24 @@
+# graphify — merged on top of .gitignore (can only exclude more, never re-include)
+node_modules/
+.next/
+dist/
+build/
+coverage/
+storybook-static/
+.venv/
+*.lock
+package-lock.json
+pnpm-lock.yaml
+*.min.js
+*.map
+
+# NEVER index our own generated output. graphify-out/wiki/ is committed, so
+# it is visible to the scanner; without this graphify re-ingests its own
+# summaries and the graph starts citing itself (AI-quoting-AI feedback loop).
+graphify-out/
+
+
+# graphify installs its own manual here (SKILL.md + references/*.md). Scoped to
+# skills/ deliberately: .claude/commands/ holds this repo's own slash commands,
+# which are legitimate content -- a blanket .claude/ rule would drop them.
+.claude/skills/
