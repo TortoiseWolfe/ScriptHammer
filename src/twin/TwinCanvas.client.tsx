@@ -131,6 +131,7 @@ function SceneInner({
   onCaption,
   onHouseGround,
   onWorldError,
+  onTwinPlaced,
   registerHandle,
   registerRig,
   onFps,
@@ -159,6 +160,9 @@ function SceneInner({
   onCaption: (c: HudCaption | null) => void;
   onHouseGround?: (y: number) => void;
   onWorldError: (message: string) => void;
+  /** Wide sites only: the embedded twin's wide-frame position + label once
+   *  placed, lifted so the HUD can offer an in-diorama fly-to (#332). */
+  onTwinPlaced?: (t: { x: number; z: number; label: string }) => void;
   registerHandle: (h: StageHandle) => void;
   /** Lifts the Rig to the composition root (directory fly-to), mirroring the
    *  registerHandle pattern. */
@@ -447,6 +451,7 @@ function SceneInner({
         onHouseGround={onHouseGround}
         onGroundReady={handleGroundReady}
         onError={onWorldError}
+        onTwinPlaced={onTwinPlaced}
       />
       {gizmoTarget && gizmoBase && patchOverride ? (
         <WarehouseGizmo
@@ -633,6 +638,13 @@ function TwinCanvasInner({
   const [showFps, setShowFps] = useState(false);
   const [fps, setFps] = useState<number | undefined>(undefined);
   const [worldError, setWorldError] = useState<string | null>(null);
+  // Wide diorama only: the embedded twin's wide-frame position, reported by
+  // WideCity once it places the scan — drives the HUD fly-to button (#332).
+  const [embeddedTwinPos, setEmbeddedTwinPos] = useState<{
+    x: number;
+    z: number;
+    label: string;
+  } | null>(null);
 
   // --- Warehouse layer: directory + placement editor (#259) ---
   // The whole editor surface (edit mode, selection, overrides + persistence,
@@ -660,7 +672,23 @@ function TwinCanvasInner({
     saveAvailable,
     saveToFile,
     flyToModel,
+    flyTo,
   } = useWarehouseEditor({ slug, warehouseModels, requestOrbit });
+  // In-diorama fly-to for the embedded twin (#332): once WideCity reports the
+  // twin's wide-frame position, prepend a camera-jump button to the HUD dock so
+  // the exhibit is reachable without leaving the map (this replaces the retired
+  // "As-built demo" page link). Non-wide sites never fire onTwinPlaced, so
+  // embeddedTwinPos stays null and this is inert.
+  const hudLinks = useMemo<HudLink[]>(() => {
+    if (!embeddedTwinPos) return links;
+    return [
+      {
+        label: embeddedTwinPos.label,
+        onClick: () => flyTo(embeddedTwinPos.x, embeddedTwinPos.z, 60),
+      },
+      ...links,
+    ];
+  }, [links, embeddedTwinPos, flyTo]);
   // Click-away deselect (iter 5): pointer-missed fires for clicks that hit
   // no scene object — but an orbit DRAG that ends over empty sky must not
   // deselect, so gate on the same 12px travel grain as the select gate.
@@ -806,6 +834,7 @@ function TwinCanvasInner({
           onCaption={setCaption}
           onHouseGround={houseFocused ? setHouseGroundY : undefined}
           onWorldError={setWorldError}
+          onTwinPlaced={setEmbeddedTwinPos}
           registerHandle={registerHandle}
           registerRig={registerRig}
           onFps={showFps ? setFps : undefined}
@@ -905,7 +934,7 @@ function TwinCanvasInner({
         views={views}
         activeView={view}
         onView={(v) => setView(v as 'massing' | 'asbuilt')}
-        links={links}
+        links={hudLinks}
         sliders={sliders}
         caption={
           mode === 'tour' ? caption : (MODE_HINTS[mode] ?? null) // embodied modes explain their controls

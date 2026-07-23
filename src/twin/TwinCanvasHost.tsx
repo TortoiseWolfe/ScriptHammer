@@ -14,9 +14,9 @@
 // diorama's own features (?ortho, ?house, ?edit, ?select, ?nofx) imply it too,
 // since they are diorama-only. `?atlas` stays a no-op alias so links shared
 // before the flip keep working. A slug baked with no atlasBox (a single
-// as-built exhibit, e.g. east-main-street-chattanooga) has nothing for the
-// atlas to add and gets the diorama regardless of any of the above — see the
-// `hasAtlas` prop below and ./renderer-select.ts's selectRendererFor.
+// as-built exhibit) has nothing for the atlas to add and gets the diorama
+// regardless of any of the above — see the `hasAtlas` prop below and
+// ./renderer-select.ts's selectRendererFor.
 import dynamic from 'next/dynamic';
 import { useEffect } from 'react';
 import { getAssetUrl } from '@/config/project.config';

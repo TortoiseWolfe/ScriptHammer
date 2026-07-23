@@ -110,12 +110,12 @@
     "framing": {
       "homeFocus": [-100, 0, -2000]
     },
-    "links": [
-      {
-        "label": "As-built demo",
-        "href": "/twins/east-main-street-chattanooga/?house"
-      }
-    ],
+    "embeddedTwin": {
+      "slug": "east-main-street-chattanooga",
+      "lat": 35.0212761,
+      "lon": -85.2672533,
+      "label": "1887 Victorian — As-Built"
+    },
     "water": true
   }
 }

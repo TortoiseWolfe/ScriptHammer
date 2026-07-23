@@ -151,10 +151,10 @@
     "ept": "https://s3-us-west-2.amazonaws.com/usgs-lidar-public/USGS_LPC_TN_27County_blk4_2015_LAS_2018",
     "maxDepth": 10
   },
-  "links": [
-    {
-      "label": "As-built demo",
-      "href": "/twins/east-main-street-chattanooga/?house"
-    }
-  ]
+  "embeddedTwin": {
+    "slug": "east-main-street-chattanooga",
+    "lat": 35.0212761,
+    "lon": -85.2672533,
+    "label": "1887 Victorian — As-Built"
+  }
 }
