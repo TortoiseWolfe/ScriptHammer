@@ -135,13 +135,21 @@ async function globalSetup(): Promise<void> {
     }>;
 
     // Page through every user (perPage max 1000) so users past page 1 are seen.
+    // A listUsers ERROR must NOT be read as "no users": that makes the shared
+    // users look absent and triggers the destructive recreate below against
+    // users that actually exist — which is how the shared PRIMARY user got
+    // corrupted once (createTestUser → deleteTestUser ran on a live shared user).
     const allEmails = new Set<string>();
+    let enumerationError: string | null = null;
     for (let page = 1; page <= 50; page++) {
       const { data, error } = await adminClient.auth.admin.listUsers({
         page,
         perPage: 1000,
       });
-      if (error) break;
+      if (error) {
+        enumerationError = error.message;
+        break;
+      }
       const batch = data?.users ?? [];
       for (const u of batch) if (u.email) allEmails.add(u.email.toLowerCase());
       if (batch.length < 1000) break; // last page
@@ -150,6 +158,19 @@ async function globalSetup(): Promise<void> {
     for (const { email, password, name } of testUsers) {
       if (allEmails.has(email.toLowerCase())) {
         console.log(`✓ Test user ${name} exists: ${email}`);
+        continue;
+      }
+
+      // Not seen — but if the enumeration ERRORED we cannot conclude the user
+      // is absent. Recreating (delete+create) a user that actually exists is
+      // what orphans the shared user, so fail loudly for a re-run instead of
+      // recreating on incomplete data.
+      if (enumerationError) {
+        errors.push({
+          category: 'Test User',
+          message: `Could not verify ${name} exists — listUsers error: ${enumerationError}`,
+          fix: 'Transient admin API error — re-run the job (do NOT recreate the shared user on incomplete enumeration).',
+        });
         continue;
       }
 
