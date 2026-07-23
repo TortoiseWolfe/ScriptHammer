@@ -22,3 +22,12 @@ graphify-out/
 # skills/ deliberately: .claude/commands/ holds this repo's own slash commands,
 # which are legitimate content -- a blanket .claude/ rule would drop them.
 .claude/skills/
+
+# Screenshots, diagrams and fixtures: 304 files that would each hit the LLM
+# vision pass for very little conceptual signal. Docs stay indexed.
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.svg
