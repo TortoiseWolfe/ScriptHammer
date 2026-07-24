@@ -239,6 +239,7 @@ export default defineConfig({
         '**/sign-up.spec.ts',
         '**/basepath/**', // basePath project only (root-anchored build here)
         '**/signup-mailer/**', // local-Mailpit only — playwright.signup-mailer.config.ts
+        '**/smoke/**', // live-prod only — playwright.smoke.config.ts
       ],
       dependencies: ['setup'],
       use: {
@@ -279,6 +280,7 @@ export default defineConfig({
         '**/sign-up.spec.ts',
         '**/basepath/**', // basePath project only (root-anchored build here)
         '**/signup-mailer/**', // local-Mailpit only — playwright.signup-mailer.config.ts
+        '**/smoke/**', // live-prod only — playwright.smoke.config.ts
       ],
       dependencies: ['setup'],
       use: {
@@ -319,6 +321,7 @@ export default defineConfig({
         '**/sign-up.spec.ts',
         '**/basepath/**', // basePath project only (root-anchored build here)
         '**/signup-mailer/**', // local-Mailpit only — playwright.signup-mailer.config.ts
+        '**/smoke/**', // live-prod only — playwright.smoke.config.ts
       ],
       dependencies: ['setup'],
       use: {
@@ -338,6 +341,7 @@ export default defineConfig({
           '**/sign-up.spec.ts',
           '**/basepath/**', // basePath project only (root-anchored build here)
           '**/signup-mailer/**', // local-Mailpit only — playwright.signup-mailer.config.ts
+          '**/smoke/**', // live-prod only — playwright.smoke.config.ts
         ],
         dependencies: ['setup'],
         use: {
@@ -358,6 +362,7 @@ export default defineConfig({
           '**/sign-up.spec.ts',
           '**/basepath/**', // basePath project only (root-anchored build here)
           '**/signup-mailer/**', // local-Mailpit only — playwright.signup-mailer.config.ts
+          '**/smoke/**', // live-prod only — playwright.smoke.config.ts
         ],
         dependencies: ['setup'],
         use: {

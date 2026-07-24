@@ -1,0 +1,77 @@
+# Post-deploy production @smoke suite (#288, item 2).
+#
+# #287 proved the whole test suite can be green while the DEPLOYED product is
+# unusable (placeholder OAuth client_ids, site_url=localhost, dead SMTP). This
+# job hits the LIVE origin AFTER each deploy (and daily) and asserts the deployed
+# thing a customer touches works: providers enabled, OAuth authorize redirects
+# carry real client_ids (#287 detector), canonical origin + github.io redirect.
+# (The "sign-in zero console errors" check is currently skipped pending #348 —
+# the real prod defect this suite already caught.)
+#
+# All checks are READ-ONLY against prod (no signup / user creation). Like
+# conformance.yml it needs no shared-backend mutex — nothing is mutated.
+
+name: Production Smoke
+
+on:
+  # Fire AFTER a successful deploy (the missing post-deploy verification).
+  workflow_run:
+    workflows: ['Deploy to GitHub Pages']
+    types: [completed]
+  # Daily drift/uptime detection.
+  schedule:
+    - cron: '30 15 * * *'
+  workflow_dispatch:
+  # Validate the suite itself on PRs that touch it (runs against live prod).
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/e2e/smoke/**'
+      - 'tests/e2e/utils/oauth-validity.ts'
+      - 'playwright.smoke.config.ts'
+      - '.github/workflows/smoke.yml'
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Production @smoke (live origin)
+    # Post-deploy runs proceed only if the deploy succeeded; other triggers always run.
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      BASE_URL: https://scripthammer.com
+      NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.16.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright (chromium)
+        run: |
+          for i in 1 2 3; do
+            pnpm exec playwright install --with-deps chromium && break
+            echo "Retry $i: playwright install failed, retrying in 10s..."
+            sleep 10
+          done
+
+      - name: Run the production @smoke suite
+        run: pnpm test:e2e:smoke
