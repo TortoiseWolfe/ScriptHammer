@@ -1,0 +1,65 @@
+# Auth-config drift gate (#288, item 4).
+#
+# #287: prod's Supabase auth config had silently drifted (site_url=localhost,
+# empty uri_allow_list) while every test stayed green — no human could sign up.
+# This runs `pnpm supabase:auth-config:check` (a read-only dry-run of the
+# Management API vs the checked-in scripts/supabase/auth-config.json) and FAILS
+# on any drift, so prod config can't diverge from the repo unnoticed again.
+#
+# Secrets already exist in the repo (SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF).
+# Read-only — it never PATCHes (that needs --apply, which this does not pass).
+#
+# Runs: on push to main (after a merge), on PRs that touch the auth config or this
+# workflow (validates + gives PR-time feedback), daily (catches OUT-OF-BAND prod
+# changes with no repo change), and on demand.
+
+name: Auth Config Drift
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/supabase/auth-config.json'
+      - 'scripts/supabase/set-auth-config.ts'
+      - '.github/workflows/auth-config-drift.yml'
+  schedule:
+    - cron: '15 15 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: auth-config-drift-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  drift:
+    name: Live auth config matches the repo
+    # Secrets aren't passed to fork PRs — skip there instead of failing on a
+    # missing token (same-repo PRs, push, schedule, dispatch all still run).
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.16.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check prod auth config matches scripts/supabase/auth-config.json
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: pnpm supabase:auth-config:check
