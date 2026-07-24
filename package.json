@@ -37,6 +37,7 @@
     "supabase:local:up": "docker compose --profile supabase up -d",
     "supabase:local:down": "docker compose --profile supabase down",
     "supabase:auth-config": "tsx scripts/supabase/set-auth-config.ts",
+    "supabase:auth-config:check": "tsx scripts/supabase/set-auth-config.ts --check",
     "supabase:secrets": "tsx scripts/supabase/set-edge-function-secrets.ts",
     "db:reset": "tsx scripts/reset-database.ts",
     "generate:sitemap": "node scripts/generate-sitemap.js",
