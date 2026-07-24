@@ -65,7 +65,7 @@ describe('getEmbedColor', () => {
   });
 
   it('falls back to 808080 when the token is unset (not empty, not white)', () => {
-    // No --color-* set on :root → getDaisyUIColorAsThree returns #808080.
+    // No --color-* set on :root → getDaisyUIColorAsHex returns 808080.
     const hex = getEmbedColor('p');
     expect(hex).toBe('808080');
     expect(getEmbedColor('p', { hash: true })).toBe('#808080');

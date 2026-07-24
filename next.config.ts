@@ -97,8 +97,11 @@ const nextConfig: NextConfig = {
             // off the homepage: they claim their modules before `vendor` (10)
             // can. Delete one and its library silently ships on every route.
             //
-            // three.js has no such group and IS in the 2.26MB initial vendor
-            // chunk today — a pre-existing bug, tracked separately.
+            // three.js now has its own group too (#291) — WITHOUT it, all of
+            // three + the @react-three/drei ecosystem (three-stdlib, troika-*,
+            // meshline, camera-controls, maath, @monogrid/gainmap-js,
+            // three-mesh-bvh, stats-gl, @mediapipe/tasks-vision, postprocessing)
+            // shipped in the 2.66MB initial vendor chunk on EVERY route.
             leaflet: {
               test: /[\\/]node_modules[\\/](leaflet|react-leaflet)[\\/]/,
               name: 'leaflet',
@@ -113,6 +116,17 @@ const nextConfig: NextConfig = {
             cesium: {
               test: /[\\/]node_modules[\\/](cesium|@cesium)[\\/]/,
               name: 'cesium',
+              priority: 20,
+            },
+            // three.js (#291). `three` itself is the real 2.66MB package (not a
+            // re-export shell like cesium), but the @react-three/drei/fiber
+            // ecosystem pulls a dozen separate top-level packages that each
+            // bundle three — ALL must be listed or they stay in `vendor`. The
+            // trailing `[\\/]` after `three` matches only the exact `three` dir,
+            // not `three-stdlib`/`three-mesh-bvh` (listed explicitly).
+            three: {
+              test: /[\\/]node_modules[\\/](three|three-stdlib|three-mesh-bvh|@react-three[\\/](fiber|drei)|troika-three-text|troika-three-utils|troika-worker-utils|meshline|camera-controls|maath|@monogrid[\\/]gainmap-js|stats-gl|@mediapipe[\\/]tasks-vision|postprocessing)[\\/]/,
+              name: 'three',
               priority: 20,
             },
           },

@@ -1,4 +1,4 @@
-import { getDaisyUIColorAsThree } from '@/utils/theme-utils';
+import { getDaisyUIColorAsHex } from '@/utils/theme-utils';
 
 /**
  * Shared theme → third-party-embed color mapping (issues #39, #46).
@@ -6,7 +6,7 @@ import { getDaisyUIColorAsThree } from '@/utils/theme-utils';
  * Third-party embeds (Calendly, Cal.com, Disqus) take a brand/accent/link color
  * as a plain hex string and cannot parse DaisyUI's OKLCH CSS custom properties.
  * This module reads the active DaisyUI theme's tokens off `:root`, runs the
- * OKLCH→sRGB math (via `getDaisyUIColorAsThree`), and returns a 6-digit hex in
+ * OKLCH→sRGB math (via `getDaisyUIColorAsHex`), and returns a 6-digit hex in
  * whichever `#`-convention the embed expects:
  *
  * - Calendly's `pageSettings.primaryColor` wants a bare hex (`"00a2ff"`).
@@ -26,7 +26,7 @@ import { getDaisyUIColorAsThree } from '@/utils/theme-utils';
  * Callers MUST re-invoke on theme change; use {@link useEmbedThemeColor} which
  * wires the canonical `data-theme` MutationObserver.
  *
- * SSR-safe: `getDaisyUIColorAsThree` returns the `#808080` fallback when
+ * SSR-safe: `getDaisyUIColorAsHex` returns the `808080` fallback when
  * `document` is undefined (static export renders these client-side only).
  */
 
@@ -46,7 +46,7 @@ export function getEmbedColor(
   token: string = 'p',
   opts: { hash?: boolean } = {}
 ): string {
-  const hex = getDaisyUIColorAsThree(token).getHexString();
+  const hex = getDaisyUIColorAsHex(token);
   return opts.hash ? `#${hex}` : hex;
 }
 

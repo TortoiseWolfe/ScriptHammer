@@ -8,7 +8,7 @@ import FallbackPanel from '@/components/game/FallbackPanel';
 import CogRing from '@/components/game/CogRing';
 import ScriptTags from '@/components/game/ScriptTags';
 import PrintingMallet from '@/components/game/PrintingMallet';
-import { getDaisyUIColorAsThree } from '@/utils/theme-utils';
+import { getDaisyUIColorAsHex } from '@/utils/theme-utils';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 export interface SceneProps {
@@ -29,11 +29,16 @@ interface ThemeTokens {
 }
 
 function readThemeTokens(): ThemeTokens {
+  // theme-utils is three-free now (#291 — it's imported by non-3D routes).
+  // Reconstruct THREE.Color objects here (this module already imports three)
+  // from the byte-identical hex string.
+  const c = (token: string) =>
+    new ThreeColor(`#${getDaisyUIColorAsHex(token)}`);
   return {
-    primary: getDaisyUIColorAsThree('p'),
-    secondary: getDaisyUIColorAsThree('s'),
-    accent: getDaisyUIColorAsThree('a'),
-    base: getDaisyUIColorAsThree('b1'),
+    primary: c('p'),
+    secondary: c('s'),
+    accent: c('a'),
+    base: c('b1'),
   };
 }
 
@@ -63,7 +68,7 @@ function isWebGLAvailable(): boolean {
  *
  * - DPR capped at [1, 2] (NFR-004)
  * - No SSR — must be loaded via `dynamic(import(...), { ssr: false })` (NFR-005)
- * - Theme reactivity via `getDaisyUIColorAsThree` + MutationObserver on
+ * - Theme reactivity via `getDaisyUIColorAsHex` + MutationObserver on
  *   `<html data-theme>` (FR-002, FR-003, US-2)
  * - Auto-orbit gated on `prefers-reduced-motion` + 3-second idle-resume
  *   after user input (FR-004, FR-005, US-3)
