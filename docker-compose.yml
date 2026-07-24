@@ -249,7 +249,19 @@ services:
       GOTRUE_JWT_EXP: 3600
       GOTRUE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
       GOTRUE_EXTERNAL_EMAIL_ENABLED: 'true'
-      GOTRUE_MAILER_AUTOCONFIRM: 'true'
+      # Default 'true' = normal local dev auto-confirms (fast, no email step).
+      # The signup-mailer E2E (#288) sets GOTRUE_MAILER_AUTOCONFIRM=false so GoTrue
+      # sends a REAL confirmation email into supabase-mail (Mailpit) that the test
+      # reads + clicks — exercising the mailer path that broke undetected in #287.
+      GOTRUE_MAILER_AUTOCONFIRM: ${GOTRUE_MAILER_AUTOCONFIRM:-true}
+      # GoTrue builds email links as {API_EXTERNAL_URL}{URLPATH}. API_EXTERNAL_URL
+      # points at Kong (54321), which only routes /auth/v1/* — so the paths MUST be
+      # prefixed /auth/v1, else the emailed link 404s at Kong. GoTrue's default is a
+      # bare /verify (would break); pin them (matches the official Supabase stack).
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_INVITE: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_RECOVERY: /auth/v1/verify
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: /auth/v1/verify
       GOTRUE_SMTP_HOST: supabase-mail
       GOTRUE_SMTP_PORT: 1025
       GOTRUE_SMTP_ADMIN_EMAIL: admin@example.com
