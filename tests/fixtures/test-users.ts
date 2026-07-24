@@ -211,12 +211,43 @@ export async function createTestUser(
 }
 
 /**
- * Deletes a test user via service role client
+ * Deletes a test user via service role client.
+ *
+ * Clears the only non-cascading FK blockers first — `webhook_events` →
+ * `subscriptions` → `payment_intents` — before `admin.deleteUser`, which
+ * cascades everything else (profile, keys, messages, …). Mirrors the factory's
+ * `deleteTestUser` (`tests/e2e/utils/test-user-factory.ts`, #338 / #341): those
+ * three `template_user_id` / `related_subscription_id` FKs are `ON DELETE NO
+ * ACTION`, so a user with a subscription-that-has-a-webhook would otherwise make
+ * `admin.deleteUser` fail. We never pre-delete the profile, so a failed
+ * auth-delete leaves the user fully intact rather than orphaned.
  *
  * @param userId - User ID to delete
  */
 export async function deleteTestUser(userId: string): Promise<void> {
   const serviceClient = createServiceClient();
+
+  // Best-effort blocker cleanup (a PostgREST delete succeeds even with 0
+  // matching rows, so these don't throw in the common no-payment-data case).
+  const { data: subs } = await serviceClient
+    .from('subscriptions')
+    .select('id')
+    .eq('template_user_id', userId);
+  const subIds = (subs ?? []).map((s) => s.id);
+  if (subIds.length > 0) {
+    await serviceClient
+      .from('webhook_events')
+      .delete()
+      .in('related_subscription_id', subIds);
+  }
+  await serviceClient
+    .from('subscriptions')
+    .delete()
+    .eq('template_user_id', userId);
+  await serviceClient
+    .from('payment_intents')
+    .delete()
+    .eq('template_user_id', userId);
 
   const { error } = await serviceClient.auth.admin.deleteUser(userId);
 

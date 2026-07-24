@@ -1,8 +1,8 @@
 /**
  * Pure cleanup function for stale `*@scripthammer.test` users (#50).
  *
- * Walks the FK chain (payment_intents → subscriptions → user_profiles
- * → auth deleteUser) for every test-suite user that matches the
+ * Walks the FK chain (payment_intents → webhook_events → subscriptions →
+ * user_profiles → auth deleteUser) for every test-suite user that matches the
  * scripthammer.test domain. Best-effort: errors are logged via the
  * provided logger and the cleanup continues. Returns a summary count.
  *
@@ -76,6 +76,37 @@ export async function cleanupStaleScripthammerUsers(
         error: intentsResult.error.message,
       });
       summary.errorsLogged++;
+    }
+
+    // webhook_events (NO ACTION → subscriptions) must be cleared BEFORE the
+    // subscriptions delete, or a stale user whose subscription has a webhook
+    // row wedges the cleanup. Fetch this user's subscription ids first, then
+    // delete its webhook rows. Mirrors tests/e2e/utils/test-user-factory.ts
+    // deleteTestUser (#338 / #341).
+    const { data: subsData, error: subsSelectError } = await client
+      .from('subscriptions')
+      .select('id')
+      .eq('template_user_id', userId);
+    if (subsSelectError) {
+      logger.warn('Cleanup-stale: subscriptions select failed', {
+        userId,
+        error: subsSelectError.message,
+      });
+      summary.errorsLogged++;
+    }
+    const subIds = (subsData ?? []).map((s: { id: string }) => s.id);
+    if (subIds.length > 0) {
+      const webhookResult = await client
+        .from('webhook_events')
+        .delete()
+        .in('related_subscription_id', subIds);
+      if (webhookResult.error) {
+        logger.warn('Cleanup-stale: webhook_events delete failed', {
+          userId,
+          error: webhookResult.error.message,
+        });
+        summary.errorsLogged++;
+      }
     }
 
     // subscriptions (leaf w.r.t. auth.users)
