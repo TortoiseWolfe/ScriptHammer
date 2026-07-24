@@ -59,13 +59,6 @@ test.describe('@smoke production deploy (#288)', () => {
   }
 
   test('the sign-in page loads with no console errors', async ({ page }) => {
-    // SKIPPED pending #348: this check works and immediately caught a REAL prod
-    // defect — /sign-in throws a browser-only "Invalid or unexpected token" parse
-    // error (#294 SWC-octal class). Skipping (not deleting/allowlisting) keeps the
-    // check visible and honest; DELETE this one line to re-gate once #348 is fixed
-    // — a green run then re-confirms the fix on the live origin.
-    test.skip(true, 'prod /sign-in has a live parse error — tracked in #348');
-
     const errors: string[] = [];
     page.on('console', (msg) => {
       if (msg.type() === 'error') errors.push(msg.text());

@@ -4,9 +4,9 @@
 # unusable (placeholder OAuth client_ids, site_url=localhost, dead SMTP). This
 # job hits the LIVE origin AFTER each deploy (and daily) and asserts the deployed
 # thing a customer touches works: providers enabled, OAuth authorize redirects
-# carry real client_ids (#287 detector), canonical origin + github.io redirect.
-# (The "sign-in zero console errors" check is currently skipped pending #348 —
-# the real prod defect this suite already caught.)
+# carry real client_ids (#287 detector), sign-in loads with zero console errors,
+# and canonical origin + github.io redirect. (This suite caught a real prod defect
+# on its first run — #348, a CSS emitted as <script> — fixed in the same PR.)
 #
 # All checks are READ-ONLY against prod (no signup / user creation). Like
 # conformance.yml it needs no shared-backend mutex — nothing is mutated.
@@ -22,14 +22,12 @@ on:
   schedule:
     - cron: '30 15 * * *'
   workflow_dispatch:
-  # Validate the suite itself on PRs that touch it (runs against live prod).
-  pull_request:
-    branches: [main]
-    paths:
-      - 'tests/e2e/smoke/**'
-      - 'tests/e2e/utils/oauth-validity.ts'
-      - 'playwright.smoke.config.ts'
-      - '.github/workflows/smoke.yml'
+
+# NOTE: no `pull_request` trigger — this is a POST-DEPLOY monitor that tests the
+# LIVE origin. A PR's changes aren't deployed yet, so running it on a PR would
+# assert against the OLD deploy and red the PR for something it hasn't shipped.
+# It runs after Deploy completes (where the PR's changes ARE live), on a daily
+# cron, and on demand. Validate suite changes locally or via workflow_dispatch.
 
 concurrency:
   group: smoke-${{ github.ref }}
