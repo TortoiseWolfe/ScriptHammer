@@ -14,6 +14,7 @@
 -- below is psql meta-syntax (shell-out), not a YAML or eval hazard.
 
 \set pgpass `echo "$POSTGRES_PASSWORD"`
+\set dotnetpass `echo "${DOTNET_DB_PASSWORD:-$POSTGRES_PASSWORD}"`
 
 -- ── 1. Role passwords ──────────────────────────────────────────────────────
 -- init-scripts/ create these roles with LOGIN but no PASSWORD clause. No
@@ -27,10 +28,12 @@ ALTER ROLE supabase_auth_admin     WITH PASSWORD :'pgpass';
 ALTER ROLE supabase_storage_admin  WITH PASSWORD :'pgpass';
 ALTER ROLE supabase_read_only_user WITH PASSWORD :'pgpass';
 -- dotnet_app (#321): the least-privilege role the .NET backend logs in as. It is
--- CREATEd by the app monolithic migration (99999999999999_app_monolithic), which
--- runs before this /etc/postgresql.schema.sql hook, so it exists by now. Locally
--- it shares POSTGRES_PASSWORD; prod injects a distinct DOTNET_DB_PASSWORD.
-ALTER ROLE dotnet_app              WITH PASSWORD :'pgpass';
+-- CREATEd by the monolithic migration (supabase/migrations/20251006_complete_
+-- monolithic_setup.sql), which runs before this /etc/postgresql.schema.sql hook,
+-- so it exists by now. Its password sources DOTNET_DB_PASSWORD (defaulting to
+-- POSTGRES_PASSWORD) — the SAME var the .NET connection string uses, so the two
+-- can't drift; prod injects a distinct DOTNET_DB_PASSWORD.
+ALTER ROLE dotnet_app              WITH PASSWORD :'dotnetpass';
 
 -- ── 2. _realtime schema ────────────────────────────────────────────────────
 -- Not the same thing as the `realtime` schema (no underscore) that base
