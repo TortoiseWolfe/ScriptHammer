@@ -1,5 +1,3 @@
-import { Color as ThreeColor } from 'three';
-
 /**
  * Centralized dark theme detection for DaisyUI themes.
  * Used by map tiles, Disqus, Calendly, Cal.com, and Leaflet CSS.
@@ -86,8 +84,29 @@ function linearSrgbToSrgb(c: number): number {
 }
 
 /**
- * Convert a DaisyUI OKLCH value (as stored in CSS custom properties) to a
- * Three.js Color. Accepts both formats DaisyUI has used:
+ * Format an sRGB triplet (each channel 0..1) as a 6-digit lowercase hex string
+ * (no `#`).
+ *
+ * This intentionally reproduces `new THREE.Color(r, g, b).getHexString()`
+ * BYTE-FOR-BYTE, which is what this module used to return before three.js was
+ * removed from the non-3D bundle (#291). THREE stores constructor args in its
+ * linear working color space and `getHex()` applies the linear→sRGB transfer
+ * (`linearSrgbToSrgb`) on the way out — so applying it once here matches THREE
+ * exactly (verified across 45,260 samples). Do NOT "simplify" to
+ * `round(c * 255)`: that drops the transfer and shifts every theme color,
+ * breaking the WCAG contrast in tests/e2e/embed-theme-contrast.spec.ts.
+ */
+function rgbToHex(r: number, g: number, b: number): string {
+  const ch = (c: number) =>
+    Math.round(linearSrgbToSrgb(c) * 255)
+      .toString(16)
+      .padStart(2, '0');
+  return ch(r) + ch(g) + ch(b);
+}
+
+/**
+ * Convert a DaisyUI OKLCH value (as stored in CSS custom properties) to an sRGB
+ * triplet (each channel 0..1). Accepts both formats DaisyUI has used:
  *
  * - DaisyUI 4 (deprecated): bare triplet `"0.7 0.15 250"` — no wrapper, no `%`
  * - DaisyUI 5 (current):    `"oklch(58% .233 277.117)"` — function wrapper, `%` on L
@@ -95,9 +114,11 @@ function linearSrgbToSrgb(c: number): number {
  * @param oklch  CSS custom property value. Whitespace tolerated. Optional
  *               `oklch()` wrapper. `L` may carry a trailing `%`; in that case
  *               it's interpreted as 0-100 and converted to 0-1.
- * @returns      THREE.Color in sRGB, or null if the string is malformed.
+ * @returns      `{ r, g, b }` in sRGB (0..1), or null if the string is malformed.
  */
-function parseOklchTriplet(oklch: string): ThreeColor | null {
+function parseOklchTriplet(
+  oklch: string
+): { r: number; g: number; b: number } | null {
   // Strip `oklch(` prefix + `)` suffix if present.
   let stripped = oklch.trim();
   const wrapMatch = stripped.match(/^oklch\(([^)]+)\)$/i);
@@ -127,7 +148,7 @@ function parseOklchTriplet(oklch: string): ThreeColor | null {
   const g = linearSrgbToSrgb(linG);
   const b = linearSrgbToSrgb(linB);
 
-  return new ThreeColor(r, g, b);
+  return { r, g, b };
 }
 
 /**
@@ -155,25 +176,31 @@ const SHORT_TOKEN_TO_DAISYUI5: Record<string, string> = {
 
 /**
  * Read a DaisyUI theme token from `:root` (`document.documentElement`) and
- * return it as a `THREE.Color`. Mirrors the `useMapTheme` pattern from
- * `src/hooks/useMapTheme.ts` for theme reactivity — callers MUST subscribe
- * via `MutationObserver` on `data-theme` to be notified of theme changes
- * and re-call this helper.
+ * return it as a 6-digit lowercase hex string (no `#`). Mirrors the
+ * `useMapTheme` pattern from `src/hooks/useMapTheme.ts` for theme reactivity —
+ * callers MUST subscribe via `MutationObserver` on `data-theme` to be notified
+ * of theme changes and re-call this helper.
+ *
+ * Formerly `getDaisyUIColorAsThree` (returned a `THREE.Color`). Renamed +
+ * de-three'd in #291: this module is imported by non-3D routes (the blog's
+ * Disqus embed via embed-theme.ts), so a static `three` import here dragged the
+ * 2.66MB three chunk onto `/blog/[slug]`. The output is byte-identical — see
+ * {@link rgbToHex}. 3D callers that need a THREE.Color reconstruct one from the
+ * hex (`new Color('#' + getDaisyUIColorAsHex(token))`).
  *
  * Per research.md Decision 3:
  * - DaisyUI 4+ stores theme tokens as OKLCH triplets in CSS custom properties.
  * - The CSS value format is `"L C H"` (no `oklch()` wrapper, no commas).
- * - Three.js r184's color parser does NOT understand `oklch()` strings.
  * - This helper does the OKLCH→sRGB math inline so unit tests in jsdom work
  *   without requiring a real browser's CSS color resolution.
  *
  * @param token  DaisyUI token name without the `--` prefix (e.g. `"p"` for primary).
- * @returns      A Three.js Color. Returns middle gray (`#808080`) if the token
- *               is unset or malformed — never throws, so calling code can use
- *               the result directly without try/catch.
+ * @returns      A 6-digit hex string (no `#`). Returns middle gray (`"808080"`)
+ *               if the token is unset or malformed — never throws, so calling
+ *               code can use the result directly without try/catch.
  */
-export function getDaisyUIColorAsThree(token: string): ThreeColor {
-  const fallback = new ThreeColor(0x808080);
+export function getDaisyUIColorAsHex(token: string): string {
+  const fallback = '808080';
 
   if (typeof document === 'undefined') return fallback;
 
@@ -191,7 +218,7 @@ export function getDaisyUIColorAsThree(token: string): ThreeColor {
     const value = root.getPropertyValue(`--${name}`).trim();
     if (!value) continue;
     const parsed = parseOklchTriplet(value);
-    if (parsed) return parsed;
+    if (parsed) return rgbToHex(parsed.r, parsed.g, parsed.b);
   }
 
   return fallback;

@@ -92,6 +92,12 @@ jobs:
       - name: Verify chunks parse in a browser (#294)
         run: node scripts/check-chunks-parse.mjs
 
+      # First-load budget (#291): three.js must stay OFF non-3D routes' initial
+      # payload. Nothing else measures first-load JS, so a lost cacheGroup entry
+      # or a new static `three` import would silently re-bloat every route.
+      - name: Verify three.js is off non-3D routes (#291)
+        run: node scripts/check-first-load-budget.mjs
+
       - name: Build Storybook
         run: pnpm run build-storybook
 

@@ -125,6 +125,12 @@ fi
 # the one that catches it.
 run_check "Chunk parse check (#294)" "node scripts/check-chunks-parse.mjs"
 
+# 5c. First-load budget (#291): three.js (2.66MB) must not ship in the initial
+# payload of any non-3D route. `next build` never measured first-load JS, so
+# three silently rode the initial vendor chunk on every route. This gate fails
+# the push if it regresses (a lost cacheGroup entry or a new static three import).
+run_check "First-load budget (#291)" "node scripts/check-first-load-budget.mjs"
+
 # 6. Storybook build (optional - can be slow)
 if [ "$1" != "--quick" ]; then
     run_check "Storybook build" "pnpm build-storybook"

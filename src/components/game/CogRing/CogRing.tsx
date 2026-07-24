@@ -26,7 +26,7 @@ export interface CogRingProps {
  *
  * Material is `<meshStandardMaterial>` with high metalness + low roughness
  * for a silver / steampunk feel; theme reactivity via the `color` prop is
- * handled by the parent Scene reading `getDaisyUIColorAsThree`.
+ * handled by the parent Scene reading `getDaisyUIColorAsHex`.
  *
  * Must be rendered inside a `<Canvas>` (R3F context required).
  *

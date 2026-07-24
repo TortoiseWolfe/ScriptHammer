@@ -1,21 +1,24 @@
 /**
  * theme-utils — Unit Tests
  *
- * Feature 047 — Three.js Game (T004)
+ * Feature 047 — Three.js Game (T004); de-three'd in #291.
  *
  * Covers:
  * - isDarkTheme (existing helper)
- * - getDaisyUIColorAsThree (new for feature 047)
- *   - reads CSS custom property from :root
- *   - resolves OKLCH triplet to a THREE.Color via browser computation
- *     (jsdom doesn't implement OKLCH parsing, so an inline fallback
- *      handles that case)
+ * - getDaisyUIColorAsHex (formerly getDaisyUIColorAsThree)
+ *   - reads a CSS custom property from :root
+ *   - resolves an OKLCH triplet to a 6-digit hex string (the inline OKLCH→sRGB
+ *     math handles jsdom, which doesn't implement OKLCH parsing)
  *   - returns a sensible default when the token is unset
+ *   - output is byte-identical to the old `THREE.Color(...).getHexString()`
+ *     (proven across 45,260 samples in the #291 work; the exact-color guard is
+ *     tests/e2e/embed-theme-contrast.spec.ts)
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { Color as ThreeColor } from 'three';
-import { isDarkTheme, getDaisyUIColorAsThree } from './theme-utils';
+import { isDarkTheme, getDaisyUIColorAsHex } from './theme-utils';
+
+const HEX6 = /^[0-9a-f]{6}$/;
 
 describe('isDarkTheme', () => {
   it('returns true for known dark themes', () => {
@@ -30,7 +33,7 @@ describe('isDarkTheme', () => {
   });
 });
 
-describe('getDaisyUIColorAsThree', () => {
+describe('getDaisyUIColorAsHex', () => {
   let originalRootStyle: string;
 
   beforeEach(() => {
@@ -45,41 +48,36 @@ describe('getDaisyUIColorAsThree', () => {
     }
   });
 
-  it('returns a THREE.Color instance', () => {
+  it('returns a 6-digit lowercase hex string (no #)', () => {
     document.documentElement.style.setProperty('--p', '0.7 0.15 250');
-    const color = getDaisyUIColorAsThree('p');
-    expect(color).toBeInstanceOf(ThreeColor);
+    const hex = getDaisyUIColorAsHex('p');
+    expect(hex).toMatch(HEX6);
   });
 
   it('reads the CSS custom property by token name (no -- prefix in the argument)', () => {
-    // Use a known easy-to-resolve triplet. The exact sRGB values vary by browser
-    // OKLCH implementation, so we assert "not white" rather than a specific hex.
+    // The exact sRGB values vary; assert "not white" (the parse-failure sentinel).
     document.documentElement.style.setProperty('--p', '0.4 0.2 30');
-    const color = getDaisyUIColorAsThree('p');
-    // White is the sentinel value when parsing fails entirely.
-    expect(color.getHexString()).not.toBe('ffffff');
+    expect(getDaisyUIColorAsHex('p')).not.toBe('ffffff');
   });
 
   it('returns a documented fallback when the token is unset', () => {
-    // Ensure no --doesnotexist is set
     document.documentElement.style.removeProperty('--doesnotexist');
-    const color = getDaisyUIColorAsThree('doesnotexist');
-    // Documented fallback: middle gray (#808080).
-    expect(color.getHexString()).toBe('808080');
+    // Documented fallback: middle gray (808080).
+    expect(getDaisyUIColorAsHex('doesnotexist')).toBe('808080');
   });
 
   it('handles raw OKLCH triplets in CSS custom property format (legacy DaisyUI 4 stored them as "L C H" without the function wrapper)', () => {
     document.documentElement.style.setProperty('--s', '0.6 0.1 180');
-    const color = getDaisyUIColorAsThree('s');
-    expect(color).toBeInstanceOf(ThreeColor);
-    expect(color.getHexString()).not.toBe('ffffff');
+    const hex = getDaisyUIColorAsHex('s');
+    expect(hex).toMatch(HEX6);
+    expect(hex).not.toBe('ffffff');
   });
 
   it('strips whitespace from the CSS custom property value before parsing', () => {
     document.documentElement.style.setProperty('--a', '  0.5 0.12 90  ');
-    const color = getDaisyUIColorAsThree('a');
-    expect(color).toBeInstanceOf(ThreeColor);
-    expect(color.getHexString()).not.toBe('ffffff');
+    const hex = getDaisyUIColorAsHex('a');
+    expect(hex).toMatch(HEX6);
+    expect(hex).not.toBe('ffffff');
   });
 
   it('parses DaisyUI 5 format: oklch() wrapper + percent-suffixed L', () => {
@@ -89,10 +87,10 @@ describe('getDaisyUIColorAsThree', () => {
       '--color-primary',
       'oklch(58% .233 277.117)'
     );
-    const color = getDaisyUIColorAsThree('p');
-    expect(color).toBeInstanceOf(ThreeColor);
-    expect(color.getHexString()).not.toBe('808080');
-    expect(color.getHexString()).not.toBe('ffffff');
+    const hex = getDaisyUIColorAsHex('p');
+    expect(hex).toMatch(HEX6);
+    expect(hex).not.toBe('808080');
+    expect(hex).not.toBe('ffffff');
   });
 
   it('maps the short DaisyUI 4 token `p` to the DaisyUI 5 name `--color-primary`', () => {
@@ -100,9 +98,9 @@ describe('getDaisyUIColorAsThree', () => {
       '--color-primary',
       'oklch(45% .24 277.023)'
     );
-    const color = getDaisyUIColorAsThree('p');
-    expect(color).toBeInstanceOf(ThreeColor);
-    expect(color.getHexString()).not.toBe('808080');
+    const hex = getDaisyUIColorAsHex('p');
+    expect(hex).toMatch(HEX6);
+    expect(hex).not.toBe('808080');
   });
 
   it('different OKLCH inputs produce different hex outputs (sanity check that the parser is not constant)', () => {
@@ -110,19 +108,19 @@ describe('getDaisyUIColorAsThree', () => {
       '--color-primary',
       'oklch(45% .24 277)'
     );
-    const a = getDaisyUIColorAsThree('p').getHexString();
+    const a = getDaisyUIColorAsHex('p');
     document.documentElement.style.setProperty(
       '--color-primary',
       'oklch(90% .05 30)'
     );
-    const b = getDaisyUIColorAsThree('p').getHexString();
+    const b = getDaisyUIColorAsHex('p');
     expect(a).not.toBe(b);
     expect(a).not.toBe('808080');
     expect(b).not.toBe('808080');
   });
 });
 
-describe('getDaisyUIColorAsThree MutationObserver reactivity', () => {
+describe('getDaisyUIColorAsHex MutationObserver reactivity', () => {
   // This case asserts that a caller can subscribe to data-theme changes via the
   // canonical MutationObserver pattern (mirrored from useMapTheme). The helper
   // itself does NOT subscribe — that's the caller's responsibility — so we
