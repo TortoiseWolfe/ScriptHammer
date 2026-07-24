@@ -150,6 +150,13 @@ services:
       PGDATABASE: postgres
       POSTGRES_DB: postgres
       JWT_EXP: 3600
+      # Password for the least-privilege dotnet_app role (#321). roles.sql reads
+      # this to set the role's password; defaults to POSTGRES_PASSWORD so local
+      # dev is unchanged. Prod injects a DISTINCT value here AND in the
+      # dotnet-messaging connection string (both source the same var, so they
+      # can't drift). The .NET backend refuses to boot outside Development if
+      # this is left at the demo default.
+      DOTNET_DB_PASSWORD: ${DOTNET_DB_PASSWORD:-${POSTGRES_PASSWORD:-your-super-secret-and-long-postgres-password}}
     command:
       - postgres
       - -c
@@ -478,10 +485,12 @@ services:
       DOTNET_WATCH_SUPPRESS_MSBUILD_INCREMENTALISM: '1'
       # Reach the local Supabase Postgres by service DNS (same messaging schema).
       # Connect as the least-privilege dotnet_app role (#321), NOT postgres — so
-      # RLS + the #281 trigger are a live backstop. Locally it shares
-      # POSTGRES_PASSWORD (docker/supabase/roles.sql sets dotnet_app's password to
-      # it). Prod overrides this whole env with a distinct injected password.
-      ConnectionStrings__DefaultConnection: 'Host=supabase-db;Port=5432;Database=postgres;Username=dotnet_app;Password=${POSTGRES_PASSWORD:-your-super-secret-and-long-postgres-password}'
+      # RLS + the #281 trigger are a live backstop. The password sources the SAME
+      # DOTNET_DB_PASSWORD var roles.sql uses (which defaults to POSTGRES_PASSWORD),
+      # so the connection password and the role's actual password can't drift.
+      # Prod injects a distinct DOTNET_DB_PASSWORD; the backend refuses to boot
+      # outside Development if it's left at the demo default.
+      ConnectionStrings__DefaultConnection: 'Host=supabase-db;Port=5432;Database=postgres;Username=dotnet_app;Password=${DOTNET_DB_PASSWORD:-${POSTGRES_PASSWORD:-your-super-secret-and-long-postgres-password}}'
       # Same HS256 secret GoTrue/PostgREST validate against.
       SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
       CORS_ORIGINS: 'http://localhost:3000,http://localhost:3002,http://127.0.0.1:3002'

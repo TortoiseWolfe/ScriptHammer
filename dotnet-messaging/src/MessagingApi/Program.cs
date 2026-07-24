@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MessagingApi.Data;
 using MessagingApi.Middleware;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -73,6 +74,36 @@ if (!builder.Environment.IsDevelopment())
             "Refusing to start: SUPABASE_JWT_SECRET is the well-known demo secret. " +
             "Inject the real project JWT secret (env SUPABASE_JWT_SECRET) in " +
             "non-Development environments — the demo secret is a token-forgery vector.");
+    }
+}
+
+// ── Fail-closed DB-password guard (#321). The backend logs in as the
+// least-privilege dotnet_app role; locally its password is the well-known
+// Supabase demo value. A shared/guessable DB password in a non-Development
+// environment undermines the least-privilege boundary — RLS + the #281
+// column-guard only help if the login itself isn't trivially forgeable — so
+// refuse to boot rather than run with the demo credential. Mirrors the JWT
+// guard above. Inject a distinct DOTNET_DB_PASSWORD in prod.
+const string DemoDbPassword = "your-super-secret-and-long-postgres-password";
+if (!builder.Environment.IsDevelopment())
+{
+    var connString = builder.Configuration.GetConnectionString("DefaultConnection");
+    var dbPassword = string.IsNullOrEmpty(connString)
+        ? null
+        : new NpgsqlConnectionStringBuilder(connString).Password;
+    if (string.IsNullOrEmpty(dbPassword))
+    {
+        throw new InvalidOperationException(
+            "Refusing to start: the database connection has no password. Inject a " +
+            "distinct DOTNET_DB_PASSWORD for the dotnet_app role in non-Development " +
+            "environments.");
+    }
+    if (dbPassword == DemoDbPassword)
+    {
+        throw new InvalidOperationException(
+            "Refusing to start: the dotnet_app DB password is the well-known local/demo " +
+            "value. Inject a distinct DOTNET_DB_PASSWORD in non-Development environments — " +
+            "a shared demo DB password undermines the least-privilege role boundary (#321).");
     }
 }
 
