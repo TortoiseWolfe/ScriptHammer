@@ -26,9 +26,14 @@ describe('OAuth Flow Integration', () => {
 
     expect(error).toBeNull();
     expect(data.url).toBeDefined();
-    // Supabase returns a URL to their auth endpoint, not directly to GitHub
-    expect(data.url).toContain('supabase');
-    expect(data.url).toContain('authorize');
+    // #288: assert the REAL Supabase authorize endpoint + provider, not merely
+    // that the string contains 'authorize' (a malformed URL could too). data.url
+    // is the Supabase authorize URL — the provider client_id is only added on the
+    // downstream redirect, so client_id validity is covered by the E2E
+    // oauth-csrf.spec.ts, not here.
+    const url = new URL(String(data.url));
+    expect(url.pathname).toBe('/auth/v1/authorize');
+    expect(url.searchParams.get('provider')).toBe('github');
   });
 
   it('should generate correct Google OAuth URL', async () => {
@@ -42,9 +47,10 @@ describe('OAuth Flow Integration', () => {
 
     expect(error).toBeNull();
     expect(data.url).toBeDefined();
-    // Supabase returns a URL to their auth endpoint
-    expect(data.url).toContain('supabase');
-    expect(data.url).toContain('authorize');
+    // #288: real authorize endpoint + provider (see the GitHub test above).
+    const url = new URL(String(data.url));
+    expect(url.pathname).toBe('/auth/v1/authorize');
+    expect(url.searchParams.get('provider')).toBe('google');
   });
 
   it('should include correct redirect URL in OAuth request', async () => {

@@ -8,6 +8,7 @@
  *
  * Usage:
  *   pnpm supabase:auth-config                    # dry-run (default)
+ *   pnpm supabase:auth-config --check            # dry-run + EXIT 1 on drift (CI gate)
  *   pnpm supabase:auth-config --apply            # PATCH and verify
  *   pnpm supabase:auth-config --config path.json # override config path
  *
@@ -28,12 +29,14 @@ const __dirname = dirname(__filename);
 
 type CliArgs = {
   apply: boolean;
+  check: boolean;
   configPath: string;
 };
 
 function parseArgs(argv: string[]): CliArgs {
   const args: CliArgs = {
     apply: false,
+    check: false,
     configPath: resolve(__dirname, 'auth-config.json'),
   };
 
@@ -41,6 +44,8 @@ function parseArgs(argv: string[]): CliArgs {
     const a = argv[i];
     if (a === '--apply') {
       args.apply = true;
+    } else if (a === '--check') {
+      args.check = true;
     } else if (a === '--config') {
       const next = argv[i + 1];
       if (!next) {
@@ -51,9 +56,12 @@ function parseArgs(argv: string[]): CliArgs {
       i++;
     } else if (a === '--help' || a === '-h') {
       console.log(
-        'Usage: tsx scripts/supabase/set-auth-config.ts [--apply] [--config <path>]'
+        'Usage: tsx scripts/supabase/set-auth-config.ts [--check] [--apply] [--config <path>]'
       );
       process.exit(0);
+    } else if (a === '--') {
+      // npm/pnpm arg separator (`pnpm run <script> -- --flag`) — ignore it.
+      continue;
     } else {
       console.error(`Unknown arg: ${a}`);
       process.exit(2);
@@ -192,7 +200,9 @@ async function main(): Promise<void> {
 
   console.log(`Project: ${projectRef}`);
   console.log(`Config:  ${args.configPath}`);
-  console.log(`Mode:    ${args.apply ? 'APPLY' : 'dry-run (default)'}`);
+  console.log(
+    `Mode:    ${args.check ? 'CHECK (fail on drift)' : args.apply ? 'APPLY' : 'dry-run (default)'}`
+  );
   console.log();
 
   console.log('Fetching current auth config...');
@@ -200,6 +210,23 @@ async function main(): Promise<void> {
 
   const diff = computeDiff(current, desired);
   printDiff(diff);
+
+  // --check: a read-only CI gate. Non-zero exit on ANY drift so the pipeline
+  // fails when the live project has diverged from the checked-in desired state
+  // (the #287 class: prod config drifts, tests stay green, sign-up breaks).
+  if (args.check) {
+    if (diff.length > 0) {
+      console.error(
+        `\n✗ Drift detected: ${diff.length} field(s) differ from ${args.configPath}. ` +
+          'Reconcile with `pnpm supabase:auth-config --apply`.'
+      );
+      process.exit(1);
+    }
+    console.log(
+      '✓ No drift — the live project matches the checked-in desired config.'
+    );
+    return;
+  }
 
   if (!args.apply) {
     console.log('Dry-run — no changes made. Re-run with --apply to commit.');
