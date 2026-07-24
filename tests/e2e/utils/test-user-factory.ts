@@ -235,37 +235,50 @@ export async function createUserProfile(
 }
 
 /**
- * Delete a test user and their associated data
+ * Delete a test user and their associated data.
  *
- * Cleans up in order:
- * 1. Messages sent by user
- * 2. Conversations involving user
- * 3. User connections
- * 4. User profile
- * 5. Auth user
+ * ORDER IS LOAD-BEARING — this function once corrupted the shared PRIMARY user.
+ * `admin.deleteUser` HARD-deletes auth.users and CASCADEs everything that
+ * matters: user_profiles → user_encryption_keys / messages / conversations /
+ * user_connections / conversation_members / group_keys / typing_indicators. The
+ * ONLY rows that DON'T cascade are payment_intents + subscriptions (their
+ * `template_user_id` FKs are ON DELETE NO ACTION — payment history is retained
+ * on user delete BY DESIGN), plus webhook_events (NO ACTION → subscriptions).
+ * Those three block admin.deleteUser, so we clear them FIRST, in dependency
+ * order (webhook_events → subscriptions → payment_intents).
+ *
+ * We deliberately do NOT delete the profile (or messages/conversations/etc.)
+ * ourselves: deleting the profile BEFORE a delete that can fail is exactly what
+ * orphaned the shared user (profile + cascaded keys gone, auth user survives,
+ * every downstream E2E job then 406s / can't unlock messaging). Now, if
+ * admin.deleteUser fails for ANY reason, the user is left fully INTACT.
  */
 export async function deleteTestUser(userId: string): Promise<boolean> {
   const client = getAdminClient();
   if (!client) return false;
 
   try {
-    // Clean up messaging data
-    await client.from('messages').delete().eq('sender_id', userId);
-
+    // Clear the only non-cascading blockers first. Best-effort: a failure here
+    // must not throw — teardown callers swallow the boolean (`.catch(() => {})`).
+    const { data: subs } = await client
+      .from('subscriptions')
+      .select('id')
+      .eq('template_user_id', userId);
+    const subIds = (subs ?? []).map((s: { id: string }) => s.id);
+    if (subIds.length > 0) {
+      await client
+        .from('webhook_events')
+        .delete()
+        .in('related_subscription_id', subIds);
+    }
+    await client.from('subscriptions').delete().eq('template_user_id', userId);
     await client
-      .from('conversations')
+      .from('payment_intents')
       .delete()
-      .or(`participant_1_id.eq.${userId},participant_2_id.eq.${userId}`);
+      .eq('template_user_id', userId);
 
-    await client
-      .from('user_connections')
-      .delete()
-      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
-
-    // Clean up user profile
-    await client.from('user_profiles').delete().eq('id', userId);
-
-    // Delete auth user
+    // Hard-delete the auth user — cascades profile, keys, messages,
+    // conversations, connections, and group data (see the FK chain above).
     const { error } = await client.auth.admin.deleteUser(userId);
 
     if (error) {
