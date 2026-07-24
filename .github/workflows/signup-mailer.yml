@@ -1,0 +1,153 @@
+# Real-form signup E2E with a mail-catcher (#288, item 3).
+#
+# The #287 disaster: the deployed product was unusable — email confirmation broke
+# — while every test stayed green, because tests minted users via
+# admin.createUser (bypassing the form + mailer). This job exercises the REAL
+# human path end-to-end against a LOCAL, ephemeral Supabase stack whose GoTrue
+# sends real confirmation emails into Mailpit (supabase-mail):
+#
+#   real /sign-up form → real confirmation email in Mailpit → click the link →
+#   session established → authenticated.
+#
+# The cloud shared Supabase can't be used here (Resend is send-only, no readable
+# inbox). Modeled on conformance.yml (local-stack bringup) + e2e.yml (root build /
+# serve / Playwright). Like conformance.yml it does NOT need the repo-wide
+# e2e-supabase mutex — the stack is per-runner ephemeral.
+#
+# Creds are the well-known PUBLIC Supabase demo keys (.env.local-supabase) — LOCAL.
+
+name: Signup Mailer E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/components/auth/**'
+      - 'src/app/sign-up/**'
+      - 'src/app/verify-email/**'
+      - 'src/app/auth/callback/**'
+      - 'src/contexts/AuthContext.tsx'
+      - 'tests/e2e/signup-mailer/**'
+      - 'tests/e2e/utils/mailpit.ts'
+      - 'playwright.signup-mailer.config.ts'
+      - 'docker-compose.yml'
+      - '.github/workflows/signup-mailer.yml'
+  workflow_dispatch:
+
+concurrency:
+  # Per-ref only — each run owns an isolated local stack (no shared backend).
+  group: signup-mailer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  signup-mailer:
+    name: Real-form signup + email confirmation (local Mailpit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Local demo env (compose + test share the same public demo creds)
+        run: |
+          # Satisfy compose's `.env` from the committed LOCAL-demo template.
+          cp .env.local-supabase .env
+          sed -i 's|host\.docker\.internal|localhost|g' .env
+          # Authoritative env for the build + test process (win over the copied
+          # .env; dotenv.config() does not override existing process.env).
+          grep -E '^(NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY)=' .env.local-supabase >> "$GITHUB_ENV"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321"
+            # Admin client (cleanup) runs on the runner → reach the published port.
+            echo "SUPABASE_ADMIN_URL=http://localhost:54321"
+            echo "MAILPIT_URL=http://localhost:54324"
+          } >> "$GITHUB_ENV"
+
+      - name: Bring up local Supabase + Mailpit (confirmation emails ON)
+        env:
+          # Flip off auto-confirm so GoTrue emits a REAL confirmation email into
+          # Mailpit (the whole point). Default stays 'true' for normal dev.
+          GOTRUE_MAILER_AUTOCONFIRM: 'false'
+        run: |
+          docker compose --profile supabase up -d --build \
+            supabase-db supabase-kong supabase-auth supabase-rest supabase-mail
+
+      - name: Wait for Postgres, Kong+Auth+REST, and Mailpit
+        run: |
+          set +e
+          ANON="$NEXT_PUBLIC_SUPABASE_ANON_KEY"
+          for i in $(seq 1 60); do
+            db=$(docker compose exec -T supabase-db pg_isready -U postgres -d postgres >/dev/null 2>&1 && echo ok || echo no)
+            rest=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 -H "apikey: $ANON" http://localhost:54321/rest/v1/ 2>/dev/null)
+            auth=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 -H "apikey: $ANON" http://localhost:54321/auth/v1/health 2>/dev/null)
+            mail=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 http://localhost:54324/api/v1/info 2>/dev/null)
+            echo "try $i: db=$db rest=$rest auth=$auth mailpit=$mail"
+            if [ "$db" = ok ] && [ "$rest" = 200 ] && [ "$auth" = 200 ] && [ "$mail" = 200 ]; then
+              echo "stack ready"; break
+            fi
+            if [ "$i" = 60 ]; then
+              echo "::error::stack did not become ready within ~5 min"
+              docker compose logs --tail=80 supabase-db supabase-auth supabase-rest supabase-kong supabase-mail
+              exit 1
+            fi
+            sleep 5
+          done
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.16.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate project configuration
+        run: node scripts/detect-project.js
+
+      - name: Build the app (root-anchored, pointed at local Supabase)
+        run: pnpm build
+        env:
+          # Served from ROOT (`serve out -l 3000`), so build without a basePath.
+          DISABLE_BASE_PATH: 'true'
+          # NEXT_PUBLIC_SUPABASE_URL / ANON_KEY are inlined at build time — they
+          # come from $GITHUB_ENV (local stack + demo anon key) set above.
+
+      - name: Install Playwright (chromium)
+        run: |
+          for i in 1 2 3; do
+            pnpm exec playwright install --with-deps chromium && break
+            echo "Retry $i: playwright install failed, retrying in 10s..."
+            sleep 10
+          done
+
+      - name: Serve the static build
+        run: |
+          npx serve out -l 3000 > serve.log 2>&1 &
+          npx wait-on http://localhost:3000 -t 60000
+
+      - name: Run the signup-mailer E2E
+        env:
+          SKIP_WEBSERVER: true
+          BASE_URL: http://localhost:3000
+        run: pnpm test:e2e:signup-mailer
+
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          echo '--- serve.log ---'; tail -40 serve.log 2>/dev/null || true
+          echo '--- mailpit messages ---'; curl -s http://localhost:54324/api/v1/messages | head -c 2000 || true
+          echo; echo '--- stack logs ---'
+          docker compose logs --tail=120 supabase-db supabase-auth supabase-rest supabase-kong supabase-mail
+
+      - name: Tear down
+        if: always()
+        run: docker compose --profile supabase down -v

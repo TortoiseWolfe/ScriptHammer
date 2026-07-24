@@ -38,6 +38,7 @@
     "supabase:local:down": "docker compose --profile supabase down",
     "supabase:auth-config": "tsx scripts/supabase/set-auth-config.ts",
     "supabase:auth-config:check": "tsx scripts/supabase/set-auth-config.ts --check",
+    "test:e2e:signup-mailer": "playwright test --config playwright.signup-mailer.config.ts",
     "supabase:secrets": "tsx scripts/supabase/set-edge-function-secrets.ts",
     "db:reset": "tsx scripts/reset-database.ts",
     "generate:sitemap": "node scripts/generate-sitemap.js",

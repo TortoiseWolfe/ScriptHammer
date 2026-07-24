@@ -238,6 +238,7 @@ export default defineConfig({
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
         '**/basepath/**', // basePath project only (root-anchored build here)
+        '**/signup-mailer/**', // local-Mailpit only — playwright.signup-mailer.config.ts
       ],
       dependencies: ['setup'],
       use: {
@@ -277,6 +278,7 @@ export default defineConfig({
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
         '**/basepath/**', // basePath project only (root-anchored build here)
+        '**/signup-mailer/**', // local-Mailpit only — playwright.signup-mailer.config.ts
       ],
       dependencies: ['setup'],
       use: {
@@ -316,6 +318,7 @@ export default defineConfig({
         '**/brute-force.spec.ts',
         '**/sign-up.spec.ts',
         '**/basepath/**', // basePath project only (root-anchored build here)
+        '**/signup-mailer/**', // local-Mailpit only — playwright.signup-mailer.config.ts
       ],
       dependencies: ['setup'],
       use: {
@@ -334,6 +337,7 @@ export default defineConfig({
           '**/brute-force.spec.ts',
           '**/sign-up.spec.ts',
           '**/basepath/**', // basePath project only (root-anchored build here)
+          '**/signup-mailer/**', // local-Mailpit only — playwright.signup-mailer.config.ts
         ],
         dependencies: ['setup'],
         use: {
@@ -353,6 +357,7 @@ export default defineConfig({
           '**/brute-force.spec.ts',
           '**/sign-up.spec.ts',
           '**/basepath/**', // basePath project only (root-anchored build here)
+          '**/signup-mailer/**', // local-Mailpit only — playwright.signup-mailer.config.ts
         ],
         dependencies: ['setup'],
         use: {
