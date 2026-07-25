@@ -22,6 +22,32 @@ import {
 } from '../utils/test-user-factory';
 
 /**
+ * (#353) Skip a test that must SUBMIT the sign-up form when the deployed build
+ * renders a CAPTCHA.
+ *
+ * Playwright cannot solve a real challenge, and the token is verified
+ * server-side against the real secret — so no Turnstile "test key" helps
+ * either. Real-form sign-up coverage lives in `signup-mailer.yml`, which runs
+ * against LOCAL Supabase where CAPTCHA is off.
+ *
+ * This must be EXPLICIT rather than left to the generic `.alert-error`
+ * branches below. Those would swallow the challenge prompt into a vague
+ * "Sign-up error" skip (test 1) or accept it as the expected duplicate-email
+ * error (test 2) — a test that silently stops testing, or passes for the wrong
+ * reason, while CI stays green. Detecting the widget keeps this
+ * self-configuring: no env var anyone has to remember to flip.
+ */
+async function skipIfCaptchaProtected(page: import('@playwright/test').Page) {
+  const captchaPresent = await page
+    .locator('[data-testid="captcha-widget"]')
+    .count();
+  test.skip(
+    captchaPresent > 0,
+    'Sign-up is CAPTCHA-protected (#353); real-form coverage runs in signup-mailer.yml against local Supabase.'
+  );
+}
+
+/**
  * Generate a test email for sign-up tests.
  * Derives domain from TEST_USER_PRIMARY_EMAIL to ensure valid emails.
  *
@@ -85,6 +111,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
 
     await page.goto('/sign-up');
     await dismissCookieBanner(page);
+    await skipIfCaptchaProtected(page);
 
     // Page heading is "Create Account"
     await expect(
@@ -151,6 +178,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
 
     await page.goto('/sign-up');
     await dismissCookieBanner(page);
+    await skipIfCaptchaProtected(page);
 
     // Try to sign up with the same email
     await page.getByLabel('Email').fill(existingEmail);

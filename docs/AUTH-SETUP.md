@@ -415,11 +415,28 @@ turns protection off later.
 
 ### 6.5.5 Effect on the test suites
 
-| Suite                                     | Target             | Effect                                                                             |
-| ----------------------------------------- | ------------------ | ---------------------------------------------------------------------------------- |
-| `signup-mailer.yml` (real form + Mailpit) | **local** Supabase | Unaffected — CAPTCHA is not enabled locally                                        |
-| `production.smoke.spec.ts`                | prod               | Unaffected — read-only, creates no users                                           |
-| `user-registration.spec.ts`               | cloud              | Validation cases unaffected; the one full-registration case is already `test.skip` |
+| Suite                                     | Target             | Effect                                                                                                              |
+| ----------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| `signup-mailer.yml` (real form + Mailpit) | **local** Supabase | Unaffected — CAPTCHA is not enabled locally. **This is where real-form sign-up coverage lives once CAPTCHA is on.** |
+| `production.smoke.spec.ts`                | prod               | Unaffected — read-only, creates no users                                                                            |
+| `user-registration.spec.ts`               | cloud              | Validation cases unaffected; the one full-registration case is already `test.skip`                                  |
+| `sign-up.spec.ts`                         | cloud              | **Two cases submit the real form and are explicitly skipped** via `skipIfCaptchaProtected()`                        |
+
+Nothing goes red — but the last row is the one that matters, and it is worth
+understanding _why_ it needed an explicit skip rather than being left alone.
+Both cases would otherwise have "passed" dishonestly:
+
+- `should complete sign-up with valid credentials` catches any `.alert-error`
+  and calls `test.skip(true, 'Sign-up error: …')`. The challenge prompt would
+  have been swallowed into a vague skip — a test that silently stops testing
+  while CI stays green.
+- `should show error when signing up with existing email` accepts "an error is
+  visible" as success, so it would have gone green on the CAPTCHA message
+  rather than the duplicate-email error it claims to assert — a false green.
+
+`skipIfCaptchaProtected()` detects the rendered widget, so it is
+self-configuring (no env var to remember) and its skip reason names #353 and
+points at where the coverage actually runs.
 
 The sign-up gate lives in `handleSubmit`, **not** in the button's `disabled`
 attribute. That is deliberate twice over: a disabled button is a dead end if
