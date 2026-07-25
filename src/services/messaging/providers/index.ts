@@ -15,6 +15,8 @@ import { DotnetMessagingProvider } from './dotnet-provider';
 import { SupabaseMessagingProvider } from './supabase-provider';
 import type { MessagingDataProvider } from './types';
 
+export { authContextFromSession } from './auth-context';
+
 export type {
   AuthContext,
   BackendProviderName,

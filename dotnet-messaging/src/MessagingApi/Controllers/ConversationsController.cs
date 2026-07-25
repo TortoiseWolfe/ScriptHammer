@@ -10,10 +10,11 @@ using MessagingApi.Models;
 namespace MessagingApi.Controllers;
 
 /// <summary>
-/// Conversation-scoped endpoints: metadata read, send, history, archive.
-/// Re-expresses C1/C2/C7 (read scoping), C8 (send = participant + server-set
-/// sender), C13 (gap-free sequence — delegated to the DB trigger), C14
-/// (NULL-tolerant idempotency), C5 (per-user archive).
+/// Conversation-scoped endpoints: create, metadata read, send, history, archive.
+/// Re-expresses C3 (creating a 1:1 requires an accepted connection), C1/C2/C7
+/// (read scoping), C8 (send = participant + server-set sender), C13 (gap-free
+/// sequence — delegated to the DB trigger), C14 (NULL-tolerant idempotency),
+/// C5 (per-user archive).
 /// </summary>
 [ApiController]
 [Route("api/messaging")]
@@ -24,6 +25,83 @@ public class ConversationsController : ControllerBase
     public ConversationsController(AppDbContext db) => _db = db;
 
     private CallerContext? Caller => CallerContext.FromPrincipal(User);
+
+    /// <summary>POST /api/messaging/conversations { otherUserId } → { id }.
+    /// C3 (creating a 1:1 requires an ACCEPTED connection) + C1 (the
+    /// existing-conversation lookup is participant-scoped).</summary>
+    [HttpPost("conversations")]
+    public async Task<IActionResult> Create([FromBody] CreateConversationDto body)
+    {
+        var caller = Caller;
+        if (caller is null) return Unauthorized();
+
+        if (body.OtherUserId == Guid.Empty)
+            return BadRequest(new { error = "otherUserId is required" });
+
+        // no_self_conversation CHECK: a 1:1 conversation needs two distinct users.
+        if (body.OtherUserId == caller.UserId)
+            return BadRequest(new { error = "cannot start a conversation with yourself" });
+
+        var (p1, p2) = CanonicalPair(caller.UserId, body.OtherUserId);
+
+        // C1: the lookup is participant-scoped (the caller IS p1 or p2 by
+        // construction, and RLS scopes the read besides) and deliberately
+        // connection-INdependent — an existing thread stays reachable after a
+        // disconnect, mirroring the RLS SELECT policy. Only creating is gated.
+        var existing = await FindConversationId(p1, p2);
+        if (existing is not null) return Ok(new { id = existing });
+
+        // C3: creating requires an ACCEPTED connection in EITHER direction.
+        if (!await MessagingQueries.HasAcceptedConnection(_db, p1, p2))
+            return Forbid();
+
+        // ON CONFLICT DO NOTHING rather than letting unique_conversation raise
+        // 23505: RlsActorMiddleware wraps the WHOLE request in one transaction, so
+        // a raised Postgres error aborts it and the recovery SELECT below would
+        // then fail with "current transaction is aborted". Same idiom as Send's
+        // C14 path. RLS's INSERT policy is still the live backstop underneath.
+        await _db.Database.ExecuteSqlRawAsync(@"
+            INSERT INTO conversations (id, participant_1_id, participant_2_id)
+            VALUES (@id, @p1, @p2)
+            ON CONFLICT (participant_1_id, participant_2_id) DO NOTHING;",
+            new NpgsqlParameter("id", Guid.NewGuid()),
+            new NpgsqlParameter("p1", p1),
+            new NpgsqlParameter("p2", p2));
+
+        // Resolve whichever row won — ours, or a concurrent caller's. This is the
+        // idempotency contract: a race returns the winner, it does not throw.
+        var saved = await FindConversationId(p1, p2);
+        if (saved is null)
+            return StatusCode(500, new { error = "insert did not persist" });
+
+        return Ok(new { id = saved });
+    }
+
+    /// <summary>
+    /// Order a pair to satisfy the canonical_ordering CHECK
+    /// (participant_1_id &lt; participant_2_id), which is what collapses (A,B) and
+    /// (B,A) onto a single unique_conversation row.
+    ///
+    /// Compares the CANONICAL STRING form, not Guid.CompareTo. Guid.CompareTo
+    /// orders by the struct's fields — the first 4 bytes as a SIGNED Int32, then
+    /// two Int16s — which does NOT match Postgres, where uuid compares as a plain
+    /// 16-byte sequence. Ordinal comparison of the lowercase hex rendering is
+    /// byte-order-equivalent, so it agrees with both Postgres and the JS-side
+    /// `a &lt; b` used by the Supabase provider and the conformance fixtures.
+    /// Using Guid.CompareTo here would emit unsorted pairs and trip the CHECK.
+    /// </summary>
+    private static (Guid, Guid) CanonicalPair(Guid a, Guid b) =>
+        string.CompareOrdinal(a.ToString(), b.ToString()) < 0 ? (a, b) : (b, a);
+
+    /// <summary>The 1:1 conversation id for an already canonically-ordered pair.</summary>
+    private async Task<Guid?> FindConversationId(Guid p1, Guid p2)
+    {
+        var conv = await _db.Conversations
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c =>
+                c.Participant1Id == p1 && c.Participant2Id == p2 && !c.IsGroup);
+        return conv?.Id;
+    }
 
     /// <summary>GET /api/messaging/conversations/{id} → ConversationMeta | null (C1/C2/C7).</summary>
     [HttpGet("conversations/{id}")]

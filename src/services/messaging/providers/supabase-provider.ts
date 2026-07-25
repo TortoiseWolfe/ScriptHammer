@@ -111,6 +111,120 @@ export class SupabaseMessagingProvider implements MessagingDataProvider {
     return createMessagingClient(this.injectedClient ?? createClient());
   }
 
+  /**
+   * (C3) Connection-gated 1:1 conversation creation; (C1) participant-scoped
+   * lookup. RLS enforces both independently — the checks here produce the
+   * domain errors the UI needs, they are not the security boundary.
+   */
+  async getOrCreateConversation(
+    ctx: AuthContext,
+    otherUserId: string
+  ): Promise<string> {
+    if (otherUserId === ctx.userId) {
+      throw new ValidationError(
+        'You cannot start a conversation with yourself',
+        'otherUserId'
+      );
+    }
+
+    const msgClient = this.client();
+
+    // Canonical ordering: participant_1_id < participant_2_id. The DB's
+    // `canonical_ordering` CHECK rejects an unsorted pair, and it is what makes
+    // `unique_conversation` collapse both directions onto one row.
+    const [participant1, participant2] =
+      ctx.userId < otherUserId
+        ? [ctx.userId, otherUserId]
+        : [otherUserId, ctx.userId];
+
+    // (C1) The lookup is participant-scoped by RLS and connection-INdependent,
+    // so it runs BEFORE the C3 gate: a pair who connected, talked, then
+    // disconnected can still reach their existing thread (their conversation
+    // list already shows it) while creating a NEW one still needs a live
+    // accepted connection.
+    const existingId = await this.findConversationId(
+      msgClient,
+      participant1,
+      participant2
+    );
+    if (existingId) return existingId;
+
+    // (C3) Creating requires an ACCEPTED connection in EITHER direction —
+    // `unique_connection` is (requester_id, addressee_id) and is not symmetric,
+    // so the single accepted row may point either way.
+    const { data: connection } = await msgClient
+      .from('user_connections')
+      .select('status')
+      .or(
+        `and(requester_id.eq.${participant1},addressee_id.eq.${participant2}),` +
+          `and(requester_id.eq.${participant2},addressee_id.eq.${participant1})`
+      )
+      .eq('status', 'accepted')
+      .maybeSingle();
+
+    if (!connection) {
+      throw new ConnectionError(
+        'You must be connected with this user to start a conversation'
+      );
+    }
+
+    const { data: created, error } = await msgClient
+      .from('conversations')
+      .insert({
+        participant_1_id: participant1,
+        participant_2_id: participant2,
+      })
+      .select('id')
+      .maybeSingle();
+
+    if (error) {
+      // 23505 (unique_violation): the other participant created the same pair
+      // between our lookup and our insert. The idempotency contract says return
+      // the winning row rather than surfacing the race to the caller.
+      if (error.code === '23505') {
+        const raced = await this.findConversationId(
+          msgClient,
+          participant1,
+          participant2
+        );
+        if (raced) return raced;
+      }
+      throw new ConnectionError(
+        'Failed to create conversation: ' + error.message
+      );
+    }
+
+    if (!created) {
+      // The INSERT returned no row — RLS's WITH CHECK rejected it. Surface the
+      // authorization failure rather than an undefined id.
+      throw new ConnectionError(
+        'You must be connected with this user to start a conversation'
+      );
+    }
+
+    return created.id;
+  }
+
+  /**
+   * Participant-scoped lookup of the 1:1 conversation for an already
+   * canonically-ordered pair. Returns null when there is none the caller may
+   * see — RLS makes "does not exist" and "not yours" indistinguishable here,
+   * which is the intended behaviour.
+   */
+  private async findConversationId(
+    msgClient: MessagingClient,
+    participant1: string,
+    participant2: string
+  ): Promise<string | null> {
+    const { data } = await msgClient
+      .from('conversations')
+      .select('id')
+      .eq('participant_1_id', participant1)
+      .eq('participant_2_id', participant2)
+      .maybeSingle();
+    return data?.id ?? null;
+  }
+
   async getConversationMeta(
     _ctx: AuthContext,
     conversationId: string

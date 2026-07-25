@@ -11,6 +11,7 @@
 import { createClient } from '@/lib/supabase/client';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import {
+  authContextFromSession,
   messagingProvider,
   type AuthContext,
   type MessagingDataProvider,
@@ -132,19 +133,6 @@ export async function cacheConversationData(
       // Non-fatal: public key will be fetched on first send (if online)
     }
   }
-}
-
-/**
- * Build the explicit {@link AuthContext} the provider needs from a Supabase
- * session. Replaces the implicit `auth.uid()`: on Supabase the ambient session
- * still drives RLS, but the provider interface is backend-agnostic, so identity
- * is passed explicitly (and the .NET provider will send accessToken as a Bearer).
- */
-function authContextFromSession(session: Session): AuthContext {
-  return {
-    userId: session.user.id,
-    accessToken: session.access_token,
-  };
 }
 
 export class MessageService {

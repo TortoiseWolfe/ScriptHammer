@@ -9,11 +9,9 @@ import { createClient } from '@/lib/supabase/client';
 import {
   createMessagingClient,
   type UserConnectionRow,
-  type ConversationRow,
   type ConnectionStatus,
   type UserConnectionInsert,
   type UserConnectionUpdate,
-  type ConversationInsert,
 } from '@/lib/supabase/messaging-client';
 import {
   validateEmail,
@@ -35,8 +33,27 @@ import {
   ConnectionError,
   ValidationError,
 } from '@/types/messaging';
+import {
+  authContextFromSession,
+  messagingProvider,
+  type MessagingDataProvider,
+} from './providers';
 
 export class ConnectionService {
+  /**
+   * The messaging backend for the operations that have been moved behind the
+   * provider seam (today: {@link ConnectionService.getOrCreateConversation}).
+   * Injected so tests can swap in a fake or the .NET provider; defaults to the
+   * env-selected singleton, matching `MessageService`'s constructor injection.
+   *
+   * The friend-request/search methods below still talk to Supabase directly —
+   * porting them is its own increment (see the deferred backlog in
+   * `docs/messaging/AUTHORIZATION-CONTRACT.md`).
+   */
+  constructor(
+    private readonly provider: MessagingDataProvider = messagingProvider
+  ) {}
+
   /**
    * Get authenticated user via getSession() with retries.
    * Uses getSession() instead of getUser() because getUser() makes a server
@@ -44,6 +61,9 @@ export class ConnectionService {
    * reads from localStorage and auto-refreshes transparently.
    * Retries 3 times with 500ms delays to handle token refresh cycles where
    * session is briefly null.
+   *
+   * Returns the whole session, not just the user: provider calls need the
+   * access token to build an {@link AuthContext}.
    */
   private async getAuthenticatedUser(
     supabase: ReturnType<typeof createClient>
@@ -57,7 +77,11 @@ export class ConnectionService {
       if (session?.user) break;
       if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
     }
-    return { user: session?.user ?? null, error: authError };
+    return {
+      user: session?.user ?? null,
+      session: session ?? null,
+      error: authError,
+    };
   }
 
   /**
@@ -529,14 +553,26 @@ export class ConnectionService {
    * Get existing conversation or create a new one between current user and another user.
    * Task: T003 - Feature 037 Unified Messaging Sidebar
    *
-   * Looks up an existing conversation between the two users. If none exists, creates
-   * a new one. Enforces canonical ordering (smaller UUID = participant_1_id) to prevent
-   * duplicate conversations. Handles race conditions via database unique constraint.
+   * Runs THROUGH the messaging provider seam (#265), so "message this user"
+   * works against either backend. The backend-agnostic guards stay here (input
+   * validation, the auth check, the self-conversation message the UI shows);
+   * the authorization rule itself lives below the seam, where each backend
+   * enforces it its own way:
+   *
+   * - **C3** — an accepted `user_connections` row (either direction) is required
+   *   to CREATE. Supabase enforces it in RLS; the .NET server re-expresses it as
+   *   an explicit check. Both are exercised by the shared conformance suite.
+   * - **C1** — looking up an EXISTING conversation is participant-scoped and
+   *   connection-independent, so a disconnected pair can still reach their old
+   *   thread (which their conversation list already shows).
+   *
+   * Canonical ordering and the create race (`unique_conversation`) are the
+   * provider's responsibility; this call is idempotent.
    *
    * @param otherUserId - UUID of the other participant
    * @returns Promise<string> - Conversation ID (existing or newly created)
    * @throws AuthenticationError if user is not signed in
-   * @throws ValidationError if otherUserId is invalid UUID
+   * @throws ValidationError if otherUserId is invalid UUID or is the caller
    * @throws ConnectionError if users are not connected (accepted status required)
    *
    * @example
@@ -551,22 +587,26 @@ export class ConnectionService {
    */
   async getOrCreateConversation(otherUserId: string): Promise<string> {
     const supabase = createClient();
-    const msgClient = createMessagingClient(supabase);
 
     // Validate UUID format
     validateUUID(otherUserId, 'otherUserId');
 
     // Get authenticated user (with retry for token refresh races)
-    const { user, error: authError } =
-      await this.getAuthenticatedUser(supabase);
+    const {
+      user,
+      session,
+      error: authError,
+    } = await this.getAuthenticatedUser(supabase);
 
-    if (authError || !user) {
+    if (authError || !user || !session) {
       throw new AuthenticationError(
         'You must be signed in to start a conversation'
       );
     }
 
-    // Prevent self-conversation
+    // Prevent self-conversation. The providers reject this too (and the DB's
+    // no_self_conversation CHECK is the final backstop); catching it here is
+    // what produces the field-scoped message the form shows.
     if (otherUserId === user.id) {
       throw new ValidationError(
         'You cannot start a conversation with yourself',
@@ -574,68 +614,10 @@ export class ConnectionService {
       );
     }
 
-    // Verify connection is accepted
-    const { data: connection } = await msgClient
-      .from('user_connections')
-      .select('status')
-      .or(
-        `and(requester_id.eq.${user.id},addressee_id.eq.${otherUserId}),and(requester_id.eq.${otherUserId},addressee_id.eq.${user.id})`
-      )
-      .eq('status', 'accepted')
-      .single<Pick<UserConnectionRow, 'status'>>();
-
-    if (!connection) {
-      throw new ConnectionError(
-        'You must be connected with this user to start a conversation'
-      );
-    }
-
-    // Apply canonical ordering (smaller UUID = participant_1_id)
-    const [participant_1, participant_2] =
-      user.id < otherUserId ? [user.id, otherUserId] : [otherUserId, user.id];
-
-    // Check for existing conversation
-    const { data: existing } = await msgClient
-      .from('conversations')
-      .select('id')
-      .eq('participant_1_id', participant_1)
-      .eq('participant_2_id', participant_2)
-      .single<Pick<ConversationRow, 'id'>>();
-
-    if (existing) {
-      return existing.id;
-    }
-
-    // Create new conversation
-    const insertData: ConversationInsert = {
-      participant_1_id: participant_1,
-      participant_2_id: participant_2,
-    };
-
-    const { data: created, error: createError } = await (msgClient as any)
-      .from('conversations')
-      .insert(insertData)
-      .select('id')
-      .single();
-
-    if (createError) {
-      // Handle race condition - conversation may have been created by other user
-      if (createError.code === '23505') {
-        // unique_violation
-        const { data: retry } = await msgClient
-          .from('conversations')
-          .select('id')
-          .eq('participant_1_id', participant_1)
-          .eq('participant_2_id', participant_2)
-          .single<Pick<ConversationRow, 'id'>>();
-        if (retry) return retry.id;
-      }
-      throw new ConnectionError(
-        'Failed to create conversation: ' + createError.message
-      );
-    }
-
-    return created.id;
+    return this.provider.getOrCreateConversation(
+      authContextFromSession(session),
+      otherUserId
+    );
   }
 }
 

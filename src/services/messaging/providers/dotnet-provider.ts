@@ -15,11 +15,13 @@
  * (`tests/contract/messaging-provider.contract.ts`) end-to-end against both
  * backends — gated in CI by the `Conformance` workflow. Set
  * `NEXT_PUBLIC_DOTNET_API_URL` to point at it; with no base URL configured every
- * method throws a clear {@link ConnectionError} (the fork-safe default). v1 wires
- * the message + conversation core; connections/groups/keys/GDPR remain on
+ * method throws a clear {@link ConnectionError} (the fork-safe default). The seam
+ * covers the message + conversation core plus connection-gated 1:1 conversation
+ * creation (C3); group management, key rotation and GDPR remain on
  * direct-Supabase (see `docs/messaging/AUTHORIZATION-CONTRACT.md` → deferred backlog).
  *
  * ## Endpoint map (the contract for the ASP.NET side)
+ *   POST   /api/messaging/conversations         { otherUserId } → getOrCreateConversation
  *   GET    /api/messaging/conversations/{id}                    → getConversationMeta
  *   POST   /api/messaging/profiles                    { userIds } → getProfiles
  *   GET    /api/messaging/messages/{id}                          → getMessageById
@@ -127,6 +129,27 @@ export class DotnetMessagingProvider implements MessagingDataProvider {
     // 204 No Content → undefined
     if (res.status === 204) return undefined as T;
     return (await res.json()) as T;
+  }
+
+  /**
+   * (C3) The server must require an ACCEPTED `user_connections` row in either
+   * direction before creating, and (C1) must scope the existing-conversation
+   * lookup to the caller's own conversations. Validation of the self-pair is
+   * deliberately NOT short-circuited client-side: sending the request is what
+   * proves the .NET endpoint enforces it (a 400/403 surfaces as a
+   * {@link ConnectionError} from `request`).
+   */
+  async getOrCreateConversation(
+    ctx: AuthContext,
+    otherUserId: string
+  ): Promise<string> {
+    const row = await this.request<{ id: string }>(
+      ctx,
+      'POST',
+      '/api/messaging/conversations',
+      { otherUserId }
+    );
+    return row.id;
   }
 
   /** (C1/C2/C7) Server must scope to participant-or-active-member. */

@@ -173,12 +173,50 @@ export interface MessagingRealtimeProvider {
 // ============================================================================
 
 /**
- * The messaging backend behind the Supabase↔.NET seam. v1 wires only
- * `message-service.ts` through this; connections/groups/keys/GDPR keep calling
- * Supabase directly until a later slice.
+ * The messaging backend behind the Supabase↔.NET seam. v1 wired only
+ * `message-service.ts` through this; the seam then grew one increment at a
+ * time. Today it also carries 1:1 conversation creation
+ * ({@link MessagingDataProvider.getOrCreateConversation}, C3 — driven by
+ * `connection-service.ts`). Group management, key rotation and GDPR keep
+ * calling Supabase directly until their own slices land; see the deferred
+ * backlog in `docs/messaging/AUTHORIZATION-CONTRACT.md`.
  */
 export interface MessagingDataProvider {
   readonly name: BackendProviderName;
+
+  /**
+   * Find or create the 1:1 conversation between the caller and `otherUserId`,
+   * returning its id. The entry point for "message this user".
+   *
+   * (C3) CREATING requires an ACCEPTED `user_connections` row between the two
+   *      users in EITHER direction — `unique_connection` is
+   *      `(requester_id, addressee_id)` and is NOT symmetric, so a single
+   *      accepted row may point either way and both orderings must be
+   *      checked, exactly as the RLS INSERT policy does.
+   * (C1) LOOKING UP an existing conversation is participant-scoped and
+   *      connection-independent, mirroring the RLS SELECT policy. This is why
+   *      the lookup runs BEFORE the connection check: a pair who connected,
+   *      talked, then disconnected can still reach their existing thread (the
+   *      conversation list already shows it), while creating a NEW one still
+   *      requires a live accepted connection.
+   *
+   * Idempotent by contract: concurrent callers converge on a single row
+   * (`unique_conversation` over the canonically-ordered pair), so a provider
+   * MUST treat a unique violation as "someone else won the race" and return
+   * the winning row rather than throwing.
+   *
+   * Canonical ordering (`participant_1_id < participant_2_id`) is the
+   * provider's responsibility — the `canonical_ordering` CHECK constraint
+   * rejects unsorted pairs.
+   *
+   * @throws ValidationError when `otherUserId` is the caller (the
+   *   `no_self_conversation` CHECK).
+   * @throws ConnectionError when the two users have no accepted connection.
+   */
+  getOrCreateConversation(
+    ctx: AuthContext,
+    otherUserId: string
+  ): Promise<string>;
 
   /**
    * Fetch the participant/group metadata for a conversation.
