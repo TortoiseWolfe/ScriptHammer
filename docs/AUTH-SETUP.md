@@ -347,6 +347,94 @@ curl -sS -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
 
 This one-line check is fast enough to run as part of every deploy verification.
 
+## Part 6.5: Bot Protection for Sign-Up (CAPTCHA) — #353
+
+**Why this exists.** The sign-up form already rate-limits, but that limit is keyed
+on the **email address** (`checkRateLimit(email, 'sign_up')`) — a bot that uses a
+fresh address per attempt never trips it. That is not hypothetical: with no
+CAPTCHA, 17 accounts were created here in a 7-day window, **13 of which belonged
+to people who never asked for one**, meaning this project's domain sent them
+mail. An open sign-up form is a free mail relay; CAPTCHA is the control that
+makes each attempt cost something.
+
+The client half ships **inert**: with no site key set, no widget renders, no
+token is sent, and behaviour is exactly as before. Forks are unaffected until
+they opt in.
+
+### 6.5.1 Order matters — do NOT flip the switch first
+
+Supabase rejects a token-less sign-up the instant `SECURITY_CAPTCHA_ENABLED` is
+true. If you enable it before a build carrying the site key is live, **every
+sign-up breaks, including yours**. Always:
+
+1. Deploy a build that has `NEXT_PUBLIC_CAPTCHA_SITE_KEY` set, **then**
+2. enable it in Supabase.
+
+To roll back, unset the site key and disable it in Supabase — in that order.
+
+### 6.5.2 Create the Turnstile site
+
+We use **Cloudflare Turnstile** (free, unlimited, and usually invisible to real
+users, so legitimate sign-ups pay nothing). Supabase also supports hCaptcha.
+
+1. <https://dash.cloudflare.com> → **Turnstile** → **Add site**
+2. Add your domain(s), including any preview host you sign up from
+3. Copy the **site key** (public) and **secret key** (private)
+
+### 6.5.3 Wire it up
+
+| Value      | Goes where                                                                   | Notes                                       |
+| ---------- | ---------------------------------------------------------------------------- | ------------------------------------------- |
+| Site key   | `NEXT_PUBLIC_CAPTCHA_SITE_KEY` — repo **Actions secret** + your local `.env` | Public; baked into the build                |
+| Secret key | Supabase → Auth → **Attack Protection** → CAPTCHA                            | **Never** commit; never send to the browser |
+
+Then set the provider to **Turnstile** and enable it. In
+`scripts/supabase/auth-config.json`, change:
+
+```json
+"security_captcha_enabled": true,
+"security_captcha_provider": "turnstile",
+```
+
+and apply with `pnpm supabase:auth-config --apply`. Those two keys are tracked
+precisely so the drift gate (`auth-config-drift.yml`) fails if anything silently
+turns protection off later.
+
+> **The gate only guards what it knows.** `computeDiff` iterates
+> `Object.keys(desired)`, so a key absent from `auth-config.json` is invisible to
+> it — which is exactly why the missing CAPTCHA went unnoticed. If you add a
+> security-relevant auth setting, add it to that file too.
+
+### 6.5.4 What this does and doesn't protect
+
+- The widget is **not** a security boundary on its own — a bot can skip the UI
+  and POST directly. The control that matters is Supabase verifying the token
+  server-side, i.e. `SECURITY_CAPTCHA_ENABLED = true`.
+- It protects the **public form only**. Tests create users through the admin
+  API, which bypasses CAPTCHA by design — so CI is unaffected.
+
+### 6.5.5 Effect on the test suites
+
+| Suite                                     | Target             | Effect                                                                             |
+| ----------------------------------------- | ------------------ | ---------------------------------------------------------------------------------- |
+| `signup-mailer.yml` (real form + Mailpit) | **local** Supabase | Unaffected — CAPTCHA is not enabled locally                                        |
+| `production.smoke.spec.ts`                | prod               | Unaffected — read-only, creates no users                                           |
+| `user-registration.spec.ts`               | cloud              | Validation cases unaffected; the one full-registration case is already `test.skip` |
+
+The sign-up gate lives in `handleSubmit`, **not** in the button's `disabled`
+attribute. That is deliberate twice over: a disabled button is a dead end if
+Turnstile fails to load (blocked script, CSP regression, offline), and it would
+have broken the validation E2E cases that click **Sign Up** expecting a
+client-side error.
+
+### 6.5.6 CSP
+
+Turnstile needs `https://challenges.cloudflare.com` in **three** CSP directives —
+`script-src` (loader), `frame-src` (the challenge iframe) and `connect-src`. Miss
+any one and the widget fails _silently_ in production. See the policy in
+`src/app/layout.tsx` (shipped as a meta tag, since static export has no response
+headers).
+
 ## Part 7: Environment Variables
 
 ### 7.1 Required Environment Variables

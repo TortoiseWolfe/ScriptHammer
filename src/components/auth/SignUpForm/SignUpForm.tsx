@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   checkRateLimit,
@@ -10,6 +10,10 @@ import {
 import { validateEmail } from '@/lib/auth/email-validator';
 import { logAuthEvent } from '@/lib/auth/audit-logger';
 import PasswordStrengthIndicator from '@/components/atomic/PasswordStrengthIndicator';
+import CaptchaWidget, {
+  type CaptchaWidgetHandle,
+} from '@/components/auth/CaptchaWidget';
+import { captchaConfig } from '@/config/captcha.config';
 import { createLogger } from '@/lib/logger/logger';
 
 const logger = createLogger('components:auth:SignUpForm');
@@ -38,6 +42,11 @@ export default function SignUpForm({
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // (#353) Null until Turnstile solves; cleared on expiry/error so a stale
+  // single-use token is never submitted. Always null when CAPTCHA is
+  // unconfigured, which is why the submit guard checks `captchaConfig.enabled`.
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<CaptchaWidgetHandle>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +77,14 @@ export default function SignUpForm({
       return;
     }
 
+    // (#353) Require a solved CAPTCHA when one is configured. Note the rate
+    // limit below is keyed on the EMAIL ADDRESS, so a bot rotating addresses
+    // never trips it — this check is what actually costs an attacker something.
+    if (captchaConfig.enabled && !captchaToken) {
+      setError('Please complete the verification challenge.');
+      return;
+    }
+
     // Check server-side rate limit for sign-up attempts (REQ-SEC-003)
     const rateLimit = await checkRateLimit(email, 'sign_up');
 
@@ -83,11 +100,21 @@ export default function SignUpForm({
 
     setLoading(true);
 
-    const { error: signUpError } = await signUp(email, password);
+    const { error: signUpError } = await signUp(
+      email,
+      password,
+      captchaToken ?? undefined
+    );
 
     setLoading(false);
 
     if (signUpError) {
+      // Turnstile tokens are single-use: whatever the failure was, the old
+      // token is spent. Reset the widget (which also clears our state) so the
+      // user can actually retry — clearing state alone would leave the solved
+      // widget sitting there, never firing onSuccess again.
+      captchaRef.current?.reset();
+
       // Record failed attempt on server
       await recordFailedAttempt(email, 'sign_up');
 
@@ -165,10 +192,13 @@ export default function SignUpForm({
       className={`space-y-4${className ? ` ${className}` : ''}`}
     >
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6">
-        <label className="label sm:w-36 sm:shrink-0 sm:text-right" htmlFor="email">
+        <label
+          className="label sm:w-36 sm:shrink-0 sm:text-right"
+          htmlFor="email"
+        >
           <span className="label-text">Email</span>
         </label>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <input
             id="email"
             type="email"
@@ -183,10 +213,13 @@ export default function SignUpForm({
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6">
-        <label className="label sm:w-36 sm:shrink-0 sm:text-right" htmlFor="password">
+        <label
+          className="label sm:w-36 sm:shrink-0 sm:text-right"
+          htmlFor="password"
+        >
           <span className="label-text">Password</span>
         </label>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <input
             id="password"
             type="password"
@@ -205,10 +238,13 @@ export default function SignUpForm({
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6">
-        <label className="label sm:w-36 sm:shrink-0 sm:text-right" htmlFor="confirm-password">
+        <label
+          className="label sm:w-36 sm:shrink-0 sm:text-right"
+          htmlFor="confirm-password"
+        >
           <span className="label-text">Confirm Password</span>
         </label>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <input
             id="confirm-password"
             type="password"
@@ -241,6 +277,16 @@ export default function SignUpForm({
         </div>
       )}
 
+      {/* (#353) Bot protection. Renders nothing when CAPTCHA is unconfigured. */}
+      <CaptchaWidget ref={captchaRef} onToken={setCaptchaToken} />
+
+      {/*
+        The CAPTCHA gate lives in handleSubmit, NOT in `disabled`, on purpose:
+        a disabled button is a dead end if Turnstile fails to load (blocked
+        script, CSP regression, offline) — the user gets no explanation and no
+        way forward. Guarding in the handler surfaces an actionable message
+        instead, and keeps the client-side validation errors above it reachable.
+      */}
       <button
         type="submit"
         className="btn btn-primary min-h-11 w-full"

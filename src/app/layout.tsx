@@ -98,12 +98,17 @@ export const metadata: Metadata = {
     // Note: HTTP headers are preferred but not available with static export
     'Content-Security-Policy': [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://*.google-analytics.com",
+      // challenges.cloudflare.com: the Turnstile sign-up CAPTCHA (#353). It
+      // needs all three of script-src (the api.js loader), frame-src (the
+      // challenge runs in an iframe) and connect-src (the widget calls home).
+      // Miss any one and the widget fails SILENTLY in prod — the CSP ships as a
+      // meta tag here because static export has no response headers.
+      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://*.google-analytics.com https://challenges.cloudflare.com",
       "style-src 'self' 'unsafe-inline' https://unpkg.com",
       "img-src 'self' data: https: blob:",
       "font-src 'self' data:",
-      "connect-src 'self' https://www.googleapis.com https://*.google-analytics.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.supabase.co wss://*.supabase.co https://*.basemaps.cartocdn.com https://api.web3forms.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io",
-      "frame-src 'self' https://www.google.com",
+      "connect-src 'self' https://www.googleapis.com https://*.google-analytics.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.supabase.co wss://*.supabase.co https://*.basemaps.cartocdn.com https://api.web3forms.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://challenges.cloudflare.com",
+      "frame-src 'self' https://www.google.com https://challenges.cloudflare.com",
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self' https://api.web3forms.com",
