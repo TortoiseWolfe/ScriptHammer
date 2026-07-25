@@ -50,10 +50,22 @@ export interface ConformanceHarness {
   /** Provider bound to userB's authenticated session. */
   providerB: MessagingDataProvider;
   ctxB: AuthContext;
-  /** A third user with NO membership in the conversation (for leak tests). */
+  /**
+   * A third user with NO membership in the conversation (for leak tests).
+   * For C3 they double as the "connected but no conversation yet" partner:
+   * the runners seed an ACCEPTED userB↔outsider connection with no conversation,
+   * while userA↔outsider share NO connection row at all.
+   */
   outsiderId: string;
   providerOutsider: MessagingDataProvider;
   ctxOutsider: AuthContext;
+
+  /**
+   * A fourth user holding a PENDING (never accepted) connection with userA, and
+   * nothing else. Exists so C3 can prove that a connection merely EXISTING is
+   * not enough — only `status = 'accepted'` unlocks creation.
+   */
+  pendingUserId: string;
 
   /**
    * Insert a message row directly via the service client (bypasses RLS +
@@ -88,7 +100,19 @@ export interface ConformanceHarness {
     archived_by_participant_1: boolean;
     archived_by_participant_2: boolean;
   } | null>;
+
+  /**
+   * The 1:1 conversation id for a pair, read directly via the service client and
+   * order-agnostic. This is the AUTHORITATIVE "was a row actually created?"
+   * check for the C3 negatives: a blocked create surfaces differently per
+   * backend (Supabase RLS rejects the INSERT, .NET returns 403 → a thrown
+   * ConnectionError), so only the database state is provider-agnostic.
+   */
+  readConversationBetween(userX: string, userY: string): Promise<string | null>;
 }
+
+/** Which authorization rule a refused write was supposed to trip. */
+export type RefusalKind = 'not-connected' | 'pending-connection' | 'self';
 
 export interface ConformanceConfig {
   /** Human label for the provider under test (e.g. "supabase"). */
@@ -97,6 +121,26 @@ export interface ConformanceConfig {
   setup(): Promise<ConformanceHarness>;
   /** Tear down seeded data. */
   teardown(h: ConformanceHarness): Promise<void>;
+
+  /**
+   * Optional per-backend assertion on HOW a write was refused.
+   *
+   * The shared cases below assert the provider-agnostic security property — no
+   * row was created. That property holds even if a backend blocks by accident,
+   * which is a real blind spot for #265: the .NET server currently sits on the
+   * same RLS-protected Postgres, so deleting its explicit C3 check changes
+   * nothing observable (RLS rejects the INSERT, the request 500s, the provider
+   * still throws, the row still doesn't exist — every assertion stays green).
+   * Verified by mutation test: stubbing `HasAcceptedConnection` to `true` left
+   * all 25 cases passing.
+   *
+   * That masking defeats the premise of the migration — a .NET backend must
+   * re-express each rule EXPLICITLY, because the next backend may have no RLS
+   * underneath. So a backend may additionally assert the SHAPE of its refusal
+   * (.NET: a 4xx from its own check, never a 5xx from an RLS exception).
+   * Supabase omits this: there, RLS IS the enforcement mechanism.
+   */
+  assertRefusal?(error: unknown, kind: RefusalKind): void;
 }
 
 /**
@@ -500,6 +544,107 @@ export function runMessagingProviderContract(config: ConformanceConfig): void {
         // Safe/idempotent on both providers; needs no realtime container.
         sub.unsubscribe();
       }
+    });
+
+    // ── C3 — creating a 1:1 conversation is connection-gated ────────────────
+    // These run LAST on purpose. The suite has no `beforeEach`; cases share one
+    // conversation and execute in declaration order, so appending guarantees the
+    // extra fixtures (a second conversation, two more connections) cannot
+    // perturb any earlier assertion.
+    //
+    // A blocked create surfaces differently per backend — Supabase's RLS
+    // WITH CHECK rejects the INSERT, the .NET server returns 403 — so the
+    // negatives use the suite's established idiom: swallow the throw, then let
+    // the DATABASE ROW be the authoritative assertion.
+
+    it('C3: getOrCreateConversation returns the EXISTING conversation for a connected pair', async () => {
+      const fromA = await h.providerA.getOrCreateConversation(
+        h.ctxA,
+        h.userBId
+      );
+      expect(fromA).toBe(h.conversationId);
+
+      // Idempotent from either side: canonical ordering collapses (A,B) and
+      // (B,A) onto the one `unique_conversation` row.
+      const fromB = await h.providerB.getOrCreateConversation(
+        h.ctxB,
+        h.userAId
+      );
+      expect(fromB).toBe(h.conversationId);
+    });
+
+    it('C3: an accepted connection permits creating a NEW 1:1 conversation', async () => {
+      // userB ↔ outsider hold an ACCEPTED connection but have no conversation.
+      expect(
+        await h.readConversationBetween(h.userBId, h.outsiderId)
+      ).toBeNull();
+
+      const created = await h.providerB.getOrCreateConversation(
+        h.ctxB,
+        h.outsiderId
+      );
+      expect(created).toBeTruthy();
+
+      // The row really landed, as a 1:1, with canonical ordering applied.
+      const row = await h.readConversation(created);
+      expect(row).not.toBeNull();
+      expect(row?.is_group).toBe(false);
+      const [expectedP1] = [h.userBId, h.outsiderId].sort();
+      expect(row?.participant_1_id).toBe(expectedP1);
+
+      // Idempotent: a second call returns the same row rather than duplicating
+      // or throwing on `unique_conversation`.
+      const again = await h.providerB.getOrCreateConversation(
+        h.ctxB,
+        h.outsiderId
+      );
+      expect(again).toBe(created);
+    });
+
+    it('C3: a PENDING connection does not permit creating a conversation', async () => {
+      // The connection EXISTS but is not accepted — status is the whole rule.
+      let refusal: unknown;
+      const created = await h.providerA
+        .getOrCreateConversation(h.ctxA, h.pendingUserId)
+        // provider may or may not throw; the row check is authoritative
+        .catch((e) => {
+          refusal = e;
+          return null;
+        });
+      expect(created).toBeNull();
+      expect(
+        await h.readConversationBetween(h.userAId, h.pendingUserId)
+      ).toBeNull();
+      config.assertRefusal?.(refusal, 'pending-connection');
+    });
+
+    it('C3: with NO connection at all, creating a conversation is refused', async () => {
+      // userA ↔ outsider share no `user_connections` row in either direction.
+      let refusal: unknown;
+      const created = await h.providerA
+        .getOrCreateConversation(h.ctxA, h.outsiderId)
+        .catch((e) => {
+          refusal = e;
+          return null;
+        });
+      expect(created).toBeNull();
+      expect(
+        await h.readConversationBetween(h.userAId, h.outsiderId)
+      ).toBeNull();
+      config.assertRefusal?.(refusal, 'not-connected');
+    });
+
+    it('C3: a self-conversation is refused (no_self_conversation)', async () => {
+      let refusal: unknown;
+      const created = await h.providerA
+        .getOrCreateConversation(h.ctxA, h.userAId)
+        .catch((e) => {
+          refusal = e;
+          return null;
+        });
+      expect(created).toBeNull();
+      expect(await h.readConversationBetween(h.userAId, h.userAId)).toBeNull();
+      config.assertRefusal?.(refusal, 'self');
     });
   });
 }

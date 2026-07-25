@@ -1,9 +1,10 @@
 /**
  * .NET runner for the shared messaging-provider conformance suite (#266/#265).
  *
- * Gated on `DOTNET_API_URL`. When set, it seeds the SAME way the Supabase runner
- * does (users + connection + 1:1 conversation via the Supabase service client
- * into the shared Postgres), then drives the REAL DotnetMessagingProvider —
+ * Gated on `DOTNET_API_URL`. When set, it seeds through the SAME shared code the
+ * Supabase runner uses (`conformance-fixtures.ts` — users + connections + 1:1 and
+ * group conversations, written via the Supabase service client into the shared
+ * Postgres), then drives the REAL DotnetMessagingProvider —
  * pointed at the live ASP.NET server — through the IDENTICAL contract assertions
  * (the 13 named clauses in `docs/messaging/AUTHORIZATION-CONTRACT.md`).
  * If the .NET backend drops a rule, this suite goes red. That is the whole point:
@@ -17,7 +18,7 @@
  * @module tests/contract/messaging-provider.dotnet.test
  */
 
-import { describe, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { DotnetMessagingProvider } from '@/services/messaging/providers/dotnet-provider';
@@ -29,9 +30,12 @@ import {
   createAuthenticatedClient,
   createServiceClient,
   createTestUser,
-  deleteTestUser,
   hasRlsTestEnvironment,
 } from '../fixtures/test-users';
+import {
+  seedConformanceFixtures,
+  teardownConformanceFixtures,
+} from './conformance-fixtures';
 import {
   runMessagingProviderContract,
   type ConformanceHarness,
@@ -43,6 +47,7 @@ const EMAILS = {
   a: 'dotnet-contract-a@scripthammer.test',
   b: 'dotnet-contract-b@scripthammer.test',
   outsider: 'dotnet-contract-outsider@scripthammer.test',
+  pending: 'dotnet-contract-pending@scripthammer.test',
 } as const;
 const PASSWORD = 'DotnetContract123!';
 
@@ -83,120 +88,25 @@ if (!DOTNET_API_URL || !hasRlsTestEnvironment()) {
       const userA = await createTestUser(EMAILS.a, PASSWORD);
       const userB = await createTestUser(EMAILS.b, PASSWORD);
       const outsider = await createTestUser(EMAILS.outsider, PASSWORD);
+      const pending = await createTestUser(EMAILS.pending, PASSWORD);
 
-      const [p1, p2] =
-        userA.id < userB.id ? [userA.id, userB.id] : [userB.id, userA.id];
-
-      await svc.from('user_connections').insert({
-        requester_id: p1,
-        addressee_id: p2,
-        status: 'accepted',
+      // The SAME fixture graph the Supabase runner seeds — shared code, so the
+      // two backends are measured against an identical world by construction.
+      const fixtures = await seedConformanceFixtures(svc, {
+        aId: userA.id,
+        bId: userB.id,
+        outsiderId: outsider.id,
+        pendingId: pending.id,
       });
-
-      const { data: conv, error: convErr } = await svc
-        .from('conversations')
-        .insert({
-          participant_1_id: p1,
-          participant_2_id: p2,
-          is_group: false,
-          current_key_version: 1,
-        })
-        .select()
-        .single();
-      if (convErr || !conv) {
-        throw new Error(
-          `Failed to seed conversation: ${convErr?.message ?? 'no row'}`
-        );
-      }
-      const conversationId = conv.id;
-
-      // A GROUP conversation with userA (creator) + userB as active members;
-      // the outsider is deliberately NOT a member (C1/C2 scoping). Both providers
-      // branch on is_group and gate access via creator-or-active-member.
-      const { data: group, error: groupErr } = await svc
-        .from('conversations')
-        .insert({
-          // Groups carry NULL participants (check_group_participants); membership
-          // is in conversation_members. Access is creator-or-active-member only.
-          participant_1_id: null,
-          participant_2_id: null,
-          is_group: true,
-          current_key_version: 1,
-          created_by: userA.id,
-        })
-        .select()
-        .single();
-      if (groupErr || !group) {
-        throw new Error(
-          `Failed to seed group conversation: ${groupErr?.message ?? 'no row'}`
-        );
-      }
-      const groupConversationId = group.id;
-      await svc.from('conversation_members').insert([
-        { conversation_id: groupConversationId, user_id: userA.id },
-        { conversation_id: groupConversationId, user_id: userB.id },
-      ]);
 
       const a = await buildProviderFor(EMAILS.a, baseUrl);
       const b = await buildProviderFor(EMAILS.b, baseUrl);
       const out = await buildProviderFor(EMAILS.outsider, baseUrl);
 
-      const seedMessage: ConformanceHarness['seedMessage'] = async ({
-        senderId,
-        ciphertext = 'c2VlZA==',
-        createdAtIso,
-        conversationId: convId,
-      }) => {
-        const row: Record<string, unknown> = {
-          conversation_id: convId ?? conversationId,
-          sender_id: senderId,
-          encrypted_content: ciphertext,
-          initialization_vector: 'aXY=',
-          sequence_number: 0, // trigger overrides
-          key_version: 1,
-        };
-        if (createdAtIso) row.created_at = createdAtIso;
-        const { data, error } = await svc
-          .from('messages')
-          .insert(row as never)
-          .select('id')
-          .single();
-        if (error || !data) {
-          throw new Error(`seedMessage failed: ${error?.message ?? 'no row'}`);
-        }
-        return { id: (data as { id: string }).id };
-      };
-
-      const readMessage: ConformanceHarness['readMessage'] = async (id) => {
-        const { data } = await svc
-          .from('messages')
-          .select(
-            'id, deleted, edited, encrypted_content, read_at, delivered_at, sequence_number'
-          )
-          .eq('id', id)
-          .maybeSingle();
-        return data ?? null;
-      };
-
-      const readConversation: ConformanceHarness['readConversation'] = async (
-        id
-      ) => {
-        const { data } = await svc
-          .from('conversations')
-          .select(
-            'id, is_group, participant_1_id, archived_by_participant_1, archived_by_participant_2'
-          )
-          .eq('id', id)
-          .maybeSingle();
-        return data ?? null;
-      };
-
       return {
         svc,
         userAId: userA.id,
         userBId: userB.id,
-        conversationId,
-        groupConversationId,
         providerA: a.provider,
         ctxA: a.ctx,
         providerB: b.provider,
@@ -204,29 +114,38 @@ if (!DOTNET_API_URL || !hasRlsTestEnvironment()) {
         outsiderId: outsider.id,
         providerOutsider: out.provider,
         ctxOutsider: out.ctx,
-        seedMessage,
-        readMessage,
-        readConversation,
+        pendingUserId: pending.id,
+        ...fixtures,
       };
     },
 
     async teardown(h: ConformanceHarness): Promise<void> {
       const { svc } = h as DotnetHarness;
-      await svc
-        .from('conversation_members')
-        .delete()
-        .eq('conversation_id', h.groupConversationId);
-      await svc
-        .from('conversations')
-        .delete()
-        .in('id', [h.conversationId, h.groupConversationId]);
-      await svc
-        .from('user_connections')
-        .delete()
-        .or(`requester_id.eq.${h.userAId},requester_id.eq.${h.userBId}`);
-      await deleteTestUser(h.userAId).catch(() => {});
-      await deleteTestUser(h.userBId).catch(() => {});
-      await deleteTestUser(h.outsiderId).catch(() => {});
+      await teardownConformanceFixtures(svc, h);
+    },
+
+    /**
+     * The .NET server must refuse from its OWN authorization check, not by
+     * letting Postgres RLS raise underneath it.
+     *
+     * This matters because the server currently talks to the same RLS-protected
+     * Postgres as Supabase, which masks missing checks: a mutation test that
+     * stubbed `MessagingQueries.HasAcceptedConnection` to always return true
+     * left all 25 cases green — RLS rejected the INSERT (42501), the request
+     * 500'd, the provider threw anyway, and no row was created. Every
+     * row-based assertion still held while the explicit rule was GONE.
+     *
+     * #265's premise is that a .NET backend re-expresses each rule explicitly,
+     * because the next backend may not have RLS underneath. So we pin the
+     * status: 403 for an authorization refusal, 400 for invalid input, and
+     * never a 5xx — `DotnetMessagingProvider.request` puts the status in the
+     * ConnectionError message.
+     */
+    assertRefusal(error: unknown, kind): void {
+      const message = String((error as Error | undefined)?.message ?? '');
+      expect(message).toContain('failed:');
+      const expected = kind === 'self' ? '400' : '403';
+      expect(message).toContain(expected);
     },
   });
 }

@@ -52,6 +52,14 @@ public sealed class ArchiveDto
     public bool Value { get; set; }
 }
 
+/// <summary>The getOrCreateConversation request: the OTHER 1:1 participant.
+/// The caller is never taken from the body — it comes from the bearer token.</summary>
+public sealed class CreateConversationDto
+{
+    [JsonPropertyName("otherUserId")]
+    public Guid OtherUserId { get; set; }
+}
+
 /// <summary>The getMessages page response: { rows, hasMore }.</summary>
 public sealed class MessagesPageDto
 {

@@ -8,12 +8,14 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { ConnectionError } from '@/types/messaging';
 
 // Valid test UUIDs
 const CURRENT_USER_ID = '00000000-0000-0000-0000-000000000001';
 const USER_1_ID = '00000000-0000-0000-0000-000000000002';
 const USER_2_ID = '00000000-0000-0000-0000-000000000003';
 const CONN_1_ID = '00000000-0000-0000-0000-000000000010';
+const ACCESS_TOKEN = 'test-access-token';
 
 // Mock Supabase client
 const mockSupabase = {
@@ -29,32 +31,22 @@ vi.mock('@/lib/supabase/client', () => ({
   createClient: () => mockSupabase,
 }));
 
-// Mock query builder
-const createMockQueryBuilder = (data: any = null, error: any = null) => ({
-  select: vi.fn().mockReturnThis(),
-  insert: vi.fn().mockReturnThis(),
-  update: vi.fn().mockReturnThis(),
-  delete: vi.fn().mockReturnThis(),
-  eq: vi.fn().mockReturnThis(),
-  neq: vi.fn().mockReturnThis(),
-  or: vi.fn().mockReturnThis(),
-  order: vi.fn().mockReturnThis(),
-  limit: vi.fn().mockReturnThis(),
-  single: vi.fn().mockResolvedValue({ data, error }),
-  maybeSingle: vi.fn().mockResolvedValue({ data, error }),
-  then: vi.fn((resolve) => resolve({ data, error })),
-});
-
 // Import after mocks are set up
-const { connectionService } = await import('../connection-service');
+const { connectionService, ConnectionService } = await import(
+  '../connection-service'
+);
 
 describe('ConnectionService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // Default: mock authenticated user (getSession used by getAuthenticatedUser helper)
+    // Default: mock authenticated user (getSession used by getAuthenticatedUser
+    // helper). access_token is what authContextFromSession puts on the
+    // AuthContext handed to the messaging provider.
     vi.mocked(mockSupabase.auth.getSession).mockResolvedValue({
-      data: { session: { user: { id: CURRENT_USER_ID } } },
+      data: {
+        session: { user: { id: CURRENT_USER_ID }, access_token: ACCESS_TOKEN },
+      },
       error: null,
     } as any);
     vi.mocked(mockSupabase.auth.getUser).mockResolvedValue({
@@ -180,131 +172,62 @@ describe('ConnectionService', () => {
       ).rejects.toThrow('You cannot start a conversation with yourself');
     });
 
-    it('should reject if users are not connected', async () => {
-      // Mock: no accepted connection found
-      const mockBuilder = createMockQueryBuilder(null, null);
-      vi.mocked(mockSupabase.from).mockReturnValue(mockBuilder as any);
+    // ── The #265 seam ──────────────────────────────────────────────────────
+    // The C3 connection gate, canonical ordering, the existing-conversation
+    // lookup and the unique-violation race all live BELOW the provider seam
+    // now, so each backend enforces them its own way and the shared conformance
+    // suite (tests/contract/) proves both do. What is this service's job — and
+    // therefore what these tests cover — is the above-seam guards and the
+    // hand-off itself.
+
+    it('delegates to the messaging provider with the caller AuthContext', async () => {
+      const providerCall = vi.fn().mockResolvedValue(CONVERSATION_ID);
+      const service = new ConnectionService({
+        getOrCreateConversation: providerCall,
+      } as any);
+
+      const result = await service.getOrCreateConversation(USER_2_ID);
+
+      expect(result).toBe(CONVERSATION_ID);
+      expect(providerCall).toHaveBeenCalledWith(
+        { userId: CURRENT_USER_ID, accessToken: ACCESS_TOKEN },
+        USER_2_ID
+      );
+      // No direct table access: a regression to querying Supabase here would
+      // silently strand the .NET backend, which has no RLS to fall back on.
+      expect(mockSupabase.from).not.toHaveBeenCalled();
+    });
+
+    it('surfaces the provider ConnectionError when users are not connected (C3)', async () => {
+      const service = new ConnectionService({
+        getOrCreateConversation: vi
+          .fn()
+          .mockRejectedValue(
+            new ConnectionError(
+              'You must be connected with this user to start a conversation'
+            )
+          ),
+      } as any);
+
+      await expect(service.getOrCreateConversation(USER_2_ID)).rejects.toThrow(
+        'You must be connected with this user'
+      );
+    });
+
+    it('does not reach the provider when the above-seam guards reject', async () => {
+      const providerCall = vi.fn().mockResolvedValue(CONVERSATION_ID);
+      const service = new ConnectionService({
+        getOrCreateConversation: providerCall,
+      } as any);
 
       await expect(
-        connectionService.getOrCreateConversation(USER_2_ID)
-      ).rejects.toThrow('You must be connected with this user');
-    });
+        service.getOrCreateConversation('invalid-uuid')
+      ).rejects.toThrow('Invalid otherUserId format');
+      await expect(
+        service.getOrCreateConversation(CURRENT_USER_ID)
+      ).rejects.toThrow('You cannot start a conversation with yourself');
 
-    it('should return existing conversation ID when conversation exists', async () => {
-      // Mock: connection exists and is accepted
-      const connectionBuilder = createMockQueryBuilder(
-        { status: 'accepted' },
-        null
-      );
-      // Mock: existing conversation found
-      const conversationBuilder = createMockQueryBuilder(
-        { id: CONVERSATION_ID },
-        null
-      );
-
-      let callCount = 0;
-      vi.mocked(mockSupabase.from).mockImplementation((table: string) => {
-        if (table === 'user_connections') {
-          return connectionBuilder as any;
-        }
-        if (table === 'conversations') {
-          callCount++;
-          if (callCount === 1) {
-            // First call - checking for existing
-            return conversationBuilder as any;
-          }
-        }
-        return conversationBuilder as any;
-      });
-
-      const result = await connectionService.getOrCreateConversation(USER_2_ID);
-      expect(result).toBe(CONVERSATION_ID);
-    });
-
-    it('should create new conversation when none exists', async () => {
-      // Mock: connection exists and is accepted
-      const connectionBuilder = createMockQueryBuilder(
-        { status: 'accepted' },
-        null
-      );
-      // Mock: no existing conversation, then successful creation
-      const noConversationBuilder = createMockQueryBuilder(null, null);
-      const createdConversationBuilder = createMockQueryBuilder(
-        { id: CONVERSATION_ID },
-        null
-      );
-
-      let conversationCallCount = 0;
-      vi.mocked(mockSupabase.from).mockImplementation((table: string) => {
-        if (table === 'user_connections') {
-          return connectionBuilder as any;
-        }
-        if (table === 'conversations') {
-          conversationCallCount++;
-          if (conversationCallCount === 1) {
-            // First call - checking for existing (none found)
-            return noConversationBuilder as any;
-          }
-          // Second call - creating new
-          return createdConversationBuilder as any;
-        }
-        return noConversationBuilder as any;
-      });
-
-      const result = await connectionService.getOrCreateConversation(USER_2_ID);
-      expect(result).toBe(CONVERSATION_ID);
-    });
-
-    it('should handle race condition with unique constraint violation', async () => {
-      // Mock: connection exists and is accepted
-      const connectionBuilder = createMockQueryBuilder(
-        { status: 'accepted' },
-        null
-      );
-      // Mock: no existing conversation initially
-      const noConversationBuilder = createMockQueryBuilder(null, null);
-      // Mock: creation fails with unique violation
-      const uniqueViolationBuilder = {
-        ...createMockQueryBuilder(null, {
-          code: '23505',
-          message: 'unique violation',
-        }),
-        insert: vi.fn().mockReturnThis(),
-        select: vi.fn().mockReturnThis(),
-        single: vi.fn().mockResolvedValue({
-          data: null,
-          error: { code: '23505', message: 'unique violation' },
-        }),
-      };
-      // Mock: retry finds the conversation
-      const retryBuilder = createMockQueryBuilder(
-        { id: CONVERSATION_ID },
-        null
-      );
-
-      let conversationCallCount = 0;
-      vi.mocked(mockSupabase.from).mockImplementation((table: string) => {
-        if (table === 'user_connections') {
-          return connectionBuilder as any;
-        }
-        if (table === 'conversations') {
-          conversationCallCount++;
-          if (conversationCallCount === 1) {
-            // First call - checking for existing (none found)
-            return noConversationBuilder as any;
-          }
-          if (conversationCallCount === 2) {
-            // Second call - insert fails with unique violation
-            return uniqueViolationBuilder as any;
-          }
-          // Third call - retry select succeeds
-          return retryBuilder as any;
-        }
-        return noConversationBuilder as any;
-      });
-
-      const result = await connectionService.getOrCreateConversation(USER_2_ID);
-      expect(result).toBe(CONVERSATION_ID);
+      expect(providerCall).not.toHaveBeenCalled();
     });
   });
 });
