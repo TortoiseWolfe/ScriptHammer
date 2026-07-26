@@ -22,28 +22,41 @@ import {
 } from '../utils/test-user-factory';
 
 /**
- * (#353) Skip a test that must SUBMIT the sign-up form when the deployed build
- * renders a CAPTCHA.
+ * (#361) Skip any test that would SUBMIT the sign-up form against the cloud
+ * project — unconditionally.
  *
+ * Submitting makes Supabase send a REAL confirmation email through Resend. The
+ * generated address plus-routes to `scripthammer.e2e@gmail.com`, a mailbox that
+ * does not exist, so every one HARD BOUNCES ("Recipient not found") and is then
+ * suppressed. Measured 2026-07-26 across the account's entire history: 121 of
+ * 154 sends bounced, a **78.6% bounce rate**, and 120 of those came from this
+ * one file. ESPs warn above 2-5% and suspend accounts over sustained rates, so
+ * this was actively burning the project's sending reputation on every push.
+ *
+ * Real-form sign-up coverage is NOT lost — it is better covered by
+ * `signup-mailer.yml` (#347), which drives the same form against LOCAL Supabase
+ * with a Mailpit catcher, so the mail is actually delivered and asserted rather
+ * than fired at the internet.
+ *
+ * The CAPTCHA condition below (#353) is kept because it documents a second,
+ * independent reason these can never run against a protected cloud sign-up:
  * Playwright cannot solve a real challenge, and the token is verified
- * server-side against the real secret — so no Turnstile "test key" helps
- * either. Real-form sign-up coverage lives in `signup-mailer.yml`, which runs
- * against LOCAL Supabase where CAPTCHA is off.
+ * server-side against the real secret, so no Turnstile "test key" helps.
  *
- * This must be EXPLICIT rather than left to the generic `.alert-error`
- * branches below. Those would swallow the challenge prompt into a vague
- * "Sign-up error" skip (test 1) or accept it as the expected duplicate-email
- * error (test 2) — a test that silently stops testing, or passes for the wrong
- * reason, while CI stays green. Detecting the widget keeps this
- * self-configuring: no env var anyone has to remember to flip.
+ * Being EXPLICIT matters. The generic `.alert-error` branches further down would
+ * otherwise swallow the skip into a vague "Sign-up error" (test 1) or accept it
+ * as the expected duplicate-email error (test 2) — a test that silently stops
+ * testing, or passes for the wrong reason, while CI stays green.
  */
-async function skipIfCaptchaProtected(page: import('@playwright/test').Page) {
+async function skipIfSubmitsRealSignup(page: import('@playwright/test').Page) {
   const captchaPresent = await page
     .locator('[data-testid="captcha-widget"]')
     .count();
   test.skip(
-    captchaPresent > 0,
-    'Sign-up is CAPTCHA-protected (#353); real-form coverage runs in signup-mailer.yml against local Supabase.'
+    true,
+    captchaPresent > 0
+      ? 'Sign-up is CAPTCHA-protected (#353) and submitting sends real mail that hard-bounces (#361); covered by signup-mailer.yml against local Supabase.'
+      : 'Submitting sends a real confirmation email that hard-bounces and burns sending reputation (#361); covered by signup-mailer.yml against local Supabase.'
   );
 }
 
@@ -111,7 +124,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
 
     await page.goto('/sign-up');
     await dismissCookieBanner(page);
-    await skipIfCaptchaProtected(page);
+    await skipIfSubmitsRealSignup(page);
 
     // Page heading is "Create Account"
     await expect(
@@ -178,7 +191,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
 
     await page.goto('/sign-up');
     await dismissCookieBanner(page);
-    await skipIfCaptchaProtected(page);
+    await skipIfSubmitsRealSignup(page);
 
     // Try to sign up with the same email
     await page.getByLabel('Email').fill(existingEmail);
