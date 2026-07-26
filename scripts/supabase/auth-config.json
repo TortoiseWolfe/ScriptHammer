@@ -3,6 +3,16 @@
   "uri_allow_list": "https://scripthammer.com,https://scripthammer.com/**,https://www.scripthammer.com,https://www.scripthammer.com/**,http://localhost:3000,http://localhost:3000/**,http://127.0.0.1:3002,http://127.0.0.1:3002/**",
   "jwt_exp": 7200,
   "rate_limit_verify": 100,
+  "rate_limit_email_sent": 30,
+  "disable_signup": false,
+  "mailer_autoconfirm": false,
+  "security_captcha_enabled": false,
+  "security_captcha_provider": "hcaptcha",
+  "smtp_host": "smtp.resend.com",
+  "smtp_port": "587",
+  "smtp_user": "resend",
+  "smtp_admin_email": "noreply@scripthammer.com",
+  "smtp_sender_name": "ScriptHammer",
   "hook_custom_access_token_enabled": true,
   "hook_custom_access_token_uri": "pg-functions://postgres/public/custom_access_token_hook"
 }

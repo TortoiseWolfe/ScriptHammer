@@ -95,7 +95,17 @@ export interface AuthState {
 }
 
 export interface AuthContextType extends AuthState {
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
+  /**
+   * Create an account. `captchaToken` (#353) is required once Supabase Auth has
+   * `SECURITY_CAPTCHA_ENABLED` on; it is optional here so the client can ship
+   * before that flag is flipped, and so forks with no CAPTCHA configured are
+   * unaffected.
+   */
+  signUp: (
+    email: string,
+    password: string,
+    captchaToken?: string
+  ) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
@@ -268,20 +278,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string) => {
-    try {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: getRedirectUrl('/auth/callback'),
-        },
-      });
-      return { error };
-    } catch (error) {
-      return { error: error as Error };
-    }
-  }, []);
+  const signUp = useCallback(
+    async (email: string, password: string, captchaToken?: string) => {
+      try {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: getRedirectUrl('/auth/callback'),
+            // (#353) Bot protection. Supabase verifies this server-side when
+            // SECURITY_CAPTCHA_ENABLED is on; passing undefined is what every
+            // caller does while CAPTCHA is unconfigured, and is ignored.
+            captchaToken,
+          },
+        });
+        return { error };
+      } catch (error) {
+        return { error: error as Error };
+      }
+    },
+    []
+  );
 
   const signIn = useCallback(async (email: string, password: string) => {
     try {
