@@ -63,8 +63,31 @@ export async function cleanupStaleScripthammerUsers(
   // 2. For each user, walk the FK chain. Order matters: leaves of the FK
   //    graph first, then the auth user.
   for (const user of users) {
-    const userId = user.id;
+    await deleteUserFkSafe(client, user.id, logger, summary);
+  }
 
+  return summary;
+}
+
+/**
+ * Delete ONE auth user and everything that references it, in FK-safe order.
+ *
+ * Extracted so the two sweepers ({@link cleanupStaleScripthammerUsers} for the
+ * Vitest `@scripthammer.test` fixtures, {@link sweepOrphanedE2EUsers} for the
+ * Playwright `scripthammer.e2e+` isolates) share one implementation. A PARTIAL
+ * delete is what corrupts a shared user (#338 / #341 / #342) — the fix must not
+ * reintroduce that failure mode in a second copy of the logic.
+ *
+ * Best-effort: every step logs and continues, so one wedged FK cannot strand
+ * the rest of the sweep. Mutates `summary`.
+ */
+async function deleteUserFkSafe(
+  client: SupabaseClient,
+  userId: string,
+  logger: Logger,
+  summary: CleanupSummary
+): Promise<void> {
+  {
     // payment_intents (cascade-deletes payment_results via ON DELETE CASCADE)
     const intentsResult = await client
       .from('payment_intents')
@@ -154,6 +177,152 @@ export async function cleanupStaleScripthammerUsers(
       summary.usersRemoved++;
     }
   }
+}
+
+// ============================================================================
+// #354 — Playwright per-test isolate sweeper
+// ============================================================================
+
+/** Prefix every Playwright per-test isolated user is minted under. */
+const E2E_ISOLATE_PREFIX = 'scripthammer.e2e+';
+
+/**
+ * The three NAMED fixtures, which must never be swept. They share the isolate
+ * prefix, so a prefix match alone would delete them and break every suite.
+ * Matched exactly, and defended twice: the literal `+test-` names plus whatever
+ * the environment configures, in case a fork renames them.
+ */
+function buildAllowlist(env: EnvLike): Set<string> {
+  const allow = new Set<string>();
+  for (const v of [
+    env.TEST_USER_PRIMARY_EMAIL,
+    env.TEST_USER_SECONDARY_EMAIL,
+    env.TEST_USER_TERTIARY_EMAIL,
+  ]) {
+    if (v) allow.add(v.trim().toLowerCase());
+  }
+  for (const name of ['primary', 'secondary', 'tertiary']) {
+    allow.add(`${E2E_ISOLATE_PREFIX}test-${name}@gmail.com`);
+  }
+  return allow;
+}
+
+/** Only the handful of optional string keys the sweeper reads. */
+type EnvLike = Record<string, string | undefined>;
+
+export interface SweepOptions {
+  /** Only sweep users created longer ago than this. Default 2h. */
+  olderThanMs?: number;
+  /** Report what WOULD be deleted without deleting. */
+  dryRun?: boolean;
+  logger?: Logger;
+  /** Injectable for tests. Defaults to `process.env`. */
+  env?: EnvLike;
+  /** Injectable for tests. Defaults to `Date.now()`. */
+  now?: number;
+}
+
+export interface SweepSummary extends CleanupSummary {
+  /** Matched the prefix, survived the allowlist, and were old enough. */
+  candidates: number;
+  /** Skipped because they are named fixtures. */
+  allowlisted: number;
+  /** Skipped because they are younger than the age guard. */
+  tooRecent: number;
+  dryRun: boolean;
+}
+
+/**
+ * Sweep orphaned Playwright per-test isolated users (#354).
+ *
+ * Per-test isolation is deliberate — it is what ended the shared-test-user
+ * corruption class (#338/#341/#342) — but the per-test `afterAll` cleanup never
+ * runs when a shard is cancelled or times out, which is exactly when it is
+ * needed. 381 orphans accumulated on prod between 2026-05-30 and 2026-07-24.
+ *
+ * Three independent safety properties, because this hard-deletes real auth rows:
+ *
+ * 1. **Prefix scoping** — only `scripthammer.e2e+…`. Owner accounts, genuine
+ *    sign-ups and the Vitest `@scripthammer.test` fixtures are unreachable.
+ * 2. **Allowlist** — the three named fixtures are never swept, even though they
+ *    match the prefix.
+ * 3. **Age guard** — nothing younger than `olderThanMs` (default 2h), so a
+ *    concurrently-running suite's fresh users can never be pulled out from
+ *    under it. This is why the sweep belongs in globalSetup rather than
+ *    teardown: at run start every in-flight user is younger than the guard.
+ */
+export async function sweepOrphanedE2EUsers(
+  client: SupabaseClient,
+  options: SweepOptions = {}
+): Promise<SweepSummary> {
+  const {
+    olderThanMs = 2 * 60 * 60 * 1000,
+    dryRun = false,
+    logger = noopLogger,
+    env = process.env,
+    now = Date.now(),
+  } = options;
+
+  const summary: SweepSummary = {
+    usersRemoved: 0,
+    errorsLogged: 0,
+    candidates: 0,
+    allowlisted: 0,
+    tooRecent: 0,
+    dryRun,
+  };
+  const allowlist = buildAllowlist(env);
+
+  // Paginate. listUsers silently caps a page, so a single call would leave
+  // orphans behind and quietly under-report (#197 — the same trap that made
+  // "find a user" break past 50).
+  const all: { id: string; email?: string; created_at?: string }[] = [];
+  for (let page = 1; page <= 50; page++) {
+    const { data, error } = await client.auth.admin.listUsers({
+      page,
+      perPage: 200,
+    });
+    if (error) {
+      logger.warn('Sweep: listUsers failed', { page, error: error.message });
+      summary.errorsLogged++;
+      break;
+    }
+    const batch = data?.users ?? [];
+    if (batch.length === 0) break;
+    all.push(...batch);
+    if (batch.length < 200) break;
+  }
+
+  for (const user of all) {
+    const email = user.email?.trim().toLowerCase();
+    if (!email || !email.startsWith(E2E_ISOLATE_PREFIX)) continue;
+
+    if (allowlist.has(email)) {
+      summary.allowlisted++;
+      continue;
+    }
+
+    const createdAt = user.created_at ? Date.parse(user.created_at) : NaN;
+    // Unparseable timestamp → treat as too recent. Failing closed on a hard
+    // delete is the only safe default.
+    if (!Number.isFinite(createdAt) || now - createdAt < olderThanMs) {
+      summary.tooRecent++;
+      continue;
+    }
+
+    summary.candidates++;
+    if (dryRun) continue;
+    await deleteUserFkSafe(client, user.id, logger, summary);
+  }
+
+  logger.info('Sweep: orphaned E2E users', {
+    scanned: all.length,
+    candidates: summary.candidates,
+    removed: summary.usersRemoved,
+    allowlisted: summary.allowlisted,
+    tooRecent: summary.tooRecent,
+    dryRun,
+  });
 
   return summary;
 }

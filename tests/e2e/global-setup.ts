@@ -15,6 +15,7 @@ import {
   createTestUser,
   ensureEncryptionKeys,
 } from './utils/test-user-factory';
+import { sweepOrphanedE2EUsers } from '../rls/__setup__/cleanup-stale-impl';
 
 interface PrerequisiteError {
   category: string;
@@ -230,6 +231,39 @@ async function globalSetup(): Promise<void> {
   if (errors.length > 0) {
     printErrors(errors);
     throw new Error(`E2E prerequisites not met: ${errors.length} issues found`);
+  }
+
+  // Sweep orphaned per-test isolated users (#354).
+  //
+  // Per-test isolation is what ended the shared-user corruption class
+  // (#338/#341/#342), but its per-test `afterAll` cleanup never runs when a
+  // shard is cancelled or times out — exactly when it is needed. 381 orphans
+  // accumulated on prod between 2026-05-30 and 2026-07-24.
+  //
+  // This runs at SETUP rather than teardown deliberately: the sweeper's age
+  // guard means it only removes users older than 2h, so at run start every
+  // in-flight user (this run's or a concurrent suite's) is far too young to
+  // touch. A teardown sweep would be racing the very users it should preserve.
+  //
+  // Best-effort by design — cleaning up yesterday's litter must never be the
+  // reason today's suite fails to start.
+  try {
+    if (!adminClient) throw new Error('no admin client');
+    const summary = await sweepOrphanedE2EUsers(adminClient, {
+      logger: {
+        info: (msg, meta) => console.log(`   ${msg}`, meta ?? ''),
+        warn: (msg, meta) => console.warn(`   ⚠️  ${msg}`, meta ?? ''),
+      },
+    });
+    if (summary.usersRemoved > 0 || summary.errorsLogged > 0) {
+      console.log(
+        `\n🧹 Swept ${summary.usersRemoved} orphaned E2E user(s) ` +
+          `(kept ${summary.allowlisted} named fixture(s), ` +
+          `${summary.tooRecent} too recent), ${summary.errorsLogged} error(s).`
+      );
+    }
+  } catch (err) {
+    console.warn('\n⚠️  Orphan sweep failed (non-fatal):', err);
   }
 
   console.log('\n✅ All prerequisites met. Starting tests...\n');
