@@ -6,7 +6,7 @@
   "rate_limit_email_sent": 30,
   "disable_signup": false,
   "mailer_autoconfirm": false,
-  "security_captcha_enabled": false,
+  "security_captcha_enabled": true,
   "security_captcha_provider": "turnstile",
   "smtp_host": "smtp.resend.com",
   "smtp_port": "587",
