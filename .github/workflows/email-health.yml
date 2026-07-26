@@ -1,0 +1,95 @@
+# Email-health gate (#361).
+#
+# #361: for six weeks the E2E suite signed up a non-existent Gmail address
+# against the cloud project on every push. Supabase sent a real confirmation
+# through Resend each time, it hard-bounced, and Resend suppressed it. By the
+# time anyone looked, 121 of 154 sends had bounced — a 78.6% bounce rate — while
+# every test stayed green, because nothing in CI knew what a bounce was.
+#
+# ESPs warn above 2-5% and suspend accounts over sustained rates. A suspended
+# sender means no sign-up confirmations at all, so this is a product outage
+# waiting to happen, not a metrics nicety.
+#
+# Same shape as the auth-config drift gate (#350): ask the live provider what is
+# actually true, compare it against what we require, fail when they diverge.
+#
+# MODE: starts at `annotate` (report, don't fail) because the pre-fix bounce
+# backlog is still inside the 7-day window and would red every run. Flip
+# EMAIL_HEALTH_MODE to `block` once the window has rolled past 2026-08-02 —
+# the same annotate-then-block path FLAKY_GATE_MODE took for #300.
+#
+# Read-only: it only ever GETs /emails. It never deletes suppressions or sends.
+
+name: Email Health
+
+on:
+  schedule:
+    # Daily. This is the point of the gate — it catches damage that accumulates
+    # with no repo change at all, which is exactly how #361 went unnoticed.
+    - cron: '40 15 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/check-email-health.mjs'
+      - '.github/workflows/email-health.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/check-email-health.mjs'
+      - '.github/workflows/email-health.yml'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'annotate (report only) or block (fail over threshold)'
+        required: false
+        default: 'annotate'
+      window_days:
+        description: 'Days of send history to measure'
+        required: false
+        default: '7'
+
+concurrency:
+  group: email-health-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bounce-rate:
+    name: Sending reputation is healthy
+    # Secrets aren't passed to fork PRs — skip there instead of failing on a
+    # missing key (same-repo PRs, push, schedule, dispatch all still run).
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      # pnpm/action-setup MUST come before setup-node. package.json declares
+      # `"packageManager": "pnpm@10.16.1"`, which setup-node auto-detects and
+      # then fails on with "Unable to locate executable file: pnpm" if the binary
+      # isn't already on PATH. This job never runs pnpm — the script uses only
+      # built-in fetch — but the detection happens regardless.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.16.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20.x
+
+      - name: Check bounce rate against Resend
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          # Both dispatch inputs go through env, never interpolated into the
+          # run: body. workflow_dispatch inputs are only settable by someone with
+          # write access, but a ${{ }} expansion inside a shell line is a script
+          # injection surface regardless of who can reach it, and env costs
+          # nothing. See the GitHub workflow-injection guidance.
+          EMAIL_HEALTH_MODE: ${{ github.event.inputs.mode || 'annotate' }}
+          WINDOW_DAYS: ${{ github.event.inputs.window_days || '7' }}
+        run: |
+          # No pnpm install: the script uses only built-in fetch, so there is
+          # nothing to resolve and the job stays under a minute.
+          node scripts/check-email-health.mjs --window-days "$WINDOW_DAYS"
