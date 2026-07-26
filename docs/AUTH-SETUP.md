@@ -383,10 +383,10 @@ users, so legitimate sign-ups pay nothing). Supabase also supports hCaptcha.
 
 ### 6.5.3 Wire it up
 
-| Value      | Goes where                                                                   | Notes                                       |
-| ---------- | ---------------------------------------------------------------------------- | ------------------------------------------- |
-| Site key   | `NEXT_PUBLIC_CAPTCHA_SITE_KEY` — repo **Actions secret** + your local `.env` | Public; baked into the build                |
-| Secret key | Supabase → Auth → **Attack Protection** → CAPTCHA                            | **Never** commit; never send to the browser |
+| Value      | Goes where                                                                                    | Notes                                                                                                                                            |
+| ---------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Site key   | `NEXT_PUBLIC_CAPTCHA_SITE_KEY` — repo **Actions variable** (not a secret) + your local `.env` | Public; ships in the page HTML, so `vars.` not `secrets.`, matching the other public `NEXT_PUBLIC_*` config. `deploy.yml` passes it to the build |
+| Secret key | Supabase → Auth → **Attack Protection** → CAPTCHA                                             | **Never** commit; never send to the browser                                                                                                      |
 
 Then set the provider to **Turnstile** and enable it. In
 `scripts/supabase/auth-config.json`, change:
@@ -419,6 +419,13 @@ identity fields belong here.
 > **Type gotcha:** `smtp_port` is a **string** (`"587"`) in the Management API,
 > not a number. Writing `587` shows permanent false drift. When adding a key,
 > read the live value first and match its JSON type exactly.
+
+> **The variable alone does nothing.** `NEXT_PUBLIC_*` is inlined at build time,
+> so `deploy.yml` must pass it into the build step — it does, but a fork adding
+> the variable without that line would ship an inert widget and wonder why.
+> Deliberately wired into `deploy.yml` ONLY: `accessibility.yml` would put
+> Cloudflare's iframe under Pa11y, and `e2e.yml` does not need it because the
+> form-submitting sign-up tests are unconditionally skipped (#361).
 
 ### 6.5.4 What this does and doesn't protect
 
