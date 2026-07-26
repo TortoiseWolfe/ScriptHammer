@@ -133,6 +133,41 @@ describe('useAuth', () => {
     expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
       email: 'test@example.com',
       password: 'password123',
+      // (#353) options is always present now; captchaToken is undefined until a
+      // CAPTCHA is configured.
+      options: { captchaToken: undefined },
+    });
+  });
+
+  // (#353) Supabase's SECURITY_CAPTCHA_ENABLED is GLOBAL to auth — it gates
+  // sign-IN as well as sign-up. Wiring only sign-up locked every existing user
+  // out of production. These two cases pin the token reaching BOTH calls.
+  it('forwards the captcha token to signInWithPassword (#353)', async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await result.current.signIn('test@example.com', 'password123', 'tok-abc');
+
+    expect(supabase.auth.signInWithPassword).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      password: 'password123',
+      options: { captchaToken: 'tok-abc' },
+    });
+  });
+
+  it('forwards the captcha token to signUp (#353)', async () => {
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await result.current.signUp('test@example.com', 'password123', 'tok-xyz');
+
+    expect(supabase.auth.signUp).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      password: 'password123',
+      options: {
+        emailRedirectTo: expect.stringContaining('/auth/callback'),
+        captchaToken: 'tok-xyz',
+      },
     });
   });
 

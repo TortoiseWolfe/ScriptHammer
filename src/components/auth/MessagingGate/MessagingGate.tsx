@@ -1,9 +1,13 @@
 'use client';
 
-import React, { useState, useRef, type ReactNode } from 'react';
+import React, { type ReactNode, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { isOAuthUser } from '@/lib/auth/oauth-utils';
+import CaptchaWidget, {
+  type CaptchaWidgetHandle,
+} from '@/components/auth/CaptchaWidget';
+import { captchaConfig } from '@/config/captcha.config';
 
 export interface MessagingGateProps {
   /** Child content to render when email is verified */
@@ -21,6 +25,10 @@ export default function MessagingGate({ children }: MessagingGateProps) {
   const { user, isLoading } = useAuth();
   const supabase = createClient();
   const [resending, setResending] = useState(false);
+  // (#353) SECURITY_CAPTCHA_ENABLED is global to Supabase auth — resending a
+  // confirmation is gated the same as sign-in and sign-up.
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<CaptchaWidgetHandle>(null);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [resendError, setResendError] = useState<string | null>(null);
 
@@ -82,14 +90,21 @@ export default function MessagingGate({ children }: MessagingGateProps) {
     setResendError(null);
     setResendSuccess(false);
 
+    if (captchaConfig.enabled && !captchaToken) {
+      setResendError('Please complete the verification challenge.');
+      return;
+    }
+
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email: user!.email!,
+      options: { captchaToken: captchaToken ?? undefined },
     });
 
     setResending(false);
 
     if (error) {
+      captchaRef.current?.reset();
       setResendError(error.message);
     } else {
       setResendSuccess(true);
@@ -151,6 +166,7 @@ export default function MessagingGate({ children }: MessagingGateProps) {
             </div>
           ) : (
             <div className="card-actions mt-6">
+              <CaptchaWidget ref={captchaRef} onToken={setCaptchaToken} />
               <button
                 onClick={handleResend}
                 disabled={resending}
