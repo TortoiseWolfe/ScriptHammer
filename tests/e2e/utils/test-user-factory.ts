@@ -19,6 +19,25 @@ import { KeyDerivationService } from '@/lib/messaging/key-derivation';
 // (createClient() returns an inert {} when window is undefined), and the
 // transitive messaging Dexie instance constructs without indexedDB.
 import { GroupKeyService } from '@/services/messaging/group-key-service';
+import { isBackendCaptchaProtected } from './captcha-guard';
+
+/**
+ * Key used for PROGRAMMATIC sign-ins in test setup.
+ *
+ * Deliberately the SERVICE ROLE key, not the anon key. CAPTCHA is enabled on
+ * the cloud project (#353) and `SECURITY_CAPTCHA_ENABLED` is global to auth, so
+ * an anon-key password grant is refused with `captcha_failed` before the
+ * password is examined. GoTrue exempts service-role callers, and this file
+ * already requires the key to create users, so it introduces no new secret.
+ *
+ * SAFE HERE, AND ONLY HERE: every call site below discards this client
+ * immediately and returns just the session tokens, which are an ordinary
+ * `role: authenticated` session for that user — so RLS still applies wherever
+ * those tokens are used. Do NOT reuse a service-role client to run queries on
+ * a user's behalf: it would bypass RLS and quietly turn RLS tests green.
+ * Sign in with this key, then hand the TOKENS to an anon-keyed client.
+ */
+const SIGN_IN_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 /**
  * Email domain for test users.
@@ -1089,6 +1108,35 @@ export async function performSignIn(
 ): Promise<{ success: boolean; error?: string }> {
   const { rememberMe = false, timeout = 30000 } = options; // Increased from 15s to 30s for CI
 
+  // When the backend requires a captcha token, the form cannot be submitted
+  // from automation at all — Cloudflare withholds tokens from automated
+  // browsers by design (#353). Authenticate by injecting a server-minted
+  // session so callers that merely need to BE signed in keep working.
+  //
+  // Credentials are still verified: signInAsInjectable does a real password
+  // check, so a wrong password still returns success:false here. What this
+  // branch stops proving is that the FORM works — that coverage lives on the
+  // local-Supabase run where captcha is off (signup-mailer.yml). Specs whose
+  // subject IS the form (brute-force, rate-limiting) do not rely on this; they
+  // skip explicitly via captcha-guard, so nothing passes for the wrong reason.
+  //
+  // Doing this inside the helper rather than at each call site also stops the
+  // repeated form submissions that were tripping GoTrue's 5-attempt lockout on
+  // the SHARED test users and cascading across concurrent shards.
+  if (await isBackendCaptchaProtected()) {
+    const { session, error } = await signInAsInjectable(email, password);
+    if (!session) {
+      return { success: false, error: error ?? 'sign-in failed' };
+    }
+    await injectSessionIntoPage(page, session);
+    // Land where a successful form sign-in would have left the user, so
+    // callers asserting on the post-sign-in page still hold.
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+    await page.goto(`${basePath}/profile`);
+    await page.waitForLoadState('domcontentloaded');
+    return { success: true };
+  }
+
   // Dismiss cookie banner first - it can block form interactions
   await dismissCookieBanner(page);
 
@@ -1465,8 +1513,8 @@ export async function seedIsolatedConversation(
   //    the anon key against the same admin-reachable URL.
   const anonUrl =
     process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!anonUrl || !anonKey) {
+  const signInKey = SIGN_IN_KEY;
+  if (!anonUrl || !signInKey) {
     console.warn('seedIsolatedConversation: anon URL/key not configured');
     await deleteTestUser(viewer.id);
     await deleteTestUser(partner.id);
@@ -1475,10 +1523,10 @@ export async function seedIsolatedConversation(
   const signInUser = async (
     user: TestUser
   ): Promise<InjectableSession | null> => {
-    const anon = createClient(anonUrl, anonKey, {
+    const signInClient = createClient(anonUrl, signInKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
-    const { data, error } = await anon.auth.signInWithPassword({
+    const { data, error } = await signInClient.auth.signInWithPassword({
       email: user.email,
       password: user.password,
     });
@@ -1641,11 +1689,30 @@ export async function openAuthedPage(
   browser: Browser,
   session: InjectableSession
 ): Promise<OpenedParticipant> {
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
   const context = await browser.newContext({
     storageState: { cookies: [], origins: [] },
   });
   const page = await context.newPage();
+  await injectSessionIntoPage(page, session);
+  return { page, context, close: () => context.close() };
+}
+
+/**
+ * Authenticate an EXISTING page as `session` by writing Supabase's auth entry
+ * into localStorage, then reloading so supabase-js picks it up on init.
+ *
+ * Extracted from {@link openAuthedPage} so `auth.setup.ts` can authenticate the
+ * shared fixture the same proven way. It must NOT sign in through the form:
+ * CAPTCHA is enabled on the cloud project (#353) and Cloudflare withholds
+ * tokens from automation by design, so a real form sign-in cannot complete in
+ * CI. Injection sidesteps the human challenge without weakening it — the
+ * session still belongs to that user and RLS still applies.
+ */
+export async function injectSessionIntoPage(
+  page: Page,
+  session: InjectableSession
+): Promise<void> {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
   // The browser talks to Supabase via NEXT_PUBLIC_SUPABASE_URL (in-container
   // Chromium → host.docker.internal locally; the real cloud URL in CI). The
@@ -1678,8 +1745,44 @@ export async function openAuthedPage(
   // Reload so Supabase picks up the injected session on init.
   await page.reload();
   await page.waitForLoadState('domcontentloaded');
+}
 
-  return { page, context, close: () => context.close() };
+/**
+ * Mint an {@link InjectableSession} for an EXISTING user from its credentials.
+ *
+ * Uses {@link SIGN_IN_KEY} (service role), which GoTrue exempts from the
+ * captcha. A wrong password is still rejected, so this does not paper over bad
+ * credentials — it verifies them, which is precisely what the auth-setup
+ * prerequisite needs to establish.
+ */
+export async function signInAsInjectable(
+  email: string,
+  password: string
+): Promise<{ session: InjectableSession | null; error: string | null }> {
+  const url =
+    process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!url || !SIGN_IN_KEY) {
+    return { session: null, error: 'Supabase URL or service role key not set' };
+  }
+  const client = createClient(url, SIGN_IN_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { data, error } = await client.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (error || !data.session) {
+    return { session: null, error: error?.message ?? 'no session returned' };
+  }
+  return {
+    session: {
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      expires_at: data.session.expires_at ?? 0,
+      user: data.session.user,
+    },
+    error: null,
+  };
 }
 
 /**
@@ -1756,16 +1859,16 @@ async function createKeyedUserWithSession(
 
   const anonUrl =
     process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!anonUrl || !anonKey) {
+  const signInKey = SIGN_IN_KEY;
+  if (!anonUrl || !signInKey) {
     console.warn('createKeyedUserWithSession: anon URL/key not configured');
     await deleteTestUser(user.id);
     return null;
   }
-  const anon = createClient(anonUrl, anonKey, {
+  const signInClient = createClient(anonUrl, signInKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  const { data, error } = await anon.auth.signInWithPassword({
+  const { data, error } = await signInClient.auth.signInWithPassword({
     email: user.email,
     password: user.password,
   });
@@ -2774,12 +2877,12 @@ export async function promoteToOAuthAndReSignIn(
   // app_metadata (the pre-promotion session still says provider: 'email').
   const anonUrl =
     process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!anonUrl || !anonKey) return null;
-  const anon = createClient(anonUrl, anonKey, {
+  const signInKey = SIGN_IN_KEY;
+  if (!anonUrl || !signInKey) return null;
+  const signInClient = createClient(anonUrl, signInKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  const { data, error } = await anon.auth.signInWithPassword({
+  const { data, error } = await signInClient.auth.signInWithPassword({
     email: user.email,
     password: user.password,
   });

@@ -199,16 +199,30 @@ async function globalSetup(): Promise<void> {
 
     // Runs in the Node test process (in-container), so use the admin URL for
     // local-sandbox reachability; falls back to the public URL on cloud/CI (#121).
-    const anonClient = createClient(
+    //
+    // Signs in with the SERVICE ROLE key, not the anon key. CAPTCHA is enabled
+    // on this project (#353) and `SECURITY_CAPTCHA_ENABLED` is global to auth,
+    // so an anon-key password grant is refused with `captcha_failed` before the
+    // password is ever examined — which broke this check the moment protection
+    // went on. GoTrue exempts service-role callers from the captcha, and the
+    // key is already required above to create users, so this adds no new secret.
+    //
+    // This does NOT weaken the check. A wrong password is still rejected with
+    // `invalid_credentials`, and the returned JWT is an ordinary
+    // `role: authenticated` session for that user, so nothing downstream gains
+    // privilege and RLS still applies exactly as before. Both were verified
+    // against the live project before this was adopted.
+    const credentialCheckClient = createClient(
       process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    const { error: signInError } = await anonClient.auth.signInWithPassword({
-      email: process.env.TEST_USER_PRIMARY_EMAIL!,
-      password: process.env.TEST_USER_PRIMARY_PASSWORD!,
-    });
+    const { error: signInError } =
+      await credentialCheckClient.auth.signInWithPassword({
+        email: process.env.TEST_USER_PRIMARY_EMAIL!,
+        password: process.env.TEST_USER_PRIMARY_PASSWORD!,
+      });
 
     if (signInError) {
       errors.push({
@@ -223,7 +237,7 @@ async function globalSetup(): Promise<void> {
     } else {
       console.log('✓ PRIMARY user credentials verified');
       // Sign out to clean up
-      await anonClient.auth.signOut();
+      await credentialCheckClient.auth.signOut();
     }
   }
 

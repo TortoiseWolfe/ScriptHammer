@@ -388,6 +388,47 @@ users, so legitimate sign-ups pay nothing). Supabase also supports hCaptcha.
 | Site key   | `NEXT_PUBLIC_CAPTCHA_SITE_KEY` — repo **Actions variable** (not a secret) + your local `.env` | Public; ships in the page HTML, so `vars.` not `secrets.`, matching the other public `NEXT_PUBLIC_*` config. `deploy.yml` passes it to the build |
 | Secret key | Supabase → Auth → **Attack Protection** → CAPTCHA                                             | **Never** commit; never send to the browser                                                                                                      |
 
+### 6.5.3 Preflight — run this BEFORE flipping the flag
+
+`SECURITY_CAPTCHA_ENABLED` is **global to auth**, not scoped to sign-up. It
+gates sign-in, password recovery and resend as well. Turning it on while any one
+link is wrong locks every existing user out of the product.
+
+That is not hypothetical: the flag was once switched on while only the sign-up
+form sent a token, and every sign-in immediately began failing with
+`captcha protection: request disallowed (no captcha_token found)`. The mistake
+was not carelessness — it was that the change was verified by probing sign-**up**,
+the single path that happened to work.
+
+```bash
+TURNSTILE_SECRET=0x... docker compose exec -T scripthammer \
+  node scripts/check-captcha.mjs
+```
+
+It verifies the two links that fail silently:
+
+- **The site key reached the deployed bundle.** `NEXT_PUBLIC_*` is inlined at
+  **build** time, so setting the repo variable alone changes nothing — the
+  workflow has to pass it into the build step. `deploy.yml` does; nothing else
+  does, deliberately.
+- **The secret is a real Turnstile secret**, via Cloudflare's `siteverify`.
+  This cannot be checked by reading the value back: Supabase returns write-only
+  secrets as **SHA-256 hashes** (`smtp_pass` and the OAuth secrets look exactly
+  the same), so the stored value always fails verification whether it is right
+  or wrong. Only the plaintext from the Cloudflare dashboard proves it. A wrong
+  secret refuses **every** auth request even when the user's token is valid.
+
+Two further points the script deliberately leaves alone:
+
+- **Domain allowlisting** must be proven _differentially_ — load the widget from
+  a bogus origin and confirm error **`110200`**, then from the real origin and
+  confirm no error. Without the bogus control, "no error" is unfalsifiable,
+  because a broken check reports exactly the same thing.
+- **A headless browser legitimately receives no token.** Turnstile exists to
+  withhold tokens from automation, so a container run getting none proves
+  nothing. Do not treat that as a failure, and do not "fix" it by weakening the
+  widget. Confirm the real flows in an ordinary browser once the flag is on.
+
 Then set the provider to **Turnstile** and enable it. In
 `scripts/supabase/auth-config.json`, change:
 

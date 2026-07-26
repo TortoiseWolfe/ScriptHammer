@@ -8,6 +8,7 @@
 import { test, expect } from '@playwright/test';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { dismissCookieBanner } from '../utils/test-user-factory';
+import { skipIfBackendCaptchaProtected } from '../utils/captcha-guard';
 
 const USER_A = {
   email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
@@ -35,6 +36,11 @@ const getAdminClient = (): SupabaseClient | null => {
 test.describe('Capture Decryption Logs', () => {
   test('capture console output from message exchange', async ({ browser }) => {
     test.setTimeout(120000);
+    // Signs both participants in through the real form, which cannot be
+    // submitted without a Turnstile token.
+    await skipIfBackendCaptchaProtected(
+      'Console capture of a two-party message exchange'
+    );
 
     const contextA = await browser.newContext({
       storageState: { cookies: [], origins: [] },

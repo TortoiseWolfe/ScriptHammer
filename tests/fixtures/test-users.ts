@@ -122,18 +122,46 @@ export async function createAuthenticatedClient(
   email: string,
   password: string
 ) {
+  // The client handed back is ANON-keyed on purpose: callers query with it as
+  // the user, so RLS must apply. Never give this client the service-role key —
+  // it would bypass RLS and quietly turn RLS tests green.
   const client = createClient<Database>(
     requireEnv(SUPABASE_URL, 'NEXT_PUBLIC_SUPABASE_URL'),
     requireEnv(SUPABASE_ANON_KEY, 'NEXT_PUBLIC_SUPABASE_ANON_KEY')
   );
 
-  const { error } = await client.auth.signInWithPassword({
+  // Sign in through a SEPARATE service-role client. CAPTCHA is enabled on the
+  // cloud project (#353) and `SECURITY_CAPTCHA_ENABLED` is global to auth, so
+  // an anon-key password grant is refused with `captcha_failed` before the
+  // password is examined. GoTrue exempts service-role callers; a wrong password
+  // is still rejected, so this check keeps its meaning.
+  const signInClient = createClient<Database>(
+    requireEnv(SUPABASE_URL, 'NEXT_PUBLIC_SUPABASE_URL'),
+    requireEnv(SUPABASE_SERVICE_ROLE_KEY, 'SUPABASE_SERVICE_ROLE_KEY'),
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+
+  const { data, error } = await signInClient.auth.signInWithPassword({
     email,
     password,
   });
 
   if (error) {
     throw new Error(`Failed to authenticate test user: ${error.message}`);
+  }
+  if (!data.session) {
+    throw new Error('Failed to authenticate test user: no session returned');
+  }
+
+  // Transfer the session onto the anon-keyed client. The tokens are an ordinary
+  // `role: authenticated` session for this user, so the returned client behaves
+  // exactly as a signed-in browser would — RLS included.
+  const { error: setErr } = await client.auth.setSession({
+    access_token: data.session.access_token,
+    refresh_token: data.session.refresh_token,
+  });
+  if (setErr) {
+    throw new Error(`Failed to attach test user session: ${setErr.message}`);
   }
 
   return client;

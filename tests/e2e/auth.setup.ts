@@ -14,7 +14,8 @@
 import { test as setup, expect } from '@playwright/test';
 import {
   dismissCookieBanner,
-  performSignIn,
+  signInAsInjectable,
+  injectSessionIntoPage,
   ensureEncryptionKeys,
   getUserByEmail,
   getAdminClient,
@@ -42,31 +43,34 @@ setup('authenticate shared test user', async ({ page, browser }) => {
 
   console.log(`Authenticating as: ${email}`);
 
-  // Navigate to sign-in
-  await page.goto('/sign-in');
-  await page.waitForLoadState('domcontentloaded');
+  // Authenticate WITHOUT driving the sign-in form.
+  //
+  // CAPTCHA is enabled on the cloud project (#353) and `SECURITY_CAPTCHA_ENABLED`
+  // is global to auth, so submitting the form requires a Turnstile token —
+  // which Cloudflare withholds from automated browsers by design. Driving the
+  // form here cannot succeed in CI, and this file is load-bearing: every E2E
+  // shard depends on the storageState it produces.
+  //
+  // Minting the session server-side and injecting it is the standard Playwright
+  // pattern, and it does NOT skip verification: signInAsInjectable checks the
+  // real credentials, so a wrong TEST_USER_PRIMARY_PASSWORD still fails loudly
+  // here — which is the whole point of this step.
+  const { session, error: signInError } = await signInAsInjectable(
+    email,
+    password
+  );
 
-  // If already redirected away from sign-in, navigate back
-  if (!page.url().includes('/sign-in')) {
-    await page.goto('/sign-in');
-    await page.waitForLoadState('domcontentloaded');
-  }
-
-  // Dismiss cookie banner before signing in
-  await dismissCookieBanner(page);
-
-  // Sign in using the existing helper
-  const result = await performSignIn(page, email, password, { timeout: 30000 });
-
-  if (!result.success) {
-    // Take screenshot for debugging
+  if (!session) {
     await page
       .screenshot({ path: 'test-results/auth-setup-failure.png' })
       .catch(() => {});
     throw new Error(
-      `Auth setup sign-in failed: ${result.error}. Check test-results/auth-setup-failure.png`
+      `Auth setup sign-in failed: ${signInError}. Check test-results/auth-setup-failure.png`
     );
   }
+
+  await injectSessionIntoPage(page, session);
+  await dismissCookieBanner(page);
 
   // Verify authenticated state
   console.log('✓ Sign-in successful, verifying auth state...');
@@ -220,24 +224,22 @@ setup('authenticate shared test user', async ({ page, browser }) => {
       const ctxB = await browser.newContext();
       const pageB = await ctxB.newPage();
       try {
-        await pageB.goto('/sign-in');
-        await pageB.waitForLoadState('domcontentloaded');
-        if (!pageB.url().includes('/sign-in')) {
-          await pageB.goto('/sign-in');
-          await pageB.waitForLoadState('domcontentloaded');
-        }
-        await dismissCookieBanner(pageB);
-
-        const resultB = await performSignIn(pageB, userBEmail, userBPassword, {
-          timeout: 30000,
-        });
-        if (!resultB.success) {
+        // Same reasoning as the primary user above: mint the session
+        // server-side and inject it, because the real form cannot be submitted
+        // against a CAPTCHA-protected backend.
+        const { session: sessionB, error: errorB } = await signInAsInjectable(
+          userBEmail,
+          userBPassword
+        );
+        if (!sessionB) {
           await pageB
             .screenshot({ path: 'test-results/auth-setup-b-failure.png' })
             .catch(() => {});
-          throw new Error(`User B auth-setup sign-in failed: ${resultB.error}`);
+          throw new Error(`User B auth-setup sign-in failed: ${errorB}`);
         }
 
+        await injectSessionIntoPage(pageB, sessionB);
+        await dismissCookieBanner(pageB);
         await expect(pageB).not.toHaveURL(/\/sign-in/);
 
         // Set E2E flag for cross-tab sign-out suppression, matching primary.

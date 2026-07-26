@@ -8,6 +8,7 @@
 import { test, expect } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 import { clearAllRateLimits } from '../utils/rate-limit-admin';
+import { skipIfBackendCaptchaProtected } from '../utils/captcha-guard';
 
 /**
  * Generate a test email using real email domain from TEST_USER_PRIMARY_EMAIL.
@@ -56,6 +57,9 @@ test.describe('Brute Force Prevention - REQ-SEC-003', () => {
       );
       return;
     }
+    await skipIfBackendCaptchaProtected(
+      'Brute-force lockout after repeated failed sign-ins (REQ-SEC-003)'
+    );
   });
 
   test('should lockout after 5 failed login attempts', async ({ page }) => {

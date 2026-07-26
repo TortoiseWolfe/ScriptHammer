@@ -20,6 +20,7 @@ import {
   dismissCookieBanner,
   waitForAuthenticatedState,
 } from '../utils/test-user-factory';
+import { skipIfBackendCaptchaProtected } from '../utils/captcha-guard';
 
 /**
  * (#361) Skip any test that would SUBMIT the sign-up form against the cloud
@@ -339,6 +340,12 @@ test.describe('Sign-up with Admin Confirmation', () => {
       test.skip(true, 'SUPABASE_SERVICE_ROLE_KEY not configured');
       return;
     }
+    // Seeding happens through the admin API (unaffected by CAPTCHA), but the
+    // second half of this test signs in through the REAL form, which cannot be
+    // submitted without a Turnstile token.
+    await skipIfBackendCaptchaProtected(
+      'Admin-confirmed user can sign in through the sign-in form'
+    );
 
     // Create user via admin API (email auto-confirmed)
     const testEmail = generateSignUpEmail('admin');
