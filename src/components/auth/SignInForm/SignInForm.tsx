@@ -1,7 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import CaptchaWidget, {
+  type CaptchaWidgetHandle,
+} from '@/components/auth/CaptchaWidget';
+import { captchaConfig } from '@/config/captcha.config';
 import {
   checkRateLimit,
   recordFailedAttempt,
@@ -40,6 +44,11 @@ export default function SignInForm({
   const [remainingAttempts, setRemainingAttempts] = useState<number | null>(
     null
   );
+  // (#353) SECURITY_CAPTCHA_ENABLED is GLOBAL to Supabase auth — it gates
+  // sign-IN as well as sign-up. Omitting this here is what locked every
+  // existing user out of production the first time the flag was flipped.
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<CaptchaWidgetHandle>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +67,11 @@ export default function SignInForm({
     // and ForgotPasswordForm, which also call it directly. Do NOT wrap it in a
     // fail-open catch: that would silently disable brute-force protection on a
     // backend outage, contradicting the wrapper's documented policy.
+    if (captchaConfig.enabled && !captchaToken) {
+      setError('Please complete the verification challenge.');
+      return;
+    }
+
     const rateLimit = await checkRateLimit(email, 'sign_in');
 
     if (!rateLimit.allowed) {
@@ -74,11 +88,18 @@ export default function SignInForm({
     setRemainingAttempts(rateLimit.remaining);
     setLoading(true);
 
-    const { error: signInError } = await signIn(email, password);
+    const { error: signInError } = await signIn(
+      email,
+      password,
+      captchaToken ?? undefined
+    );
 
     setLoading(false);
 
     if (signInError) {
+      // Turnstile tokens are single-use; reset so a retry can get a fresh one.
+      captchaRef.current?.reset();
+
       // Check if email needs verification
       if (signInError.message.toLowerCase().includes('email not confirmed')) {
         window.location.href = getInternalUrl('/verify-email');
@@ -312,6 +333,9 @@ export default function SignInForm({
           <span>{error}</span>
         </div>
       )}
+
+      {/* (#353) Renders nothing when CAPTCHA is unconfigured. */}
+      <CaptchaWidget ref={captchaRef} onToken={setCaptchaToken} />
 
       <button
         type="submit"

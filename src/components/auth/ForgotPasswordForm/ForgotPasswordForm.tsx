@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import {
   checkRateLimit,
@@ -10,6 +10,10 @@ import {
 import { validateEmail } from '@/lib/auth/email-validator';
 import { logAuthEvent } from '@/lib/auth/audit-logger';
 import { getRedirectUrl } from '@/config/project.config';
+import CaptchaWidget, {
+  type CaptchaWidgetHandle,
+} from '@/components/auth/CaptchaWidget';
+import { captchaConfig } from '@/config/captcha.config';
 
 export interface ForgotPasswordFormProps {
   /** Callback on success */
@@ -33,6 +37,10 @@ export default function ForgotPasswordForm({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  // (#353) SECURITY_CAPTCHA_ENABLED is global to Supabase auth — password
+  // recovery is gated the same as sign-in and sign-up.
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<CaptchaWidgetHandle>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,18 +67,27 @@ export default function ForgotPasswordForm({
       return;
     }
 
+    if (captchaConfig.enabled && !captchaToken) {
+      setError('Please complete the verification challenge.');
+      return;
+    }
+
     setLoading(true);
 
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       email,
       {
         redirectTo: getRedirectUrl('/reset-password'),
+        captchaToken: captchaToken ?? undefined,
       }
     );
 
     setLoading(false);
 
     if (resetError) {
+      // Single-use token: reset so a retry can get a fresh one.
+      captchaRef.current?.reset();
+
       // Record failed attempt
       await recordFailedAttempt(email, 'password_reset');
 
@@ -129,6 +146,8 @@ export default function ForgotPasswordForm({
           <span>{error}</span>
         </div>
       )}
+      {/* (#353) Renders nothing when CAPTCHA is unconfigured. */}
+      <CaptchaWidget ref={captchaRef} onToken={setCaptchaToken} />
 
       <button
         type="submit"

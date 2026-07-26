@@ -106,7 +106,17 @@ export interface AuthContextType extends AuthState {
     password: string,
     captchaToken?: string
   ) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  /**
+   * Sign in. `captchaToken` (#353) is required once Supabase Auth has
+   * `SECURITY_CAPTCHA_ENABLED` on — that flag is GLOBAL to auth, gating
+   * sign-in and password recovery as well as sign-up. Optional here so the
+   * client works both before the flag is flipped and in forks with no CAPTCHA.
+   */
+  signIn: (
+    email: string,
+    password: string,
+    captchaToken?: string
+  ) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshSession: () => Promise<void>;
   retry: () => Promise<void>;
@@ -300,17 +310,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const signIn = useCallback(async (email: string, password: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      return { error };
-    } catch (error) {
-      return { error: error as Error };
-    }
-  }, []);
+  const signIn = useCallback(
+    async (email: string, password: string, captchaToken?: string) => {
+      try {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+          // (#353) SECURITY_CAPTCHA_ENABLED gates sign-IN too, not just
+          // sign-up. Omitting this is what locked every existing user out of
+          // production when the flag was first flipped.
+          options: { captchaToken },
+        });
+        return { error };
+      } catch (error) {
+        return { error: error as Error };
+      }
+    },
+    []
+  );
 
   const signOut = useCallback(async () => {
     // Mark as local sign-out to prevent double redirect from onAuthStateChange
