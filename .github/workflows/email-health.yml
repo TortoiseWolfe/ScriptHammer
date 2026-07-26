@@ -64,6 +64,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      # pnpm/action-setup MUST come before setup-node. package.json declares
+      # `"packageManager": "pnpm@10.16.1"`, which setup-node auto-detects and
+      # then fails on with "Unable to locate executable file: pnpm" if the binary
+      # isn't already on PATH. This job never runs pnpm — the script uses only
+      # built-in fetch — but the detection happens regardless.
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.16.1
+
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
