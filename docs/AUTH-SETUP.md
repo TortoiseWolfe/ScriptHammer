@@ -405,6 +405,21 @@ turns protection off later.
 > it — which is exactly why the missing CAPTCHA went unnoticed. If you add a
 > security-relevant auth setting, add it to that file too.
 
+The same audit found a second instance, so the **outbound mail identity** is now
+tracked as well: `smtp_host`, `smtp_port`, `smtp_user`, `smtp_admin_email` and
+`smtp_sender_name`. Previously nothing would have noticed if the sending domain
+or from-address were silently repointed — a phishing-shaped change to the one
+channel users are told to trust.
+
+**`smtp_pass` is deliberately NOT tracked.** It is the Resend credential; it
+lives only in Supabase Auth's config, server-side. It must never enter a
+committed file — gitleaks would block the commit, correctly. Only non-secret
+identity fields belong here.
+
+> **Type gotcha:** `smtp_port` is a **string** (`"587"`) in the Management API,
+> not a number. Writing `587` shows permanent false drift. When adding a key,
+> read the live value first and match its JSON type exactly.
+
 ### 6.5.4 What this does and doesn't protect
 
 - The widget is **not** a security boundary on its own — a bot can skip the UI

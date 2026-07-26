@@ -8,6 +8,11 @@
   "mailer_autoconfirm": false,
   "security_captcha_enabled": false,
   "security_captcha_provider": "hcaptcha",
+  "smtp_host": "smtp.resend.com",
+  "smtp_port": "587",
+  "smtp_user": "resend",
+  "smtp_admin_email": "noreply@scripthammer.com",
+  "smtp_sender_name": "ScriptHammer",
   "hook_custom_access_token_enabled": true,
   "hook_custom_access_token_uri": "pg-functions://postgres/public/custom_access_token_hook"
 }
