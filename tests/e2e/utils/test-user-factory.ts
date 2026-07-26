@@ -19,6 +19,7 @@ import { KeyDerivationService } from '@/lib/messaging/key-derivation';
 // (createClient() returns an inert {} when window is undefined), and the
 // transitive messaging Dexie instance constructs without indexedDB.
 import { GroupKeyService } from '@/services/messaging/group-key-service';
+import { isBackendCaptchaProtected } from './captcha-guard';
 
 /**
  * Key used for PROGRAMMATIC sign-ins in test setup.
@@ -1106,6 +1107,35 @@ export async function performSignIn(
   options: { rememberMe?: boolean; timeout?: number } = {}
 ): Promise<{ success: boolean; error?: string }> {
   const { rememberMe = false, timeout = 30000 } = options; // Increased from 15s to 30s for CI
+
+  // When the backend requires a captcha token, the form cannot be submitted
+  // from automation at all — Cloudflare withholds tokens from automated
+  // browsers by design (#353). Authenticate by injecting a server-minted
+  // session so callers that merely need to BE signed in keep working.
+  //
+  // Credentials are still verified: signInAsInjectable does a real password
+  // check, so a wrong password still returns success:false here. What this
+  // branch stops proving is that the FORM works — that coverage lives on the
+  // local-Supabase run where captcha is off (signup-mailer.yml). Specs whose
+  // subject IS the form (brute-force, rate-limiting) do not rely on this; they
+  // skip explicitly via captcha-guard, so nothing passes for the wrong reason.
+  //
+  // Doing this inside the helper rather than at each call site also stops the
+  // repeated form submissions that were tripping GoTrue's 5-attempt lockout on
+  // the SHARED test users and cascading across concurrent shards.
+  if (await isBackendCaptchaProtected()) {
+    const { session, error } = await signInAsInjectable(email, password);
+    if (!session) {
+      return { success: false, error: error ?? 'sign-in failed' };
+    }
+    await injectSessionIntoPage(page, session);
+    // Land where a successful form sign-in would have left the user, so
+    // callers asserting on the post-sign-in page still hold.
+    const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+    await page.goto(`${basePath}/profile`);
+    await page.waitForLoadState('domcontentloaded');
+    return { success: true };
+  }
 
   // Dismiss cookie banner first - it can block form interactions
   await dismissCookieBanner(page);
