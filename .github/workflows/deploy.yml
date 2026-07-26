@@ -64,6 +64,10 @@ jobs:
           NEXT_PUBLIC_BASE_URL: ${{ vars.NEXT_PUBLIC_BASE_URL }}
           NEXT_PUBLIC_CALENDAR_PROVIDER: ${{ vars.NEXT_PUBLIC_CALENDAR_PROVIDER }}
           NEXT_PUBLIC_CALENDAR_URL: ${{ vars.NEXT_PUBLIC_CALENDAR_URL }}
+          # (#353) Turnstile bot protection. PUBLIC — it ships in the page
+          # HTML, so it is a var not a secret. Absent/empty leaves sign-up
+          # CAPTCHA inert, which is the fork-safe default.
+          NEXT_PUBLIC_CAPTCHA_SITE_KEY: ${{ vars.NEXT_PUBLIC_CAPTCHA_SITE_KEY }}
           NEXT_PUBLIC_DISQUS_SHORTNAME: ${{ vars.NEXT_PUBLIC_DISQUS_SHORTNAME }}
           NEXT_PUBLIC_EMAILJS_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY }}
           NEXT_PUBLIC_EMAILJS_SERVICE_ID: ${{ vars.NEXT_PUBLIC_EMAILJS_SERVICE_ID }}
