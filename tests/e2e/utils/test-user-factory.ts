@@ -21,6 +21,24 @@ import { KeyDerivationService } from '@/lib/messaging/key-derivation';
 import { GroupKeyService } from '@/services/messaging/group-key-service';
 
 /**
+ * Key used for PROGRAMMATIC sign-ins in test setup.
+ *
+ * Deliberately the SERVICE ROLE key, not the anon key. CAPTCHA is enabled on
+ * the cloud project (#353) and `SECURITY_CAPTCHA_ENABLED` is global to auth, so
+ * an anon-key password grant is refused with `captcha_failed` before the
+ * password is examined. GoTrue exempts service-role callers, and this file
+ * already requires the key to create users, so it introduces no new secret.
+ *
+ * SAFE HERE, AND ONLY HERE: every call site below discards this client
+ * immediately and returns just the session tokens, which are an ordinary
+ * `role: authenticated` session for that user — so RLS still applies wherever
+ * those tokens are used. Do NOT reuse a service-role client to run queries on
+ * a user's behalf: it would bypass RLS and quietly turn RLS tests green.
+ * Sign in with this key, then hand the TOKENS to an anon-keyed client.
+ */
+const SIGN_IN_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+/**
  * Email domain for test users.
  *
  * IMPORTANT: Supabase validates email domains for MX (mail exchange) records.
@@ -1465,8 +1483,8 @@ export async function seedIsolatedConversation(
   //    the anon key against the same admin-reachable URL.
   const anonUrl =
     process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!anonUrl || !anonKey) {
+  const signInKey = SIGN_IN_KEY;
+  if (!anonUrl || !signInKey) {
     console.warn('seedIsolatedConversation: anon URL/key not configured');
     await deleteTestUser(viewer.id);
     await deleteTestUser(partner.id);
@@ -1475,10 +1493,10 @@ export async function seedIsolatedConversation(
   const signInUser = async (
     user: TestUser
   ): Promise<InjectableSession | null> => {
-    const anon = createClient(anonUrl, anonKey, {
+    const signInClient = createClient(anonUrl, signInKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
-    const { data, error } = await anon.auth.signInWithPassword({
+    const { data, error } = await signInClient.auth.signInWithPassword({
       email: user.email,
       password: user.password,
     });
@@ -1756,16 +1774,16 @@ async function createKeyedUserWithSession(
 
   const anonUrl =
     process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!anonUrl || !anonKey) {
+  const signInKey = SIGN_IN_KEY;
+  if (!anonUrl || !signInKey) {
     console.warn('createKeyedUserWithSession: anon URL/key not configured');
     await deleteTestUser(user.id);
     return null;
   }
-  const anon = createClient(anonUrl, anonKey, {
+  const signInClient = createClient(anonUrl, signInKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  const { data, error } = await anon.auth.signInWithPassword({
+  const { data, error } = await signInClient.auth.signInWithPassword({
     email: user.email,
     password: user.password,
   });
@@ -2774,12 +2792,12 @@ export async function promoteToOAuthAndReSignIn(
   // app_metadata (the pre-promotion session still says provider: 'email').
   const anonUrl =
     process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!anonUrl || !anonKey) return null;
-  const anon = createClient(anonUrl, anonKey, {
+  const signInKey = SIGN_IN_KEY;
+  if (!anonUrl || !signInKey) return null;
+  const signInClient = createClient(anonUrl, signInKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  const { data, error } = await anon.auth.signInWithPassword({
+  const { data, error } = await signInClient.auth.signInWithPassword({
     email: user.email,
     password: user.password,
   });

@@ -11,6 +11,7 @@
 import { test, expect } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 import { clearAllRateLimits } from '../utils/rate-limit-admin';
+import { skipIfBackendCaptchaProtected } from '../utils/captcha-guard';
 
 // Run tests in serial - rate limiting is IP-based, so tests must coordinate
 test.describe.configure({ mode: 'serial' });
@@ -75,6 +76,9 @@ test.describe('Rate Limiting - User Experience', () => {
       );
       return;
     }
+    await skipIfBackendCaptchaProtected(
+      'Sign-in rate-limiting UX and lockout messaging'
+    );
 
     await page.goto('/sign-in');
     await dismissCookieBanner(page);
