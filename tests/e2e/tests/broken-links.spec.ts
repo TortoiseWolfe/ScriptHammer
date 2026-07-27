@@ -8,6 +8,72 @@ interface BrokenLink {
   linkText?: string;
 }
 
+/**
+ * Check one referenced resource, distinguishing a genuinely broken resource
+ * from an external host that merely failed to answer (#323).
+ *
+ * ## Why this distinction matters
+ * The old check treated `!response` — a connection failure carrying NO status —
+ * exactly like a real 404. But `og:image` points at an absolute production URL
+ * by design (crawlers require one), so this test reaches out to the live
+ * internet on every run. A blip contacting an external host then failed the
+ * suite as though the app had a broken image.
+ *
+ * Those are opposite signals:
+ * - a real error status (404/410/5xx) means the resource is genuinely wrong,
+ *   and that is worth failing on whoever hosts it;
+ * - no status at all, from a host we do not control, is environmental noise —
+ *   the same dead-IPv6/external-host class documented in project memory.
+ *
+ * Same-origin is held to the stricter rule: if localhost cannot be reached, the
+ * build under test really is broken and must fail.
+ *
+ * Unreachable externals are LOGGED rather than silently dropped, so a resource
+ * that quietly stops being checked is still visible in the run output.
+ */
+async function checkResource(
+  page: Page,
+  url: string,
+  label: string,
+  baseUrl: string,
+  brokenResources: BrokenLink[]
+): Promise<void> {
+  const response = await page.request.get(url).catch(() => null);
+
+  // A real error status is a real defect, external or not.
+  if (response && response.status() >= 400) {
+    brokenResources.push({
+      sourceUrl: page.url(),
+      targetUrl: url,
+      statusCode: response.status(),
+      error: label,
+    });
+    return;
+  }
+
+  if (response) return; // reachable and not an error status
+
+  let isExternal = true;
+  try {
+    isExternal = new URL(url).origin !== new URL(baseUrl).origin;
+  } catch {
+    isExternal = false; // unparseable → treat strictly rather than skipping
+  }
+
+  if (isExternal) {
+    console.log(
+      `   ⚠️  unreachable external resource, not counted as broken (#323): ${url}`
+    );
+    return;
+  }
+
+  brokenResources.push({
+    sourceUrl: page.url(),
+    targetUrl: url,
+    error: `${label} (no response from same-origin host)`,
+  });
+}
+
 test.describe('Broken Links Detection', () => {
   // Increase timeout for crawling tests (2 minutes)
   test.setTimeout(120000);
@@ -293,42 +359,28 @@ test.describe('Broken Links Detection', () => {
       const ogImage = await page
         .$eval('meta[property="og:image"]', (el) => el.getAttribute('content'))
         .catch(() => null);
-
       if (ogImage) {
-        const imageUrl = await normalizeUrl(ogImage, page.url());
-        const imageResponse = await page.request
-          .get(imageUrl)
-          .catch(() => null);
-
-        if (!imageResponse || imageResponse.status() >= 400) {
-          brokenResources.push({
-            sourceUrl: page.url(),
-            targetUrl: imageUrl,
-            statusCode: imageResponse?.status(),
-            error: 'Open Graph image not found',
-          });
-        }
+        await checkResource(
+          page,
+          await normalizeUrl(ogImage, page.url()),
+          'Open Graph image not found',
+          baseUrl,
+          brokenResources
+        );
       }
 
       // Check Twitter card images
       const twitterImage = await page
         .$eval('meta[name="twitter:image"]', (el) => el.getAttribute('content'))
         .catch(() => null);
-
       if (twitterImage) {
-        const imageUrl = await normalizeUrl(twitterImage, page.url());
-        const imageResponse = await page.request
-          .get(imageUrl)
-          .catch(() => null);
-
-        if (!imageResponse || imageResponse.status() >= 400) {
-          brokenResources.push({
-            sourceUrl: page.url(),
-            targetUrl: imageUrl,
-            statusCode: imageResponse?.status(),
-            error: 'Twitter card image not found',
-          });
-        }
+        await checkResource(
+          page,
+          await normalizeUrl(twitterImage, page.url()),
+          'Twitter card image not found',
+          baseUrl,
+          brokenResources
+        );
       }
 
       // Check favicon
@@ -337,19 +389,14 @@ test.describe('Broken Links Detection', () => {
           el.getAttribute('href')
         )
         .catch(() => null);
-
       if (favicon) {
-        const iconUrl = await normalizeUrl(favicon, page.url());
-        const iconResponse = await page.request.get(iconUrl).catch(() => null);
-
-        if (!iconResponse || iconResponse.status() >= 400) {
-          brokenResources.push({
-            sourceUrl: page.url(),
-            targetUrl: iconUrl,
-            statusCode: iconResponse?.status(),
-            error: 'Favicon not found',
-          });
-        }
+        await checkResource(
+          page,
+          await normalizeUrl(favicon, page.url()),
+          'Favicon not found',
+          baseUrl,
+          brokenResources
+        );
       }
     }
 
