@@ -1134,6 +1134,24 @@ export async function performSignIn(
     const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
     await page.goto(`${basePath}/profile`);
     await page.waitForLoadState('domcontentloaded');
+
+    // Wait for auth to SETTLE before returning. The route guard bounces to
+    // /sign-in until AuthContext has read the injected session out of
+    // localStorage, so returning on `domcontentloaded` alone hands callers a
+    // page that may still be mid-redirect — they assert on the URL immediately
+    // (session-persistence.spec.ts:241) and flake. The form path never had this
+    // race because the APP performed the redirect only once auth existed.
+    try {
+      await page.waitForURL((url) => !/\/sign-in\/?$/.test(url.pathname), {
+        timeout,
+      });
+    } catch {
+      return {
+        success: false,
+        error:
+          'injected session did not authenticate the page (still on /sign-in)',
+      };
+    }
     return { success: true };
   }
 
