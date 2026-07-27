@@ -11,6 +11,19 @@
   --breakpoint-md: 48rem; /* 768px - Tablets */
   --breakpoint-lg: 64rem; /* 1024px - Desktop */
   --breakpoint-xl: 80rem; /* 1280px - Large desktop */
+
+  /* Type stack (#377). THIS MAPPING IS LOAD-BEARING — without it the faces
+   * declared by `next/font` in layout.tsx are downloaded and rendered nowhere.
+   * That was the state of Geist for the whole life of this repo before #377:
+   * `--font-geist-sans` existed on <body> and no rule ever referenced it, so
+   * Tailwind's default `--font-sans` (ui-sans-serif) won by default. */
+  --font-sans:
+    var(--font-archivo), system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono:
+    var(--font-jetbrains), 'SF Mono', Monaco, 'Inconsolata', 'Fira Mono',
+    'Source Code Pro', monospace;
+  --font-display: var(--font-archivo-black), var(--font-sans);
 }
 
 @plugin "daisyui" {
@@ -270,17 +283,42 @@
   top: 0 !important;
 }
 
-/* Font Loading Optimization */
-@font-face {
-  font-family: 'Geist';
-  font-display: swap;
-  size-adjust: 100%;
-}
+/* ============================================================================
+ * Where the type stack is actually applied (#377).
+ *
+ * This block replaces two `@font-face` rules that declared `font-family:
+ * 'Geist'` and `'Geist Mono'` with a `font-display` and a `size-adjust` and
+ * NO `src` descriptor. A `@font-face` without `src` is invalid and discarded
+ * by the parser, so they had never done anything.
+ *
+ * `--sh-font-body` / `--sh-font-display` are the single channel through which
+ * BOTH font controls speak — the accessibility panel's sans/serif/mono toggle
+ * and the six-font FontSwitcher. Before #377 each wrote `document.body.style
+ * .fontFamily` directly, so they raced on one inline property and the last
+ * writer won. An inline style also outranks every stylesheet rule, which is
+ * the other half of why the brand face never appeared.
+ *
+ * IN `@layer base` ON PURPOSE. globals.css is unlayered, so an element
+ * selector written here would outrank Tailwind's `font-mono` utility and
+ * freeze every heading — the same cascade mistake as the `.text-*{!important}`
+ * block removed in #388. Inside `base`, utilities still win.
+ * ========================================================================= */
+@layer base {
+  body {
+    font-family: var(--sh-font-body, var(--font-sans));
+  }
 
-@font-face {
-  font-family: 'Geist Mono';
-  font-display: swap;
-  size-adjust: 100%;
+  /* The display face is a separate channel so a user font choice can replace
+   * it. #377: someone who picks OpenDyslexic must not still get Archivo Black
+   * on every heading. Both controls set both variables together. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--sh-font-display, var(--font-display));
+  }
 }
 
 /* Accessibility Font Scaling System + Mobile-First Fluid Typography (PRP-017) */

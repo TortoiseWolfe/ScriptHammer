@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Archivo, Archivo_Black, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import ThemeScript from '@/components/ThemeScript';
 import AccessibilityScript from '@/components/AccessibilityScript';
@@ -25,9 +25,24 @@ import { CountdownBanner } from '@/components/atomic/CountdownBanner';
 import { SetupBanner } from '@/components/SetupBanner';
 import A11yDevOverlay from '@/components/organisms/A11yDevOverlay';
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
+/**
+ * The 2a "Machine Shop" type stack (#377).
+ *
+ * Declaring the face here is only step one of three. A `next/font` variable
+ * that no CSS rule references paints nothing — which is exactly what Geist did
+ * on every page of this site before #377: downloaded, self-hosted, and
+ * rendered nowhere, because `@theme` never mapped it to `--font-sans` and the
+ * accessibility provider overwrote `body`'s font with an inline style anyway.
+ *
+ * The other two steps are the `--font-sans` / `--font-mono` / `--font-display`
+ * mapping in globals.css `@theme`, and `FONT_FAMILIES` in
+ * `@/config/accessibility-tokens`. Change one without the others and the font
+ * silently does not apply.
+ */
+const archivo = Archivo({
+  variable: '--font-archivo',
   subsets: ['latin'],
+  weight: ['400', '600', '700'],
   display: 'swap',
   preload: true,
   fallback: [
@@ -42,9 +57,27 @@ const geistSans = Geist({
   ],
 });
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
+/** Display face: headings only. Single weight — Archivo Black ships only 400. */
+const archivoBlack = Archivo_Black({
+  variable: '--font-archivo-black',
   subsets: ['latin'],
+  weight: '400',
+  display: 'swap',
+  preload: true,
+  fallback: [
+    'system-ui',
+    '-apple-system',
+    'BlinkMacSystemFont',
+    '"Segoe UI"',
+    'Arial',
+    'sans-serif',
+  ],
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: '--font-jetbrains',
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
   display: 'swap',
   preload: true,
   fallback: [
@@ -124,9 +157,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    // The font variables go on <html>, NOT <body>, and that placement is
+    // load-bearing (#377). A custom property resolves in the scope where it is
+    // DECLARED. `@theme` emits `--font-sans: var(--font-archivo)` onto :root,
+    // and AccessibilityScript sets `--sh-font-body` on documentElement — both
+    // are <html>. With the classes on <body>, `--font-archivo` was defined one
+    // level too deep for either to see, so both silently fell through to their
+    // ui-sans-serif fallback while the font downloaded perfectly.
+    <html
+      lang="en"
+      className={`${archivo.variable} ${archivoBlack.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
+    >
       <body
-        className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
+        className="flex min-h-screen flex-col antialiased"
         suppressHydrationWarning
       >
         <ThemeScript />

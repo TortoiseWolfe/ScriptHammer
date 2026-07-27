@@ -5,7 +5,10 @@ code[class*='language-'],
 pre[class*='language-'] {
   color: #d4d4d4;
   background: none;
-  font-family: 'Geist Mono', Menlo, Monaco, 'Courier New', monospace;
+  /* #377: was 'Geist Mono', which is no longer loaded — code blocks would have
+   * quietly dropped to Menlo. `--font-mono` is the mapped stack, so this
+   * follows the type system instead of naming a face directly. */
+  font-family: var(--font-mono, Menlo, Monaco, 'Courier New', monospace);
   font-size: 0.875rem !important;
   text-align: left;
   white-space: pre;

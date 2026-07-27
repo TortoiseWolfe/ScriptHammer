@@ -14,6 +14,7 @@ import { CookieCategory } from '../utils/consent-types';
 import {
   DEFAULT_ACCESSIBILITY_SETTINGS,
   FONT_FAMILIES,
+  DISPLAY_FONT_FAMILIES,
   FONT_SCALE_FACTORS,
   LINE_HEIGHTS,
   type AccessibilitySettings,
@@ -53,6 +54,7 @@ export function AccessibilityProvider({
     const scaleFactors = FONT_SCALE_FACTORS;
     const lineHeights = LINE_HEIGHTS;
     const fontFamilies = FONT_FAMILIES;
+    const displayFontFamilies = DISPLAY_FONT_FAMILIES;
 
     const root = document.documentElement;
 
@@ -64,9 +66,20 @@ export function AccessibilityProvider({
       '--base-line-height',
       lineHeights[newSettings.lineHeight]
     );
+
+    // The single channel for font choice (#377). globals.css applies these to
+    // `body` and to h1-h6 respectively. Setting a CSS variable rather than
+    // `document.body.style.fontFamily` matters twice over: an inline style
+    // outranks every stylesheet rule (so the brand face could never show), and
+    // the FontSwitcher writes the same choice — as an inline style the two
+    // controls raced on one property and the last writer silently won.
     root.style.setProperty(
-      '--base-font-family',
+      '--sh-font-body',
       fontFamilies[newSettings.fontFamily]
+    );
+    root.style.setProperty(
+      '--sh-font-display',
+      displayFontFamilies[newSettings.fontFamily]
     );
 
     // Apply high contrast mode
@@ -86,7 +99,6 @@ export function AccessibilityProvider({
     }
 
     document.body.style.lineHeight = lineHeights[newSettings.lineHeight];
-    document.body.style.fontFamily = fontFamilies[newSettings.fontFamily];
   }, []);
 
   // Load settings from storage on mount (respecting consent)

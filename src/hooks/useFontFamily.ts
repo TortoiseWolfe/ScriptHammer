@@ -38,8 +38,18 @@ export function useFontFamily(): UseFontFamilyReturn {
         font.stack
       );
 
-      // Update body font-family to use the CSS variable
-      document.body.style.fontFamily = `var(${FONT_CSS_VARS.FONT_FAMILY})`;
+      // Speak through the same channel as the accessibility panel (#377).
+      // This used to set `document.body.style.fontFamily` directly, as did
+      // AccessibilityContext — two controls racing on one inline property,
+      // where whichever ran last silently won. Both now write these variables,
+      // which globals.css maps onto body and h1-h6.
+      //
+      // Display is set alongside body so a chosen face replaces Archivo Black
+      // on headings too, rather than leaving a user who picked OpenDyslexic
+      // reading brand headings they explicitly opted out of.
+      const root = document.documentElement;
+      root.style.setProperty('--sh-font-body', font.stack);
+      root.style.setProperty('--sh-font-display', font.stack);
 
       // Dispatch custom event
       window.dispatchEvent(

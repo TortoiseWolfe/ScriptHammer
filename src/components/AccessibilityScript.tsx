@@ -2,6 +2,7 @@ import {
   ACCESSIBILITY_STORAGE_KEYS,
   CONSENT_STORAGE_KEY,
   DEFAULT_ACCESSIBILITY_SETTINGS,
+  DISPLAY_FONT_FAMILIES,
   FONT_FAMILIES,
   FONT_SCALE_FACTORS,
   LINE_HEIGHTS,
@@ -48,6 +49,7 @@ export default function AccessibilityScript() {
       var SCALE = ${embed(FONT_SCALE_FACTORS)};
       var LINE = ${embed(LINE_HEIGHTS)};
       var FAMILY = ${embed(FONT_FAMILIES)};
+      var DISPLAY = ${embed(DISPLAY_FONT_FAMILIES)};
       var DEFAULTS = ${embed(DEFAULT_ACCESSIBILITY_SETTINGS)};
       var KEYS = ${embed(ACCESSIBILITY_STORAGE_KEYS)};
       var CONSENT_KEY = ${embed(CONSENT_STORAGE_KEY)};
@@ -86,20 +88,26 @@ export default function AccessibilityScript() {
         var scale = SCALE[fontSize] || SCALE[DEFAULTS.fontSize];
         var leading = LINE[lineHeight] || LINE[DEFAULTS.lineHeight];
         var family = FAMILY[fontFamily] || FAMILY[DEFAULTS.fontFamily];
+        var display = DISPLAY[fontFamily] || DISPLAY[DEFAULTS.fontFamily];
 
         var root = document.documentElement;
         root.style.setProperty('--font-scale-factor', String(scale));
+
+        // Font choice rides on custom properties now (#377), which means it can
+        // be applied to <html> immediately instead of waiting for <body> to
+        // exist. globals.css maps these onto body and h1-h6.
+        root.style.setProperty('--sh-font-body', family);
+        root.style.setProperty('--sh-font-display', display);
 
         if (reduceMotion === 'reduce') {
           root.setAttribute('data-reduce-motion', 'true');
         }
 
-        // body may not exist yet depending on where this script is placed;
-        // these two are what cause the visible reflow and font swap.
+        // Line height is still an inline body style, so it still has to wait
+        // for body to exist. It is the remaining cause of visible reflow.
         function applyBody() {
           if (!document.body) return false;
           document.body.style.lineHeight = leading;
-          document.body.style.fontFamily = family;
           return true;
         }
 
