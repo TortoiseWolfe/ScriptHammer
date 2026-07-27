@@ -134,10 +134,18 @@ jobs:
           npx serve out -l 3000 > serve.log 2>&1 &
           npx wait-on http://localhost:3000 -t 60000
 
-      - name: Run the signup-mailer E2E
+      - name: Run the local-Supabase E2E (signup-mailer + captcha-blocked)
         env:
           SKIP_WEBSERVER: true
           BASE_URL: http://localhost:3000
+          # The captcha-blocked specs (#353) derive their generated addresses
+          # from this. No user needs to EXIST at it — they sign in with
+          # deliberately wrong passwords to exercise lockout — but the helpers
+          # reject a blank value or @example.com, and the gmail branch keeps the
+          # generated addresses plus-routed. Nothing leaves the machine: local
+          # Supabase delivers to Mailpit, so there is no bounce risk (#361).
+          TEST_USER_PRIMARY_EMAIL: scripthammer.e2e+local@gmail.com
+          TEST_USER_PRIMARY_PASSWORD: LocalStackTestPassword123!
         run: pnpm test:e2e:signup-mailer
 
       - name: Dump logs on failure
