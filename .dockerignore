@@ -67,3 +67,36 @@ test-results/
 playwright-report/
 blob-report/
 coverage/
+
+# Generated output that is already gitignored (#275). `.dockerignore` does NOT
+# read `.gitignore`, so every one of these was still being shipped into the
+# build context — 677M of it, on a context that measured 1.19GB.
+#
+# Each is regenerated inside the image or never used by it:
+#   out/               `pnpm run build` produces it; strip-css-script-tags.mjs
+#                      then reads it from THAT build, not from the host copy
+#   sites/_warehouse/  baked GLB/atlas artifacts; no build step reads them
+#                      (the 2 tracked sites/*.json configs are kept)
+#   screenshots/       debug captures. NOT the PWA screenshots — those live in
+#                      public/screenshots/ and are referenced by
+#                      generate-manifest.js, which only writes URL strings
+#   graphify-out/      knowledge-graph artifacts, tooling only
+#   storybook-static/  a build output of its own
+/out/
+sites/_warehouse/
+screenshots/
+graphify-out/
+storybook-static/
+
+# Generated DOT-directories (#275). These dominate the context — .pnpm-store
+# alone is ~1.3GB — and were missed on the first pass because `du -sh ./*` does
+# not match dotfiles. All five are gitignored with zero tracked files.
+#
+# Measure the context, do not eyeball it: BuildKit transfers incrementally, so a
+# second build reports only the delta and looks tiny regardless of what is
+# excluded. Read `transferring context` on a COLD builder.
+.pnpm-store/
+.chatt-verify/
+.next-acceptance/
+.speckit-tools/
+.speckit-cache/
