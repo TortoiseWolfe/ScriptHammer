@@ -2,7 +2,20 @@
 // Provides offline support, caching, and background sync
 // Note: Cache name includes project name - updated by rebrand script
 
-const CACHE_VERSION = 'scripthammer-v1.0.0'; // Updated by scripts/rebrand.sh
+// Stamped at build time by scripts/stamp-sw-version.mjs, which rewrites this
+// literal in `out/sw.js` after `next build` (#317). The value here is the dev
+// default and is intentionally left in the tracked source.
+//
+// It previously read "Updated by scripts/rebrand.sh", which was never true —
+// rebrand.sh does not mention sw.js — so this string never changed. Returning
+// visitors therefore kept a frozen precache forever, which is what turned a
+// trailing-slash cache miss into a permanent offline page rather than a
+// one-deploy blip.
+//
+// MUST keep the `scripthammer-` prefix: the activate handler purges old caches
+// by matching that prefix, so a different one would leak storage instead of
+// cleaning up.
+const CACHE_VERSION = 'scripthammer-v1.0.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const IMAGE_CACHE = `${CACHE_VERSION}-images`;
@@ -63,6 +76,56 @@ self.addEventListener('activate', (event) => {
 });
 
 // Fetch event - implement caching strategies
+/**
+ * Find a cached page for a navigation request, tolerating the trailing-slash
+ * mismatch between what gets precached and what users actually navigate to.
+ *
+ * ## The bug this fixes (#317)
+ * STATIC_ASSETS precaches directory-style paths WITH a trailing slash
+ * (`'./blog/'`), because that is how the static export names them. Users and
+ * links navigate to `/blog` WITHOUT one. The server papers over this with a
+ * 301, but a cache lookup is exact: `caches.match('/blog')` misses a cache
+ * holding `/blog/`.
+ *
+ * So a single momentary network failure — the fallback path is only reached
+ * when `fetch()` rejects — turned into a full "You're Offline" page on every
+ * non-home route, while the homepage (`'./'`, which needs no toggling) kept
+ * working. That asymmetry is what made it look like a site outage rather than
+ * a cache-key bug.
+ *
+ * Order matters: exact first, so a page cached under the exact URL is never
+ * shadowed by a variant.
+ *
+ * Returns `undefined` when every variant misses, which is the caller's signal
+ * to serve offline.html — genuinely uncached routes must still get it.
+ */
+async function matchNavigation(request) {
+  const exact = await caches.match(request);
+  if (exact) return exact;
+
+  let url;
+  try {
+    url = new URL(request.url);
+  } catch {
+    return undefined; // unparseable — fall through to offline.html
+  }
+
+  // Toggle the trailing slash: '/blog' <-> '/blog/'. Skipped for the root,
+  // where stripping the slash would leave an empty path.
+  const path = url.pathname;
+  const toggled = path.endsWith('/') ? path.slice(0, -1) : `${path}/`;
+  if (toggled && toggled !== path) {
+    const variant = new URL(url.href);
+    variant.pathname = toggled;
+    const slashMatch = await caches.match(variant.href);
+    if (slashMatch) return slashMatch;
+  }
+
+  // Last resort: same path, different query string. A cached page is a better
+  // answer than the offline screen when only `?utm_source=…` differs.
+  return caches.match(request, { ignoreSearch: true });
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -125,7 +188,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle navigation requests - Network first with offline fallback
+  // Handle navigation requests - Network first with offline fallback.
+  // See matchNavigation() for why the offline fallback is tolerant (#317).
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
@@ -138,14 +202,21 @@ self.addEventListener('fetch', (event) => {
           }
           return response;
         })
-        .catch(() => {
-          return caches.match(request).then((response) => {
-            if (response) {
-              return response;
-            }
-            // Return offline page if available
-            if (request.destination === 'document') {
-              return caches.match(new URL('./offline.html', self.registration.scope).href).catch(() => {
+        .catch(async () => {
+          // Tolerant lookup (#317). A single caches.match(request) here is what
+          // turned a momentary network blip into a full "You're Offline" page
+          // on every non-home route.
+          const cached = await matchNavigation(request);
+          if (cached) {
+            return cached;
+          }
+
+          // Genuinely not cached — this is what offline.html is FOR, and it
+          // must still happen. Only reached once every variant has missed.
+          if (request.destination === 'document') {
+            return caches
+              .match(new URL('./offline.html', self.registration.scope).href)
+              .catch(() => {
                 return new Response('Offline - Content not available', {
                   status: 503,
                   statusText: 'Service Unavailable',
@@ -154,8 +225,7 @@ self.addEventListener('fetch', (event) => {
                   }),
                 });
               });
-            }
-          });
+          }
         })
     );
     return;
