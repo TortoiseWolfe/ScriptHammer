@@ -19,7 +19,18 @@
 import { readdirSync, statSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const OUT = join(process.cwd(), 'out');
+// Where the static export actually landed. `next.config.ts` sets
+// `distDir: process.env.NEXT_DIST_DIR || '.next'`, and under `output: 'export'`
+// on Next 15.5 a CUSTOM distDir receives the export directly — there is no
+// `out/` at all. The basePath build (scripts/serve-basepath.sh) does exactly
+// that, with NEXT_DIST_DIR=out-basepath.
+//
+// This previously hard-coded 'out', so on every basePath build it printed
+// "no out/ directory — skipping" and exited 0. The #348 fix was therefore never
+// applied to the project-site variant that forks deploy: those exports still
+// shipped the `<script src="*.css">` tags that make CSS parse as JavaScript.
+// A silent skip looked identical to a successful run.
+const OUT = join(process.cwd(), process.env.NEXT_DIST_DIR || 'out');
 
 // A <script> whose src ends in `.css` (with its optional empty close tag).
 const CSS_SCRIPT = /<script\b[^>]*\bsrc=["'][^"']*\.css["'][^>]*>\s*(?:<\/script>)?/gi;
@@ -38,7 +49,15 @@ let htmlFiles;
 try {
   htmlFiles = walkHtml(OUT);
 } catch {
-  console.error(`strip-css-script-tags: no out/ directory at ${OUT} — skipping.`);
+  // Still non-fatal — a non-export build legitimately has nothing to strip —
+  // but the message now names the resolved directory and says plainly what was
+  // NOT done, because the old wording read like routine noise while the #348
+  // fix was silently skipped on every basePath build.
+  console.error(
+    `strip-css-script-tags: no export directory at ${OUT} — skipping, so the ` +
+      `#348 CSS-as-script fix was NOT applied. If this was an export build, ` +
+      `NEXT_DIST_DIR is wrong.`
+  );
   process.exit(0);
 }
 
