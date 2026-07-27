@@ -44,6 +44,26 @@ docs
 .travis.yml
 
 # Docker
-Dockerfile
-docker-compose.yml
+# Broadened (#275) to cover docker/Dockerfile.e2e and the e2e compose file,
+# which the old root-only list still shipped into every build context.
+#
+# NOT `docker/` wholesale: docker/Dockerfile:122 COPYs docker-entrypoint.sh and
+# healthcheck.sh out of that directory, so excluding it breaks every image
+# build. Only the Dockerfiles and compose files are excluded — and those are
+# read by the client, never needed inside the context.
+Dockerfile*
+docker/Dockerfile*
+docker-compose*.yml
+docker/docker-compose*.yml
 .dockerignore
+
+# Derived test artifacts (#275) — large, regenerated constantly, and never
+# needed by a build; leaving them in busts the cache on every test run.
+#
+# `tests/` is deliberately NOT excluded, despite the audit suggesting it:
+# Dockerfile.e2e does `COPY . .` and runs `pnpm test:e2e` from the image with no
+# bind mount, so dropping the suites would leave that image with nothing to run.
+test-results/
+playwright-report/
+blob-report/
+coverage/
