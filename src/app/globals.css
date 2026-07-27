@@ -11,6 +11,19 @@
   --breakpoint-md: 48rem; /* 768px - Tablets */
   --breakpoint-lg: 64rem; /* 1024px - Desktop */
   --breakpoint-xl: 80rem; /* 1280px - Large desktop */
+
+  /* Type stack (#377). THIS MAPPING IS LOAD-BEARING — without it the faces
+   * declared by `next/font` in layout.tsx are downloaded and rendered nowhere.
+   * That was the state of Geist for the whole life of this repo before #377:
+   * `--font-geist-sans` existed on <body> and no rule ever referenced it, so
+   * Tailwind's default `--font-sans` (ui-sans-serif) won by default. */
+  --font-sans:
+    var(--font-archivo), system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --font-mono:
+    var(--font-jetbrains), 'SF Mono', Monaco, 'Inconsolata', 'Fira Mono',
+    'Source Code Pro', monospace;
+  --font-display: var(--font-archivo-black), var(--font-sans);
 }
 
 @plugin "daisyui" {
@@ -136,6 +149,86 @@
   --noise: 1;
 }
 
+/* ============================================================================
+ * 2a "Machine Shop" depth system (#377, epic #376)
+ *
+ * Three primitives: a raised PLATE holds content, a cut WELL holds data, a
+ * GROOVE holds inputs and thin strips. One light source, from above.
+ *
+ * The design was authored dark-only, against literal rgba(0,0,0,.8–.9). That
+ * cannot ship here: this app has 32 themes and a black shadow is invisible on
+ * the dark ones and bruises the light ones. So both inks are derived from the
+ * active theme's OWN base-100 via relative colour syntax, which means each
+ * theme gets depth carrying its own hue and chroma — the parchment themes cast
+ * a warm shadow, the cool ones a cool shadow.
+ *
+ * WHY TWO INKS, AND WHY EVERY PRIMITIVE USES BOTH.
+ * Measured across all 32 themes, base-100 lightness spans the entire range:
+ * `black` sits at L=0 and ten themes (light, bumblebee, emerald, corporate,
+ * lofi, pastel, fantasy, wireframe, cmyk, winter) sit at L=1. At L=0 a shadow
+ * has no room to get darker; at L=1 a highlight has no room to get lighter.
+ * A single-ink system is therefore invisible at one end or the other.
+ *
+ * The two ramps have complementary headroom — shadow scales with L, edge
+ * scales with (1 - L) — so their sum is constant and at least one always has
+ * room. That is why a plate carries a rim and a groove carries a highlight:
+ * on `black` the rim is the entire effect, on `wireframe` the shadow is.
+ *
+ * Declared on `[data-theme]` as well as `:root` so a theme-scoped subtree —
+ * the 32 side-by-side previews on /themes (#382) — recomputes its own inks
+ * instead of inheriting the page's.
+ * ========================================================================= */
+:root,
+[data-theme] {
+  /* Surface pushed toward black. Headroom = L, so it fades out on dark themes. */
+  --sh-ink-shadow: oklch(from var(--color-base-100) calc(l * 0.42) c h / 0.55);
+  --sh-ink-shadow-soft: oklch(
+    from var(--color-base-100) calc(l * 0.42) c h / 0.32
+  );
+
+  /* Surface pushed toward white. Headroom = 1 - L, so it fades out on light
+   * themes. This is the "machined edge" — the lit top lip of a cut face. */
+  --sh-ink-edge: oklch(
+    from var(--color-base-100) calc(l + (1 - l) * 0.55) c h / 0.5
+  );
+
+  /* Raised: content sits on top of the page. */
+  --sh-plate:
+    0 6px 12px -5px var(--sh-ink-shadow),
+    0 2px 4px -2px var(--sh-ink-shadow-soft), inset 0 1px 0 var(--sh-ink-edge);
+
+  /* Cut: data sits down inside the page. Outer drop plus the 1px top lip. */
+  --sh-well:
+    0 22px 42px -16px var(--sh-ink-shadow), inset 0 1px 0 var(--sh-ink-edge);
+
+  /* Machined channel: inputs and thin strips. Pure inset, no outer drop. */
+  --sh-groove:
+    inset 0 3px 8px var(--sh-ink-shadow), inset 0 -1px 0 var(--sh-ink-edge);
+}
+
+/* Exposed as utilities so callers compose them like any other Tailwind class
+ * rather than remembering to plumb `box-shadow: var(--sh-plate)` by hand.
+ *
+ * Force-emitted, because Tailwind only generates a `@utility` it can see used
+ * in scanned source. These three are a foundation shipped ahead of the page
+ * tickets that consume them (#379–#384), so on this branch nothing references
+ * them yet and all three would compile to nothing — untested until the first
+ * consumer landed and discovered they were broken. Three rules of CSS is a
+ * cheap price for a primitive that is verifiable the day it ships. */
+@source inline("sh-plate sh-well sh-groove");
+
+@utility sh-plate {
+  box-shadow: var(--sh-plate);
+}
+
+@utility sh-well {
+  box-shadow: var(--sh-well);
+}
+
+@utility sh-groove {
+  box-shadow: var(--sh-groove);
+}
+
 /* ScriptHammer visual polish — scoped to custom themes only.
  * Stock DaisyUI themes keep their original look untouched. */
 [data-theme='scripthammer-dark'] .card,
@@ -190,17 +283,42 @@
   top: 0 !important;
 }
 
-/* Font Loading Optimization */
-@font-face {
-  font-family: 'Geist';
-  font-display: swap;
-  size-adjust: 100%;
-}
+/* ============================================================================
+ * Where the type stack is actually applied (#377).
+ *
+ * This block replaces two `@font-face` rules that declared `font-family:
+ * 'Geist'` and `'Geist Mono'` with a `font-display` and a `size-adjust` and
+ * NO `src` descriptor. A `@font-face` without `src` is invalid and discarded
+ * by the parser, so they had never done anything.
+ *
+ * `--sh-font-body` / `--sh-font-display` are the single channel through which
+ * BOTH font controls speak — the accessibility panel's sans/serif/mono toggle
+ * and the six-font FontSwitcher. Before #377 each wrote `document.body.style
+ * .fontFamily` directly, so they raced on one inline property and the last
+ * writer won. An inline style also outranks every stylesheet rule, which is
+ * the other half of why the brand face never appeared.
+ *
+ * IN `@layer base` ON PURPOSE. globals.css is unlayered, so an element
+ * selector written here would outrank Tailwind's `font-mono` utility and
+ * freeze every heading — the same cascade mistake as the `.text-*{!important}`
+ * block removed in #388. Inside `base`, utilities still win.
+ * ========================================================================= */
+@layer base {
+  body {
+    font-family: var(--sh-font-body, var(--font-sans));
+  }
 
-@font-face {
-  font-family: 'Geist Mono';
-  font-display: swap;
-  size-adjust: 100%;
+  /* The display face is a separate channel so a user font choice can replace
+   * it. #377: someone who picks OpenDyslexic must not still get Archivo Black
+   * on every heading. Both controls set both variables together. */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--sh-font-display, var(--font-display));
+  }
 }
 
 /* Accessibility Font Scaling System + Mobile-First Fluid Typography (PRP-017) */

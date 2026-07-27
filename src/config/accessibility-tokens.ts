@@ -50,11 +50,36 @@ export const LINE_HEIGHTS: Record<LineHeight, string> = {
   relaxed: '1.75',
 };
 
+/**
+ * Body font per accessibility setting.
+ *
+ * These lead with the brand faces on purpose (#377). This map is the LAST word
+ * on the site's body font — it is written to `--sh-font-body`, which
+ * `globals.css` applies to `body`. So a stack here that omits Archivo silently
+ * defeats both `next/font` in layout.tsx and the `--font-sans` mapping in
+ * `@theme`, no matter what those say. That is precisely how Geist managed to
+ * be downloaded on every page and rendered on none.
+ */
 export const FONT_FAMILIES: Record<FontFamily, string> = {
   'sans-serif':
-    'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    'var(--font-archivo), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   serif: 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',
-  mono: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+  mono: 'var(--font-jetbrains), ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+};
+
+/**
+ * Heading font per accessibility setting, written to `--sh-font-display`.
+ *
+ * Kept as its own map rather than derived, so that choosing serif or mono
+ * moves the headings too. #377 requires the font controls to override the
+ * display face — a user who picks a legibility font should not keep getting
+ * Archivo Black on every heading.
+ */
+export const DISPLAY_FONT_FAMILIES: Record<FontFamily, string> = {
+  'sans-serif':
+    'var(--font-archivo-black), var(--font-archivo), ui-sans-serif, system-ui, sans-serif',
+  serif: 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',
+  mono: 'var(--font-jetbrains), ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
 };
 
 export const DEFAULT_ACCESSIBILITY_SETTINGS: AccessibilitySettings = {

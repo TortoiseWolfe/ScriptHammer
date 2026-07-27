@@ -174,14 +174,42 @@ describe('useFontFamily', () => {
       expect(fontFamily).toContain('Inter');
     });
 
-    it('should update body font-family style', () => {
+    // #377: this used to assert `document.body.style.fontFamily`. The hook no
+    // longer writes that, deliberately — AccessibilityContext wrote the same
+    // inline property, so the two font controls raced and the last one to run
+    // silently won. Both now set these custom properties, which globals.css
+    // maps onto `body` and `h1`-`h6`.
+    it('should set the shared font channel on the root element', async () => {
       const { result } = renderHook(() => useFontFamily());
 
-      act(() => {
-        result.current.setFontFamily('jetbrains');
+      // Awaited, like the sibling CSS-variable tests above: setFontFamily
+      // loads the face before applying it, so a synchronous act() observes the
+      // default stack and would pass against any implementation.
+      await act(async () => {
+        await result.current.setFontFamily('jetbrains');
       });
 
-      expect(document.body.style.fontFamily).toContain('var(--font-family)');
+      const root = document.documentElement;
+      expect(root.style.getPropertyValue('--sh-font-body')).toContain(
+        'JetBrains'
+      );
+      // Display is set alongside body so a chosen face also replaces the
+      // brand display face on headings.
+      expect(root.style.getPropertyValue('--sh-font-display')).toContain(
+        'JetBrains'
+      );
+    });
+
+    it('should no longer write an inline body font-family', async () => {
+      const { result } = renderHook(() => useFontFamily());
+
+      await act(async () => {
+        await result.current.setFontFamily('jetbrains');
+      });
+
+      // An inline style outranks every stylesheet rule, which is half of why
+      // the brand face never rendered before #377.
+      expect(document.body.style.fontFamily).toBe('');
     });
 
     it('should dispatch custom event on font change', async () => {

@@ -1,0 +1,77 @@
+/**
+ * The 2a "Machine Shop" icon set (#377).
+ *
+ * Icons are DATA, not components. One `<Icon>` renders all of them, so adding
+ * the twentieth costs one line here rather than a five-file component
+ * directory, and no icon can drift into its own markup conventions.
+ *
+ * Hand-drawn rather than pulled from a library, deliberately. The set is small
+ * and the design has a specific character; a dependency would also put a React
+ * component per icon into the bundle, and this repo has a first-load budget
+ * gate (#291) that exists because of exactly that kind of weight.
+ *
+ * ── THE GRID. Match this when adding one. ────────────────────────────────────
+ *
+ *   viewBox    0 0 24 24
+ *   stroke     2 units, `currentColor`, never a fixed colour
+ *   fill       none — these are line icons; a filled shape reads as a blob
+ *              next to the rest of the set
+ *   caps       round joins and caps (set once on the <svg>, not per path)
+ *   geometry   whole or half units only. Off-grid coordinates are what make a
+ *              hand-drawn set look uneven once it sits next to real text.
+ *
+ *   COMMANDS   absolute only — M L H V A Z. No lowercase.
+ *
+ * That last rule is not style. With absolute commands every number in the
+ * string is a coordinate, a radius or an arc flag, all of which belong in the
+ * 0–24 space — so `Icon.test.tsx` can check the grid by reading the numbers.
+ * Relative commands mix in deltas like `-8`, which makes the same check
+ * meaningless. The first draft of this set used them and the bounds test
+ * reported fourteen false failures.
+ *
+ * Anything that cannot be said in 2-unit strokes on a 24-unit grid does not
+ * belong here — that is a logo or an illustration, not an icon.
+ */
+
+/** Every icon in the set. Adding a key here makes it usable immediately. */
+export const ICON_PATHS = {
+  // ── Navigation ──────────────────────────────────────────────────────────
+  menu: 'M3 6 H21 M3 12 H21 M3 18 H21',
+  close: 'M6 6 L18 18 M18 6 L6 18',
+  'chevron-down': 'M5 9 L12 16 L19 9',
+  'chevron-right': 'M9 5 L16 12 L9 19',
+  home: 'M3 11 L12 3 L21 11 M6 9 V20 H18 V9',
+  docs: 'M7 3 H14 L19 8 V21 H7 Z M14 3 V8 H19 M10 13 H16 M10 17 H16',
+  blog: 'M4 4 H20 V20 H4 Z M8 9 H16 M8 13 H16 M8 17 H12',
+
+  // ── Account ─────────────────────────────────────────────────────────────
+  user: 'M8 8 A4 4 0 1 1 16 8 A4 4 0 1 1 8 8 M4 20 A8 8 0 0 1 20 20',
+  'sign-in': 'M14 4 H19 V20 H14 M3 12 H14 M10 8 L14 12 L10 16',
+  // Sliders, not a gear. A stroked gear at this size collapses into a
+  // starburst that is indistinguishable from `sun` — which is exactly what the
+  // first draft did, and no test caught it because the path data differed.
+  settings: 'M4 7 H20 M4 12 H20 M4 17 H20 M9 5 V9 M15 10 V14 M7 15 V19',
+  messages: 'M4 5 H20 V16 H8 L4 20 Z',
+  admin: 'M12 3 L20 7 V12 A8 10 0 0 1 12 21 A8 10 0 0 1 4 12 V7 Z',
+
+  // ── Appearance controls ─────────────────────────────────────────────────
+  // Contrast circle: full circle plus its vertical diameter. The first draft
+  // chained arcs of two different radii and rendered as a spiral.
+  theme: 'M3 12 A9 9 0 1 1 21 12 A9 9 0 1 1 3 12 M12 3 V21',
+  sun: 'M8 12 A4 4 0 1 1 16 12 A4 4 0 1 1 8 12 M12 2 V4 M12 20 V22 M2 12 H4 M20 12 H22 M5 5 L6.5 6.5 M17.5 17.5 L19 19 M5 19 L6.5 17.5 M17.5 6.5 L19 5',
+  moon: 'M20 14 A8 8 0 1 1 10 4 A7 7 0 0 0 20 14 Z',
+  type: 'M4 6 V4 H20 V6 M12 4 V20 M9 20 H15',
+  accessibility:
+    'M12 2 A1.5 1.5 0 1 1 12 5 A1.5 1.5 0 1 1 12 2 M4 8 H20 M12 8 V14 M12 14 L9 21 M12 14 L15 21',
+
+  // ── Status and actions ──────────────────────────────────────────────────
+  check: 'M4 12 L9 17 L20 6',
+  alert: 'M12 3 L21 20 H3 Z M12 10 V14 M12 17 V17.5',
+  install: 'M12 3 V14 M8 11 L12 15 L16 11 M4 19 H20',
+  'external-link': 'M14 4 H20 V10 M20 4 L11 13 M18 14 V20 H4 V6 H10',
+} as const;
+
+export type IconName = keyof typeof ICON_PATHS;
+
+/** Sorted for stable Storybook output and predictable review diffs. */
+export const ICON_NAMES = Object.keys(ICON_PATHS).sort() as IconName[];
