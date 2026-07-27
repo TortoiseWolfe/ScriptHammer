@@ -29,15 +29,25 @@ import { join } from 'node:path';
 // interpreted as a shell metacharacter even if this grows arguments later.
 import { execFileSync } from 'node:child_process';
 
-const SW = join(process.cwd(), 'out', 'sw.js');
+// Where the static export actually landed. `next.config.ts` sets
+// `distDir: process.env.NEXT_DIST_DIR || '.next'`, and under `output: 'export'`
+// a CUSTOM distDir receives the export directly — there is no `out/`. The
+// basePath build (scripts/serve-basepath.sh) uses NEXT_DIST_DIR=out-basepath,
+// so hard-coding 'out' fails that build outright, which is what it did on
+// first contact with the basePath job.
+const EXPORT_DIR = join(process.cwd(), process.env.NEXT_DIST_DIR || 'out');
+const SW = join(EXPORT_DIR, 'sw.js');
 const REQUIRED_PREFIX = 'scripthammer-';
 
 if (!existsSync(SW)) {
+  // Non-fatal, but LOUD. A build with no worker to stamp must not fail the
+  // build; saying exactly what was skipped is what stops it reading as success
+  // — the trap that let the #348 fix silently miss basePath exports.
   console.error(
-    `stamp-sw-version: ${SW} not found. This runs AFTER \`next build\`; ` +
-      'if the export moved, update this path rather than skipping silently.'
+    `stamp-sw-version: no sw.js at ${SW} — skipping, so CACHE_VERSION was NOT ` +
+      `stamped. If this was an export build, NEXT_DIST_DIR is wrong.`
   );
-  process.exit(1);
+  process.exit(0);
 }
 
 /** Short commit SHA, or a timestamp when git is unavailable (e.g. a slim image). */
@@ -88,4 +98,6 @@ writeFileSync(
   'utf-8'
 );
 
-console.log(`✅ stamp-sw-version: out/sw.js CACHE_VERSION = ${cacheVersion}`);
+// Print the REAL path, not a hard-coded 'out/sw.js'. The basePath build writes
+// out-basepath/sw.js, and a log naming the wrong file is worse than none.
+console.log(`✅ stamp-sw-version: ${SW} CACHE_VERSION = ${cacheVersion}`);
