@@ -1,13 +1,25 @@
 # E2E Testing Dockerfile with Playwright
-FROM mcr.microsoft.com/playwright:v1.48.0-focal
-
-# Install pnpm
-RUN npm install -g pnpm@8
+#
+# Used by scripts/run-e2e-tests.sh via docker/docker-compose.e2e.yml (a local
+# convenience runner — CI runs Playwright directly on the runner, not here).
+#
+# The image tag MUST track the @playwright/test version in package.json.
+# Playwright ships browser binaries inside this image and refuses to drive
+# browsers built for a different release, so a drifted tag fails with a
+# version-mismatch error that points nowhere near the real cause.
+FROM mcr.microsoft.com/playwright:v1.55.0-noble
 
 WORKDIR /app
 
-# Copy package files
+# Copy manifests first so the pnpm activation below can read `packageManager`,
+# and so dependency installs stay cached when only source changes.
 COPY package.json pnpm-lock.yaml ./
+
+# Activate the pnpm version pinned by package.json's `packageManager` field
+# rather than hard-coding one. This previously pinned pnpm@8 against a lockfile
+# written by pnpm@10, which makes `--frozen-lockfile` fail outright — drift that
+# only surfaces when someone tries the local runner months later.
+RUN corepack enable && corepack prepare --activate
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
@@ -26,10 +38,21 @@ RUN mkdir -p test-results playwright-report
 
 # Set environment variables
 ENV CI=true
-ENV BASE_URL=http://localhost:3000/CRUDkit
+
+# A default only; docker-compose.e2e.yml sets the real value, pointing at the
+# sibling `scripthammer` service. The old default read `/CRUDkit` — the
+# pre-rename project name — and survived precisely because compose always
+# overrode it, so nothing ever exercised the wrong value.
+ENV BASE_URL=http://localhost:3000/ScriptHammer
 
 # Expose ports
 EXPOSE 3000
 
-# Default command runs E2E tests
-CMD ["sh", "-c", "pnpm run dev & sleep 10 && pnpm test:e2e"]
+# Run the tests only. The app under test is a SEPARATE compose service with a
+# healthcheck, and compose gates this container on `service_healthy`.
+#
+# The previous default started the dev server in the background and slept 10
+# seconds before testing — a wall-clock guess that either wastes time or races,
+# the antipattern tracked in #300. Waiting on the healthcheck is both faster and
+# actually correct.
+CMD ["pnpm", "test:e2e"]

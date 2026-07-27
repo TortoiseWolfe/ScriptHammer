@@ -198,3 +198,9 @@ knowledge/spatial
 # NOT committed: the post-commit hook rewrites graph.json on every commit and it
 # delta-compresses poorly, so committing it would grow the repo forever.
 graphify-out/
+
+# Stray downloads that land in the repo root (#275). These were sitting in the
+# build context and keeping `git status` permanently noisy. *:Zone.Identifier is
+# the WSL alternate-data-stream marker Windows attaches to downloaded files.
+*.skp
+*:Zone.Identifier
