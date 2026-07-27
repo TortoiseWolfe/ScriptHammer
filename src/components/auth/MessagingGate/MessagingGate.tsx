@@ -86,14 +86,19 @@ export default function MessagingGate({ children }: MessagingGateProps) {
   const handleResend = async () => {
     if (!user?.email) return;
 
+    // Check the challenge BEFORE entering the loading state. An early return
+    // after setResending(true) never clears it, so the button stays stuck on
+    // "Sending…" and disabled — the user can never retry, even once they solve
+    // the challenge. Matches the ordering in SignInForm.
+    if (captchaConfig.enabled && !captchaToken) {
+      setResendError('Please complete the verification challenge.');
+      setResendSuccess(false);
+      return;
+    }
+
     setResending(true);
     setResendError(null);
     setResendSuccess(false);
-
-    if (captchaConfig.enabled && !captchaToken) {
-      setResendError('Please complete the verification challenge.');
-      return;
-    }
 
     const { error } = await supabase.auth.resend({
       type: 'signup',

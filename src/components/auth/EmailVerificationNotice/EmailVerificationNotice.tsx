@@ -35,13 +35,16 @@ export default function EmailVerificationNotice({
   const resendVerification = async () => {
     if (!user?.email) return;
 
-    setLoading(true);
-    setError(null);
-
+    // Check the challenge BEFORE entering the loading state. Returning early
+    // afterwards never clears it, leaving the button stuck and disabled so the
+    // user can never retry — not even once they solve the challenge.
     if (captchaConfig.enabled && !captchaToken) {
       setError('Please complete the verification challenge.');
       return;
     }
+
+    setLoading(true);
+    setError(null);
 
     const { error: resendError } = await supabase.auth.resend({
       type: 'signup',

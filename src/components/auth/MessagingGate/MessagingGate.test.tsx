@@ -2,6 +2,35 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import MessagingGate from './MessagingGate';
 
+// (#353) Pin the CAPTCHA config instead of inheriting it from the environment.
+// captchaConfig derives `enabled` from NEXT_PUBLIC_CAPTCHA_SITE_KEY, which
+// vitest picks up from .env — so with a real site key present these tests hit
+// the "Please complete the verification challenge." guard and fail, while CI
+// passed only because the variable happens to be unset there. That is a test
+// passing for an environmental reason rather than a behavioural one, so it is
+// pinned here the same way the SignInForm/SignUpForm suites pin it.
+//
+// UNCONFIGURED is the right default: it is the path every fork and local dev
+// environment takes. The enabled path is asserted separately below.
+const mockConfig = vi.hoisted(() => ({
+  // siteKey is widened deliberately: inferred from `undefined` alone it becomes
+  // type `undefined`, and the enabled-path test below could not set a key.
+  captchaConfig: {
+    provider: 'turnstile',
+    siteKey: undefined as string | undefined,
+    enabled: false,
+  },
+}));
+vi.mock('@/config/captcha.config', () => mockConfig);
+
+vi.mock('@marsidev/react-turnstile', () => ({
+  Turnstile: ({ onSuccess }: { onSuccess: (t: string) => void }) => (
+    <button data-testid="turnstile-stub" onClick={() => onSuccess('tok-abc')}>
+      solve
+    </button>
+  ),
+}));
+
 // Mock dependencies
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: vi.fn(),
@@ -182,6 +211,62 @@ describe('MessagingGate', () => {
     await waitFor(() => {
       expect(screen.getByText(/verification email sent/i)).toBeInTheDocument();
     });
+  });
+
+  // (#353) The guard the pinned config above switches off. Asserted here so
+  // turning CAPTCHA on cannot silently stop resend from working — and so the
+  // `enabled: false` default is a deliberate choice rather than the only state
+  // this suite has ever seen.
+  it('blocks resend until the CAPTCHA challenge is solved when enabled', async () => {
+    mockConfig.captchaConfig = {
+      provider: 'turnstile',
+      siteKey: '0xTEST',
+      enabled: true,
+    };
+    const mockResend = vi.fn().mockResolvedValue({ error: null });
+    mockCreateClient.mockReturnValue({ auth: { resend: mockResend } });
+    mockUseAuth.mockReturnValue({
+      user: {
+        id: 'test-user',
+        email: 'test@example.com',
+        email_confirmed_at: null,
+      },
+      isLoading: false,
+    });
+
+    try {
+      render(
+        <MessagingGate>
+          <div>Protected Content</div>
+        </MessagingGate>
+      );
+
+      fireEvent.click(
+        screen.getByRole('button', { name: /resend verification/i })
+      );
+
+      // No token yet: refused locally, and crucially NO request is sent — a
+      // token-less call would be rejected server-side anyway.
+      await waitFor(() => {
+        expect(
+          screen.getByText(/complete the verification challenge/i)
+        ).toBeInTheDocument();
+      });
+      expect(mockResend).not.toHaveBeenCalled();
+
+      // Solve it, and the resend goes through.
+      fireEvent.click(screen.getByTestId('turnstile-stub'));
+      fireEvent.click(
+        screen.getByRole('button', { name: /resend verification/i })
+      );
+      await waitFor(() => expect(mockResend).toHaveBeenCalledTimes(1));
+    } finally {
+      mockConfig.captchaConfig = {
+        provider: 'turnstile',
+        siteKey: undefined,
+        enabled: false,
+      };
+    }
   });
 
   it('handles resend verification error', async () => {
