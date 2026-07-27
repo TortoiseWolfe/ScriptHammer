@@ -205,8 +205,14 @@
 
 /* Accessibility Font Scaling System + Mobile-First Fluid Typography (PRP-017) */
 :root {
-  /* Base scale factor - controlled by accessibility settings */
-  --font-scale-factor: 1;
+  /* Base scale factor - controlled by accessibility settings.
+     Must equal FONT_SCALE_FACTORS.medium in @/config/accessibility-tokens
+     (the DEFAULT_ACCESSIBILITY_SETTINGS.fontSize value). No setting maps to 1
+     -- the smallest is 1.25 -- so a `1` here paints a size the app can never
+     be set to, then jumps on hydration (#388). AccessibilityScript overrides
+     this pre-paint for anyone with a stored preference; this value is what a
+     first-time or JS-disabled visitor gets. */
+  --font-scale-factor: 1.5;
 
   /* The sticky GlobalNav's real border-box height (#301).
      GlobalNav.tsx:172's inner div is h-16 (4rem) and :170's header adds
@@ -286,48 +292,25 @@
   animation: fade-in 0.3s ease-out;
 }
 
-/* Override Tailwind text size classes to use CSS variables */
-.text-xs {
-  font-size: var(--text-xs) !important;
-}
-.text-sm {
-  font-size: var(--text-sm) !important;
-}
-.text-base {
-  font-size: var(--text-base) !important;
-}
-.text-lg {
-  font-size: var(--text-lg) !important;
-}
-.text-xl {
-  font-size: var(--text-xl) !important;
-}
-.text-2xl {
-  font-size: var(--text-2xl) !important;
-}
-.text-3xl {
-  font-size: var(--text-3xl) !important;
-}
-.text-4xl {
-  font-size: var(--text-4xl) !important;
-}
-.text-5xl {
-  font-size: var(--text-5xl) !important;
-}
-.text-6xl {
-  font-size: var(--text-6xl) !important;
-}
-.text-7xl {
-  font-size: var(--text-7xl) !important;
-}
-.text-8xl {
-  font-size: var(--text-8xl) !important;
-}
-.text-9xl {
-  font-size: var(--text-9xl) !important;
-}
+/* The `.text-xs`..`.text-9xl` overrides that used to live here were deleted in
+   #388. They were redundant AND actively harmful:
 
-/* Also scale heading elements that don't have explicit classes */
+   - Redundant: Tailwind v4 already emits `.text-4xl{font-size:var(--text-4xl)}`,
+     and the `--text-*` tokens are redefined above in an unlayered `:root`,
+     which outranks Tailwind's `@layer theme`. So Tailwind's own utilities
+     already resolved to the fluid, accessibility-scaled values.
+   - Harmful: because globals.css is unlayered, these rules outranked every
+     responsive variant. `sm:text-5xl` emits into `@layer utilities` and lost
+     to an unlayered `.text-4xl{...!important}`, so ~42 responsive font ladders
+     across 15 files silently rendered frozen at their base size.
+
+   Deleting them also restores Tailwind's `--text-*--line-height` pairing,
+   which the `font-size`-only overrides had suppressed. */
+
+/* Also scale heading elements that don't have explicit classes.
+   Deliberately KEPT (#388): this is what makes bare <h1>..<p> scale, and blog
+   post headings currently depend on it. It is unlayered too, but it only
+   matches elements with no `text-*` class, so it cannot shadow a utility. */
 h1:not([class*='text-']) {
   font-size: var(--text-4xl);
 }

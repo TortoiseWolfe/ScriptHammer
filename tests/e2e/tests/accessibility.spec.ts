@@ -253,52 +253,53 @@ test.describe('Accessibility', () => {
     }
   });
 
-  test('font size controls work', async ({ page }) => {
+  // Rewritten in #388. The previous version located
+  // `button:has-text("Increase"), button:has-text("+")` — /accessibility
+  // renders Small / Medium / Large / X large, so count() was 0, the entire
+  // body was skipped, and the test passed with zero assertions while appearing
+  // to cover this feature. It was also measuring getComputedStyle(body)
+  // .fontSize, which this system never sets: the scale factor drives the
+  // --text-* tokens that .text-* classes consume, not the root font size.
+  test('font size controls actually resize text', async ({ page }) => {
     await page.goto('/accessibility', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
-    // Find font size controls
-    const increaseFontBtn = page
-      .locator('button:has-text("Increase"), button:has-text("+")')
-      .first();
-    const decreaseFontBtn = page
-      .locator('button:has-text("Decrease"), button:has-text("-")')
-      .first();
+    // The preview heading carries `text-2xl`, so it resolves through
+    // --text-2xl -> calc(... * var(--font-scale-factor)).
+    const sample = page.getByRole('heading', { name: 'Sample Heading' });
+    await expect(sample).toBeVisible();
 
-    if ((await increaseFontBtn.count()) > 0) {
-      // Get initial font size
-      const initialSize = await page.evaluate(() => {
-        const body = document.body;
-        return window.getComputedStyle(body).fontSize;
-      });
+    const sizeOf = () =>
+      sample.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
 
-      // Increase font size
-      await increaseFontBtn.click();
+    const smallBtn = page.getByRole('button', { name: 'Small', exact: true });
+    const xLargeBtn = page.getByRole('button', {
+      name: 'X large',
+      exact: true,
+    });
 
-      // Check font size increased
-      const increasedSize = await page.evaluate(() => {
-        const body = document.body;
-        return window.getComputedStyle(body).fontSize;
-      });
+    // Both controls must exist — if the labels change, this test must fail
+    // rather than silently skip the way its predecessor did.
+    await expect(smallBtn).toBeVisible();
+    await expect(xLargeBtn).toBeVisible();
 
-      expect(parseFloat(increasedSize)).toBeGreaterThan(
-        parseFloat(initialSize)
-      );
+    await smallBtn.click();
+    await expect
+      .poll(sizeOf, { message: 'font size settles after picking Small' })
+      .toBeGreaterThan(0);
+    const smallSize = await sizeOf();
 
-      // Decrease font size
-      if ((await decreaseFontBtn.count()) > 0) {
-        await decreaseFontBtn.click();
+    await xLargeBtn.click();
+    await expect
+      .poll(sizeOf, { message: 'font size grows after picking X large' })
+      .toBeGreaterThan(smallSize);
 
-        const decreasedSize = await page.evaluate(() => {
-          const body = document.body;
-          return window.getComputedStyle(body).fontSize;
-        });
+    const xLargeSize = await sizeOf();
 
-        expect(parseFloat(decreasedSize)).toBeLessThan(
-          parseFloat(increasedSize)
-        );
-      }
-    }
+    // Strict comparison. The documented factors are 1.25 and 2.125, so the
+    // ratio should be ~1.7 — assert a real gap, not just "not smaller", so
+    // that a regression which freezes scaling goes red.
+    expect(xLargeSize).toBeGreaterThan(smallSize * 1.5);
   });
 
   test('keyboard navigation works throughout the site', async ({ page }) => {

@@ -98,41 +98,31 @@ export default function AccessibilityPage() {
           <div className="divider my-12">Preview</div>
 
           <div className="card bg-base-100 shadow-xl">
-            <div
-              className="card-body accessibility-preview"
-              style={{ fontSize: `var(--base-font-size)` }}
-            >
-              <h2
-                className="text-2xl font-bold"
-                style={{ fontSize: `calc(2rem * var(--font-scale, 1))` }}
-              >
-                Sample Heading
-              </h2>
-              <p
-                className="text-lg"
-                style={{ fontSize: `calc(1.125rem * var(--font-scale, 1))` }}
-              >
+            {/* The inline `fontSize` overrides that used to be on these
+                elements referenced `--base-font-size` and `--font-scale`,
+                neither of which is set by anything in the app — the provider
+                writes `--font-scale-factor`. So this preview never responded
+                to the S/M/L/XL buttons above it (#388). The Tailwind classes
+                do the work correctly: `--text-*` already multiplies by
+                `--font-scale-factor`. */}
+            <div className="card-body accessibility-preview">
+              <h2 className="text-2xl font-bold">Sample Heading</h2>
+              <p className="text-lg">
                 This is a lead paragraph showing how your accessibility settings
                 affect the text display.
               </p>
-              <p style={{ fontSize: `calc(1rem * var(--font-scale, 1))` }}>
+              <p className="text-base">
                 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
                 eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
                 enim ad minim veniam, quis nostrud exercitation ullamco laboris
                 nisi ut aliquip ex ea commodo consequat.
               </p>
-              <p
-                className="text-sm"
-                style={{ fontSize: `calc(0.875rem * var(--font-scale, 1))` }}
-              >
+              <p className="text-sm">
                 Small text: These accessibility controls are saved to your
                 browser and will persist across sessions.
               </p>
               <div className="mt-4">
-                <pre
-                  className="bg-base-200 rounded p-4"
-                  style={{ fontSize: `calc(0.875rem * var(--font-scale, 1))` }}
-                >
+                <pre className="bg-base-200 rounded p-4 text-sm">
                   <code>{`// Code example
 const settings = {
   fontSize: "${fontSize}",

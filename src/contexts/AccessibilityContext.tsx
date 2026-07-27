@@ -11,20 +11,18 @@ import React, {
 } from 'react';
 import { canUseCookies } from '../utils/consent';
 import { CookieCategory } from '../utils/consent-types';
-
-type FontSize = 'small' | 'medium' | 'large' | 'x-large';
-type LineHeight = 'compact' | 'normal' | 'relaxed';
-type FontFamily = 'sans-serif' | 'serif' | 'mono';
-type ContrastMode = 'normal' | 'high';
-type MotionPreference = 'no-preference' | 'reduce';
-
-interface AccessibilitySettings {
-  fontSize: FontSize;
-  lineHeight: LineHeight;
-  fontFamily: FontFamily;
-  highContrast: ContrastMode;
-  reduceMotion: MotionPreference;
-}
+import {
+  DEFAULT_ACCESSIBILITY_SETTINGS,
+  FONT_FAMILIES,
+  FONT_SCALE_FACTORS,
+  LINE_HEIGHTS,
+  type AccessibilitySettings,
+  type ContrastMode,
+  type FontFamily,
+  type FontSize,
+  type LineHeight,
+  type MotionPreference,
+} from '@/config/accessibility-tokens';
 
 interface AccessibilityContextType {
   settings: AccessibilitySettings;
@@ -32,13 +30,9 @@ interface AccessibilityContextType {
   resetSettings: () => void;
 }
 
-const defaultSettings: AccessibilitySettings = {
-  fontSize: 'medium',
-  lineHeight: 'normal',
-  fontFamily: 'sans-serif',
-  highContrast: 'normal',
-  reduceMotion: 'no-preference',
-};
+// Shared with AccessibilityScript, which serialises the same values into a
+// pre-paint inline script. Do not re-declare these locally (#388).
+const defaultSettings = DEFAULT_ACCESSIBILITY_SETTINGS;
 
 const AccessibilityContext = createContext<
   AccessibilityContextType | undefined
@@ -54,28 +48,11 @@ export function AccessibilityProvider({
 
   // Apply settings to DOM
   const applySettings = useCallback((newSettings: AccessibilitySettings) => {
-    // Font scale factors
-    const scaleFactors: Record<FontSize, number> = {
-      small: 1.25, // 20px - minimum comfortable size
-      medium: 1.5, // 24px - good default
-      large: 1.75, // 28px - easy to read
-      'x-large': 2.125, // 34px - very accessible
-    };
-
-    // Line heights
-    const lineHeights: Record<LineHeight, string> = {
-      compact: '1.25',
-      normal: '1.5',
-      relaxed: '1.75',
-    };
-
-    // Font families
-    const fontFamilies: Record<FontFamily, string> = {
-      'sans-serif':
-        'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-      serif: 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',
-      mono: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
-    };
+    // Token maps live in @/config/accessibility-tokens so AccessibilityScript
+    // can serialise the identical values into its pre-paint inline script.
+    const scaleFactors = FONT_SCALE_FACTORS;
+    const lineHeights = LINE_HEIGHTS;
+    const fontFamilies = FONT_FAMILIES;
 
     const root = document.documentElement;
 
