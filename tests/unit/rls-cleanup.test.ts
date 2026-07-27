@@ -173,8 +173,13 @@ describe('cleanupStaleScripthammerUsers (#50)', () => {
 
     expect(deleteCalls).toHaveLength(0);
     expect(deleteUserCalls).toHaveLength(0);
+    // Exact shape on purpose: a no-op must report a no-op on EVERY counter,
+    // so a new counter that silently starts non-zero fails here. That is why
+    // adding `usersAlreadyGone` (#360) had to be acknowledged rather than
+    // absorbed by a looser matcher.
     expect(summary).toEqual({
       usersRemoved: 0,
+      usersAlreadyGone: 0,
       errorsLogged: 0,
     });
   });

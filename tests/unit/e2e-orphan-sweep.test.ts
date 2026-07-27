@@ -185,3 +185,101 @@ describe('sweepOrphanedE2EUsers (#354)', () => {
     expect(s.dryRun).toBe(true);
   });
 });
+
+/**
+ * #360 — concurrent sweeps racing each other.
+ *
+ * `globalSetup` runs once per Playwright invocation and the E2E workflow
+ * invokes Playwright ~15 times, so two sweeps routinely overlap and both try to
+ * delete the same backlog. The loser's deletes come back "not found".
+ *
+ * Nothing was ever broken by that, but a green run printing ~49 red-flag
+ * warnings teaches people to stop reading warnings — and that habit is what
+ * lets a real failure through. The fix must therefore do BOTH: stop crying wolf
+ * on the benign race, AND keep a genuine delete failure loud. A change that
+ * only silenced warnings would trade one blind spot for a worse one.
+ */
+describe('sweepOrphanedE2EUsers — concurrent sweeps (#360)', () => {
+  type DeleteResult = { data: object; error: unknown };
+
+  function clientWithDeleteResult(users: U[], result: () => DeleteResult) {
+    return {
+      auth: {
+        admin: {
+          listUsers: vi.fn(
+            async ({ page }: { page: number; perPage: number }) => ({
+              data: { users: page === 1 ? users : [] },
+              error: null,
+            })
+          ),
+          deleteUser: vi.fn(async () => result()),
+        },
+      },
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          eq: vi.fn(async () => ({ data: [], error: null })),
+        })),
+        delete: vi.fn(() => ({
+          eq: vi.fn(async () => ({ data: null, error: null })),
+          in: vi.fn(async () => ({ data: null, error: null })),
+        })),
+      })),
+    } as unknown as Parameters<typeof sweepOrphanedE2EUsers>[0];
+  }
+
+  const orphans = [
+    old('u1', 'scripthammer.e2e+iso-a@gmail.com'),
+    old('u2', 'scripthammer.e2e+iso-b@gmail.com'),
+  ];
+
+  it('counts users a concurrent sweep already removed, without warning', async () => {
+    const warn = vi.fn();
+    const summary = await sweepOrphanedE2EUsers(
+      clientWithDeleteResult(orphans, () => ({
+        data: {},
+        error: { message: 'User not found', status: 404 },
+      })),
+      { env, now: NOW, logger: { info: vi.fn(), warn } }
+    );
+
+    expect(summary.usersAlreadyGone).toBe(2);
+    expect(summary.errorsLogged).toBe(0);
+    expect(summary.usersRemoved).toBe(0);
+    // The whole point: no red-flag warnings for a benign race.
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('still warns loudly on a genuine delete failure', async () => {
+    const warn = vi.fn();
+    const summary = await sweepOrphanedE2EUsers(
+      clientWithDeleteResult(orphans, () => ({
+        data: {},
+        error: { message: 'permission denied for table users', status: 403 },
+      })),
+      { env, now: NOW, logger: { info: vi.fn(), warn } }
+    );
+
+    expect(summary.errorsLogged).toBe(2);
+    expect(summary.usersAlreadyGone).toBe(0);
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+
+  it('reports errors and alreadyGone in the logged summary', async () => {
+    // The observability gap that made this race invisible: the summary line
+    // omitted errorsLogged entirely, so a run emitting warnings still looked
+    // clean and the cause had to be dug out of raw log lines.
+    const info = vi.fn();
+    await sweepOrphanedE2EUsers(
+      clientWithDeleteResult(orphans, () => ({
+        data: {},
+        error: { message: 'User not found', status: 404 },
+      })),
+      { env, now: NOW, logger: { info, warn: vi.fn() } }
+    );
+
+    expect(info).toHaveBeenCalledWith(
+      'Sweep: orphaned E2E users',
+      expect.objectContaining({ alreadyGone: 2, errors: 0 })
+    );
+  });
+});

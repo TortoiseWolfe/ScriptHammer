@@ -19,11 +19,43 @@ export interface CleanupSummary {
   /** Auth users hard-deleted via auth.admin.deleteUser. */
   usersRemoved: number;
   /**
+   * Users a CONCURRENT sweep had already removed (#360).
+   *
+   * Counted rather than ignored. `globalSetup` runs once per Playwright
+   * invocation and the E2E workflow invokes Playwright ~15 times, so two
+   * sweeps overlap routinely and both try to delete the same backlog. The
+   * loser's deletes come back "not found", which is a SUCCESS condition — the
+   * row is gone, which is what was wanted.
+   *
+   * Previously those surfaced as ~49 `deleteUser failed` warnings in a green
+   * run. Nothing was broken, but a green run printing a wall of red-flag
+   * warnings teaches people to stop reading warnings, and that habit is what
+   * lets a real failure through unnoticed.
+   *
+   * Kept as its own counter instead of silently swallowed: a genuine delete
+   * failure and a benign race must stay distinguishable.
+   */
+  usersAlreadyGone: number;
+  /**
    * Per-table errors logged (non-fatal; cleanup continues).
    * Operators reading the summary use this to gauge whether the cleanup
    * fully completed or punted on some FKs.
    */
   errorsLogged: number;
+}
+
+/**
+ * Did this delete fail because the row was already gone? (#360)
+ *
+ * A concurrent sweep having removed it first is the outcome we wanted, not a
+ * failure. Matched narrowly — on an explicit 404 or a not-found message — so
+ * that any other failure still counts as an error.
+ */
+function isAlreadyDeleted(error: unknown): boolean {
+  if (!error) return false;
+  const e = error as { message?: string; status?: number };
+  if (e.status === 404) return true;
+  return /not found|does not exist|no rows/i.test(e.message ?? '');
 }
 
 type Logger = {
@@ -42,6 +74,7 @@ export async function cleanupStaleScripthammerUsers(
 ): Promise<CleanupSummary> {
   const summary: CleanupSummary = {
     usersRemoved: 0,
+    usersAlreadyGone: 0,
     errorsLogged: 0,
   };
 
@@ -168,11 +201,17 @@ async function deleteUserFkSafe(
       false
     );
     if (authError) {
-      logger.warn('Cleanup-stale: auth deleteUser failed', {
-        userId,
-        error: authError.message,
-      });
-      summary.errorsLogged++;
+      if (isAlreadyDeleted(authError)) {
+        // A concurrent sweep won the race (#360). The row is gone, which is
+        // the outcome we wanted — count it, do not warn.
+        summary.usersAlreadyGone++;
+      } else {
+        logger.warn('Cleanup-stale: auth deleteUser failed', {
+          userId,
+          error: authError.message,
+        });
+        summary.errorsLogged++;
+      }
     } else {
       summary.usersRemoved++;
     }
@@ -265,6 +304,7 @@ export async function sweepOrphanedE2EUsers(
 
   const summary: SweepSummary = {
     usersRemoved: 0,
+    usersAlreadyGone: 0,
     errorsLogged: 0,
     candidates: 0,
     allowlisted: 0,
@@ -315,12 +355,19 @@ export async function sweepOrphanedE2EUsers(
     await deleteUserFkSafe(client, user.id, logger, summary);
   }
 
+  // `errorsLogged` was missing here (#360). The field existed on the summary
+  // and drove the outcome, but was never logged — so a run emitting ~49
+  // warnings still printed a clean-looking summary line, and the race had to be
+  // found by reading raw warnings instead. A summary that omits the failure
+  // count is not a summary.
   logger.info('Sweep: orphaned E2E users', {
     scanned: all.length,
     candidates: summary.candidates,
     removed: summary.usersRemoved,
+    alreadyGone: summary.usersAlreadyGone,
     allowlisted: summary.allowlisted,
     tooRecent: summary.tooRecent,
+    errors: summary.errorsLogged,
     dryRun,
   });
 
