@@ -86,37 +86,73 @@ test.describe('#388 type scale truth', () => {
    *
    * `/docs`'s h1 is `text-4xl sm:text-5xl`. While the unlayered
    * `.text-4xl{...!important}` block existed, the `sm:` variant lost the
-   * cascade and the heading rendered at one size at every width.
+   * cascade and the heading rendered at the 4xl size at every width.
    *
-   * The comparison is STRICT (`>`). A `toBeGreaterThanOrEqual` would pass with
-   * the bug present — which is exactly why `mobile-typography.spec.ts` never
-   * caught this.
+   * IMPORTANT — why this does not simply assert "bigger at a wider viewport".
+   * The `--text-*` tokens are fluid: `clamp(1.75rem, 1.5rem + 1.5vw, 2.25rem)`.
+   * A frozen `text-4xl` heading STILL grows with viewport width. Measured with
+   * the bug deliberately reintroduced: 44.775px at 390px and 47.25px at 500px —
+   * so a `toBeGreaterThan` comparison passes with the defect present. The first
+   * draft of this test did exactly that and survived its own mutation check.
    *
-   * MUTATION CHECK: restore the `.text-*{ font-size: var(--text-*) !important }`
-   * block in globals.css. This test must fail.
+   * Instead we compare the heading against probe elements carrying the two
+   * classes. That is exact and immune to fluid growth: below `sm` the heading
+   * must match a `text-4xl` probe, at/above `sm` it must match a `text-5xl`
+   * probe, and the two probes must differ.
+   *
+   * MUTATION CHECK: append
+   * `.text-4xl{font-size:var(--text-4xl)!important}` to the built stylesheet
+   * (or restore the block in globals.css). The at/above assertion must fail,
+   * because the heading stays pinned to the 4xl probe.
    */
-  test('the /docs h1 grows across the sm breakpoint', async ({ page }) => {
+  test('the /docs h1 uses text-5xl at/above sm and text-4xl below', async ({
+    page,
+  }) => {
     await page.goto('/docs', { waitUntil: 'domcontentloaded' });
     const h1 = page.locator('h1').first();
     await expect(h1).toBeVisible();
 
-    const measure = async (width: number) => {
+    // Probes rendered in the same document, so they resolve through the same
+    // tokens, the same scale factor and the same media queries.
+    await page.evaluate(() => {
+      for (const cls of ['text-4xl', 'text-5xl']) {
+        const el = document.createElement('span');
+        el.className = cls;
+        el.dataset.probe = cls;
+        el.textContent = 'probe';
+        document.body.appendChild(el);
+      }
+    });
+
+    const sample = async (width: number) => {
       await page.setViewportSize({ width, height: 900 });
-      // Let the media query settle before reading.
-      await expect
-        .poll(async () =>
-          h1.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
-        )
-        .toBeGreaterThan(0);
-      return h1.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+      return page.evaluate(() => {
+        const px = (sel: string) =>
+          parseFloat(
+            getComputedStyle(document.querySelector(sel)!).fontSize as string
+          );
+        return {
+          h1: px('h1'),
+          fourXl: px('[data-probe="text-4xl"]'),
+          fiveXl: px('[data-probe="text-5xl"]'),
+        };
+      });
     };
 
-    const below = await measure(BELOW_SM);
-    const above = await measure(ABOVE_SM);
-
+    const below = await sample(BELOW_SM);
     expect(
-      above,
-      `h1 is text-4xl sm:text-5xl; at ${ABOVE_SM}px (>= sm ${SM_BREAKPOINT}px) it must render larger than at ${BELOW_SM}px, got ${above} vs ${below}`
-    ).toBeGreaterThan(below);
+      below.fiveXl,
+      'the two probes must differ, or this test proves nothing'
+    ).toBeGreaterThan(below.fourXl);
+    expect(below.h1, `below sm (${BELOW_SM}px) the h1 should be text-4xl`).toBe(
+      below.fourXl
+    );
+
+    const above = await sample(ABOVE_SM);
+    expect(above.fiveXl).toBeGreaterThan(above.fourXl);
+    expect(
+      above.h1,
+      `at ${ABOVE_SM}px (>= sm ${SM_BREAKPOINT}px) the h1 must match the text-5xl probe (${above.fiveXl}px), not text-4xl (${above.fourXl}px) — a frozen ladder pins it to the latter`
+    ).toBe(above.fiveXl);
   });
 });
