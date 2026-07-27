@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import ThemeScript from '@/components/ThemeScript';
+import AccessibilityScript from '@/components/AccessibilityScript';
 import { GlobalNav } from '@/components/GlobalNav';
 import { Footer } from '@/components/Footer';
 import { AccessibilityProvider } from '@/contexts/AccessibilityContext';
@@ -129,6 +130,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ThemeScript />
+        <AccessibilityScript />
         <JsonLdScript data={generateJsonLd()} />
         <ColorblindFilters />
         <ConsentProvider>
