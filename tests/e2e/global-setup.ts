@@ -16,11 +16,48 @@ import {
   ensureEncryptionKeys,
 } from './utils/test-user-factory';
 import { sweepOrphanedE2EUsers } from '../rls/__setup__/cleanup-stale-impl';
+import { isTransientAdminError } from './utils/transient-admin-error';
 
 interface PrerequisiteError {
   category: string;
   message: string;
   fix: string;
+}
+
+/**
+ * Run an admin-API call, retrying only transient failures (#345).
+ *
+ * Returns the LAST result either way, so callers keep their existing error
+ * handling — an error that survives the retries is reported exactly as before,
+ * which is what preserves the fail-loudly behaviour #338 introduced.
+ *
+ * `T` is deliberately unconstrained. Constraining it to `{ error: unknown }`
+ * collapses supabase-js's discriminated `{ data, error }` union to `{}` at the
+ * call sites, erasing `AuthError`; `error` is read defensively instead so
+ * callers keep their types.
+ */
+async function retryTransient<T>(
+  label: string,
+  call: () => Promise<T>,
+  attempts = 3
+): Promise<T> {
+  let result = await call();
+
+  for (let attempt = 1; attempt < attempts; attempt++) {
+    const err = (result as { error?: unknown } | null)?.error;
+    if (!isTransientAdminError(err)) return result;
+
+    const backoffMs = 2000 * attempt; // 2s, then 4s
+    const raw = (err as { message?: string })?.message ?? '';
+    console.log(
+      `  ↻ ${label}: transient admin-API error (attempt ${attempt}/${attempts}, ` +
+        `message: ${raw === '' ? '<empty — the #345 signature>' : raw}) — retrying in ${backoffMs}ms`
+    );
+    await new Promise((resolve) => setTimeout(resolve, backoffMs));
+    result = await call();
+  }
+
+  return result;
 }
 
 async function globalSetup(): Promise<void> {
@@ -79,12 +116,18 @@ async function globalSetup(): Promise<void> {
 
   let adminClient;
   try {
-    adminClient = createClient(supabaseUrl, supabaseKey, {
+    // Bound to a const as well: `let adminClient` is an evolving `any`, which
+    // resolves to `unknown` when captured by the retry closures below.
+    const client = createClient(supabaseUrl, supabaseKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
+    adminClient = client;
 
-    // Test connectivity by listing users (requires service role)
-    const { error } = await adminClient.auth.admin.listUsers({ perPage: 1 });
+    // Test connectivity by listing users (requires service role).
+    // Retried: under 28-shard load this is the first call to feel the spike (#345).
+    const { error } = await retryTransient('connectivity probe', () =>
+      client.auth.admin.listUsers({ perPage: 1 })
+    );
     if (error) {
       errors.push({
         category: 'Supabase Connection',
@@ -143,12 +186,21 @@ async function globalSetup(): Promise<void> {
     const allEmails = new Set<string>();
     let enumerationError: string | null = null;
     for (let page = 1; page <= 50; page++) {
-      const { data, error } = await adminClient.auth.admin.listUsers({
-        page,
-        perPage: 1000,
-      });
+      // Retried (#345): a transient here becomes `enumerationError`, which
+      // correctly refuses to conclude the user is absent — but then reds the
+      // shard for a blip. Retrying first keeps that guarantee while removing
+      // the false alarm.
+      const pageClient = adminClient;
+      const { data, error } = await retryTransient(
+        `listUsers page ${page}`,
+        () => pageClient.auth.admin.listUsers({ page, perPage: 1000 })
+      );
       if (error) {
-        enumerationError = error.message;
+        // Empty-message errors read as "{}" in logs and told nobody anything;
+        // name the shape explicitly so the next person can match it to #345.
+        enumerationError =
+          error.message?.trim() ||
+          'empty error from the auth admin API (transient signature, #345) — persisted across retries';
         break;
       }
       const batch = data?.users ?? [];
@@ -218,11 +270,17 @@ async function globalSetup(): Promise<void> {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    const { error: signInError } =
-      await credentialCheckClient.auth.signInWithPassword({
-        email: process.env.TEST_USER_PRIMARY_EMAIL!,
-        password: process.env.TEST_USER_PRIMARY_PASSWORD!,
-      });
+    // Retried (#345). A wrong password reports "Invalid login credentials" and
+    // is NOT retried — it fails fast, as it must. Only an unexplained failure
+    // (the empty-error signature) gets another attempt.
+    const { error: signInError } = await retryTransient(
+      'PRIMARY credential check',
+      () =>
+        credentialCheckClient.auth.signInWithPassword({
+          email: process.env.TEST_USER_PRIMARY_EMAIL!,
+          password: process.env.TEST_USER_PRIMARY_PASSWORD!,
+        })
+    );
 
     if (signInError) {
       errors.push({
