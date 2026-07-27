@@ -112,6 +112,11 @@ services:
   # check-chunks-parse.mjs keep working exactly as they do in CI.
   builder:
     profiles: ['build']
+    # PID1 init (#275 SIGNAL_HANDLING). Compose's `init: true` is the
+    # `docker run --init` route the audit named as the alternative to adding
+    # tini to the Dockerfile. One-shot service, but without it a Ctrl-C
+    # mid-build orphans the child processes `pnpm build` spawned.
+    init: true
     build:
       context: .
       dockerfile: docker/Dockerfile
@@ -480,6 +485,12 @@ services:
   # ──────────────────────────────────────────────────────────────────────
   dotnet-messaging:
     profiles: ['dotnet']
+    # PID1 init (#275 SIGNAL_HANDLING). This is the service where it actually
+    # matters: a long-running server (`restart: unless-stopped`) with no init
+    # reaps no zombies and leaves SIGTERM handling entirely to the runtime.
+    # The audit's original target was the prod runner stage, deleted in
+    # ebbac6b — but the concern outlived it, and only `scripthammer` had init.
+    init: true
     build:
       context: ./dotnet-messaging
       target: dev
