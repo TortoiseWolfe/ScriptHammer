@@ -15,20 +15,32 @@ spacing, copy or composition. This directory closes that gap.
 | `ScriptHammer-Directions.dc.html` | the **home page** — three competing directions, of which **2a** was chosen                     |
 | `ScriptHammer-Site.dc.html`       | the **five inner pages** — docs, blog, themes, status, sign-in ("Turn 3 · 2a across the site") |
 
-## Palette — this is NOT `scripthammer-dark`
+## Palette — theme-aware, built on DaisyUI tokens
 
-Worth stating plainly, because assuming otherwise is an easy mistake:
+**Both documents are built on `var(--color-base-*)`, not on fixed colours:**
 
 ```
-#14161c   page background        (near-black, cool)
-#191c23 · #1d2028 · #2c2f38      surfaces, ascending
-#e8e6e1   primary text
-#c8c4bc · #a8a49c · #8f8a80 · #7d786f   muted scale
-#4a4740   hairlines
+ScriptHammer-Directions.dc.html   216 uses of var(--color-base-*)   78 hex literals
+ScriptHammer-Site.dc.html         255 uses of var(--color-base-*)   46 hex literals
 ```
 
-`scripthammer-dark`'s `base-100` is `#1a1a2e` — a navy/purple, visibly not
-`#14161c`. The design carries its own graphite palette.
+The mockups render in whatever DaisyUI theme is active. Typical shadow recipe
+straight from the source:
+
+```css
+box-shadow:
+  0 4px 10px -3px rgba(0, 0, 0, 0.8),
+  inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 16%, transparent);
+```
+
+So a token-based implementation is the correct approach, and the depth system
+shipped in #377 is aligned with the design's own method.
+
+> ⚠️ **The `#14161c` graphite is the design-document chrome, not the design.**
+> It is the dark canvas these mockups are _presented on_. Counting hex literals
+> and concluding the design has a bespoke palette is a mistake — it was made
+> once already, in the first version of this file, from exactly that faulty
+> measurement. Count `var(--color-base-*)` instead.
 
 ## Type — matches what shipped
 
