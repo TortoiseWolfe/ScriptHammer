@@ -350,8 +350,13 @@ export function GlobalNav() {
                     </li>
                   )}
                   <li>
+                    {/* min-h-11: DaisyUI's menu default renders this at 26px,
+                        18px under the 44px standard. It sits inside a closed
+                        dropdown, so the touch-target gate never measured it
+                        until that gate was taught to open the menu (#378). */}
                     <button
                       type="button"
+                      className="min-h-11"
                       onClick={(e) => {
                         e.preventDefault();
                         // Close dropdown
@@ -466,8 +471,10 @@ export function GlobalNav() {
                       </li>
                     )}
                     <li>
+                      {/* Same 26px default as the desktop menu above. */}
                       <button
                         type="button"
+                        className="min-h-11"
                         onClick={(e) => {
                           e.preventDefault();
                           // Close dropdown

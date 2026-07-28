@@ -53,6 +53,24 @@ test.describe('Touch Target Standards', () => {
     await dismissCookieBanner(page);
     await waitForLayoutStability(page);
 
+    // OPEN THE MOBILE MENU FIRST. Without this the gate is very nearly inert:
+    // measured on a clean page at 390px, the selector below matched 58
+    // elements and exactly ONE was visible — the hamburger itself. The other
+    // 57 sit inside the closed dropdown, `isVisible()` skips them, and the
+    // test reports green having checked a single 44px button.
+    //
+    // The nav is a DaisyUI `dropdown` held open by `:focus-within`, so
+    // focusing the trigger opens it (#378 will add more of these).
+    const menuTrigger = page.locator('[aria-label="Navigation menu"]');
+    if (await menuTrigger.count()) {
+      // click(), not focus(): a DaisyUI dropdown is held open by
+      // :focus-within, and a programmatic focus on the <label> does not
+      // reliably establish it. Measured — focus() surfaced 3 targets, click()
+      // surfaces the full menu.
+      await menuTrigger.first().click();
+      await page.waitForTimeout(250);
+    }
+
     // Check primary navigation buttons only (not all interactive elements)
     // Inline text links, badges, and icons inside buttons are exempt
     const primaryButtons = await page
@@ -60,6 +78,7 @@ test.describe('Touch Target Standards', () => {
       .all();
 
     const failures: string[] = [];
+    let measured = 0;
 
     for (let i = 0; i < primaryButtons.length; i++) {
       const element = primaryButtons[i];
@@ -68,6 +87,7 @@ test.describe('Touch Target Standards', () => {
         const box = await element.boundingBox();
 
         if (box) {
+          measured++;
           const text =
             (await element.textContent())?.trim().substring(0, 30) || '';
 
@@ -89,6 +109,32 @@ test.describe('Touch Target Standards', () => {
       const summary = `${failures.length} primary buttons failed touch target requirements:\n${failures.join('\n')}`;
       expect(failures.length, summary).toBe(0);
     }
+
+    // COVERAGE FLOOR — the assertion that keeps the one above honest.
+    //
+    // Every check here is conditional on `isVisible()`, so anything moved
+    // behind a closed menu stops being measured and the test still passes.
+    // Zero measured is indistinguishable from zero failures.
+    //
+    // That is not hypothetical. Before the click above, this gate measured a
+    // single element — the hamburger — while its selector matched 60. Opening
+    // the menu immediately surfaced a real defect that had never been checked:
+    // Sign Out at 144x26px, 18px under the standard.
+    //
+    // 6 is MEASURED, not chosen. Be clear about what it does and does not
+    // mean: the selector deliberately exempts inline text links, so the menu's
+    // <a> items are out of scope by design and 6 is full coverage FOR THIS
+    // SELECTOR — not proof that every nav target is checked.
+    //
+    // #378 regroups the nav into `Demos ▾` and `Display ▾`. If this number
+    // drops, targets were hidden rather than fixed. Raise it deliberately;
+    // never lower it to make a run pass.
+    expect(
+      measured,
+      `Only ${measured} nav touch targets were measured, down from 6. ` +
+        `Something is hidden behind a closed menu that this gate must open ` +
+        `first — see the menuTrigger click above.`
+    ).toBeGreaterThanOrEqual(6);
   });
 
   test('Navigation buttons meet touch target standards', async ({ page }) => {
