@@ -1,26 +1,53 @@
 import Link from 'next/link';
-import { LayeredScriptHammerLogo } from '@/components/atomic/SpinningLogo';
-import { AnimatedLogo } from '@/components/atomic/AnimatedLogo';
 import Icon from '@/components/atomic/Icon';
 import TemplateStats, {
   type TemplateStat,
   type TemplateDemo,
 } from '@/components/molecular/TemplateStats';
 import { detectedConfig } from '@/config/project-detected';
-import { THEME_COUNT } from '@/config/themes';
+import { CURATED_THEMES, THEME_COUNT } from '@/config/themes';
 import { countWireframes } from '@/config/wireframes';
+import pkg from '../../package.json';
 
-// Counted from the committed `features/` tree at build time, so the number
-// quoted here cannot disagree with the wireframes /wireframes actually shows.
-// Server component, so this filesystem read never reaches the browser (#408).
-const WIREFRAME_COUNT = countWireframes();
-
-// ── Hosted landing — audience is a visitor evaluating the product.
-//     Visual hierarchy: spinning logo + animated title draw the eye,
-//     one `btn-primary` is the only filled button, proof numbers below. ──
+// ── The 2a "Machine Shop" landing page (#379). ──────────────────────────────
 //
-// Server component: logo and animated-title are 'use client' internally,
-// but this page itself ships zero client JS beyond those islands.
+// Server component: the depth is CSS and the numbers are read at build time,
+// so this page ships no client JS of its own.
+//
+// EVERY NUMBER HERE IS DERIVED. The design's comps carry mockup figures —
+// `2,431 tests passed 4m ago`, `Lighthouse 100/100/100/100`, `deploy #1,284`,
+// `41s` — under a heading that reads "Every claim on this page is a link to
+// the thing running." Typing those in would break the direction's own promise
+// and repeat #408, where a hard-coded `46` and `32` had already drifted from
+// the 66 and 34 they described.
+const WIREFRAME_COUNT = countWireframes();
+const NEXT_MINOR = pkg.dependencies.next.replace(/^\^?(\d+\.\d+).*$/, '$1');
+
+// The install block, verbatim from README.md — NOT the design's
+// `npx create-scripthammer my-app`, which names a package that exists nowhere
+// in this repo and which `CLAUDE.md` forbids outright ("npx <anything>" is on
+// the ABSOLUTELY FORBIDDEN list). Owner's ruling on #380: "Docker Only, the
+// design was a mockup, technical specs are still first priority over an
+// artist renderings." A landing page whose most prominent element fails when
+// pasted is worse than one that looks plainer.
+const TERMINAL_LINES = [
+  { prompt: true, text: `git clone ${detectedConfig.projectUrl}.git my-app` },
+  { prompt: true, text: 'cd my-app && cp .env.example .env' },
+  { prompt: true, text: 'docker compose up' },
+  { prompt: false, text: '→ ready · localhost:3000' },
+] as const;
+
+// Facts, not metrics. Each is either derived above or a property of the build
+// that cannot go stale without the build itself changing.
+const GROOVE_FACTS = [
+  `Next ${NEXT_MINOR}`,
+  'React 19',
+  `${THEME_COUNT} themes`,
+  `${WIREFRAME_COUNT} wireframes`,
+  'WCAG AA',
+  'PWA · offline',
+  'Static export → GitHub Pages',
+] as const;
 
 const STATS: readonly TemplateStat[] = [
   {
@@ -63,44 +90,33 @@ const DEMOS: readonly TemplateDemo[] = [
 
 const STORYBOOK_URL = 'https://tortoisewolfe.github.io/ScriptHammer/storybook/';
 
-// Promoted hero card — stands alone above the grouped grid.
-// Icons are DECORATIVE, and that is a change from the emoji they replace.
-// The emoji carried names describing the picture — "Rocket launch", "Artist
-// palette" — while the card's own `label` already carries the meaning. A
-// screen reader announcing "Rocket launch, Production Ready" is repeating the
-// decoration, not conveying anything. Verified no test referenced any of the
-// five old names before removing them (#377: accessible names are an API).
-const PRODUCTION_READY = {
-  icon: 'rocket',
-  label: 'Production Ready',
-  desc: 'CI/CD pipeline, 2,400+ tests, Lighthouse monitoring, GitHub Pages deploy on every push',
-  href: '/status',
-} as const;
-
-const FEATURES = [
+// The design's four modules. `01–04` is legitimate numbering here: these are a
+// declared set of four, not a decorative sequence — the design labels them
+// "Four modules · all live" and every one links to the thing running.
+const MODULES = [
   {
-    icon: 'theme',
-    label: `${THEME_COUNT} Themes`,
-    desc: 'Light & dark with live switching',
-    href: '/themes',
+    n: '01',
+    label: 'Accounts',
+    desc: 'Sign-up, sign-in, password strength, sessions. Not a mock.',
+    href: '/sign-in',
   },
   {
-    icon: 'layout',
-    label: 'Wireframes',
-    desc: `${WIREFRAME_COUNT} interactive SVG design specs`,
-    href: '/wireframes',
+    n: '02',
+    label: 'Payments',
+    desc: 'Checkout wired end to end, with a demo you can click today.',
+    href: '/payment-demo',
   },
   {
-    icon: 'install',
-    label: 'PWA Ready',
-    desc: 'Installable with offline support',
+    n: '03',
+    label: 'Messaging',
+    desc: 'Encrypted, with read receipts and offline queueing built in.',
+    href: '/messages',
+  },
+  {
+    n: '04',
+    label: 'Offline',
+    desc: "Installable PWA. Works on a train, syncs when it doesn't.",
     href: '/docs',
-  },
-  {
-    icon: 'accessibility',
-    label: 'Accessible',
-    desc: 'WCAG compliant & customizable',
-    href: '/accessibility',
   },
 ] as const;
 
@@ -115,150 +131,216 @@ export default function Home() {
         Skip to main content
       </a>
 
-      {/* ── Tier 1: Hero ─────────────────────────────────────────────── */}
+      {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <section
         id="main-content"
         aria-labelledby="hero-heading"
-        className="mx-auto w-full max-w-6xl flex-1 px-4 py-16 sm:px-6 lg:px-8 lg:py-24"
+        className="mx-auto w-full max-w-6xl px-4 pt-14 pb-10 sm:px-6 lg:px-8 lg:pt-20"
       >
-        <div className="flex flex-col items-center gap-8 lg:flex-row lg:gap-16">
-          {/* Logo — responsive sizing, spins slowly, pauses on hover */}
-          <div className="flex-shrink-0">
-            <div className="h-48 w-48 sm:h-52 sm:w-52 md:h-56 md:w-56 lg:h-[350px] lg:w-[350px]">
-              <LayeredScriptHammerLogo speed="slow" pauseOnHover />
-            </div>
+        <p className="text-accent mb-4 font-mono text-xs tracking-wider uppercase">
+          Live in production · Next {NEXT_MINOR}
+        </p>
+
+        <h1
+          id="hero-heading"
+          className="text-base-content max-w-4xl text-4xl leading-[0.95] tracking-tight sm:text-5xl lg:text-7xl"
+        >
+          The boring parts are already done.
+        </h1>
+
+        <p className="text-base-content/80 mt-6 max-w-2xl text-lg leading-relaxed sm:text-xl">
+          Accounts, payments, encrypted messaging and offline mode — wired to
+          Supabase, tested, accessible to WCAG AA, and running on this exact
+          site.
+        </p>
+
+        <nav
+          aria-label="Primary actions"
+          className="mt-8 flex flex-wrap items-center gap-4"
+        >
+          <Link href="/schedule" className="btn btn-primary btn-lg min-h-11">
+            Start a project
+          </Link>
+          <Link
+            href="/status"
+            className="link link-hover text-base-content inline-flex min-h-11 items-center gap-2 text-sm"
+          >
+            See it running
+            <span aria-hidden="true">→</span>
+          </Link>
+        </nav>
+      </section>
+
+      {/* ── Terminal, full width — the hero's thesis ──────────────────────── */}
+      <section
+        aria-labelledby="install-heading"
+        className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8"
+      >
+        <h2 id="install-heading" className="sr-only">
+          Install
+        </h2>
+        <div className="sh-plate bg-base-100 rounded-box overflow-hidden">
+          <div className="border-base-300 text-base-content/60 flex items-center gap-2 border-b px-4 py-2 font-mono text-xs tracking-wider uppercase">
+            <span aria-hidden="true">●</span>
+            bash — new project
           </div>
-
-          {/* Content — stacked below logo on mobile, beside it on desktop */}
-          <div className="text-center lg:text-left">
-            <h1 id="hero-heading" className="mb-4 sm:mb-6">
-              <AnimatedLogo
-                text={detectedConfig.projectName}
-                className="!text-2xl font-bold sm:!text-3xl md:!text-5xl lg:!text-6xl"
-                animationSpeed="normal"
-              />
-            </h1>
-
-            <p className="text-base-content/80 mb-6 max-w-2xl text-lg leading-relaxed sm:text-xl">
-              Auth, payments, messaging, and offline support are already wired
-              to Supabase and tested, accessible to WCAG AA, and running in
-              production.
-            </p>
-
-            {/* Tech stack badges */}
-            <div
-              className="mb-8 flex flex-wrap justify-center gap-2 lg:justify-start"
-              role="list"
-              aria-label="Technology stack"
-            >
-              {[
-                'Next.js 15.5',
-                'React 19',
-                'TypeScript',
-                'Tailwind CSS',
-                'PWA Ready',
-              ].map((tech) => (
-                <span
-                  key={tech}
-                  role="listitem"
-                  className="badge badge-outline badge-sm sm:badge-md"
-                >
-                  {tech}
-                </span>
-              ))}
-            </div>
-
-            <nav
-              aria-label="Primary actions"
-              className="flex flex-col items-center gap-4 lg:items-start"
-            >
-              <a
-                href={detectedConfig.projectUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-primary btn-lg min-h-11 min-w-11"
-              >
-                Explore the source
-              </a>
-              <a
-                href={STORYBOOK_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                // Solid text-base-content for AAA contrast (7:1) on
-                // scripthammer-light's #ebe5dd panel. /70 was 4.98:1 — fine
-                // for AA but failed AAA per #21. The muted-secondary feel
-                // is preserved via text-sm + the smaller font, not opacity.
-                className="link link-hover text-base-content inline-flex min-h-11 items-center gap-2 text-sm"
-              >
-                or explore the component catalogue in Storybook
-                <span aria-hidden="true">→</span>
-              </a>
-            </nav>
-          </div>
+          {/* One <pre> so the whole block copies as runnable text. */}
+          <pre className="text-base-content overflow-x-auto p-4 font-mono text-sm leading-7 sm:p-6">
+            {TERMINAL_LINES.map((line) => (
+              <span key={line.text} className="block">
+                {line.prompt && (
+                  <span className="text-accent select-none">$ </span>
+                )}
+                {line.text}
+              </span>
+            ))}
+          </pre>
         </div>
       </section>
 
-      {/* ── Tiers 2 & 3: proof + demos ───────────────────────────────── */}
+      {/* ── Groove: facts, not metrics ────────────────────────────────────── */}
+      {/* The design runs a scrolling marquee of live readings here. It is a
+          static strip instead, for two reasons: its comp content is mockup
+          data ("CI green — 2,431 tests passed 4m ago", "Deploy #1,284"), and a
+          marquee is motion this page would then have to suppress under
+          prefers-reduced-motion. These are facts that do not move. */}
+      <section aria-label="At a glance" className="mt-10 px-4 sm:px-6 lg:px-8">
+        <ul className="sh-groove bg-base-100 rounded-box text-base-content/70 mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-5 py-3 font-mono text-xs tracking-wider uppercase">
+          {GROOVE_FACTS.map((fact) => (
+            <li key={fact}>{fact}</li>
+          ))}
+        </ul>
+      </section>
+
+      {/* ── Stat wells + live demos ───────────────────────────────────────── */}
       <TemplateStats stats={STATS} demos={DEMOS} />
 
-      {/* ── Feature cards — 1 promoted + 4 grouped ───────────────────── */}
-      {/* The base-100 → base-200 transition out of TemplateStats used to be a
-          contentless `h-16 sm:h-24` div — up to 96px of pure gradient holding
-          nothing (#373 §A6). It is now the top of this section's own
-          background, so the fade happens BEHIND the section's padding instead
-          of before it. Same transition, none of the dead height.
-
-          That also lets the section take real top padding, which fixes the
-          6:1 hero-to-features asymmetry #379 flags: the hero runs py-16
-          lg:py-24 while this ran pt-4. */}
+      {/* ── Modules on raised plates ──────────────────────────────────────── */}
       <section
-        aria-label="Key features"
-        className="px-4 pt-10 pb-12 sm:px-6 lg:px-8"
-        style={{
-          background:
-            'linear-gradient(to bottom, var(--color-base-100), var(--color-base-200) 6rem)',
-        }}
+        aria-labelledby="modules-heading"
+        className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 lg:px-8"
       >
-        <div className="mx-auto flex max-w-6xl flex-col gap-4">
-          <h2 className="sr-only">Key Features</h2>
-
-          {/* Promoted: Production Ready. Full-width, primary border accent,
-              horizontal layout on sm+ so the longer copy can breathe. Border
-              uses the DaisyUI semantic token so it holds across all 32 themes. */}
-          <Link
-            href={PRODUCTION_READY.href}
-            className="card sh-plate bg-base-100 border-primary focus-within:ring-primary rounded-box border-2 transition-all focus-within:ring-2 hover:-translate-y-1"
+        <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
+          <h2
+            id="modules-heading"
+            className="text-base-content text-3xl tracking-tight sm:text-4xl"
           >
-            <div className="card-body flex-col items-center gap-4 p-6 text-center sm:flex-row sm:text-left">
-              <div className="text-primary shrink-0 text-5xl">
-                <Icon name={PRODUCTION_READY.icon} decorative />
-              </div>
-              <div>
-                <h3 className="card-title text-lg">{PRODUCTION_READY.label}</h3>
-                <p className="text-base-content/85 text-sm">
-                  {PRODUCTION_READY.desc}
-                </p>
-              </div>
-            </div>
-          </Link>
+            What&rsquo;s in the box
+          </h2>
+          <p className="text-base-content/60 font-mono text-xs tracking-wider uppercase">
+            Four modules · all live
+          </p>
+        </div>
 
-          {/* Grouped: remaining 4 in a 2×2 / 4-wide grid */}
-          <div className="grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 lg:grid-cols-4">
-            {FEATURES.map((f) => (
-              <Link
-                key={f.href}
-                href={f.href}
-                className="card sh-plate bg-base-100 focus-within:ring-primary rounded-box transition-all focus-within:ring-2 hover:-translate-y-1"
+        <div className="grid grid-cols-1 gap-4 min-[500px]:grid-cols-2 lg:grid-cols-4">
+          {MODULES.map((m) => (
+            <Link
+              key={m.href}
+              href={m.href}
+              className="sh-plate bg-base-100 rounded-box focus-within:ring-primary flex flex-col gap-2 p-5 transition-transform focus-within:ring-2 hover:-translate-y-1"
+            >
+              <span
+                aria-hidden="true"
+                className="text-accent font-mono text-xs tracking-wider"
               >
-                <div className="card-body items-center p-4 text-center">
-                  <div className="text-primary mb-3 text-3xl">
-                    <Icon name={f.icon} decorative />
-                  </div>
-                  <h3 className="card-title text-base">{f.label}</h3>
-                  <p className="text-base-content/85 text-xs">{f.desc}</p>
-                </div>
+                {m.n}
+              </span>
+              <h3 className="text-base-content text-lg">{m.label}</h3>
+              <p className="text-base-content/80 text-sm">{m.desc}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Theme rail in a well ──────────────────────────────────────────── */}
+      <section
+        aria-labelledby="themes-heading"
+        className="mx-auto w-full max-w-6xl px-4 pb-12 sm:px-6 lg:px-8"
+      >
+        <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
+          <h2
+            id="themes-heading"
+            className="text-base-content text-3xl tracking-tight sm:text-4xl"
+          >
+            Every theme, actually designed
+          </h2>
+          <p className="text-base-content/60 font-mono text-xs tracking-wider uppercase">
+            {THEME_COUNT} available
+          </p>
+        </div>
+
+        {/* Ten swatches, not the design's six, so this wraps rather than
+            sitting in one row — and must never force the well wider than the
+            container, which is the #373 clamp waiting to happen. */}
+        <ul className="sh-well bg-base-100 rounded-box flex flex-wrap gap-3 p-4">
+          {CURATED_THEMES.map((theme) => (
+            <li key={theme}>
+              <Link
+                href="/themes"
+                // data-theme scopes DaisyUI's tokens to this element, so the
+                // chips below render each theme's REAL colours rather than an
+                // approximation hand-copied from the comp.
+                data-theme={theme}
+                className="bg-base-100 focus-visible:ring-primary flex min-h-11 items-center gap-2 rounded-full px-3 py-2 focus-visible:ring-2"
+              >
+                <span aria-hidden="true" className="flex gap-1">
+                  <span className="bg-primary h-4 w-4 rounded-full" />
+                  <span className="bg-secondary h-4 w-4 rounded-full" />
+                  <span className="bg-accent h-4 w-4 rounded-full" />
+                </span>
+                <span className="text-base-content font-mono text-xs tracking-wider">
+                  {theme}
+                </span>
               </Link>
-            ))}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* ── CTA plate ─────────────────────────────────────────────────────── */}
+      <section
+        aria-labelledby="cta-heading"
+        className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6 lg:px-8"
+      >
+        <div className="sh-plate bg-base-100 rounded-box flex flex-col gap-6 p-6 sm:p-10">
+          <div>
+            <h2
+              id="cta-heading"
+              className="text-base-content max-w-2xl text-2xl tracking-tight sm:text-3xl"
+            >
+              Tell us what you&rsquo;re building.
+            </h2>
+            <p className="text-base-content/80 mt-3 max-w-2xl">
+              Or take the whole thing yourself — it&rsquo;s open source,
+              documented, and deployed on every push.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+            <Link href="/schedule" className="btn btn-primary min-h-11">
+              Book a call
+            </Link>
+            <a
+              href={detectedConfig.projectUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-ghost min-h-11"
+            >
+              Clone the starter
+              <Icon name="external-link" decorative />
+            </a>
+            <a
+              href={STORYBOOK_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              // Solid text-base-content for AAA contrast (7:1) on
+              // scripthammer-light's panel — /70 was 4.98:1, fine for AA but
+              // failing AAA per #21.
+              className="link link-hover text-base-content inline-flex min-h-11 items-center gap-2 text-sm"
+            >
+              Component catalogue in Storybook
+              <span aria-hidden="true">→</span>
+            </a>
           </div>
         </div>
       </section>

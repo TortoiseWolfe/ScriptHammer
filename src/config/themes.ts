@@ -54,3 +54,32 @@ export type Theme = (typeof THEMES)[number];
 
 /** Derived, so the number on the landing page cannot disagree with the list. */
 export const THEME_COUNT = THEMES.length;
+
+/**
+ * The themes shown as full swatches on the landing page and `/themes` (#379).
+ *
+ * The 2a design drew six and named four that do not exist in this repo —
+ * `terminal`, `field`, `paper`, `larp` — as proposed new themes, each given
+ * only a three-colour accent triplet and no base tokens. The owner's call was
+ * to curate ten real ones instead; the proposed palettes are recorded on #379
+ * so the intent survives.
+ *
+ * `scripthammer-dark` leads because it is the site default (`--default` in
+ * globals.css) and the theme the whole design is drawn in.
+ *
+ * ONE list, used by both surfaces. Two hand-maintained copies of these ten is
+ * exactly the drift #408 removed — the theme list had reached five copies, one
+ * of which silently excluded the default theme from a test.
+ */
+export const CURATED_THEMES = [
+  'scripthammer-dark',
+  'scripthammer-light',
+  'synthwave',
+  'retro',
+  'forest',
+  'luxury',
+  'halloween',
+  'aqua',
+  'sunset',
+  'dim',
+] as const satisfies readonly Theme[];

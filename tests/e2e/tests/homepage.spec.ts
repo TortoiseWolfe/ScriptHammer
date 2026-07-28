@@ -45,23 +45,36 @@ test.describe('Homepage Navigation', () => {
     await newPage.close();
   });
 
-  test('key features section is present', async ({ page }) => {
-    // Check that the Key Features section exists
-    const featuresHeading = page
-      .locator('h2')
-      .filter({ hasText: /Key Features/i });
-    await expect(featuresHeading).toBeVisible();
+  test('the four modules are present and numbered', async ({ page }) => {
+    // #379 replaced the "Key Features" grid with the 2a design's module
+    // plates. The heading and the four card titles changed with it, so this
+    // asserts the new contract rather than the old one.
+    await expect(
+      page.locator('h2').filter({ hasText: /What.s in the box/i })
+    ).toBeVisible();
 
-    // Check feature cards are present
-    const featureCards = page.locator('h3');
-    await expect(
-      featureCards.filter({ hasText: new RegExp(`${THEME_COUNT} Themes`, 'i') })
-    ).toBeVisible();
-    await expect(featureCards.filter({ hasText: /PWA Ready/i })).toBeVisible();
-    await expect(featureCards.filter({ hasText: /Accessible/i })).toBeVisible();
-    await expect(
-      featureCards.filter({ hasText: /Production Ready/i })
-    ).toBeVisible();
+    const cards = page.locator('h3');
+    for (const label of ['Accounts', 'Payments', 'Messaging', 'Offline']) {
+      await expect(
+        cards.filter({ hasText: new RegExp(`^${label}$`) })
+      ).toBeVisible();
+    }
+  });
+
+  test('the install block shows the Docker path, never npx', async ({
+    page,
+  }) => {
+    // The 2a comp puts `npx create-scripthammer my-app` here. That package
+    // does not exist in this repo and `npx` is on CLAUDE.md's forbidden list,
+    // so the most prominent element on the page would fail for anyone who
+    // pasted it. Owner's ruling (#380): Docker only. This test is what keeps
+    // the comp from being copied back in later.
+    const terminal = page.locator('pre').first();
+    await expect(terminal).toBeVisible();
+
+    const text = (await terminal.textContent()) ?? '';
+    expect(text).toContain('docker compose up');
+    expect(text).not.toContain('npx');
   });
 
   test('navigate to game page', async ({ page }) => {
