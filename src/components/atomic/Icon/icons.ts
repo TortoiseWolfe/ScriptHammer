@@ -64,6 +64,12 @@ export const ICON_PATHS = {
   accessibility:
     'M12 2 A1.5 1.5 0 1 1 12 5 A1.5 1.5 0 1 1 12 2 M4 8 H20 M12 8 V14 M12 14 L9 21 M12 14 L15 21',
 
+  // ── Concepts ────────────────────────────────────────────────────────────
+  // Added for the home page (#379), drawn to the grid rules above.
+  rocket:
+    'M12 2 A7 7 0 0 1 15.5 8 V15 H8.5 V8 A7 7 0 0 1 12 2 Z M8.5 11 L5.5 14 V18 H8.5 M15.5 11 L18.5 14 V18 H15.5 M10.5 8 A1.5 1.5 0 1 1 13.5 8 A1.5 1.5 0 1 1 10.5 8 M10 15 L12 19 L14 15',
+  layout: 'M3 5 H21 V19 H3 Z M9 5 V19 M9 11 H21',
+
   // ── Status and actions ──────────────────────────────────────────────────
   check: 'M4 12 L9 17 L20 6',
   alert: 'M12 3 L21 20 H3 Z M12 10 V14 M12 17 V17.5',

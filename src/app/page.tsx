@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { LayeredScriptHammerLogo } from '@/components/atomic/SpinningLogo';
 import { AnimatedLogo } from '@/components/atomic/AnimatedLogo';
+import Icon from '@/components/atomic/Icon';
 import TemplateStats, {
   type TemplateStat,
   type TemplateDemo,
@@ -56,42 +57,43 @@ const DEMOS: readonly TemplateDemo[] = [
 const STORYBOOK_URL = 'https://tortoisewolfe.github.io/ScriptHammer/storybook/';
 
 // Promoted hero card — stands alone above the grouped grid.
+// Icons are DECORATIVE, and that is a change from the emoji they replace.
+// The emoji carried names describing the picture — "Rocket launch", "Artist
+// palette" — while the card's own `label` already carries the meaning. A
+// screen reader announcing "Rocket launch, Production Ready" is repeating the
+// decoration, not conveying anything. Verified no test referenced any of the
+// five old names before removing them (#377: accessible names are an API).
 const PRODUCTION_READY = {
-  emoji: '🚀',
+  icon: 'rocket',
   label: 'Production Ready',
   desc: 'CI/CD pipeline, 2,400+ tests, Lighthouse monitoring, GitHub Pages deploy on every push',
   href: '/status',
-  ariaLabel: 'Rocket launch',
 } as const;
 
 const FEATURES = [
   {
-    emoji: '🎨',
+    icon: 'theme',
     label: '32 Themes',
     desc: 'Light & dark with live switching',
     href: '/themes',
-    ariaLabel: 'Artist palette',
   },
   {
-    emoji: '📐',
+    icon: 'layout',
     label: 'Wireframes',
     desc: '46 interactive SVG design specs',
     href: '/wireframes',
-    ariaLabel: 'Triangular ruler',
   },
   {
-    emoji: '📱',
+    icon: 'install',
     label: 'PWA Ready',
     desc: 'Installable with offline support',
     href: '/docs',
-    ariaLabel: 'Mobile phone',
   },
   {
-    emoji: '♿',
+    icon: 'accessibility',
     label: 'Accessible',
     desc: 'WCAG compliant & customizable',
     href: '/accessibility',
-    ariaLabel: 'Wheelchair accessibility symbol',
   },
 ] as const;
 
@@ -192,20 +194,23 @@ export default function Home() {
       {/* ── Tiers 2 & 3: proof + demos ───────────────────────────────── */}
       <TemplateStats stats={STATS} demos={DEMOS} />
 
-      {/* ── Gradient: base-100 → base-200 (smooth transition from TemplateStats) */}
-      <div
-        aria-hidden="true"
-        className="h-16 sm:h-24"
-        style={{
-          background:
-            'linear-gradient(to bottom, var(--color-base-100), var(--color-base-200))',
-        }}
-      />
-
       {/* ── Feature cards — 1 promoted + 4 grouped ───────────────────── */}
+      {/* The base-100 → base-200 transition out of TemplateStats used to be a
+          contentless `h-16 sm:h-24` div — up to 96px of pure gradient holding
+          nothing (#373 §A6). It is now the top of this section's own
+          background, so the fade happens BEHIND the section's padding instead
+          of before it. Same transition, none of the dead height.
+
+          That also lets the section take real top padding, which fixes the
+          6:1 hero-to-features asymmetry #379 flags: the hero runs py-16
+          lg:py-24 while this ran pt-4. */}
       <section
         aria-label="Key features"
-        className="px-4 pt-4 pb-12 sm:px-6 lg:px-8"
+        className="px-4 pt-10 pb-12 sm:px-6 lg:px-8"
+        style={{
+          background:
+            'linear-gradient(to bottom, var(--color-base-100), var(--color-base-200) 6rem)',
+        }}
       >
         <div className="mx-auto flex max-w-6xl flex-col gap-4">
           <h2 className="sr-only">Key Features</h2>
@@ -215,15 +220,11 @@ export default function Home() {
               uses the DaisyUI semantic token so it holds across all 32 themes. */}
           <Link
             href={PRODUCTION_READY.href}
-            className="card bg-base-100 border-primary focus-within:ring-primary border-2 shadow-md transition-all focus-within:ring-2 hover:-translate-y-1 hover:shadow-lg"
+            className="card sh-plate bg-base-100 border-primary focus-within:ring-primary rounded-box border-2 transition-all focus-within:ring-2 hover:-translate-y-1"
           >
             <div className="card-body flex-col items-center gap-4 p-6 text-center sm:flex-row sm:text-left">
-              <div
-                className="shrink-0 text-5xl"
-                role="img"
-                aria-label={PRODUCTION_READY.ariaLabel}
-              >
-                {PRODUCTION_READY.emoji}
+              <div className="text-primary shrink-0 text-5xl">
+                <Icon name={PRODUCTION_READY.icon} decorative />
               </div>
               <div>
                 <h3 className="card-title text-lg">{PRODUCTION_READY.label}</h3>
@@ -240,15 +241,11 @@ export default function Home() {
               <Link
                 key={f.href}
                 href={f.href}
-                className="card bg-base-100 focus-within:ring-primary shadow-md transition-all focus-within:ring-2 hover:-translate-y-1 hover:shadow-lg"
+                className="card sh-plate bg-base-100 focus-within:ring-primary rounded-box transition-all focus-within:ring-2 hover:-translate-y-1"
               >
                 <div className="card-body items-center p-4 text-center">
-                  <div
-                    className="mb-3 text-3xl"
-                    role="img"
-                    aria-label={f.ariaLabel}
-                  >
-                    {f.emoji}
+                  <div className="text-primary mb-3 text-3xl">
+                    <Icon name={f.icon} decorative />
                   </div>
                   <h3 className="card-title text-base">{f.label}</h3>
                   <p className="text-base-content/85 text-xs">{f.desc}</p>
