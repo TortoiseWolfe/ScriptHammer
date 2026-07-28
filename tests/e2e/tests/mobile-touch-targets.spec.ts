@@ -72,9 +72,19 @@ test.describe('Touch Target Standards', () => {
     }
 
     // Check primary navigation buttons only (not all interactive elements)
-    // Inline text links, badges, and icons inside buttons are exempt
+    // Inline text links, badges, and icons inside buttons are exempt.
+    //
+    // `a.sh-btn` is here because this repo now has TWO button vocabularies:
+    // DaisyUI's `.btn` and the 2a design's `.sh-btn` (#379). When the home
+    // page's CTAs moved from one to the other, this selector silently stopped
+    // matching them and `measured` fell 6 → 5. The buttons had not shrunk —
+    // they were simply no longer being looked at, which is the exact failure
+    // the coverage floor below exists to catch, and it did.
+    //
+    // Any third button class must be added here too, or it inherits that same
+    // invisibility for free.
     const primaryButtons = await page
-      .locator('nav button, nav label, a.btn')
+      .locator('nav button, nav label, a.btn, a.sh-btn, button.sh-btn')
       .all();
 
     const failures: string[] = [];
