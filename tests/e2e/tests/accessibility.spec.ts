@@ -113,9 +113,20 @@ test.describe('Accessibility', () => {
     await page.waitForSelector('form', { state: 'visible', timeout: 5000 });
     await page.waitForLoadState('domcontentloaded');
 
-    const inputs = page
-      .locator('input, select, textarea')
-      .filter({ hasNot: page.locator('[type="hidden"]') });
+    // `:not([type="hidden"])` in the selector, NOT `.filter({ hasNot })` (#391).
+    // `hasNot` keeps elements that do not contain a DESCENDANT matching the
+    // inner locator — and an <input> is void, so the condition was trivially
+    // true for every element and hidden inputs were never excluded. The filter
+    // did nothing at all.
+    //
+    // What it was failing to exclude, identified 2026-07-28: Cloudflare
+    // Turnstile injects `<input type="hidden" name="cf-turnstile-response"
+    // id="cf-chl-widget-<random>_response">` into the sign-in form. It carries
+    // an id and no accessible name — correctly, because a hidden input needs
+    // none — so the id-guarded assertion below flagged it. The id is
+    // randomised per render and the input only exists once the widget has
+    // loaded, which is why this failed intermittently rather than always.
+    const inputs = page.locator('input:not([type="hidden"]), select, textarea');
     const inputCount = await inputs.count();
 
     for (let i = 0; i < inputCount; i++) {

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { detectedConfig } from '@/config/project-detected';
+import Icon from '@/components/atomic/Icon';
 
 // Docs index. Audience: someone who just clicked through from the landing
 // page with a question. Hierarchy: first-hour path is larger and sits right
@@ -14,8 +15,7 @@ import { detectedConfig } from '@/config/project-detected';
 
 export const metadata: Metadata = {
   title: 'Documentation - ScriptHammer',
-  description:
-    'Documentation index for ScriptHammer — configure, build, ship.',
+  description: 'Documentation index for ScriptHammer — configure, build, ship.',
 };
 
 const gh = (path: string) => `${detectedConfig.projectUrl}/blob/main/${path}`;
@@ -71,11 +71,14 @@ function DocRow({ doc, large = false }: { doc: Doc; large?: boolean }) {
       <span className="text-base-content order-last w-full text-sm sm:order-none sm:ml-auto sm:w-auto">
         {doc.hint}
       </span>
-      <span
-        aria-hidden="true"
-        className="text-base-content/30 group-hover:text-base-content transition-all group-hover:translate-x-1"
-      >
-        {doc.internal ? '→' : '↗'}
+      <span className="text-base-content/30 group-hover:text-base-content transition-all group-hover:translate-x-1">
+        {/* Decorative: the row's own label is the accessible name, and every
+            external row already announces itself via the visible hint. An
+            unlabelled icon here would add noise, not information (#377). */}
+        <Icon
+          name={doc.internal ? 'chevron-right' : 'external-link'}
+          decorative
+        />
       </span>
     </>
   );
@@ -105,19 +108,28 @@ export default function DocsPage() {
         </h1>
         <p className="text-base-content mb-10 text-base sm:text-lg">
           New here? The first two links get you to{' '}
-          <code className="font-mono text-sm">docker compose up</code>.
+          {/* A command is an input, and inputs sit in grooves (#377). */}
+          <code className="sh-groove bg-base-200 rounded-field px-2 py-1 font-mono text-sm whitespace-nowrap">
+            docker compose up
+          </code>
+          .
         </p>
 
-        {/* Tier 1 — first hour. Hierarchy is purely typographic: bigger
-            rows, no section label, sits directly under the h1. No box —
-            same flat-ledger discipline as the landing page. */}
-        <ul className="divide-base-300 divide-y">
-          {START_HERE.map((doc) => (
-            <li key={doc.href}>
-              <DocRow doc={doc} large />
-            </li>
-          ))}
-        </ul>
+        {/* Tier 1 — first hour. The 2a treatment maps onto the hierarchy this
+            page already had rather than replacing it: the first-hour path is
+            the thing you act on, so it is a raised PLATE; the reference shelf
+            below is data you scan, so each group is a cut WELL. The rows stay
+            flat ledger rows inside them — no `card`, no `btn`, no primary
+            colour, per the discipline documented at the top of this file. */}
+        <div className="sh-plate bg-base-100 rounded-box px-4 py-2 sm:px-6">
+          <ul className="divide-base-300 divide-y">
+            {START_HERE.map((doc) => (
+              <li key={doc.href}>
+                <DocRow doc={doc} large />
+              </li>
+            ))}
+          </ul>
+        </div>
 
         {/* Tier 2 — reference shelf. Grouped by WHEN, not by topic. */}
         {REFERENCE.map((group) => (
@@ -125,13 +137,15 @@ export default function DocsPage() {
             <h2 className="text-base-content mb-3 font-mono text-xs tracking-wider uppercase">
               {group.when}
             </h2>
-            <ul className="divide-base-300 divide-y">
-              {group.docs.map((doc) => (
-                <li key={doc.href}>
-                  <DocRow doc={doc} />
-                </li>
-              ))}
-            </ul>
+            <div className="sh-well bg-base-100 rounded-box px-4 py-2 sm:px-6">
+              <ul className="divide-base-300 divide-y">
+                {group.docs.map((doc) => (
+                  <li key={doc.href}>
+                    <DocRow doc={doc} />
+                  </li>
+                ))}
+              </ul>
+            </div>
           </section>
         ))}
 
