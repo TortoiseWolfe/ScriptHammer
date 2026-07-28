@@ -124,19 +124,27 @@ export default function StatusPage() {
       <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
         <h1 className="text-base-content mb-2 text-4xl font-bold tracking-tight sm:text-5xl">Status</h1>
 
-        {/* The verdict. If this dot is green you can stop reading. */}
-        <p className="text-base-content mb-12 flex items-baseline gap-3 font-mono text-lg sm:text-xl">
+        {/* The verdict. If this dot is green you can stop reading.
+            A raised PLATE (#383): it is the one thing on this page you act
+            on, so it sits ON the page while the readings below sit IN it. */}
+        <p className="text-base-content sh-plate bg-base-100 rounded-box mb-12 flex items-baseline gap-3 px-5 py-4 font-mono text-lg sm:text-xl">
           <span aria-hidden="true" className={DOT[verdict.state]}>●</span>
           <span className="sr-only">{SR[verdict.state]}:</span>
           <span>{verdict.text}{!online && ' · offline'}</span>
         </p>
 
+        {/* "Every well is a live reading" — each group of measurements is a
+            cut WELL. Rows stay flat inside them; the depth is the container's
+            job, not the row's. Same discipline as /docs (#380): no card, no
+            badge, no page-local shadow values. */}
         {groups.map((g) => (
           <section key={g} className="mt-10 first:mt-0">
             <h2 className="text-base-content mb-3 font-mono text-xs tracking-wider uppercase">{g}</h2>
-            <ul className="divide-base-300 divide-y">
-              {checks.filter((c) => c.group === g).map((c) => <Row key={c.label} c={c} />)}
-            </ul>
+            <div className="sh-well bg-base-100 rounded-box px-4 py-2 sm:px-6">
+              <ul className="divide-base-300 divide-y">
+                {checks.filter((c) => c.group === g).map((c) => <Row key={c.label} c={c} />)}
+              </ul>
+            </div>
           </section>
         ))}
 
