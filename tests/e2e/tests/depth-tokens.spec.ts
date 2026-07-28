@@ -202,6 +202,75 @@ test.describe('#377 depth tokens', () => {
   });
 
   /**
+   * T4 — a raised plate and a cut well must not resolve to the same thing.
+   *
+   * The gate that was missing. T1–T3 all passed while `--sh-plate` and
+   * `--sh-well` were near-indistinguishable in use: the authored recipe gave
+   * the well a big OUTER drop plus a 1px inner lip, so on every theme both
+   * primitives resolved to "outer drop + one inset line" and differed only by
+   * blur radius. Every existing assertion was happy — the tokens were
+   * theme-derived, visible, and emitted. They were just not opposites.
+   *
+   * Caught by applying them to a real page (#380) and looking, which is the
+   * same way the icon defects were caught. Encoded here so it cannot recur:
+   * the two are physically inverse, so their SHADOW STRUCTURE must invert too.
+   *
+   *   plate → outer-dominant (raised: casts down onto the page)
+   *   well  → inset-dominant (cut: shadow falls inside its own top edge)
+   *
+   * MUTATION CHECK: restore the old value —
+   * `--sh-well: 0 22px 42px -16px var(--sh-ink-shadow), inset 0 1px 0 var(--sh-ink-edge)`.
+   * The well then has one outer and one inset layer, and this fails.
+   */
+  test('a plate reads as raised and a well as cut, on every theme', async ({
+    page,
+  }) => {
+    await page.goto('/');
+
+    const rows = await page.evaluate(
+      ({ themes, names }) => {
+        const root = document.documentElement;
+        const body = document.body;
+        const probe = document.createElement('div');
+        root.appendChild(probe);
+        const layers = (cls: string) => {
+          probe.className = cls;
+          const s = getComputedStyle(probe).boxShadow;
+          // Split on commas that separate layers, not those inside colour fns.
+          const parts = s.split(/,(?![^(]*\))/);
+          const inset = parts.filter((p) => p.includes('inset')).length;
+          return { inset, outer: parts.length - inset };
+        };
+        const out = themes.map((t) => {
+          root.setAttribute('data-theme', t);
+          body.setAttribute('data-theme', t);
+          return { theme: t, plate: layers(names[0]), well: layers(names[1]) };
+        });
+        probe.remove();
+        return out;
+      },
+      { themes: THEMES, names: NAMES }
+    );
+
+    const wrong = rows.filter(
+      (r) => !(r.plate.outer > r.plate.inset) || !(r.well.inset > r.well.outer)
+    );
+
+    expect(
+      wrong,
+      'A plate must be outer-dominant and a well inset-dominant, or the two ' +
+        'read as the same surface:\n' +
+        wrong
+          .map(
+            (r) =>
+              `  ${r.theme}: plate ${r.plate.outer} outer/${r.plate.inset} inset, ` +
+              `well ${r.well.outer} outer/${r.well.inset} inset`
+          )
+          .join('\n')
+    ).toEqual([]);
+  });
+
+  /**
    * T3 — the utilities must actually compile.
    *
    * Tailwind only emits a `@utility` it can see used in scanned source. These

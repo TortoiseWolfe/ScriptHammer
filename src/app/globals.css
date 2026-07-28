@@ -197,9 +197,25 @@
     0 6px 12px -5px var(--sh-ink-shadow),
     0 2px 4px -2px var(--sh-ink-shadow-soft), inset 0 1px 0 var(--sh-ink-edge);
 
-  /* Cut: data sits down inside the page. Outer drop plus the 1px top lip. */
+  /* Cut: data sits down inside the page.
+   *
+   * INSET-DOMINANT, and that is a correction to the authored recipe. The mock
+   * gave the well a big OUTER drop plus a 1px inner top lip — which reads as a
+   * cut only against the one dark background it was drawn on. Everywhere else
+   * it is a plate with a softer shadow: measured on light AND dark themes,
+   * plate and well both resolved to "outer drop + one inset line", so the two
+   * were near-indistinguishable in use (caught applying them to /docs, #380).
+   *
+   * A cut is the plate inverted, and the physics say so: light from above puts
+   * the shadow INSIDE the top edge of a recess and lights its bottom lip.
+   *
+   *   plate = outer drop below + inset highlight on top   (raised, casts down)
+   *   well  = inset shadow on top + inset highlight below (cut, catches light)
+   *
+   * A groove is then just a tighter well, which is why the two share a shape. */
   --sh-well:
-    0 22px 42px -16px var(--sh-ink-shadow), inset 0 1px 0 var(--sh-ink-edge);
+    inset 0 8px 16px -6px var(--sh-ink-shadow),
+    inset 0 2px 3px -2px var(--sh-ink-shadow), inset 0 -1px 0 var(--sh-ink-edge);
 
   /* Machined channel: inputs and thin strips. Pure inset, no outer drop. */
   --sh-groove:
