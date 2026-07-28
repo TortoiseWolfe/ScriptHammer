@@ -513,6 +513,28 @@ p:not([class*='text-']) {
   font-size: var(--text-base);
 }
 
+/* The 2a hero's status dot (#379). The design specifies
+   `animation: sh-pulse 2.4s ease-in-out infinite` on a glowing accent dot.
+   Held to opacity so it cannot cause layout shift, and stopped outright under
+   prefers-reduced-motion — the dot still reads, it just stops breathing. */
+@keyframes sh-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@utility sh-pulse {
+  animation: sh-pulse 2.4s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
 /* Spinning Logo Animations */
 @keyframes spin-clockwise {
   from {
