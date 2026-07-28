@@ -63,9 +63,10 @@ const PAGES = [
   '/themes/',
   '/accessibility/',
   '/status/',
-  // Added after a 6.44:1 eyebrow shipped to main on /blog (#407) and no
-  // gate saw it. This list covers 5 of 43 routes — see the tracking issue
-  // before assuming a page is checked just because the suite is green.
+  // Added after a 6.44:1 eyebrow shipped to main on /blog (#407) and no gate
+  // saw it. This list covers 5 of 43 routes — #411 tracks the other 38. A
+  // green run here does NOT mean the app meets AAA; it means these five pages
+  // do. Check #411 before reading it as anything broader.
   '/blog/',
 ] as const;
 
