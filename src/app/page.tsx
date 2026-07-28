@@ -8,11 +8,12 @@ import TemplateStats, {
 } from '@/components/molecular/TemplateStats';
 import { detectedConfig } from '@/config/project-detected';
 import { THEME_COUNT } from '@/config/themes';
-// The manifest `/wireframes` itself renders from — so the number quoted here
-// cannot disagree with the number of wireframes the page actually shows (#408).
-import wireframeManifest from '../../public/wireframes/wireframes-manifest.json';
+import { countWireframes } from '@/config/wireframes';
 
-const WIREFRAME_COUNT = wireframeManifest.total;
+// Counted from the committed `features/` tree at build time, so the number
+// quoted here cannot disagree with the wireframes /wireframes actually shows.
+// Server component, so this filesystem read never reaches the browser (#408).
+const WIREFRAME_COUNT = countWireframes();
 
 // ── Hosted landing — audience is a visitor evaluating the product.
 //     Visual hierarchy: spinning logo + animated title draw the eye,

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { THEMES, THEME_COUNT } from '../themes';
-import wireframeManifest from '../../../public/wireframes/wireframes-manifest.json';
+import { countWireframes } from '../wireframes';
 
 /**
  * The landing page states numbers about this project. Before #408 all four
@@ -37,9 +37,36 @@ describe('landing-page claims', () => {
     expect(THEME_COUNT).toBe(registered.length);
   });
 
-  it('the wireframe count comes from the manifest the page renders from', () => {
-    expect(wireframeManifest.total).toBeGreaterThan(0);
-    expect(wireframeManifest.total).toBe(wireframeManifest.wireframes.length);
+  it('the wireframe count is read from the committed tree, excluding includes/', () => {
+    const counted = countWireframes();
+    expect(counted).toBeGreaterThan(0);
+
+    // `includes/` holds shared chrome the viewer never lists as a wireframe.
+    // Counting it would overstate the figure ~4x, and a recursive walk is the
+    // easy way to write this wrong — so pin that the counter is not doing one.
+    const everySvgUnderFeatures = (dir: string): number => {
+      if (!existsSync(dir)) return 0;
+      return readdirSync(dir, { withFileTypes: true }).reduce((n, entry) => {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) return n + everySvgUnderFeatures(full);
+        return n + (entry.name.endsWith('.svg') ? 1 : 0);
+      }, 0);
+    };
+    expect(counted).toBeLessThan(
+      everySvgUnderFeatures(join(process.cwd(), 'features'))
+    );
+
+    // When the generated manifest is present (locally, after `prebuild`) the
+    // committed count must equal what the viewer will actually render. It is
+    // gitignored, so this cannot run in CI — which is exactly why the page
+    // reads the committed tree rather than the manifest.
+    const manifest = join(
+      process.cwd(),
+      'public/wireframes/wireframes-manifest.json'
+    );
+    if (existsSync(manifest)) {
+      expect(counted).toBe(JSON.parse(readFileSync(manifest, 'utf8')).total);
+    }
   });
 
   it('the "2,400+ tests" claim is still a floor and not a boast', () => {
