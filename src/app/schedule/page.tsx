@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Icon from '@/components/atomic/Icon';
 
 const CalendarEmbed = dynamic(
   () => import('@/components/atomic/CalendarEmbed'),
@@ -59,7 +60,10 @@ export default function SchedulePage() {
 
                 <div className="bg-primary/10 border-primary/20 rounded-lg border p-4">
                   <h2 className="mb-2 flex items-center text-lg font-semibold">
-                    <span className="mr-2">💡</span>
+                    {/* Decorative (#385): "Prepare for the meeting:" follows. */}
+                    <span className="mr-2">
+                      <Icon name="tip" decorative />
+                    </span>
                     Prepare for the meeting:
                   </h2>
                   <p className="mb-3 text-sm">

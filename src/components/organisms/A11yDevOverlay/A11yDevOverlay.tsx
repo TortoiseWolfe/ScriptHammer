@@ -3,6 +3,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import type { ImpactValue, Result } from 'axe-core';
 import { useA11yScan } from './useA11yScan';
+import Icon from '@/components/atomic/Icon';
 
 export interface A11yDevOverlayProps {
   /**
@@ -167,9 +168,9 @@ export default function A11yDevOverlay({
         aria-label={`Accessibility violations: ${violations.length}. Open panel.`}
         className={`badge ${badgeColor} fixed right-4 bottom-20 z-[90] flex min-h-11 min-w-11 cursor-pointer items-center gap-1 rounded-full px-3 shadow-lg ${className}`}
       >
-        <span role="img" aria-hidden="true">
-          ♿
-        </span>
+        {/* Decorative (#385): the button's aria-label already reads
+            "Accessibility violations: N. Open panel." */}
+        <Icon name="accessibility" decorative />
         <span className="font-mono font-bold">{violations.length}</span>
       </button>
     );
@@ -184,9 +185,7 @@ export default function A11yDevOverlay({
     >
       <header className="border-base-300 flex items-center justify-between gap-2 border-b px-3 py-2">
         <h2 className="flex items-center gap-2 text-sm font-bold">
-          <span role="img" aria-hidden="true">
-            ♿
-          </span>
+          <Icon name="accessibility" decorative />
           A11y
           <span className={`badge badge-sm ${badgeColor}`}>
             {violations.length}
@@ -208,7 +207,8 @@ export default function A11yDevOverlay({
             aria-label="Collapse accessibility panel"
             className="btn btn-ghost btn-xs min-h-11 min-w-11"
           >
-            ✕
+            {/* The button carries aria-label="Collapse accessibility panel". */}
+            <Icon name="close" decorative />
           </button>
         </div>
       </header>

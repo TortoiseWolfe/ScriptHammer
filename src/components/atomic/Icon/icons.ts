@@ -70,6 +70,20 @@ export const ICON_PATHS = {
     'M12 2 A7 7 0 0 1 15.5 8 V15 H8.5 V8 A7 7 0 0 1 12 2 Z M8.5 11 L5.5 14 V18 H8.5 M15.5 11 L18.5 14 V18 H15.5 M10.5 8 A1.5 1.5 0 1 1 13.5 8 A1.5 1.5 0 1 1 10.5 8 M10 15 L12 19 L14 15',
   layout: 'M3 5 H21 V19 H3 Z M9 5 V19 M9 11 H21',
 
+  // ── Chrome (#385) ───────────────────────────────────────────────────────
+  // Replacing emoji on the surfaces outside the page children. Emoji cannot
+  // take `currentColor` and render differently on every OS, which is the
+  // actual problem a monochrome set fixes.
+  cookie:
+    'M12 3 A9 9 0 1 0 21 12 A3 3 0 0 1 18 9 A3 3 0 0 1 15 6 A3 3 0 0 1 12 3 Z M9 10 H9.5 M14 9 H14.5 M11 15 H11.5 M16 14 H16.5',
+  copy: 'M9 3 H19 V17 H9 Z M5 7 V21 H15 V17',
+  pin: 'M12 21 A18 18 0 0 1 5 9 A7 7 0 0 1 19 9 A18 18 0 0 1 12 21 Z M9.5 9 A2.5 2.5 0 1 1 14.5 9 A2.5 2.5 0 1 1 9.5 9',
+  ban: 'M4 12 A8 8 0 1 1 20 12 A8 8 0 1 1 4 12 M6.5 6.5 L17.5 17.5',
+  tip: 'M12 3 A6 6 0 0 1 15 14 V16 H9 V14 A6 6 0 0 1 12 3 Z M9 19 H15 M10 21.5 H14',
+  eye: 'M2 12 A12 12 0 0 1 22 12 A12 12 0 0 1 2 12 M9 12 A3 3 0 1 1 15 12 A3 3 0 1 1 9 12',
+  'eye-off':
+    'M4 4 L20 20 M9.5 9.5 A3 3 0 0 0 14 14 M6 6.5 A12 12 0 0 0 2 12 A12 12 0 0 0 17 18.5 M9.5 4.5 A12 12 0 0 1 22 12 A12 12 0 0 1 19.5 15.5',
+
   // ── Status and actions ──────────────────────────────────────────────────
   check: 'M4 12 L9 17 L20 6',
   alert: 'M12 3 L21 20 H3 Z M12 10 V14 M12 17 V17.5',

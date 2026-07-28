@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { isOAuthUser, getOAuthProvider } from '@/lib/auth/oauth-utils';
 import { sendWelcomeMessageOnSetup } from '@/lib/messaging/welcome/send-welcome-message';
 import { createLogger } from '@/lib/logger/logger';
+import Icon from '@/components/atomic/Icon';
 
 const logger = createLogger('app:messages:setup');
 
@@ -264,7 +265,10 @@ export default function MessagingSetupPage() {
                   className="btn btn-ghost btn-sm absolute top-1/2 right-1 -translate-y-1/2"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
-                  {showPassword ? '👁️' : '👁️‍🗨️'}
+                  {/* Decorative (#385): the button's aria-label already
+                      says Show/Hide password, and the two emoji were nearly
+                      indistinguishable at button size. */}
+                  <Icon name={showPassword ? 'eye-off' : 'eye'} decorative />
                 </button>
               </div>
             </div>

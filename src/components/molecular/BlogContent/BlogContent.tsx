@@ -6,9 +6,31 @@ import { getProjectConfig } from '@/config/project.config';
 // Import Prism theme for styling the pre-highlighted code
 import 'prismjs/themes/prism-tomorrow.css';
 import '@/styles/prism-override.css';
+import { ICON_PATHS, type IconName } from '@/components/atomic/Icon';
 
 interface BlogContentProps {
   htmlContent: string;
+}
+
+/**
+ * An icon as an HTML string (#385).
+ *
+ * This code block is built as markup in a template literal with an inline
+ * `onclick`, not as JSX, so `<Icon>` cannot be used. Attributes are
+ * single-quoted deliberately: the surrounding `onclick` is a double-quoted
+ * HTML attribute, and double quotes here would terminate it.
+ *
+ * The button swaps two pre-rendered spans by `display` rather than rewriting
+ * `innerHTML`, because injecting SVG markup through an attribute-embedded JS
+ * string is exactly where quoting breaks.
+ */
+function iconSvg(name: IconName, style = ''): string {
+  return (
+    `<svg width='1em' height='1em' viewBox='0 0 24 24' fill='none' ` +
+    `stroke='currentColor' stroke-width='2' stroke-linecap='round' ` +
+    `stroke-linejoin='round' aria-hidden='true' style='${style}'>` +
+    `<path d='${ICON_PATHS[name]}'/></svg>`
+  );
 }
 
 export default function BlogContent({ htmlContent }: BlogContentProps) {
@@ -41,10 +63,10 @@ export default function BlogContent({ htmlContent }: BlogContentProps) {
           <div class="mockup-code bg-base-300 my-4 relative" data-code-id="${id}">
             <div class="absolute top-2 right-12 text-xs text-base-content/80">${lang}</div>
             <button
-              onclick="navigator.clipboard.writeText(this.parentElement.querySelector('pre').textContent); this.innerHTML='✓'; setTimeout(() => this.innerHTML='📋', 2000)"
+              onclick="navigator.clipboard.writeText(this.parentElement.querySelector('pre').textContent); var i=this.children; i[0].style.display='none'; i[1].style.display='inline'; setTimeout(function(){i[0].style.display='inline'; i[1].style.display='none'}, 2000)"
               class="btn btn-xs btn-ghost absolute top-2 right-2"
               title="Copy code"
-            >📋</button>
+            >${iconSvg('copy')}${iconSvg('check', 'display:none')}<span class='sr-only'>Copy code</span></button>
             <pre><code class="language-${lang}" id="${id}">${code}</code></pre>
           </div>
         `;
