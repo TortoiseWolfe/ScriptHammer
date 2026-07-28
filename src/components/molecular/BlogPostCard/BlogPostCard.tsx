@@ -108,7 +108,16 @@ export default function BlogPostCard({
             is also ~27% wider than the face this replaced (#395), so titles
             wrap sooner than the old sizing assumed. */}
         <h2 className="card-title text-xl leading-snug">
-          <Link href={`/blog/${post.slug}`} className="hover:text-primary">
+          {/* min-h-11 is load-bearing, not decoration. Shrinking the title to
+              text-xl took a SINGLE-LINE title's link box to 39px — under the
+              44px tap minimum — and `blog-touch-targets.spec.ts` caught it on
+              the one post with a short enough title to fit on one line.
+              inline-flex pads the target back to 44px without touching the
+              rendered text size. Multi-line titles simply grow past it. */}
+          <Link
+            href={`/blog/${post.slug}`}
+            className="hover:text-primary inline-flex min-h-11 items-center"
+          >
             {post.title}
           </Link>
         </h2>
