@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/scripthammer-1fd85329-1f95-4426-87bf-dd7a2cfd3a74/theme.css">
+<script src="_ds/scripthammer-1fd85329-1f95-4426-87bf-dd7a2cfd3a74/_ds_bundle.js"></script>
+<script src="./image-slot.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Archivo+Black&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; background: #14161c; }
+  a { color: inherit; text-decoration: none; }
+  a:hover { text-decoration: none; }
+  @keyframes sh-pulse { 0%,100% { opacity: 1 } 50% { opacity: .25 } }
+  @keyframes sh-marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
+</style>
+</helmet>
+
+<section style="display:flex; flex-direction:column; gap:44px; padding:64px; font-family:'Archivo', ui-sans-serif, system-ui, sans-serif; color:#e8e6e1">
+
+  <header style="display:flex; flex-direction:column; gap:14px; max-width:940px">
+    <div style="font-family:'JetBrains Mono', ui-monospace, monospace; font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:#8f8a80">Turn 3 · 2a across the site</div>
+    <h1 style="font-family:'Archivo Black', sans-serif; font-size:46px; line-height:1.02; letter-spacing:-.02em; margin:0">The Machine Shop, applied</h1>
+    <p style="font-size:17px; line-height:1.6; color:#a8a49c; margin:0; text-wrap:pretty">Five more pages on 2a's depth system — raised plates hold content, cutout wells hold data, grooves hold inputs and thin strips. Same nav shell, same light source, same type. Home lives in <a href="ScriptHammer Directions.dc.html" style="border-bottom:1px solid #4a4740">ScriptHammer Directions</a>. Reference these as <a href="#3a" style="border-bottom:1px solid #4a4740">3a</a>–<a href="#3e" style="border-bottom:1px solid #4a4740">3e</a>.</p>
+  </header>
+
+  <div style="display:flex; flex-wrap:wrap; gap:48px; align-items:flex-start">
+
+    <!-- ============ 3a DOCS ============ -->
+    <div id="3a" style="display:flex; flex-direction:column; gap:14px; flex:0 0 1200px; width:1200px">
+      <div style="display:flex; align-items:baseline; gap:14px">
+        <span style="font-family:'JetBrains Mono', monospace; font-size:13px; font-weight:700; letter-spacing:.1em; background:#e8e6e1; color:#14161c; padding:4px 9px">3a</span>
+        <span style="font-family:'Archivo Black', sans-serif; font-size:22px">Docs</span>
+        <span style="font-size:14px; color:#8f8a80">Nav rail as a well · active page as a raised pill · code in recessed panels</span>
+      </div>
+
+      <div data-theme="scripthammer-dark" data-screen-label="3a Docs" style="background:radial-gradient(120% 70% at 50% -10%, oklch(28.51% 0.067 281.32) 0%, var(--color-base-100) 55%); color:var(--color-base-content); border-radius:8px; box-shadow:0 40px 90px rgba(0,0,0,.6); padding:18px 18px 26px; overflow:hidden">
+
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0 22px; height:66px; border-radius:999px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 92%, var(--color-base-content) 6%), var(--color-base-200)); box-shadow:0 16px 34px -14px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 16%, transparent)">
+          <div style="display:flex; align-items:center; gap:13px">
+            <div style="position:relative; width:40px; height:40px; border-radius:50%; background:var(--color-base-100); box-shadow:inset 0 3px 8px rgba(0,0,0,.85); display:flex; align-items:center; justify-content:center; flex-shrink:0">
+              <img src="https://scripthammer.com/scripthammer-logo.svg" alt="ScriptHammer" style="position:absolute; width:30px; height:30px">
+              <img src="https://scripthammer.com/script-tags.svg" alt="" style="position:absolute; width:17px; height:17px">
+              <img src="https://scripthammer.com/printing-mallet.svg" alt="" style="position:absolute; width:11px; height:11px">
+            </div>
+            <span style="font-family:'Archivo Black', sans-serif; font-size:17px; letter-spacing:-.01em">SCRIPTHAMMER</span>
+          </div>
+          <div style="display:flex; gap:6px; padding:5px; border-radius:999px; background:var(--color-base-100); box-shadow:inset 0 3px 7px rgba(0,0,0,.7); font-family:'JetBrains Mono', monospace; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase">
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Home</span>
+            <span style="padding:8px 14px; border-radius:999px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 95%, var(--color-base-content) 8%), var(--color-base-200)); box-shadow:0 4px 10px -3px rgba(0,0,0,.8), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 16%, transparent)">Docs</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Blog</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Themes</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Wireframes</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Status</span>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center">
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 65%, transparent)">Sign in</span>
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; white-space:nowrap; padding:11px 18px; border-radius:999px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-secondary) 92%, #fff), var(--color-secondary)); color:var(--color-secondary-content); box-shadow:0 10px 22px -8px color-mix(in oklab, var(--color-secondary) 80%, transparent), inset 0 1px 0 rgba(255,255,255,.5)">Clone it</span>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:268px 1fr 210px; gap:24px; padding:34px 22px 0">
+
+          <!-- rail in a well -->
+          <div style="border-radius:22px; padding:18px 14px; background:var(--color-base-100); box-shadow:inset 0 5px 14px rgba(0,0,0,.8), inset 0 -1px 0 color-mix(in oklab, var(--color-base-content) 10%, transparent); display:flex; flex-direction:column; gap:6px; align-self:start">
+            <div style="display:flex; align-items:center; gap:8px; margin:2px 8px 12px; padding:9px 12px; border-radius:12px; background:oklch(18% 0.03 282); box-shadow:inset 0 3px 8px rgba(0,0,0,.9); font-family:'JetBrains Mono', monospace; font-size:12px; color:color-mix(in oklab, var(--color-base-content) 45%, transparent)">
+              <span>⌘K</span><span>Search the docs</span>
+            </div>
+            <span style="font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 40%, transparent); padding:10px 12px 6px">Getting started</span>
+            <span style="padding:10px 14px; border-radius:12px; font-size:14.5px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 95%, var(--color-base-content) 8%), var(--color-base-200)); box-shadow:0 6px 14px -5px rgba(0,0,0,.85), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 16%, transparent); font-weight:600">Install &amp; first run</span>
+            <span style="padding:10px 14px; font-size:14.5px; color:color-mix(in oklab, var(--color-base-content) 68%, transparent)">Project structure</span>
+            <span style="padding:10px 14px; font-size:14.5px; color:color-mix(in oklab, var(--color-base-content) 68%, transparent)">Environment &amp; secrets</span>
+            <span style="font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 40%, transparent); padding:16px 12px 6px">Modules</span>
+            <span style="padding:10px 14px; font-size:14.5px; color:color-mix(in oklab, var(--color-base-content) 68%, transparent)">Auth &amp; sessions</span>
+            <span style="padding:10px 14px; font-size:14.5px; color:color-mix(in oklab, var(--color-base-content) 68%, transparent)">Payments</span>
+            <span style="padding:10px 14px; font-size:14.5px; color:color-mix(in oklab, var(--color-base-content) 68%, transparent)">Encrypted messaging</span>
+            <span style="padding:10px 14px; font-size:14.5px; color:color-mix(in oklab, var(--color-base-content) 68%, transparent)">Offline &amp; PWA</span>
+            <span style="font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 40%, transparent); padding:16px 12px 6px">Design</span>
+            <span style="padding:10px 14px; font-size:14.5px; color:color-mix(in oklab, var(--color-base-content) 68%, transparent)">Themes &amp; tokens</span>
+            <span style="padding:10px 14px; font-size:14.5px; color:color-mix(in oklab, var(--color-base-content) 68%, transparent)">Accessibility</span>
+          </div>
+
+          <!-- article -->
+          <div style="display:flex; flex-direction:column; gap:22px; padding-top:2px">
+            <div style="display:flex; align-items:center; gap:10px; font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 45%, transparent)">
+              <span>Docs</span><span>/</span><span>Getting started</span><span>/</span><span style="color:var(--color-secondary)">Install</span>
+            </div>
+            <h2 style="font-family:'Archivo Black', sans-serif; font-size:46px; line-height:1.02; letter-spacing:-.03em; margin:0">Install &amp; first run</h2>
+            <p style="font-size:17px; line-height:1.65; color:color-mix(in oklab, var(--color-base-content) 76%, transparent); margin:0; text-wrap:pretty">One command scaffolds the project, applies the Supabase schema and runs the full test suite. If it goes green you have auth, payments, messaging and offline working locally before you write a line.</p>
+
+            <div style="border-radius:20px; padding:7px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200)); box-shadow:0 20px 38px -16px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 14%, transparent)">
+              <div style="display:flex; gap:5px; padding:6px 8px 8px">
+                <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; padding:6px 12px; border-radius:9px; background:oklch(18% 0.03 282); box-shadow:inset 0 2px 6px rgba(0,0,0,.85)">npm</span>
+                <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; padding:6px 12px; color:color-mix(in oklab, var(--color-base-content) 50%, transparent)">pnpm</span>
+                <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; padding:6px 12px; color:color-mix(in oklab, var(--color-base-content) 50%, transparent)">docker</span>
+              </div>
+              <div style="border-radius:15px; background:oklch(18% 0.03 282); box-shadow:inset 0 5px 14px rgba(0,0,0,.9); padding:18px 20px; font-family:'JetBrains Mono', monospace; font-size:13.5px; line-height:1.9; display:flex; flex-direction:column">
+                <span><span style="color:var(--color-accent)">$</span> npx create-scripthammer my-app</span>
+                <span><span style="color:var(--color-accent)">$</span> cd my-app &amp;&amp; cp .env.example .env.local</span>
+                <span><span style="color:var(--color-accent)">$</span> npm run dev</span>
+                <span style="color:var(--color-secondary)">→ ready in 41s · localhost:3000</span>
+              </div>
+            </div>
+
+            <h3 style="font-family:'Archivo Black', sans-serif; font-size:24px; letter-spacing:-.02em; margin:8px 0 0">What you need first</h3>
+            <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px">
+              <div style="border-radius:16px; padding:16px 16px 18px; background:var(--color-base-100); box-shadow:inset 0 4px 11px rgba(0,0,0,.75), inset 0 -1px 0 color-mix(in oklab, var(--color-base-content) 10%, transparent); display:flex; flex-direction:column; gap:5px">
+                <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 50%, transparent)">Node</span>
+                <span style="font-family:'Archivo Black', sans-serif; font-size:22px">20 LTS</span>
+              </div>
+              <div style="border-radius:16px; padding:16px 16px 18px; background:var(--color-base-100); box-shadow:inset 0 4px 11px rgba(0,0,0,.75), inset 0 -1px 0 color-mix(in oklab, var(--color-base-content) 10%, transparent); display:flex; flex-direction:column; gap:5px">
+                <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 50%, transparent)">Supabase</span>
+                <span style="font-family:'Archivo Black', sans-serif; font-size:22px">Free tier</span>
+              </div>
+              <div style="border-radius:16px; padding:16px 16px 18px; background:var(--color-base-100); box-shadow:inset 0 4px 11px rgba(0,0,0,.75), inset 0 -1px 0 color-mix(in oklab, var(--color-base-content) 10%, transparent); display:flex; flex-direction:column; gap:5px">
+                <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 50%, transparent)">Disk</span>
+                <span style="font-family:'Archivo Black', sans-serif; font-size:22px">1.2 GB</span>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:14px; padding-top:12px">
+              <span style="flex:1; border-radius:18px; padding:18px 20px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200)); box-shadow:0 18px 34px -14px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 14%, transparent); display:flex; flex-direction:column; gap:5px">
+                <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 45%, transparent)">← Previous</span>
+                <span style="font-weight:600; font-size:16px">Why ScriptHammer</span>
+              </span>
+              <span style="flex:1; border-radius:18px; padding:18px 20px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200)); box-shadow:0 18px 34px -14px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 14%, transparent); display:flex; flex-direction:column; gap:5px; text-align:right">
+                <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 45%, transparent)">Next →</span>
+                <span style="font-weight:600; font-size:16px">Project structure</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- on this page -->
+          <div style="align-self:start; display:flex; flex-direction:column; gap:10px; padding:16px 14px; border-radius:18px; background:var(--color-base-100); box-shadow:inset 0 4px 12px rgba(0,0,0,.75), inset 0 -1px 0 color-mix(in oklab, var(--color-base-content) 10%, transparent)">
+            <span style="font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 42%, transparent)">On this page</span>
+            <span style="font-size:13.5px; color:var(--color-secondary)">Install &amp; first run</span>
+            <span style="font-size:13.5px; color:color-mix(in oklab, var(--color-base-content) 62%, transparent)">What you need first</span>
+            <span style="font-size:13.5px; color:color-mix(in oklab, var(--color-base-content) 62%, transparent)">Environment file</span>
+            <span style="font-size:13.5px; color:color-mix(in oklab, var(--color-base-content) 62%, transparent)">Running the tests</span>
+            <span style="font-size:13.5px; color:color-mix(in oklab, var(--color-base-content) 62%, transparent)">Deploying</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 3b BLOG ============ -->
+    <div id="3b" style="display:flex; flex-direction:column; gap:14px; flex:0 0 1200px; width:1200px">
+      <div style="display:flex; align-items:baseline; gap:14px">
+        <span style="font-family:'JetBrains Mono', monospace; font-size:13px; font-weight:700; letter-spacing:.1em; background:#e8e6e1; color:#14161c; padding:4px 9px">3b</span>
+        <span style="font-family:'Archivo Black', sans-serif; font-size:22px">Blog</span>
+        <span style="font-size:14px; color:#8f8a80">Lead post as a wide plate · recessed thumbnails · mono datelines</span>
+      </div>
+
+      <div data-theme="scripthammer-dark" data-screen-label="3b Blog" style="background:radial-gradient(120% 70% at 50% -10%, oklch(28.51% 0.067 281.32) 0%, var(--color-base-100) 55%); color:var(--color-base-content); border-radius:8px; box-shadow:0 40px 90px rgba(0,0,0,.6); padding:18px 18px 30px; overflow:hidden">
+
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0 22px; height:66px; border-radius:999px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 92%, var(--color-base-content) 6%), var(--color-base-200)); box-shadow:0 16px 34px -14px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 16%, transparent)">
+          <div style="display:flex; align-items:center; gap:13px">
+            <div style="position:relative; width:40px; height:40px; border-radius:50%; background:var(--color-base-100); box-shadow:inset 0 3px 8px rgba(0,0,0,.85); display:flex; align-items:center; justify-content:center; flex-shrink:0">
+              <img src="https://scripthammer.com/scripthammer-logo.svg" alt="ScriptHammer" style="position:absolute; width:30px; height:30px">
+              <img src="https://scripthammer.com/script-tags.svg" alt="" style="position:absolute; width:17px; height:17px">
+              <img src="https://scripthammer.com/printing-mallet.svg" alt="" style="position:absolute; width:11px; height:11px">
+            </div>
+            <span style="font-family:'Archivo Black', sans-serif; font-size:17px; letter-spacing:-.01em">SCRIPTHAMMER</span>
+          </div>
+          <div style="display:flex; gap:6px; padding:5px; border-radius:999px; background:var(--color-base-100); box-shadow:inset 0 3px 7px rgba(0,0,0,.7); font-family:'JetBrains Mono', monospace; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase">
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Home</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Docs</span>
+            <span style="padding:8px 14px; border-radius:999px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 95%, var(--color-base-content) 8%), var(--color-base-200)); box-shadow:0 4px 10px -3px rgba(0,0,0,.8), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 16%, transparent)">Blog</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Themes</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Wireframes</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Status</span>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center">
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 65%, transparent)">Sign in</span>
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; white-space:nowrap; padding:11px 18px; border-radius:999px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-secondary) 92%, #fff), var(--color-secondary)); color:var(--color-secondary-content); box-shadow:0 10px 22px -8px color-mix(in oklab, var(--color-secondary) 80%, transparent), inset 0 1px 0 rgba(255,255,255,.5)">Clone it</span>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; padding:44px 22px 20px">
+          <div style="display:flex; flex-direction:column; gap:10px">
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--color-accent)">Build log</span>
+            <h2 style="font-family:'Archivo Black', sans-serif; font-size:52px; letter-spacing:-.03em; margin:0">Notes from the shop floor</h2>
+          </div>
+          <div style="display:flex; gap:6px; padding:5px; border-radius:999px; background:var(--color-base-100); box-shadow:inset 0 3px 8px rgba(0,0,0,.75); font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase">
+            <span style="padding:8px 14px; border-radius:999px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 95%, var(--color-base-content) 8%), var(--color-base-200)); box-shadow:0 4px 10px -3px rgba(0,0,0,.8), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 16%, transparent)">All</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 55%, transparent)">Engineering</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 55%, transparent)">Accessibility</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 55%, transparent)">geoLARP</span>
+          </div>
+        </div>
+
+        <!-- lead post -->
+        <div style="margin:0 22px 22px; border-radius:24px; padding:10px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200)); box-shadow:0 26px 48px -18px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 14%, transparent); display:grid; grid-template-columns:520px 1fr; gap:26px">
+          <div style="height:300px; border-radius:17px; overflow:hidden; box-shadow:inset 0 4px 14px rgba(0,0,0,.85); position:relative"><image-slot id="blog-lead" shape="rect" placeholder="Lead post image"></image-slot></div>
+          <div style="display:flex; flex-direction:column; gap:14px; padding:20px 22px 22px 0">
+            <div style="display:flex; gap:12px; align-items:center; font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 48%, transparent)">
+              <span style="padding:5px 10px; border-radius:8px; background:var(--color-base-100); box-shadow:inset 0 2px 6px rgba(0,0,0,.8); color:var(--color-secondary)">Engineering</span>
+              <span>12 Jul 2026</span><span>·</span><span>9 min</span>
+            </div>
+            <h3 style="font-family:'Archivo Black', sans-serif; font-size:34px; line-height:1.08; letter-spacing:-.025em; margin:0">Shipping encrypted messaging without a backend team</h3>
+            <p style="font-size:16px; line-height:1.6; color:color-mix(in oklab, var(--color-base-content) 72%, transparent); margin:0; text-wrap:pretty">How the offline queue, read receipts and key handling fit into Supabase realtime — and the three things that broke on a train.</p>
+            <span style="align-self:flex-start; margin-top:6px; font-family:'JetBrains Mono', monospace; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:13px 22px; border-radius:12px; background:var(--color-base-100); box-shadow:inset 0 3px 9px rgba(0,0,0,.75), inset 0 -1px 0 color-mix(in oklab, var(--color-base-content) 12%, transparent)">Read it →</span>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:16px; padding:0 22px">
+          <div style="border-radius:20px; padding:9px 9px 4px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200)); box-shadow:0 20px 38px -16px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 14%, transparent)">
+            <div style="height:150px; border-radius:14px; overflow:hidden; box-shadow:inset 0 4px 12px rgba(0,0,0,.85); position:relative"><image-slot id="blog-1" shape="rect" placeholder="Post image"></image-slot></div>
+            <div style="padding:14px 11px 16px; display:flex; flex-direction:column; gap:8px">
+              <span style="font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 45%, transparent)">04 Jul 2026 · 6 min</span>
+              <span style="font-family:'Archivo Black', sans-serif; font-size:19px; line-height:1.15">Getting 2,400 tests to run in under four minutes</span>
+            </div>
+          </div>
+          <div style="border-radius:20px; padding:9px 9px 4px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200)); box-shadow:0 20px 38px -16px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 14%, transparent)">
+            <div style="height:150px; border-radius:14px; overflow:hidden; box-shadow:inset 0 4px 12px rgba(0,0,0,.85); position:relative"><image-slot id="blog-2" shape="rect" placeholder="Post image"></image-slot></div>
+            <div style="padding:14px 11px 16px; display:flex; flex-direction:column; gap:8px">
+              <span style="font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 45%, transparent)">28 Jun 2026 · 11 min</span>
+              <span style="font-family:'Archivo Black', sans-serif; font-size:19px; line-height:1.15">Colour-vision assistance that survives 32 themes</span>
+            </div>
+          </div>
+          <div style="border-radius:20px; padding:9px 9px 4px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200)); box-shadow:0 20px 38px -16px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 14%, transparent)">
+            <div style="height:150px; border-radius:14px; overflow:hidden; box-shadow:inset 0 4px 12px rgba(0,0,0,.85); position:relative"><image-slot id="blog-3" shape="rect" placeholder="Post image"></image-slot></div>
+            <div style="padding:14px 11px 16px; display:flex; flex-direction:column; gap:8px">
+              <span style="font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 45%, transparent)">19 Jun 2026 · 7 min</span>
+              <span style="font-family:'Archivo Black', sans-serif; font-size:19px; line-height:1.15">Turning a live map into a LARP engine</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 3c THEMES ============ -->
+    <div id="3c" style="display:flex; flex-direction:column; gap:14px; flex:0 0 1200px; width:1200px">
+      <div style="display:flex; align-items:baseline; gap:14px">
+        <span style="font-family:'JetBrains Mono', monospace; font-size:13px; font-weight:700; letter-spacing:.1em; background:#e8e6e1; color:#14161c; padding:4px 9px">3c</span>
+        <span style="font-family:'Archivo Black', sans-serif; font-size:22px">Themes</span>
+        <span style="font-size:14px; color:#8f8a80">Six curated up top as big plates · the other 26 as a compact well</span>
+      </div>
+
+      <div data-theme="scripthammer-dark" data-screen-label="3c Themes" style="background:radial-gradient(120% 70% at 50% -10%, oklch(28.51% 0.067 281.32) 0%, var(--color-base-100) 55%); color:var(--color-base-content); border-radius:8px; box-shadow:0 40px 90px rgba(0,0,0,.6); padding:18px 18px 30px; overflow:hidden">
+
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0 22px; height:66px; border-radius:999px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 92%, var(--color-base-content) 6%), var(--color-base-200)); box-shadow:0 16px 34px -14px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 16%, transparent)">
+          <div style="display:flex; align-items:center; gap:13px">
+            <div style="position:relative; width:40px; height:40px; border-radius:50%; background:var(--color-base-100); box-shadow:inset 0 3px 8px rgba(0,0,0,.85); display:flex; align-items:center; justify-content:center; flex-shrink:0">
+              <img src="https://scripthammer.com/scripthammer-logo.svg" alt="ScriptHammer" style="position:absolute; width:30px; height:30px">
+              <img src="https://scripthammer.com/script-tags.svg" alt="" style="position:absolute; width:17px; height:17px">
+              <img src="https://scripthammer.com/printing-mallet.svg" alt="" style="position:absolute; width:11px; height:11px">
+            </div>
+            <span style="font-family:'Archivo Black', sans-serif; font-size:17px; letter-spacing:-.01em">SCRIPTHAMMER</span>
+          </div>
+          <div style="display:flex; gap:6px; padding:5px; border-radius:999px; background:var(--color-base-100); box-shadow:inset 0 3px 7px rgba(0,0,0,.7); font-family:'JetBrains Mono', monospace; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase">
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Home</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Docs</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Blog</span>
+            <span style="padding:8px 14px; border-radius:999px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 95%, var(--color-base-content) 8%), var(--color-base-200)); box-shadow:0 4px 10px -3px rgba(0,0,0,.8), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 16%, transparent)">Themes</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Wireframes</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Status</span>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center">
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 65%, transparent)">Sign in</span>
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; white-space:nowrap; padding:11px 18px; border-radius:999px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-secondary) 92%, #fff), var(--color-secondary)); color:var(--color-secondary-content); box-shadow:0 10px 22px -8px color-mix(in oklab, var(--color-secondary) 80%, transparent), inset 0 1px 0 rgba(255,255,255,.5)">Clone it</span>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:flex-end; justify-content:space-between; padding:44px 22px 22px">
+          <div style="display:flex; flex-direction:column; gap:10px">
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--color-accent)">Live switching · no reload</span>
+            <h2 style="font-family:'Archivo Black', sans-serif; font-size:52px; letter-spacing:-.03em; margin:0">Six themes we stand behind</h2>
+            <p style="font-size:16.5px; line-height:1.6; color:color-mix(in oklab, var(--color-base-content) 72%, transparent); margin:0; max-width:62ch">Every one is checked for AA contrast in both text and UI states. The remaining 26 DaisyUI themes still work — they're just not the ones we'd hand a client.</p>
+          </div>
+          <span style="font-family:'JetBrains Mono', monospace; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; white-space:nowrap; padding:15px 24px; border-radius:13px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-secondary) 92%, #fff), var(--color-secondary)); color:var(--color-secondary-content); box-shadow:0 16px 30px -12px color-mix(in oklab, var(--color-secondary) 75%, transparent), inset 0 1px 0 rgba(255,255,255,.55)">Apply to this page</span>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:18px; padding:0 22px 22px">
+          <div style="border-radius:22px; padding:9px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200)); box-shadow:0 22px 42px -16px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 14%, transparent), 0 0 0 2px var(--color-secondary)">
+            <div style="border-radius:15px; overflow:hidden; box-shadow:inset 0 4px 12px rgba(0,0,0,.6)">
+              <div style="background:linear-gradient(180deg,oklch(97% 0.009 67.72),oklch(93% 0.012 70)); padding:16px; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; gap:6px"><span style="width:44px; height:12px; border-radius:99px; background:oklch(42.79% 0.03 257.68)"></span><span style="width:26px; height:12px; border-radius:99px; background:oklch(44.28% 0.116 46.14)"></span><span style="width:26px; height:12px; border-radius:99px; background:oklch(42.86% 0.098 239.94)"></span></div>
+                <div style="height:9px; width:80%; border-radius:99px; background:oklch(27.81% 0.03 256.85); opacity:.75"></div>
+                <div style="height:9px; width:55%; border-radius:99px; background:oklch(27.81% 0.03 256.85); opacity:.35"></div>
+                <div style="height:30px; width:110px; border-radius:8px; background:oklch(44.28% 0.116 46.14)"></div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 10px 8px">
+              <span style="font-family:'Archivo Black', sans-serif; font-size:17px">Light</span>
+              <span style="font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; padding:5px 10px; border-radius:8px; background:var(--color-secondary); color:var(--color-secondary-content)">Active</span>
+            </div>
+          </div>
+          <div style="border-radius:22px; padding:9px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200)); box-shadow:0 22px 42px -16px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 14%, transparent)">
+            <div style="border-radius:15px; overflow:hidden; box-shadow:inset 0 4px 12px rgba(0,0,0,.8)">
+              <div style="background:linear-gradient(180deg,oklch(26% 0.045 282.93),oklch(21% 0.036 282.93)); padding:16px; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; gap:6px"><span style="width:44px; height:12px; border-radius:99px; background:oklch(76.05% 0.024 258.37)"></span><span style="width:26px; height:12px; border-radius:99px; background:oklch(87.91% 0.043 76.31)"></span><span style="width:26px; height:12px; border-radius:99px; background:oklch(75.35% 0.139 232.66)"></span></div>
+                <div style="height:9px; width:80%; border-radius:99px; background:oklch(92.88% 0.013 255.51); opacity:.75"></div>
+                <div style="height:9px; width:55%; border-radius:99px; background:oklch(92.88% 0.013 255.51); opacity:.3"></div>
+                <div style="height:30px; width:110px; border-radius:8px; background:oklch(87.91% 0.043 76.31)"></div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 10px 8px">
+              <span style="font-family:'Archivo Black', sans-serif; font-size:17px">Dark</span>
+              <span style="font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 45%, transparent)">AA ✓</span>
+            </div>
+          </div>
+          <div style="border-radius:22px; padding:9px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200)); box-shadow:0 22px 42px -16px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 14%, transparent)">
+            <div style="border-radius:15px; overflow:hidden; box-shadow:inset 0 4px 12px rgba(0,0,0,.85)">
+              <div style="background:linear-gradient(180deg,oklch(21% 0.024 250),oklch(15% 0.018 250)); padding:16px; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; gap:6px"><span style="width:44px; height:12px; border-radius:99px; background:oklch(80% 0.19 145)"></span><span style="width:26px; height:12px; border-radius:99px; background:oklch(70% 0.14 200)"></span><span style="width:26px; height:12px; border-radius:99px; background:oklch(90% 0.05 120)"></span></div>
+                <div style="height:9px; width:80%; border-radius:99px; background:oklch(90% 0.05 120); opacity:.7"></div>
+                <div style="height:9px; width:55%; border-radius:99px; background:oklch(90% 0.05 120); opacity:.3"></div>
+                <div style="height:30px; width:110px; border-radius:8px; background:oklch(80% 0.19 145)"></div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 10px 8px">
+              <span style="font-family:'Archivo Black', sans-serif; font-size:17px">Terminal</span>
+              <span style="font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 45%, transparent)">AA ✓</span>
+            </div>
+          </div>
+          <div style="border-radius:22px; padding:9px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200)); box-shadow:0 22px 42px -16px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 14%, transparent)">
+            <div style="border-radius:15px; overflow:hidden; box-shadow:inset 0 4px 12px rgba(0,0,0,.6)">
+              <div style="background:linear-gradient(180deg,oklch(95% 0.032 85),oklch(90% 0.03 85)); padding:16px; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; gap:6px"><span style="width:44px; height:12px; border-radius:99px; background:oklch(45% 0.12 40)"></span><span style="width:26px; height:12px; border-radius:99px; background:oklch(55% 0.09 150)"></span><span style="width:26px; height:12px; border-radius:99px; background:oklch(30% 0.03 70)"></span></div>
+                <div style="height:9px; width:80%; border-radius:99px; background:oklch(30% 0.03 70); opacity:.75"></div>
+                <div style="height:9px; width:55%; border-radius:99px; background:oklch(30% 0.03 70); opacity:.35"></div>
+                <div style="height:30px; width:110px; border-radius:8px; background:oklch(45% 0.12 40)"></div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 10px 8px">
+              <span style="font-family:'Archivo Black', sans-serif; font-size:17px">Field</span>
+              <span style="font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 45%, transparent)">AA ✓</span>
+            </div>
+          </div>
+          <div style="border-radius:22px; padding:9px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200)); box-shadow:0 22px 42px -16px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 14%, transparent)">
+            <div style="border-radius:15px; overflow:hidden; box-shadow:inset 0 4px 12px rgba(0,0,0,.5)">
+              <div style="background:linear-gradient(180deg,#fff,oklch(96% 0 0)); padding:16px; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; gap:6px"><span style="width:44px; height:12px; border-radius:99px; background:#000"></span><span style="width:26px; height:12px; border-radius:99px; background:oklch(70% 0.2 25)"></span><span style="width:26px; height:12px; border-radius:99px; background:oklch(85% 0 0)"></span></div>
+                <div style="height:9px; width:80%; border-radius:99px; background:#000; opacity:.8"></div>
+                <div style="height:9px; width:55%; border-radius:99px; background:#000; opacity:.32"></div>
+                <div style="height:30px; width:110px; border-radius:8px; background:#000"></div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 10px 8px">
+              <span style="font-family:'Archivo Black', sans-serif; font-size:17px">Paper</span>
+              <span style="font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 45%, transparent)">AAA ✓</span>
+            </div>
+          </div>
+          <div style="border-radius:22px; padding:9px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200)); box-shadow:0 22px 42px -16px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 14%, transparent)">
+            <div style="border-radius:15px; overflow:hidden; box-shadow:inset 0 4px 12px rgba(0,0,0,.8)">
+              <div style="background:linear-gradient(180deg,oklch(34% 0.1 300),oklch(26% 0.085 300)); padding:16px; display:flex; flex-direction:column; gap:10px">
+                <div style="display:flex; gap:6px"><span style="width:44px; height:12px; border-radius:99px; background:oklch(80% 0.17 330)"></span><span style="width:26px; height:12px; border-radius:99px; background:oklch(85% 0.15 90)"></span><span style="width:26px; height:12px; border-radius:99px; background:oklch(75% 0.16 200)"></span></div>
+                <div style="height:9px; width:80%; border-radius:99px; background:#fff; opacity:.8"></div>
+                <div style="height:9px; width:55%; border-radius:99px; background:#fff; opacity:.32"></div>
+                <div style="height:30px; width:110px; border-radius:8px; background:oklch(80% 0.17 330)"></div>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:14px 10px 8px">
+              <span style="font-family:'Archivo Black', sans-serif; font-size:17px">LARP</span>
+              <span style="font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 45%, transparent)">AA ✓</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin:0 22px; padding:22px 24px; border-radius:22px; background:var(--color-base-100); box-shadow:inset 0 5px 14px rgba(0,0,0,.8), inset 0 -1px 0 color-mix(in oklab, var(--color-base-content) 10%, transparent); display:flex; flex-direction:column; gap:16px">
+          <div style="display:flex; align-items:baseline; justify-content:space-between">
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11.5px; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 52%, transparent)">The other 26 · still supported</span>
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11.5px; color:color-mix(in oklab, var(--color-base-content) 40%, transparent)">DaisyUI</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(13,1fr); gap:8px">
+            <span style="height:34px; border-radius:9px; background:linear-gradient(135deg,#f5f0e6,#c9a227); box-shadow:0 6px 12px -5px rgba(0,0,0,.8)"></span>
+            <span style="height:34px; border-radius:9px; background:linear-gradient(135deg,#1f2937,#4b5563); box-shadow:0 6px 12px -5px rgba(0,0,0,.8)"></span>
+            <span style="height:34px; border-radius:9px; background:linear-gradient(135deg,#fdf2f8,#ec4899); box-shadow:0 6px 12px -5px rgba(0,0,0,.8)"></span>
+            <span style="height:34px; border-radius:9px; background:linear-gradient(135deg,#052e16,#22c55e); box-shadow:0 6px 12px -5px rgba(0,0,0,.8)"></span>
+            <span style="height:34px; border-radius:9px; background:linear-gradient(135deg,#1e1b4b,#818cf8); box-shadow:0 6px 12px -5px rgba(0,0,0,.8)"></span>
+            <span style="height:34px; border-radius:9px; background:linear-gradient(135deg,#78350f,#f59e0b); box-shadow:0 6px 12px -5px rgba(0,0,0,.8)"></span>
+            <span style="height:34px; border-radius:9px; background:linear-gradient(135deg,#0c4a6e,#38bdf8); box-shadow:0 6px 12px -5px rgba(0,0,0,.8)"></span>
+            <span style="height:34px; border-radius:9px; background:linear-gradient(135deg,#3f0f3f,#a21caf); box-shadow:0 6px 12px -5px rgba(0,0,0,.8)"></span>
+            <span style="height:34px; border-radius:9px; background:linear-gradient(135deg,#111827,#9ca3af); box-shadow:0 6px 12px -5px rgba(0,0,0,.8)"></span>
+            <span style="height:34px; border-radius:9px; background:linear-gradient(135deg,#fef3c7,#b45309); box-shadow:0 6px 12px -5px rgba(0,0,0,.8)"></span>
+            <span style="height:34px; border-radius:9px; background:linear-gradient(135deg,#042f2e,#14b8a6); box-shadow:0 6px 12px -5px rgba(0,0,0,.8)"></span>
+            <span style="height:34px; border-radius:9px; background:linear-gradient(135deg,#450a0a,#ef4444); box-shadow:0 6px 12px -5px rgba(0,0,0,.8)"></span>
+            <span style="display:flex; align-items:center; justify-content:center; height:34px; border-radius:9px; font-family:'JetBrains Mono', monospace; font-size:11px; color:color-mix(in oklab, var(--color-base-content) 55%, transparent); box-shadow:inset 0 2px 6px rgba(0,0,0,.7)">+14</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 3d STATUS ============ -->
+    <div id="3d" style="display:flex; flex-direction:column; gap:14px; flex:0 0 1200px; width:1200px">
+      <div style="display:flex; align-items:baseline; gap:14px">
+        <span style="font-family:'JetBrains Mono', monospace; font-size:13px; font-weight:700; letter-spacing:.1em; background:#e8e6e1; color:#14161c; padding:4px 9px">3d</span>
+        <span style="font-family:'Archivo Black', sans-serif; font-size:22px">Status</span>
+        <span style="font-size:14px; color:#8f8a80">The gauge wall — every well is a live reading</span>
+      </div>
+
+      <div data-theme="scripthammer-dark" data-screen-label="3d Status" style="background:radial-gradient(120% 70% at 50% -10%, oklch(28.51% 0.067 281.32) 0%, var(--color-base-100) 55%); color:var(--color-base-content); border-radius:8px; box-shadow:0 40px 90px rgba(0,0,0,.6); padding:18px 18px 30px; overflow:hidden">
+
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:0 22px; height:66px; border-radius:999px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 92%, var(--color-base-content) 6%), var(--color-base-200)); box-shadow:0 16px 34px -14px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 16%, transparent)">
+          <div style="display:flex; align-items:center; gap:13px">
+            <div style="position:relative; width:40px; height:40px; border-radius:50%; background:var(--color-base-100); box-shadow:inset 0 3px 8px rgba(0,0,0,.85); display:flex; align-items:center; justify-content:center; flex-shrink:0">
+              <img src="https://scripthammer.com/scripthammer-logo.svg" alt="ScriptHammer" style="position:absolute; width:30px; height:30px">
+              <img src="https://scripthammer.com/script-tags.svg" alt="" style="position:absolute; width:17px; height:17px">
+              <img src="https://scripthammer.com/printing-mallet.svg" alt="" style="position:absolute; width:11px; height:11px">
+            </div>
+            <span style="font-family:'Archivo Black', sans-serif; font-size:17px; letter-spacing:-.01em">SCRIPTHAMMER</span>
+          </div>
+          <div style="display:flex; gap:6px; padding:5px; border-radius:999px; background:var(--color-base-100); box-shadow:inset 0 3px 7px rgba(0,0,0,.7); font-family:'JetBrains Mono', monospace; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase">
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Home</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Docs</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Blog</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Themes</span>
+            <span style="padding:8px 14px; color:color-mix(in oklab, var(--color-base-content) 60%, transparent)">Wireframes</span>
+            <span style="padding:8px 14px; border-radius:999px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 95%, var(--color-base-content) 8%), var(--color-base-200)); box-shadow:0 4px 10px -3px rgba(0,0,0,.8), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 16%, transparent)">Status</span>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center">
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 65%, transparent)">Sign in</span>
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11.5px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; white-space:nowrap; padding:11px 18px; border-radius:999px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-secondary) 92%, #fff), var(--color-secondary)); color:var(--color-secondary-content); box-shadow:0 10px 22px -8px color-mix(in oklab, var(--color-secondary) 80%, transparent), inset 0 1px 0 rgba(255,255,255,.5)">Clone it</span>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:18px; padding:44px 22px 24px">
+          <div style="display:flex; align-items:center; gap:12px; padding:12px 20px; border-radius:999px; background:var(--color-base-100); box-shadow:inset 0 4px 10px rgba(0,0,0,.8); font-family:'JetBrains Mono', monospace; font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:oklch(80% 0.18 145)">
+            <span style="width:10px; height:10px; border-radius:50%; background:oklch(80% 0.18 145); box-shadow:0 0 14px oklch(80% 0.18 145); animation:sh-pulse 2.2s ease-in-out infinite"></span>
+            All systems green
+          </div>
+          <h2 style="font-family:'Archivo Black', sans-serif; font-size:52px; letter-spacing:-.03em; margin:0">Status</h2>
+          <span style="margin-left:auto; font-family:'JetBrains Mono', monospace; font-size:11.5px; letter-spacing:.12em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 45%, transparent)">Updated 4m ago · deploy #1,284</span>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px; padding:0 22px 20px">
+          <div style="border-radius:20px; padding:22px; background:var(--color-base-100); box-shadow:inset 0 4px 12px rgba(0,0,0,.78), inset 0 -1px 0 color-mix(in oklab, var(--color-base-content) 11%, transparent); display:flex; flex-direction:column; gap:12px">
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 55%, transparent)">Test suite</span>
+            <span style="font-family:'Archivo Black', sans-serif; font-size:40px; line-height:1">2,431</span>
+            <div style="height:8px; border-radius:99px; box-shadow:inset 0 2px 5px rgba(0,0,0,.8); overflow:hidden"><span style="display:block; height:100%; width:100%; border-radius:99px; background:linear-gradient(90deg,oklch(70% 0.17 145),oklch(80% 0.19 145)); box-shadow:0 0 12px oklch(80% 0.19 145 / .55)"></span></div>
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11px; color:oklch(80% 0.18 145)">100% passing · 3m 41s</span>
+          </div>
+          <div style="border-radius:20px; padding:22px; background:var(--color-base-100); box-shadow:inset 0 4px 12px rgba(0,0,0,.78), inset 0 -1px 0 color-mix(in oklab, var(--color-base-content) 11%, transparent); display:flex; flex-direction:column; gap:12px">
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 55%, transparent)">Lighthouse</span>
+            <span style="font-family:'Archivo Black', sans-serif; font-size:40px; line-height:1">100</span>
+            <div style="height:8px; border-radius:99px; box-shadow:inset 0 2px 5px rgba(0,0,0,.8); overflow:hidden"><span style="display:block; height:100%; width:100%; border-radius:99px; background:linear-gradient(90deg,oklch(70% 0.17 145),oklch(80% 0.19 145)); box-shadow:0 0 12px oklch(80% 0.19 145 / .55)"></span></div>
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11px; color:color-mix(in oklab, var(--color-base-content) 55%, transparent)">perf · a11y · bp · seo</span>
+          </div>
+          <div style="border-radius:20px; padding:22px; background:var(--color-base-100); box-shadow:inset 0 4px 12px rgba(0,0,0,.78), inset 0 -1px 0 color-mix(in oklab, var(--color-base-content) 11%, transparent); display:flex; flex-direction:column; gap:12px">
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 55%, transparent)">Coverage</span>
+            <span style="font-family:'Archivo Black', sans-serif; font-size:40px; line-height:1">94%</span>
+            <div style="height:8px; border-radius:99px; box-shadow:inset 0 2px 5px rgba(0,0,0,.8); overflow:hidden"><span style="display:block; height:100%; width:94%; border-radius:99px; background:linear-gradient(90deg,var(--color-secondary),oklch(92% 0.05 76)); box-shadow:0 0 12px color-mix(in oklab, var(--color-secondary) 55%, transparent)"></span></div>
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11px; color:color-mix(in oklab, var(--color-base-content) 55%, transparent)">statements · target 90</span>
+          </div>
+          <div style="border-radius:20px; padding:22px; background:var(--color-base-100); box-shadow:inset 0 4px 12px rgba(0,0,0,.78), inset 0 -1px 0 color-mix(in oklab, var(--color-base-content) 11%, transparent); display:flex; flex-direction:column; gap:12px">
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 55%, transparent)">a11y violations</span>
+            <span style="font-family:'Archivo Black', sans-serif; font-size:40px; line-height:1">0</span>
+            <div style="height:8px; border-radius:99px; box-shadow:inset 0 2px 5px rgba(0,0,0,.8); overflow:hidden"><span style="display:block; height:100%; width:100%; border-radius:99px; background:linear-gradient(90deg,var(--color-accent),oklch(85% 0.12 232)); box-shadow:0 0 12px color-mix(in oklab, var(--color-accent) 55%, transparent)"></span></div>
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11px; color:color-mix(in oklab, var(--color-base-content) 55%, transparent)">axe · WCAG AA</span>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1.35fr 1fr; gap:16px; padding:0 22px">
+          <div style="border-radius:22px; padding:24px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200)); box-shadow:0 22px 42px -16px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 14%, transparent); display:flex; flex-direction:column; gap:18px">
+            <div style="display:flex; align-items:baseline; justify-content:space-between">
+              <span style="font-family:'Archivo Black', sans-serif; font-size:22px">Last 30 deploys</span>
+              <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 45%, transparent)">All green</span>
+            </div>
+            <div style="border-radius:16px; padding:18px 16px; background:var(--color-base-100); box-shadow:inset 0 4px 12px rgba(0,0,0,.8); display:flex; align-items:flex-end; gap:6px; height:150px">
+              <span style="flex:1; height:52%; border-radius:5px; background:linear-gradient(180deg,oklch(80% 0.19 145),oklch(62% 0.16 145))"></span>
+              <span style="flex:1; height:71%; border-radius:5px; background:linear-gradient(180deg,oklch(80% 0.19 145),oklch(62% 0.16 145))"></span>
+              <span style="flex:1; height:44%; border-radius:5px; background:linear-gradient(180deg,oklch(80% 0.19 145),oklch(62% 0.16 145))"></span>
+              <span style="flex:1; height:88%; border-radius:5px; background:linear-gradient(180deg,oklch(80% 0.19 145),oklch(62% 0.16 145))"></span>
+              <span style="flex:1; height:61%; border-radius:5px; background:linear-gradient(180deg,oklch(80% 0.19 145),oklch(62% 0.16 145))"></span>
+              <span style="flex:1; height:73%; border-radius:5px; background:linear-gradient(180deg,oklch(80% 0.19 145),oklch(62% 0.16 145))"></span>
+              <span style="flex:1; height:38%; border-radius:5px; background:linear-gradient(180deg,oklch(80% 0.19 145),oklch(62% 0.16 145))"></span>
+              <span style="flex:1; height:66%; border-radius:5px; background:linear-gradient(180deg,oklch(80% 0.19 145),oklch(62% 0.16 145))"></span>
+              <span style="flex:1; height:92%; border-radius:5px; background:linear-gradient(180deg,oklch(80% 0.19 145),oklch(62% 0.16 145))"></span>
+              <span style="flex:1; height:57%; border-radius:5px; background:linear-gradient(180deg,oklch(80% 0.19 145),oklch(62% 0.16 145))"></span>
+              <span style="flex:1; height:80%; border-radius:5px; background:linear-gradient(180deg,oklch(80% 0.19 145),oklch(62% 0.16 145))"></span>
+              <span style="flex:1; height:49%; border-radius:5px; background:linear-gradient(180deg,oklch(80% 0.19 145),oklch(62% 0.16 145))"></span>
+              <span style="flex:1; height:69%; border-radius:5px; background:linear-gradient(180deg,oklch(80% 0.19 145),oklch(62% 0.16 145))"></span>
+              <span style="flex:1; height:96%; border-radius:5px; background:linear-gradient(180deg,var(--color-secondary),oklch(70% 0.06 76)); box-shadow:0 0 16px color-mix(in oklab, var(--color-secondary) 50%, transparent)"></span>
+            </div>
+            <span style="font-family:'JetBrains Mono', monospace; font-size:11px; color:color-mix(in oklab, var(--color-base-content) 45%, transparent)">Bar height = suite duration · gold = current</span>
+          </div>
+
+          <div style="border-radius:22px; padding:24px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200)); box-shadow:0 22px 42px -16px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 14%, transparent); display:flex; flex-direction:column; gap:14px">
+            <span style="font-family:'Archivo Black', sans-serif; font-size:22px">Live checks</span>
+            <div style="display:flex; flex-direction:column; gap:9px">
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 16px; border-radius:13px; background:var(--color-base-100); box-shadow:inset 0 3px 8px rgba(0,0,0,.78)">
+                <span style="font-size:14.5px">Auth &amp; sessions</span>
+                <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:oklch(80% 0.18 145)">● OK</span>
+              </div>
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 16px; border-radius:13px; background:var(--color-base-100); box-shadow:inset 0 3px 8px rgba(0,0,0,.78)">
+                <span style="font-size:14.5px">Payments webhook</span>
+                <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:oklch(80% 0.18 145)">● OK</span>
+              </div>
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 16px; border-radius:13px; background:var(--color-base-100); box-shadow:inset 0 3px 8px rgba(0,0,0,.78)">
+                <span style="font-size:14.5px">Realtime channels</span>
+                <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:oklch(80% 0.18 145)">● OK</span>
+              </div>
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 16px; border-radius:13px; background:var(--color-base-100); box-shadow:inset 0 3px 8px rgba(0,0,0,.78)">
+                <span style="font-size:14.5px">Service worker</span>
+                <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:oklch(80% 0.18 145)">● OK</span>
+              </div>
+              <div style="display:flex; align-items:center; justify-content:space-between; padding:13px 16px; border-radius:13px; background:var(--color-base-100); box-shadow:inset 0 3px 8px rgba(0,0,0,.78)">
+                <span style="font-size:14.5px">Map tiles</span>
+                <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--color-secondary)">● 240ms</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 3e SIGN IN ============ -->
+    <div id="3e" style="display:flex; flex-direction:column; gap:14px; flex:0 0 1200px; width:1200px">
+      <div style="display:flex; align-items:baseline; gap:14px">
+        <span style="font-family:'JetBrains Mono', monospace; font-size:13px; font-weight:700; letter-spacing:.1em; background:#e8e6e1; color:#14161c; padding:4px 9px">3e</span>
+        <span style="font-family:'Archivo Black', sans-serif; font-size:22px">Sign in</span>
+        <span style="font-size:14px; color:#8f8a80">Inputs as grooves · the form floats on a plate over the logo</span>
+      </div>
+
+      <div data-theme="scripthammer-dark" data-screen-label="3e Sign in" style="background:radial-gradient(90% 90% at 22% 40%, oklch(28.51% 0.067 281.32) 0%, var(--color-base-100) 60%); color:var(--color-base-content); border-radius:8px; box-shadow:0 40px 90px rgba(0,0,0,.6); overflow:hidden; display:grid; grid-template-columns:1fr 520px; min-height:720px">
+
+        <div style="padding:56px 56px; display:flex; flex-direction:column; justify-content:space-between">
+          <div style="display:flex; align-items:center; gap:13px">
+            <div style="position:relative; width:44px; height:44px; border-radius:50%; background:var(--color-base-100); box-shadow:inset 0 3px 9px rgba(0,0,0,.85); display:flex; align-items:center; justify-content:center; flex-shrink:0">
+              <img src="https://scripthammer.com/scripthammer-logo.svg" alt="ScriptHammer" style="position:absolute; width:33px; height:33px">
+              <img src="https://scripthammer.com/script-tags.svg" alt="" style="position:absolute; width:19px; height:19px">
+              <img src="https://scripthammer.com/printing-mallet.svg" alt="" style="position:absolute; width:12px; height:12px">
+            </div>
+            <span style="font-family:'Archivo Black', sans-serif; font-size:18px; letter-spacing:-.01em">SCRIPTHAMMER</span>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:22px; max-width:44ch">
+            <h2 style="font-family:'Archivo Black', sans-serif; font-size:56px; line-height:.98; letter-spacing:-.035em; margin:0">Same auth<br>your users get.</h2>
+            <p style="font-size:17px; line-height:1.6; color:color-mix(in oklab, var(--color-base-content) 74%, transparent); margin:0; text-wrap:pretty">This form is the shipped component — sessions, password strength, rate limits and error states all included in the starter.</p>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase">
+              <span style="padding:8px 13px; border-radius:9px; background:var(--color-base-100); box-shadow:inset 0 3px 7px rgba(0,0,0,.78); color:color-mix(in oklab, var(--color-base-content) 62%, transparent)">Rate limited</span>
+              <span style="padding:8px 13px; border-radius:9px; background:var(--color-base-100); box-shadow:inset 0 3px 7px rgba(0,0,0,.78); color:color-mix(in oklab, var(--color-base-content) 62%, transparent)">Session refresh</span>
+              <span style="padding:8px 13px; border-radius:9px; background:var(--color-base-100); box-shadow:inset 0 3px 7px rgba(0,0,0,.78); color:color-mix(in oklab, var(--color-base-content) 62%, transparent)">WCAG AA</span>
+            </div>
+          </div>
+
+          <span style="font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 38%, transparent)">CRUDgames.com · built with ScriptHammer</span>
+        </div>
+
+        <div style="padding:36px; display:flex; align-items:center">
+          <div style="width:100%; border-radius:26px; padding:34px 32px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 92%, var(--color-base-content) 6%), var(--color-base-200)); box-shadow:0 34px 62px -20px rgba(0,0,0,.95), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 16%, transparent); display:flex; flex-direction:column; gap:20px">
+            <div style="display:flex; flex-direction:column; gap:6px">
+              <span style="font-family:'Archivo Black', sans-serif; font-size:28px; letter-spacing:-.02em">Sign in</span>
+              <span style="font-size:14.5px; color:color-mix(in oklab, var(--color-base-content) 62%, transparent)">New here? <span style="color:var(--color-secondary)">Create an account</span></span>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:8px">
+              <span style="font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 50%, transparent)">Email</span>
+              <div style="padding:15px 17px; border-radius:13px; background:var(--color-base-100); box-shadow:inset 0 4px 10px rgba(0,0,0,.8), inset 0 -1px 0 color-mix(in oklab, var(--color-base-content) 10%, transparent); font-size:15px; color:color-mix(in oklab, var(--color-base-content) 90%, transparent)">you@studio.com</div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:8px">
+              <div style="display:flex; justify-content:space-between; align-items:baseline">
+                <span style="font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 50%, transparent)">Password</span>
+                <span style="font-size:13px; color:var(--color-accent)">Forgot?</span>
+              </div>
+              <div style="padding:15px 17px; border-radius:13px; background:var(--color-base-100); box-shadow:inset 0 4px 10px rgba(0,0,0,.8), inset 0 -1px 0 color-mix(in oklab, var(--color-base-content) 10%, transparent), 0 0 0 2px color-mix(in oklab, var(--color-accent) 55%, transparent); font-size:15px; letter-spacing:.24em; color:color-mix(in oklab, var(--color-base-content) 80%, transparent)">••••••••••</div>
+              <div style="display:flex; gap:5px; padding-top:4px">
+                <span style="flex:1; height:6px; border-radius:99px; background:oklch(80% 0.18 145); box-shadow:0 0 10px oklch(80% 0.18 145 / .5)"></span>
+                <span style="flex:1; height:6px; border-radius:99px; background:oklch(80% 0.18 145); box-shadow:0 0 10px oklch(80% 0.18 145 / .5)"></span>
+                <span style="flex:1; height:6px; border-radius:99px; background:oklch(80% 0.18 145); box-shadow:0 0 10px oklch(80% 0.18 145 / .5)"></span>
+                <span style="flex:1; height:6px; border-radius:99px; box-shadow:inset 0 2px 4px rgba(0,0,0,.8)"></span>
+              </div>
+              <span style="font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.08em; color:oklch(80% 0.18 145)">Strong · 3 of 4</span>
+            </div>
+
+            <span style="text-align:center; font-family:'JetBrains Mono', monospace; font-size:13px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:17px; border-radius:14px; background:linear-gradient(180deg, color-mix(in oklab, var(--color-secondary) 92%, #fff), var(--color-secondary)); color:var(--color-secondary-content); box-shadow:0 18px 32px -12px color-mix(in oklab, var(--color-secondary) 75%, transparent), inset 0 1px 0 rgba(255,255,255,.55), inset 0 -3px 6px rgba(0,0,0,.22)">Sign in</span>
+
+            <div style="display:flex; align-items:center; gap:14px">
+              <span style="flex:1; height:1px; background:color-mix(in oklab, var(--color-base-content) 14%, transparent)"></span>
+              <span style="font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.16em; text-transform:uppercase; color:color-mix(in oklab, var(--color-base-content) 40%, transparent)">or</span>
+              <span style="flex:1; height:1px; background:color-mix(in oklab, var(--color-base-content) 14%, transparent)"></span>
+            </div>
+
+            <div style="display:flex; gap:10px">
+              <span style="flex:1; text-align:center; font-size:14px; font-weight:600; padding:15px; border-radius:13px; background:var(--color-base-100); box-shadow:inset 0 3px 9px rgba(0,0,0,.78), inset 0 -1px 0 color-mix(in oklab, var(--color-base-content) 10%, transparent)">GitHub</span>
+              <span style="flex:1; text-align:center; font-size:14px; font-weight:600; padding:15px; border-radius:13px; background:var(--color-base-100); box-shadow:inset 0 3px 9px rgba(0,0,0,.78), inset 0 -1px 0 color-mix(in oklab, var(--color-base-content) 10%, transparent)">Google</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+</body>
+</html>
