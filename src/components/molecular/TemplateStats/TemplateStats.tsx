@@ -69,7 +69,11 @@ export default function TemplateStats({
           Mobile: number + label + arrow on line 1, detail wraps below.
           ≥sm:    number + label, detail pushed right by ml-auto, arrow.
         */}
-        <ul className="divide-base-300 divide-y">
+        {/* Recessed as one well rather than the design's four separate ones
+            (#379). The design's rule is that data lives IN a cutout; this
+            keeps that reading without rebuilding the ledger, whose row-as-hit-
+            target layout is deliberate and separately tested. */}
+        <ul className="divide-base-300 sh-well bg-base-100 rounded-box divide-y px-4 sm:px-6">
           {stats.map((stat) => (
             <li key={stat.href}>
               <Link

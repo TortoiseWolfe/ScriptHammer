@@ -58,7 +58,17 @@ interface AxeResults {
 const THEMES = ['scripthammer-light', 'scripthammer-dark'] as const;
 
 // Mirrors config/pa11yci.json's urls[].
-const PAGES = ['/', '/themes/', '/accessibility/', '/status/'] as const;
+const PAGES = [
+  '/',
+  '/themes/',
+  '/accessibility/',
+  '/status/',
+  // Added after a 6.44:1 eyebrow shipped to main on /blog (#407) and no gate
+  // saw it. This list covers 5 of 43 routes — #411 tracks the other 38. A
+  // green run here does NOT mean the app meets AAA; it means these five pages
+  // do. Check #411 before reading it as anything broader.
+  '/blog/',
+] as const;
 
 test.describe('WCAG AAA color-contrast-enhanced (violations only)', () => {
   // Match pa11yci.json viewport.
