@@ -271,6 +271,74 @@ test.describe('#377 depth tokens', () => {
   });
 
   /**
+   * T5 — a depth utility must WIN on a real element, not just resolve.
+   *
+   * T1–T4 all read the tokens off a bare probe. That proves the values are
+   * right; it proves nothing about whether they survive the cascade on an
+   * actual component.
+   *
+   * They did not. `[data-theme='…'] .card` in globals.css is specificity
+   * 0,2,0 and a Tailwind `@utility` is 0,1,0, so on the two DEFAULT themes a
+   * card carrying `sh-plate` rendered the legacy literal-black shadow
+   * instead — the exact thing the depth system replaces, winning on the only
+   * two themes most people see. Found by applying it to the home page (#379).
+   *
+   * MUTATION CHECK: drop the `:not(.sh-plate):not(.sh-well):not(.sh-groove)`
+   * chain from that block. This fails on both ScriptHammer themes, reporting
+   * a literal-black shadow on the migrated element.
+   */
+  test('a depth utility beats component styles on the default themes', async ({
+    page,
+  }) => {
+    await page.goto('/');
+
+    const results = await page.evaluate(
+      ({ themes, plateCls }) => {
+        const root = document.documentElement;
+        const body = document.body;
+        // A real DaisyUI card, not a bare probe — the point is the cascade.
+        const el = document.createElement('div');
+        el.className = `card ${plateCls}`;
+        body.appendChild(el);
+
+        const out = themes.map((t) => {
+          root.setAttribute('data-theme', t);
+          body.setAttribute('data-theme', t);
+          const s = getComputedStyle(el).boxShadow;
+          const parts = s.split(/,(?![^(]*\))/);
+          const inset = parts.filter((p) => p.includes('inset')).length;
+          return {
+            theme: t,
+            literalBlack: /rgba?\(\s*0,\s*0,\s*0/.test(s),
+            outer: parts.length - inset,
+            inset,
+          };
+        });
+        el.remove();
+        return out;
+      },
+      {
+        themes: ['scripthammer-dark', 'scripthammer-light'],
+        plateCls: NAMES[0],
+      }
+    );
+
+    const beaten = results.filter((r) => r.literalBlack || r.inset === 0);
+
+    expect(
+      beaten,
+      'A card carrying the plate utility is rendering something else — a ' +
+        'component rule is out-specifying the depth system:\n' +
+        beaten
+          .map(
+            (r) =>
+              `  ${r.theme}: ${r.outer} outer/${r.inset} inset, literalBlack=${r.literalBlack}`
+          )
+          .join('\n')
+    ).toEqual([]);
+  });
+
+  /**
    * T3 — the utilities must actually compile.
    *
    * Tailwind only emits a `@utility` it can see used in scanned source. These

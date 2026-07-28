@@ -278,9 +278,23 @@
 }
 
 /* ScriptHammer visual polish — scoped to custom themes only.
- * Stock DaisyUI themes keep their original look untouched. */
-[data-theme='scripthammer-dark'] .card,
-[data-theme='scripthammer-light'] .card {
+ * Stock DaisyUI themes keep their original look untouched.
+ *
+ * The `:not()` chain is load-bearing (#379). This selector is `[attr] .class`
+ * — specificity 0,2,0 — while a Tailwind `@utility` is 0,1,0, so on the two
+ * DEFAULT themes this block silently beat `sh-plate`/`sh-well`/`sh-groove`
+ * and a card carrying a depth utility rendered this literal-black shadow
+ * instead. Exactly the thing the depth system exists to replace, winning by
+ * specificity on the only two themes most people ever see.
+ *
+ * Opting out by name rather than raising the utilities' specificity keeps the
+ * legacy look everywhere it is still wanted, and makes the depth system the
+ * explicit override wherever a page has been migrated. Remove this block
+ * entirely once every surface is on the depth tokens. */
+[data-theme='scripthammer-dark']
+  .card:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-light']
+  .card:not(.sh-plate):not(.sh-well):not(.sh-groove) {
   box-shadow:
     0 4px 6px -1px rgb(0 0 0 / 0.25),
     0 10px 15px -3px rgb(0 0 0 / 0.2),
