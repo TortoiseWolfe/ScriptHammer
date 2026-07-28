@@ -26,6 +26,38 @@
   --font-display: var(--font-archivo-black), var(--font-sans);
 }
 
+/* ============================================================================
+ * `container` must fill the viewport, not the previous breakpoint (#373 §A1)
+ *
+ * Tailwind 4 builds `container`'s max-width ladder from the registered
+ * `@theme` breakpoints above, emitting a tier at each one. Between tiers,
+ * content is pinned to the LOWER value — so the narrow mobile-first ladder
+ * this project deliberately chose turns into dead gutter at every width in
+ * between:
+ *
+ *     390px viewport -> capped at 320px ->  70px wasted (17.9%)
+ *     428px          -> capped at 320px -> 108px wasted (25.2%)
+ *     767px          -> capped at 430px -> 337px wasted (43.9%)
+ *
+ * Measured, not derived: at 767px `getComputedStyle(el).maxWidth` really did
+ * return `430px`. 36 call sites across 28 files, including GlobalNav, Footer
+ * and the cookie banner, so it was never scoped to one page. The visible
+ * symptom was one-sentence copy wrapping to five lines inside a ~228px column
+ * with empty gutters either side.
+ *
+ * Overriding the utility replaces the whole generated ladder with a single
+ * cap. Call sites keep their own `mx-auto px-4`, so horizontal padding is
+ * unaffected — this only stops the width being thrown away.
+ *
+ * NOT a reason to widen the breakpoints: they are correct for what they are
+ * for (`sm` is 430px on purpose, and must not equal 428px). The bug is that
+ * `container` reuses them for something they were never meant to describe.
+ * ========================================================================= */
+@utility container {
+  width: 100%;
+  max-width: 80rem; /* 1280px, matching --breakpoint-xl */
+}
+
 @plugin "daisyui" {
   themes:
     scripthammer-dark --default,
