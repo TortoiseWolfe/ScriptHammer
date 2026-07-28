@@ -660,7 +660,7 @@ export default function CaptainShipCrewWithNPC({
           </div>
 
           <div className="divider">Game Mode</div>
-          <div className="text-sm opacity-75">
+          <div className="text-base-content text-sm">
             {gameMode === 'single'
               ? 'Single Round'
               : `Playing to ${targetScore} points`}
@@ -690,7 +690,7 @@ export default function CaptainShipCrewWithNPC({
               Final Score: {gameState.winner?.score} points
             </p>
             {gameState.winner?.type === 'npc' && (
-              <p className="mt-1 text-sm opacity-75">
+              <p className="text-base-content mt-1 text-sm">
                 (🤖 NPC - {gameState.winner.difficulty} difficulty)
               </p>
             )}
@@ -750,7 +750,7 @@ export default function CaptainShipCrewWithNPC({
 
         {/* NPC Processing Indicator */}
         {isNPCTurn && isProcessingNPC && (
-          <div className="text-center text-sm opacity-75">
+          <div className="text-base-content text-center text-sm">
             <span className="loading loading-dots loading-sm"></span>
             NPC is thinking...
           </div>
@@ -887,7 +887,7 @@ export default function CaptainShipCrewWithNPC({
         </div>
 
         {gameState.gameMode === 'target' && (
-          <div className="mt-2 text-center text-sm opacity-75">
+          <div className="text-base-content mt-2 text-center text-sm">
             Playing to {gameState.targetScore} points
           </div>
         )}

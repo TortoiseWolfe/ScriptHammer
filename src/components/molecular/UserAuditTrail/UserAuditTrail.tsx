@@ -111,7 +111,7 @@ export default function UserAuditTrail({
       <h2 id="user-audit-trail-heading" className="mb-1 text-xl font-bold">
         Recent security activity
       </h2>
-      <p className="text-base-content/70 mb-4 text-sm">
+      <p className="text-base-content mb-4 text-sm">
         Your account&apos;s recent sign-ins and security events. Entries are
         kept for 90 days.
       </p>
@@ -130,7 +130,7 @@ export default function UserAuditTrail({
       )}
 
       {!error && entries !== null && entries.length === 0 && (
-        <p className="text-base-content/70 py-6">No recent activity to show.</p>
+        <p className="text-base-content py-6">No recent activity to show.</p>
       )}
 
       {!error && entries !== null && entries.length > 0 && (

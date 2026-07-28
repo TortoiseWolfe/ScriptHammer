@@ -73,7 +73,14 @@
  * ========================================================================= */
 .label,
 .label > span,
-.label-text {
+.label-text,
+/* `.table th` is the same defect in a different component: DaisyUI dims
+   column headers to #9094a1 on base-200 in the dark theme — 5.86:1. Found by
+   #411 on /account/audit and /payment-demo, both of which render tables. A
+   column header is the label for its column; dimming it is the same mistake
+   as dimming a form label. */
+.table thead th,
+.table th {
   color: var(--color-base-content);
 }
 
