@@ -13,9 +13,11 @@ import { ICON_PATHS, type IconName } from './icons';
  *
  * This matters more than usual here. Accessible names are an API in this repo
  * (#377): `performSignIn()` and ~20 specs locate controls by name, and the
- * emoji this set replaces carry their names explicitly — `CookieConsent.tsx`
- * renders `role="img" aria-label="Cookie"`. Swapping in a silently unlabelled
- * SVG changes what axe and every name-based locator can see.
+ * emoji this set replaced carried theirs explicitly — `CookieConsent` rendered
+ * `role="img" aria-label="Cookie"` beside a sentence that already said "We use
+ * cookies", so the name simply repeated the copy. Swapping in a silently
+ * unlabelled SVG changes what axe and every name-based locator can see, so the
+ * choice has to be made per site rather than defaulted.
  */
 export type IconProps = {
   /** Which icon to draw. */

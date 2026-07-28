@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useConsent } from '../../../contexts/ConsentContext';
+import Icon from '../../atomic/Icon';
 
 export interface CookieConsentProps {
   position?: 'top' | 'bottom';
@@ -71,8 +72,12 @@ export function CookieConsent({
           <div className="flex items-center justify-between gap-4">
             {/* Message Section - Compact */}
             <div className="flex flex-1 items-center gap-2">
-              <span className="text-lg" role="img" aria-label="Cookie">
-                🍪
+              {/* Decorative (#385): the sentence beside it already says
+                  "We use cookies". The emoji carried aria-label="Cookie", so
+                  a screen reader announced "Cookie, We use cookies to enhance
+                  your experience" — the name repeated the copy. */}
+              <span className="text-lg">
+                <Icon name="cookie" decorative />
               </span>
               {customContent || (
                 <p className="text-sm sm:text-base">

@@ -84,7 +84,11 @@ describe('BlogContent', () => {
     // Check that copy button is present
     const copyButton = screen.getByTitle('Copy code');
     expect(copyButton).toBeInTheDocument();
-    expect(copyButton).toHaveTextContent('📋');
+    // Was toHaveTextContent('📋'). The button now renders the icon set
+    // (#385), so its label is real sr-only text rather than an emoji glyph —
+    // a stronger assertion, since the button previously had no accessible
+    // name beyond `title`.
+    expect(copyButton).toHaveTextContent('Copy code');
   });
 
   it('processes code blocks with language labels', () => {

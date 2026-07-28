@@ -10,10 +10,12 @@ expect.extend(toHaveNoViolations);
  * Accessible names are an API in this repo (#377).
  *
  * `performSignIn()` and roughly twenty specs locate controls by their
- * accessible name, and the emoji this set replaces carry names explicitly —
- * `CookieConsent.tsx` renders `role="img" aria-label="Cookie"`. An SVG that
- * silently renders unlabelled changes what axe sees and what those locators
- * can find, without failing anything at the point of the swap.
+ * accessible name, and the emoji this set replaced carried names explicitly —
+ * `CookieConsent` rendered `role="img" aria-label="Cookie"` next to a sentence
+ * that already said "We use cookies", so that name only repeated the copy and
+ * the replacement is deliberately decorative. An SVG that silently renders
+ * unlabelled changes what axe sees and what those locators can find, without
+ * failing anything at the point of the swap — hence the union in the props.
  */
 describe('Icon Accessibility', () => {
   it('has no violations when labelled', async () => {

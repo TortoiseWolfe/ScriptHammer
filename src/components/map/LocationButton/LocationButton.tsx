@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Icon from '@/components/atomic/Icon';
 
 export interface LocationButtonProps {
   onClick: () => void;
@@ -37,9 +38,11 @@ export const LocationButton: React.FC<LocationButtonProps> = ({
   const getIcon = () => {
     if (loading)
       return <span className="loading loading-spinner loading-sm"></span>;
-    if (permissionState === 'denied') return '🚫';
-    if (hasLocation) return '📍';
-    return '📍';
+    // Decorative (#385): getButtonText() beside these already says "Location
+    // blocked" / "Update location" / "Get my location", so the icon carries no
+    // information the label does not.
+    if (permissionState === 'denied') return <Icon name="ban" decorative />;
+    return <Icon name="pin" decorative />;
   };
 
   const getVariantClasses = () => {

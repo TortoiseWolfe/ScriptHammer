@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import type { BlogPost } from '@/types/blog';
 import { seoAnalyzer } from '@/lib/blog/seo-analyzer';
+import Icon from '@/components/atomic/Icon';
 
 export interface SEOAnalysisPanelProps {
   post: BlogPost;
@@ -64,7 +65,9 @@ export default function SEOAnalysisPanel({
               className="btn btn-xs sm:btn-sm btn-ghost"
               title="Copy SEO feedback"
             >
-              {copied ? '✓ Copied' : '📋 Copy'}
+              {/* Decorative (#385): the word beside it changes too. */}
+              <Icon name={copied ? 'check' : 'copy'} decorative />
+              {copied ? 'Copied' : 'Copy'}
             </button>
             <div
               className={`radial-progress ${scoreColorClass(score.overall)}`}
@@ -145,7 +148,11 @@ export default function SEOAnalysisPanel({
                   key={i}
                   className="flex items-start gap-2 text-xs sm:text-sm"
                 >
-                  <span className="text-success mt-0.5 flex-shrink-0">✓</span>
+                  {/* Decorative: the <h4> above reads "Strengths (N)", so
+                      the marker is not the only non-colour signal (#385). */}
+                  <span className="text-success mt-0.5 flex-shrink-0">
+                    <Icon name="check" decorative />
+                  </span>
                   <span className="break-words">{strength}</span>
                 </li>
               ))}
@@ -165,7 +172,10 @@ export default function SEOAnalysisPanel({
                   key={i}
                   className="flex items-start gap-2 text-xs sm:text-sm"
                 >
-                  <span className="text-error mt-0.5 flex-shrink-0">✗</span>
+                  {/* Decorative: the <h4> above reads "Weaknesses (N)". */}
+                  <span className="text-error mt-0.5 flex-shrink-0">
+                    <Icon name="close" decorative />
+                  </span>
                   <span className="break-words">{weakness}</span>
                 </li>
               ))}
