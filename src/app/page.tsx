@@ -1,10 +1,7 @@
 import Link from 'next/link';
 import { LayeredScriptHammerLogo } from '@/components/atomic/SpinningLogo';
 import Icon from '@/components/atomic/Icon';
-import {
-  type TemplateStat,
-  type TemplateDemo,
-} from '@/components/molecular/TemplateStats';
+import { type TemplateDemo } from '@/components/molecular/TemplateStats';
 import { detectedConfig } from '@/config/project-detected';
 import { CURATED_THEMES, THEME_COUNT } from '@/config/themes';
 import { countWireframes } from '@/config/wireframes';
@@ -31,12 +28,17 @@ const NEXT_MINOR = pkg.dependencies.next.replace(/^\^?(\d+\.\d+).*$/, '$1');
 // design was a mockup, technical specs are still first priority over an
 // artist renderings." A landing page whose most prominent element fails when
 // pasted is worse than one that looks plainer.
-const TERMINAL_LINES = [
+const TERMINAL_LINES: readonly {
+  prompt: boolean;
+  done?: boolean;
+  text: string;
+}[] = [
   { prompt: true, text: `git clone ${detectedConfig.projectUrl}.git my-app` },
   { prompt: true, text: 'cd my-app && cp .env.example .env' },
   { prompt: true, text: 'docker compose up' },
-  { prompt: false, text: '→ ready · localhost:3000' },
-] as const;
+  // `done` is the comp's secondary-coloured completion line.
+  { prompt: false, done: true, text: '→ ready · localhost:3000' },
+];
 
 // The terminal's right-hand column in the design. Its last row reads
 // "ci — 2,431 tests + a11y audit wired to every push"; that count is mockup
@@ -61,31 +63,29 @@ const GROOVE_FACTS = [
   'Static export → GitHub Pages',
 ] as const;
 
-const STATS: readonly TemplateStat[] = [
+// The comp's four readings, in its order. Captions are SHORT and singular —
+// the earlier `label · detail` pair wrapped to two lines and broke the rhythm.
+//
+// Two accessible names here are load-bearing E2E anchors: this list must keep
+// a link whose name contains "34 Themes" (seven locators, #408) and one
+// matching /accessible/i (homepage.spec.ts). Both are asserted below.
+const STATS: readonly {
+  value: string;
+  caption: string;
+  href: string;
+}[] = [
+  { value: '2,400+', caption: 'Tests on every push', href: '/status' },
   {
     value: String(THEME_COUNT),
-    label: 'Themes',
-    detail: 'DaisyUI · live switching',
+    caption: `Themes · ${CURATED_THEMES.length} curated`,
     href: '/themes',
   },
   {
-    value: '2,400+',
-    label: 'Tests',
-    detail: 'Unit · a11y · E2E',
-    href: '/status',
+    value: String(WIREFRAME_COUNT),
+    caption: 'Interactive wireframes',
+    href: '/wireframes',
   },
-  {
-    value: 'WCAG AA',
-    label: 'Accessible',
-    detail: 'Skip links · font scaling',
-    href: '/accessibility',
-  },
-  {
-    value: 'PWA',
-    label: 'Offline-first',
-    detail: 'Service worker · installable',
-    href: '/docs',
-  },
+  { value: 'AA', caption: 'Accessible · WCAG in CI', href: '/accessibility' },
 ];
 
 const DEMOS: readonly TemplateDemo[] = [
@@ -156,7 +156,17 @@ const MODULES = [
 
 export default function Home() {
   return (
-    <main className="bg-base-200 flex min-h-full flex-col">
+    // The ambient glow from the top of the comp. It is what sets the mood of
+    // the whole page, and it was the single biggest thing missing — the built
+    // page was a flat `bg-base-200`. Theme-aware: `base-300` is the glow in
+    // every theme, so this reads correctly on all 34.
+    <main
+      className="bg-base-100 flex min-h-full flex-col"
+      style={{
+        background:
+          'radial-gradient(120% 80% at 50% -10%, var(--color-base-300) 0%, var(--color-base-100) 55%)',
+      }}
+    >
       {/* Skip link — load-bearing a11y, do not remove (PRP-017 T036). */}
       <a
         href="#main-content"
@@ -243,13 +253,10 @@ export default function Home() {
             aria-label="Primary actions"
             className="flex flex-wrap items-center gap-4"
           >
-            <Link href="/schedule" className="btn btn-primary btn-lg min-h-11">
+            <Link href="/schedule" className="sh-btn sh-btn-primary">
               Start a project
             </Link>
-            <Link
-              href="/status"
-              className="link link-hover text-base-content inline-flex min-h-11 items-center gap-2 text-sm"
-            >
+            <Link href="/status" className="sh-btn sh-btn-ghost">
               See it running
               <span aria-hidden="true">→</span>
             </Link>
@@ -265,43 +272,111 @@ export default function Home() {
         <h2 id="install-heading" className="sr-only">
           Install
         </h2>
-        <div className="sh-plate bg-base-100 rounded-box overflow-hidden">
-          <div className="border-base-300 text-base-content flex items-center gap-2 border-b px-4 py-2 font-mono text-xs tracking-wider uppercase">
-            <span aria-hidden="true">●</span>
-            bash — new project
-          </div>
-          <div className="grid grid-cols-1 gap-6 p-4 sm:p-6 lg:grid-cols-[1fr_1fr] lg:gap-10">
-            {/* One <pre> so the whole block copies as runnable text.
-                Wraps rather than scrolls: the clone URL is long enough to
-                truncate the page's most important line at rest, and a
-                command you cannot read is worse than one that takes two
-                lines. */}
-            <pre className="text-base-content min-w-0 font-mono text-sm leading-7 break-words whitespace-pre-wrap">
-              {TERMINAL_LINES.map((line) => (
-                <span key={line.text} className="block">
-                  {line.prompt && (
-                    <span className="text-accent select-none">$ </span>
-                  )}
-                  {line.text}
-                </span>
+        {/* BEZEL — a raised plate with 8px of padding, which is what makes the
+            screen inside read as recessed hardware rather than a coloured div. */}
+        <div
+          className="rounded-[22px] p-2"
+          style={{
+            background:
+              'linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200))',
+            boxShadow:
+              '0 26px 50px -18px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 15%, transparent)',
+          }}
+        >
+          {/* SCREEN — a FIXED near-black, deliberately not a theme token. The
+              comp hard-codes oklch(18% 0.03 282), darker than even
+              scripthammer-dark's base-100 (oklch(22.84%)), because a terminal
+              screen is a physical object that does not repaint with the theme.
+              Keeping it fixed is also what lets the muted opacities below clear
+              7:1 — they are light-on-near-black in every theme. */}
+          <div
+            className="flex flex-col gap-3 rounded-2xl px-5 py-[18px] font-mono text-[13px] leading-[1.95]"
+            style={{
+              background: 'oklch(18% 0.03 282)',
+              color: 'oklch(93% 0.013 256)',
+              boxShadow:
+                'inset 0 5px 14px rgba(0,0,0,.9), inset 0 -1px 0 color-mix(in oklab, #fff 8%, transparent)',
+            }}
+          >
+            {/* Title bar: macOS traffic lights, each with its own glow. */}
+            <div className="flex items-center gap-[7px]">
+              {(
+                [
+                  ['#ff5f57', 0.5],
+                  ['#febc2e', 0.4],
+                  ['#28c840', 0.4],
+                ] as const
+              ).map(([c, a]) => (
+                <span
+                  key={c}
+                  aria-hidden="true"
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{
+                    background: c,
+                    boxShadow: `0 0 8px ${c}${Math.round(a * 255).toString(16)}`,
+                  }}
+                />
               ))}
-            </pre>
+              <span className="ml-2 text-[10.5px] tracking-[.12em] uppercase opacity-70">
+                bash — new project
+              </span>
+            </div>
 
-            {/* The design's right-hand column. Its copy ends "ci — 2,431 tests
-                + a11y audit wired to every push"; the count is mockup data, so
-                this states the thing that is true without inventing a figure. */}
-            <div>
-              <h3 className="text-base-content mb-3 font-mono text-xs tracking-wider uppercase">
-                What that one command did
-              </h3>
-              <dl className="space-y-2 font-mono text-xs leading-6">
-                {COMMAND_DID.map(([key, what]) => (
-                  <div key={key} className="flex flex-wrap gap-x-2">
-                    <dt className="text-accent shrink-0">{key}</dt>
-                    <dd className="text-base-content flex-1">— {what}</dd>
-                  </div>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-10">
+              {/* One <pre> so the whole block copies as runnable text.
+                  Wraps rather than scrolls: the clone URL is long enough to
+                  truncate the page's most important line at rest, and a
+                  command you cannot read is worse than one that takes two
+                  lines. */}
+              <pre className="min-w-0 font-mono text-[13px] leading-[1.95] break-words whitespace-pre-wrap">
+                {TERMINAL_LINES.map((line) => (
+                  <span key={line.text} className="block">
+                    {line.prompt && (
+                      <span className="text-accent select-none">$ </span>
+                    )}
+                    <span
+                      style={
+                        line.done
+                          ? { color: 'var(--color-secondary)' }
+                          : undefined
+                      }
+                    >
+                      {line.text}
+                    </span>
+                  </span>
                 ))}
-              </dl>
+                {/* The comp ends on a live prompt with a blinking block. */}
+                <span className="block">
+                  <span className="text-accent select-none">$ </span>
+                  <span
+                    aria-hidden="true"
+                    className="sh-blink inline-block w-[8px] align-text-bottom"
+                    style={{ background: 'currentColor', height: '1.1em' }}
+                  />
+                </span>
+              </pre>
+
+              {/* The design's right-hand column. Its copy ends "ci — 2,431 tests
+                  + a11y audit wired to every push"; the count is mockup data, so
+                  this states the thing that is true without inventing a figure. */}
+              <div className="min-w-0">
+                <h3 className="mb-3 text-[10.5px] tracking-[.16em] uppercase opacity-70">
+                  What that one command did
+                </h3>
+                <dl className="space-y-3 font-mono text-xs leading-[1.6]">
+                  {COMMAND_DID.map(([key, what]) => (
+                    <div key={key} className="flex flex-wrap gap-x-2">
+                      <dt
+                        className="shrink-0"
+                        style={{ color: 'var(--color-secondary)' }}
+                      >
+                        {key}
+                      </dt>
+                      <dd className="flex-1">— {what}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
             </div>
           </div>
         </div>
@@ -342,11 +417,20 @@ export default function Home() {
                 {/* value and label in one line so the accessible name reads
                     "34 Themes …" — seven E2E locators across three specs match
                     on that substring (#408). */}
-                <span className="text-base-content font-mono text-3xl leading-none tabular-nums">
+                {/* Archivo Black, not mono — and filled with the comp's
+                    top-to-bottom fade. Solid `color` stays as the fallback if
+                    background-clip is unsupported. */}
+                <span
+                  className="text-base-content font-display bg-clip-text text-[42px] leading-none tracking-[-0.03em] [-webkit-background-clip:text] [-webkit-text-fill-color:transparent]"
+                  style={{
+                    backgroundImage:
+                      'linear-gradient(180deg, var(--color-base-content), color-mix(in oklab, var(--color-base-content) 62%, transparent))',
+                  }}
+                >
                   {stat.value}
                 </span>
-                <span className="text-base-content font-mono text-xs tracking-wider uppercase">
-                  {stat.label} · {stat.detail}
+                <span className="text-base-content font-mono text-[11px] tracking-[.14em] uppercase">
+                  {stat.caption}
                 </span>
               </Link>
             </li>
@@ -362,7 +446,7 @@ export default function Home() {
         <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
           <h2
             id="modules-heading"
-            className="text-base-content text-3xl tracking-tight sm:text-4xl"
+            className="text-base-content font-display text-3xl tracking-[-0.025em] sm:text-[38px]"
           >
             What&rsquo;s in the box
           </h2>
@@ -376,16 +460,32 @@ export default function Home() {
             <Link
               key={m.href}
               href={m.href}
-              className="sh-plate bg-base-100 rounded-box focus-within:ring-primary flex flex-col gap-2 p-5 transition-transform focus-within:ring-2 hover:-translate-y-1"
+              className="focus-within:ring-primary flex flex-col gap-3 rounded-[20px] px-[22px] pt-[26px] pb-7 transition-transform focus-within:ring-2 hover:-translate-y-1"
+              style={{
+                background:
+                  'linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200))',
+                boxShadow:
+                  '0 20px 38px -16px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 14%, transparent)',
+              }}
             >
+              {/* The number sits in its own recessed chip in the comp — a
+                  groove, not bare text. */}
               <span
                 aria-hidden="true"
-                className="text-accent font-mono text-xs tracking-wider"
+                className="bg-base-100 flex h-[38px] w-[38px] items-center justify-center rounded-xl font-mono text-xs"
+                style={{
+                  color: 'var(--color-secondary)',
+                  boxShadow: 'inset 0 3px 7px rgba(0,0,0,.8)',
+                }}
               >
                 {m.n}
               </span>
-              <h3 className="text-base-content text-lg">{m.label}</h3>
-              <p className="text-base-content/80 text-sm">{m.desc}</p>
+              <h3 className="text-base-content font-display text-xl">
+                {m.label}
+              </h3>
+              <p className="text-base-content/80 text-[14.5px] leading-[1.55]">
+                {m.desc}
+              </p>
             </Link>
           ))}
         </div>
@@ -399,7 +499,7 @@ export default function Home() {
         <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
           <h2
             id="surfaces-heading"
-            className="text-base-content text-3xl tracking-tight sm:text-4xl"
+            className="text-base-content font-display text-3xl tracking-[-0.025em] sm:text-[38px]"
           >
             Live surfaces
           </h2>
@@ -417,13 +517,31 @@ export default function Home() {
             <li key={s.href}>
               <Link
                 href={s.href}
-                className="sh-plate bg-base-100 rounded-box focus-within:ring-primary flex h-full flex-col gap-3 p-5 transition-transform focus-within:ring-2 hover:-translate-y-1"
+                className="focus-within:ring-primary flex h-full flex-col gap-3 rounded-[20px] px-[22px] pt-[26px] pb-6 transition-transform focus-within:ring-2 hover:-translate-y-1"
+                style={{
+                  background:
+                    'linear-gradient(180deg, color-mix(in oklab, var(--color-base-300) 90%, var(--color-base-content) 5%), var(--color-base-200))',
+                  boxShadow:
+                    '0 20px 38px -16px rgba(0,0,0,.9), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 14%, transparent)',
+                }}
               >
-                <span className="sh-well bg-base-100 rounded-box text-base-content flex items-center justify-center px-4 py-8 font-mono text-xs tracking-wider uppercase">
-                  {s.surface}
+                <span className="text-base-content font-display text-xl">
+                  {s.label}
                 </span>
-                <span className="text-base-content text-lg">{s.label}</span>
-                <span className="text-base-content/80 text-sm">{s.desc}</span>
+                <span className="text-base-content/80 flex-1 text-[14.5px] leading-[1.55]">
+                  {s.desc}
+                </span>
+                {/* The comp recesses a screenshot here. There are none in this
+                    repo, and an empty framed well reads as an image that
+                    failed to load — worse than not drawing one. The route
+                    itself is the honest thing to put in a groove: it says
+                    where the surface lives and it is true. */}
+                <span className="sh-groove bg-base-100 text-base-content flex items-center gap-2 rounded-full px-3 py-2 font-mono text-[10.5px] tracking-[.14em] uppercase">
+                  {s.href}
+                  <span aria-hidden="true" className="ml-auto">
+                    →
+                  </span>
+                </span>
               </Link>
             </li>
           ))}
@@ -458,7 +576,7 @@ export default function Home() {
         <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
           <h2
             id="themes-heading"
-            className="text-base-content text-3xl tracking-tight sm:text-4xl"
+            className="text-base-content font-display text-3xl tracking-[-0.025em] sm:text-[38px]"
           >
             Every theme, actually designed
           </h2>
@@ -470,23 +588,42 @@ export default function Home() {
         {/* Ten swatches, not the design's six, so this wraps rather than
             sitting in one row — and must never force the well wider than the
             container, which is the #373 clamp waiting to happen. */}
-        <ul className="sh-well bg-base-100 rounded-box flex flex-wrap gap-3 p-4">
+        <ul className="sh-well bg-base-100 grid grid-cols-2 gap-3 rounded-[24px] p-6 sm:grid-cols-3 lg:grid-cols-5">
           {CURATED_THEMES.map((theme) => (
             <li key={theme}>
               <Link
                 href="/themes"
-                // data-theme scopes DaisyUI's tokens to this element, so the
-                // chips below render each theme's REAL colours rather than an
-                // approximation hand-copied from the comp.
-                data-theme={theme}
-                className="bg-base-100 focus-visible:ring-primary flex min-h-11 items-center gap-2 rounded-full px-3 py-2 focus-visible:ring-2"
+                className="focus-visible:ring-primary group block overflow-hidden rounded-2xl focus-visible:ring-2"
+                style={{
+                  boxShadow:
+                    '0 12px 26px -10px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.14)',
+                }}
               >
-                <span aria-hidden="true" className="flex gap-1">
-                  <span className="bg-primary h-4 w-4 rounded-full" />
-                  <span className="bg-secondary h-4 w-4 rounded-full" />
-                  <span className="bg-accent h-4 w-4 rounded-full" />
+                {/* A 58px field carrying the theme's own base gradient, with
+                    its three accent chips bottom-aligned — the comp's shape.
+                    This is the part that makes the rail read as a set of
+                    designed themes rather than a list of names. */}
+                {/* data-theme is scoped to the SWATCH ONLY, not the card.
+                    It makes the field and chips render each theme's real
+                    colours — but scoping the label too made it inherit that
+                    theme's contrast, and `retro` puts base-content on base-300
+                    at 5.69:1, under the 7:1 gate. Not every DaisyUI theme
+                    meets AAA internally, so the label stays on the page's
+                    theme and only the sample carries the other one. */}
+                <span
+                  aria-hidden="true"
+                  data-theme={theme}
+                  className="flex h-[58px] items-end gap-[5px] p-[9px]"
+                  style={{
+                    background:
+                      'linear-gradient(180deg, var(--color-base-100), var(--color-base-200))',
+                  }}
+                >
+                  <span className="bg-primary h-4 w-4 rounded-[5px]" />
+                  <span className="bg-secondary h-4 w-4 rounded-[5px]" />
+                  <span className="bg-accent h-4 w-4 rounded-[5px]" />
                 </span>
-                <span className="text-base-content font-mono text-xs tracking-wider">
+                <span className="bg-base-300 text-base-content flex min-h-11 items-center px-[9px] py-2 font-mono text-[10.5px] tracking-[.12em] uppercase">
                   {theme}
                 </span>
               </Link>
@@ -500,29 +637,42 @@ export default function Home() {
         aria-labelledby="cta-heading"
         className="mx-auto w-full max-w-6xl px-4 pb-16 sm:px-6 lg:px-8"
       >
-        <div className="sh-plate bg-base-100 rounded-box flex flex-col gap-6 p-6 sm:p-10">
-          <div>
+        {/* The comp warms this plate toward `secondary` on a 140deg axis,
+            which is what separates it from the module plates above. */}
+        <div
+          className="flex flex-col items-start justify-between gap-10 rounded-[26px] p-8 sm:p-10 lg:flex-row lg:items-center lg:p-[52px]"
+          style={{
+            background:
+              'linear-gradient(140deg, color-mix(in oklab, var(--color-base-300) 92%, var(--color-secondary) 10%), var(--color-base-200) 60%)',
+            boxShadow:
+              '0 30px 60px -22px rgba(0,0,0,.95), inset 0 1px 0 color-mix(in oklab, var(--color-base-content) 16%, transparent)',
+          }}
+        >
+          <div className="flex flex-col gap-3">
             <h2
               id="cta-heading"
-              className="text-base-content max-w-2xl text-2xl tracking-tight sm:text-3xl"
+              className="text-base-content font-display max-w-[20ch] text-3xl leading-[1.05] tracking-[-0.025em] sm:text-[38px]"
             >
-              Tell us what you&rsquo;re building.
+              Tell us what you&rsquo;re building. We&rsquo;ll show it running
+              next week.
             </h2>
-            <p className="text-base-content/80 mt-3 max-w-2xl">
+            <p className="text-base-content/80 max-w-[50ch] leading-[1.55]">
               Or take the whole thing yourself — it&rsquo;s open source,
               documented, and deployed on every push.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
-            <Link href="/schedule" className="btn btn-primary min-h-11">
+          {/* Stacked, not inline — the comp puts these in a column at the
+              right so the plate reads as one block with an action rail. */}
+          <div className="flex w-full shrink-0 flex-col gap-3 sm:w-[19rem]">
+            <Link href="/schedule" className="sh-btn sh-btn-primary">
               Book a call
             </Link>
             <a
               href={detectedConfig.projectUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-ghost min-h-11"
+              className="sh-btn sh-btn-ghost"
             >
               Clone the starter
               <Icon name="external-link" decorative />
@@ -531,12 +681,9 @@ export default function Home() {
               href={STORYBOOK_URL}
               target="_blank"
               rel="noopener noreferrer"
-              // Solid text-base-content for AAA contrast (7:1) on
-              // scripthammer-light's panel — /70 was 4.98:1, fine for AA but
-              // failing AAA per #21.
-              className="link link-hover text-base-content inline-flex min-h-11 items-center gap-2 text-sm"
+              className="link link-hover text-base-content inline-flex min-h-11 items-center justify-center gap-2 text-center text-sm"
             >
-              Component catalogue in Storybook
+              Storybook catalogue
               <span aria-hidden="true">→</span>
             </a>
           </div>
