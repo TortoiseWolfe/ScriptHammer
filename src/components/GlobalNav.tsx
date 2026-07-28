@@ -185,19 +185,20 @@ export function GlobalNav() {
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="flex items-center gap-2 transition-opacity hover:opacity-80"
+              className="flex min-h-11 items-center gap-3 transition-opacity hover:opacity-80"
             >
-              <div className="h-8 w-8">
-                <LayeredScriptHammerLogo
-                  size={32}
-                  speed="slow"
-                  className="drop-shadow-sm"
-                />
-              </div>
+              {/* The comp seats the mark in a 40px cut WELL, which is what
+                  makes it read as a machined badge rather than a floating
+                  image (#379). */}
+              <span className="bg-base-100 sh-groove flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
+                <span className="h-[30px] w-[30px]">
+                  <LayeredScriptHammerLogo size={30} speed="slow" />
+                </span>
+              </span>
               <span className="hidden sm:block">
                 <AnimatedLogo
                   text={detectedConfig.projectName}
-                  className="!text-xl font-bold"
+                  className="font-display !text-[17px] tracking-[-0.01em] uppercase"
                   animationSpeed="normal"
                 />
               </span>
@@ -205,10 +206,12 @@ export function GlobalNav() {
           </div>
 
           {/* Main Navigation */}
-          <nav className="hidden items-center gap-1 lg:flex">
+          <nav className="sh-rail hidden items-center lg:flex">
             {navItems.map((item) => {
-              const cls = `btn btn-ghost btn-sm ${
-                isActive(item) ? 'btn-active' : ''
+              // min-h-11 keeps the 44px target the repo gates on; the comp's
+              // 33px rows are a desktop-only drawing.
+              const cls = `text-base-content inline-flex min-h-11 items-center rounded-full px-2.5 font-mono text-[11.5px] xl:px-3.5 tracking-[.1em] uppercase transition-colors ${
+                isActive(item) ? 'sh-rail-active' : 'hover:bg-base-200'
               }`;
               return item.reload ? (
                 <a
@@ -342,15 +345,19 @@ export function GlobalNav() {
               </div>
             ) : (
               <>
+                {/* The comp pairs a quiet text action with one lit pill.
+                    Its pill says "Clone it"; ours stays Sign Up — this app has
+                    real auth, and the primary nav action should be the one a
+                    visitor actually needs. Same treatment, honest label. */}
                 <Link
                   href="/sign-in"
-                  className="btn btn-ghost btn-sm hidden min-h-11 min-w-11 lg:inline-flex"
+                  className="text-base-content hidden min-h-11 min-w-11 items-center px-3 font-mono text-[11.5px] tracking-[.1em] uppercase lg:inline-flex"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/sign-up"
-                  className="btn btn-primary btn-sm hidden min-h-11 min-w-11 lg:inline-flex"
+                  className="sh-btn sh-btn-primary hidden !min-w-11 !rounded-full !px-[18px] !py-[11px] !text-[11.5px] lg:inline-flex"
                 >
                   Sign Up
                 </Link>
