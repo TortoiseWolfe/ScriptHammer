@@ -122,16 +122,18 @@ export default function StatusPage() {
   return (
     <main className="bg-base-200 min-h-full">
       <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-        <h1 className="text-base-content mb-2 text-4xl font-bold tracking-tight sm:text-5xl">Status</h1>
-
-        {/* The verdict. If this dot is green you can stop reading.
-            A raised PLATE (#383): it is the one thing on this page you act
-            on, so it sits ON the page while the readings below sit IN it. */}
-        <p className="text-base-content sh-plate bg-base-100 rounded-box mb-12 flex items-baseline gap-3 px-5 py-4 font-mono text-lg sm:text-xl">
-          <span aria-hidden="true" className={DOT[verdict.state]}>●</span>
-          <span className="sr-only">{SR[verdict.state]}:</span>
-          <span>{verdict.text}{!online && ' · offline'}</span>
-        </p>
+        {/* Verdict pill beside the title, recessed — the composition and the
+            depth in the design source (`docs/design/2a/ScriptHammer-Site.dc.html`,
+            "3d STATUS"). It shipped as a raised plate; the design cuts it in,
+            like every other reading on the page. See #383. */}
+        <div className="mb-12 flex flex-wrap items-center gap-4">
+          <p className="text-base-content sh-groove bg-base-100 flex items-center gap-2 rounded-full px-5 py-3 font-mono text-xs tracking-wider uppercase">
+            <span aria-hidden="true" className={DOT[verdict.state]}>●</span>
+            <span className="sr-only">{SR[verdict.state]}:</span>
+            <span>{verdict.text}{!online && ' · offline'}</span>
+          </p>
+          <h1 className="text-base-content text-4xl tracking-tight sm:text-5xl">Status</h1>
+        </div>
 
         {/* "Every well is a live reading" — each group of measurements is a
             cut WELL. Rows stay flat inside them; the depth is the container's
