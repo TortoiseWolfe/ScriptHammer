@@ -7,6 +7,12 @@ import TemplateStats, {
   type TemplateDemo,
 } from '@/components/molecular/TemplateStats';
 import { detectedConfig } from '@/config/project-detected';
+import { THEME_COUNT } from '@/config/themes';
+// The manifest `/wireframes` itself renders from — so the number quoted here
+// cannot disagree with the number of wireframes the page actually shows (#408).
+import wireframeManifest from '../../public/wireframes/wireframes-manifest.json';
+
+const WIREFRAME_COUNT = wireframeManifest.total;
 
 // ── Hosted landing — audience is a visitor evaluating the product.
 //     Visual hierarchy: spinning logo + animated title draw the eye,
@@ -17,7 +23,7 @@ import { detectedConfig } from '@/config/project-detected';
 
 const STATS: readonly TemplateStat[] = [
   {
-    value: '32',
+    value: String(THEME_COUNT),
     label: 'Themes',
     detail: 'DaisyUI · live switching',
     href: '/themes',
@@ -73,14 +79,14 @@ const PRODUCTION_READY = {
 const FEATURES = [
   {
     icon: 'theme',
-    label: '32 Themes',
+    label: `${THEME_COUNT} Themes`,
     desc: 'Light & dark with live switching',
     href: '/themes',
   },
   {
     icon: 'layout',
     label: 'Wireframes',
-    desc: '46 interactive SVG design specs',
+    desc: `${WIREFRAME_COUNT} interactive SVG design specs`,
     href: '/wireframes',
   },
   {

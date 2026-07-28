@@ -8,6 +8,7 @@ import { AnimatedLogo } from '@/components/atomic/AnimatedLogo';
 import { ColorblindToggle } from '@/components/molecular/ColorblindToggle';
 import { FontSizeControl } from '@/components/navigation/FontSizeControl';
 import { detectedConfig } from '@/config/project-detected';
+import { THEMES } from '@/config/themes';
 import { getInternalUrl } from '@/config/project.config';
 import { selectRenderer } from '@/twin/renderer-select';
 import { useAuth } from '@/contexts/AuthContext';
@@ -166,43 +167,6 @@ export function GlobalNav() {
       (!!pathname?.startsWith(item.href + '/') && item.href !== '/')
     );
   };
-
-  const themes = [
-    'scripthammer-dark',
-    'scripthammer-light',
-    'light',
-    'dark',
-    'cupcake',
-    'bumblebee',
-    'emerald',
-    'corporate',
-    'synthwave',
-    'retro',
-    'cyberpunk',
-    'valentine',
-    'halloween',
-    'garden',
-    'forest',
-    'aqua',
-    'lofi',
-    'pastel',
-    'fantasy',
-    'wireframe',
-    'black',
-    'luxury',
-    'dracula',
-    'cmyk',
-    'autumn',
-    'business',
-    'acid',
-    'lemonade',
-    'night',
-    'coffee',
-    'winter',
-    'dim',
-    'nord',
-    'sunset',
-  ];
 
   return (
     // data-global-nav is a styling hook for the twin routes' glass treatment
@@ -566,7 +530,7 @@ export function GlobalNav() {
                 tabIndex={0}
                 className="dropdown-content bg-base-100 rounded-box z-[1] max-h-96 w-44 max-w-[calc(100vw-4rem)] overflow-y-auto p-2 shadow-lg sm:w-52"
               >
-                {themes.map((t) => (
+                {THEMES.map((t) => (
                   <li key={t}>
                     <button
                       className={`btn btn-ghost btn-sm w-full justify-start ${theme === t ? 'btn-active' : ''}`}

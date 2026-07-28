@@ -5,43 +5,7 @@ import { canUseCookies } from '../../utils/consent';
 import { CookieCategory } from '../../utils/consent-types';
 import { useAnalytics } from '@/hooks/useAnalytics';
 
-// DaisyUI themes (custom themes listed first)
-const THEMES = [
-  'scripthammer-dark',
-  'scripthammer-light',
-  'light',
-  'dark',
-  'cupcake',
-  'bumblebee',
-  'emerald',
-  'corporate',
-  'synthwave',
-  'retro',
-  'cyberpunk',
-  'valentine',
-  'halloween',
-  'garden',
-  'forest',
-  'aqua',
-  'lofi',
-  'pastel',
-  'fantasy',
-  'wireframe',
-  'black',
-  'luxury',
-  'dracula',
-  'cmyk',
-  'autumn',
-  'business',
-  'acid',
-  'lemonade',
-  'night',
-  'coffee',
-  'winter',
-  'dim',
-  'nord',
-  'sunset',
-];
+import { THEMES } from '@/config/themes';
 
 export function ThemeSwitcher() {
   const [currentTheme, setCurrentTheme] = useState('scripthammer-dark');
