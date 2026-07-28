@@ -54,13 +54,20 @@ export default function BlogPostCard({
       : post.metadata.featuredImage
     : null;
 
+  // 2a (#381): the card is a raised PLATE and its thumbnail a cut WELL, so the
+  // image reads as set INTO the card rather than floating on it.
+  //
+  // `sh-plate` also opts this card out of the legacy `[data-theme='…'] .card`
+  // polish, which is specificity 0,2,0 and would otherwise out-specify the
+  // utility on the two default themes (#377). That is why the depth class and
+  // DaisyUI's `card` can coexist here rather than fighting.
   return (
     <article
-      className={`blog-post-card card bg-base-100 shadow-sm hover:shadow-md transition-shadow${className ? ` ${className}` : ''}`}
+      className={`blog-post-card card sh-plate bg-base-100 rounded-box transition-transform hover:-translate-y-0.5${className ? ` ${className}` : ''}`}
       onClick={onClick}
     >
       {featuredImageSrc && (
-        <figure className="relative h-48 w-full overflow-hidden rounded-t-2xl">
+        <figure className="sh-well rounded-box relative m-3 mb-0 h-48 overflow-hidden">
           <Image
             src={featuredImageSrc}
             alt={post.metadata?.featuredImageAlt || post.title}
@@ -94,7 +101,13 @@ export default function BlogPostCard({
           </div>
         )}
 
-        <h2 className="card-title">
+        {/* Explicit subordinate size (#381). Unsized, `card-title` resolved to
+            38.5px here — identical to the page h1 — and a real title ran five
+            lines at 390px, 39% of the card's height. A listing entry should
+            not compete with the heading of the page listing it. Archivo Black
+            is also ~27% wider than the face this replaced (#395), so titles
+            wrap sooner than the old sizing assumed. */}
+        <h2 className="card-title text-xl leading-snug">
           <Link href={`/blog/${post.slug}`} className="hover:text-primary">
             {post.title}
           </Link>
@@ -114,9 +127,17 @@ export default function BlogPostCard({
             )}
           </div>
 
-          <div className="text-base-content/80 flex gap-3 text-sm">
+          {/* Mono dateline (#381). Tabular metadata reads as data, not prose,
+              and the fixed advance keeps dates and read-times aligned down a
+              column of cards instead of jittering with the proportional face. */}
+          <div className="text-base-content/80 flex gap-3 font-mono text-xs whitespace-nowrap">
             <span>{publishedDate}</span>
-            <span>{readingTime} min read</span>
+            <span aria-hidden="true">·</span>
+            {/* "9 min" visually, per the mock — but "9 min read" to a screen
+                reader, because the bare unit is ambiguous read aloud. */}
+            <span>
+              {readingTime} min<span className="sr-only"> read</span>
+            </span>
           </div>
         </div>
 
