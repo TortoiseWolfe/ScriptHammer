@@ -88,7 +88,7 @@ export default function SchedulePage() {
                       </span>
                     </li>
                   </ul>
-                  <p className="text-base-content/85 mt-3 text-xs">
+                  <p className="text-base-content mt-3 text-xs">
                     This information helps us make the most of our time
                     together.
                   </p>

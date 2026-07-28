@@ -200,7 +200,7 @@ export default function CommentPolicyPage() {
 
         <section className="bg-base-200 mb-8 rounded-lg p-6">
           <h2 className="mb-4 text-xl font-semibold">Quick Summary</h2>
-          <p className="text-base-content/80">
+          <p className="text-base-content">
             Be respectful, stay on topic, and contribute meaningfully. No spam,
             harassment, or offensive content. We moderate comments to maintain
             quality discussions. Violations may result in removal or bans.

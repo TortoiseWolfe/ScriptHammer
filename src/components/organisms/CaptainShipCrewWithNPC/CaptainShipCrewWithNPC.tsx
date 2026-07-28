@@ -592,7 +592,7 @@ export default function CaptainShipCrewWithNPC({
           <h2 className="card-title text-lg sm:text-xl">
             Captain, Ship & Crew - Setup
           </h2>
-          <p className="text-sm opacity-75">
+          <p className="text-base-content text-sm">
             Configure players - add NPCs to play against computer opponents!
           </p>
 
