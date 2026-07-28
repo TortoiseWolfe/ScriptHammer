@@ -433,6 +433,34 @@ Apply this any time test code sets `scrollTop` and expects a scroll-event-driven
 - **UI is misleading**: the workflow-run-list page shows the workflow's _overall_ status with the most-recent activity timestamp. That timestamp is when the _last queued sub-job started_, not when the run as a whole started. Reading "In progress 10:35 PM" as "nothing started yet" is wrong but easy to do.
 - **For per-job status**: click into the run itself (job-graph view) or use the API. Don't trust the list page.
 
+## Issue Hygiene: the body is the finding
+
+**The issue BODY is the finding. A comment is not.**
+
+The body is always-current truth and gets rewritten as things change. Comments are history — what someone said, and when. **If a comment is load-bearing, it belongs in the body and the comment should go.** A comment on issue 42 is the file nobody opens, wearing a different hat.
+
+This is not a filing preference. It has cost real time here: a retraction posted as a comment on #391 left the issue **title** still asserting the thing being retracted, and the roadmap went on telling people to ignore a test that was not actually failing. Adopted repo-wide in #358 after a consolidation pass found four issues whose comments contradicted their own bodies.
+
+**When you write something down, ask where a reader will look for it.** Then put it there.
+
+- **Rewrite the body** — don't append. Put whatever changes the reader's mind at the top.
+- **Watch the title too.** A stale title is read far more often than a body, and vastly more than a comment.
+- **Comments worth keeping** are genuine history: someone else's words, or a delivery mechanism. Two live exemptions, both documented in the issues themselves — **#115**, the session-prime roadmap, whose comments _are_ the audit trail by design, and **#188**, whose retained comment is the paste-ready verification prompt that `docs/verification/schlajo-tickets.md` depends on.
+- **Log before you fix.** A small fix still gets an issue. A change with no ticket behind it is one nobody can explain in three months.
+
+### `gh` traps when doing this
+
+- **Comment IDs: `gh issue view` returns GraphQL node IDs** (`IC_kwDO…`), but the delete endpoint wants REST **numeric** IDs. Get them from `gh api /repos/OWNER/REPO/issues/N/comments --jq '.[].id'`, or the delete 404s.
+- **`gh pr edit` is broken in this repo (#397).** It queries the deprecated Projects-classic `repository.pullRequest.projectCards` field and fails on every PR edit. The error reads like a deprecation _notice_, so in a script it looks like an unrelated failure. Use REST instead — note `-F` reads `@file`, `-f` would set the literal string:
+
+  ```bash
+  gh api -X PATCH repos/OWNER/REPO/pulls/N -F body=@body.md
+  ```
+
+  `gh issue edit` is unaffected. Re-test after a `gh` upgrade; when the CLI stops requesting `projectCards` this note can go.
+
+- **Assert your anchor before pushing a body.** A patch that silently fails to match leaves an orphaned marker or drops an edit, and `&&` on the `gh` call will not catch it — the assertion has to live inside the script that rewrites the text. Grep the new body for a distinctive phrase from each comment **before** deleting that comment.
+
 ## Important Notes
 
 - Never create components manually - use the generator
