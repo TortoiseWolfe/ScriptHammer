@@ -3,7 +3,7 @@ import { injectAxe, checkA11y } from 'axe-playwright';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
 // Axe rules to skip in automated checks:
-// - color-contrast: Theme-dependent (DaisyUI has 32 themes with varying contrast)
+// - color-contrast: Theme-dependent (the registered themes vary in contrast)
 // - landmark-unique: Multiple nav elements (GlobalNav + footer) is acceptable
 const axeOptions = {
   axeOptions: {
@@ -216,7 +216,7 @@ test.describe('Accessibility', () => {
   }) => {
     // ADVISORY TEST — does NOT enforce WCAG AA contrast ratios.
     //
-    // DaisyUI ships 32 themes, not all of which meet AA. The team has chosen
+    // Not all registered themes meet AA. The team has chosen
     // to surface contrast issues as warnings rather than CI failures so theme
     // experimentation isn't blocked. This test asserts that:
     //   1. axe-core injects and runs without throwing

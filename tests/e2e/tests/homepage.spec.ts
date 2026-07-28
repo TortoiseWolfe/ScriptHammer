@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
+import { THEME_COUNT } from '@/config/themes';
 
 test.describe('Homepage Navigation', () => {
   test.beforeEach(async ({ page }) => {
@@ -17,8 +18,11 @@ test.describe('Homepage Navigation', () => {
   });
 
   test('navigate to themes page', async ({ page }) => {
-    // Click the 32 Themes link (stats card)
-    await page.getByRole('link', { name: '32 Themes' }).first().click();
+    // Click the themes stats link (stats card)
+    await page
+      .getByRole('link', { name: `${THEME_COUNT} Themes` })
+      .first()
+      .click();
 
     // Verify navigation to themes page
     await expect(page).toHaveURL(/.*themes/);
@@ -50,7 +54,9 @@ test.describe('Homepage Navigation', () => {
 
     // Check feature cards are present
     const featureCards = page.locator('h3');
-    await expect(featureCards.filter({ hasText: /32 Themes/i })).toBeVisible();
+    await expect(
+      featureCards.filter({ hasText: new RegExp(`${THEME_COUNT} Themes`, 'i') })
+    ).toBeVisible();
     await expect(featureCards.filter({ hasText: /PWA Ready/i })).toBeVisible();
     await expect(featureCards.filter({ hasText: /Accessible/i })).toBeVisible();
     await expect(

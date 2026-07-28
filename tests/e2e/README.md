@@ -107,7 +107,7 @@ docker compose exec crudkit pnpm test:e2e --project=chromium
    - Skip navigation
 
 2. **Theme Switching** (13+ tests)
-   - All 32 themes switching
+   - All registered themes switching
    - Theme persistence across reloads
    - Theme application across pages
    - Theme search functionality

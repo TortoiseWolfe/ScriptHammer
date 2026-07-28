@@ -1,7 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { THEMES } from '@/config/themes';
 
 /**
- * #377 — the Machine Shop depth system must read as depth on all 32 themes.
+ * #377 — the Machine Shop depth system must read as depth on every registered theme.
  *
  * The design was authored dark-only against literal `rgba(0,0,0,.8-.9)`. The
  * risk this file exists to catch is a depth system that looks right on the two
@@ -18,42 +19,6 @@ import { test, expect } from '@playwright/test';
  */
 
 /** Every theme registered in the `@plugin "daisyui"` block in globals.css. */
-const THEMES = [
-  'scripthammer-dark',
-  'scripthammer-light',
-  'light',
-  'dark',
-  'cupcake',
-  'bumblebee',
-  'emerald',
-  'corporate',
-  'synthwave',
-  'retro',
-  'cyberpunk',
-  'valentine',
-  'halloween',
-  'garden',
-  'forest',
-  'aqua',
-  'lofi',
-  'pastel',
-  'fantasy',
-  'wireframe',
-  'black',
-  'luxury',
-  'dracula',
-  'cmyk',
-  'autumn',
-  'business',
-  'acid',
-  'lemonade',
-  'night',
-  'coffee',
-  'winter',
-  'dim',
-  'nord',
-  'sunset',
-];
 
 /**
  * Minimum OKLCH lightness separation for an ink to count as visible.
