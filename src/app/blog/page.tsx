@@ -66,7 +66,12 @@ export default async function BlogPage() {
       {/* Eyebrow above, statement as the h1 — the order in the design source
           (`docs/design/2a/ScriptHammer-Site.dc.html`, "3b BLOG"). See #381. */}
       <header className="mb-8 sm:mb-10 md:mb-12">
-        <p className="text-accent mb-2 font-mono text-xs tracking-wider uppercase">
+        {/* Solid, not `text-accent`. The accent measured 6.44:1 against
+            scripthammer-light's #ebe5dd — fine for AA, under the 7:1 this repo
+            gates at (#21). It shipped in #407 and reached main unnoticed
+            because color-contrast.spec.ts only sweeps /, /themes,
+            /accessibility and /status; /blog is not in that list. */}
+        <p className="text-base-content mb-2 font-mono text-xs tracking-wider uppercase">
           Build log
         </p>
         <h1 className="text-base-content text-4xl tracking-tight sm:text-5xl">

@@ -137,7 +137,7 @@ export default function Home() {
         aria-labelledby="hero-heading"
         className="mx-auto w-full max-w-6xl px-4 pt-14 pb-10 sm:px-6 lg:px-8 lg:pt-20"
       >
-        <p className="text-accent mb-4 font-mono text-xs tracking-wider uppercase">
+        <p className="text-base-content mb-4 font-mono text-xs tracking-wider uppercase">
           Live in production · Next {NEXT_MINOR}
         </p>
 
@@ -180,7 +180,7 @@ export default function Home() {
           Install
         </h2>
         <div className="sh-plate bg-base-100 rounded-box overflow-hidden">
-          <div className="border-base-300 text-base-content/60 flex items-center gap-2 border-b px-4 py-2 font-mono text-xs tracking-wider uppercase">
+          <div className="border-base-300 text-base-content flex items-center gap-2 border-b px-4 py-2 font-mono text-xs tracking-wider uppercase">
             <span aria-hidden="true">●</span>
             bash — new project
           </div>
@@ -205,7 +205,7 @@ export default function Home() {
           marquee is motion this page would then have to suppress under
           prefers-reduced-motion. These are facts that do not move. */}
       <section aria-label="At a glance" className="mt-10 px-4 sm:px-6 lg:px-8">
-        <ul className="sh-groove bg-base-100 rounded-box text-base-content/70 mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-5 py-3 font-mono text-xs tracking-wider uppercase">
+        <ul className="sh-groove bg-base-100 rounded-box text-base-content mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-6 gap-y-2 px-5 py-3 font-mono text-xs tracking-wider uppercase">
           {GROOVE_FACTS.map((fact) => (
             <li key={fact}>{fact}</li>
           ))}
@@ -227,7 +227,7 @@ export default function Home() {
           >
             What&rsquo;s in the box
           </h2>
-          <p className="text-base-content/60 font-mono text-xs tracking-wider uppercase">
+          <p className="text-base-content font-mono text-xs tracking-wider uppercase">
             Four modules · all live
           </p>
         </div>
@@ -264,7 +264,7 @@ export default function Home() {
           >
             Every theme, actually designed
           </h2>
-          <p className="text-base-content/60 font-mono text-xs tracking-wider uppercase">
+          <p className="text-base-content font-mono text-xs tracking-wider uppercase">
             {THEME_COUNT} available
           </p>
         </div>
