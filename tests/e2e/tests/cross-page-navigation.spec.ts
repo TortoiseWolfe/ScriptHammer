@@ -1,41 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
-
-// All 32 DaisyUI themes for random selection
-const THEMES = [
-  'light',
-  'dark',
-  'cupcake',
-  'bumblebee',
-  'emerald',
-  'corporate',
-  'synthwave',
-  'retro',
-  'cyberpunk',
-  'valentine',
-  'halloween',
-  'garden',
-  'forest',
-  'aqua',
-  'lofi',
-  'pastel',
-  'fantasy',
-  'wireframe',
-  'black',
-  'luxury',
-  'dracula',
-  'cmyk',
-  'autumn',
-  'business',
-  'acid',
-  'lemonade',
-  'night',
-  'coffee',
-  'winter',
-  'dim',
-  'nord',
-  'sunset',
-];
+import { THEMES, THEME_COUNT } from '@/config/themes';
 
 test.describe('Cross-Page Navigation', () => {
   test('navigate through all main pages', async ({ page }) => {
@@ -45,7 +10,10 @@ test.describe('Cross-Page Navigation', () => {
     await expect(page).toHaveURL(/\/$/);
 
     // Navigate to Themes
-    await page.getByRole('link', { name: '32 Themes' }).first().click();
+    await page
+      .getByRole('link', { name: `${THEME_COUNT} Themes` })
+      .first()
+      .click();
     await dismissCookieBanner(page);
     await expect(page).toHaveURL(/\/themes/);
     await expect(
@@ -74,7 +42,10 @@ test.describe('Cross-Page Navigation', () => {
     await dismissCookieBanner(page);
 
     // Navigate to themes and wait for URL
-    await page.getByRole('link', { name: '32 Themes' }).first().click();
+    await page
+      .getByRole('link', { name: `${THEME_COUNT} Themes` })
+      .first()
+      .click();
     await expect(page).toHaveURL(/\/themes/);
 
     // Navigate to blog and wait for URL
@@ -238,7 +209,10 @@ test.describe('Cross-Page Navigation', () => {
     await page.goto('/themes', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
-    // Pick a random theme from all 32 DaisyUI themes
+    // Pick a random theme from every registered theme. This used to read
+    // from a local 32-entry copy that omitted scripthammer-dark and
+    // scripthammer-light — so the site's own default theme was never
+    // covered here. /themes renders a button for all 34 (#408).
     const randomTheme = THEMES[Math.floor(Math.random() * THEMES.length)];
 
     // Click the theme button
@@ -310,7 +284,10 @@ test.describe('Cross-Page Navigation', () => {
     expect(hasTransitions).toBeDefined();
 
     // Navigate and observe smooth transition
-    await page.getByRole('link', { name: '32 Themes' }).first().click();
+    await page
+      .getByRole('link', { name: `${THEME_COUNT} Themes` })
+      .first()
+      .click();
 
     // Just verify navigation completed
     await expect(page).toHaveURL(/\/themes/);
@@ -353,7 +330,10 @@ test.describe('Cross-Page Navigation', () => {
     await page.evaluate(() => window.scrollTo(0, 500));
 
     // Navigate to another page
-    await page.getByRole('link', { name: '32 Themes' }).first().click();
+    await page
+      .getByRole('link', { name: `${THEME_COUNT} Themes` })
+      .first()
+      .click();
 
     // Wait for the destination page to actually render its content and for
     // Next.js App Router's scroll restoration to complete. Measuring at

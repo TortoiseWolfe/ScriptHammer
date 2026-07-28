@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
+import { THEME_COUNT } from '@/config/themes';
 
 /**
  * Wait for theme to be applied and saved to localStorage.
@@ -76,8 +77,11 @@ test.describe('Theme Switching', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
-    // Navigate to themes page via the 32 Themes stats link
-    await page.getByRole('link', { name: '32 Themes' }).first().click();
+    // Navigate to themes page via the themes stats link
+    await page
+      .getByRole('link', { name: `${THEME_COUNT} Themes` })
+      .first()
+      .click();
     await expect(page).toHaveURL(/.*themes/);
 
     // Check that theme buttons are visible

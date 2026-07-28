@@ -7,6 +7,13 @@ import TemplateStats, {
   type TemplateDemo,
 } from '@/components/molecular/TemplateStats';
 import { detectedConfig } from '@/config/project-detected';
+import { THEME_COUNT } from '@/config/themes';
+import { countWireframes } from '@/config/wireframes';
+
+// Counted from the committed `features/` tree at build time, so the number
+// quoted here cannot disagree with the wireframes /wireframes actually shows.
+// Server component, so this filesystem read never reaches the browser (#408).
+const WIREFRAME_COUNT = countWireframes();
 
 // ── Hosted landing — audience is a visitor evaluating the product.
 //     Visual hierarchy: spinning logo + animated title draw the eye,
@@ -17,7 +24,7 @@ import { detectedConfig } from '@/config/project-detected';
 
 const STATS: readonly TemplateStat[] = [
   {
-    value: '32',
+    value: String(THEME_COUNT),
     label: 'Themes',
     detail: 'DaisyUI · live switching',
     href: '/themes',
@@ -73,14 +80,14 @@ const PRODUCTION_READY = {
 const FEATURES = [
   {
     icon: 'theme',
-    label: '32 Themes',
+    label: `${THEME_COUNT} Themes`,
     desc: 'Light & dark with live switching',
     href: '/themes',
   },
   {
     icon: 'layout',
     label: 'Wireframes',
-    desc: '46 interactive SVG design specs',
+    desc: `${WIREFRAME_COUNT} interactive SVG design specs`,
     href: '/wireframes',
   },
   {
