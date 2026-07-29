@@ -204,3 +204,15 @@ graphify-out/
 # the WSL alternate-data-stream marker Windows attaches to downloaded files.
 *.skp
 *:Zone.Identifier
+
+# Editor and script backups (#424). Anything a tool leaves beside the file it
+# edited is untracked-but-not-ignored, so one `git add -A` commits it. That is
+# the same shape as #392, where a local root build rewrote public/manifest.json
+# and the only mitigation was remembering not to stage everything. This is the
+# version that does not depend on remembering.
+*.bak
+*.bak-*
+*.orig
+*.rej
+*~
+*.swp
