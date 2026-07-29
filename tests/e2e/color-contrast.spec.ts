@@ -82,8 +82,6 @@ const EXCLUDED: Record<string, string> = {
     'transient OAuth handler — redirects on load, there is no UI to measure',
   '/twins/[slug]':
     'twin payloads are privacy-gated and gitignored; absent in a fresh checkout',
-  '/blog/tags/[tag]':
-    'no post declares a tag, so generateStaticParams yields no instance to visit',
   // Headless Firefox has no WebGL, so Cesium cannot construct and renders its
   // OWN error panel — `.cesium-widget-errorPanel-header`, measured at 6.49:1.
   // That is vendor markup we do not ship or control, appearing only in a
@@ -100,6 +98,11 @@ const EXCLUDED: Record<string, string> = {
 /** Dynamic segments need a real instance — the template alone proves nothing. */
 const INSTANCES: Record<string, string> = {
   '/blog/[slug]': '/blog/playable-city-chattanooga',
+  // Was excluded with the reason "no post declares a tag". That was wrong: I
+  // read `post.tags` at the top level, where nothing lives. Tags are under
+  // `metadata.tags` — 53 distinct across 12 posts — and
+  // blog/tags/[tag]/page.tsx:45 builds its params from exactly that field.
+  '/blog/tags/[tag]': '/blog/tags/digital-twin',
 };
 
 function enumerateRoutes(dir: string, prefix = ''): string[] {
