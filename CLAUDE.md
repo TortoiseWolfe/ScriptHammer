@@ -447,6 +447,8 @@ This is not a filing preference. It has cost real time here: a retraction posted
 - **Watch the title too.** A stale title is read far more often than a body, and vastly more than a comment.
 - **Comments worth keeping** are genuine history: someone else's words, or a delivery mechanism. Two live exemptions, both documented in the issues themselves — **#115**, the session-prime roadmap, whose comments _are_ the audit trail by design, and **#188**, whose retained comment is the paste-ready verification prompt that `docs/verification/schlajo-tickets.md` depends on.
 - **Log before you fix.** A small fix still gets an issue. A change with no ticket behind it is one nobody can explain in three months.
+- **A PR body and a commit message are history too — the same trap as a comment, one level further from the reader.** They describe one change at one moment. Nobody greps merged PRs to learn how the system works today. If a finding will still matter after the PR merges, it goes in an **issue body** and the PR points at it. Written after a session put four real findings — a markdown renderer that cannot draw tables (#421), a badge with no data behind it (#422), and two superseded recommendations — into PR bodies and commit messages, where the next reader would never have looked.
+- **A PR that finishes a ticket says `Closes #N`, not `Refs #N`.** `Refs` merges the work and leaves the ticket open forever: #381, #382 and #383 all sat open behind their own merged PR because of it, reading as pending work that was already shipped. Use `Refs` only when the PR genuinely does not finish the ticket.
 
 ### `gh` traps when doing this
 
