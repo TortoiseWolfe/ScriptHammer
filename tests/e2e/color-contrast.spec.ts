@@ -84,6 +84,17 @@ const EXCLUDED: Record<string, string> = {
     'twin payloads are privacy-gated and gitignored; absent in a fresh checkout',
   '/blog/tags/[tag]':
     'no post declares a tag, so generateStaticParams yields no instance to visit',
+  // Headless Firefox has no WebGL, so Cesium cannot construct and renders its
+  // OWN error panel — `.cesium-widget-errorPanel-header`, measured at 6.49:1.
+  // That is vendor markup we do not ship or control, appearing only in a
+  // browser that cannot run the widget at all; chromium passed, which is why
+  // the PR was green and `main` went red on the post-merge firefox shard.
+  //
+  // The route's real UI is not left unchecked: tests/e2e/twin-glass-contrast.spec.ts
+  // measures the twin chrome against the scene directly, which is the contrast
+  // question that actually matters here.
+  '/chatt':
+    'Cesium error panel is vendor markup; headless Firefox has no WebGL',
 };
 
 /** Dynamic segments need a real instance — the template alone proves nothing. */
