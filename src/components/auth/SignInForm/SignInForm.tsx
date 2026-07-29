@@ -345,7 +345,18 @@ export default function SignInForm({
             id="remember-me"
             type="checkbox"
             checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
+            onChange={(e) => {
+              setRememberMe(e.target.checked);
+              // Written on TOGGLE, not only on submit (#375). OAuthButtons sits
+              // directly below this form and passes no storage option of its
+              // own, so a GitHub/Google user would otherwise get unconditional
+              // persistence with no control at all — which the scope decision
+              // on this ticket explicitly rules out. Recording the preference
+              // here means whichever entry path they take next honours the box
+              // they can see, with no prop plumbing between two sibling
+              // components that do not otherwise know about each other.
+              setSessionPersistence(e.target.checked);
+            }}
             className="checkbox checkbox-primary"
             disabled={loading}
             aria-label="Remember Me"

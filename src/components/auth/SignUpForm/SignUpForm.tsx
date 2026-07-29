@@ -270,7 +270,12 @@ export default function SignUpForm({
           <input
             type="checkbox"
             checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
+            onChange={(e) => {
+              setRememberMe(e.target.checked);
+              // On toggle, so the OAuth buttons below this form inherit the
+              // choice (#375). Same reasoning as SignInForm.
+              setSessionPersistence(e.target.checked);
+            }}
             className="checkbox min-h-11 min-w-11"
             disabled={loading}
           />
