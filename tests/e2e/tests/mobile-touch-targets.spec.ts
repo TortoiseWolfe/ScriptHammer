@@ -147,6 +147,89 @@ test.describe('Touch Target Standards', () => {
     ).toBeGreaterThanOrEqual(6);
   });
 
+  test('desktop nav group menus expose 44px targets (#378)', async ({
+    page,
+  }) => {
+    // #378 grouped the demo routes behind `Demos ▾`. Everything inside a
+    // dropdown is invisible to the 390px test above, because the desktop nav
+    // is `hidden lg:flex` — so without this the seven routes that moved into
+    // the group would silently stop being measured the moment they were
+    // grouped. That is the same narrowing the coverage floor below exists to
+    // catch, arriving through a different door.
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
+
+    const trigger = page.locator('[aria-label="Demos menu"]');
+    await expect(trigger).toHaveCount(1);
+
+    // The group is a controlled menu button (#378), not a :focus-within
+    // dropdown — DaisyUI's pattern cannot satisfy "Escape closes and focus
+    // returns to the trigger", because the trigger lives inside .dropdown and
+    // refocusing it re-opens the menu on the same frame.
+    await trigger.first().click();
+    await page.waitForTimeout(400);
+    await expect(trigger.first()).toHaveAttribute('aria-expanded', 'true');
+
+    const items = await page.locator('[role="menu"] [role="menuitem"]').all();
+    const failures: string[] = [];
+    let measured = 0;
+
+    for (const item of items) {
+      if (!(await item.isVisible())) continue;
+      const box = await item.boundingBox();
+      if (!box) continue;
+      measured++;
+      const text = (await item.textContent())?.trim() ?? '';
+      if (box.height < MINIMUM - TOLERANCE) {
+        failures.push(`"${text}": ${box.height.toFixed(0)}px tall (min 44)`);
+      }
+    }
+
+    expect(failures, failures.join('\n')).toHaveLength(0);
+
+    // The trigger itself is a target too, and the group holds seven routes.
+    expect(
+      measured,
+      `Only ${measured} items measured inside the Demos menu. If routes were ` +
+        `moved out of the group, raise this deliberately; if the menu stopped ` +
+        `opening, fix that instead of lowering the number.`
+    ).toBeGreaterThanOrEqual(7);
+  });
+
+  test('the Demos menu is keyboard operable and Escape restores focus (#378)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await dismissCookieBanner(page);
+    await waitForLayoutStability(page);
+
+    const trigger = page.locator('[aria-label="Demos menu"]');
+    const items = page.locator('[role="menu"] [role="menuitem"]');
+
+    // Hydration must finish before onClick exists. Measured: at 1800ms the
+    // button rendered with aria-expanded but the handler was not attached yet,
+    // which reads exactly like a broken menu.
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await trigger.click();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    expect(await items.count()).toBeGreaterThanOrEqual(7);
+
+    await page.keyboard.press('Escape');
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(items).toHaveCount(0);
+
+    // Focus must come back to the trigger, or a keyboard user is dropped at
+    // the top of the document every time they dismiss a menu.
+    expect(
+      await page.evaluate(() =>
+        document.activeElement?.getAttribute('aria-label')
+      )
+    ).toBe('Demos menu');
+  });
+
   test('Navigation buttons meet touch target standards', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/', { waitUntil: 'domcontentloaded' });
