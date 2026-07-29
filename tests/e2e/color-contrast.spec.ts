@@ -103,6 +103,12 @@ const INSTANCES: Record<string, string> = {
   // `metadata.tags` — 53 distinct across 12 posts — and
   // blog/tags/[tag]/page.tsx:45 builds its params from exactly that field.
   '/blog/tags/[tag]': '/blog/tags/digital-twin',
+  // Without this the sweep visits the literal path `/docs/[slug]`, which 404s
+  // — so it measured the not-found page and reported the failure against
+  // `/docs/[slug]`. That accident is what found #425; the 404 page's own
+  // violation is fixed there, and bringing route templates into a gate is
+  // tracked by it.
+  '/docs/[slug]': '/docs/install-and-first-run',
 };
 
 function enumerateRoutes(dir: string, prefix = ''): string[] {

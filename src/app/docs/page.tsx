@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { detectedConfig } from '@/config/project-detected';
 import Icon from '@/components/atomic/Icon';
+import { DOCS, SECTIONS } from '@/lib/docs/registry';
 
 // Docs index. Audience: someone who just clicked through from the landing
 // page with a question. Hierarchy: first-hour path is larger and sits right
@@ -33,7 +34,6 @@ interface Doc {
 
 // prettier-ignore
 const START_HERE: readonly Doc[] = [
-  { label: 'README',        hint: 'clone · env · docker compose up', href: gh('README.md') },
   { label: 'Forking Guide', hint: 'rename · rebrand · deploy',       href: gh('docs/FORKING.md') },
 ];
 
@@ -45,8 +45,6 @@ const REFERENCE: readonly { when: string; docs: readonly Doc[] }[] = [
     { label: 'Testing',             hint: 'unit · a11y · E2E',               href: gh('docs/project/TESTING.md') },
   ]},
   { when: 'How the pieces work', docs: [
-    { label: 'Auth Setup',         hint: 'Supabase · OAuth · magic links',      href: gh('docs/AUTH-SETUP.md') },
-    { label: 'Accessibility',      hint: 'WCAG AA · skip links · font scaling', href: gh('docs/ACCESSIBILITY.md') },
     { label: 'Security',           hint: 'RLS · Vault · secrets',               href: gh('docs/project/SECURITY.md') },
     { label: 'Auto-configuration', hint: 'project detection · defaults',        href: '/blog/auto-configuration-system', internal: true },
   ]},
@@ -106,6 +104,60 @@ export default function DocsPage() {
         <h1 className="text-base-content mb-2 text-4xl font-bold tracking-tight sm:text-5xl">
           Documentation
         </h1>
+
+        {/* ── Read here (3a, #380) ────────────────────────────────────────────
+          These seven render IN THE APP now, from the markdown already in this
+          repo — the comp's rail, made real. Everything below still points at
+          GitHub because it has no in-app route yet.
+
+          README, Auth Setup and Accessibility were removed from those shelves
+          rather than listed twice: the same document reachable by two routes
+          is how a reader ends up on the stale one. */}
+        <section aria-labelledby="in-app-heading" className="mb-10">
+          <h2
+            id="in-app-heading"
+            className="text-base-content mb-3 font-mono text-xs tracking-wider uppercase"
+          >
+            Read here
+          </h2>
+          <div className="sh-well bg-base-100 rounded-box p-3">
+            {SECTIONS.map((section) => {
+              const items = DOCS.filter((d) => d.section === section);
+              if (!items.length) return null;
+              return (
+                <div key={section} className="mb-3 last:mb-0">
+                  <h3 className="text-base-content mb-1 px-2 font-mono text-[10.5px] tracking-[.14em] uppercase">
+                    {section}
+                  </h3>
+                  <ul>
+                    {items.map((d) => (
+                      <li key={d.slug}>
+                        <Link
+                          href={`/docs/${d.slug}`}
+                          className="hover:bg-base-200 flex min-h-11 flex-wrap items-baseline gap-x-3 rounded-lg px-3 py-2 transition-colors"
+                        >
+                          <span className="text-base-content font-semibold">
+                            {d.title}
+                          </span>
+                          <span className="text-base-content text-sm">
+                            {d.hint}
+                          </span>
+                          <span
+                            aria-hidden="true"
+                            className="text-base-content ml-auto"
+                          >
+                            →
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
         <p className="text-base-content mb-10 text-base sm:text-lg">
           New here? The first two links get you to{' '}
           {/* A command is an input, and inputs sit in grooves (#377). */}
