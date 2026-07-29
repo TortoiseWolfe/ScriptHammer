@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { setSessionPersistence } from '@/lib/supabase/client';
 import {
   checkRateLimit,
   recordFailedAttempt,
@@ -99,6 +100,12 @@ export default function SignUpForm({
     }
 
     setLoading(true);
+
+    // Recorded before the auth call (#375). Sign-up matters as much as sign-in
+    // here: the preference has to survive the email-verification round trip, so
+    // that when the user returns via the confirmation link and a session is
+    // finally established, it lands in the store they actually chose.
+    setSessionPersistence(rememberMe);
 
     const { error: signUpError } = await signUp(
       email,

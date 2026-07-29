@@ -3,6 +3,7 @@
 import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { setSessionPersistence } from '@/lib/supabase/client';
 import CaptchaWidget, {
   type CaptchaWidgetHandle,
 } from '@/components/auth/CaptchaWidget';
@@ -88,6 +89,13 @@ export default function SignInForm({
 
     setRemainingAttempts(rateLimit.remaining);
     setLoading(true);
+
+    // BEFORE the auth call, not after (#375). The session is written to storage
+    // as part of signIn, so the preference has to already be recorded or the
+    // token lands in the wrong store and has to be migrated. Until this line
+    // existed, `rememberMe` reached nothing at all: its only consumers were the
+    // checkbox's own `checked` and `onChange`.
+    setSessionPersistence(rememberMe);
 
     const { error: signInError } = await signIn(
       email,

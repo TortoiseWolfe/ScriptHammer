@@ -101,6 +101,103 @@ let supabaseInstance: SupabaseClient<Database> | null = null;
 let isConfigured = false;
 
 /**
+ * Where the auth token lives, and therefore what "Remember me" means (#375).
+ *
+ * `persistSession: true` was hard-coded, so the checkbox could express only the
+ * state it could not deliver: ticking it remembered you by accident, and
+ * UNticking it remembered you anyway. On a shared machine, a user who
+ * deliberately left the box clear still left a session behind.
+ *
+ * The preference itself is deliberately kept in localStorage rather than in the
+ * chosen store. It has to be readable BEFORE the session is restored in order
+ * to decide where to look for it, and a preference of "do not persist" is not
+ * itself a secret — it is which STORE the token goes in that carries the
+ * privacy meaning.
+ *
+ * `session` -> sessionStorage: the token dies with the tab, which is what an
+ * unticked box has always promised.
+ * `local`   -> localStorage: survives restarts. The default, so existing signed
+ * -in users are not silently logged out by this change.
+ */
+const PERSIST_PREF_KEY = 'sh-auth-persistence';
+
+type PersistenceMode = 'local' | 'session';
+
+function persistenceMode(): PersistenceMode {
+  if (typeof window === 'undefined') return 'local';
+  try {
+    return window.localStorage.getItem(PERSIST_PREF_KEY) === 'session'
+      ? 'session'
+      : 'local';
+  } catch {
+    // Safari private mode throws on access. Defaulting to `local` keeps the
+    // pre-#375 behaviour rather than silently signing people out.
+    return 'local';
+  }
+}
+
+/** The store the auth token should live in right now. */
+function authStore(): Storage {
+  return persistenceMode() === 'session'
+    ? window.sessionStorage
+    : window.localStorage;
+}
+
+/** The other one — used to keep exactly one copy of the token. */
+function otherStore(): Storage {
+  return persistenceMode() === 'session'
+    ? window.localStorage
+    : window.sessionStorage;
+}
+
+/**
+ * Record what "Remember me" was set to, for every entry path.
+ *
+ * MUST be called BEFORE the auth call that creates the session, so the token is
+ * written to the right store first time rather than migrated afterwards. That
+ * matters most for OAuth, where the redirect means there is no "afterwards" in
+ * the same page load — `/auth/callback` restores the session on a fresh
+ * document, and the preference has to already be on disk when it does.
+ *
+ * @param remember - true to persist across browser restarts, false to end the
+ * session with the tab.
+ */
+export function setSessionPersistence(remember: boolean): void {
+  if (typeof window === 'undefined') return;
+  const next: PersistenceMode = remember ? 'local' : 'session';
+  try {
+    const current = persistenceMode();
+    if (current === next) return;
+
+    window.localStorage.setItem(PERSIST_PREF_KEY, next);
+
+    // Move any token that already exists, so a preference change mid-session
+    // takes effect immediately instead of at the next sign-in. Without this,
+    // unticking the box on a machine that already had a persisted session
+    // would leave that session sitting in localStorage — the exact failure
+    // this ticket is about.
+    const from =
+      next === 'session' ? window.localStorage : window.sessionStorage;
+    const to = next === 'session' ? window.sessionStorage : window.localStorage;
+    for (const key of Object.keys(from)) {
+      if (!key.includes('auth-token')) continue;
+      const value = from.getItem(key);
+      if (value === null) continue;
+      to.setItem(key, value);
+      from.removeItem(key);
+    }
+  } catch {
+    // Storage unavailable — the session still works for this page view; it
+    // just cannot honour the preference. Better than throwing mid-sign-in.
+  }
+}
+
+/** Read the current preference. Exported for the UI to reflect real state. */
+export function getSessionPersistence(): boolean {
+  return persistenceMode() === 'local';
+}
+
+/**
  * Check if Supabase is properly configured
  * @returns true if environment variables are set
  */
@@ -160,16 +257,38 @@ export function createClient(): SupabaseClient<Database> {
         // next TOKEN_REFRESHED / SIGNED_IN fires shortly and recovers.
         // This applies in production AND E2E — the test path now exercises
         // exactly the same auth flow real users see.
+        //
+        // The store is now chosen per the "Remember me" preference (#375)
+        // rather than always being localStorage. The removal guard above is
+        // unchanged in meaning — it just has to clear both stores now.
         storage:
           typeof window !== 'undefined'
             ? {
-                getItem: (key: string) => window.localStorage.getItem(key),
-                setItem: (key: string, value: string) =>
-                  window.localStorage.setItem(key, value),
+                getItem: (key: string) => {
+                  // Preferred store first, then the other. The fallback is not
+                  // redundant: a token written before the preference changed
+                  // would otherwise be orphaned and the user silently signed
+                  // out — which is the failure mode this whole adapter exists
+                  // to prevent.
+                  const found = authStore().getItem(key);
+                  return found !== null ? found : otherStore().getItem(key);
+                },
+                setItem: (key: string, value: string) => {
+                  authStore().setItem(key, value);
+                  // Exactly one home for the token. Leaving a stale copy in the
+                  // other store is precisely the privacy leak #375 is about:
+                  // an unticked box that still leaves something behind.
+                  try {
+                    otherStore().removeItem(key);
+                  } catch {
+                    // Non-fatal; the authoritative write above succeeded.
+                  }
+                },
                 removeItem: (key: string) => {
                   if (key.includes('auth-token') && !_allowAuthTokenRemoval)
                     return;
                   window.localStorage.removeItem(key);
+                  window.sessionStorage.removeItem(key);
                 },
               }
             : undefined,
