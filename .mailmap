@@ -1,0 +1,22 @@
+# Canonical commit identities.
+#
+# Commits made inside the dev container before the GIT_AUTHOR_* passthrough
+# landed in docker-compose.yml (2026-04-22) went out with placeholder
+# identities. The worst case is `dev@example.com`: GitHub matches commits to
+# accounts by email, and an unrelated account owns that address, so 36 commits
+# from 2026-02-08..02-23 are credited to a stranger on the contributor graph.
+#
+# This file fixes attribution for git's own tooling (log, shortlog, blame,
+# `git log --author`). GitHub's contributor graph does NOT read .mailmap —
+# only rewriting history would change the website, which is not worth a
+# force-push on a public repo with forks. Set GIT_AUTHOR_NAME/GIT_AUTHOR_EMAIL
+# in .env so it cannot recur.
+#
+# Format: Proper Name <proper@email> <commit@email>
+
+TurtleWolfe <TurtleWolfe@users.noreply.github.com> <dev@example.com>
+TurtleWolfe <TurtleWolfe@users.noreply.github.com> <tortoisewolfe@example.com>
+TurtleWolfe <TurtleWolfe@users.noreply.github.com> <101219421+TortoiseWolfe@users.noreply.github.com>
+TurtleWolfe <TurtleWolfe@users.noreply.github.com> <turtlewolfe@users.noreply.github.com>
+TurtleWolfe <TurtleWolfe@users.noreply.github.com> <SpokeToWork@gmail.com>
+TurtleWolfe <TurtleWolfe@users.noreply.github.com> <jonpohlner@gmail.com>
