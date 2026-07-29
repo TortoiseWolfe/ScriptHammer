@@ -1,30 +1,21 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { canUseCookies } from '../../utils/consent';
-import { CookieCategory } from '../../utils/consent-types';
 import { useAnalytics } from '@/hooks/useAnalytics';
 
 import { THEMES } from '@/config/themes';
+import {
+  applyTheme,
+  readStoredTheme,
+  DEFAULT_THEME,
+} from '@/utils/apply-theme';
 
 export function ThemeSwitcher() {
-  const [currentTheme, setCurrentTheme] = useState('scripthammer-dark');
+  const [currentTheme, setCurrentTheme] = useState(DEFAULT_THEME);
   const { trackThemeChange } = useAnalytics();
 
   useEffect(() => {
-    // Check if we can use persistent storage
-    const canPersist = canUseCookies(CookieCategory.FUNCTIONAL);
-
-    // Try to load saved theme
-    let savedTheme = 'scripthammer-dark';
-
-    if (canPersist) {
-      // Use localStorage if functional cookies allowed
-      savedTheme = localStorage.getItem('theme') || 'scripthammer-dark';
-    } else {
-      // Use sessionStorage as fallback
-      savedTheme = sessionStorage.getItem('theme') || 'scripthammer-dark';
-    }
+    const savedTheme = readStoredTheme();
 
     setCurrentTheme(savedTheme);
     document.documentElement.setAttribute('data-theme', savedTheme);
@@ -38,40 +29,8 @@ export function ThemeSwitcher() {
       // Track theme change in analytics
       trackThemeChange(theme, previousTheme);
 
-      // Apply to DOM
-      document.documentElement.setAttribute('data-theme', theme);
-      document.body?.setAttribute('data-theme', theme);
-
-      // Check if we can persist the preference
-      const canPersist = canUseCookies(CookieCategory.FUNCTIONAL);
-
-      if (canPersist) {
-        // Save to localStorage for persistence across sessions
-        localStorage.setItem('theme', theme);
-        // Also save to sessionStorage for consistency
-        sessionStorage.setItem('theme', theme);
-
-        // Broadcast to other tabs/windows
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: 'theme',
-            newValue: theme,
-            url: window.location.href,
-            storageArea: localStorage,
-          })
-        );
-      } else {
-        // Only save to sessionStorage for current session
-        sessionStorage.setItem('theme', theme);
-      }
-
-      // Force update service worker if available
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-          type: 'THEME_CHANGE',
-          theme: theme,
-        });
-      }
+      // One implementation, shared with /themes' curated plates (#382).
+      applyTheme(theme);
     },
     [currentTheme, trackThemeChange]
   );
