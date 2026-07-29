@@ -1,93 +1,162 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import ThemeSwitcher from '@/components/theme/ThemeSwitcher';
-import Text from '@/components/subatomic/Text/Text';
+import { CURATED_THEMES, THEMES, THEME_COUNT } from '@/config/themes';
+import {
+  applyTheme,
+  readStoredTheme,
+  DEFAULT_THEME,
+} from '@/utils/apply-theme';
+
+// 3c (#382). Counts are DERIVED — the comp says "six curated / the other 26",
+// which is 32 and was already stale when it was drawn. The curated set is ten
+// (owner, 2026-07-28) and lives in one place so this page and the home rail
+// cannot disagree (#408).
+// `CURATED_THEMES` is a literal tuple, so `.includes` narrows its argument to
+// those ten; widen for the membership test.
+const CURATED: readonly string[] = CURATED_THEMES;
+const OTHERS = THEMES.filter((t) => !CURATED.includes(t));
+
+/** One theme rendered as its own colours, scoped so it draws itself. */
+function ThemePlate({
+  theme,
+  active,
+  onApply,
+}: {
+  theme: string;
+  active: boolean;
+  onApply: (t: string) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onApply(theme)}
+      aria-pressed={active}
+      // w-full: a `block` button still sizes to its content, so without this the
+      // plates were as wide as their labels — SCRIPTHAMMER-DARK far wider than
+      // LUXURY — and the grid read as ragged rather than a set.
+      className="focus-visible:ring-primary block w-full overflow-hidden rounded-2xl text-left focus-visible:ring-2"
+      style={{
+        boxShadow: active
+          ? '0 22px 42px -16px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.14), 0 0 0 2px var(--color-secondary)'
+          : '0 22px 42px -16px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.14)',
+      }}
+    >
+      {/* data-theme is scoped to the SAMPLE only. Scoping the label too made it
+          inherit that theme's contrast, and `retro` puts base-content on
+          base-300 at 5.69:1 — under the 7:1 gate (#411). */}
+      <span
+        aria-hidden="true"
+        data-theme={theme}
+        className="flex h-24 flex-col justify-end gap-2 p-3"
+        style={{
+          background:
+            'linear-gradient(180deg, var(--color-base-100), var(--color-base-200))',
+        }}
+      >
+        <span className="flex gap-1.5">
+          <span className="bg-primary h-5 w-5 rounded-md" />
+          <span className="bg-secondary h-5 w-5 rounded-md" />
+          <span className="bg-accent h-5 w-5 rounded-md" />
+        </span>
+      </span>
+      <span className="bg-base-300 text-base-content flex min-h-11 items-center justify-between gap-2 px-3 py-2 font-mono text-[10.5px] tracking-[.12em] uppercase">
+        {theme}
+        {active && <span aria-hidden="true">✓</span>}
+      </span>
+    </button>
+  );
+}
 
 export default function ThemesPage() {
+  const [current, setCurrent] = useState(DEFAULT_THEME);
+
+  useEffect(() => setCurrent(readStoredTheme()), []);
+
+  const choose = (theme: string) => {
+    applyTheme(theme);
+    setCurrent(theme);
+  };
+
   return (
     <main className="bg-base-100 min-h-screen">
       <div className="container mx-auto px-4 py-6 sm:py-8 md:py-12">
-        <div className="mb-8 text-center">
-          <h1 className="mb-4 !text-2xl font-bold sm:!text-4xl md:!text-5xl">
-            ScriptHammer Theme Playground
-          </h1>
-          <p className="text-base-content text-base sm:text-lg md:text-xl">
-            Explore 34 themes including custom ScriptHammer variants
+        <header className="mb-8">
+          <p className="text-base-content mb-2 font-mono text-xs tracking-wider uppercase">
+            Live switching · no reload
           </p>
-        </div>
+          <h1 className="text-base-content font-display text-3xl tracking-[-0.025em] sm:text-[38px]">
+            {CURATED_THEMES.length} themes we stand behind
+          </h1>
+          {/* The comp claims per-theme "AA ✓ / AAA ✓" badges. Deliberately not
+              reproduced: the contrast gate sweeps scripthammer-light and
+              scripthammer-dark only, so the grade of the other 32 is genuinely
+              unmeasured here. A badge asserting it would be the #287 failure —
+              a claim nobody checked. This says what is actually true. */}
+          <p className="text-base-content/80 mt-3 max-w-[60ch] leading-relaxed">
+            These {CURATED_THEMES.length} are the ones we&rsquo;d hand a client.
+            The two ScriptHammer themes are gated at WCAG AAA on every push; the
+            rest are DaisyUI stock and still work.
+          </p>
+        </header>
 
+        <ul className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {CURATED_THEMES.map((theme) => (
+            <li key={theme}>
+              <ThemePlate
+                theme={theme}
+                active={current === theme}
+                onApply={choose}
+              />
+            </li>
+          ))}
+        </ul>
+
+        {/* The rest, compact, in a well — the comp's "still supported" shelf. */}
+        <section aria-labelledby="others-heading" className="mb-12">
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+            <h2
+              id="others-heading"
+              className="text-base-content font-display text-2xl tracking-[-0.02em]"
+            >
+              The other {OTHERS.length}
+            </h2>
+            <p className="text-base-content font-mono text-[11px] tracking-[.12em] uppercase">
+              DaisyUI · still supported
+            </p>
+          </div>
+          <ul className="sh-well bg-base-100 flex flex-wrap gap-2 rounded-[24px] p-4">
+            {OTHERS.map((theme) => (
+              <li key={theme}>
+                <button
+                  type="button"
+                  onClick={() => choose(theme)}
+                  aria-pressed={current === theme}
+                  className={`text-base-content hover:bg-base-200 focus-visible:ring-primary inline-flex min-h-11 items-center gap-2 rounded-full px-3 font-mono text-[10.5px] tracking-[.12em] uppercase focus-visible:ring-2 ${
+                    current === theme ? 'sh-rail-active' : ''
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    data-theme={theme}
+                    className="flex gap-1"
+                  >
+                    <span className="bg-primary h-3 w-3 rounded-full" />
+                    <span className="bg-secondary h-3 w-3 rounded-full" />
+                    <span className="bg-accent h-3 w-3 rounded-full" />
+                  </span>
+                  {theme}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* The full switcher stays — it is what every E2E spec drives, and it
+            lists all {THEME_COUNT} in one place. */}
         <div className="mx-auto max-w-6xl">
           <ThemeSwitcher />
-        </div>
-
-        <div className="divider my-12">Theme Preview</div>
-
-        {/* Simplified theme preview using our Text component */}
-        <div className="grid gap-8 md:grid-cols-2">
-          {/* Text Component Showcase */}
-          <div className="card bg-base-200 shadow-xl">
-            <div className="card-body">
-              <Text variant="h3" className="mb-4">
-                Typography
-              </Text>
-              <div className="space-y-2">
-                <Text variant="h4">Heading Example</Text>
-                <Text variant="lead">Lead paragraph text</Text>
-                <Text variant="body">
-                  Body text for regular content in the current theme.
-                </Text>
-                <Text variant="small">
-                  Small text for secondary information
-                </Text>
-                <Text variant="code">const theme = &quot;current&quot;;</Text>
-              </div>
-            </div>
-          </div>
-
-          {/* Color Showcase */}
-          <div className="card bg-base-100 shadow-xl">
-            <div className="card-body">
-              <Text variant="h3" className="mb-4">
-                Theme Colors
-              </Text>
-              <div className="space-y-2">
-                <button className="btn btn-primary w-full">Primary</button>
-                <button className="btn btn-secondary w-full">Secondary</button>
-                <button className="btn btn-accent w-full">Accent</button>
-                <div className="flex gap-2">
-                  <button className="btn btn-success btn-sm">Success</button>
-                  <button className="btn btn-warning btn-sm">Warning</button>
-                  <button className="btn btn-error btn-sm">Error</button>
-                  <button className="btn btn-info btn-sm">Info</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Alerts */}
-          <div className="space-y-2">
-            <div className="alert alert-info">
-              <Text variant="body">
-                Info: Theme changes are saved automatically
-              </Text>
-            </div>
-            <div className="alert alert-success">
-              <Text variant="body">Success: Theme applied</Text>
-            </div>
-          </div>
-
-          {/* Background Colors */}
-          <div className="space-y-2">
-            <div className="bg-base-100 rounded-lg p-4">
-              <Text variant="body">Base 100 Background</Text>
-            </div>
-            <div className="bg-base-200 rounded-lg p-4">
-              <Text variant="body">Base 200 Background</Text>
-            </div>
-            <div className="bg-base-300 rounded-lg p-4">
-              <Text variant="body">Base 300 Background</Text>
-            </div>
-          </div>
         </div>
       </div>
     </main>

@@ -58,6 +58,43 @@ function Row({ c }: { c: Check }) {
   );
 }
 
+/**
+ * One Lighthouse score as the comp's gauge (#383): a cut WELL holding a big
+ * number over a recessed track with a lit fill.
+ *
+ * The comp's four gauges read `2,431 tests`, `Lighthouse 100/100/100/100`,
+ * `deploy #1,284` and `Updated 4m ago` — all mockup. This file's own header
+ * warns against exactly that ("static marketing copy"), and the last time a
+ * number here was decorative it hid a real bug for months: the old page read
+ * `d.performance` while the JSON nests under .mobile/.desktop, so CI scores
+ * were NEVER shown and it silently fell back to 92/98/95/100.
+ *
+ * So the gauges render the real Lighthouse numbers or they do not render.
+ */
+// prettier-ignore
+function Gauge({ label, score }: { label: string; score: number | null }) {
+  const state: State = score === null ? 'pending' : rateLH(score);
+  const fill = score === null ? 0 : Math.max(0, Math.min(100, score));
+  // Bar colour tracks the rating, so the gauge cannot look healthy while
+  // reading badly. Decorative — the number beside it carries the meaning.
+  const bar = state === 'pass' ? 'bg-success' : state === 'warn' ? 'bg-warning' : state === 'fail' ? 'bg-error' : 'bg-base-300';
+  return (
+    <li className="sh-well bg-base-100 rounded-box flex flex-col gap-3 p-5">
+      <span className="text-base-content font-mono text-[11px] tracking-[.14em] uppercase">{label}</span>
+      <span className="text-base-content font-display text-[40px] leading-none tabular-nums">
+        {score === null ? '—' : score}
+      </span>
+      <span aria-hidden="true" className="sh-groove bg-base-100 h-2 w-full overflow-hidden rounded-full">
+        <span className={`block h-full rounded-full ${bar}`} style={{ width: `${fill}%` }} />
+      </span>
+      <span className="text-base-content font-mono text-[11px]">
+        <span className="sr-only">{SR[state]}: </span>
+        {score === null ? 'no CI score yet' : `${SR[state]} · ${score}/100`}
+      </span>
+    </li>
+  );
+}
+
 export default function StatusPage() {
   const [vitals, setVitals] = useState<Partial<Record<Vital, Metric>>>({});
   const [pwa, setPwa] = useState<PWATestResult[]>([]);
@@ -116,7 +153,14 @@ export default function StatusPage() {
     : { state: bad.some((c) => c.state === 'fail') ? 'fail' : 'warn',
         text: `${bad.length} of ${settled.length} need attention` };
 
-  const groups = [...new Set(checks.map((c) => c.group))];
+  // The gauge wall above IS the Lighthouse presentation once scores load, so
+  // the ledger drops that group rather than printing the same four numbers a
+  // second time. They stay in the ledger while pending, so a missing CI score
+  // is still visible somewhere.
+  const LH_GROUP = 'Lighthouse · mobile · CI';
+  const groups = [...new Set(checks.map((c) => c.group))].filter(
+    (g) => !(lh && g === LH_GROUP)
+  );
 
   // prettier-ignore
   return (
@@ -134,6 +178,26 @@ export default function StatusPage() {
           </p>
           <h1 className="text-base-content text-4xl tracking-tight sm:text-5xl">Status</h1>
         </div>
+
+        {/* The gauge wall. Only renders once real CI scores have loaded — an
+            empty wall is better than four invented hundreds. */}
+        {lh && (
+          <section aria-labelledby="lh-heading" className="mb-12">
+            <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+              <h2 id="lh-heading" className="text-base-content font-mono text-xs tracking-wider uppercase">Lighthouse · CI</h2>
+              {lhTime && (
+                <p className="text-base-content font-mono text-[11px] tracking-[.12em] uppercase">
+                  measured {lhTime.slice(0, 10)}
+                </p>
+              )}
+            </div>
+            <ul className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              {LH.map(([key, label]) => (
+                <Gauge key={key} label={label} score={lh[key] ?? null} />
+              ))}
+            </ul>
+          </section>
+        )}
 
         {/* "Every well is a live reading" — each group of measurements is a
             cut WELL. Rows stay flat inside them; the depth is the container's
