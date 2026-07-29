@@ -461,6 +461,46 @@ This is not a filing preference. It has cost real time here: a retraction posted
 
 - **Assert your anchor before pushing a body.** A patch that silently fails to match leaves an orphaned marker or drops an edit, and `&&` on the `gh` call will not catch it — the assertion has to live inside the script that rewrites the text. Grep the new body for a distinctive phrase from each comment **before** deleting that comment.
 
+## Verify against the condition that fails, not the one that's convenient
+
+Nearly every defect found in the 2026-07-28 visual-refresh session had the same shape: something was checked where it passed, then used where it didn't. This is the general rule; the specifics below are the ways it shows up here.
+
+**A probe that cannot report failure proves nothing.** Four written in one session were wrong: one parsed `oklch()` from `getComputedStyle` as RGB (it returns `oklch()` unchanged — read colours back through a `<canvas>`), one printed its success line unconditionally, one was piped through `tail` and silently lost rows, one let Playwright's evaluate-retry double-fire `axe.run()`. Each was caught by a number that looked impossible, not by the tool saying so. **Make it fail on purpose before trusting a pass.**
+
+### Gates are only as wide as what they point at
+
+A green check means "the thing the gate looks at is fine", which is rarely what people read it as.
+
+- **`tests/e2e/color-contrast.spec.ts` enumerates routes from `src/app/**/page.tsx`** — it used to be a hand-written list of four, which is how a 6.44:1 eyebrow reached `main` with 17 green checks (#411). Exclusions are printed every run with a reason. Don't replace the enumeration with a list.
+- **Class-name selectors have a silent dependency on that class.** Introducing `.sh-btn` alongside DaisyUI's `.btn` dropped `mobile-touch-targets.spec.ts` from 6 measured targets to 5 — the buttons hadn't shrunk, they'd stopped being looked at. Only the **coverage floor** caught it. Never lower a floor to make a run pass (#396).
+- **`hidden lg:block` hides a control from every gate you have.** Most specs run at 390px, so a desktop-only control is unmeasured everywhere. A 40px `ColorblindToggle` trigger sat in the nav that way indefinitely.
+
+### Accessible names are an API — in both directions
+
+Renaming one breaks locators: `32 Themes` → `34 Themes` broke seven across three specs (#408). **Adding** one is just as dangerous — a nav trigger labelled `"Demos menu"` matched `mobile-navigation`'s `[aria-label*="menu" i]`, came first in document order, and shadowed the mobile hamburger (#378).
+
+Before naming a control, grep `tests/e2e` for **substring** collisions, and prefer the shortest honest name — `aria-haspopup` already makes a screen reader say "menu button". `.first()` follows document order, and nav markup precedes page content.
+
+### Theme colours must clear contrast on every surface they sit on
+
+`--color-*` values were AAA-verified against `base-100` only, and the annotations said so truthfully — but text also sits on `base-200`, where all seven light-theme colours measured 6.4–6.5:1 against a 7:1 gate. DaisyUI also dims `.label` and `.table th`, which is every form and every table in the product. Both are corrected in `globals.css`; check any new token on **base-100 and base-200**.
+
+### Generated artifacts are build OUTPUTS, never inputs
+
+`prebuild` writes `public/wireframes/`, sitemap, RSS and more, and all of it except `public/manifest.json` is gitignored (#392). Importing one type-checks locally and fails CI on a fresh checkout. Read the committed source instead — for wireframes that's `features/<cat>/<feat>/wireframes/*.svg`, top level only.
+
+### Read designs from the render, not from stripped text
+
+`docs/design/2a/` holds the real design plus `renders/*.png`. Pulling copy out with a tag-stripping regex deletes every `<img>` and every `style` attribute — which is how the home page shipped with no logo and no gradients, twice. **Look at the PNG first**, then read the markup for exact values.
+
+## `main` is protected
+
+Direct pushes are rejected for everyone, admins included (#414). Work on a branch and open a PR — there is no other route in.
+
+Required checks are **`Test (20.x)` and `accessibility` only**, because those are the two workflows with no `paths:` filter. Requiring `Build` or `Validate Component Structure` would make every docs-only PR permanently unmergeable: a required check that never reports is _pending forever_, not skipped. The sharded E2E jobs are excluded too — their names carry the shard count (`E2E (chromium-gen 3/6)`), so changing the matrix would orphan every required context.
+
+To lift it: `gh api -X DELETE repos/TortoiseWolfe/ScriptHammer/branches/main/protection`.
+
 ## Important Notes
 
 - Never create components manually - use the generator
