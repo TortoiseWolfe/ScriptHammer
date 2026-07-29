@@ -82,7 +82,7 @@ function NavGroupMenu({
         type="button"
         aria-expanded={open}
         aria-haspopup="menu"
-        aria-label={`${label} menu`}
+        aria-label={label}
         className={triggerClass}
         onClick={() => setOpen((v) => !v)}
       >
@@ -294,6 +294,11 @@ export function GlobalNav() {
           <div className="flex items-center gap-3">
             <Link
               href="/"
+              // #378 moved Home onto the logo. Its visible text is the project
+              // name, so without an explicit name nothing announces it as the
+              // way home — and `a:has-text("Home")` in cross-page-navigation
+              // had nothing left to match.
+              aria-label={`${detectedConfig.projectName} — Home`}
               className="flex min-h-11 items-center gap-3 transition-opacity hover:opacity-80"
             >
               {/* The comp seats the mark in a 40px cut WELL, which is what

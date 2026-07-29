@@ -30,8 +30,11 @@ test.describe('Cross-Page Navigation', () => {
     await dismissCookieBanner(page);
     await expect(page).toHaveURL(/\/docs/);
 
-    // Navigate back to Home
-    await page.locator('a:has-text("Home")').first().click();
+    // Navigate back to Home. #378 moved Home onto the logo — the standard
+    // convention — so no nav link has the TEXT "Home" any more. The logo
+    // carries it as an accessible name, which is the sturdier locator anyway:
+    // it survives the wordmark changing.
+    await page.getByRole('link', { name: /home/i }).first().click();
     await dismissCookieBanner(page);
     await expect(page).toHaveURL(/\/$/);
   });

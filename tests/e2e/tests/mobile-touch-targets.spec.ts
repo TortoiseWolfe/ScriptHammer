@@ -161,7 +161,7 @@ test.describe('Touch Target Standards', () => {
     await dismissCookieBanner(page);
     await waitForLayoutStability(page);
 
-    const trigger = page.locator('[aria-label="Demos menu"]');
+    const trigger = page.locator('[aria-label="Demos"]');
     await expect(trigger).toHaveCount(1);
 
     // The group is a controlled menu button (#378), not a :focus-within
@@ -206,7 +206,7 @@ test.describe('Touch Target Standards', () => {
     await dismissCookieBanner(page);
     await waitForLayoutStability(page);
 
-    const trigger = page.locator('[aria-label="Demos menu"]');
+    const trigger = page.locator('[aria-label="Demos"]');
     const items = page.locator('[role="menu"] [role="menuitem"]');
 
     // Hydration must finish before onClick exists. Measured: at 1800ms the
@@ -227,7 +227,7 @@ test.describe('Touch Target Standards', () => {
       await page.evaluate(() =>
         document.activeElement?.getAttribute('aria-label')
       )
-    ).toBe('Demos menu');
+    ).toBe('Demos');
   });
 
   test('Navigation buttons meet touch target standards', async ({ page }) => {
