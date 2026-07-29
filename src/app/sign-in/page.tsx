@@ -48,11 +48,9 @@ export default function SignInPage() {
           }}
         />
 
-        <p className="mt-4 text-center text-sm">
-          <Link href="/forgot-password" className="link-primary">
-            Forgot password?
-          </Link>
-        </p>
+        {/* "Forgot password?" moved INTO the form, onto the Remember-Me row
+            where the convention puts it (#374). It was stranded here below the
+            submit button, costing a 46px line of its own. */}
 
         <div className="divider my-6">OR</div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import CaptchaWidget, {
   type CaptchaWidgetHandle,
@@ -310,7 +311,24 @@ export default function SignInForm({
         </div>
       </div>
 
-      <div>
+      {/* #374. This row was a classless `<div>` sitting 168px LEFT of the
+          inputs with a 310x31 empty rectangle beside it, while "Forgot
+          password?" was stranded below the submit button over in
+          `sign-in/page.tsx`, costing a 46px line of its own.
+
+          The row spans the FULL 448px column rather than being indented to the
+          280px input column behind a label-width spacer. That was tried first,
+          because the ticket's "also in scope" note asks for a spacer cell — and
+          measuring it showed the two controls do not fit: Remember Me (138px)
+          + Forgot password (162px) = 300px against 280px, so they wrapped onto
+          separate lines and gave back the row this change exists to reclaim.
+          Full width fits them with room to spare, and is what the ticket's own
+          mock draws.
+
+          `flex-wrap` is still load-bearing at the narrow end: 300px clears the
+          448px and 382px columns, but NOT the 288px column below 430px, nor
+          the `x-large` accessibility font setting. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
         <label
           htmlFor="remember-me"
           className="label cursor-pointer justify-start gap-3"
@@ -326,6 +344,14 @@ export default function SignInForm({
           />
           <span>Remember Me</span>
         </label>
+        {/* Conventionally belongs on this row, not below the submit button.
+            `min-h-11` keeps the 44px touch target the mobile gate requires. */}
+        <Link
+          href="/forgot-password"
+          className="link link-primary min-h-11 content-center text-sm"
+        >
+          Forgot password?
+        </Link>
       </div>
 
       {error && (
