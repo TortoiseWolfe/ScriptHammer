@@ -39,10 +39,17 @@ interface BeforeInstallPromptEvent extends Event {
 function NavGroupMenu({
   label,
   triggerClass,
+  panel = false,
   children,
 }: {
   label: string;
   triggerClass: string;
+  /**
+   * Render a labelled GROUP rather than a `menu`. `role="menu"` expects
+   * `menuitem` children — a radio group or a select inside one is a lie to a
+   * screen reader, and `Display ▾` holds exactly those. Links stay a menu.
+   */
+  panel?: boolean;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -89,14 +96,23 @@ function NavGroupMenu({
         {label}
         <span aria-hidden="true">▾</span>
       </button>
-      {open && (
-        <ul
-          role="menu"
-          className="menu menu-sm bg-base-100 rounded-box absolute end-0 z-[1] mt-2 w-52 p-2 shadow-lg"
-        >
-          {children}
-        </ul>
-      )}
+      {open &&
+        (panel ? (
+          <div
+            role="group"
+            aria-label={label}
+            className="bg-base-100 rounded-box absolute end-0 z-[1] mt-2 w-72 max-w-[calc(100vw-2rem)] space-y-4 p-4 shadow-lg"
+          >
+            {children}
+          </div>
+        ) : (
+          <ul
+            role="menu"
+            className="menu menu-sm bg-base-100 rounded-box absolute end-0 z-[1] mt-2 w-52 p-2 shadow-lg"
+          >
+            {children}
+          </ul>
+        ))}
     </div>
   );
 }
@@ -643,54 +659,73 @@ export function GlobalNav() {
               </button>
             )}
 
-            {/* Font Size Control - Hidden below lg (1024px) — accessible via hamburger */}
-            <div className="hidden lg:block">
-              <FontSizeControl />
-            </div>
+            {/* ── Display ▾ (#378) ───────────────────────────────────────
+                Theme, type and colour vision were three always-on slots in a
+                bar that already held twelve targets. They are one concern —
+                how the page looks — so they fold into one popover.
 
-            {/* Color Vision Control - Hidden below lg (1024px) */}
-            <div className="hidden lg:block">
-              <ColorblindToggle className="compact" />
-            </div>
+                It also gives a home to the AccessibilityContext settings that
+                had NO nav entry at all: line height, contrast and font family
+                were reachable only by knowing /accessibility exists.
 
-            {/* Theme Selector - Hidden below lg (1024px) */}
-            <div className="dropdown dropdown-end hidden lg:block">
-              <label
-                tabIndex={0}
-                className="btn btn-ghost btn-circle min-h-11 min-w-11"
-                title="Change theme"
-                aria-label="Change theme"
+                A `panel`, not a `menu`: role="menu" expects menuitem children,
+                and a theme list plus embedded form controls is not that. */}
+            <div className="hidden lg:block">
+              <NavGroupMenu
+                label="Display"
+                panel
+                triggerClass="text-base-content inline-flex min-h-11 items-center gap-1 rounded-full px-2.5 font-mono text-[11.5px] tracking-[.1em] uppercase transition-colors hover:bg-base-200 xl:px-3.5"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-4 w-4 sm:h-5 sm:w-5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
-                  />
-                </svg>
-              </label>
-              <ul
-                tabIndex={0}
-                className="dropdown-content bg-base-100 rounded-box z-[1] max-h-96 w-44 max-w-[calc(100vw-4rem)] overflow-y-auto p-2 shadow-lg sm:w-52"
-              >
-                {THEMES.map((t) => (
-                  <li key={t}>
-                    <button
-                      className={`btn btn-ghost btn-sm w-full justify-start ${theme === t ? 'btn-active' : ''}`}
-                      onClick={() => handleThemeChange(t)}
-                    >
-                      <span className="capitalize">{t}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+                <div>
+                  <h3 className="text-base-content mb-2 font-mono text-[10.5px] tracking-[.14em] uppercase">
+                    Theme
+                  </h3>
+                  <ul className="max-h-56 overflow-y-auto">
+                    {THEMES.map((t) => (
+                      <li key={t}>
+                        <button
+                          type="button"
+                          className={`hover:bg-base-200 flex min-h-11 w-full items-center rounded px-2 text-left text-sm capitalize ${
+                            theme === t ? 'bg-base-200 font-semibold' : ''
+                          }`}
+                          onClick={() => handleThemeChange(t)}
+                        >
+                          {t}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="border-base-300 border-t pt-3">
+                  <h3 className="text-base-content mb-2 font-mono text-[10.5px] tracking-[.14em] uppercase">
+                    Text size
+                  </h3>
+                  <FontSizeControl />
+                </div>
+
+                <div className="border-base-300 border-t pt-3">
+                  <h3 className="text-base-content mb-2 font-mono text-[10.5px] tracking-[.14em] uppercase">
+                    Colour vision
+                  </h3>
+                  <ColorblindToggle className="compact" />
+                </div>
+
+                {/* Line height, contrast, font family and reduced motion live
+                    on /accessibility and had no nav path to them at all. */}
+                <div className="border-base-300 border-t pt-3">
+                  <Link
+                    href="/accessibility"
+                    className="link link-hover text-base-content flex min-h-11 items-center gap-2 text-sm"
+                  >
+                    More display settings
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                  <p className="text-base-content mt-1 text-xs">
+                    Line height, contrast, font family, reduced motion
+                  </p>
+                </div>
+              </NavGroupMenu>
             </div>
           </div>
         </div>
