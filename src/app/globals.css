@@ -335,21 +335,101 @@
  * legacy look everywhere it is still wanted, and makes the depth system the
  * explicit override wherever a page has been migrated. Remove this block
  * entirely once every surface is on the depth tokens. */
+/* The DaisyUI primitives carry the depth vocabulary directly (#427).
+ *
+ * This replaces two blocks of literal-black drop shadow. Those existed so that
+ * pages nobody had migrated still looked deliberate, and their comment set the
+ * exit condition: remove them once every surface is on the depth tokens. That
+ * framing assumed migration meant hand-applying `sh-plate` to every element on
+ * 43 routes. It does not have to: 38 of those routes are thin shells over 46
+ * shared components built from these ten primitives, so putting the vocabulary
+ * on the BASE CLASSES moves the whole app at once and the page tickets
+ * (#428-#435) are left with composition rather than re-shadowing.
+ *
+ * Literal black is also the thing --sh-ink-shadow exists to replace: it is
+ * derived from the theme's own surface, so it stays correct on both house
+ * themes instead of being tuned for the dark one and tolerated on the light.
+ *
+ * Scoped to the two house themes. Stock DaisyUI themes keep their original
+ * look — 32 themes depend on that contract, and it is why the selectors below
+ * are attribute-scoped rather than bare element rules.
+ *
+ * The `:not()` chain is load-bearing (#379). These selectors are
+ * `[attr] .class` — specificity 0,2,0 — while a Tailwind `@utility` is 0,1,0,
+ * so without the opt-out this block beats `sh-plate`/`sh-well`/`sh-groove` and
+ * an element carrying a depth utility silently renders the default treatment
+ * for its primitive instead. Any rule added here needs the same chain.
+ *
+ * Focus is safe to shadow over: DaisyUI draws its focus ring with
+ * `outline: 2px solid`, not box-shadow (`components/input.css`), so nothing
+ * here can erase it. Verified rather than assumed. */
+
+/* Raised — content sitting on top of the page. */
 [data-theme='scripthammer-dark']
   .card:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-light']
-  .card:not(.sh-plate):not(.sh-well):not(.sh-groove) {
-  box-shadow:
-    0 4px 6px -1px rgb(0 0 0 / 0.25),
-    0 10px 15px -3px rgb(0 0 0 / 0.2),
-    0 20px 25px -5px rgb(0 0 0 / 0.15);
+  .card:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-dark']
+  .alert:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-light']
+  .alert:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-dark']
+  .modal-box:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-light']
+  .modal-box:not(.sh-plate):not(.sh-well):not(.sh-groove) {
+  box-shadow: var(--sh-plate);
 }
 
-[data-theme='scripthammer-dark'] .btn,
-[data-theme='scripthammer-light'] .btn {
-  box-shadow:
-    0 2px 4px 0 rgb(0 0 0 / 0.2),
-    0 1px 2px -1px rgb(0 0 0 / 0.15);
+/* Cut — data sitting down inside the page. */
+[data-theme='scripthammer-dark']
+  .stats:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-light']
+  .stats:not(.sh-plate):not(.sh-well):not(.sh-groove) {
+  box-shadow: var(--sh-well);
+}
+
+/* Machined channel — inputs and thin strips. A control you type into is cut
+ * into the surface; that is the whole grammar of the system. */
+[data-theme='scripthammer-dark']
+  .input:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-light']
+  .input:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-dark']
+  .select:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-light']
+  .select:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-dark']
+  .textarea:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-light']
+  .textarea:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-dark']
+  .file-input:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-light']
+  .file-input:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-dark'] .table thead th,
+[data-theme='scripthammer-light'] .table thead th {
+  box-shadow: var(--sh-groove);
+}
+
+/* Buttons are raised, and they press. `.btn-ghost` and `.btn-link` are flat by
+ * definition — shadowing them would make "quiet action" read as a raised one,
+ * which is the opposite of what the variant means. */
+[data-theme='scripthammer-dark']
+  .btn:not(.btn-ghost):not(.btn-link):not(.sh-plate):not(.sh-well):not(
+    .sh-groove
+  ),
+[data-theme='scripthammer-light']
+  .btn:not(.btn-ghost):not(.btn-link):not(.sh-plate):not(.sh-well):not(
+    .sh-groove
+  ) {
+  box-shadow: var(--sh-plate);
+}
+
+[data-theme='scripthammer-dark']
+  .btn:not(.btn-ghost):not(.btn-link):not(.btn-disabled):active,
+[data-theme='scripthammer-light']
+  .btn:not(.btn-ghost):not(.btn-link):not(.btn-disabled):active {
+  box-shadow: var(--sh-groove);
 }
 
 [data-theme='scripthammer-dark'] .btn:hover,
