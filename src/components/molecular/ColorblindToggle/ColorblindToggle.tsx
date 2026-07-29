@@ -105,7 +105,12 @@ export const ColorblindToggle: React.FC<ColorblindToggleProps> = ({
         tabIndex={0}
         className={
           isCompact
-            ? 'btn btn-ghost btn-circle btn-xs sm:btn-md'
+            ? // min-h-11 min-w-11 because DaisyUI's `btn-md` is 40px, four
+              // short of the 44px this repo gates on. Pre-existing: the
+              // compact toggle has sat in the nav at 40px and nothing measured
+              // it, because the touch-target gate runs at 390px where this
+              // control is `hidden lg:block` (#378).
+              'btn btn-ghost btn-circle btn-xs sm:btn-md min-h-11 min-w-11'
             : 'btn btn-ghost gap-2'
         }
         aria-label="Color Vision Assistance"

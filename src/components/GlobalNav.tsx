@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayeredScriptHammerLogo } from '@/components/atomic/SpinningLogo';
@@ -22,6 +22,90 @@ interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
+
+/**
+ * A nav group rendered as a real menu button (#378).
+ *
+ * NOT a DaisyUI `:focus-within` dropdown. That pattern cannot satisfy the
+ * ticket's keyboard requirement, and the reason is structural rather than a
+ * missing handler: the trigger lives INSIDE `.dropdown`, so "close the menu
+ * and return focus to the trigger" re-opens it on the same frame. Measured —
+ * Escape left the menu visible with focus correctly on the trigger.
+ *
+ * So the open state is React's, the trigger is a `<button>` carrying
+ * `aria-expanded`/`aria-haspopup`, Escape closes and restores focus, and a
+ * click or focus elsewhere dismisses it.
+ */
+function NavGroupMenu({
+  label,
+  triggerClass,
+  children,
+}: {
+  label: string;
+  triggerClass: string;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocDown = (e: MouseEvent) => {
+      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setOpen(false);
+      trigger.current?.focus();
+    };
+    document.addEventListener('mousedown', onDocDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  return (
+    <div
+      ref={wrap}
+      className="relative"
+      // Tabbing out of the group closes it, so a keyboard user is never
+      // dragging an open menu along behind them.
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false);
+      }}
+    >
+      <button
+        ref={trigger}
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        aria-label={label}
+        className={triggerClass}
+        onClick={() => setOpen((v) => !v)}
+      >
+        {label}
+        <span aria-hidden="true">▾</span>
+      </button>
+      {open && (
+        <ul
+          role="menu"
+          className="menu menu-sm bg-base-100 rounded-box absolute end-0 z-[1] mt-2 w-52 p-2 shadow-lg"
+        >
+          {children}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** A single nav destination. */
+type NavLeaf = { href: string; label: string; reload?: boolean };
+/** A labelled group of destinations, rendered as a dropdown. */
+type NavGroup = { label: string; items: NavLeaf[] };
+type NavEntry = NavLeaf | NavGroup;
 
 export function GlobalNav() {
   const pathname = usePathname();
@@ -135,14 +219,39 @@ export function GlobalNav() {
   // reactive, so a client-side query-only nav would keep the current renderer
   // and you could never switch atlas↔diorama. A hard nav re-reads the query
   // (and gives each heavy map a fresh WebGL context).
-  const navItems: { href: string; label: string; reload?: boolean }[] = [
-    { href: '/', label: 'Home' },
-    { href: '/blog', label: 'Blog' },
+  // #378: Home lives on the logo (which already links to `/`), and the demos
+  // are grouped. Atlas and Diorama are THE SAME ROUTE differing only by query
+  // — two adjacent flat links pointing at one route is exactly what a group
+  // expresses better. Grouping also surfaces Map, Game, Payments and Schedule,
+  // which were in no nav at all and reachable only from the home page.
+  //
+  // Net: one fewer top-level slot, five more routes reachable.
+  const navItems: NavEntry[] = [
     { href: '/docs', label: 'Docs' },
-    { href: '/chatt?diorama', label: 'Diorama', reload: true },
-    { href: '/chatt', label: 'Atlas', reload: true },
-    { href: '/wireframes', label: 'Wireframes' },
+    { href: '/blog', label: 'Blog' },
+    {
+      label: 'Demos',
+      items: [
+        // `reload: true` is load-bearing on both — Cesium needs a full document
+        // load to get a fresh WebGL context, and a client-side nav cannot
+        // re-read the ?diorama query. Grouping must not change that.
+        { href: '/chatt', label: 'Atlas', reload: true },
+        { href: '/chatt?diorama', label: 'Diorama', reload: true },
+        { href: '/wireframes', label: 'Wireframes' },
+        { href: '/map', label: 'Map' },
+        { href: '/game', label: 'Game' },
+        { href: '/payment-demo', label: 'Payments' },
+        { href: '/schedule', label: 'Schedule' },
+      ],
+    },
+    { href: '/themes', label: 'Themes' },
+    { href: '/status', label: 'Status' },
   ];
+
+  /** Every leaf, flattened — for the mobile menu and for active-state checks. */
+  const navLeaves: NavLeaf[] = navItems.flatMap((e) =>
+    'items' in e ? e.items : [e]
+  );
 
   // The two map entries share the /chatt pathname and differ only by ?diorama,
   // so usePathname (query-blind) can't tell them apart — it would light up
@@ -185,6 +294,11 @@ export function GlobalNav() {
           <div className="flex items-center gap-3">
             <Link
               href="/"
+              // #378 moved Home onto the logo. Its visible text is the project
+              // name, so without an explicit name nothing announces it as the
+              // way home — and `a:has-text("Home")` in cross-page-navigation
+              // had nothing left to match.
+              aria-label={`${detectedConfig.projectName} — Home`}
               className="flex min-h-11 items-center gap-3 transition-opacity hover:opacity-80"
             >
               {/* The comp seats the mark in a 40px cut WELL, which is what
@@ -207,23 +321,57 @@ export function GlobalNav() {
 
           {/* Main Navigation */}
           <nav className="sh-rail hidden items-center lg:flex">
-            {navItems.map((item) => {
+            {navItems.map((entry) => {
               // min-h-11 keeps the 44px target the repo gates on; the comp's
               // 33px rows are a desktop-only drawing.
-              const cls = `text-base-content inline-flex min-h-11 items-center rounded-full px-2.5 font-mono text-[11.5px] xl:px-3.5 tracking-[.1em] uppercase transition-colors ${
-                isActive(item) ? 'sh-rail-active' : 'hover:bg-base-200'
-              }`;
-              return item.reload ? (
+              const base =
+                'text-base-content inline-flex min-h-11 items-center rounded-full px-2.5 font-mono text-[11.5px] tracking-[.1em] uppercase transition-colors xl:px-3.5';
+
+              if ('items' in entry) {
+                const active = entry.items.some(isActive);
+                return (
+                  <NavGroupMenu
+                    key={entry.label}
+                    label={entry.label}
+                    triggerClass={`${base} cursor-pointer gap-1 ${active ? 'sh-rail-active' : 'hover:bg-base-200'}`}
+                  >
+                    {entry.items.map((item) => (
+                      <li key={item.href} role="none">
+                        {item.reload ? (
+                          <a
+                            role="menuitem"
+                            href={getInternalUrl(item.href)}
+                            className={`min-h-11 ${isActive(item) ? 'active' : ''}`}
+                          >
+                            {item.label}
+                          </a>
+                        ) : (
+                          <Link
+                            role="menuitem"
+                            href={item.href}
+                            className={`min-h-11 ${isActive(item) ? 'active' : ''}`}
+                          >
+                            {item.label}
+                          </Link>
+                        )}
+                      </li>
+                    ))}
+                  </NavGroupMenu>
+                );
+              }
+
+              const cls = `${base} ${isActive(entry) ? 'sh-rail-active' : 'hover:bg-base-200'}`;
+              return entry.reload ? (
                 <a
-                  key={item.href}
-                  href={getInternalUrl(item.href)}
+                  key={entry.href}
+                  href={getInternalUrl(entry.href)}
                   className={cls}
                 >
-                  {item.label}
+                  {entry.label}
                 </a>
               ) : (
-                <Link key={item.href} href={item.href} className={cls}>
-                  {item.label}
+                <Link key={entry.href} href={entry.href} className={cls}>
+                  {entry.label}
                 </Link>
               );
             })}
@@ -390,7 +538,7 @@ export function GlobalNav() {
                 tabIndex={0}
                 className="menu menu-sm dropdown-content bg-base-100 rounded-box -right-2 z-[1] mt-3 w-40 max-w-[calc(100vw-4rem)] p-2 shadow sm:w-44"
               >
-                {navItems.map((item) => (
+                {navLeaves.map((item) => (
                   <li key={item.href}>
                     {item.reload ? (
                       <a
