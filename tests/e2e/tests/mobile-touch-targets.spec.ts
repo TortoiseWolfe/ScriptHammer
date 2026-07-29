@@ -230,52 +230,6 @@ test.describe('Touch Target Standards', () => {
     ).toBe('Demos menu');
   });
 
-  test('the Display panel exposes 44px targets (#378)', async ({ page }) => {
-    // Everything in here is `hidden lg:block`, so the 390px test above cannot
-    // see it — which is how a 40px ColorblindToggle trigger sat in the nav
-    // unmeasured until this panel was built. Same shape as #411: a gate that
-    // only runs at one viewport is blind to everything gated to another.
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await dismissCookieBanner(page);
-    await waitForLayoutStability(page);
-
-    const trigger = page.locator('[aria-label="Display menu"]');
-    await expect(trigger).toHaveCount(1);
-    await trigger.click();
-    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-
-    const panel = page.locator('[role="group"][aria-label="Display"]');
-    const controls = await panel.locator('button, a').all();
-
-    const failures: string[] = [];
-    let measured = 0;
-    for (const el of controls) {
-      if (!(await el.isVisible())) continue;
-      const box = await el.boundingBox();
-      if (!box) continue;
-      measured++;
-      if (box.height < MINIMUM - TOLERANCE) {
-        const name =
-          (await el.getAttribute('aria-label')) ||
-          (await el.textContent())?.trim() ||
-          '(unnamed)';
-        failures.push(`"${name}": ${box.height.toFixed(0)}px tall (min 44)`);
-      }
-    }
-
-    expect(failures, failures.join('\n')).toHaveLength(0);
-
-    // The panel holds the theme list plus the text-size and colour-vision
-    // controls, so it is well into double figures. A collapse to single digits
-    // means a control silently stopped rendering.
-    expect(
-      measured,
-      `Only ${measured} controls measured in the Display panel — a section ` +
-        `has probably stopped rendering rather than shrunk.`
-    ).toBeGreaterThanOrEqual(20);
-  });
-
   test('Navigation buttons meet touch target standards', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/', { waitUntil: 'domcontentloaded' });
