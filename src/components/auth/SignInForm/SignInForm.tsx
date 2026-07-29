@@ -3,6 +3,7 @@
 import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
+import { setSessionPersistence } from '@/lib/supabase/client';
 import CaptchaWidget, {
   type CaptchaWidgetHandle,
 } from '@/components/auth/CaptchaWidget';
@@ -88,6 +89,13 @@ export default function SignInForm({
 
     setRemainingAttempts(rateLimit.remaining);
     setLoading(true);
+
+    // BEFORE the auth call, not after (#375). The session is written to storage
+    // as part of signIn, so the preference has to already be recorded or the
+    // token lands in the wrong store and has to be migrated. Until this line
+    // existed, `rememberMe` reached nothing at all: its only consumers were the
+    // checkbox's own `checked` and `onChange`.
+    setSessionPersistence(rememberMe);
 
     const { error: signInError } = await signIn(
       email,
@@ -337,7 +345,18 @@ export default function SignInForm({
             id="remember-me"
             type="checkbox"
             checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
+            onChange={(e) => {
+              setRememberMe(e.target.checked);
+              // Written on TOGGLE, not only on submit (#375). OAuthButtons sits
+              // directly below this form and passes no storage option of its
+              // own, so a GitHub/Google user would otherwise get unconditional
+              // persistence with no control at all — which the scope decision
+              // on this ticket explicitly rules out. Recording the preference
+              // here means whichever entry path they take next honours the box
+              // they can see, with no prop plumbing between two sibling
+              // components that do not otherwise know about each other.
+              setSessionPersistence(e.target.checked);
+            }}
             className="checkbox checkbox-primary"
             disabled={loading}
             aria-label="Remember Me"
