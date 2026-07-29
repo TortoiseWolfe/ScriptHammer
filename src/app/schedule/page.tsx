@@ -17,29 +17,41 @@ const CalendarEmbed = dynamic(
 
 export default function SchedulePage() {
   return (
-    <main className="container mx-auto px-4 py-8">
-      <div className="mx-auto max-w-7xl">
+    // `container` clamps to the PREVIOUS breakpoint (`--breakpoint-xs: 20rem`,
+    // #373), so the inner `max-w-7xl` never got a chance to apply — one
+    // explicit measure replaces both.
+    <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+      <div>
         {/* Two-column layout on desktop, stacked on mobile */}
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3 lg:gap-12">
           {/* Left column - Text content */}
           <aside className="lg:col-span-1">
             <div className="lg:sticky lg:top-8">
               <header>
-                <h1 className="mb-4 text-3xl font-bold lg:text-4xl">
+                <p className="text-base-content mb-2 font-mono text-xs tracking-[.14em] uppercase">
+                  Book a call
+                </p>
+                <h1 className="text-base-content font-display mb-4 text-4xl tracking-[-0.025em] sm:text-5xl">
                   Schedule a Meeting
                 </h1>
-                <div className="prose prose-sm lg:prose-base mb-6">
-                  <p>
-                    Book a time that works for you. We&apos;ll send a calendar
-                    invitation with all the details.
-                  </p>
-                </div>
+                {/* `prose` is inert in this app (#373) — it was wrapping this
+                    paragraph and doing nothing. */}
+                <p className="text-base-content mb-6">
+                  Book a time that works for you. We&apos;ll send a calendar
+                  invitation with all the details.
+                </p>
               </header>
 
-              {/* Additional helpful information */}
-              <div className="space-y-6">
-                <div>
-                  <h2 className="mb-2 text-lg font-semibold">
+              {/* Four loose siblings became one recessed LEDGER with divided
+                  rows — the /docs + /status idiom: depth on the padded
+                  container, rows stay flat. `px-5` is load-bearing: sh-well is
+                  an inset shadow painted below child content, so a flush child
+                  would hide it. The tip keeps its own raised plate, which is
+                  the 2a plate-in-well vocabulary and marks it as the one
+                  actionable panel here. */}
+              <div className="sh-well bg-base-100 rounded-box divide-base-300 divide-y px-5">
+                <div className="py-4">
+                  <h2 className="text-base-content mb-2 font-mono text-xs tracking-[.14em] uppercase">
                     What to expect:
                   </h2>
                   <ul className="space-y-2 text-sm">
@@ -58,7 +70,7 @@ export default function SchedulePage() {
                   </ul>
                 </div>
 
-                <div className="bg-primary/10 border-primary/20 rounded-lg border p-4">
+                <div className="sh-plate bg-base-100 rounded-box my-4 p-5">
                   <h2 className="mb-2 flex items-center text-lg font-semibold">
                     {/* Decorative (#385): "Prepare for the meeting:" follows. */}
                     <span className="mr-2">
@@ -94,26 +106,28 @@ export default function SchedulePage() {
                   </p>
                 </div>
 
-                <div>
-                  <h2 className="mb-2 text-lg font-semibold">Time zones:</h2>
-                  <p className="text-base-content/85 text-sm">
+                <div className="py-4">
+                  <h2 className="text-base-content mb-2 font-mono text-xs tracking-[.14em] uppercase">
+                    Time zones:
+                  </h2>
+                  <p className="text-base-content text-sm">
                     All times are shown in your local timezone. The calendar
                     will automatically adjust for daylight saving time.
                   </p>
                 </div>
 
-                <div>
-                  <h2 className="mb-2 text-lg font-semibold">
+                <div className="py-4">
+                  <h2 className="text-base-content mb-2 font-mono text-xs tracking-[.14em] uppercase">
                     Need to reschedule?
                   </h2>
-                  <p className="text-base-content/85 text-sm">
+                  <p className="text-base-content text-sm">
                     You can reschedule or cancel your appointment using the link
                     in your confirmation email.
                   </p>
                 </div>
               </div>
 
-              <footer className="text-base-content/80 mt-8 space-y-2 text-xs">
+              <footer className="text-base-content mt-8 space-y-2 text-xs">
                 <p>Powered by scheduling integration</p>
                 <p>
                   <a
@@ -131,7 +145,7 @@ export default function SchedulePage() {
 
           {/* Right column - Calendar embed */}
           <section className="lg:col-span-2">
-            <div className="bg-base-200/50 min-h-[1200px] rounded-lg p-4 lg:min-h-[1250px] lg:p-6">
+            <div className="sh-well bg-base-100 rounded-box min-h-[1200px] p-4 lg:min-h-[1250px] lg:p-6">
               <CalendarEmbed mode="inline" />
             </div>
           </section>
