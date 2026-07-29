@@ -18,7 +18,29 @@
 const CACHE_VERSION = 'scripthammer-v1.0.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
-const IMAGE_CACHE = `${CACHE_VERSION}-images`;
+
+// Images are versioned SEPARATELY from the build, and that is the whole point
+// (#438).
+//
+// This used to be `${CACHE_VERSION}-images`. Because CACHE_VERSION is stamped
+// with the commit SHA, every deploy renamed it and `activate` deleted the
+// previous one — throwing away every cached image on a code change that had
+// nothing to do with images. Combined with `skipWaiting()` + `clients.claim()`
+// below, an open page had its image cache deleted mid-session and was then
+// claimed by the new worker, so its not-yet-requested lazy images all faulted
+// into an empty cache at once. Reported from the live blog as broken-image
+// icons on exactly the below-the-fold cards, with the already-painted ones
+// above them fine.
+//
+// A fresh browser CANNOT reproduce that — with no previous worker there is no
+// takeover and no deletion — which is why a clean-profile check reported 14 of
+// 14 images loaded while real visitors saw them break.
+//
+// Bump this by hand only when the image CACHING BEHAVIOUR changes; a content
+// change does not need it, since entries are keyed by request URL. Keeps the
+// `scripthammer-` prefix so the activate purge below still owns it rather than
+// leaking it.
+const IMAGE_CACHE = 'scripthammer-images-v1';
 
 // Assets to cache on install. Paths are relative to this script's location
 // (self.registration.scope), so they resolve correctly whether the app is
@@ -174,15 +196,30 @@ self.addEventListener('fetch', (event) => {
         if (response) {
           return response;
         }
-        return fetch(request).then((response) => {
-          if (response.status === 200) {
-            const responseToCache = response.clone();
-            caches.open(IMAGE_CACHE).then((cache) => {
-              cache.put(request, responseToCache);
-            });
-          }
-          return response;
-        });
+        return (
+          fetch(request)
+            .then((response) => {
+              if (response.status === 200) {
+                const responseToCache = response.clone();
+                caches.open(IMAGE_CACHE).then((cache) => {
+                  cache.put(request, responseToCache);
+                });
+              }
+              return response;
+            })
+            // This handler was the ONLY one serving content without a failure
+            // path — the api and navigate handlers above and below both have
+            // one (#438). Without it a rejected fetch rejects the promise given
+            // to respondWith, which the browser renders as a network error for
+            // that image. Nothing is cached on failure (only 200s are), so
+            // there is no self-repair: the image stays broken until a reload.
+            //
+            // Re-checking the cache is not redundant with the lookup above. A
+            // concurrent request for the same image may have populated it in
+            // between, which is exactly the case during a worker takeover when
+            // a page faults in many lazy images at once.
+            .catch(() => caches.match(request))
+        );
       })
     );
     return;
