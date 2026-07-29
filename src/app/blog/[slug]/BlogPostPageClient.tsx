@@ -126,7 +126,7 @@ export default function BlogPostPageClient({
               <div className="flex-1">
                 <div className="font-semibold">{author.name}</div>
                 {author.bio && (
-                  <div className="text-base-content/80 line-clamp-1 text-sm">
+                  <div className="text-base-content line-clamp-1 text-sm">
                     {author.bio}
                   </div>
                 )}

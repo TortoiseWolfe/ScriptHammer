@@ -58,6 +58,32 @@
   max-width: 80rem; /* 1280px, matching --breakpoint-xl */
 }
 
+/* ============================================================================
+ * Form labels must be readable, not decorative (#411)
+ *
+ * DaisyUI's `.label` mutes its own text — measured `#9094a1` on base-200 in
+ * scripthammer-dark, which is **5.86:1**, under the 7:1 this repo gates at.
+ * That is not one page: it is every form in the product — sign-in, sign-up,
+ * reset-password, profile, payment, payment-demo, payment-result, contact and
+ * admin/messaging all reported it.
+ *
+ * It went unseen because the contrast gate looked at four routes and none of
+ * them had a form. A label is the text telling someone what to type; it is the
+ * last thing that should be dimmed for style.
+ * ========================================================================= */
+.label,
+.label > span,
+.label-text,
+/* `.table th` is the same defect in a different component: DaisyUI dims
+   column headers to #9094a1 on base-200 in the dark theme — 5.86:1. Found by
+   #411 on /account/audit and /payment-demo, both of which render tables. A
+   column header is the label for its column; dimming it is the same mistake
+   as dimming a form label. */
+.table thead th,
+.table th {
+  color: var(--color-base-content);
+}
+
 @plugin "daisyui" {
   themes:
     scripthammer-dark --default,
@@ -138,7 +164,23 @@
   --noise: 1;
 }
 
-/* ScriptHammer Light Theme — warm parchment with adjusted brand colors */
+/* ScriptHammer Light Theme — warm parchment with adjusted brand colors
+ *
+ * Every colour below was AAA-verified against base-100 ONLY (#21), and the old
+ * annotations said so — "AAA 8.03:1" was true on #f5f0eb. Text is routinely
+ * placed on base-200 (#ebe5dd) too, where the same colours measured 6.4–6.5:1
+ * and failed the 7:1 gate.
+ *
+ * Found by #411, once the contrast sweep stopped looking at 4 routes and
+ * started looking at 40: /blog/seo alone reported 19 nodes. It is also the
+ * root cause of the 6.44:1 `text-accent` eyebrow that reached main in #407 and
+ * was worked around locally instead of fixed here.
+ *
+ * Each lightness is now the measured minimum that clears 7:1 on base-100 AND
+ * base-200, with a small margin. The shift is ~2 points — visually almost
+ * nothing, and it removes a whole class of violation rather than one instance.
+ * Solved by canvas readback, NOT getComputedStyle, which returns oklch()
+ * unparsed (see lesson_oklch_contrast_canvas_playwright). */
 @plugin "daisyui/theme" {
   name: 'scripthammer-light';
   default: false;
@@ -150,25 +192,27 @@
   --color-base-300: oklch(87.66% 0.016 73.66); /* #ddd5cb */
   --color-base-content: oklch(27.81% 0.03 256.85); /* #1f2937 dark text */
 
-  --color-primary: oklch(42.79% 0.03 257.68); /* #455060 — AAA 7.22:1 */
+  --color-primary: oklch(41% 0.03 257.68); /* AAA on base-100 AND base-200 */
   --color-primary-content: oklch(100% 0 0);
 
-  --color-secondary: oklch(44.28% 0.116 46.14); /* #853a0d — AAA 7.11:1 */
+  --color-secondary: oklch(
+    42.2% 0.116 46.14
+  ); /* AAA on base-100 AND base-200 */
   --color-secondary-content: oklch(100% 0 0);
 
-  --color-accent: oklch(42.86% 0.098 239.94); /* #01557f — AAA 7.11:1 */
+  --color-accent: oklch(40.8% 0.098 239.94); /* AAA on base-100 AND base-200 */
   --color-accent-content: oklch(100% 0 0);
 
   --color-neutral: oklch(37.29% 0.031 259.73); /* #374151 */
   --color-neutral-content: oklch(98.46% 0.002 247.84);
 
-  --color-info: oklch(43.86% 0.167 262.77); /* #1b49ac — AAA 8.09:1 */
+  --color-info: oklch(42% 0.167 262.77); /* AAA on base-100 AND base-200 */
   --color-info-content: oklch(100% 0 0);
-  --color-success: oklch(42.03% 0.11 149.9); /* #0c5d2a — AAA 8.03:1 */
+  --color-success: oklch(39.9% 0.11 149.9); /* AAA on base-100 AND base-200 */
   --color-success-content: oklch(100% 0 0);
-  --color-warning: oklch(43.35% 0.09 76.98); /* #6c4902 — AAA 8.10:1 */
+  --color-warning: oklch(41.3% 0.09 76.98); /* AAA on base-100 AND base-200 */
   --color-warning-content: oklch(100% 0 0);
-  --color-error: oklch(44.94% 0.164 26.98); /* #9c1b1b — AAA 8.12:1 */
+  --color-error: oklch(42.9% 0.164 26.98); /* AAA on base-100 AND base-200 */
   --color-error-content: oklch(100% 0 0);
 
   --radius-selector: 0.75rem;

@@ -338,7 +338,7 @@ export default function BlogPostViewer({
             />
           </div>
           {post.metadata?.featuredImageAlt && (
-            <figcaption className="text-base-content/80 mt-2 text-center text-sm">
+            <figcaption className="text-base-content mt-2 text-center text-sm">
               {post.metadata.featuredImageAlt}
             </figcaption>
           )}

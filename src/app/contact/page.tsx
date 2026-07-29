@@ -35,7 +35,7 @@ export default function ContactPage() {
               <h2 className="mb-3 text-xl font-semibold sm:text-2xl">
                 Why Contact Us?
               </h2>
-              <ul className="text-base-content/80 space-y-2">
+              <ul className="text-base-content space-y-2">
                 <li className="flex items-start">
                   <svg
                     className="text-primary mt-1 mr-2 h-5 w-5 flex-shrink-0"
