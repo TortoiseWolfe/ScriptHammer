@@ -137,7 +137,7 @@ function NewGroupContent() {
           <div className="mb-6">
             <label htmlFor="group-name" className="label">
               <span className="font-medium">Group Name</span>
-              <span className="text-base-content/80">
+              <span className="text-base-content">
                 {groupName.length}/{GROUP_CONSTRAINTS.MAX_NAME_LENGTH}
               </span>
             </label>
@@ -154,7 +154,7 @@ function NewGroupContent() {
               }
               disabled={isCreating}
             />
-            <p className="text-base-content/80 mt-2">{autoNamePreview}</p>
+            <p className="text-base-content mt-2">{autoNamePreview}</p>
           </div>
 
           {/* Selected Members Section */}
@@ -299,7 +299,7 @@ function NewGroupContent() {
                 <span className="loading loading-spinner loading-lg" />
               </div>
             ) : availableConnections.length === 0 ? (
-              <div className="text-base-content/80 p-8 text-center">
+              <div className="text-base-content p-8 text-center">
                 {searchQuery
                   ? 'No connections found'
                   : selectedMembers.length === searchResults.length
@@ -339,7 +339,7 @@ function NewGroupContent() {
                         {user.display_name || 'Unknown'}
                       </p>
                       {user.username && (
-                        <p className="text-base-content/80 truncate text-sm">
+                        <p className="text-base-content truncate text-sm">
                           @{user.username}
                         </p>
                       )}

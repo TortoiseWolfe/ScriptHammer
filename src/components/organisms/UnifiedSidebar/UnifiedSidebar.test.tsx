@@ -67,8 +67,23 @@ describe('UnifiedSidebar', () => {
     render(<UnifiedSidebar {...defaultProps} activeTab="connections" />);
 
     const connectionsTab = screen.getByRole('tab', { name: /connections/i });
-    expect(connectionsTab).toHaveClass('tab-active');
+    // `sh-rail-active`, not DaisyUI's `tab-active`: the strip is a rail now
+    // (#431), the same vocabulary as GlobalNav, /blog, /docs, /payment and the
+    // admin console. `.tab` gets no depth from #427.
+    //
+    // Note what this assertion can and cannot do. A class being PRESENT says
+    // nothing about whether it renders — that is exactly how AdminStatCard's
+    // dead `hover:shadow-md` stayed green (#430). It is kept because it is the
+    // cheapest guard that the active branch was taken at all; the line below is
+    // the one that pins the actual contract, because `aria-selected` is what a
+    // screen reader and every getByRole locator read.
+    expect(connectionsTab).toHaveClass('sh-rail-active');
     expect(connectionsTab).toHaveAttribute('aria-selected', 'true');
+    // And the INACTIVE tab must not carry it, or the assertion above would pass
+    // on a component that marked everything active.
+    expect(screen.getByRole('tab', { name: /chats/i })).not.toHaveClass(
+      'sh-rail-active'
+    );
   });
 
   it('calls onTabChange when tab clicked', () => {

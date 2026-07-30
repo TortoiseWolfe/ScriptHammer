@@ -149,9 +149,9 @@ export default function ConversationList({
         </div>
 
         {/* Filter tabs */}
-        <div className="tabs tabs-boxed mt-3" role="tablist">
+        <div className="sh-rail mt-3 flex-wrap" role="tablist">
           <button
-            className={`tab min-h-11 ${filterType === 'all' ? 'tab-active' : ''}`}
+            className={`text-base-content flex min-h-11 flex-shrink-0 items-center gap-2 rounded-full px-4 text-sm transition-colors ${filterType === 'all' ? 'sh-rail-active' : 'hover:bg-base-200'}`}
             onClick={() => setFilterType('all')}
             role="tab"
             aria-selected={filterType === 'all'}
@@ -162,7 +162,7 @@ export default function ConversationList({
             )}
           </button>
           <button
-            className={`tab min-h-11 ${filterType === 'unread' ? 'tab-active' : ''}`}
+            className={`text-base-content flex min-h-11 flex-shrink-0 items-center gap-2 rounded-full px-4 text-sm transition-colors ${filterType === 'unread' ? 'sh-rail-active' : 'hover:bg-base-200'}`}
             onClick={() => setFilterType('unread')}
             role="tab"
             aria-selected={filterType === 'unread'}
@@ -175,7 +175,7 @@ export default function ConversationList({
             )}
           </button>
           <button
-            className={`tab min-h-11 ${filterType === 'archived' ? 'tab-active' : ''}`}
+            className={`text-base-content flex min-h-11 flex-shrink-0 items-center gap-2 rounded-full px-4 text-sm transition-colors ${filterType === 'archived' ? 'sh-rail-active' : 'hover:bg-base-200'}`}
             onClick={() => setFilterType('archived')}
             role="tab"
             aria-selected={filterType === 'archived'}

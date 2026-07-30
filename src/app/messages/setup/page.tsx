@@ -174,7 +174,7 @@ export default function MessagingSetupPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="card bg-base-100 w-full max-w-md shadow-xl">
+      <div className="card bg-base-100 rounded-box w-full max-w-md">
         <div className="card-body">
           <h1 className="card-title text-2xl">Set Up Encrypted Messaging</h1>
 
@@ -321,7 +321,7 @@ export default function MessagingSetupPage() {
             </div>
           </form>
 
-          <p className="text-base-content/85 mt-4 text-center text-sm">
+          <p className="text-base-content mt-4 text-center text-sm">
             Your messages are end-to-end encrypted. Only you and your recipients
             can read them.
           </p>
