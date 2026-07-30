@@ -265,6 +265,49 @@ self.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(async () => {
+          // RETRY BEFORE FALLING BACK TO CACHE (#467).
+          //
+          // Cached HTML and the live assets can belong to DIFFERENT BUILDS.
+          // GitHub Pages serves only the current build, so the previous
+          // deploy's hashed CSS is deleted — measured, a stale hash 404s. If a
+          // navigation fails for a moment during a deploy and we answer it with
+          // HTML from the older build, every `<link rel=stylesheet>` in that
+          // HTML 404s and the visitor gets the site with NO CSS: no nav, white
+          // background, the logo painting at its natural size. That is what a
+          // real user reported, and the DOM was perfectly correct.
+          //
+          // So when the network is reachable, try once more — with `cache:
+          // 'reload'` to bypass the HTTP cache — before reaching for anything
+          // stored. A deploy swap and a momentary blip both recover here, and
+          // neither can serve HTML older than the assets on the server.
+          //
+          // `navigator.onLine` is a weak signal (it reports true for a captive
+          // portal), which is exactly why it only gates an EXTRA ATTEMPT and
+          // never suppresses the cache path below. #317's symptom must not come
+          // back: a genuinely offline visitor still gets their cached page.
+          // Optional chaining, and `!== false` rather than a truthiness test:
+          // skip the extra attempt only when we KNOW the client is offline. A
+          // scope without `navigator` must still retry, not throw — reading
+          // `self.navigator.onLine` unguarded threw inside this catch and
+          // rejected the whole response, which broke all five #317 tests. The
+          // sibling sw-router-bypass spec records the same mistake with
+          // `self.location.origin`: a real worker has these, so the failure
+          // would only ever have shown up somewhere it was too late to see.
+          if (self.navigator?.onLine !== false) {
+            try {
+              const retried = await fetch(request, { cache: 'reload' });
+              if (retried && retried.status === 200) {
+                const clone = retried.clone();
+                caches.open(DYNAMIC_CACHE).then((cache) => {
+                  cache.put(request, clone);
+                });
+                return retried;
+              }
+            } catch {
+              // Still failing — fall through to the cache, as before.
+            }
+          }
+
           // Tolerant lookup (#317). A single caches.match(request) here is what
           // turned a momentary network blip into a full "You're Offline" page
           // on every non-home route.
