@@ -40,7 +40,7 @@ export default function BlogPostCard({
   // Calculate SEO score
   const seoAnalysis = showSEO ? seoAnalyzer.analyze(post) : null;
   const seoScore = seoAnalysis?.score.overall || 0;
-  const seoColor = seoAnalyzer.getScoreColor(seoScore);
+  const seoBadgeClass = seoAnalyzer.getScoreBadgeClass(seoScore);
   const seoLabel = seoAnalyzer.getScoreLabel(seoScore);
 
   // Get the base path for images
@@ -82,7 +82,7 @@ export default function BlogPostCard({
         {/* SEO Score Badge */}
         {showSEO && seoAnalysis && (
           <div className="mb-2 flex items-start justify-between">
-            <div className={`badge badge-${seoColor} badge-sm gap-1`}>
+            <div className={`badge ${seoBadgeClass} badge-sm gap-1`}>
               <span className="font-bold">SEO:</span>
               <span>{seoScore}%</span>
               <span className="text-xs">({seoLabel})</span>

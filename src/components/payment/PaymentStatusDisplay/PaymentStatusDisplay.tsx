@@ -165,6 +165,7 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
   const statusConfig = {
     succeeded: {
       badge: 'badge-success',
+      iconColor: 'text-success',
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -186,6 +187,7 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
     },
     failed: {
       badge: 'badge-error',
+      iconColor: 'text-error',
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -207,6 +209,7 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
     },
     refunded: {
       badge: 'badge-warning',
+      iconColor: 'text-warning',
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -228,6 +231,7 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
     },
     pending: {
       badge: 'badge-info',
+      iconColor: 'text-info',
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -252,14 +256,12 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
   const config = statusConfig[paymentResult.status] || statusConfig.pending;
 
   return (
-    <div className={`card bg-base-100 shadow-xl ${className}`}>
+    <div className={`card bg-base-100 rounded-box ${className}`}>
       <div className="card-body">
         {/* Status Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`text-${config.badge.split('-')[1]}`}>
-              {config.icon}
-            </div>
+            <div className={config.iconColor}>{config.icon}</div>
             <div>
               <h3 className="text-xl font-bold">{config.message}</h3>
               <span className={`badge ${config.badge} mt-1`}>

@@ -545,7 +545,39 @@ export class SEOAnalyzer {
   }
 
   /**
+   * Complete Tailwind class literals for an SEO score (#455).
+   *
+   * `getScoreColor` below returns a bare word ('success' | 'warning' | 'error')
+   * and every caller interpolated it — `text-${…}`, `badge-${…}`. Tailwind scans
+   * source for class LITERALS, so none of those classes was generated from
+   * these call sites; they existed only because other files happened to use the
+   * same literal. `text-info` was surviving on two unrelated files.
+   *
+   * These return whole class names, so Tailwind sees each one verbatim. Adding a
+   * new tone means adding its literals here, where the compiler and a grep can
+   * both find them.
+   *
+   * `getScoreColor` keeps its bare-word contract — it is pinned by
+   * seo-analyzer.test.ts:520-533 and is legitimately useful for non-class uses.
+   */
+  getScoreTextClass(score: number): string {
+    if (score >= 80) return 'text-success';
+    if (score >= 60) return 'text-warning';
+    return 'text-error';
+  }
+
+  getScoreBadgeClass(score: number): string {
+    if (score >= 80) return 'badge-success';
+    if (score >= 60) return 'badge-warning';
+    return 'badge-error';
+  }
+
+  /**
    * Get SEO score color based on score value
+   *
+   * Returns a BARE WORD, not a class name. For a Tailwind class use
+   * `getScoreTextClass` / `getScoreBadgeClass` — interpolating this into
+   * `text-${…}` produces a class Tailwind cannot see (#455).
    */
   getScoreColor(score: number): string {
     if (score >= 80) return 'success';
