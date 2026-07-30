@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useId } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayeredScriptHammerLogo } from '@/components/atomic/SpinningLogo';
 import { AnimatedLogo } from '@/components/atomic/AnimatedLogo';
-import { ColorblindToggle } from '@/components/molecular/ColorblindToggle';
-import { FontSizeControl } from '@/components/navigation/FontSizeControl';
+import { ColorVisionPanel } from '@/components/molecular/ColorblindToggle';
+import { TextSettingsPanel } from '@/components/navigation/FontSizeControl';
 import { detectedConfig } from '@/config/project-detected';
 import { THEMES } from '@/config/themes';
 import { getInternalUrl } from '@/config/project.config';
@@ -21,6 +21,107 @@ import { createClient } from '@/lib/supabase/client';
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+/**
+ * Open state plus the three ways a nav popover must close: Escape (returning
+ * focus to the trigger), a pointer press outside it, and tabbing out.
+ *
+ * Shared by {@link NavGroupMenu} and {@link NavPopover} so the keyboard contract
+ * is written once. Both are React-owned rather than DaisyUI `:focus-within` —
+ * with that pattern the trigger lives INSIDE `.dropdown`, so returning focus to
+ * it re-opens the panel on the same frame.
+ */
+function useDismissable() {
+  const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocDown = (e: MouseEvent) => {
+      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      setOpen(false);
+      trigger.current?.focus();
+    };
+    document.addEventListener('mousedown', onDocDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+
+  return { open, setOpen, wrap, trigger };
+}
+
+/**
+ * A nav popover holding CONTROLS rather than destinations (#378).
+ *
+ * Deliberately not a `role="menu"`. `NavGroupMenu` is correct for a list of
+ * links, but a menu's children are `menuitem`s — putting a `<select>`, a toggle
+ * and button groups inside one misdescribes them to a screen reader. This is a
+ * disclosure: `aria-expanded` on the trigger, a plain panel, and the same
+ * dismiss contract via {@link useDismissable}.
+ *
+ * `aria-haspopup="true"` rather than `"menu"` for the same reason.
+ */
+function NavPopover({
+  label,
+  triggerClass,
+  icon,
+  children,
+}: {
+  label: string;
+  triggerClass: string;
+  icon?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  const { open, setOpen, wrap, trigger } = useDismissable();
+  const triggerId = useId();
+
+  return (
+    <div
+      ref={wrap}
+      className="relative"
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false);
+      }}
+    >
+      <button
+        ref={trigger}
+        id={triggerId}
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="true"
+        aria-label={label}
+        className={triggerClass}
+        onClick={() => setOpen((v) => !v)}
+      >
+        {icon}
+        <span className="hidden lg:inline">{label}</span>
+        <span aria-hidden="true">▾</span>
+      </button>
+      {open && (
+        <div
+          className="sh-plate bg-base-100 rounded-box absolute end-0 z-[1] mt-2 max-h-[80vh] w-72 max-w-[calc(100vw-1.5rem)] space-y-4 overflow-y-auto p-4"
+          role="group"
+          // NAMED BY THE TRIGGER, not by a second `aria-label={label}`.
+          // Putting the same label on both put two elements in the
+          // accessibility tree with one name — confusing to announce, and it
+          // made `[aria-label="Display"]` resolve to two nodes, which is a
+          // Playwright strict-mode violation. Caught by the new gate test.
+          aria-labelledby={triggerId}
+          data-testid={`nav-popover-${label.toLowerCase()}`}
+        >
+          {children}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /**
@@ -45,27 +146,7 @@ function NavGroupMenu({
   triggerClass: string;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
-  const wrap = useRef<HTMLDivElement>(null);
-  const trigger = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDocDown = (e: MouseEvent) => {
-      if (!wrap.current?.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return;
-      setOpen(false);
-      trigger.current?.focus();
-    };
-    document.addEventListener('mousedown', onDocDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('mousedown', onDocDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [open]);
+  const { open, setOpen, wrap, trigger } = useDismissable();
 
   return (
     <div
@@ -648,30 +729,33 @@ export function GlobalNav() {
               </button>
             )}
 
-            {/* Font Size Control - Hidden below lg (1024px) — accessible via hamburger */}
-            <div className="hidden lg:block">
-              <FontSizeControl />
-            </div>
+            {/* ONE `Display ▾` for every appearance setting (#378).
+                Replaces three separate popovers — text settings, colour vision
+                and theme — each of which was `hidden lg:block`. Measured: below
+                1024px the hamburger holds 13 destinations and ZERO appearance
+                controls, so on a phone there was no way to change the theme or
+                the font size from the nav at all. The comment on the old font
+                block claimed it was "accessible via hamburger"; it was not.
 
-            {/* Color Vision Control - Hidden below lg (1024px) */}
-            <div className="hidden lg:block">
-              <ColorblindToggle className="compact" />
-            </div>
+                No breakpoint gate here on purpose. The label text collapses
+                below lg so the trigger stays icon-sized, but the control itself
+                is present at every width.
 
-            {/* Theme Selector - Hidden below lg (1024px) */}
-            <div className="dropdown dropdown-end hidden lg:block">
-              <label
-                tabIndex={0}
-                className="btn btn-ghost btn-circle min-h-11 min-w-11"
-                title="Change theme"
-                aria-label="Change theme"
-              >
+                Named `Display`, NOT "Display menu": mobile-navigation.spec.ts
+                locates `[aria-label*="menu" i]`, `.first()` follows document
+                order and nav precedes page content, so a name containing "menu"
+                shadows the mobile hamburger — #378's own earlier regression. */}
+            <NavPopover
+              label="Display"
+              triggerClass="btn btn-ghost min-h-11 min-w-11 gap-1 px-2"
+              icon={
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-4 w-4 sm:h-5 sm:w-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -680,23 +764,32 @@ export function GlobalNav() {
                     d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
                   />
                 </svg>
-              </label>
-              <ul
-                tabIndex={0}
-                className="dropdown-content bg-base-100 rounded-box z-[1] max-h-96 w-44 max-w-[calc(100vw-4rem)] overflow-y-auto p-2 shadow-lg sm:w-52"
-              >
-                {THEMES.map((t) => (
-                  <li key={t}>
-                    <button
-                      className={`btn btn-ghost btn-sm w-full justify-start ${theme === t ? 'btn-active' : ''}`}
-                      onClick={() => handleThemeChange(t)}
-                    >
-                      <span className="capitalize">{t}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+              }
+            >
+              <TextSettingsPanel />
+              <div className="divider my-0"></div>
+              <ColorVisionPanel />
+              <div className="divider my-0"></div>
+              <div>
+                <h3 className="mb-2 text-sm font-semibold tracking-wide uppercase">
+                  Theme
+                </h3>
+                <ul className="max-h-64 overflow-y-auto">
+                  {THEMES.map((t) => (
+                    <li key={t}>
+                      <button
+                        type="button"
+                        className={`btn btn-ghost min-h-11 w-full justify-start ${theme === t ? 'btn-active' : ''}`}
+                        onClick={() => handleThemeChange(t)}
+                        aria-current={theme === t ? 'true' : undefined}
+                      >
+                        <span className="capitalize">{t}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </NavPopover>
           </div>
         </div>
       </nav>

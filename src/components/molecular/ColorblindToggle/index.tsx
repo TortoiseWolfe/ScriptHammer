@@ -1,2 +1,2 @@
-export { ColorblindToggle } from './ColorblindToggle';
+export { ColorblindToggle, ColorVisionPanel } from './ColorblindToggle';
 export type { ColorblindToggleProps } from './ColorblindToggle';

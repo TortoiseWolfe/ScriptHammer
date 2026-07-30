@@ -213,8 +213,29 @@ test.describe('Touch Target Standards', () => {
     // button rendered with aria-expanded but the handler was not attached yet,
     // which reads exactly like a broken menu.
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
-    await trigger.click();
-    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    // RETRY the click rather than assume hydration has finished.
+    //
+    // A click dispatched before React attaches its handler is silently
+    // swallowed, and there is nothing to wait for: the server already renders
+    // `aria-expanded="false"`, so the assertion above passes instantly against
+    // an inert button. That made this test timing-dependent — it passed or
+    // failed on how long the bundle took to hydrate, which shifts with any
+    // change to the nav's imports. Measured: identical code passed one run and
+    // failed the next.
+    //
+    // `body[data-theme]` is NOT a usable hydration marker, before anyone tries:
+    // ThemeScript sets it pre-paint, at 251ms, long before the handler exists.
+    //
+    // The click is only issued while the menu is closed, so retrying cannot
+    // toggle it shut again.
+    await expect(async () => {
+      if ((await trigger.getAttribute('aria-expanded')) !== 'true') {
+        await trigger.click();
+      }
+      await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    }).toPass({ timeout: 15000 });
+
     expect(await items.count()).toBeGreaterThanOrEqual(7);
 
     await page.keyboard.press('Escape');
@@ -228,6 +249,107 @@ test.describe('Touch Target Standards', () => {
         document.activeElement?.getAttribute('aria-label')
       )
     ).toBe('Demos');
+  });
+
+  test('the Display popover is reachable at every width and its controls meet 44px (#378)', async ({
+    page,
+  }) => {
+    test.setTimeout(120000);
+
+    // EVERY width, because the defect this replaced was a breakpoint gate: the
+    // three appearance dropdowns were each `hidden lg:block`, and the mobile
+    // hamburger held 13 destinations and ZERO appearance controls — so below
+    // 1024px there was no way to change the theme or the font size from the nav.
+    const WIDTHS = [320, 390, 428, 768, 1024, 1280];
+    let totalMeasured = 0;
+
+    for (const width of WIDTHS) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
+      await dismissCookieBanner(page);
+      await waitForLayoutStability(page);
+
+      const trigger = page.locator('[aria-label="Display"]');
+      await expect(
+        trigger,
+        `the Display trigger must exist and be visible at ${width}px — a ` +
+          `breakpoint-hidden appearance control is the defect #378 fixed`
+      ).toBeVisible();
+
+      // Same retry as the Demos menu: a click before hydration is swallowed and
+      // the server-rendered `aria-expanded="false"` gives nothing to wait for.
+      await expect(async () => {
+        if ((await trigger.getAttribute('aria-expanded')) !== 'true') {
+          await trigger.click();
+        }
+        await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+      }).toPass({ timeout: 15000 });
+
+      // By testid, not by role or name. `[role="group"]` alone also matches the
+      // cookie banner, and the panel is NAMED BY ITS TRIGGER
+      // (`aria-labelledby`) rather than carrying a duplicate `aria-label` —
+      // which is the correct ARIA pattern and stops `[aria-label="Display"]`
+      // resolving to two nodes.
+      const panel = page.getByTestId('nav-popover-display');
+      await expect(panel).toBeVisible();
+
+      const controls = panel.locator('button, a, select, input');
+      const count = await controls.count();
+
+      // COVERAGE FLOOR, per width. Everything below is conditional on finding
+      // controls, so a panel that renders empty would pass silently — the
+      // #411/#454 shape. 40 is MEASURED (34 themes + size, spacing, reset and
+      // the accessibility link + the assistance-mode select). Raise it
+      // deliberately; never lower it to go green.
+      expect(
+        count,
+        `only ${count} controls measured inside the Display panel at ${width}px`
+      ).toBeGreaterThanOrEqual(40);
+      totalMeasured += count;
+
+      const failures: string[] = [];
+      for (let i = 0; i < count; i++) {
+        const el = controls.nth(i);
+        if (!(await el.isVisible())) continue;
+        const box = await el.boundingBox();
+        if (!box) continue;
+        // 44x44, not 44 tall: these are `flex-1`, so width follows the label.
+        // "L" measured 44x42 when only the height had a floor.
+        if (
+          box.height < MINIMUM - TOLERANCE ||
+          box.width < MINIMUM - TOLERANCE
+        ) {
+          const name =
+            (await el.getAttribute('aria-label')) ||
+            (await el.textContent())?.trim().slice(0, 24) ||
+            '(unnamed)';
+          failures.push(
+            `${name}: ${box.width.toFixed(0)}x${box.height.toFixed(0)}px at ${width}px`
+          );
+        }
+      }
+
+      expect(
+        failures,
+        `${failures.length} Display controls under ${MINIMUM}px at ${width}px. ` +
+          `These sit inside a popover, so nothing else in this suite can see ` +
+          `them:\n${failures.join('\n')}`
+      ).toEqual([]);
+
+      await page.keyboard.press('Escape');
+      await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+      expect(
+        await page.evaluate(() =>
+          document.activeElement?.getAttribute('aria-label')
+        ),
+        `Escape must return focus to the trigger at ${width}px`
+      ).toBe('Display');
+    }
+
+    expect(
+      totalMeasured,
+      'measured no Display controls at all — the selector has stopped matching'
+    ).toBeGreaterThan(0);
   });
 
   test('Navigation buttons meet touch target standards', async ({ page }) => {
