@@ -52,9 +52,19 @@ export default function UserProfileCard({
             displayName={displayName}
             size="lg"
           />
-          <div className="flex-1">
-            <h3 className="card-title">{displayName}</h3>
-            <p className="text-base-content/85 text-sm">{user.email}</p>
+          <div className="min-w-0 flex-1">
+            <h3 className="card-title break-words">{displayName}</h3>
+            {/* `displayName` already falls back to `user.email` when
+                `profile.display_name` is null - which is the common case, since
+                nothing in the signup flow sets it. Printing the email again
+                below showed the same string TWICE, as heading and as subtitle.
+                Solid rather than /85: #411 measured /60 and /70 failing AAA and
+                /85 was never measured, so the de-emphasis comes from size. */}
+            {displayName !== user.email && (
+              <p className="text-base-content text-sm break-words">
+                {user.email}
+              </p>
+            )}
             {profile?.bio && <p className="mt-2 text-sm">{profile.bio}</p>}
           </div>
         </div>

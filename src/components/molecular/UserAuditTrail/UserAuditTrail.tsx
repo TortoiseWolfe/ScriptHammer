@@ -134,42 +134,62 @@ export default function UserAuditTrail({
       )}
 
       {!error && entries !== null && entries.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="table-zebra table">
-            <caption className="sr-only">Your recent security events</caption>
-            <thead>
-              <tr>
-                <th scope="col">Event</th>
-                <th scope="col">When</th>
-                <th scope="col">Result</th>
-                <th scope="col">IP address</th>
-              </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry) => (
-                <tr key={entry.id}>
-                  <td>{labelFor(entry.event_type)}</td>
-                  <td>
-                    <time dateTime={entry.created_at}>
-                      {formatWhen(entry.created_at)}
-                    </time>
-                  </td>
-                  <td>
-                    <span
-                      className={`badge ${
-                        entry.success ? 'badge-success' : 'badge-error'
-                      }`}
-                    >
-                      {entry.success ? 'Success' : 'Failed'}
-                    </span>
-                  </td>
-                  <td className="font-mono text-sm">
-                    {entry.ip_address ?? '—'}
-                  </td>
+        // The well WRAPS the scroll container rather than replacing it: the
+        // overflow-x-auto div must stay its own scrolling box, and the padding
+        // is what makes an inset shadow visible at all - `table-zebra` paints
+        // opaque full-bleed rows, so a well directly on the table would be
+        // hidden underneath them.
+        <div className="sh-well bg-base-100 rounded-box px-4 py-2">
+          <div className="overflow-x-auto">
+            <table className="table-zebra table">
+              <caption className="sr-only">Your recent security events</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Event</th>
+                  <th scope="col">When</th>
+                  <th scope="col">Result</th>
+                  <th scope="col">IP address</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {entries.map((entry) => (
+                  <tr key={entry.id}>
+                    <td>{labelFor(entry.event_type)}</td>
+                    <td>
+                      <time dateTime={entry.created_at}>
+                        {formatWhen(entry.created_at)}
+                      </time>
+                    </td>
+                    <td>
+                      <span
+                        className={`badge ${
+                          entry.success ? 'badge-success' : 'badge-error'
+                        }`}
+                      >
+                        {entry.success ? 'Success' : 'Failed'}
+                      </span>
+                    </td>
+                    <td className="font-mono text-sm">
+                      {entry.ip_address ?? '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Say so when the view is truncated. The table renders `limit` rows
+              and stops, while the copy above talks about a 90-day retention
+              window - which reads as though this were everything. Someone
+              checking their own security log for a sign-in they do not
+              recognise needs to know the list ends early. Derived from the
+              prop, and rendered only when it is TRUE: a short list makes no
+              claim. */}
+          {entries.length >= limit && (
+            <p className="text-base-content mt-3 text-xs">
+              Showing the {limit} most recent events. Older entries within the
+              90-day window are not listed here.
+            </p>
+          )}
         </div>
       )}
     </section>
