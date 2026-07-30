@@ -17,9 +17,11 @@ const CalendarEmbed = dynamic(
 
 export default function SchedulePage() {
   return (
-    // `container` clamps to the PREVIOUS breakpoint (`--breakpoint-xs: 20rem`,
-    // #373), so the inner `max-w-7xl` never got a chance to apply — one
-    // explicit measure replaces both.
+    // One explicit measure instead of `container` plus an inner `max-w-7xl`.
+    //
+    // The old comment here said the inner measure "never got a chance to apply"
+    // because `container` clamped — untrue: `container` is 1280px at every tier
+    // since #373's §A1, so the two were simply redundant (#463).
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
       <div>
         {/* Two-column layout on desktop, stacked on mobile */}

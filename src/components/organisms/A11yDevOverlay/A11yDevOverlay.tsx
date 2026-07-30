@@ -245,11 +245,16 @@ export default function A11yDevOverlay({
         />
       </div>
 
+      {/* The empty-state line below is solid, not `/60`: measured 5.20:1 on
+          base-100 in scripthammer-light, under the 7:1 gate (#411, table in
+          #462). It also lost its emoji - an emoji cannot take `currentColor`
+          and renders differently on every OS (#385). The sentence carries the
+          meaning without it. */}
       <ul className="flex-1 overflow-y-auto" aria-live="polite">
         {visibleViolations.length === 0 ? (
-          <li className="text-base-content/60 p-4 text-center text-sm">
+          <li className="text-base-content p-4 text-center text-sm">
             {violations.length === 0
-              ? 'No accessibility violations 🎉'
+              ? 'No accessibility violations'
               : 'No violations match the current filters.'}
           </li>
         ) : (

@@ -68,12 +68,12 @@ export default function UnifiedSidebar({
       {/* Tab Navigation - Feature 038: Consolidated to 2 tabs */}
       <div
         role="tablist"
-        className="tabs tabs-bordered flex-shrink-0 overflow-x-auto px-4 pt-4"
+        className="sh-rail mx-4 mt-4 flex-shrink-0 overflow-x-auto"
       >
         <button
           role="tab"
           aria-selected={activeTab === 'chats'}
-          className={`tab min-h-11 flex-shrink-0 gap-2 ${activeTab === 'chats' ? 'tab-active' : ''}`}
+          className={`text-base-content flex min-h-11 flex-shrink-0 items-center gap-2 rounded-full px-4 text-sm transition-colors ${activeTab === 'chats' ? 'sh-rail-active' : 'hover:bg-base-200'}`}
           onClick={() => onTabChange('chats')}
         >
           Chats
@@ -84,7 +84,7 @@ export default function UnifiedSidebar({
         <button
           role="tab"
           aria-selected={activeTab === 'connections'}
-          className={`tab min-h-11 flex-shrink-0 gap-2 ${activeTab === 'connections' ? 'tab-active' : ''}`}
+          className={`text-base-content flex min-h-11 flex-shrink-0 items-center gap-2 rounded-full px-4 text-sm transition-colors ${activeTab === 'connections' ? 'sh-rail-active' : 'hover:bg-base-200'}`}
           onClick={() => onTabChange('connections')}
         >
           Connections

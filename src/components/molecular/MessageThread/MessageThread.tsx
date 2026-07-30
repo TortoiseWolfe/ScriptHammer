@@ -281,7 +281,7 @@ export default function MessageThread({
     if (messages.length === 0 && pendingMessages.length === 0) {
       return (
         <div className="flex h-full items-center justify-center">
-          <p className="text-base-content/80">
+          <p className="text-base-content">
             No messages yet. Send the first one!
           </p>
         </div>
@@ -377,7 +377,7 @@ export default function MessageThread({
               data-testid="pagination-loader"
             >
               <span className="loading loading-spinner loading-sm"></span>
-              <span className="text-base-content/80 ml-2 text-sm">
+              <span className="text-base-content ml-2 text-sm">
                 Loading older messages...
               </span>
             </div>

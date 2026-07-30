@@ -65,7 +65,7 @@ export default function MessagingGate({ children }: MessagingGateProps) {
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
           <h2 className="mb-2 text-xl font-semibold">Sign in required</h2>
-          <p className="text-base-content/85">
+          <p className="text-base-content">
             Please sign in to access messaging.
           </p>
         </div>
@@ -119,7 +119,7 @@ export default function MessagingGate({ children }: MessagingGateProps) {
   // Blocked state - show verification required UI
   return (
     <div className="bg-base-100 flex h-full items-center justify-center p-4">
-      <div className="card bg-base-200 w-full max-w-md shadow-xl">
+      <div className="card bg-base-200 rounded-box w-full max-w-md">
         <div className="card-body items-center text-center">
           {/* Lock icon */}
           <div className="text-warning mb-4">
@@ -141,7 +141,7 @@ export default function MessagingGate({ children }: MessagingGateProps) {
 
           <h2 className="card-title text-2xl">Email Verification Required</h2>
 
-          <p className="text-base-content/85 mt-2">
+          <p className="text-base-content mt-2">
             To protect your privacy and ensure secure messaging, please verify
             your email address first.
           </p>

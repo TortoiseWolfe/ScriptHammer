@@ -244,7 +244,7 @@ export function ReAuthModal({
         aria-label="Re-authentication required"
         aria-modal="true"
         aria-describedby="reauth-description"
-        className={`bg-base-100 mx-4 flex w-full max-w-md flex-col overflow-hidden rounded-lg shadow-xl ${className}`}
+        className={`sh-plate bg-base-100 rounded-box mx-4 flex w-full max-w-md flex-col overflow-hidden ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

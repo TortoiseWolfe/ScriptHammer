@@ -185,7 +185,7 @@ export function ConsentModal({
         role="dialog"
         aria-label="Cookie preferences modal"
         aria-modal="true"
-        className={`bg-base-100 mx-4 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-lg shadow-xl ${className} `}
+        className={`sh-plate bg-base-100 rounded-box mx-4 flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden ${className} `}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
