@@ -157,10 +157,35 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip chrome extension requests and dev server hot reload
+  // Never intercept Next's OWN router traffic.
+  //
+  // This is what made clicking "Blog" land the user on
+  // `https://scripthammer.com/blog/index.txt` — the raw RSC flight payload —
+  // instead of the blog.
+  //
+  // Under `output: 'export'` the App Router fetches a per-route `index.txt`
+  // flight payload to do a client-side navigation. That request was falling
+  // through to the stale-while-revalidate handler at the bottom of this file,
+  // which has no failure path: one rejected `fetch` rejects `respondWith`, the
+  // router's fetch dies, and Next recovers by HARD-NAVIGATING to the URL it was
+  // fetching. The address bar ends up on the payload.
+  //
+  // The `_next` skip below was previously scoped to `hostname === 'localhost'`,
+  // so production was the only place the worker sat in the router's path — the
+  // one environment where it could break navigation for real users.
+  //
+  // Router traffic gains nothing from being cached here: a stale flight payload
+  // does not match the shipped HTML, and the navigation handler already caches
+  // the page itself for offline use.
   if (
     url.protocol === 'chrome-extension:' ||
-    (url.hostname === 'localhost' && url.pathname.includes('_next'))
+    url.pathname.includes('/_next/') ||
+    // RSC flight payloads. No origin qualifier: `self.location` does not exist
+    // in a plain worker scope, and reading `.origin` off it threw on EVERY
+    // request — which would have disabled the whole worker in production. The
+    // unit tests caught it. Bypassing a cross-origin `.txt` is harmless anyway,
+    // since bypass just means "let the browser handle this normally".
+    url.pathname.endsWith('.txt')
   ) {
     return;
   }
@@ -250,37 +275,65 @@ self.addEventListener('fetch', (event) => {
 
           // Genuinely not cached — this is what offline.html is FOR, and it
           // must still happen. Only reached once every variant has missed.
-          if (request.destination === 'document') {
-            return caches
-              .match(new URL('./offline.html', self.registration.scope).href)
-              .catch(() => {
-                return new Response('Offline - Content not available', {
-                  status: 503,
-                  statusText: 'Service Unavailable',
-                  headers: new Headers({
-                    'Content-Type': 'text/plain',
-                  }),
-                });
-              });
-          }
+          // `caches.match()` RESOLVES to undefined on a miss — it does not
+          // reject — so the `.catch` this used to rely on could never fire. If
+          // offline.html was not cached, respondWith got `undefined` and the
+          // navigation failed as an opaque network error, with the 503 below
+          // unreachable dead code.
+          //
+          // The `destination === 'document'` guard is also gone: anything else
+          // fell off the end of this function and returned undefined, which is
+          // the same opaque failure by a different route.
+          const offline = await caches.match(
+            new URL('./offline.html', self.registration.scope).href
+          );
+          if (offline) return offline;
+
+          return new Response('Offline - Content not available', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: new Headers({ 'Content-Type': 'text/plain' }),
+          });
         })
     );
     return;
   }
 
   // Default strategy - Stale While Revalidate
+  //
+  // This handler serves every remaining asset. It had NO failure path, so a
+  // single rejected `fetch` rejected `respondWith` and the browser reported
+  // `net::ERR_FAILED` on that asset — the same defect fixed for images in #438,
+  // left behind here because that change was scoped to one handler.
   event.respondWith(
-    caches.match(request).then((response) => {
-      const fetchPromise = fetch(request).then((networkResponse) => {
-        if (networkResponse.status === 200) {
-          const responseToCache = networkResponse.clone();
-          caches.open(DYNAMIC_CACHE).then((cache) => {
-            cache.put(request, responseToCache);
+    caches.match(request).then((cached) => {
+      const fetchPromise = fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse.status === 200) {
+            const responseToCache = networkResponse.clone();
+            caches.open(DYNAMIC_CACHE).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(async () => {
+          // Re-check the cache: a sibling request may have populated it while
+          // this one was in flight. `caches.match` RESOLVES to undefined on a
+          // miss rather than rejecting, so the `||` below is the real guard.
+          const late = await caches.match(request);
+          if (late) return late;
+          // Nothing cached and the network is gone. Fail as an explicit, honest
+          // response rather than by rejecting — a rejected respondWith is an
+          // opaque ERR_FAILED that looks like a bug in the page.
+          return new Response('Offline - asset not available', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: new Headers({ 'Content-Type': 'text/plain' }),
           });
-        }
-        return networkResponse;
-      });
-      return response || fetchPromise;
+        });
+      // Cache-first when we have it, network otherwise.
+      return cached || fetchPromise;
     })
   );
 });
