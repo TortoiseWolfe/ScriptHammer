@@ -38,7 +38,7 @@ export class OAuthErrorBoundary extends Component<Props, State> {
   override render() {
     if (this.state.hasError) {
       return (
-        <div className="container mx-auto px-4 py-12">
+        <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
           <div className="card bg-base-100 mx-auto max-w-md shadow-xl">
             <div className="card-body">
               <div className="flex items-center gap-4">

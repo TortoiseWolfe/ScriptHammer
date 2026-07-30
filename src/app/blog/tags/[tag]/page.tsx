@@ -121,7 +121,7 @@ export default async function TagPage({ params }: PageProps) {
   });
 
   return (
-    <main className="container mx-auto px-4 py-8">
+    <main className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-12 text-center">
         <div className="mb-4 flex items-center justify-center gap-2">

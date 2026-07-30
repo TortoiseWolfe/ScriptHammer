@@ -68,7 +68,7 @@ export function CookieConsent({
         aria-live="polite"
         className={`fixed right-0 left-0 ${positionClasses} bg-base-100 border-base-300 z-[60] border-t-2 shadow-lg backdrop-blur-md ${className}`}
       >
-        <div className="container mx-auto px-4 py-3">
+        <div className="container mx-auto px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             {/* Message Section - Compact */}
             {/* `min-w-0` is load-bearing. A flex item will not shrink below its

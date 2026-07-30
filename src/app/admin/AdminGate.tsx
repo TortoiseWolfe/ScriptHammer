@@ -87,7 +87,7 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
 
   if (authLoading || isAdmin === null) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="container mx-auto p-6 lg:px-8">
         <div className="flex min-h-[50vh] items-center justify-center">
           <span className="loading loading-spinner loading-lg" />
         </div>
