@@ -67,32 +67,126 @@ async function get(url) {
   }
 }
 
-/** Routes to read. The live sitemap is authoritative; `/` is the fallback. */
+/**
+ * Routes to read. The live sitemap is authoritative; `/` is the fallback.
+ *
+ * REACHABILITY IS CHECKED FIRST AND SEPARATELY. The first version of this
+ * script reported `no sitemap on the live site` and `collected 0 asset
+ * reference(s)` and exited 0 — while the real cause was that the host could not
+ * RESOLVE the domain at all. Every fetch returned null, the fail-soft `get()`
+ * swallowed it, and the run looked like a benign "nothing to retain".
+ *
+ * That would have shipped a fix that does nothing, on a bug whose entire history
+ * is fixes that did nothing. "Could not read the live site" and "the live site
+ * had no new hashes" must never print the same way.
+ */
 async function livePages() {
+  const root = await get(`${BASE}/`);
+  if (!root) {
+    console.log(
+      `::error::cannot read ${BASE}/ — retention is a NO-OP this run. ` +
+        'Check DNS/network from the runner. This is not "nothing to retain": ' +
+        'nothing was even looked at.'
+    );
+    return null;
+  }
+
   const pages = new Set([`${BASE}/`]);
   const sm = await get(`${BASE}/sitemap.xml`);
   if (sm) {
     const xml = await sm.text();
-    for (const m of xml.matchAll(/<loc>([^<]+)<\/loc>/g)) pages.add(m[1]);
+    for (const m of xml.matchAll(/<loc>([^<]+)<\/loc>/g)) {
+      // REBASE EVERY SITEMAP URL ONTO `BASE`.
+      //
+      // `<loc>` entries are absolute and point at the CANONICAL domain. Fetching
+      // them verbatim hits a different origin than the one being crawled, every
+      // request fails, and `get()` swallows it — measured: 84 sitemap pages
+      // yielded 14 references because only the single seed page was ever read.
+      try {
+        // ORIGIN, not BASE. A `<loc>` pathname ALREADY carries the deployed
+        // basePath, and BASE carries it too — joining them produced
+        // `/ScriptHammer/ScriptHammer/` and every page 404'd. Measured: 1 of 84
+        // pages read. Taking the loc's pathname verbatim against the origin is
+        // correct whether the site is on a custom domain (no basePath) or on
+        // github.io (basePath present in the loc).
+        pages.add(`${new URL(BASE).origin}${new URL(m[1]).pathname}`);
+      } catch {
+        /* not a URL — skip rather than poison the list */
+      }
+    }
     console.log(`sitemap: ${pages.size} page(s)`);
   } else {
-    console.log('no sitemap on the live site — falling back to / only');
+    console.log(
+      'live site is reachable but has no sitemap.xml — reading / only, which ' +
+        'covers the shared CSS but not route-specific chunks'
+    );
   }
   return [...pages];
 }
 
 const wanted = new Set();
 
-for (const page of await livePages()) {
+/**
+ * PREFERRED SOURCE: the previous deploy's own manifest.
+ *
+ * Crawling HTML finds only what HTML names. Measured on a real build: 33 of 106
+ * static files — all the CSS, but 26 of 85 chunks, because route chunks are named
+ * from inside JS. That covers the reported symptom (unstyled pages are a CSS
+ * problem) and leaves client-side navigation to a changed route uncovered.
+ *
+ * So each deploy now writes `_next/static/ASSET_MANIFEST.txt` listing every file
+ * it published, and the NEXT deploy reads it and retains all of them. Complete,
+ * one request, no inference.
+ *
+ * Ramp, stated plainly: the currently-live build has no manifest, so the first
+ * deploy after this lands falls back to crawling and writes the first manifest.
+ * The deploy after that gets complete retention.
+ */
+const manifest = await get(`${BASE}/_next/static/ASSET_MANIFEST.txt`);
+if (manifest) {
+  const lines = (await manifest.text())
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith('_next/static/'));
+  for (const l of lines) wanted.add(`/${l}`);
+  console.log(`manifest from the live build: ${wanted.size} file(s) — complete list`);
+}
+
+const pages = manifest ? [] : await livePages();
+if (!manifest) console.log('no manifest on the live build — falling back to crawling its HTML');
+if (pages === null) {
+  // Non-zero so this is visibly a failure. The workflow step uses
+  // `continue-on-error`, so the deploy still ships — but the step is marked
+  // failed in the UI instead of printing a warning inside a green check.
+  process.exit(1);
+}
+
+let read = 0;
+for (const page of pages) {
   const res = await get(page);
   if (!res) continue;
+  read++;
   const html = await res.text();
   for (const m of html.matchAll(ASSET_RE)) wanted.add(m[1]);
 }
-console.log(`collected ${wanted.size} asset reference(s) from live HTML`);
+if (!manifest)
+  console.log(
+    `read ${read}/${pages.length} live page(s); collected ${wanted.size} asset reference(s)`
+  );
+if (!manifest && read === 0) {
+  console.log('::error::listed pages but read none of them — retention is a NO-OP');
+  process.exit(1);
+}
+if (!manifest && read < pages.length) {
+  console.log(
+    `::warning::${pages.length - read} live page(s) could not be read; their ` +
+      'route-specific chunks will not be retained'
+  );
+}
 
-// One transitive pass: the entry chunks name the lazy ones.
-const seed = [...wanted].filter((u) => u.endsWith('.js'));
+// One transitive pass: the entry chunks name the lazy ones. Pointless when the
+// manifest already gave the complete list.
+const seed = manifest ? [] : [...wanted].filter((u) => u.endsWith('.js'));
 for (const u of seed) {
   const res = await get(u.startsWith('http') ? u : `${new URL(BASE).origin}${u}`);
   if (!res) continue;
@@ -135,10 +229,16 @@ for (const ref of wanted) {
 console.log(
   `\nretained ${retained} previous-build asset(s); ${alreadyPresent} already in the new build; ${failed} unreachable`
 );
+if (retained === 0 && alreadyPresent === 0) {
+  console.log(
+    '::error::read the live site but found 0 asset references. The HTML shape ' +
+      'this script matches on has probably changed — retention is a NO-OP.'
+  );
+  process.exit(1);
+}
 if (retained === 0) {
   console.log(
-    '::warning::retained 0 previous-build assets. Either the hashes did not change ' +
-      '(no asset churn in this deploy, which is fine) or the live site was unreachable. ' +
-      'A silent zero here is how the stale-CSS bug returns.'
+    `::notice::retained 0 assets, and that is correct here: all ${alreadyPresent} ` +
+      'live references already exist in this build, so no hashes changed.'
   );
 }

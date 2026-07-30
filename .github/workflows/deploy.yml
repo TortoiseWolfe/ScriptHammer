@@ -165,10 +165,30 @@ jobs:
       # `|| true`: shipping a new build is strictly better than not shipping, so a
       # network problem here must not block the deploy. The script prints a
       # ::warning:: on a zero count rather than passing silently.
+      #
+      # `continue-on-error` rather than `|| true`: a network problem must not
+      # block shipping, but it must be VISIBLE. `|| true` prints a warning inside
+      # a green check, which is how the first version of this step would have
+      # gone unnoticed — it collected 0 assets because the host could not resolve
+      # the domain, and exited 0 anyway.
+      # This build's OWN manifest, so the NEXT deploy can retain every file it
+      # published rather than inferring the list by crawling HTML (#476).
+      # Measured: crawling finds 33 of 106 static files — all the CSS, but 26 of
+      # 85 chunks, because route chunks are named only from inside JS.
+      #
+      # Written BEFORE the retention step so it lists this build's files only.
+      # Retention then reads the LIVE build's manifest and adds what is missing.
+      - name: Write this build's asset manifest (#476)
+        run: |
+          cd merged-output
+          find _next/static -type f | sort > _next/static/ASSET_MANIFEST.txt
+          echo "manifest lists $(wc -l < _next/static/ASSET_MANIFEST.txt) file(s)"
+
       - name: Retain the previous build's assets (#476)
+        continue-on-error: true
         run: |
           node scripts/retain-previous-assets.mjs merged-output \
-            "${SITE_URL:-https://scripthammer.com}" || true
+            "${SITE_URL:-https://scripthammer.com}"
         env:
           SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
 
