@@ -14,7 +14,10 @@ export interface NetworkStatusHookReturn {
  */
 export function useNetworkStatus(): NetworkStatusHookReturn {
   const [isOnline, setIsOnline] = useState(
-    typeof navigator !== 'undefined' ? navigator.onLine : true
+    // See #466: on the server `typeof navigator` is 'object' and `onLine`
+    // is undefined, so this used to report OFFLINE during SSR. Seeded true
+    // and corrected in the effect below, so SSR and hydration agree.
+    true
   );
   const [wasOffline, setWasOffline] = useState(false);
 
@@ -30,6 +33,9 @@ export function useNetworkStatus(): NetworkStatusHookReturn {
       setIsOnline(false);
       setWasOffline(false);
     };
+
+    // Same as useOfflineQueue: seeded true for hydration, corrected here.
+    setIsOnline(navigator.onLine);
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);

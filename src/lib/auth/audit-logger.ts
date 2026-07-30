@@ -57,9 +57,15 @@ export interface AuditLogEntry {
  */
 export async function logAuthEvent(entry: AuditLogEntry): Promise<void> {
   try {
-    // Get user agent from browser
+    // Get user agent from browser.
+    //
+    // `typeof window`, not `typeof navigator`: Node 18+ ships a global
+    // `navigator`, and its userAgent is the literal string 'Node.js/22'. With
+    // the old guard, any server-side call recorded THAT as the user's browser in
+    // the audit trail — a plausible-looking wrong value, which is worse than the
+    // undefined it was meant to fall back to (#466).
     const userAgent =
-      typeof navigator !== 'undefined' ? navigator.userAgent : undefined;
+      typeof window !== 'undefined' ? navigator.userAgent : undefined;
 
     // #241: write via the log_auth_event RPC, NOT a direct table insert. The
     // auth_audit_logs INSERT policy only permits service_role, so the old

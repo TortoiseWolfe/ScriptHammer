@@ -475,6 +475,31 @@ describe('useOfflineQueue', () => {
       expect(result.current.isOnline).toBe(true);
     });
 
+    it('reports offline when MOUNTED while already offline (#466)', async () => {
+      // The initial state is seeded `true` so the server render and the first
+      // client render agree — `typeof navigator !== 'undefined'` is TRUE on the
+      // server (Node 18+ ships a global navigator) and its `onLine` is
+      // undefined, which the old initialiser read as offline and which produced
+      // a React #418 hydration mismatch on /contact in production.
+      //
+      // Seeding alone would be a regression: someone who LOADS the page already
+      // offline would be reported online until a transition fired, and the
+      // offline queue exists precisely for that person. A mount effect reads the
+      // real value, and this test is what holds it in place — the transition
+      // tests below cannot see it, because they start from online.
+      Object.defineProperty(navigator, 'onLine', {
+        writable: true,
+        value: false,
+        configurable: true,
+      });
+
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(result.current.isOnline).toBe(false);
+      });
+    });
+
     it('should update isOnline when going offline', async () => {
       const { result } = renderHook(() => useOfflineQueue());
 

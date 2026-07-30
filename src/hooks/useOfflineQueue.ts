@@ -73,9 +73,20 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
   const [queueCount, setQueueCount] = useState(0);
   const [failedCount, setFailedCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isOnline, setIsOnline] = useState(
-    typeof navigator !== 'undefined' ? navigator.onLine : true
-  );
+  // Optimistic `true`, corrected after mount.
+  //
+  // Two bugs in the old initialiser. First, `typeof navigator !== 'undefined'`
+  // is TRUE on the server — Node 18+ ships a global `navigator` — and its
+  // `onLine` is `undefined`, which is falsy, so the SERVER rendered this app as
+  // OFFLINE. On /contact that meant the server sent an offline warning where the
+  // client renders the form, which is the React #418 hydration mismatch seen on
+  // production (#466).
+  //
+  // Second, even a correct `typeof window` guard would still be able to
+  // disagree with the server when a visitor really is offline at hydration.
+  // Seeding both renders with the same value and correcting in an effect is the
+  // only initialiser that cannot mismatch.
+  const [isOnline, setIsOnline] = useState(true);
 
   // Load queue data
   const loadQueue = useCallback(async () => {
@@ -198,6 +209,12 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     const handleFocus = () => {
       syncQueue();
     };
+
+    // Read the REAL value now that we are on the client. The state is seeded
+    // `true` so SSR and hydration agree (#466); without this line a visitor who
+    // loads the page already offline would be reported online until a
+    // transition fired, which is the very case the offline queue is for.
+    setIsOnline(navigator.onLine);
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
