@@ -97,7 +97,7 @@ export function FontSizeControl() {
           {/* Reset button */}
           <button
             onClick={resetSettings}
-            className="btn btn-neutral btn-outline btn-sm flex-1"
+            className="btn btn-outline btn-sm flex-1"
             title="Reset all accessibility settings to defaults"
           >
             Reset

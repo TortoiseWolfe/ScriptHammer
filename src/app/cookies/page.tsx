@@ -12,7 +12,7 @@ export default function CookiePolicyPage() {
   const lastUpdated = '2025-09-15';
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 py-6 sm:py-8 md:py-12">
+    <main className="mx-auto w-full max-w-4xl px-4 py-6 sm:py-8 md:py-12">
       <header>
         <h1 className="mb-6 !text-2xl font-bold sm:mb-8 sm:!text-4xl md:!text-5xl">
           Cookie Policy
@@ -22,15 +22,13 @@ export default function CookiePolicyPage() {
       {/* Quick Actions - Client Component */}
       <CookieActions />
 
-      <article className="prose prose-lg max-w-none">
-        <p className="text-base-content/85 mb-6 text-sm">
+      <article className="sh-doc">
+        <p className="text-base-content mb-6 text-sm">
           Last updated: {lastUpdated}
         </p>
         <section className="mb-8">
-          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
-            Updates to This Policy
-          </h2>
-          <p className="mb-4">
+          <h2>Updates to This Policy</h2>
+          <p>
             We may update this Cookie Policy from time to time to reflect
             changes in our practices or for other operational, legal, or
             regulatory reasons. We will notify you of any material changes by

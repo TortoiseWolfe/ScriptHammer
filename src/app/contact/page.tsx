@@ -15,13 +15,13 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <main className="container mx-auto min-h-screen px-4 py-6 sm:py-8 md:py-12">
+    <main className="mx-auto min-h-screen w-full px-4 py-6 sm:py-8 md:py-12">
       <div className="mx-auto max-w-4xl">
         <div className="mb-8 text-center">
           <h1 className="mb-4 !text-2xl font-bold sm:!text-4xl md:!text-5xl">
             Get in Touch
           </h1>
-          <p className="text-base-content/85 text-base sm:text-lg md:text-xl">
+          <p className="text-base-content text-base sm:text-lg md:text-xl">
             Have a question, suggestion, or just want to say hello? We&apos;d
             love to hear from you!
           </p>
@@ -99,7 +99,7 @@ export default function ContactPage() {
               <h3 className="mb-2 text-lg font-semibold sm:text-xl">
                 Response Time
               </h3>
-              <p className="text-base-content/80 text-sm sm:text-base">
+              <p className="text-base-content text-sm sm:text-base">
                 We typically respond within 24-48 hours during business days.
               </p>
             </div>
@@ -154,7 +154,7 @@ export default function ContactPage() {
           </div>
         </div>
 
-        <div className="text-base-content/80 text-center text-xs sm:text-sm">
+        <div className="text-base-content text-center text-xs sm:text-sm">
           <p>
             Your privacy is important to us. We&apos;ll never share your
             information with third parties.

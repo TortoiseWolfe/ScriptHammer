@@ -10,7 +10,7 @@ export default function AccessibilityPage() {
 
   return (
     <main className="bg-base-100 min-h-screen">
-      <div className="container mx-auto px-4 py-6 sm:py-8 md:py-12">
+      <div className="mx-auto w-full px-4 py-6 sm:py-8 md:py-12">
         <div className="mx-auto max-w-4xl">
           <h1 className="mb-6 !text-2xl font-bold sm:mb-8 sm:!text-4xl md:!text-5xl">
             Accessibility Controls
@@ -21,7 +21,7 @@ export default function AccessibilityPage() {
 
           <div className="grid gap-8 md:grid-cols-2">
             {/* Font Size Control */}
-            <div className="card bg-base-200 shadow-xl">
+            <div className="card bg-base-200 rounded-box">
               <div className="card-body">
                 <h2 className="card-title mb-4">Font Size</h2>
                 <div className="flex flex-wrap gap-2">
@@ -42,7 +42,7 @@ export default function AccessibilityPage() {
             </div>
 
             {/* Line Height Control */}
-            <div className="card bg-base-200 shadow-xl">
+            <div className="card bg-base-200 rounded-box">
               <div className="card-body">
                 <h2 className="card-title mb-4">Line Spacing</h2>
                 <div className="flex flex-wrap gap-2">
@@ -60,7 +60,7 @@ export default function AccessibilityPage() {
             </div>
 
             {/* Font Family Control */}
-            <div className="card bg-base-200 shadow-xl">
+            <div className="card bg-base-200 rounded-box">
               <div className="card-body">
                 <h2 className="card-title mb-4">Font Selection</h2>
                 <p className="mb-4 text-sm">
@@ -72,7 +72,7 @@ export default function AccessibilityPage() {
             </div>
 
             {/* Color Vision Control */}
-            <div className="card bg-base-200 shadow-xl">
+            <div className="card bg-base-200 rounded-box">
               <div className="card-body">
                 <h2 className="card-title mb-4">Color Vision Assistance</h2>
                 <p className="mb-4 text-sm">
@@ -84,7 +84,7 @@ export default function AccessibilityPage() {
             </div>
 
             {/* Reset Button */}
-            <div className="card bg-base-200 shadow-xl">
+            <div className="card bg-base-200 rounded-box">
               <div className="card-body">
                 <h2 className="card-title mb-4">Reset Settings</h2>
                 <button onClick={resetSettings} className="btn btn-warning">
@@ -97,7 +97,7 @@ export default function AccessibilityPage() {
           {/* Preview Section */}
           <div className="divider my-12">Preview</div>
 
-          <div className="card bg-base-100 shadow-xl">
+          <div className="card bg-base-100 rounded-box">
             {/* The inline `fontSize` overrides that used to be on these
                 elements referenced `--base-font-size` and `--font-scale`,
                 neither of which is set by anything in the app — the provider
@@ -122,7 +122,7 @@ export default function AccessibilityPage() {
                 browser and will persist across sessions.
               </p>
               <div className="mt-4">
-                <pre className="bg-base-200 rounded p-4 text-sm">
+                <pre className="sh-well bg-base-200 rounded-box p-4 text-sm">
                   <code>{`// Code example
 const settings = {
   fontSize: "${fontSize}",
@@ -135,7 +135,7 @@ const settings = {
           </div>
 
           {/* Current Settings Display */}
-          <div className="stats mt-8 shadow">
+          <div className="stats mt-8">
             <div className="stat">
               <div className="stat-title">Current Font Size</div>
               <div className="stat-value text-primary">{fontSize}</div>

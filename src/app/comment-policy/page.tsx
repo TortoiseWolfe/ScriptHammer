@@ -12,23 +12,21 @@ export default function CommentPolicyPage() {
   const lastUpdated = '2025-01-27';
 
   return (
-    <main className="container mx-auto max-w-4xl px-4 py-6 sm:py-8 md:py-12">
+    <main className="mx-auto w-full max-w-4xl px-4 py-6 sm:py-8 md:py-12">
       <header>
         <h1 className="mb-6 !text-2xl font-bold sm:mb-8 sm:!text-4xl md:!text-5xl">
           Comment Policy
         </h1>
       </header>
 
-      <article className="prose prose-lg max-w-none">
-        <p className="text-base-content/85 mb-6 text-sm">
+      <article className="sh-doc">
+        <p className="text-base-content mb-6 text-sm">
           Last updated: {lastUpdated}
         </p>
 
         <section className="mb-8">
-          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
-            Welcome to Our Community
-          </h2>
-          <p className="mb-4">
+          <h2>Welcome to Our Community</h2>
+          <p>
             We encourage thoughtful discussion and welcome your comments on our
             blog posts. This comment policy outlines our expectations for
             participation and helps maintain a respectful, constructive
@@ -37,10 +35,8 @@ export default function CommentPolicyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
-            What We Encourage
-          </h2>
-          <ul className="mb-4 list-disc pl-6">
+          <h2>What We Encourage</h2>
+          <ul>
             <li>Constructive feedback and respectful disagreement</li>
             <li>Relevant questions and thoughtful insights</li>
             <li>Sharing helpful resources and experiences</li>
@@ -50,14 +46,12 @@ export default function CommentPolicyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
-            What&apos;s Not Allowed
-          </h2>
-          <p className="mb-4">
+          <h2>What&apos;s Not Allowed</h2>
+          <p>
             The following types of content will be removed and may result in a
             ban:
           </p>
-          <ul className="mb-4 list-disc pl-6">
+          <ul>
             <li>
               <strong>Spam</strong>: Promotional content, excessive links, or
               repetitive posts
@@ -90,11 +84,9 @@ export default function CommentPolicyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
-            Moderation Process
-          </h2>
-          <p className="mb-4">All comments are subject to moderation:</p>
-          <ul className="mb-4 list-disc pl-6">
+          <h2>Moderation Process</h2>
+          <p>All comments are subject to moderation:</p>
+          <ul>
             <li>
               First-time commenters may experience a delay while their comment
               is reviewed
@@ -111,13 +103,11 @@ export default function CommentPolicyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
-            User Accounts
-          </h2>
-          <p className="mb-4">
+          <h2>User Accounts</h2>
+          <p>
             Comments are managed through Disqus. To comment, you&apos;ll need:
           </p>
-          <ul className="mb-4 list-disc pl-6">
+          <ul>
             <li>A Disqus account (free to create)</li>
             <li>A recognizable username (not offensive or misleading)</li>
             <li>To agree to Disqus&apos;s Terms of Service</li>
@@ -125,17 +115,15 @@ export default function CommentPolicyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
-            Privacy & Data
-          </h2>
-          <p className="mb-4">When you comment:</p>
-          <ul className="mb-4 list-disc pl-6">
+          <h2>Privacy & Data</h2>
+          <p>When you comment:</p>
+          <ul>
             <li>Your comment and username are publicly visible</li>
             <li>Your email address is not displayed publicly</li>
             <li>Disqus may collect data according to their privacy policy</li>
             <li>We don&apos;t sell or share your personal information</li>
           </ul>
-          <p className="mb-4">
+          <p>
             For more details, see our{' '}
             <Link href="/privacy" className="text-primary hover:underline">
               Privacy Policy
@@ -145,11 +133,9 @@ export default function CommentPolicyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
-            Enforcement
-          </h2>
-          <p className="mb-4">Violations are handled as follows:</p>
-          <ol className="mb-4 list-decimal pl-6">
+          <h2>Enforcement</h2>
+          <p>Violations are handled as follows:</p>
+          <ol>
             <li>
               <strong>First Offense</strong>: Warning and comment removal if
               necessary
@@ -161,17 +147,15 @@ export default function CommentPolicyPage() {
               <strong>Third Offense</strong>: Permanent ban
             </li>
           </ol>
-          <p className="mb-4">
+          <p>
             Severe violations (hate speech, threats, doxxing) result in
             immediate permanent bans.
           </p>
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
-            Appeals & Contact
-          </h2>
-          <p className="mb-4">
+          <h2>Appeals & Contact</h2>
+          <p>
             If you believe your comment was removed in error or wish to appeal a
             moderation decision, please{' '}
             <Link href="/contact" className="text-primary hover:underline">
@@ -179,7 +163,7 @@ export default function CommentPolicyPage() {
             </Link>{' '}
             with:
           </p>
-          <ul className="mb-4 list-disc pl-6">
+          <ul>
             <li>Your Disqus username</li>
             <li>The post where the comment was made</li>
             <li>Approximate date and time</li>
@@ -188,10 +172,8 @@ export default function CommentPolicyPage() {
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-3 text-xl font-semibold sm:mb-4 sm:text-2xl">
-            Policy Updates
-          </h2>
-          <p className="mb-4">
+          <h2>Policy Updates</h2>
+          <p>
             We may update this policy periodically. Continued commenting after
             changes indicates acceptance of the updated policy. Major changes
             will be announced on the blog.
@@ -199,7 +181,7 @@ export default function CommentPolicyPage() {
         </section>
 
         <section className="bg-base-200 mb-8 rounded-lg p-6">
-          <h2 className="mb-4 text-xl font-semibold">Quick Summary</h2>
+          <h2>Quick Summary</h2>
           <p className="text-base-content">
             Be respectful, stay on topic, and contribute meaningfully. No spam,
             harassment, or offensive content. We moderate comments to maintain
