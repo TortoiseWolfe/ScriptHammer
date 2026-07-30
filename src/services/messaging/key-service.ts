@@ -730,7 +730,7 @@ export class KeyManagementService {
     logger.debug('getUserPublicKey: Fetching public key', { userId });
 
     // If offline, fall back to cached key (populated by prior online fetch)
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    if (typeof window !== 'undefined' && !navigator.onLine) {
       const cached = this.publicKeyCache.get(userId);
       if (cached) {
         const fingerprint = cached?.x?.slice(0, 8) ?? 'null';
@@ -773,7 +773,7 @@ export class KeyManagementService {
       // in production builds.
       const fingerprint = publicKey?.x?.slice(0, 8) ?? 'null';
       const source =
-        typeof navigator !== 'undefined' && !navigator.onLine
+        typeof window !== 'undefined' && !navigator.onLine
           ? 'offline-cache'
           : 'db-fresh';
       logger.debug('getUserPublicKey result', {
