@@ -198,6 +198,71 @@ test.describe('Touch Target Standards', () => {
     ).toBeGreaterThanOrEqual(7);
   });
 
+  test("the mobile menu's own items meet 44px (#378)", async ({ page }) => {
+    test.setTimeout(90000);
+
+    // THE EXEMPTION THIS CLOSES.
+    //
+    // The primary-button selector above is
+    // `nav button, nav label, a.btn, a.sh-btn, button.sh-btn`, and its coverage
+    // note says bare `<a>` items are exempt as "inline text links". That is true
+    // of a link in a paragraph. It is not true of these: below lg they are the
+    // ENTIRE navigation. Measured before the fix, at 390px with the menu open,
+    // all 13 destinations were 26x144 against a 44px floor — DaisyUI renders
+    // `menu li > a` at 26px, and nothing here could see them because they sit
+    // inside a closed dropdown.
+    for (const width of [320, 390, 428, 768]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
+      await dismissCookieBanner(page);
+      await waitForLayoutStability(page);
+
+      const trigger = page.locator('[aria-label="Navigation menu"]');
+      await expect(trigger).toBeVisible();
+      await trigger.click();
+
+      const items = page.locator(
+        '.dropdown-content a, .dropdown-content button'
+      );
+      const count = await items.count();
+
+      // COVERAGE FLOOR. Everything below is conditional on finding items, so a
+      // menu that failed to open would pass silently — the #411/#454 shape. 13
+      // is MEASURED signed-out at each of these widths.
+      expect(
+        count,
+        `only ${count} items measured in the mobile menu at ${width}px — it ` +
+          `probably did not open`
+      ).toBeGreaterThanOrEqual(13);
+
+      const failures: string[] = [];
+      for (let i = 0; i < count; i++) {
+        const el = items.nth(i);
+        if (!(await el.isVisible())) continue;
+        const box = await el.boundingBox();
+        if (!box) continue;
+        if (
+          box.height < MINIMUM - TOLERANCE ||
+          box.width < MINIMUM - TOLERANCE
+        ) {
+          const name =
+            (await el.textContent())?.trim().slice(0, 24) || '(unnamed)';
+          failures.push(
+            `${name}: ${box.width.toFixed(0)}x${box.height.toFixed(0)}px at ${width}px`
+          );
+        }
+      }
+
+      expect(
+        failures,
+        `${failures.length} mobile menu items under ${MINIMUM}px at ${width}px. ` +
+          `These are the whole navigation below lg:\n${failures.join('\n')}`
+      ).toEqual([]);
+
+      await page.keyboard.press('Escape');
+    }
+  });
+
   test('the Demos menu is keyboard operable and Escape restores focus (#378)', async ({
     page,
   }) => {
