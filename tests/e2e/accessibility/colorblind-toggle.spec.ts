@@ -2,31 +2,57 @@ import { test, expect } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
 /**
- * E2E Test: ColorblindToggle Accessibility
+ * E2E Test: colour-vision controls inside the nav's `Display ▾` popover
  *
- * Moved from unit tests because DaisyUI dropdown behavior and focus management
- * require real browser DOM with CSS :focus-within pseudo-class support.
+ * Moved from unit tests because popover behaviour and focus management require a
+ * real browser DOM.
  *
  * Original locations:
  * - ColorblindToggle.accessibility.test.tsx:95-106 (focus management)
  * - ColorblindToggle.test.tsx:213-236 (click outside to close)
+ *
+ * RETARGETED for #378. These drove a standalone "Color Vision" trigger in the
+ * nav, which no longer exists: theme, text settings and colour vision were three
+ * separate popovers, each `hidden lg:block`, and are now one `Display ▾` reachable
+ * at every width. The controls themselves are unchanged and keep their accessible
+ * names, so only the opening step moved — every assertion about the select, the
+ * pattern toggle and persistence is the coverage it always was.
+ *
+ * It is also no longer a DaisyUI `:focus-within` dropdown. `NavPopover` owns its
+ * open state in React, which is what lets Escape close it AND restore focus to
+ * the trigger; the `:focus-within` pattern cannot do that, because the trigger
+ * lives inside the dropdown and refocusing it reopens the panel.
  */
-test.describe('ColorblindToggle - Accessibility', () => {
+/**
+ * Open the appearance popover that hosts the colour-vision controls.
+ *
+ * The click is RETRIED rather than issued once: a click dispatched before React
+ * attaches its handler is silently swallowed, and the server already renders
+ * `aria-expanded="false"`, so there is no state to wait for. Only clicks while
+ * the panel is closed, so retrying cannot toggle it shut.
+ */
+async function openDisplay(page: import('@playwright/test').Page) {
+  const trigger = page.getByRole('button', { name: 'Display' });
+  await expect(trigger).toBeVisible();
+  await expect(async () => {
+    if ((await trigger.getAttribute('aria-expanded')) !== 'true') {
+      await trigger.click();
+    }
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  }).toPass({ timeout: 15000 });
+  return trigger;
+}
+
+test.describe('Colour vision controls (Display popover) - Accessibility', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to home page where ColorblindToggle is in navigation
+    // Home page; the Display popover lives in the nav at every width (#378).
     await page.goto('/');
     // Dismiss cookie banner to prevent it from intercepting clicks
     await dismissCookieBanner(page);
   });
 
   test('should maintain focus management in dropdown', async ({ page }) => {
-    // Find and click the Color Vision toggle button
-    const toggleButton = page.getByRole('button', { name: /color vision/i });
-    await expect(toggleButton).toBeVisible();
-    await toggleButton.click();
-
-    // Wait for dropdown to appear
-    await page.waitForTimeout(200);
+    await openDisplay(page);
 
     // Check that dropdown content is visible
     const dropdown = page.getByText('Color Vision Assistance');
@@ -42,36 +68,37 @@ test.describe('ColorblindToggle - Accessibility', () => {
   });
 
   test('should close dropdown when clicking outside', async ({ page }) => {
-    // Open the dropdown
-    const toggleButton = page.getByRole('button', { name: /color vision/i });
-    await toggleButton.click();
-
-    // Wait for dropdown to open
-    await page.waitForTimeout(200);
+    await openDisplay(page);
 
     // Verify dropdown is visible
     const dropdown = page.getByText('Color Vision Assistance');
     await expect(dropdown).toBeVisible();
 
-    // Click outside the dropdown (on main content)
-    await page.click('main');
-
-    // Wait for DaisyUI's CSS transition
-    await page.waitForTimeout(300);
+    // Press outside the panel at a fixed point rather than `page.click('main')`.
+    // Playwright scrolls an element into view before clicking it, and `main` is
+    // taller than the viewport, so scrolling to its centre can bring the panel
+    // — `absolute end-0` inside a `sticky` header — over the click point, which
+    // times out waiting for it to be actionable. The panel is on the right, so
+    // the left margin is unambiguously outside it.
+    //
+    // `mousedown` is the event that matters: NavPopover's outside-dismiss is a
+    // document mousedown listener.
+    const box = page.viewportSize();
+    await page.mouse.click(12, Math.floor((box?.height ?? 800) / 2));
 
     // Verify dropdown is now hidden
     await expect(dropdown).not.toBeVisible();
   });
 
   test('should support keyboard navigation in dropdown', async ({ page }) => {
-    // Open dropdown with keyboard
-    const toggleButton = page.getByRole('button', { name: /color vision/i });
+    // Keyboard path: focus the trigger and press Enter. It is a real
+    // <button>, so Enter activates it — the old `<label tabIndex={0}>` had no
+    // such guarantee.
+    const toggleButton = page.getByRole('button', { name: 'Display' });
     await toggleButton.focus();
     await expect(toggleButton).toBeFocused();
-
-    // Press Enter to open
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(200);
+    await expect(toggleButton).toHaveAttribute('aria-expanded', 'true');
 
     // Dropdown should be visible
     const dropdown = page.getByText('Color Vision Assistance');
@@ -91,10 +118,7 @@ test.describe('ColorblindToggle - Accessibility', () => {
   });
 
   test('should close dropdown with Escape key', async ({ page }) => {
-    // Open dropdown
-    const toggleButton = page.getByRole('button', { name: /color vision/i });
-    await toggleButton.click();
-    await page.waitForTimeout(200);
+    const toggleButton = await openDisplay(page);
 
     // Verify dropdown is visible
     const dropdown = page.getByText('Color Vision Assistance');
@@ -102,19 +126,19 @@ test.describe('ColorblindToggle - Accessibility', () => {
 
     // Press Escape to close
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(300);
 
-    // Dropdown should be hidden
+    // Hidden, AND focus back on the trigger. The second half is the point of
+    // NavPopover: a DaisyUI :focus-within dropdown cannot do it, because the
+    // trigger lives inside the dropdown and refocusing it reopens the panel.
     await expect(dropdown).not.toBeVisible();
+    await expect(toggleButton).toHaveAttribute('aria-expanded', 'false');
+    await expect(toggleButton).toBeFocused();
   });
 
   test('should show pattern toggle when colorblind mode is active', async ({
     page,
   }) => {
-    // Open dropdown
-    const toggleButton = page.getByRole('button', { name: /color vision/i });
-    await toggleButton.click();
-    await page.waitForTimeout(200);
+    await openDisplay(page);
 
     // Select a colorblind mode (not "No Correction Needed")
     const select = page.getByRole('combobox');
@@ -135,10 +159,7 @@ test.describe('ColorblindToggle - Accessibility', () => {
   test('should persist selected mode across page navigation', async ({
     page,
   }) => {
-    // Open dropdown and select a mode
-    let toggleButton = page.getByRole('button', { name: /color vision/i });
-    await toggleButton.click();
-    await page.waitForTimeout(200);
+    await openDisplay(page);
 
     let select = page.getByRole('combobox');
     await select.selectOption({
@@ -155,10 +176,8 @@ test.describe('ColorblindToggle - Accessibility', () => {
     await page.waitForLoadState('networkidle');
     await dismissCookieBanner(page);
 
-    // Re-query for elements after navigation
-    toggleButton = page.getByRole('button', { name: /color vision/i });
-    await toggleButton.click();
-    await page.waitForTimeout(200);
+    // Re-open after navigation.
+    await openDisplay(page);
 
     // Re-query for select after navigation
     select = page.getByRole('combobox');
