@@ -808,7 +808,7 @@ export function GlobalNav() {
                 <h3 className="mb-2 text-sm font-semibold tracking-wide uppercase">
                   Theme
                 </h3>
-                <ul className="max-h-64 overflow-y-auto">
+                <ul>
                   {THEMES.map((t) => (
                     <li key={t}>
                       <button
