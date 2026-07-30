@@ -156,7 +156,7 @@ export default function MessagingSetupPage() {
   // Loading states
   if (authLoading || checkingKeys) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-full items-center justify-center">
         <span className="loading loading-spinner loading-lg"></span>
       </div>
     );
@@ -165,7 +165,7 @@ export default function MessagingSetupPage() {
   // Redirect if already set up
   if (hasExistingKeys) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-full items-center justify-center">
         <span className="loading loading-spinner loading-lg"></span>
         <span className="ml-2">Redirecting to messages...</span>
       </div>
@@ -173,7 +173,7 @@ export default function MessagingSetupPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="flex min-h-full items-center justify-center p-4">
       <div className="card bg-base-100 rounded-box w-full max-w-md">
         <div className="card-body">
           <h1 className="card-title text-2xl">Set Up Encrypted Messaging</h1>

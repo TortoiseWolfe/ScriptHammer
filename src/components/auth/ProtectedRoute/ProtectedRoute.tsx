@@ -64,7 +64,7 @@ export default function ProtectedRoute({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-full items-center justify-center">
         <span className="loading loading-spinner loading-lg"></span>
       </div>
     );
@@ -76,7 +76,7 @@ export default function ProtectedRoute({
   // sign-out the component unmounts via window.location.href anyway.
   if (!isAuthenticated && !wasAuthenticated.current) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4">
+      <div className="flex min-h-full items-center justify-center px-4">
         <div className="card bg-base-100 w-full max-w-md shadow-xl">
           <div className="card-body items-center text-center">
             <svg

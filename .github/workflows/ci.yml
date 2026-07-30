@@ -50,6 +50,13 @@ jobs:
       - name: Type check
         run: pnpm type-check
 
+      # The script existed and already failed — CSS said `sm` was 430px while
+      # src/config/breakpoints.ts said 428px — and it was wired into no workflow
+      # and no hook (#373 B2). Landing it green here is what keeps the two in
+      # step; without this step the mirror silently drifts again.
+      - name: Validate breakpoint configuration
+        run: pnpm validate:breakpoints
+
       - name: Run tests
         run: pnpm test --run
 

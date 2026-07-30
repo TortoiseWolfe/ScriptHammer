@@ -66,7 +66,14 @@ export const ColorVisionPanel: React.FC = () => {
 
   return (
     <div>
-      <h3 className="text-lg font-bold">Color Vision Assistance</h3>
+      {/* A SECTION LABEL, not a page heading (#469). As a standalone popover
+          this was `text-lg font-bold`; inside `Display ▾` that put it a whole
+          tier above the "TEXT SETTINGS" and "THEME" labels beside it, and it
+          wrapped to two lines at 390px — measured 25.7px/80px against their
+          18.5px/26px. */}
+      <h3 className="mb-2 text-sm font-semibold tracking-wide uppercase">
+        Color Vision Assistance
+      </h3>
 
       <div>
         <label className="label" htmlFor={selectId}>
@@ -105,8 +112,15 @@ export const ColorVisionPanel: React.FC = () => {
         </div>
       )}
 
-      <div className="alert alert-info mt-4" role="status" aria-live="polite">
-        <span className="text-sm">
+      {/* A hint line, not an `alert` (#469): the tinted block measured 105px
+          for one sentence inside a menu. `role="status"` and `aria-live` stay —
+          the announcement when the mode changes is the point of this text. */}
+      <div
+        className="text-base-content mt-3 text-sm"
+        role="status"
+        aria-live="polite"
+      >
+        <span>
           {mode === ColorblindType.NONE
             ? 'Select your color vision type for visual assistance'
             : `Correcting for ${COLORBLIND_LABELS[mode]}`}

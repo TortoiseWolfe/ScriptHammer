@@ -182,6 +182,14 @@ function NavGroupMenu({
   );
 }
 
+/**
+ * Every item in a DaisyUI `menu` needs an explicit height floor: `li > a`
+ * renders at 26px, and the 44px gate cannot see items inside a closed
+ * dropdown, so they stay under it indefinitely (#378). Named rather than
+ * repeated so a new entry cannot arrive without one.
+ */
+const MENU_ITEM = 'min-h-11 flex items-center';
+
 /** A single nav destination. */
 type NavLeaf = { href: string; label: string; reload?: boolean };
 /** A labelled group of destinations, rendered as a dropdown. */
@@ -519,10 +527,14 @@ export function GlobalNav() {
                     <span>{user.email}</span>
                   </li>
                   <li>
-                    <Link href="/profile">Profile</Link>
+                    <Link href="/profile" className={MENU_ITEM}>
+                      Profile
+                    </Link>
                   </li>
                   <li>
-                    <Link href="/account">Account Settings</Link>
+                    <Link href="/account" className={MENU_ITEM}>
+                      Account Settings
+                    </Link>
                   </li>
                   <li>
                     <Link
@@ -538,11 +550,18 @@ export function GlobalNav() {
                     </Link>
                   </li>
                   <li>
-                    <Link href="/messages?tab=connections">Connections</Link>
+                    <Link
+                      href="/messages?tab=connections"
+                      className={MENU_ITEM}
+                    >
+                      Connections
+                    </Link>
                   </li>
                   {isAdmin && (
                     <li>
-                      <Link href="/admin">Admin Dashboard</Link>
+                      <Link href="/admin" className={MENU_ITEM}>
+                        Admin Dashboard
+                      </Link>
                     </li>
                   )}
                   <li>
@@ -624,14 +643,14 @@ export function GlobalNav() {
                     {item.reload ? (
                       <a
                         href={getInternalUrl(item.href)}
-                        className={isActive(item) ? 'active' : ''}
+                        className={`${MENU_ITEM} ${isActive(item) ? 'active' : ''}`}
                       >
                         {item.label}
                       </a>
                     ) : (
                       <Link
                         href={item.href}
-                        className={isActive(item) ? 'active' : ''}
+                        className={`${MENU_ITEM} ${isActive(item) ? 'active' : ''}`}
                       >
                         {item.label}
                       </Link>
@@ -644,15 +663,19 @@ export function GlobalNav() {
                       <span>Account</span>
                     </li>
                     <li>
-                      <Link href="/profile">Profile</Link>
+                      <Link href="/profile" className={MENU_ITEM}>
+                        Profile
+                      </Link>
                     </li>
                     <li>
-                      <Link href="/account">Settings</Link>
+                      <Link href="/account" className={MENU_ITEM}>
+                        Settings
+                      </Link>
                     </li>
                     <li>
                       <Link
                         href="/messages"
-                        className="flex items-center justify-between"
+                        className={`${MENU_ITEM} justify-between`}
                       >
                         <span>Messages</span>
                         {unreadCount > 0 && (
@@ -663,11 +686,18 @@ export function GlobalNav() {
                       </Link>
                     </li>
                     <li>
-                      <Link href="/messages?tab=connections">Connections</Link>
+                      <Link
+                        href="/messages?tab=connections"
+                        className={MENU_ITEM}
+                      >
+                        Connections
+                      </Link>
                     </li>
                     {isAdmin && (
                       <li>
-                        <Link href="/admin">Admin Dashboard</Link>
+                        <Link href="/admin" className={MENU_ITEM}>
+                          Admin Dashboard
+                        </Link>
                       </li>
                     )}
                     <li>
@@ -695,10 +725,14 @@ export function GlobalNav() {
                       <span>Account</span>
                     </li>
                     <li>
-                      <Link href="/sign-in">Sign In</Link>
+                      <Link href="/sign-in" className={MENU_ITEM}>
+                        Sign In
+                      </Link>
                     </li>
                     <li>
-                      <Link href="/sign-up">Sign Up</Link>
+                      <Link href="/sign-up" className={MENU_ITEM}>
+                        Sign Up
+                      </Link>
                     </li>
                   </>
                 )}
@@ -774,7 +808,7 @@ export function GlobalNav() {
                 <h3 className="mb-2 text-sm font-semibold tracking-wide uppercase">
                   Theme
                 </h3>
-                <ul className="max-h-64 overflow-y-auto">
+                <ul>
                   {THEMES.map((t) => (
                     <li key={t}>
                       <button

@@ -83,6 +83,11 @@ run_check "ESLint" "pnpm lint"
 # 2. Type check
 run_check "TypeScript type check" "pnpm type-check"
 
+# 2b. Breakpoint drift. The script existed and already failed — CSS said the `sm`
+# breakpoint was 430px while src/config/breakpoints.ts said 428px — and it was
+# wired into no workflow and no hook, so nothing ever ran it (#373 B2).
+run_check "Breakpoint config" "pnpm validate:breakpoints"
+
 # 3. Unit tests
 run_check "Unit tests" "pnpm test --run"
 
