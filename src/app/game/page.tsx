@@ -22,9 +22,11 @@ const CaptainShipCrewWithNPC = dynamic(
 export default function GamePage() {
   return (
     // Flat frame, not the three-stop gradient — the same shape /docs and
-    // /status use. `container` also clamps to the PREVIOUS breakpoint
-    // (`--breakpoint-xs: 20rem`, #373), so it is replaced by an explicit
-    // measure rather than left to throw width away.
+    // /status use, with an explicit measure instead of `container`.
+    //
+    // The explicit measure is a readability choice, not a bug fix: this comment
+    // used to claim `container` clamps to the previous breakpoint, which #373's
+    // §A1 had already corrected before it was written (#463).
     <main className="bg-base-200 min-h-full py-8">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-8">

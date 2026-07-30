@@ -102,9 +102,13 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    // `container` clamps to the PREVIOUS breakpoint (`--breakpoint-xs: 20rem`,
-    // #373) — 43.9% of the viewport thrown away at 767px, on all six admin
-    // routes. Same explicit measure `/docs` uses.
+    // The same explicit measure `/docs` uses, stated here rather than left to
+    // `container` — whose value you have to go read `globals.css` to learn.
+    //
+    // It is NOT a clamp fix. An earlier version of this comment said `container`
+    // throws away 43.9% of the viewport at 767px, citing #373. That was already
+    // false when written: #373's §A1 fixed it with an `@utility container`
+    // override, and `container` now computes to 1280px at every tier (#463).
     <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
       {/* A rail, not DaisyUI `tabs`: `.tab` gets no depth from #427 and sits at
           ~40px, under the 44px touch floor. `sh-rail`/`sh-rail-active` is the
