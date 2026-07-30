@@ -80,7 +80,7 @@ export default function ThemesPage() {
   };
 
   return (
-    <main className="bg-base-100 min-h-screen">
+    <main className="bg-base-100 min-h-full">
       <div className="container mx-auto px-4 py-6 sm:py-8 md:py-12">
         <header className="mb-8">
           <p className="text-base-content mb-2 font-mono text-xs tracking-wider uppercase">

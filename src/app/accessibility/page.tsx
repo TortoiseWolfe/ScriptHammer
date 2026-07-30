@@ -9,7 +9,7 @@ export default function AccessibilityPage() {
   const { fontSize, lineHeight, fontFamily } = settings;
 
   return (
-    <main className="bg-base-100 min-h-screen">
+    <main className="bg-base-100 min-h-full">
       <div className="mx-auto w-full px-4 py-6 sm:py-8 md:py-12">
         <div className="mx-auto max-w-4xl">
           <h1 className="mb-6 !text-2xl font-bold sm:mb-8 sm:!text-4xl md:!text-5xl">
