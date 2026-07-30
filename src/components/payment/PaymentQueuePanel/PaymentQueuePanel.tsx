@@ -137,7 +137,7 @@ export const PaymentQueuePanel: React.FC<PaymentQueuePanelProps> = ({
 
   return (
     <div
-      className={`card bg-base-100 shadow-xl ${className}`}
+      className={`card bg-base-100 rounded-box ${className}`}
       data-testid={testId}
     >
       <div className="card-body">

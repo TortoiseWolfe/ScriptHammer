@@ -144,7 +144,7 @@ export const SwitchProviderPanel: React.FC<SwitchProviderPanelProps> = ({
     <div className={`card bg-base-200 ${className}`}>
       <div className="card-body">
         <h3 className="card-title text-base">Use a different payment method</h3>
-        <p className="text-sm opacity-70">
+        <p className="text-base-content text-sm">
           Switching from your previous attempt:{' '}
           <span className="font-semibold">{formattedAmount}</span>
           {parent.description ? (

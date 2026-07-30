@@ -165,7 +165,7 @@ function PaymentResultContent() {
           aria-live="polite"
         >
           <span className="loading loading-spinner loading-lg"></span>
-          <p className="text-base-content/70">Verifying payment status...</p>
+          <p className="text-base-content">Verifying payment status...</p>
           <span className="sr-only">Loading payment status</span>
         </div>
       </main>
@@ -233,7 +233,7 @@ function PaymentResultContent() {
               when the result is ready.
             </span>
           </div>
-          <Link href="/payment-demo" className="btn btn-ghost min-h-11">
+          <Link href="/payment-demo" className="sh-btn sh-btn-ghost">
             Back to Payment Demo
           </Link>
         </div>
@@ -265,7 +265,7 @@ function PaymentResultContent() {
       </div>
 
       <div className="mt-8 flex gap-4">
-        <Link href="/payment-demo" className="btn btn-ghost min-h-11">
+        <Link href="/payment-demo" className="sh-btn sh-btn-ghost">
           Back to Payment Demo
         </Link>
       </div>
@@ -285,7 +285,7 @@ export default function PaymentResultPage() {
               aria-live="polite"
             >
               <span className="loading loading-spinner loading-lg"></span>
-              <p className="text-base-content/70">Loading...</p>
+              <p className="text-base-content">Loading...</p>
             </div>
           </main>
         }

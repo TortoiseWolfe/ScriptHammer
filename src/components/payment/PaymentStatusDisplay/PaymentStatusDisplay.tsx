@@ -161,10 +161,18 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
     );
   }
 
-  // Map status to badge style
+  /**
+   * Status -> glyph, colour and words.
+   *
+   * `iconColor` is a WHOLE class name, not a fragment. It used to be built as
+   * `text-${config.badge.split('-')[1]}`, which Tailwind never sees because it
+   * scans source for literals (#455). The `badge` field those fragments came
+   * from is gone: the pill below is a groove carrying the status word, so hue
+   * is no longer the only thing separating the four states.
+   */
   const statusConfig = {
     succeeded: {
-      badge: 'badge-success',
+      iconColor: 'text-success',
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -185,7 +193,7 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
       message: 'Payment Successful',
     },
     failed: {
-      badge: 'badge-error',
+      iconColor: 'text-error',
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -206,7 +214,7 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
       message: 'Payment Failed',
     },
     refunded: {
-      badge: 'badge-warning',
+      iconColor: 'text-warning',
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -227,7 +235,7 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
       message: 'Payment Refunded',
     },
     pending: {
-      badge: 'badge-info',
+      iconColor: 'text-info',
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -252,26 +260,35 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
   const config = statusConfig[paymentResult.status] || statusConfig.pending;
 
   return (
-    <div className={`card bg-base-100 shadow-xl ${className}`}>
+    <div className={`card bg-base-100 rounded-box ${className}`}>
       <div className="card-body">
         {/* Status Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`text-${config.badge.split('-')[1]}`}>
-              {config.icon}
-            </div>
+            <div className={config.iconColor}>{config.icon}</div>
             <div>
               <h3 className="text-xl font-bold">{config.message}</h3>
-              <span className={`badge ${config.badge} mt-1`}>
+              {/* A cut pill carrying the status WORD, not a colour-filled
+                  badge. `badge-success`/`badge-error` differ from each other
+                  only by hue, so on a monochrome display or to a red/green
+                  colourblind reader the four states are indistinguishable.
+                  The text is the cue; the groove says "this is a reading".
+                  The text itself is unchanged — PaymentStatusDisplay.test.tsx
+                  asserts on 'SUCCEEDED'/'PENDING', not on the class. */}
+              <span className="sh-groove bg-base-100 text-base-content mt-1 inline-flex min-h-7 items-center rounded-full px-3 py-1 font-mono text-[11px] tracking-wider uppercase">
                 {paymentResult.status.toUpperCase()}
               </span>
             </div>
           </div>
         </div>
 
-        {/* Details */}
+        {/* Details — a padded recessed well, the /docs tier-2 idiom for a block
+            of readings. The padding is load-bearing: `sh-well` is an INSET
+            shadow, so it paints underneath child content and is invisible
+            without a gutter. Replaces a bare `border-t`, which draws in
+            currentColor and so changed hue with the surrounding text. */}
         {showDetails && (
-          <div className="mt-4 space-y-2 border-t pt-4">
+          <div className="sh-well bg-base-100 rounded-box mt-4 space-y-2 px-4 py-3">
             <div className="flex justify-between text-sm">
               <span className="font-semibold">Amount:</span>
               <span>
@@ -290,7 +307,7 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
             {paymentResult.transaction_id && (
               <div className="flex justify-between text-sm">
                 <span className="font-semibold">Transaction ID:</span>
-                <code className="bg-base-200 rounded px-2 py-1 text-xs">
+                <code className="sh-groove bg-base-200 rounded-field px-2 py-1 text-xs">
                   {paymentResult.transaction_id}
                 </code>
               </div>
@@ -348,10 +365,19 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
                   <div className="flex flex-col gap-1">
                     <p className="font-semibold">{categorized.userMessage}</p>
                     <p className="text-sm">{categorized.resolutionHint}</p>
+                    {/* No colour class and no `opacity-70`. A transaction
+                        reference is the one string a user retypes to support,
+                        so dimming it is wrong — but naming a colour is worse:
+                        this sits inside `.alert-warning`, which sets its own
+                        foreground. Applying `text-base-content` here paints the
+                        PAGE's text colour onto the alert's yellow and measured
+                        1.07:1 on scripthammer-dark. Inheriting is correct.
+                        Same reason the code chip carries no `bg-` — a
+                        base-200 chip on warning yellow is a hole in the alert. */}
                     {paymentResult.transaction_id && (
-                      <p className="text-xs opacity-70">
+                      <p className="text-xs">
                         Reference:{' '}
-                        <code className="bg-base-200 rounded px-1">
+                        <code className="sh-groove rounded-field px-1 font-mono">
                           {paymentResult.transaction_id}
                         </code>
                       </p>
@@ -379,7 +405,7 @@ export const PaymentStatusDisplay: React.FC<PaymentStatusDisplayProps> = ({
                     <div className="card-actions mt-4 flex-wrap items-center justify-between gap-2">
                       {/* FR-008: attempt counter */}
                       <p
-                        className="text-sm opacity-70"
+                        className="text-base-content font-mono text-sm"
                         aria-label={`Attempt ${retryStatus.retryCount + 1} of ${retryStatus.maxRetries}`}
                       >
                         Attempt {retryStatus.retryCount + 1} of{' '}

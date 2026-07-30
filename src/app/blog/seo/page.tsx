@@ -114,7 +114,7 @@ export default async function SEODashboardPage() {
               <div className="stat bg-base-100 rounded">
                 <div className="stat-title text-xs">Overall</div>
                 <div
-                  className={`stat-value text-lg text-${seoAnalyzer.getScoreColor(avgScores.overall)}`}
+                  className={`stat-value text-lg ${seoAnalyzer.getScoreTextClass(avgScores.overall)}`}
                 >
                   {avgScores.overall}%
                 </div>
@@ -125,7 +125,7 @@ export default async function SEODashboardPage() {
               <div className="stat bg-base-100 rounded">
                 <div className="stat-title text-xs">Titles</div>
                 <div
-                  className={`stat-value text-lg text-${avgScores.title >= 80 ? 'success' : avgScores.title >= 60 ? 'warning' : 'error'}`}
+                  className={`stat-value text-lg ${seoAnalyzer.getScoreTextClass(avgScores.title)}`}
                 >
                   {avgScores.title}%
                 </div>
@@ -133,7 +133,7 @@ export default async function SEODashboardPage() {
               <div className="stat bg-base-100 rounded">
                 <div className="stat-title text-xs">Descriptions</div>
                 <div
-                  className={`stat-value text-lg text-${avgScores.description >= 80 ? 'success' : avgScores.description >= 60 ? 'warning' : 'error'}`}
+                  className={`stat-value text-lg ${seoAnalyzer.getScoreTextClass(avgScores.description)}`}
                 >
                   {avgScores.description}%
                 </div>
@@ -141,7 +141,7 @@ export default async function SEODashboardPage() {
               <div className="stat bg-base-100 rounded">
                 <div className="stat-title text-xs">Content</div>
                 <div
-                  className={`stat-value text-lg text-${avgScores.content >= 80 ? 'success' : avgScores.content >= 60 ? 'warning' : 'error'}`}
+                  className={`stat-value text-lg ${seoAnalyzer.getScoreTextClass(avgScores.content)}`}
                 >
                   {avgScores.content}%
                 </div>
@@ -149,7 +149,7 @@ export default async function SEODashboardPage() {
               <div className="stat bg-base-100 rounded">
                 <div className="stat-title text-xs">Keywords</div>
                 <div
-                  className={`stat-value text-lg text-${avgScores.keywords >= 80 ? 'success' : avgScores.keywords >= 60 ? 'warning' : 'error'}`}
+                  className={`stat-value text-lg ${seoAnalyzer.getScoreTextClass(avgScores.keywords)}`}
                 >
                   {avgScores.keywords}%
                 </div>
@@ -157,7 +157,7 @@ export default async function SEODashboardPage() {
               <div className="stat bg-base-100 rounded">
                 <div className="stat-title text-xs">Readability</div>
                 <div
-                  className={`stat-value text-lg text-${avgScores.readability >= 80 ? 'success' : avgScores.readability >= 60 ? 'warning' : 'error'}`}
+                  className={`stat-value text-lg ${seoAnalyzer.getScoreTextClass(avgScores.readability)}`}
                 >
                   {avgScores.readability}%
                 </div>
@@ -165,7 +165,7 @@ export default async function SEODashboardPage() {
               <div className="stat bg-base-100 rounded">
                 <div className="stat-title text-xs">Technical</div>
                 <div
-                  className={`stat-value text-lg text-${avgScores.technical >= 80 ? 'success' : avgScores.technical >= 60 ? 'warning' : 'error'}`}
+                  className={`stat-value text-lg ${seoAnalyzer.getScoreTextClass(avgScores.technical)}`}
                 >
                   {avgScores.technical}%
                 </div>
@@ -198,7 +198,7 @@ export default async function SEODashboardPage() {
                       </p>
                     </div>
                     <div
-                      className={`badge badge-lg badge-${seoAnalyzer.getScoreColor(analysis.score.overall)}`}
+                      className={`badge badge-lg ${seoAnalyzer.getScoreBadgeClass(analysis.score.overall)}`}
                     >
                       SEO: {analysis.score.overall}%
                     </div>

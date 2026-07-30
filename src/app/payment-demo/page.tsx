@@ -118,7 +118,7 @@ function PaymentDemoContent() {
       {/* GDPR Consent Modal */}
       {showConsent && (
         <div className="mb-8">
-          <div className="card bg-base-100 shadow-xl">
+          <div className="card bg-base-100 rounded-box">
             <div className="card-body">
               <h2 className="card-title">Step 1: GDPR Consent</h2>
               <p className="text-base-content/85 mb-4">
@@ -127,7 +127,7 @@ function PaymentDemoContent() {
               </p>
 
               {/* Inline consent UI for demo */}
-              <div className="bg-base-200 rounded-lg p-4">
+              <div className="sh-well bg-base-200 rounded-box p-4">
                 <h4 className="mb-2 font-semibold">What this means:</h4>
                 <ul className="list-inside list-disc space-y-1 text-sm">
                   <li>
@@ -155,9 +155,13 @@ function PaymentDemoContent() {
                 >
                   Accept & Continue
                 </button>
+                {/* `.btn-ghost` is deliberately excluded from #427's depth,
+                    so a ghost button on these pages reads as bare text with no
+                    boundary at all. `sh-btn sh-btn-ghost` is the cut twin
+                    (the /docs/[slug] precedent) and keeps the 44px height. */}
                 <button
                   type="button"
-                  className="btn btn-ghost min-h-11 flex-1"
+                  className="sh-btn sh-btn-ghost flex-1"
                   onClick={() =>
                     alert('Payment features require consent to function')
                   }
@@ -173,7 +177,7 @@ function PaymentDemoContent() {
       {/* Payment Button Demo */}
       {!showConsent && (
         <div className="mb-8">
-          <div className="card bg-base-100 shadow-xl">
+          <div className="card bg-base-100 rounded-box">
             <div className="card-body">
               <h2 className="card-title">Step 2: Make a Payment</h2>
               <p className="text-base-content/85 mb-4">
@@ -229,7 +233,7 @@ function PaymentDemoContent() {
               {/* GDPR: withdraw payment consent (right to withdraw). Returns to
                   Step 1 and clears the stored consent. */}
               <div className="border-base-300 mt-6 border-t pt-4">
-                <p className="text-base-content/70 mb-2 text-sm">
+                <p className="text-base-content mb-2 text-sm">
                   You granted payment consent
                   {consentDate
                     ? ` on ${new Date(consentDate).toLocaleDateString()}`
@@ -254,7 +258,7 @@ function PaymentDemoContent() {
       {/* Payment Result Display */}
       {(paymentResultId || paymentError) && (
         <div className="mb-8">
-          <div className="card bg-base-100 shadow-xl">
+          <div className="card bg-base-100 rounded-box">
             <div className="card-body">
               <h2 className="card-title">Step 3: Payment Result</h2>
               {paymentError ? (
@@ -290,7 +294,7 @@ function PaymentDemoContent() {
       {/* Payment History */}
       {!showConsent && user?.id && (
         <div className="mb-8">
-          <div className="card bg-base-100 shadow-xl">
+          <div className="card bg-base-100 rounded-box">
             <div className="card-body">
               <h2 className="card-title">Step 4: Payment History</h2>
               <p className="text-base-content/85 mb-4">
@@ -303,7 +307,7 @@ function PaymentDemoContent() {
       )}
 
       {/* Feature Documentation */}
-      <div className="card bg-base-200">
+      <div className="card sh-well bg-base-100 rounded-box">
         <div className="card-body">
           <h2 className="card-title">Features Implemented</h2>
           <ul className="list-inside list-disc space-y-2">
@@ -343,7 +347,7 @@ function PaymentDemoContent() {
           <div className="divider"></div>
 
           <h3 className="text-lg font-semibold">Test Cards</h3>
-          <div className="overflow-x-auto">
+          <div className="sh-well bg-base-100 rounded-box overflow-x-auto px-4 py-2">
             <table className="table-sm table">
               <thead>
                 <tr>
