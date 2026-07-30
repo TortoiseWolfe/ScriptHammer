@@ -78,10 +78,6 @@ export default function AdminPaymentsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">Payment Activity</h1>
-      </div>
-
       {error && (
         <div className="alert alert-error mb-6">
           <span>{error}</span>

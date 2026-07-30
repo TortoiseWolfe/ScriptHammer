@@ -54,8 +54,15 @@ export default function DateRangeFilter({
   const end = value?.end ?? '';
 
   return (
+    // A recessed WELL grouping the two date fields and the presets into one
+    // panel (#430). Shared by four of the six admin routes, so this single edit
+    // is the highest-leverage change in the console.
+    //
+    // `p-4` is load-bearing: sh-well is an inset shadow painted BELOW child
+    // content, so opaque children flush to the edge would hide it and the
+    // change would be a visual no-op.
     <div
-      className={`flex flex-wrap items-end gap-4${className ? ` ${className}` : ''}`}
+      className={`sh-well bg-base-100 rounded-box flex flex-wrap items-end gap-4 p-4${className ? ` ${className}` : ''}`}
       data-testid={testId}
     >
       <div>
