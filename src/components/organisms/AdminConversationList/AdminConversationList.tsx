@@ -166,7 +166,7 @@ export function AdminConversationList({
           Conversations
         </h2>
         <span
-          className="text-base-content/70 text-sm tabular-nums"
+          className="text-base-content text-sm tabular-nums"
           aria-live="polite"
         >
           Showing {from}–{to} of {total.toLocaleString()}

@@ -186,7 +186,7 @@ export function AdminMessagingOverview({
                           {s.display_name ?? s.username ?? 'N/A'}
                         </div>
                         {s.username && s.display_name && (
-                          <div className="text-base-content/60 text-xs">
+                          <div className="text-base-content text-xs">
                             @{s.username}
                           </div>
                         )}
@@ -199,7 +199,7 @@ export function AdminMessagingOverview({
             </div>
           ) : (
             <p
-              className="text-base-content/60 text-sm"
+              className="text-base-content text-sm"
               data-testid="top-senders-empty"
             >
               No messages in this range.

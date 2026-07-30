@@ -60,7 +60,7 @@ export function AdminStatCard({
     return (
       <Link
         href={href}
-        className={`stats bg-base-100 shadow hover:shadow-md${className ? ` ${className}` : ''}`}
+        className={`stats bg-base-100 transition-transform hover:-translate-y-0.5${className ? ` ${className}` : ''}`}
         aria-label={ariaLabel}
         data-testid={testId}
       >
@@ -71,7 +71,7 @@ export function AdminStatCard({
 
   return (
     <div
-      className={`stats bg-base-100 shadow${className ? ` ${className}` : ''}`}
+      className={`stats bg-base-100${className ? ` ${className}` : ''}`}
       aria-label={ariaLabel}
       data-testid={testId}
     >

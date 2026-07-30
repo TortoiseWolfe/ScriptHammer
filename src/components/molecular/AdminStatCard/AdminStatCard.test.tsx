@@ -25,7 +25,15 @@ describe('AdminStatCard', () => {
     const link = screen.getByRole('link', { name: 'Users: 100' });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute('href', '/admin/users');
-    expect(link).toHaveClass('hover:shadow-md');
+    // Was `toHaveClass('hover:shadow-md')` (#430). That assertion was green
+    // while the hover cue was INVISIBLE on both house themes: globals.css has
+    // `[data-theme] .stats:not(.sh-plate)…` at specificity 0,2,0, which beats a
+    // Tailwind shadow utility at 0,1,0. So the class was present, the test
+    // passed, and a linked stat card had no affordance at all.
+    //
+    // A transform is not overridden by that rule, so this assertion now tracks
+    // something a user can actually see.
+    expect(link).toHaveClass('hover:-translate-y-0.5');
   });
 
   it('renders as a div when no href is provided', () => {
