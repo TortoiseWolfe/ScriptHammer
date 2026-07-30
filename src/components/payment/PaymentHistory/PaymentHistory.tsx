@@ -280,7 +280,7 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
             {payments.length} total payments
           </span>
         </div>
-        <div className="card bg-base-100 shadow-xl">
+        <div className="card bg-base-100 rounded-box">
           <div className="card-body items-center text-center">
             <svg
               xmlns="http://www.w3.org/2000/svg"

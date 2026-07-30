@@ -91,32 +91,40 @@ export default function PaymentHubContent() {
       <div className="mx-auto max-w-3xl">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-3xl font-bold">{TAB_H1[activeTab]}</h1>
-          <Link href="/account" className="btn btn-ghost min-h-11">
+          <Link href="/account" className="sh-btn sh-btn-ghost">
             Back to Account
           </Link>
         </div>
 
+        {/* A rail rather than DaisyUI `tabs`: the same vocabulary as the
+            /docs sidebar, the /blog chips and the admin console. `.tab` gets
+            no depth from #427, and dropping the DaisyUI border variant would
+            leave the current tab with no cue at all - so `sh-rail-active`
+            lands in the same edit. Both tab TEXTS are unchanged; they are
+            pinned by tests/e2e/payment/. */}
         <div
           role="tablist"
-          className="tabs tabs-bordered mb-6"
+          className="sh-rail mb-6 flex-wrap"
           aria-label="Payment sections"
         >
-          <button
-            role="tab"
-            aria-selected={activeTab === 'overview'}
-            className={`tab min-h-11 ${activeTab === 'overview' ? 'tab-active' : ''}`}
-            onClick={() => selectTab('overview')}
-          >
-            Overview
-          </button>
-          <button
-            role="tab"
-            aria-selected={activeTab === 'subscriptions'}
-            className={`tab min-h-11 ${activeTab === 'subscriptions' ? 'tab-active' : ''}`}
-            onClick={() => selectTab('subscriptions')}
-          >
-            Subscriptions
-          </button>
+          {(
+            [
+              ['overview', 'Overview'],
+              ['subscriptions', 'Subscriptions'],
+            ] as const
+          ).map(([tab, label]) => (
+            <button
+              key={tab}
+              role="tab"
+              aria-selected={activeTab === tab}
+              className={`text-base-content flex min-h-11 items-center rounded-full px-4 font-mono text-[11px] tracking-wider uppercase transition-colors ${
+                activeTab === tab ? 'sh-rail-active' : 'hover:bg-base-200'
+              }`}
+              onClick={() => selectTab(tab)}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         {activeTab === 'overview' && (
@@ -135,10 +143,12 @@ export default function PaymentHubContent() {
             )}
 
             <section aria-labelledby="payment-history-heading">
-              <h2
-                id="payment-history-heading"
-                className="mb-4 text-2xl font-bold"
-              >
+              {/* PaymentHistory.tsx:315 renders its own visible h2 with this
+                  same text, so /payment showed "Payment History" twice - a
+                  strict-mode locator hazard as well as a duplicate. The
+                  landmark still needs a name, so it goes to sr-only rather
+                  than away. */}
+              <h2 id="payment-history-heading" className="sr-only">
                 Payment History
               </h2>
               <PaymentHistory initialLimit={20} showFilters />

@@ -310,7 +310,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
 
   if (subscriptions.length === 0) {
     return (
-      <div className={`card bg-base-100 shadow-xl ${className}`}>
+      <div className={`card bg-base-100 rounded-box ${className}`}>
         <div className="card-body items-center text-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -359,7 +359,7 @@ export const SubscriptionManager: React.FC<SubscriptionManagerProps> = ({
       {/* Subscription Cards */}
       <div className="grid gap-4 md:grid-cols-2">
         {subscriptions.map((subscription) => (
-          <div key={subscription.id} className="card bg-base-100 shadow-xl">
+          <div key={subscription.id} className="card bg-base-100 rounded-box">
             <div className="card-body">
               {/* Header */}
               <div className="flex items-start justify-between">

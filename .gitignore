@@ -216,3 +216,6 @@ graphify-out/
 *.rej
 *~
 *.swp
+
+# Local visual-verification scratch (#432) — session tokens live here.
+.pay-verify/
