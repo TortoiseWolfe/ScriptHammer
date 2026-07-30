@@ -350,7 +350,7 @@ export function ConsentModal({
             </button>
             <button
               onClick={handleAcceptAll}
-              className="btn btn-neutral btn-outline"
+              className="btn btn-outline"
               aria-label="Accept all cookies"
             >
               Accept All

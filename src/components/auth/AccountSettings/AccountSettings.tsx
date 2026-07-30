@@ -255,7 +255,7 @@ export default function AccountSettings({
             >
               <span className="label-text">Display Name</span>
             </label>
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
               <input
                 id="displayname-input"
                 type="text"
@@ -266,7 +266,9 @@ export default function AccountSettings({
                 disabled={loading || isUpdatingProfile}
               />
               <label className="label mt-2">
-                <span className="text-sm">Your friendly name shown to other users</span>
+                <span className="text-sm">
+                  Your friendly name shown to other users
+                </span>
               </label>
             </div>
           </div>
@@ -279,7 +281,7 @@ export default function AccountSettings({
             >
               <span className="label-text">Bio</span>
             </label>
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
               <textarea
                 id="bio-textarea"
                 value={bio}
@@ -344,7 +346,7 @@ export default function AccountSettings({
               displayName={displayName || user?.email || 'User'}
               size="xl"
             />
-            <div className="text-base-content/85 text-sm">
+            <div className="text-base-content text-sm">
               {avatarUrl ? (
                 <p>Your current profile picture</p>
               ) : (
@@ -386,7 +388,7 @@ export default function AccountSettings({
             >
               <span className="label-text">New Password</span>
             </label>
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
               <input
                 id="new-password-input"
                 type="password"
@@ -405,7 +407,7 @@ export default function AccountSettings({
             >
               <span className="label-text">Confirm Password</span>
             </label>
-            <div className="flex-1 min-w-0">
+            <div className="min-w-0 flex-1">
               <input
                 id="confirm-password-input"
                 type="password"
@@ -451,7 +453,7 @@ export default function AccountSettings({
       <div className="card bg-base-200">
         <div className="card-body">
           <h3 className="card-title">Privacy & Data</h3>
-          <p className="text-base-content/85 text-sm">
+          <p className="text-base-content text-sm">
             Manage your personal data in compliance with GDPR regulations.
           </p>
 
@@ -459,29 +461,33 @@ export default function AccountSettings({
           <div className="divider"></div>
           <div className="space-y-3">
             <h4 className="font-semibold">Data Export</h4>
-            <p className="text-base-content/85 text-sm">
+            <p className="text-base-content text-sm">
               Download all your data including messages (decrypted),
               connections, and profile information in JSON format.
             </p>
             <DataExportButton />
           </div>
+        </div>
+      </div>
 
-          {/* Account Deletion Subsection */}
-          <div className="divider"></div>
-          <div className="space-y-3">
-            <h4 className="text-error font-semibold">Account Deletion</h4>
-            <p className="text-base-content/85 text-sm">
-              Permanently delete your account and all associated data. This
-              action cannot be undone.
-            </p>
-            <button
-              onClick={handleOpenDeleteModal}
-              className="btn btn-error min-h-11"
-              disabled={loading || isUpdatingProfile}
-            >
-              Delete Account
-            </button>
-          </div>
+      {/* Account deletion gets its OWN plate. It shared one with data export,
+          separated by nothing but a divider - so an irreversible action read as
+          a sibling of a reversible one. The error-toned edge is the only place
+          in these settings that carries it, which is the point. */}
+      <div className="card bg-base-200 border-error/60 border">
+        <div className="card-body space-y-3">
+          <h3 className="card-title text-error">Account Deletion</h3>
+          <p className="text-base-content text-sm">
+            Permanently delete your account and all associated data. This action
+            cannot be undone.
+          </p>
+          <button
+            onClick={handleOpenDeleteModal}
+            className="btn btn-error min-h-11 self-start"
+            disabled={loading || isUpdatingProfile}
+          >
+            Delete Account
+          </button>
         </div>
       </div>
 

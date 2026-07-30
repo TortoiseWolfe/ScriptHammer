@@ -109,7 +109,7 @@ export default function ProtectedRoute({
               </Link>
               <Link
                 href={`/sign-up?returnUrl=${encodeURIComponent(pathname)}`}
-                className="btn btn-neutral btn-outline min-h-11 flex-1"
+                className="btn btn-outline min-h-11 flex-1"
               >
                 Sign Up
               </Link>

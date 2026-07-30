@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 export default function ProfilePage() {
   return (
     <ProtectedRoute>
-      <main className="container mx-auto px-4 py-12 sm:px-6 md:py-16 lg:px-8">
+      <main className="mx-auto w-full px-4 py-12 sm:px-6 md:py-16 lg:px-8">
         <div className="mx-auto max-w-2xl">
           <h1 className="mb-6 text-center text-3xl font-bold sm:mb-8">
             Your Profile

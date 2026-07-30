@@ -175,7 +175,7 @@ export default function DiceTray({
               'Roll Unlocked Dice'
             )}
           </button>
-          <button onClick={resetAll} className="btn btn-neutral btn-outline">
+          <button onClick={resetAll} className="btn btn-outline">
             Reset All
           </button>
         </div>
