@@ -1,12 +1,120 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useId } from 'react';
 import { useColorblindMode } from '@/hooks/useColorblindMode';
 import { ColorblindType, COLORBLIND_LABELS } from '@/utils/colorblind';
+
+/** The assistance modes offered, in menu order. Static data — it was being
+ *  rebuilt on every render, and both the panel and the trigger need it. */
+const COLORBLIND_OPTIONS = [
+  { value: ColorblindType.NONE, label: 'No Correction Needed' },
+  {
+    value: ColorblindType.PROTANOPIA,
+    label: 'Protanopia (Red-Blind) Correction',
+  },
+  {
+    value: ColorblindType.PROTANOMALY,
+    label: 'Protanomaly (Red-Weak) Correction',
+  },
+  {
+    value: ColorblindType.DEUTERANOPIA,
+    label: 'Deuteranopia (Green-Blind) Correction',
+  },
+  {
+    value: ColorblindType.DEUTERANOMALY,
+    label: 'Deuteranomaly (Green-Weak) Correction',
+  },
+  {
+    value: ColorblindType.TRITANOPIA,
+    label: 'Tritanopia (Blue-Blind) Correction',
+  },
+  {
+    value: ColorblindType.TRITANOMALY,
+    label: 'Tritanomaly (Blue-Weak) Correction',
+  },
+  {
+    value: ColorblindType.ACHROMATOPSIA,
+    label: 'Achromatopsia (No Color) Enhancement',
+  },
+  {
+    value: ColorblindType.ACHROMATOMALY,
+    label: 'Achromatomaly (Partial Color) Enhancement',
+  },
+];
 
 export interface ColorblindToggleProps {
   className?: string;
 }
+
+/**
+ * The colour-vision controls WITHOUT a popover of their own (#378).
+ *
+ * `Display ▾` hosts this beside the theme and text-settings panels. Nesting the
+ * dropdown below inside that menu would put two popovers and two focus traps in
+ * one control, so the panel stands alone and {@link ColorblindToggle} is this
+ * panel plus a trigger.
+ */
+export const ColorVisionPanel: React.FC = () => {
+  const { mode, setColorblindMode, patternsEnabled, togglePatterns } =
+    useColorblindMode();
+  // A literal id would collide if two panels are mounted at once.
+  const selectId = useId();
+
+  const handleModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setColorblindMode(e.target.value as ColorblindType);
+  };
+
+  return (
+    <div>
+      <h3 className="text-lg font-bold">Color Vision Assistance</h3>
+
+      <div>
+        <label className="label" htmlFor={selectId}>
+          <span>Assistance Mode</span>
+        </label>
+        <select
+          id={selectId}
+          className="select min-h-11 w-full"
+          value={mode}
+          onChange={handleModeChange}
+          aria-label="Select assistance mode"
+        >
+          {COLORBLIND_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {mode !== ColorblindType.NONE && (
+        <div className="mt-4">
+          <label className="label min-h-11 cursor-pointer">
+            <span>Enable Patterns</span>
+            <input
+              type="checkbox"
+              className="toggle toggle-primary"
+              checked={patternsEnabled}
+              onChange={togglePatterns}
+              aria-label="Toggle pattern overlays"
+            />
+          </label>
+          <span className="text-sm">
+            Adds patterns to help distinguish colors
+          </span>
+        </div>
+      )}
+
+      <div className="alert alert-info mt-4" role="status" aria-live="polite">
+        <span className="text-sm">
+          {mode === ColorblindType.NONE
+            ? 'Select your color vision type for visual assistance'
+            : `Correcting for ${COLORBLIND_LABELS[mode]}`}
+        </span>
+      </div>
+    </div>
+  );
+};
 
 export const ColorblindToggle: React.FC<ColorblindToggleProps> = ({
   className = '',
@@ -50,42 +158,6 @@ export const ColorblindToggle: React.FC<ColorblindToggleProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const colorblindOptions = [
-    { value: ColorblindType.NONE, label: 'No Correction Needed' },
-    {
-      value: ColorblindType.PROTANOPIA,
-      label: 'Protanopia (Red-Blind) Correction',
-    },
-    {
-      value: ColorblindType.PROTANOMALY,
-      label: 'Protanomaly (Red-Weak) Correction',
-    },
-    {
-      value: ColorblindType.DEUTERANOPIA,
-      label: 'Deuteranopia (Green-Blind) Correction',
-    },
-    {
-      value: ColorblindType.DEUTERANOMALY,
-      label: 'Deuteranomaly (Green-Weak) Correction',
-    },
-    {
-      value: ColorblindType.TRITANOPIA,
-      label: 'Tritanopia (Blue-Blind) Correction',
-    },
-    {
-      value: ColorblindType.TRITANOMALY,
-      label: 'Tritanomaly (Blue-Weak) Correction',
-    },
-    {
-      value: ColorblindType.ACHROMATOPSIA,
-      label: 'Achromatopsia (No Color) Enhancement',
-    },
-    {
-      value: ColorblindType.ACHROMATOMALY,
-      label: 'Achromatomaly (Partial Color) Enhancement',
-    },
-  ];
-
   const handleModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setColorblindMode(e.target.value as ColorblindType);
   };
@@ -125,66 +197,7 @@ export const ColorblindToggle: React.FC<ColorblindToggleProps> = ({
         className="dropdown-content card card-sm bg-base-100 z-50 w-64 max-w-[calc(100vw-2rem)] p-4 shadow sm:w-80"
       >
         <div className="card-body">
-          <h3 className="text-lg font-bold">Color Vision Assistance</h3>
-
-          <div>
-            <label className="label">
-              <span>Assistance Mode</span>
-            </label>
-            <select
-              className="select w-full"
-              value={mode}
-              onChange={handleModeChange}
-              aria-label="Select assistance mode"
-            >
-              {colorblindOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {mode !== ColorblindType.NONE && (
-            <div className="mt-4">
-              <label className="label cursor-pointer">
-                <span>Enable Patterns</span>
-                <input
-                  type="checkbox"
-                  className="toggle toggle-primary"
-                  checked={patternsEnabled}
-                  onChange={handlePatternToggle}
-                  aria-label="Toggle pattern overlays"
-                />
-              </label>
-              <span>Adds patterns to help distinguish colors</span>
-            </div>
-          )}
-
-          <div
-            className="alert alert-info mt-4"
-            role="status"
-            aria-live="polite"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              className="h-6 w-6 shrink-0 stroke-current"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <span className="text-sm">
-              {mode === ColorblindType.NONE
-                ? 'Select your color vision type for visual assistance'
-                : `Correcting for ${COLORBLIND_LABELS[mode]}`}
-            </span>
-          </div>
+          <ColorVisionPanel />
         </div>
       </div>
     </div>
