@@ -141,6 +141,37 @@ jobs:
             Cache-Control: public, max-age=31536000, immutable
           EOF
 
+      # KEEP THE PREVIOUS BUILD'S HASHED ASSETS (#476).
+      #
+      # Runs AFTER the merge, so it can see what this build produced and add only
+      # what is missing. It never overwrites a new file.
+      #
+      # GitHub Pages replaces the whole site per deploy, so the previous build's
+      # content-hashed CSS and JS are DELETED the moment this publishes. Pages
+      # serves HTML with `cache-control: max-age=600`, so for ten minutes after
+      # every deploy a visitor can be holding the previous build's HTML while its
+      # stylesheets no longer exist. They get the site with NO CSS: white page,
+      # no nav, images at natural size. Reported from production three times.
+      #
+      # The service worker is NOT in that path — `sw.js` bypasses `/_next/` — which
+      # is why two worker fixes (#438, #467) did not stop it. The first occurrence
+      # even self-healed before its "fix" merged, because a ten-minute cache
+      # window always looks fixed afterwards.
+      #
+      # Reproduced, and this fix verified, by `scripts/check-stale-html.mjs`:
+      # stale HTML with a cold asset cache gives 0 CSS rules and a 3099px header;
+      # with the previous assets retained it gives 498 rules and a 65px header.
+      #
+      # `|| true`: shipping a new build is strictly better than not shipping, so a
+      # network problem here must not block the deploy. The script prints a
+      # ::warning:: on a zero count rather than passing silently.
+      - name: Retain the previous build's assets (#476)
+        run: |
+          node scripts/retain-previous-assets.mjs merged-output \
+            "${SITE_URL:-https://scripthammer.com}" || true
+        env:
+          SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
