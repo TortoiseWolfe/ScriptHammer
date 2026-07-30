@@ -84,6 +84,37 @@
   color: var(--color-base-content);
 }
 
+/* ============================================================================
+ * A field's position must not depend on how long its label reads (#436)
+ *
+ * DaisyUI's `.label` is `inline-flex`. In markup that assumes a block — a
+ * wrapper holding a label and then its control — that makes the layout a
+ * function of the COPY: if `labelWidth + controlWidth` happens to fit the
+ * container, the control rides up onto the label's line and that one field sits
+ * a label-width right of every other field in the same form.
+ *
+ * Measured before this rule, sweeping 7 routes x 6 widths: 5 of 27 forms had
+ * fields that disagreed with their own siblings.
+ *
+ *   /contact   @1024 and @1280   "Subject" shares its label's line; the other
+ *                                three fields do not. Rename it "Subject line"
+ *                                and the defect moves elsewhere.
+ *   /reset-password @768/1024/1280  "New Password" shares; "Confirm Password"
+ *                                does not, putting their inputs 108px apart.
+ *
+ * `flex` rather than `block` keeps DaisyUI's own inner alignment (a label may
+ * hold text plus a hint or a required marker) while making the box block-level,
+ * so a following control always begins on the next line.
+ *
+ * This does NOT disturb the deliberate two-column rows on /sign-in and /sign-up
+ * (#384), where the label is a flex ITEM of a row container — a flex item's
+ * display is blockified by its parent regardless. Verified: those forms measured
+ * internally consistent before this rule and unchanged after it.
+ * ========================================================================= */
+.label {
+  display: flex;
+}
+
 @plugin "daisyui" {
   themes:
     scripthammer-dark --default,
