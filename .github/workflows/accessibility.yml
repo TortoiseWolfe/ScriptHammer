@@ -35,6 +35,20 @@ jobs:
       - name: Build application
         run: pnpm run build
 
+      # A RETURNING VISITOR MUST GET STYLED HTML ACROSS A DEPLOY (#476).
+      #
+      # Production has rendered with no CSS three times, and no gate ever caught
+      # it, because every check in this repo opens a FRESH browser context — an
+      # empty HTTP cache always fetches HTML and assets from the same build, and
+      # this bug only exists when they come from different ones.
+      #
+      # Lives here rather than in the Playwright suites because it needs a real
+      # production build in ./out, which this job already produces, and because
+      # `accessibility` is a required check — a guard nothing runs is how
+      # `validate:breakpoints` sat broken and unnoticed (#373 §B2).
+      - name: Verify a returning visitor is styled across a deploy (#476)
+        run: node scripts/check-stale-html.mjs
+
       - name: Run accessibility tests
         run: pnpm run test:a11y:ci
 
