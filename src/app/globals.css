@@ -1190,7 +1190,7 @@ p:not([class*='text-']) {
   line-height: 1 !important;
 }
 
-@media (min-width: 26.75rem) {
+@media (width >= theme(--breakpoint-sm)) {
   .btn-mobile-compact {
     height: 2rem !important;
     min-height: 2rem !important;
@@ -1211,7 +1211,7 @@ p:not([class*='text-']) {
   margin-bottom: 0.25rem !important;
 }
 
-@media (min-width: 26.75rem) {
+@media (width >= theme(--breakpoint-sm)) {
   /* sm breakpoint */
   .page-title {
     font-size: var(--text-2xl) !important;
@@ -1252,7 +1252,7 @@ p:not([class*='text-']) {
   font-weight: 600 !important;
 }
 
-@media (min-width: 26.75rem) {
+@media (width >= theme(--breakpoint-sm)) {
   .section-title {
     font-size: var(--text-xl) !important;
     margin-top: 1rem !important;
@@ -1292,7 +1292,7 @@ p:not([class*='text-']) {
   margin-bottom: 0.25rem !important;
 }
 
-@media (min-width: 26.75rem) {
+@media (width >= theme(--breakpoint-sm)) {
   .subsection-title {
     font-size: var(--text-lg) !important;
     margin-top: 0.75rem !important;
@@ -1324,7 +1324,7 @@ p:not([class*='text-']) {
   margin-bottom: 0.125rem !important;
 }
 
-@media (min-width: 26.75rem) {
+@media (width >= theme(--breakpoint-sm)) {
   .minor-heading {
     font-size: var(--text-base) !important;
     margin-top: 0.5rem !important;

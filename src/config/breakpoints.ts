@@ -13,27 +13,35 @@ import type { BreakpointConfig } from '@/types/mobile-first';
  *
  * Strategy: Mobile-first with progressive enhancement
  * - xs (320px): Minimum supported mobile width
- * - sm (428px): Standard mobile devices
+ * - sm (430px): Standard mobile devices
  * - md (768px): Tablet portrait
  * - lg (1024px): Desktop and tablet landscape
  * - xl (1280px): Large desktop
  *
- * Note: Tailwind CSS 4 uses `@theme` in globals.css for configuration
+ * Note: Tailwind CSS 4 uses `@theme` in globals.css for configuration, which is
+ * the SOURCE OF TRUTH — this file mirrors it, and `pnpm validate:breakpoints`
+ * fails when the two disagree.
+ *
+ * `sm` is 430px, not 428px, deliberately: the iPhone 14 Pro Max is exactly 428
+ * CSS px, and it is a phone, so `sm:` utilities must NOT apply there. That is
+ * also why `xs` ends at 429 rather than 427 — 428 and 429 belong to the phone
+ * bucket. This file said 428 while globals.css said 430, so at 428-429px the
+ * hand-written media queries fired and no Tailwind `sm:` utility did (#373 B2).
  */
 export const BREAKPOINTS: BreakpointConfig[] = [
   {
     name: 'xs',
     minWidth: 320,
-    maxWidth: 427,
+    maxWidth: 429,
     category: 'mobile',
-    mediaQuery: '(min-width: 320px) and (max-width: 427px)',
+    mediaQuery: '(min-width: 320px) and (max-width: 429px)',
   },
   {
     name: 'sm',
-    minWidth: 428,
+    minWidth: 430,
     maxWidth: 767,
     category: 'mobile',
-    mediaQuery: '(min-width: 428px) and (max-width: 767px)',
+    mediaQuery: '(min-width: 430px) and (max-width: 767px)',
   },
   {
     name: 'md',
@@ -105,8 +113,8 @@ export function getDeviceCategory(width: number): string {
 export const mediaQueries = {
   /** Mobile and up (>= 320px) */
   mobile: '(min-width: 320px)',
-  /** Standard mobile and up (>= 428px) */
-  sm: '(min-width: 428px)',
+  /** Standard mobile and up (>= 430px) */
+  sm: '(min-width: 430px)',
   /** Tablet and up (>= 768px) */
   md: '(min-width: 768px)',
   /** Desktop and up (>= 1024px) */
