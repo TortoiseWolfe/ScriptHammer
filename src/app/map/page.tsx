@@ -135,12 +135,15 @@ export default function MapPage() {
   ];
 
   return (
-    <main className="container mx-auto p-4">
-      <header className="prose mb-6 max-w-none">
-        <h1 className="!text-2xl font-bold sm:!text-4xl md:!text-5xl">
+    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <header className="mb-8">
+        <p className="text-base-content mb-2 font-mono text-xs tracking-[.14em] uppercase">
+          Live demo
+        </p>
+        <h1 className="text-base-content font-display text-4xl tracking-[-0.025em] sm:text-5xl">
           Interactive Map
         </h1>
-        <p>
+        <p className="text-base-content mt-2">
           Explore the map and enable location services to see your current
           position.
           {mounted && !isSupported && (
@@ -151,9 +154,9 @@ export default function MapPage() {
         </p>
       </header>
 
-      <section className="card bg-base-100 shadow-xl">
-        <div className="card-body p-4">
-          <div className="mb-4 flex flex-wrap gap-4">
+      <section className="sh-plate bg-base-100 rounded-box">
+        <div className="p-4 sm:p-6">
+          <div className="sh-groove bg-base-100 rounded-box mb-4 flex flex-wrap items-center gap-4 p-3">
             <LocationButton
               onClick={handleLocationRequest}
               loading={loading}
@@ -169,7 +172,7 @@ export default function MapPage() {
             )}
 
             {userLocation && (
-              <div className="stats shadow">
+              <div className="stats">
                 <div className="stat">
                   <div className="stat-title">Your Location</div>
                   <div className="stat-value text-lg">

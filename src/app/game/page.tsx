@@ -21,12 +21,24 @@ const CaptainShipCrewWithNPC = dynamic(
 
 export default function GamePage() {
   return (
-    <main className="from-base-200 via-base-100 to-base-200 bg-gradient-to-br py-6">
-      <div className="container mx-auto px-4">
-        {/* Compact Header */}
-        <div className="mb-4 text-center">
-          <h1 className="mb-2 text-3xl font-bold">Captain, Ship & Crew</h1>
-          <p className="text-base-content/85 text-sm">
+    // Flat frame, not the three-stop gradient — the same shape /docs and
+    // /status use. `container` also clamps to the PREVIOUS breakpoint
+    // (`--breakpoint-xs: 20rem`, #373), so it is replaced by an explicit
+    // measure rather than left to throw width away.
+    <main className="bg-base-200 min-h-full py-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <p className="text-base-content mb-2 font-mono text-xs tracking-[.14em] uppercase">
+            Playable demo
+          </p>
+          {/* The TEXT is pinned: tests/e2e/pages/HomePage.ts:27 selects
+              `h1:has-text("Captain, Ship & Crew")`. Restyled, never retitled. */}
+          <h1 className="text-base-content font-display text-4xl tracking-[-0.025em] sm:text-5xl">
+            Captain, Ship & Crew
+          </h1>
+          {/* Solid, not `/85` — opacity-suffixed text fails the AAA gate
+              (#411, #425) and /game is in the sweep. */}
+          <p className="text-base-content mt-2 text-sm">
             Roll for your ship, captain, and crew!
           </p>
         </div>
@@ -41,47 +53,41 @@ export default function GamePage() {
 
             {/* Instructions - Side panel on large screens */}
             <div className="lg:col-span-1">
-              <div className="card bg-base-200/50 sticky top-4 h-fit">
-                <div className="card-body p-4">
-                  <h2 className="card-title mb-3 text-base">How to Play</h2>
-                  <ul className="space-y-2 text-xs">
-                    <li className="flex gap-2">
-                      <span className="text-primary font-bold">1.</span>
-                      <span>
-                        Roll five dice to get a Ship (6), Captain (5), and Crew
-                        (4) in that order
-                      </span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="text-primary font-bold">2.</span>
-                      <span>
-                        Once you have all three, the remaining two dice are your
-                        cargo score
-                      </span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="text-primary font-bold">3.</span>
-                      <span>
-                        You have three rolls per turn to maximize your score
-                      </span>
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="text-primary font-bold">4.</span>
-                      <span>Beat the NPC to win!</span>
-                    </li>
-                  </ul>
+              {/* A cut WELL, padded. `bg-base-200/50` was invisible against a
+                  base-200 page — a 50% tint of the surface it sits on. The
+                  padding is load-bearing: `sh-well` is an inset shadow painted
+                  below child content, so a flush child would hide it. */}
+              <div className="sh-well bg-base-100 rounded-box sticky top-4 h-fit p-5">
+                <h2 className="text-base-content mb-3 font-mono text-xs tracking-[.14em] uppercase">
+                  How to Play
+                </h2>
+                {/* A real ordered list. The numbers were hand-typed into spans
+                    styled `text-primary`, which meant a screen reader heard
+                    "1." as content and the sequence carried no semantics. */}
+                <ol className="text-base-content list-decimal space-y-2 pl-5 text-xs">
+                  <li>
+                    Roll five dice to get a Ship (6), Captain (5), and Crew (4)
+                    in that order
+                  </li>
+                  <li>
+                    Once you have all three, the remaining two dice are your
+                    cargo score
+                  </li>
+                  <li>You have three rolls per turn to maximize your score</li>
+                  <li>Beat the NPC to win!</li>
+                </ol>
 
-                  <div className="divider my-3"></div>
+                <div className="divider my-3"></div>
 
-                  <div className="text-base-content/85 space-y-1 text-xs">
-                    <p>
-                      <strong>Tip:</strong> Higher cargo scores win rounds
-                    </p>
-                    <p>
-                      <strong>Strategy:</strong> Decide when to keep or reroll
-                      cargo dice
-                    </p>
-                  </div>
+                {/* Solid, not `/85` (#411, #425). */}
+                <div className="text-base-content space-y-1 text-xs">
+                  <p>
+                    <strong>Tip:</strong> Higher cargo scores win rounds
+                  </p>
+                  <p>
+                    <strong>Strategy:</strong> Decide when to keep or reroll
+                    cargo dice
+                  </p>
                 </div>
               </div>
             </div>
