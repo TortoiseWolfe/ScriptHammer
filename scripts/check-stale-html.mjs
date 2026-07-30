@@ -209,7 +209,20 @@ const renames = await makeBuildB();
 await new Promise((r) => server.listen(PORT, '127.0.0.1', r));
 const base = `http://127.0.0.1:${PORT}`;
 
-const browser = await chromium.launch();
+// BROWSER RESOLUTION. Locally the container has Playwright's own chromium. On a
+// CI runner it does not — `accessibility.yml` gets its browser from Pa11y's
+// puppeteer, and adding `playwright install` would put a 60s download on a
+// REQUIRED check. Every GitHub runner ships Chrome, so fall back to the system
+// channel rather than making the guard expensive enough to be removed later.
+async function launch() {
+  try {
+    return await chromium.launch();
+  } catch (err) {
+    console.log(`bundled chromium unavailable (${String(err).slice(0, 80)}) — trying system chrome`);
+    return chromium.launch({ channel: 'chrome' });
+  }
+}
+const browser = await launch();
 // ONE context for the whole run. A new context per visit is what made this
 // invisible: it resets the HTTP cache and the service worker registration.
 const ctx = await browser.newContext();
