@@ -169,33 +169,42 @@ export function AdminMessagingOverview({
           />
 
           <h3 className="mb-2 text-lg font-semibold">Top Senders</h3>
+          {/* See AdminPaymentPanel: the well needs a padded parent around the
+              scroller, not on it (#430). The comment lives ABOVE the ternary —
+              a `{comment}` between `? (` and its element is two root nodes and a
+              syntax error, which is exactly what it was a moment ago. */}
           {(trends.top_senders ?? []).length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="table-sm table" data-testid="top-senders-table">
-                <thead>
-                  <tr>
-                    <th>User</th>
-                    <th className="text-right">Messages</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(trends.top_senders ?? []).map((s) => (
-                    <tr key={s.user_id}>
-                      <td>
-                        <div className="font-medium">
-                          {s.display_name ?? s.username ?? 'N/A'}
-                        </div>
-                        {s.username && s.display_name && (
-                          <div className="text-base-content text-xs">
-                            @{s.username}
-                          </div>
-                        )}
-                      </td>
-                      <td className="text-right font-mono">{s.messages}</td>
+            <div className="sh-well rounded-lg p-2">
+              <div className="overflow-x-auto">
+                <table
+                  className="table-sm table"
+                  data-testid="top-senders-table"
+                >
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th className="text-right">Messages</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {(trends.top_senders ?? []).map((s) => (
+                      <tr key={s.user_id}>
+                        <td>
+                          <div className="font-medium">
+                            {s.display_name ?? s.username ?? 'N/A'}
+                          </div>
+                          {s.username && s.display_name && (
+                            <div className="text-base-content text-xs">
+                              @{s.username}
+                            </div>
+                          )}
+                        </td>
+                        <td className="text-right font-mono">{s.messages}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           ) : (
             <p
