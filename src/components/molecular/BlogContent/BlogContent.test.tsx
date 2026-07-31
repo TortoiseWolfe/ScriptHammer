@@ -66,10 +66,12 @@ describe('BlogContent', () => {
 
     // Check that the content container has the expected responsive styling classes
     const contentDiv = container.firstChild as HTMLElement;
-    expect(contentDiv).toHaveClass('[&>h1]:page-title'); // Global page title class
-    expect(contentDiv).toHaveClass('[&>h2]:section-title'); // Global section title class
-    expect(contentDiv).toHaveClass('[&>h3]:subsection-title'); // Global subsection title class
-    expect(contentDiv).toHaveClass('[&>h4]:minor-heading'); // Global minor heading class
+    // The four `[&>hN]:*-title` assertions that were here are GONE (#373 §C4).
+    // They asserted class STRINGS for rules that generated no CSS whatsoever —
+    // a plain class cannot be a Tailwind arbitrary variant — so they passed
+    // while the styling their comments described had never applied. That is
+    // exactly why the inertness survived unnoticed. Assert rendered results,
+    // not the presence of a class.
     expect(contentDiv).toHaveClass('[&>p]:text-xs'); // Mobile size
     expect(contentDiv).toHaveClass('lg:[&>p]:text-lg'); // Desktop size
   });
