@@ -1200,6 +1200,33 @@ p:not([class*='text-']) {
   }
 }
 
+/* HEADINGS MUST NOT TRUNCATE A WORD THEY CANNOT FIT (#473).
+ *
+ * At 320px, /docs rendered its page title as "Documentatio" — the final `n`
+ * simply gone. The h1's BOX fits the viewport; its TEXT does not: measured
+ * scrollWidth 346px inside a clientWidth of 288px, because a 13-character
+ * unbreakable word at 43.2px cannot wrap. Nothing in the app reported it,
+ * because every overflow check compares element boxes against the viewport and
+ * this box is entirely inside it — the overflow is INTERNAL.
+ *
+ * `overflow-wrap: break-word` only takes effect when a single word cannot fit
+ * on a line by itself, so it changes nothing about headings that already wrap
+ * normally. That is why this is safe to apply globally, where a margin rule
+ * would not be: 15 of 42 headings across six routes sit inside cards where
+ * spacing is deliberate (#373 §C3), but none of them want to be truncated.
+ *
+ * Deliberately no hyphenation here — that would alter where every wrapping
+ * heading breaks, which is a typographic change rather than a truncation fix.
+ */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
 /* The global typography scale that used to live here is GONE (#373 §C4).
  *
  * It defined .page-title / .section-title / .subsection-title / .minor-heading /
