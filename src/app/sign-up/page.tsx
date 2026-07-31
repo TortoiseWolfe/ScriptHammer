@@ -43,7 +43,14 @@ export default function SignUpPage() {
             }
           />
 
-          <div className="divider my-6">OR</div>
+          {/* Matches /sign-in's divider exactly (#384). Lowercase `or` with a
+              CSS `uppercase` rather than a literal "OR": the machined-label
+              treatment is letter-spaced small-caps, and typing the caps in the
+              markup would leave the tracking applied to already-uppercase text
+              on one page and not the other. */}
+          <div className="divider my-6 font-mono text-[10.5px] tracking-[.16em] uppercase">
+            or
+          </div>
 
           <OAuthButtons />
         </div>
