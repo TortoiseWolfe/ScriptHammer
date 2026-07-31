@@ -77,7 +77,7 @@ function AuthCallbackContent() {
 
   if (errorDetails) {
     return (
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
         <div className="alert alert-error mx-auto max-w-md">
           <div>
             <h3 className="font-bold">Authentication Error</h3>
@@ -100,7 +100,7 @@ function AuthCallbackContent() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-12">
+    <div className="container mx-auto px-4 py-12 sm:px-6 lg:px-8">
       <div className="text-center">
         <span className="loading loading-spinner loading-lg"></span>
         <p className="mt-4">Completing sign in...</p>

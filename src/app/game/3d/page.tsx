@@ -16,7 +16,7 @@ const Scene = dynamic(() => import('@/components/game/Scene'), {
 export default function ThreeDGamePage() {
   return (
     <main className="from-base-200 via-base-100 to-base-200 bg-gradient-to-br py-6">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Heading + breadcrumb */}
         <div className="mb-4">
           <h1 className="mb-1 text-2xl font-bold">3D Game (Three.js)</h1>

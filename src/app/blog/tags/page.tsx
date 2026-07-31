@@ -52,7 +52,7 @@ export default function TagsPage() {
   const sortedTags = [...tags].sort((a, b) => b.count - a.count);
 
   return (
-    <main className="container mx-auto px-4 py-6 sm:py-8 md:py-12">
+    <main className="container mx-auto px-4 py-6 sm:px-6 sm:py-8 md:py-12 lg:px-8">
       {/* Header */}
       <div className="mb-12 text-center">
         <h1 className="mb-4 !text-2xl font-bold sm:!text-4xl md:!text-5xl">

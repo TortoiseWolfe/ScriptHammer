@@ -377,7 +377,12 @@ export function GlobalNav() {
       data-global-nav
       className="border-base-300 bg-base-100 sticky top-0 z-50 border-b shadow-sm"
     >
-      <nav className="container mx-auto px-4">
+      {/* Same gutter ladder as `Footer.tsx:15` (#373 §A5). These two are
+          siblings in one layout and had no reason to disagree: measured on prod,
+          the nav's content edge sat at 18px from 320px all the way to 1280px
+          while the footer's climbed 16 -> 24 -> 32, so the two landmarks framing
+          every page were inset differently at every width above 428px. */}
+      <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo & Brand */}
           <div className="flex items-center gap-3">
