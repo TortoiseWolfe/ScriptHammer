@@ -140,7 +140,7 @@ export default function MapPage() {
         <p className="text-base-content mb-2 font-mono text-xs tracking-[.14em] uppercase">
           Live demo
         </p>
-        <h1 className="text-base-content font-display text-4xl tracking-[-0.025em] sm:text-5xl">
+        <h1 className="text-base-content font-display mb-4 text-4xl tracking-[-0.025em] sm:text-5xl">
           Interactive Map
         </h1>
         <p className="text-base-content mt-2">
