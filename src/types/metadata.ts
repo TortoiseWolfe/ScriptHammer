@@ -89,6 +89,13 @@ export interface MarkdownProcessorOptions {
   enableMath?: boolean;
   enableDiagrams?: boolean;
   tocMaxDepth?: number;
+  /**
+   * Shift every body heading down one level when the body contains an `h1`
+   * (#373 §C5). Off by default, because `# ` -> `h1` is correct for
+   * general-purpose markdown; it is only wrong when a template already supplies
+   * the document's `h1`, as the blog post page does.
+   */
+  demoteHeadings?: boolean;
   excerptLength?: number;
   imageOptimization?: boolean;
   lazyLoadImages?: boolean;

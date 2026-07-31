@@ -549,9 +549,38 @@ export const x = 1;
     expect(result.metadata.hasLinks).toBe(true);
   });
 
-  it('exposes a working singleton instance', () => {
+  it('exposes a working singleton instance, configured for the blog', () => {
     const result = markdownProcessor.process('# heading\n\nbody');
     expect(result.toc).toHaveLength(1);
-    expect(result.html).toContain('<h1');
+    // The singleton sets `demoteHeadings` because its only consumer,
+    // `blog/[slug]/page.tsx`, already renders the post title as the page's
+    // `h1` — so a body `# ` must become `h2` or the page ships two `h1`
+    // elements (#373 §C5). A bare `new MarkdownProcessor()` keeps plain
+    // markdown semantics, which the tests above still cover.
+    expect(result.html).toContain('<h2');
+    expect(result.html).not.toContain('<h1');
+  });
+
+  it('leaves headings alone when the body has no h1', () => {
+    // A blanket demote would push these to h3 and create an h1 -> h3 skip on
+    // the two posts that are already correct. The shift is conditional.
+    const result = markdownProcessor.process('## section\n\nbody');
+    expect(result.html).toContain('<h2');
+    expect(result.html).not.toContain('<h3');
+  });
+
+  it('does not treat a # inside a fenced code block as a heading', () => {
+    // Counting `^# ` in raw markdown reports 17 for countdown-timer-tutorial,
+    // which renders 6 — the difference is shell comments inside fences.
+    const result = markdownProcessor.process(
+      '## real section\n\n```bash\n# not a heading\n```\n'
+    );
+    expect(result.html).toContain('<h2');
+    expect(result.html).not.toContain('<h3');
+  });
+
+  it('preserves heading text exactly, including emoji', () => {
+    const result = markdownProcessor.process('# 🔧 Building the Dashboard');
+    expect(result.html).toContain('🔧 Building the Dashboard');
   });
 });
