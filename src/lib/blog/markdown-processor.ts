@@ -148,12 +148,18 @@ export class MarkdownProcessor {
     // Same shift the renderer applies, so the TOC's nesting matches the
     // document's heading levels rather than drifting one level apart (#373 §C5).
     const demote = this.headingDemotion(content);
+    // SCAN THE SAME TEXT THE RENDERER DOES (#483). Scanning raw markdown gave a
+    // TOC entry to every `# comment` inside a fenced code block, and those never
+    // render a heading — so the anchor pointed at nothing. Measured on
+    // production: 7 of 7 TOC anchors dead on /blog/playable-city-chattanooga,
+    // 8 of 13 on countdown-timer-tutorial, 7 of 17 on admin-dashboard-overview.
+    const scannable = this.stripFences(content);
     const headingRegex = /^(#{1,6})\s+(.+)$/gm;
     const toc: TOCItem[] = [];
     const stack: TOCItem[] = [];
 
     let match;
-    while ((match = headingRegex.exec(content)) !== null) {
+    while ((match = headingRegex.exec(scannable)) !== null) {
       const level = Math.min(6, match[1].length + demote) as
         | 1
         | 2
@@ -349,18 +355,48 @@ export class MarkdownProcessor {
    * Measured: no post renders an `h6`, so shifting down one cannot overflow
    * past `h6`. The deepest result is `h5`.
    */
+  /**
+   * Markdown with fenced code blocks removed (#483).
+   *
+   * `renderMarkdown` pulls code blocks out to placeholders BEFORE converting
+   * headings — its own comment says "after code blocks to avoid converting # in
+   * code". Anything that reasons about HEADINGS has to see the same thing, or it
+   * counts shell comments and markdown examples as headings.
+   *
+   * Deliberately NOT used by extractImages / extractLinks / extractCodeBlocks:
+   * those legitimately scan the raw source.
+   */
+  private stripFences(content: string): string {
+    return content.replace(/```[\s\S]*?```/g, '');
+  }
+
   private headingDemotion(content: string): number {
     if (!this.options.demoteHeadings) return 0;
-    const withoutFences = content.replace(/```[\s\S]*?```/g, '');
-    return /^#\s+\S/m.test(withoutFences) ? 1 : 0;
+    return /^#\s+\S/m.test(this.stripFences(content)) ? 1 : 0;
   }
 
   private generateId(text: string): string {
-    return text
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .trim();
+    return (
+      text
+        .toLowerCase()
+        // Strips emoji and punctuation — but leaves the SPACE that followed
+        // them, which the next rule turns into a leading hyphen.
+        .replace(/[^\w\s-]/g, '')
+        .replace(/\s+/g, '-')
+        // TRIM HYPHENS, NOT JUST WHITESPACE (#483).
+        //
+        // `.trim()` alone removes whitespace, and by this point there is none
+        // left — the leading space has already become a `-`. So a heading that
+        // opens with an emoji produced `-the-twin-we-already-have` while every
+        // link to it, hand-written or generated, points at
+        // `#the-twin-we-already-have`. Measured on production: 7 of 7 in-page
+        // anchors dead on /blog/playable-city-chattanooga, and every affected
+        // heading starts with an emoji (🌆 🗺️ 🏙️ 🧭 🎯 ⚠️ 💬).
+        //
+        // Also collapses runs, so `A — B` cannot yield `a---b`.
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '')
+    );
   }
 
   /**

@@ -561,6 +561,30 @@ export const x = 1;
     expect(result.html).not.toContain('<h1');
   });
 
+  it('does not put fenced-code headings in the TOC (#483)', () => {
+    // The renderer converts headings AFTER pulling code blocks out, so a `#`
+    // inside a fence never becomes a heading. extractTOC used to scan the raw
+    // source, so it produced an entry pointing at an element that does not
+    // exist. Measured on production before the fix: 7 of 7 TOC anchors dead on
+    // /blog/playable-city-chattanooga.
+    const md = [
+      '## Real Section',
+      '',
+      '```bash',
+      '# not a heading, just a shell comment',
+      'echo hi',
+      '```',
+      '',
+      '## Another Real Section',
+    ].join('\n');
+    const result = markdownProcessor.process(md);
+    const texts = result.toc.map((t) => t.text);
+    expect(texts).toContain('Real Section');
+    expect(texts).toContain('Another Real Section');
+    expect(texts).not.toContain('not a heading, just a shell comment');
+    expect(result.toc).toHaveLength(2);
+  });
+
   it('leaves headings alone when the body has no h1', () => {
     // A blanket demote would push these to h3 and create an h1 -> h3 skip on
     // the two posts that are already correct. The shift is conditional.
