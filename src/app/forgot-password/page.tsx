@@ -16,12 +16,14 @@ export default function ForgotPasswordPage() {
           Reset Password
         </h1>
 
-        <p className="text-base-content mb-6 text-center text-sm">
-          Enter your email address and we&apos;ll send you a link to reset your
-          password.
-        </p>
+        <div className="sh-plate rounded-[26px] px-4 py-8 sm:px-6 md:px-8">
+          <p className="text-base-content mb-6 text-center text-sm">
+            Enter your email address and we&apos;ll send you a link to reset
+            your password.
+          </p>
 
-        <ForgotPasswordForm />
+          <ForgotPasswordForm />
+        </div>
 
         <p className="mt-6 text-center text-sm">
           <Link href="/sign-in" className="link-primary">
