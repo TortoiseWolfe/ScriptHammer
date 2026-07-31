@@ -12,9 +12,13 @@ export default function ResetPasswordPage() {
           Set New Password
         </h1>
 
-        <ResetPasswordForm
-          onSuccess={() => (window.location.href = getInternalUrl('/sign-in'))}
-        />
+        <div className="sh-plate rounded-[26px] px-4 py-8 sm:px-6 md:px-8">
+          <ResetPasswordForm
+            onSuccess={() =>
+              (window.location.href = getInternalUrl('/sign-in'))
+            }
+          />
+        </div>
       </div>
     </main>
   );

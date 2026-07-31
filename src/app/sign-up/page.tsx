@@ -36,15 +36,17 @@ export default function SignUpPage() {
           Create Account
         </h1>
 
-        <SignUpForm
-          onSuccess={() =>
-            (window.location.href = getInternalUrl('/verify-email'))
-          }
-        />
+        <div className="sh-plate rounded-[26px] px-4 py-8 sm:px-6 md:px-8">
+          <SignUpForm
+            onSuccess={() =>
+              (window.location.href = getInternalUrl('/verify-email'))
+            }
+          />
 
-        <div className="divider my-6">OR</div>
+          <div className="divider my-6">OR</div>
 
-        <OAuthButtons />
+          <OAuthButtons />
+        </div>
 
         <p className="mt-6 text-center text-sm">
           Already have an account?{' '}
