@@ -199,10 +199,13 @@ export function getMobileLandscapeViewports(): TestViewport[] {
 export const CRITICAL_MOBILE_WIDTHS = [320, 375, 390, 428] as const;
 
 /**
- * Standard test pages for mobile UX validation
+ * `TEST_PAGES` is GONE ON PURPOSE (#373 §B1).
+ *
+ * It was three routes — `/`, `/blog` and one blog post — and its only consumer,
+ * `tests/e2e/tests/mobile-horizontal-scroll.spec.ts`, now ENUMERATES routes
+ * from `src/app/**\/page.tsx` so a new page is covered the day it is created.
+ * A hand-written list of three read as "mobile UX is validated" while covering
+ * 7% of the app, which is the same failure #411 fixed in the contrast gate.
+ *
+ * If you need a route list for a new sweep, enumerate — do not reintroduce this.
  */
-export const TEST_PAGES = [
-  '/',
-  '/blog',
-  '/blog/countdown-timer-tutorial',
-] as const;

@@ -69,9 +69,15 @@ export function CookieConsent({
         className={`fixed right-0 left-0 ${positionClasses} bg-base-100 border-base-300 z-[60] border-t-2 shadow-lg backdrop-blur-md ${className}`}
       >
         <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
             {/* Message Section - Compact */}
-            <div className="flex flex-1 items-center gap-2">
+            {/* `min-w-0` is load-bearing. A flex item will not shrink below its
+                MIN-CONTENT width without it, so at 320px this block held its
+                ground and pushed the actions group 11px past the viewport —
+                measured on live production on 41 of 42 routes, in the
+                first-time-visitor state that every touch-target spec dismisses
+                before it measures anything (#457). */}
+            <div className="flex min-w-0 flex-1 basis-full items-center gap-2 sm:basis-auto">
               {/* Decorative (#385): the sentence beside it already says
                   "We use cookies". The emoji carried aria-label="Cookie", so
                   a screen reader announced "Cookie, We use cookies to enhance
@@ -100,7 +106,7 @@ export function CookieConsent({
 
             {/* Actions Section - Compact */}
             <div
-              className="flex gap-2"
+              className="flex shrink-0 gap-2"
               role="group"
               aria-label="Consent actions"
             >
