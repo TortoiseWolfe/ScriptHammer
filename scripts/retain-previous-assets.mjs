@@ -95,7 +95,32 @@ async function livePages() {
   const sm = await get(`${BASE}/sitemap.xml`);
   if (sm) {
     const xml = await sm.text();
-    for (const m of xml.matchAll(/<loc>([^<]+)<\/loc>/g)) {
+    const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+
+    // DERIVE THE LIVE PREFIX; DO NOT ASSUME IT.
+    //
+    // The deployed sitemap advertises `https://tortoisewolfe.github.io/ScriptHammer/…`
+    // while the site is served at `scripthammer.com` with NO basePath. So a loc
+    // pathname carries a `/ScriptHammer` prefix that does not exist on the host
+    // being crawled — measured in production: 1 of 84 pages read, after the same
+    // symptom had already been fixed once for a different reason.
+    //
+    // The home page is the shortest loc, and its pathname IS whatever prefix the
+    // sitemap was generated with. Strip that, then join to BASE, which carries
+    // whatever prefix the crawl target actually uses. Correct for custom domain
+    // and github.io in either direction.
+    let livePrefix = '/';
+    try {
+      livePrefix = locs
+        .map((l) => new URL(l).pathname)
+        .reduce((a, b) => (b.length < a.length ? b : a), '/'.padEnd(9999, 'x'));
+      if (!livePrefix.endsWith('/')) livePrefix += '/';
+    } catch {
+      livePrefix = '/';
+    }
+    console.log(`live sitemap prefix: ${livePrefix}`);
+
+    for (const loc of locs) {
       // REBASE EVERY SITEMAP URL ONTO `BASE`.
       //
       // `<loc>` entries are absolute and point at the CANONICAL domain. Fetching
@@ -103,13 +128,11 @@ async function livePages() {
       // request fails, and `get()` swallows it — measured: 84 sitemap pages
       // yielded 14 references because only the single seed page was ever read.
       try {
-        // ORIGIN, not BASE. A `<loc>` pathname ALREADY carries the deployed
-        // basePath, and BASE carries it too — joining them produced
-        // `/ScriptHammer/ScriptHammer/` and every page 404'd. Measured: 1 of 84
-        // pages read. Taking the loc's pathname verbatim against the origin is
-        // correct whether the site is on a custom domain (no basePath) or on
-        // github.io (basePath present in the loc).
-        pages.add(`${new URL(BASE).origin}${new URL(m[1]).pathname}`);
+        const path = new URL(loc).pathname;
+        const rel = path.startsWith(livePrefix)
+          ? '/' + path.slice(livePrefix.length)
+          : path;
+        pages.add(`${BASE.replace(/\/$/, '')}${rel}`);
       } catch {
         /* not a URL — skip rather than poison the list */
       }
@@ -215,7 +238,12 @@ for (const ref of wanted) {
     /* not in the new build — that is exactly what we retain */
   }
 
-  const res = await get(`${new URL(BASE).origin}${path}`);
+  // Fetch against BASE, not the origin. `path` carries whatever prefix the LIVE
+  // HTML uses, and `rel` is prefix-free — so joining `rel` to BASE is the only
+  // combination correct in both directions. Using the origin plus the live path
+  // made all 33 references unreachable when the live sitemap advertised
+  // `/ScriptHammer/` and the crawl target served at root.
+  const res = await get(`${BASE.replace(/\/$/, '')}/${rel}`);
   if (!res) {
     failed++;
     continue;
@@ -229,10 +257,18 @@ for (const ref of wanted) {
 console.log(
   `\nretained ${retained} previous-build asset(s); ${alreadyPresent} already in the new build; ${failed} unreachable`
 );
-if (retained === 0 && alreadyPresent === 0) {
+if (wanted.size === 0) {
   console.log(
     '::error::read the live site but found 0 asset references. The HTML shape ' +
       'this script matches on has probably changed — retention is a NO-OP.'
+  );
+  process.exit(1);
+}
+if (retained === 0 && alreadyPresent === 0) {
+  console.log(
+    `::error::found ${wanted.size} reference(s) but could download none of them ` +
+      `(${failed} unreachable) — retention is a NO-OP. The asset URLs being ` +
+      'requested do not exist on the live host.'
   );
   process.exit(1);
 }
