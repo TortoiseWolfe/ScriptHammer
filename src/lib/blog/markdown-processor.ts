@@ -145,13 +145,22 @@ export class MarkdownProcessor {
    * Extract table of contents from markdown
    */
   private extractTOC(content: string): TOCItem[] {
+    // Same shift the renderer applies, so the TOC's nesting matches the
+    // document's heading levels rather than drifting one level apart (#373 §C5).
+    const demote = this.headingDemotion(content);
     const headingRegex = /^(#{1,6})\s+(.+)$/gm;
     const toc: TOCItem[] = [];
     const stack: TOCItem[] = [];
 
     let match;
     while ((match = headingRegex.exec(content)) !== null) {
-      const level = match[1].length as 1 | 2 | 3 | 4 | 5 | 6;
+      const level = Math.min(6, match[1].length + demote) as
+        | 1
+        | 2
+        | 3
+        | 4
+        | 5
+        | 6;
 
       if (level > (this.options.tocMaxDepth || 3)) continue;
 
@@ -315,6 +324,37 @@ export class MarkdownProcessor {
   /**
    * Generate ID from text
    */
+  /**
+   * How many levels to demote every body heading by (#373 §C5).
+   *
+   * The page template already renders the post title as the document's `h1`.
+   * 11 of 13 posts ALSO open with a `# ` heading in the body — usually the
+   * title repeated, sometimes with a leading emoji — so those pages render two
+   * `h1` elements, and `countdown-timer-tutorial` renders six because it uses
+   * `# ` for every section.
+   *
+   * Demoting by one puts the body under the title: `# ` becomes `h2`, `## `
+   * becomes `h3`, and so on. Nothing is deleted and no text is rewritten, so
+   * every emoji the author put in a heading is preserved exactly.
+   *
+   * ONLY when the body actually has an `h1`. A blanket demote would push the
+   * `## ` headings of the two posts that are already correct down to `h3`,
+   * creating an h1 -> h3 skip where there is none today — a regression, not a
+   * fix.
+   *
+   * Fenced code is stripped before testing, because a shell comment or a
+   * markdown example inside a fence is not a heading. Counting `^# ` in the raw
+   * file reports 17 for `countdown-timer-tutorial`, which renders 6.
+   *
+   * Measured: no post renders an `h6`, so shifting down one cannot overflow
+   * past `h6`. The deepest result is `h5`.
+   */
+  private headingDemotion(content: string): number {
+    if (!this.options.demoteHeadings) return 0;
+    const withoutFences = content.replace(/```[\s\S]*?```/g, '');
+    return /^#\s+\S/m.test(withoutFences) ? 1 : 0;
+  }
+
   private generateId(text: string): string {
     return text
       .toLowerCase()
@@ -386,31 +426,26 @@ export class MarkdownProcessor {
     html = this.stripDangerousHtml(html);
 
     // Convert headers (after code blocks to avoid converting # in code)
-    // Add IDs to headers for TOC navigation
-    html = html.replace(/^###### (.*?)$/gm, (match, text) => {
-      const id = this.generateId(text);
-      return `<h6 id="${id}">${text}</h6>`;
-    });
-    html = html.replace(/^##### (.*?)$/gm, (match, text) => {
-      const id = this.generateId(text);
-      return `<h5 id="${id}">${text}</h5>`;
-    });
-    html = html.replace(/^#### (.*?)$/gm, (match, text) => {
-      const id = this.generateId(text);
-      return `<h4 id="${id}">${text}</h4>`;
-    });
-    html = html.replace(/^### (.*?)$/gm, (match, text) => {
-      const id = this.generateId(text);
-      return `<h3 id="${id}">${text}</h3>`;
-    });
-    html = html.replace(/^## (.*?)$/gm, (match, text) => {
-      const id = this.generateId(text);
-      return `<h2 id="${id}">${text}</h2>`;
-    });
-    html = html.replace(/^# (.*?)$/gm, (match, text) => {
-      const id = this.generateId(text);
-      return `<h1 id="${id}">${text}</h1>`;
-    });
+    // Add IDs to headers for TOC navigation.
+    //
+    // ONE level-aware pass, replacing six independent replaces (#373 §C5). The
+    // old cascade ran deepest-first so that `###` could not be eaten by the `#`
+    // pattern; matching `#{1,6}` in a single pass removes that ordering
+    // dependency entirely.
+    //
+    // `demote` shifts the body under the template's `h1` — see
+    // headingDemotion(). The heading TEXT is passed through untouched, so
+    // emoji and everything else survive exactly as authored; only the tag
+    // number changes.
+    const demote = this.headingDemotion(content);
+    html = html.replace(
+      /^(#{1,6}) (.*?)$/gm,
+      (_match, hashes: string, text: string) => {
+        const level = Math.min(6, hashes.length + demote);
+        const id = this.generateId(text);
+        return `<h${level} id="${id}">${text}</h${level}>`;
+      }
+    );
 
     // Convert inline code
     html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
@@ -543,6 +578,12 @@ export class MarkdownProcessor {
 }
 
 // Export singleton instance
-export const markdownProcessor = new MarkdownProcessor();
+// The singleton is the BLOG's processor — its only consumer is
+// `src/app/blog/[slug]/page.tsx`, which renders the post title as the page's
+// `h1`. So the body must start at `h2` (#373 §C5). Construct your own
+// MarkdownProcessor if you want plain markdown semantics.
+export const markdownProcessor = new MarkdownProcessor({
+  demoteHeadings: true,
+});
 
 export default MarkdownProcessor;
