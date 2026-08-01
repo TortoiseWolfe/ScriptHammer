@@ -131,17 +131,68 @@ function enumerateRoutes(dir: string, prefix = ''): string[] {
   return out;
 }
 
+/**
+ * ROUTE TEMPLATES ARE NOT `page.tsx`, SO ENUMERATION CANNOT SEE THEM (#425).
+ *
+ * `enumerateRoutes` emits a route only for `page.tsx`. `not-found.tsx` and
+ * `global-error.tsx` are neither, so a template that renders on EVERY bad URL
+ * in the product sat outside this gate entirely — and it did have a violation:
+ * `text-base-content/80` on the 404 page measured 6.62:1 against the 7:1 floor.
+ *
+ * Nobody found that on purpose. PR #420 added a `/docs/[slug]` route with no
+ * `INSTANCES` entry, so the sweep visited the literal path, 404'd, and measured
+ * the not-found page by accident — reporting the failure against `/docs/[slug]`
+ * while the real subject was `not-found.tsx`.
+ *
+ * A template has no URL of its own, so it cannot be enumerated; it has to be
+ * REACHED. The 404 renders on any unmatched path, so the sweep asks for one
+ * deliberately. `TEMPLATE_MUST_CONTAIN` below then proves the probe actually
+ * landed on the 404 page — without it, a path that started resolving to
+ * something else would leave this measuring the wrong page and passing.
+ */
+const TEMPLATE_PROBES: Record<string, { source: string; contains: string }> = {
+  '/__contrast-probe-unmatched-route__/': {
+    source: 'src/app/not-found.tsx',
+    contains: 'Page Not Found',
+  },
+};
+
+/**
+ * Templates that no navigation can reach, recorded rather than left silent —
+ * the same contract as EXCLUDED above.
+ */
+const UNREACHABLE_TEMPLATES: Record<string, string> = {
+  'src/app/global-error.tsx':
+    'renders only when the ROOT layout itself throws. No URL reaches it, and a ' +
+    'static export offers no way to induce that from a navigation, so this gate ' +
+    'cannot measure it. Clean by inspection today; if it grows real UI it needs ' +
+    'a component-level contrast test, not a route sweep.',
+};
+
 const ALL = enumerateRoutes(APP_DIR).sort();
 const SKIPPED = ALL.filter((r) => r in EXCLUDED);
-const PAGES = ALL.filter((r) => !(r in EXCLUDED)).map((r) => INSTANCES[r] ?? r);
+const PAGES = [
+  ...ALL.filter((r) => !(r in EXCLUDED)).map((r) => INSTANCES[r] ?? r),
+  ...Object.keys(TEMPLATE_PROBES),
+];
 
 // Loudly, so a shrinking sweep can never read as a passing one.
 console.log(
-  `[color-contrast] sweeping ${PAGES.length} of ${ALL.length} routes x ${THEMES.length} themes` +
+  `[color-contrast] sweeping ${PAGES.length} paths ` +
+    `(${ALL.length - SKIPPED.length} of ${ALL.length} routes + ` +
+    `${Object.keys(TEMPLATE_PROBES).length} route template(s)) x ${THEMES.length} themes` +
     (SKIPPED.length
       ? `\n[color-contrast] excluded ${SKIPPED.length}:\n` +
         SKIPPED.map((r) => `  - ${r}: ${EXCLUDED[r]}`).join('\n')
-      : '')
+      : '') +
+    `\n[color-contrast] route templates reached by probe:\n` +
+    Object.entries(TEMPLATE_PROBES)
+      .map(([p, t]) => `  - ${t.source} via ${p}`)
+      .join('\n') +
+    `\n[color-contrast] route templates NOT measurable here:\n` +
+    Object.entries(UNREACHABLE_TEMPLATES)
+      .map(([f, why]) => `  - ${f}: ${why}`)
+      .join('\n')
 );
 
 test.describe('WCAG AAA color-contrast-enhanced (violations only)', () => {
@@ -173,6 +224,20 @@ test.describe('WCAG AAA color-contrast-enhanced (violations only)', () => {
         // full route list that is minutes of pure idling. 1200ms is the settle
         // that replaces the load-state guarantee given up above.
         await page.waitForTimeout(1200);
+
+        // PROVE THE PROBE LANDED ON THE TEMPLATE IT CLAIMS TO MEASURE (#425).
+        // This path only reaches not-found.tsx for as long as nothing else
+        // resolves it. If that ever changes, the sweep would quietly measure a
+        // different page and report it as template coverage — which is the
+        // failure mode this whole ticket is about.
+        const probe = TEMPLATE_PROBES[path];
+        if (probe) {
+          await expect(
+            page.getByText(probe.contains),
+            `${path} must render ${probe.source} (looking for "${probe.contains}"); ` +
+              `if it does not, this test is measuring the wrong page`
+          ).toBeVisible();
+        }
 
         await page.evaluate(axeSource);
         const results = await page.evaluate<AxeResults>(async () => {
