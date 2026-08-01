@@ -476,6 +476,116 @@ test.describe('Touch Target Standards', () => {
     }
   });
 
+  test("the cookie banner's OWN controls meet 44px (#457)", async ({
+    page,
+  }) => {
+    // THE ONE TEST IN THIS FILE THAT MUST NOT DISMISS THE BANNER.
+    //
+    // Every other test here calls `dismissCookieBanner()` before measuring.
+    // That is correct for the page underneath — a fixed overlay would occlude
+    // it — but it makes the consent banner the one surface this suite
+    // structurally cannot see, and its buttons are the FIRST control a mobile
+    // visitor is ever asked to hit. They shipped at 32x87 and 32x77 across
+    // 320/390/428 with every touch-target check green (#457).
+    //
+    // Measuring the banner's own controls is therefore not redundant with the
+    // sweeps above; it is the only place they are looked at at all.
+    test.setTimeout(120000);
+
+    for (const width of CRITICAL_MOBILE_WIDTHS) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.addInitScript(() => {
+        window.localStorage.removeItem('cookie-consent');
+      });
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
+      await waitForLayoutStability(page);
+
+      const banner = page.getByRole('region', {
+        name: 'Cookie consent banner',
+      });
+      // If the banner is not showing, this test has measured nothing — say so
+      // rather than passing. A silent skip here recreates the exact blind spot
+      // the test exists to close.
+      await expect(
+        banner,
+        `Cookie banner must be visible at ${width}px for this test to measure anything`
+      ).toBeVisible();
+
+      const controls = await banner.locator('button, a[href]').all();
+      expect(
+        controls.length,
+        `Expected the banner to expose controls at ${width}px`
+      ).toBeGreaterThan(0);
+
+      for (const control of controls) {
+        if (!(await control.isVisible())) continue;
+        const box = await control.boundingBox();
+        if (!box) continue;
+        const name =
+          (await control.getAttribute('aria-label')) ||
+          (await control.textContent())?.trim() ||
+          '(unnamed)';
+        expect(
+          box.height,
+          `Cookie banner control "${name}" is ${Math.round(box.height)}px tall at ${width}px; the floor is ${MINIMUM}px`
+        ).toBeGreaterThanOrEqual(MINIMUM - TOLERANCE);
+      }
+    }
+  });
+
+  test('the banner spacer reserves the banner’s real height (#457)', async ({
+    page,
+  }) => {
+    // The spacer exists so the fixed banner does not cover footer content. It
+    // was a fixed `h-14` (56px) while the banner rendered 117-120px, so ~61px
+    // of content sat underneath it. A fixed height cannot be correct for an
+    // element whose height depends on how its message wraps.
+    for (const width of CRITICAL_MOBILE_WIDTHS) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.addInitScript(() => {
+        window.localStorage.removeItem('cookie-consent');
+      });
+      await page.goto('/', { waitUntil: 'domcontentloaded' });
+      await waitForLayoutStability(page);
+
+      // WAIT FOR THE BANNER BEFORE MEASURING. `page.evaluate` runs once and
+      // does not retry, unlike Playwright's web-first assertions — the first
+      // version of this test read `null` on every width because it evaluated
+      // before the banner mounted, while the sibling test above passed purely
+      // because `toBeVisible()` retried for it.
+      const banner = page.getByRole('region', {
+        name: 'Cookie consent banner',
+      });
+      await expect(
+        banner,
+        `Cookie banner must be visible at ${width}px for this test to measure anything`
+      ).toBeVisible();
+
+      // The spacer height is set from a ResizeObserver after mount, so poll
+      // for the settled value rather than reading the first painted frame.
+      await expect
+        .poll(
+          async () =>
+            page.evaluate(() => {
+              const el = document.querySelector(
+                '[aria-label="Cookie consent banner"]'
+              );
+              const spacer = el?.previousElementSibling;
+              if (!el || !spacer) return -1;
+              return (
+                spacer.getBoundingClientRect().height -
+                el.getBoundingClientRect().height
+              );
+            }),
+          {
+            message: `Spacer must reserve the banner's full height at ${width}px`,
+            timeout: 10000,
+          }
+        )
+        .toBeGreaterThanOrEqual(-1);
+    }
+  });
+
   test('Links in content meet touch target standards', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/blog', { waitUntil: 'domcontentloaded' });

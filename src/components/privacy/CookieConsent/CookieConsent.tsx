@@ -32,6 +32,26 @@ export function CookieConsent({
   const { showBanner, isLoading, acceptAll, rejectAll, openModal } =
     useConsent();
 
+  // Keep the spacer the same height as the banner. `56` is only the
+  // server-rendered starting value — the effect replaces it as soon as the
+  // banner has a measured height, and a ResizeObserver keeps it correct when
+  // the message rewraps on rotation or a font-scale change.
+  const bannerRef = React.useRef<HTMLDivElement>(null);
+  const [spacerHeight, setSpacerHeight] = React.useState(56);
+
+  React.useEffect(() => {
+    const el = bannerRef.current;
+    if (!el) return;
+    const sync = () => setSpacerHeight(el.getBoundingClientRect().height);
+    sync();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => ro.disconnect();
+    // `showBanner` is the gate on whether the banner is in the DOM at all, so
+    // the observer has to be re-attached when it flips.
+  }, [showBanner, isLoading]);
+
   // Don't render if banner shouldn't be shown or still loading
   if (!showBanner || isLoading) {
     return null;
@@ -60,9 +80,16 @@ export function CookieConsent({
 
   return (
     <>
-      {/* Spacer to prevent fixed banner from overlapping footer content */}
-      <div className="h-14" aria-hidden="true" />
+      {/* The spacer must be as tall as the banner, so it MEASURES it (#457).
+          It was a fixed `h-14` (56px) while the banner rendered 117px at
+          320px, 119px at 390px and 120px at 428px — so roughly 61px of page
+          content sat underneath the banner already, and raising the buttons to
+          the 44px touch floor above would have widened that gap rather than
+          created it. A fixed height cannot be right for a fixed-position
+          element whose height depends on how the message wraps. */}
+      <div style={{ height: spacerHeight }} aria-hidden="true" />
       <div
+        ref={bannerRef}
         role="region"
         aria-label="Cookie consent banner"
         aria-live="polite"
@@ -110,16 +137,25 @@ export function CookieConsent({
               role="group"
               aria-label="Consent actions"
             >
+              {/* `min-h-11` is the 44px touch floor (#457). `btn-sm` is 2rem =
+                  32px, so these two rendered 32x87 and 32x77 at 320/390/428 —
+                  and they are the FIRST control a mobile visitor is asked to
+                  hit. No gate caught it because every test in
+                  mobile-touch-targets.spec.ts calls dismissCookieBanner()
+                  before it measures, which is correct for the page underneath
+                  and makes this banner the one surface the suite structurally
+                  cannot see. There is now a spec that measures with the banner
+                  present; see mobile-touch-targets.spec.ts. */}
               <button
                 onClick={handleAcceptAll}
-                className="btn btn-primary btn-sm"
+                className="btn btn-primary btn-sm min-h-11"
                 aria-label="Accept all cookies"
               >
                 Accept All
               </button>
               <button
                 onClick={handleCustomize}
-                className="btn btn-ghost btn-sm"
+                className="btn btn-ghost btn-sm min-h-11"
                 aria-label="Customize cookie preferences"
               >
                 Settings
