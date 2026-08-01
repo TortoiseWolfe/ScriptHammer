@@ -5,7 +5,67 @@ const path = require('path');
 
 const PUBLIC_DIR = path.join(process.cwd(), 'public');
 const BLOG_DATA_PATH = path.join(process.cwd(), 'src/lib/blog/blog-data.json');
-const SITE_URL = 'https://tortoisewolfe.github.io/ScriptHammer';
+
+/**
+ * The canonical origin, resolved the SAME way the app resolves it (#479).
+ *
+ * This was a hardcoded `https://tortoisewolfe.github.io/ScriptHammer`, so the
+ * sitemap deployed to scripthammer.com advertised 83 URLs on a different
+ * origin, carrying a `/ScriptHammer` basePath that does not exist there. Every
+ * one of them 404s on the domain serving the sitemap that lists them.
+ *
+ * The `<link rel="canonical">` tags were always correct — they come from
+ * `getProjectConfig().deployUrl` in src/config/project.config.ts, whose first
+ * priority is NEXT_PUBLIC_DEPLOY_URL. Only this script disagreed, because it
+ * consulted nothing. Reading the same variable is what makes the three
+ * artifacts incapable of disagreeing; a second source of truth would just move
+ * the bug.
+ *
+ * NOT derived from `public/CNAME`, which #479 proposed. CNAME here reads
+ * `www.scripthammer.com` while the canonical tag and the served site are the
+ * apex `scripthammer.com` — so CNAME would generate an origin that disagrees
+ * with the canonical, which is the same class of defect in a new place.
+ *
+ * The fallback preserves today's behaviour for forks that set nothing, and the
+ * resolved value is printed with its source so a misconfigured deploy is
+ * visible in the build log rather than silently shipping the wrong origin.
+ */
+function resolveSiteUrl() {
+  const explicit = process.env.NEXT_PUBLIC_DEPLOY_URL;
+  if (explicit && explicit.trim()) {
+    return {
+      url: explicit.trim().replace(/\/+$/, ''),
+      source: 'NEXT_PUBLIC_DEPLOY_URL',
+    };
+  }
+
+  const owner = (
+    process.env.NEXT_PUBLIC_PROJECT_OWNER || 'TortoiseWolfe'
+  ).toLowerCase();
+  const name = process.env.NEXT_PUBLIC_PROJECT_NAME || 'ScriptHammer';
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH;
+
+  return {
+    url: `https://${owner}.github.io${basePath || `/${name}`}`.replace(
+      /\/+$/,
+      ''
+    ),
+    source: basePath
+      ? 'GitHub Pages + NEXT_PUBLIC_BASE_PATH (no NEXT_PUBLIC_DEPLOY_URL set)'
+      : 'GitHub Pages default (no NEXT_PUBLIC_DEPLOY_URL set)',
+  };
+}
+
+const resolved = resolveSiteUrl();
+const SITE_URL = resolved.url;
+
+// Fail rather than emit a sitemap full of malformed URLs.
+try {
+  new URL(SITE_URL);
+} catch {
+  console.error(`❌ Resolved site URL is not a valid URL: ${SITE_URL}`);
+  process.exit(1);
+}
 
 // Static pages in the application (public, indexable pages only)
 const staticPages = [
@@ -60,6 +120,7 @@ const disallowedPaths = [
 
 function generateSitemap() {
   console.log('🗺️ Generating sitemap...');
+  console.log(`   🌐 Site URL: ${SITE_URL}  (from ${resolved.source})`);
 
   // Read blog data from pre-generated JSON
   let blogData = { posts: [] };
