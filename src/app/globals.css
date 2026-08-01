@@ -1227,6 +1227,76 @@ h6 {
   overflow-wrap: break-word;
 }
 
+/* LIST ITEMS AND INLINE CODE HAVE THE SAME PROBLEM, FOR A DIFFERENT REASON
+ * (#473, second half).
+ *
+ * The heading rule above does not reach them, and the remaining overflows are
+ * not headings. Measured on /docs/install-and-first-run at 320px: of 140 list
+ * items, five overflowed their own box — up to 318px of content inside a 264px
+ * one — every one of them computing `overflow-wrap: normal`.
+ *
+ * What overflows is never prose. It is a URL
+ * (`https://www.scripthammer.com/...`), an environment variable
+ * (`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`), or a repo path
+ * (`docs/CREATING_COMPONENTS.md`) — single tokens with no break opportunity,
+ * which is exactly and only the case `break-word` acts on.
+ *
+ * `break-word`, NOT `break-all`, even though the ticket floated `break-all` for
+ * "comma-separated key material". `break-all` breaks any word at the box edge
+ * whether or not it needed to, so it would chop ordinary sentences mid-word
+ * throughout the docs. `break-word` leaves every list that already wraps
+ * untouched — the same property that made the heading rule safe to apply
+ * globally.
+ *
+ * `code` is listed separately because one of the five was an `<li>` whose three
+ * `<code>` children were the unbreakable part; a rule on the `li` alone does not
+ * give the inline child a break opportunity. */
+li,
+code {
+  overflow-wrap: break-word;
+}
+
+/* `break-word` DOES NOT AFFECT MIN-CONTENT SIZE; `anywhere` DOES (#473).
+ *
+ * `/blog/seo`'s `h2.card-title` measured 261px of text in a 240px box WITH the
+ * heading rule applied and computed, so this was never a specificity problem.
+ *
+ * #473 diagnosed it as the flex `min-width: auto` trap and prescribed
+ * `min-width: 0`. THAT WAS WRONG, and implementing it is how we know: with
+ * `min-width: 0px` computed on the element, the number did not move — still
+ * 261/240. The box was already 240px wide, so being unable to shrink was never
+ * the constraint. `min-width: 0` here is a measured no-op.
+ *
+ * What is actually happening: `.card-title` is `display: flex` and its only
+ * child is a bare text node, which becomes an ANONYMOUS flex item — one no
+ * selector can reach. A flex item's automatic minimum size comes from its
+ * content's min-content width, and `overflow-wrap: break-word` deliberately
+ * does NOT change min-content. `overflow-wrap: anywhere` does. So `anywhere`
+ * is not a stronger flavour of the same thing here; it is the only one of the
+ * two that alters the sizing the layout depends on.
+ *
+ * Measured against every alternative rather than argued:
+ *
+ *   min-width: 0                    261/240  no change
+ *   min-width: 0 on children        261/240  no change (cannot reach anonymous items)
+ *   flex-wrap: wrap                 261/240  no change (wraps items, not text)
+ *   display: block                  240/240  works, but discards the flex layout
+ *                                            DaisyUI uses for icon-plus-title cards
+ *   word-break: break-word          240/240  works; deprecated alias of this rule
+ *   overflow-wrap: anywhere         240/240  works
+ *
+ * Blast radius, measured rather than assumed — #473 flagged this as touching
+ * "every card in the product". Across all 40 routes at 320px, with
+ * screen-reader-only elements excluded, exactly ONE element overflowed its own
+ * box. `anywhere` only breaks where a line cannot otherwise fit, so titles that
+ * already wrap are untouched.
+ *
+ * Not theme-scoped: a layout-correctness fix, and the 32 stock DaisyUI themes
+ * have the same defect. */
+.card-title {
+  overflow-wrap: anywhere;
+}
+
 /* The global typography scale that used to live here is GONE (#373 §C4).
  *
  * It defined .page-title / .section-title / .subsection-title / .minor-heading /
