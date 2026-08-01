@@ -213,7 +213,22 @@ export default function ConversationListItem({
               )}
             </div>
             {lastMessageAt && (
-              <span className="text-base-content/80 shrink-0 text-xs">
+              // Solid, not `/80`. This list item sits on base-200, where
+              // `text-base-content/80` measures 6.62:1 against the 7:1 AAA
+              // gate — the exact figure #462's light-theme table records for
+              // /80 on base-200. It red-lined main's post-merge webkit shard
+              // on /messages and /messages/setup.
+              //
+              // It had gone unnoticed because the text is a RELATIVE
+              // TIMESTAMP: "Just now" / "1m ago" only renders when the shared
+              // test backend happens to hold a recent message, so the
+              // violation appears in some runs and not others.
+              //
+              // Solid rather than bumping to `/85` (7.73:1 here): the sibling
+              // span above is already solid, /85 would still fail if this ever
+              // sat on base-300 (6.88:1), and #411/#415/#425 all settled on
+              // solid for exactly this failure mode.
+              <span className="text-base-content shrink-0 text-xs">
                 {formatTimestamp(lastMessageAt)}
               </span>
             )}
