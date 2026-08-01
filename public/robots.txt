@@ -14,4 +14,4 @@ Disallow: /profile/
 Disallow: /messages/
 Disallow: /payment-demo/
 
-Sitemap: https://tortoisewolfe.github.io/ScriptHammer/sitemap.xml
+Sitemap: https://scripthammer.com/sitemap.xml
