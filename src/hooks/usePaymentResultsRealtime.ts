@@ -65,10 +65,12 @@ export function usePaymentResultsRealtime(
     const supabase = createClient();
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     // Count events coalesced into the pending debounce so onBatch can report
-    // how many changes a single refetch represents.
+    // how many changes a single refetch represents. `countsTowardBatch: false`
+    // schedules the same refetch WITHOUT counting — used by the join resync
+    // below, which is bookkeeping rather than a change the user made happen.
     let pendingCount = 0;
-    const debouncedChange = () => {
-      pendingCount += 1;
+    const debouncedChange = (countsTowardBatch = true) => {
+      if (countsTowardBatch) pendingCount += 1;
       if (debounceTimer) clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
         const count = pendingCount;
@@ -95,15 +97,24 @@ export function usePaymentResultsRealtime(
       )
       .subscribe((subStatus: string, err?: { message?: string }) => {
         if (subStatus === 'SUBSCRIBED') {
-          setStatus((prev) => {
-            // Recovered after a drop → refetch so events missed while the
-            // channel was down are not silently lost.
-            if (prev === 'reconnecting') {
-              debouncedChange();
-            }
-            return 'live';
-          });
+          // Resync on EVERY join, the first one included (#497). Joining is not
+          // instant — under load it took tens of seconds — and anything written
+          // between the initial fetch and the join is published to nobody. The
+          // list has no other refresh path (no polling, no revalidate-on-focus),
+          // so a missed row stayed missing for the life of the page while the
+          // indicator read "Live".
+          //
+          // A re-join counts toward the coalesced batch, as it always has; a
+          // first join does not, or every page load would flash "N updates".
+          //
+          // The decision reads hasBeenLiveRef rather than the previous status
+          // because it must not live inside a setStatus updater: React
+          // double-invokes updaters in StrictMode, which fired the recovery
+          // refetch twice.
+          const isRejoin = hasBeenLiveRef.current;
           hasBeenLiveRef.current = true;
+          setStatus('live');
+          debouncedChange(isRejoin);
         } else if (subStatus === 'CHANNEL_ERROR' || subStatus === 'TIMED_OUT') {
           // After a prior SUBSCRIBED, a drop is transient (Supabase auto-retries)
           // → 'reconnecting', not the terminal-looking 'error'. Before ever
