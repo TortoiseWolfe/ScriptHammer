@@ -167,19 +167,16 @@ export default function Home() {
           'radial-gradient(120% 80% at 50% -10%, var(--color-base-300) 0%, var(--color-base-100) 55%)',
       }}
     >
-      {/* Skip link — load-bearing a11y, do not remove (PRP-017 T036). */}
-      <a
-        href="#main-content"
-        className="btn btn-sm btn-primary sr-only min-h-11 min-w-11 focus:not-sr-only focus:absolute focus:top-4 focus:left-4"
-      >
-        Skip to main content
-      </a>
+      {/* The skip link that used to live here (PRP-017 T036) moved to
+          app/layout.tsx (#475) — it is still load-bearing, it just now exists
+          on all 41 routes instead of this one. `#main-content` moved with it,
+          onto the layout's content wrapper; keeping a second element with that
+          id here would make the target ambiguous. */}
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       {/* Two columns at lg, matching the design's `352px 1fr` grid. Stacked
           below that, logo first, because the medallion is the brand. */}
       <section
-        id="main-content"
         aria-labelledby="hero-heading"
         className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 pt-12 pb-10 sm:px-6 lg:grid-cols-[352px_1fr] lg:gap-13 lg:px-8 lg:pt-16"
       >

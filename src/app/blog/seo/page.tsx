@@ -96,7 +96,8 @@ export default async function SEODashboardPage() {
       : null;
 
   return (
-    <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+    // <main>, not <div> (#475) — this page never had a landmark.
+    <main className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="mb-4 text-3xl font-bold">SEO Dashboard</h1>
@@ -288,7 +289,7 @@ export default async function SEODashboardPage() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 

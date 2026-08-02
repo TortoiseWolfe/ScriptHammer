@@ -60,16 +60,21 @@ export default function MessagingGate({ children }: MessagingGateProps) {
       );
     }
 
-    // Never been authenticated — genuinely not signed in
+    // Never been authenticated — genuinely not signed in.
+    // <main>, not <div> (#475): this renders INSTEAD of children, so
+    // /messages and /messages/new-group — whose own <main> lives at
+    // messages/page.tsx:117 and new-group/page.tsx:134 — reach no landmark at
+    // all in this state. The loading branch above is exempt: it renders
+    // {children}, which bring their own.
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
+      <main className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
           <h2 className="mb-2 text-xl font-semibold">Sign in required</h2>
           <p className="text-base-content">
             Please sign in to access messaging.
           </p>
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -116,9 +121,10 @@ export default function MessagingGate({ children }: MessagingGateProps) {
     }
   };
 
-  // Blocked state - show verification required UI
+  // Blocked state - show verification required UI (also a landmark, #475 —
+  // it replaces the page just as the sign-in branch above does)
   return (
-    <div className="bg-base-100 flex h-full items-center justify-center p-4">
+    <main className="bg-base-100 flex h-full items-center justify-center p-4">
       <div className="card bg-base-200 rounded-box w-full max-w-md">
         <div className="card-body items-center text-center">
           {/* Lock icon */}
@@ -213,6 +219,6 @@ export default function MessagingGate({ children }: MessagingGateProps) {
           </p>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

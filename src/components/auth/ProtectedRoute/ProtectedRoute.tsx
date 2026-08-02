@@ -63,10 +63,15 @@ export default function ProtectedRoute({
   }, [isAuthenticated, isLoading, router, redirectTo, pathname]);
 
   if (isLoading) {
+    // <main>, not <div> (#475). These two branches render INSTEAD of the page,
+    // so on every gated route the page's own <main> is never reached and the
+    // document has no main landmark at all. That is most of the routes the
+    // ticket counted. Safe to make a landmark: it is an alternative branch —
+    // when children render, this does not.
     return (
-      <div className="flex min-h-full items-center justify-center">
+      <main className="flex min-h-full items-center justify-center">
         <span className="loading loading-spinner loading-lg"></span>
-      </div>
+      </main>
     );
   }
 
@@ -76,7 +81,7 @@ export default function ProtectedRoute({
   // sign-out the component unmounts via window.location.href anyway.
   if (!isAuthenticated && !wasAuthenticated.current) {
     return (
-      <div className="flex min-h-full items-center justify-center px-4">
+      <main className="flex min-h-full items-center justify-center px-4">
         <div className="card bg-base-100 w-full max-w-md shadow-xl">
           <div className="card-body items-center text-center">
             <svg
@@ -116,7 +121,7 @@ export default function ProtectedRoute({
             </div>
           </div>
         </div>
-      </div>
+      </main>
     );
   }
 
