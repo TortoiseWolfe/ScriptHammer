@@ -48,9 +48,19 @@ async function waitForRealtimeLive(
   await expect(page.getByTestId(testId)).toHaveText(/Live/i, {
     timeout: 30000,
   });
+  const ms = Date.now() - startedAt;
+  // Both, deliberately. The annotation reaches the HTML/blob report; the
+  // console line reaches the JOB LOG, which is the only one of the two a
+  // person reads six hours later while working out whether main went red for
+  // a real reason. The `list` reporter does not print annotations for passing
+  // tests, so annotation-only would have been a number nobody could see —
+  // and a trend nobody could spot. Rising joins across green runs are the
+  // evidence that would justify priming a realtime channel the way
+  // `e2e.yml` already primes the REST pool.
+  console.log(`[realtime-join] ${testId} reached Live in ${ms}ms`);
   test.info().annotations.push({
     type: 'realtime-join',
-    description: `${testId} reached Live in ${Date.now() - startedAt}ms`,
+    description: `${testId} reached Live in ${ms}ms`,
   });
 }
 
