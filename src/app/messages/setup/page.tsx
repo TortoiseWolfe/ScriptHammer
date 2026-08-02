@@ -153,27 +153,30 @@ export default function MessagingSetupPage() {
     [password, confirmPassword, user, router]
   );
 
-  // Loading states
+  // Loading states.
+  // <main> on all three branches (#475) — this route rendered no landmark in
+  // ANY state, so the skip link had nowhere to land whatever the user's
+  // situation. They are alternatives; only one is ever in the document.
   if (authLoading || checkingKeys) {
     return (
-      <div className="flex min-h-full items-center justify-center">
+      <main className="flex min-h-full items-center justify-center">
         <span className="loading loading-spinner loading-lg"></span>
-      </div>
+      </main>
     );
   }
 
   // Redirect if already set up
   if (hasExistingKeys) {
     return (
-      <div className="flex min-h-full items-center justify-center">
+      <main className="flex min-h-full items-center justify-center">
         <span className="loading loading-spinner loading-lg"></span>
         <span className="ml-2">Redirecting to messages...</span>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="flex min-h-full items-center justify-center p-4">
+    <main className="flex min-h-full items-center justify-center p-4">
       <div className="card bg-base-100 rounded-box w-full max-w-md">
         <div className="card-body">
           <h1 className="card-title text-2xl">Set Up Encrypted Messaging</h1>
@@ -327,6 +330,6 @@ export default function MessagingSetupPage() {
           </p>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

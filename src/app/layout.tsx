@@ -182,11 +182,42 @@ export default function RootLayout({
           <SentryMonitor />
           <AuthProvider>
             <AccessibilityProvider>
+              {/* WCAG 2.4.1 Bypass Blocks. It lives HERE, not on a page (#475).
+                  It used to exist on `/` alone, so on every other route a
+                  keyboard or screen-reader user traversed the whole nav — 13
+                  destinations plus the Display panel — before reaching content,
+                  on every navigation.
+
+                  `focus:fixed` rather than `focus:absolute`: <body> is not
+                  positioned, so an absolutely-positioned link resolves against
+                  the initial containing block and scrolls away with the page.
+                  Fixed keeps it on screen wherever focus arrives from.
+
+                  data-skip-link is what tests/e2e/landmarks.spec.ts matches on.
+                  Do NOT let a gate identify this by "first in-page anchor" —
+                  on a blog post that is a table-of-contents entry, which is
+                  how #475's original probe nearly filed a false report. */}
+              <a
+                href="#main-content"
+                data-skip-link
+                className="btn btn-sm btn-primary sr-only min-h-11 min-w-11 focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50"
+              >
+                Skip to main content
+              </a>
               <GlobalNav />
               <CountdownBanner />
               <SetupBanner />
               <ErrorBoundary level="page">
-                <div className="bg-base-200 min-h-0 flex-1 overflow-x-clip">
+                {/* The skip TARGET. tabIndex={-1} so the anchor jump actually
+                    moves focus here — without it the browser scrolls and leaves
+                    focus on the link, and the next Tab returns to the nav.
+                    Not itself a <main>: 32 pages render their own, and nesting
+                    or duplicating the landmark is worse than not having it. */}
+                <div
+                  id="main-content"
+                  tabIndex={-1}
+                  className="bg-base-200 min-h-0 flex-1 overflow-x-clip"
+                >
                   {children}
                 </div>
               </ErrorBoundary>

@@ -87,11 +87,11 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
 
   if (authLoading || isAdmin === null) {
     return (
-      <div className="container mx-auto p-6 lg:px-8">
+      <main className="container mx-auto p-6 lg:px-8">
         <div className="flex min-h-[50vh] items-center justify-center">
           <span className="loading loading-spinner loading-lg" />
         </div>
-      </div>
+      </main>
     );
   }
 
@@ -109,7 +109,14 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
     // throws away 43.9% of the viewport at 767px, citing #373. That was already
     // false when written: #373's §A1 fixed it with an `@utility container`
     // override, and `container` now computes to 1280px at every tier (#463).
-    <div className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+    //
+    // <main> since #475. None of the six /admin pages renders one, and neither
+    // does any Admin* organism — so an actual signed-in admin had no main
+    // landmark on any admin route. #475 filed all six under "auth gate", which
+    // was only the anonymous half of the story: anonymously ProtectedRoute
+    // answers first (admin/layout.tsx), so AdminGate is never reached and the
+    // gap here stayed invisible.
+    <main className="mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
       {/* A rail, not DaisyUI `tabs`: `.tab` gets no depth from #427 and sits at
           ~40px, under the 44px touch floor. `sh-rail`/`sh-rail-active` is the
           same vocabulary as the /docs sidebar and the /blog chips.
@@ -149,6 +156,6 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
       )}
 
       {children}
-    </div>
+    </main>
   );
 }
