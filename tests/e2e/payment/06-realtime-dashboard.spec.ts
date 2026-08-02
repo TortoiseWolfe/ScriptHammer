@@ -8,7 +8,7 @@
  * 3. Tests assume UI elements that aren't implemented
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import {
   dismissCookieBanner,
   getAdminClient,
@@ -21,6 +21,38 @@ import {
   type IsolatedPayment,
   type IsolatedSubscription,
 } from '../utils/test-user-factory';
+
+/**
+ * Wait for the realtime channel to be JOINED before driving it (#497).
+ *
+ * `subscribe()` returning is not the same as the channel being joined, and the
+ * initial list rendering is not evidence of either — it comes from a plain REST
+ * fetch. Inserting before the join publishes the event to nobody, and the
+ * failure then reads as "the count never advanced", which is indistinguishable
+ * from realtime being genuinely broken. It cost two red `main` runs to tell
+ * those apart by hand.
+ *
+ * With this guard the two causes name themselves: a timeout HERE means the
+ * channel never joined (the shared backend was saturated — 28 shards open
+ * channels against one free-tier project), and a timeout on the count assertion
+ * that follows means the channel was live and the event did not arrive.
+ *
+ * The join latency is recorded as an annotation so the next occurrence has a
+ * number instead of a guess.
+ */
+async function waitForRealtimeLive(
+  page: Page,
+  testId: 'realtime-status' | 'subscription-realtime-status' = 'realtime-status'
+): Promise<void> {
+  const startedAt = Date.now();
+  await expect(page.getByTestId(testId)).toHaveText(/Live/i, {
+    timeout: 30000,
+  });
+  test.info().annotations.push({
+    type: 'realtime-join',
+    description: `${testId} reached Live in ${Date.now() - startedAt}ms`,
+  });
+}
 
 test.describe('Payment Dashboard Real-Time Updates', () => {
   test.describe.configure({ timeout: 60000 });
@@ -105,6 +137,7 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
       const { page } = opened;
       const count = page.getByTestId('transaction-count');
       await expect(count).toContainText('1 total', { timeout: 30000 });
+      await waitForRealtimeLive(page);
 
       await fixture.addResult(); // live insert
       await expect(count).toContainText('2 total', { timeout: 15000 });
@@ -142,6 +175,7 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
       await expect(page.getByText(/Active/i).first()).toBeVisible({
         timeout: 30000,
       });
+      await waitForRealtimeLive(page, 'subscription-realtime-status');
 
       // Flip status server-side; the realtime subscription should refetch.
       const graceExpires = fixture.gracePeriodExpires ?? '2099-01-01';
@@ -245,6 +279,7 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
         '1 total',
         { timeout: 30000 }
       );
+      await waitForRealtimeLive(page);
 
       // Burst: 3 inserts within the debounce window → one coalesced batch.
       await Promise.all([
@@ -289,6 +324,7 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
         '1 total',
         { timeout: 30000 }
       );
+      await waitForRealtimeLive(page);
 
       await fixture.addResult('failed'); // live insert of a failed payment
 

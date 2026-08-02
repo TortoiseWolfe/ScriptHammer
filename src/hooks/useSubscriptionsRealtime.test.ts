@@ -77,6 +77,19 @@ describe('useSubscriptionsRealtime', () => {
     vi.useRealTimers();
   });
 
+  it('resyncs on the FIRST SUBSCRIBED, not only after a reconnect', () => {
+    // #497: same gap as usePaymentResultsRealtime — a status flip written
+    // between the initial fetch and the channel join was published to nobody,
+    // and the badge stayed stale until the user reloaded.
+    const onChange = vi.fn();
+    renderHook(() => useSubscriptionsRealtime(onChange));
+    act(() => statusCb?.('SUBSCRIBED'));
+    expect(onChange).not.toHaveBeenCalled(); // still inside the debounce window
+    act(() => vi.advanceTimersByTime(1000));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
   it('opens NO channel when disabled (enabled=false)', () => {
     renderHook(() => useSubscriptionsRealtime(vi.fn(), false));
     expect(channel).not.toHaveBeenCalled();

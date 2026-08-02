@@ -90,6 +90,48 @@ describe('usePaymentResultsRealtime', () => {
     vi.useRealTimers();
   });
 
+  it('resyncs on the FIRST SUBSCRIBED, so a row inserted before the join is not lost', () => {
+    // #497: the channel joining is not instant, and under load it took tens of
+    // seconds. Anything written between the initial fetch and the join is
+    // published to nobody — and the list has no other refresh path, so the
+    // count stayed stale for the life of the page. The join itself must resync.
+    const onChange = vi.fn();
+    renderHook(() => usePaymentResultsRealtime(onChange));
+
+    act(() => statusCb?.('SUBSCRIBED'));
+    expect(onChange).not.toHaveBeenCalled(); // still inside the debounce window
+    act(() => vi.advanceTimersByTime(1000));
+    expect(onChange).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it('does not inflate the "N updates" pill with the first-join resync', () => {
+    // The resync is bookkeeping, not a change the user made happen. It must not
+    // count toward the coalesced burst total, or every page load would flash a
+    // spurious "N updates" pill.
+    const onBatch = vi.fn();
+    renderHook(() => usePaymentResultsRealtime(vi.fn(), true, onBatch));
+    act(() => statusCb?.('SUBSCRIBED'));
+    act(() => vi.advanceTimersByTime(1000));
+    expect(onBatch).toHaveBeenCalledWith(0);
+    vi.useRealTimers();
+  });
+
+  it('counts a real event landing in the same window as the join exactly once', () => {
+    const onChange = vi.fn();
+    const onBatch = vi.fn();
+    renderHook(() => usePaymentResultsRealtime(onChange, true, onBatch));
+    act(() => {
+      statusCb?.('SUBSCRIBED');
+      changeHandler?.({ eventType: 'INSERT' });
+    });
+    act(() => vi.advanceTimersByTime(1000));
+    // One refetch covering both, and the batch reports the one real event.
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onBatch).toHaveBeenCalledWith(1);
+    vi.useRealTimers();
+  });
+
   it('calls onChange once (debounced) for rapid changes', () => {
     const onChange = vi.fn();
     renderHook(() => usePaymentResultsRealtime(onChange));

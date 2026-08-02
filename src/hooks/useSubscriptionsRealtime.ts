@@ -42,12 +42,13 @@ export function useSubscriptionsRealtime(
       )
       .subscribe((subStatus: string, err?: { message?: string }) => {
         if (subStatus === 'SUBSCRIBED') {
-          setStatus((prev) => {
-            // Recovered after a drop → refetch missed events.
-            if (prev === 'reconnecting') debouncedChange();
-            return 'live';
-          });
+          // Resync on EVERY join, first one included (#497) — a status flip
+          // written between the initial fetch and the join reaches nobody, and
+          // the badge would stay stale until the user reloaded. Kept out of the
+          // setStatus updater so StrictMode's double-invoke cannot fire it twice.
           hasBeenLiveRef.current = true;
+          setStatus('live');
+          debouncedChange();
         } else if (subStatus === 'CHANNEL_ERROR' || subStatus === 'TIMED_OUT') {
           // Transient after a prior connect → 'reconnecting'; genuine failure
           // before ever connecting → 'error'.
