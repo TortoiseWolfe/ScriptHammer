@@ -76,11 +76,98 @@ echo "Container initialized successfully"
 # Detection is status-code-only via healthcheck.sh --code: only sustained
 # HTTP 5xx counts as corruption. Timeouts/"000" mean the server is still
 # compiling — slow is NEVER corruption.
+#
+# The probe ROTATES over several routes, because corruption is PARTIAL (#298).
+# Measured on 2026-08-02, mid-incident: `/` 200, `/docs/` 200, `/contact/` 500.
+# Routes already compiled keep serving; only routes needing a rewritten chunk
+# break. This supervisor probed `/` alone for its whole life, so it sat silent
+# through that — while still serving the exact 5xx signature it exists to catch.
+# A second FIXED url would not have helped either: `/docs/` was one of the
+# healthy ones. Rotation is the answer, not a longer fixed list.
+#
+# Rotation forces a matching change to the counter. The old logic counted
+# CONSECUTIVE 5xx from one route; under rotation a single corrupt route among
+# six 5xxes once, the next route returns 200, and the count resets — it could
+# never reach the limit. So a 5xx now triggers confirmation ON THE SAME ROUTE:
+# a dead chunk keeps 500ing, a transient blip does not. "Sustained, not
+# transient" is preserved; "sustained" just stopped meaning "always the same
+# single url".
 supervise_dev() {
   set +e # probe/kill failures are expected control flow here
   PROBE_INTERVAL="${SH_HEAL_PROBE_INTERVAL:-15}" # seconds between probes
-  FAIL_LIMIT="${SH_HEAL_FAIL_LIMIT:-4}"          # consecutive 5xx before heal
+  FAIL_LIMIT="${SH_HEAL_FAIL_LIMIT:-4}"          # 5xx on ONE route before heal
   GRACE="${SH_HEAL_GRACE:-120}"                  # post-launch compile grace
+  CONFIRM_INTERVAL="${SH_HEAL_CONFIRM_INTERVAL:-3}" # seconds between re-probes
+
+  # Distinct chunk graphs, not an exhaustive route list — it does not need to
+  # be complete, it needs to not be ONE. Overridable so a fork with different
+  # routes can point it somewhere real.
+  HEAL_ROUTES="${SH_HEAL_ROUTES:-/ /docs/ /blog/ /contact/ /themes/ /sign-in/}"
+  ROUTES_LEFT=""
+
+  # ── Loop guard ──────────────────────────────────────────────────────────
+  # Recycling `.next` fixes CORRUPTION. It cannot fix a route that 5xxes for a
+  # reason that survives a rebuild — a genuine error at module scope in the
+  # page's own source, say. Without a guard that route heals, still 5xxes,
+  # heals again: a permanent restart loop that is strictly worse than the bug
+  # this supervisor exists for.
+  #
+  # The risk is not new — a persistently broken `/` could always do this — but
+  # rotation widens the exposure from one route to six, so it has to be handled
+  # rather than inherited. If the SAME route triggers a second heal in a row,
+  # recycling demonstrably is not the answer for it: stop healing on it, say so
+  # loudly, and keep watching the others. Declared OUTSIDE the relaunch loop
+  # below so it survives a dev-server restart — that is the whole point.
+  #
+  # A quarantine lasts until the CONTAINER restarts, deliberately. Once a route
+  # is skipped nothing probes it, so nothing can observe it recovering; clearing
+  # the quarantine automatically would mean re-probing skipped routes, i.e.
+  # re-opening the loop this closes. Losing one route from the rotation is a far
+  # smaller cost than a restart loop, and the log line above names the route so
+  # the fix is obvious.
+  LAST_HEAL_ROUTE=""
+  SKIP_ROUTES=""
+
+  # Next route in the rotation, refilling when the list runs out and skipping
+  # any route already proven unfixable by a recycle.
+  next_route() {
+    _tries=0
+    while [ "$_tries" -lt 32 ]; do
+      _tries=$((_tries + 1))
+      [ -z "$ROUTES_LEFT" ] && ROUTES_LEFT="$HEAL_ROUTES"
+      ROUTE="${ROUTES_LEFT%% *}"
+      case "$ROUTES_LEFT" in
+        *' '*) ROUTES_LEFT="${ROUTES_LEFT#* }" ;;
+        *) ROUTES_LEFT="" ;;
+      esac
+      case " $SKIP_ROUTES " in
+        *" $ROUTE "*) continue ;; # quarantined — a recycle did not fix it
+        *) return 0 ;;
+      esac
+    done
+    # Every route quarantined. Nothing left to watch; ROUTE is whatever fell
+    # out last, and the caller's confirm step will simply not fire a heal.
+    ROUTE=""
+    return 1
+  }
+
+  # 0 = sustained 5xx on THIS route (corruption). 1 = anything else, including
+  # "000" (still compiling) — slow is never corruption, unchanged from before.
+  confirm_corrupt() {
+    _route="$1"
+    _n=0
+    while :; do
+      _code=$(/usr/local/bin/healthcheck.sh --code "$_route")
+      case "$_code" in
+        5??) _n=$((_n + 1)) ;;
+        *) return 1 ;;
+      esac
+      [ "$_n" -ge "$FAIL_LIMIT" ] && return 0
+      # sleep as a child + wait, so the TERM trap still fires promptly.
+      sleep "$CONFIRM_INTERVAL" &
+      wait $! 2>/dev/null
+    done
+  }
 
   while :; do
     # Own session/process-group so ONE negative-PID signal reaches the whole
@@ -100,20 +187,27 @@ supervise_dev() {
     ) &
 
     START=$(date +%s)
-    FAILS=0
+    ROUTES_LEFT=""
     while kill -0 "$DEV_PID" 2>/dev/null; do
       # sleep as a child + wait: TERM/INT traps fire immediately, so
       # `docker compose stop` stays within its 10s grace.
       sleep "$PROBE_INTERVAL" &
       wait $! 2>/dev/null
       [ $(($(date +%s) - START)) -lt "$GRACE" ] && continue
-      CODE=$(/usr/local/bin/healthcheck.sh --code)
-      case "$CODE" in
-        5??) FAILS=$((FAILS + 1)) ;; # corruption signature: real HTTP 5xx only
-        *) FAILS=0 ;;                # 2xx/3xx healthy; 000 = still compiling
-      esac
-      if [ "$FAILS" -ge "$FAIL_LIMIT" ]; then
-        echo "[self-heal] ${FAILS} consecutive 5xx — recycling .next, relaunching next dev (container/port unchanged)"
+      next_route || continue # every route quarantined — nothing to probe
+      # One request per interval, same cost as before — just not always the
+      # same url. A 5xx is only a CANDIDATE until confirmed on that route.
+      if confirm_corrupt "$ROUTE"; then
+        if [ "$ROUTE" = "$LAST_HEAL_ROUTE" ]; then
+          # Already recycled for this exact route and it came back 5xx anyway.
+          # Recycling is not the fix here; looping on it would be.
+          SKIP_ROUTES="$SKIP_ROUTES $ROUTE"
+          LAST_HEAL_ROUTE=""
+          echo "[self-heal] ${ROUTE} still 5xx after a recycle — NOT corruption. Quarantining it and continuing to watch the rest. Look at that route's source."
+          continue
+        fi
+        LAST_HEAL_ROUTE="$ROUTE"
+        echo "[self-heal] ${FAIL_LIMIT} consecutive 5xx on ${ROUTE} — recycling .next, relaunching next dev (container/port unchanged)"
         kill -s TERM -- "-$DEV_PID" 2>/dev/null
         n=0
         while kill -0 "$DEV_PID" 2>/dev/null && [ "$n" -lt 10 ]; do

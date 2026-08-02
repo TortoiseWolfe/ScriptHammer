@@ -1,0 +1,143 @@
+# E2E coverage watchdog for `main` (#444).
+#
+# THE BUG THIS EXISTS FOR: a run cancelled while `pending` creates NO check-runs
+# at all. So `gh pr checks` reports only the checks that DID report, every one of
+# them is green, and the absence of E2E is indistinguishable from a passing E2E
+# at every surface a human or an agent looks at. #444 records two merged PRs and
+# one lost `main` verification in a single working day, with no red signal
+# anywhere.
+#
+# That matters more on `main` than on a PR: PR runs are chromium-only, so the
+# post-merge `main` run is the ONLY place firefox and webkit ever execute.
+#
+# WHAT THIS DOES NOT DO: touch `e2e.yml`'s `concurrency:` block. That mutex
+# exists because two concurrent runs share one Supabase project and raced each
+# other's `cleanupOldMessages` hooks (#85 — a run was cancelled at the 60-minute
+# cap after a second run wiped its data). Splitting the group by ref would
+# reintroduce exactly that. The mutex is correct; its SILENCE about casualties
+# is the bug, and that is what this fixes.
+#
+# It answers one question — does `main`'s current HEAD have a completed,
+# non-cancelled E2E run? — and if not, says so loudly and re-dispatches.
+
+name: E2E Watchdog
+
+on:
+  # Right after any E2E run finishes: that is when a `pending` sibling is most
+  # likely to have just been superseded.
+  workflow_run:
+    workflows: ['E2E Tests']
+    types: [completed]
+  # Safety net. Catches losses this repo has not seen yet — a run that never
+  # started, a runner outage, a cancel that happened while nothing else ran.
+  schedule:
+    - cron: '17 */3 * * *'
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'Commit SHA to check (default: current main HEAD)'
+        required: false
+
+permissions:
+  contents: read
+  actions: write # required to re-dispatch e2e.yml
+
+concurrency:
+  # Only against itself — this must NEVER queue behind the E2E mutex it polices.
+  group: e2e-watchdog-${{ github.repository }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: main has E2E coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for a completed E2E run on main@HEAD, re-dispatch if missing
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          INPUT_SHA: ${{ github.event.inputs.sha }}
+        run: |
+          set -euo pipefail
+
+          # The dispatch input reaches a `gh api` URL, so it is validated rather
+          # than trusted — even though only collaborators can dispatch. Anything
+          # that is not a bare hex sha is rejected outright instead of escaped,
+          # because there is no legitimate value that needs escaping.
+          SHA="${INPUT_SHA:-}"
+          if [ -n "$SHA" ]; then
+            case "$SHA" in
+              *[!0-9a-fA-F]* | '')
+                echo "::error::refusing a non-hex sha input"
+                exit 1
+                ;;
+            esac
+            if [ "${#SHA}" -lt 7 ] || [ "${#SHA}" -gt 40 ]; then
+              echo "::error::sha input must be 7-40 hex chars"
+              exit 1
+            fi
+          else
+            SHA=$(gh api "repos/$REPO/commits/main" --jq '.sha')
+          fi
+          SHORT="${SHA:0:8}"
+          echo "main HEAD: $SHORT"
+
+          # Every E2E run for this SHA, whatever its state.
+          RUNS=$(gh api "repos/$REPO/actions/workflows/e2e.yml/runs?head_sha=$SHA&per_page=100" \
+                   --jq '[.workflow_runs[] | {id, status, conclusion}]')
+          echo "runs for $SHORT: $RUNS"
+
+          # "Covered" means E2E actually EXECUTED and reported — whatever it
+          # concluded. Deliberately NOT `conclusion == "success"`: a `failure`
+          # means the suite ran and found something, which is a signal for a
+          # human, not a missing run. Defining coverage as success would make
+          # this watchdog re-dispatch every genuinely-red commit on every cron
+          # tick, forever — verified against `48e11ba`, whose E2E is
+          # `completed/failure`. The #444 loss is specifically CANCELLED (or no
+          # run at all), which is the one state that leaves no check-runs behind.
+          COVERED=$(echo "$RUNS" | jq '[.[] | select(.status=="completed" and .conclusion!="cancelled" and .conclusion!="skipped")] | length')
+
+          # In flight, in any of the three waiting/running states. Re-dispatching
+          # on top of one of these is how a watchdog turns into a dispatch loop —
+          # and worse, a newly queued run can supersede a `pending` sibling, so a
+          # careless watchdog would cause the very loss it is meant to prevent.
+          INFLIGHT=$(echo "$RUNS" | jq '[.[] | select(.status=="queued" or .status=="in_progress" or .status=="pending")] | length')
+
+          {
+            echo "### E2E coverage for \`main@$SHORT\`"
+            echo ""
+            echo "| | count |"
+            echo "|---|---|"
+            echo "| executed (completed, not cancelled) | $COVERED |"
+            echo "| in flight (queued/in_progress/pending) | $INFLIGHT |"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$COVERED" -gt 0 ]; then
+            echo "✅ covered — E2E executed and reported for this commit"
+            echo "✅ **Covered.** E2E executed and reported for this commit. Whether it passed is a separate question, deliberately — this watchdog is about coverage, not colour." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          if [ "$INFLIGHT" -gt 0 ]; then
+            echo "⏳ a run is already in flight — not dispatching (that is how loops start)"
+            echo "⏳ **In flight.** $INFLIGHT run(s) already queued or running; not dispatching." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # Nothing completed, nothing running. On `main` this is the #444 loss:
+          # firefox and webkit never ran for this commit and nothing anywhere
+          # says so.
+          echo "::warning title=main has no E2E coverage::main@$SHORT has no completed E2E run and none in flight — re-dispatching. This is #444."
+          {
+            echo "🔴 **No E2E coverage for \`main@$SHORT\`, and nothing in flight.**"
+            echo ""
+            echo "PR runs are chromium-only, so firefox and webkit have never executed"
+            echo "for this commit. A run cancelled while \`pending\` creates no check-runs,"
+            echo "which is why nothing else reported a problem (#444)."
+            echo ""
+            echo "Re-dispatching \`e2e.yml\` against \`main\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          gh workflow run e2e.yml --repo "$REPO" --ref main
+          echo "dispatched"
