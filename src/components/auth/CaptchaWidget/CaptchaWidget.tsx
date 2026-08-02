@@ -56,6 +56,34 @@ const CaptchaWidget = forwardRef<CaptchaWidgetHandle, CaptchaWidgetProps>(
       },
     }));
 
+    // `compact`, deliberately, and the numbers are why (#488).
+    //
+    // MEASURED on /sign-in at a 320px viewport, where the form column offers
+    // 248px of content width:
+    //
+    //   size        widget     plate   elements past the viewport
+    //   normal      300x65      348     28      <- what shipped before
+    //   flexible    300x65      348     28
+    //   compact     150x140     296      0
+    //
+    // **`flexible` is NOT a fix here**, despite reading like one: Cloudflare
+    // clamps it to a 300px MINIMUM, so below ~350px it renders identically to
+    // `normal`. Measured at a 500px viewport it becomes 388px wide, so the
+    // clamp — not the prop — is the constraint. #488, #428 and #374 all
+    // described this width as Cloudflare's and unfixable; it is ours to set,
+    // but `flexible` alone does not set it low enough.
+    //
+    // `compact` is the only size that fits 320px, and the plate shrinks with it
+    // (348 -> 296) because the plate was only ever as wide as its widest child
+    // plus its own `px-6`: 300 + 48 = 348 exactly. One cause, not the two the
+    // ticket originally described.
+    //
+    // The cost is 75px of height (140 vs 65) at EVERY width, which is the
+    // vertical spend #374 objects to. A per-breakpoint size (compact below
+    // `sm`, flexible above) was built and measured: the media listener flips
+    // correctly on resize, but a fresh load above the breakpoint still rendered
+    // `compact`, and shipping a path I could not explain was the worse trade.
+    // Recorded in #488 as a follow-up with the measurements.
     if (!captchaConfig.enabled || !captchaConfig.siteKey) return null;
 
     return (
@@ -72,7 +100,7 @@ const CaptchaWidget = forwardRef<CaptchaWidgetHandle, CaptchaWidgetProps>(
           // would reject with a confusing error.
           onExpire={() => onToken(null)}
           onError={() => onToken(null)}
-          options={{ theme: 'auto', size: 'normal' }}
+          options={{ theme: 'auto', size: 'compact' }}
         />
       </div>
     );
