@@ -19,6 +19,8 @@ import {
   ensureEncryptionKeys,
   getUserByEmail,
   getAdminClient,
+  deleteTestUser,
+  ISO_ADMIN_PREFIX,
 } from './utils/test-user-factory';
 
 const AUTH_FILE = 'tests/e2e/fixtures/storage-state-auth.json';
@@ -27,7 +29,62 @@ const AUTH_FILE_B = 'tests/e2e/fixtures/storage-state-auth-b.json';
 // Allow extra time for static page hydration + encryption setup
 setup.setTimeout(180000);
 
+/**
+ * Delete throwaway admins that survived a previous run.
+ *
+ * `seedIsolatedAdmin` grants `user_profiles.is_admin`, which gates 25 policies
+ * across 9 tables — an orphan can read every message, payment and profile in
+ * the shared project. Teardown lives in a `finally`, but a killed worker or a
+ * cancelled shard skips it, so this runs once per run as the backstop.
+ *
+ * PAGINATES. `admin.listUsers()` defaults to one page and silently truncates
+ * past 50 (#197) — a sweep that reads page one and reports "0 orphans" is
+ * exactly the kind of signal this repo keeps finding: it looks like a clean
+ * result and is actually an unread list.
+ */
+async function sweepOrphanedAdmins(): Promise<void> {
+  const admin = getAdminClient();
+  if (!admin) return;
+
+  const orphans: { id: string; email: string }[] = [];
+  const PER_PAGE = 200;
+  for (let page = 1; page <= 50; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({
+      page,
+      perPage: PER_PAGE,
+    });
+    if (error) {
+      console.warn(
+        `[admin-sweep] listUsers page ${page} failed: ${error.message}`
+      );
+      return;
+    }
+    const users = data?.users ?? [];
+    for (const u of users) {
+      if (u.email?.includes(ISO_ADMIN_PREFIX)) {
+        orphans.push({ id: u.id, email: u.email });
+      }
+    }
+    if (users.length < PER_PAGE) break; // last page
+  }
+
+  if (orphans.length === 0) {
+    console.log('[admin-sweep] no orphaned throwaway admins');
+    return;
+  }
+
+  console.warn(
+    `[admin-sweep] ${orphans.length} orphaned throwaway admin(s) from a ` +
+      `previous run — deleting. Each could read every message and payment in ` +
+      `the project:\n` +
+      orphans.map((o) => `  - ${o.email}`).join('\n')
+  );
+  for (const o of orphans) await deleteTestUser(o.id);
+}
+
 setup('authenticate shared test user', async ({ page, browser }) => {
+  await sweepOrphanedAdmins();
+
   // Always run fresh — never use cached auth state. Cached state from
   // previous runs may lack encryption keys, causing all messaging tests
   // to redirect to /messages/setup and fail.

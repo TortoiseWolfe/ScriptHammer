@@ -213,52 +213,55 @@ export function AdminPaymentPanel({
             testId="payment-trend-chart"
           />
 
-          <div className="overflow-x-auto">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Provider</th>
-                  <th>Succeeded</th>
-                  <th>Failed</th>
-                  <th>Refunded</th>
-                  <th>Revenue</th>
-                  <th>Health</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(trends.provider_breakdown ?? []).map((p) => {
-                  const flagged = failureShare(p) > FAILURE_FLAG_THRESHOLD;
-                  return (
-                    <tr key={p.provider}>
-                      <td className="font-medium">{p.provider}</td>
-                      <td>{p.succeeded}</td>
-                      <td>{p.failed}</td>
-                      <td>{p.refunded}</td>
-                      <td>{formatCents(p.revenue_cents)}</td>
-                      <td>
-                        {flagged ? (
-                          <span className="badge badge-error">
-                            Elevated failures
-                          </span>
-                        ) : (
-                          <span className="badge badge-success">OK</span>
-                        )}
+          {/* The scroller is WRAPPED, not replaced (#430). `sh-well` paints an
+              inset shadow BELOW its children, so it needs a padded parent — put it
+              on the `overflow-x-auto` div itself and the shadow is clipped by the
+              scroller and hidden under the table. */}
+          <div className="sh-well rounded-lg p-2">
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Provider</th>
+                    <th>Succeeded</th>
+                    <th>Failed</th>
+                    <th>Refunded</th>
+                    <th>Revenue</th>
+                    <th>Health</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(trends.provider_breakdown ?? []).map((p) => {
+                    const flagged = failureShare(p) > FAILURE_FLAG_THRESHOLD;
+                    return (
+                      <tr key={p.provider}>
+                        <td className="font-medium">{p.provider}</td>
+                        <td>{p.succeeded}</td>
+                        <td>{p.failed}</td>
+                        <td>{p.refunded}</td>
+                        <td>{formatCents(p.revenue_cents)}</td>
+                        <td>
+                          {flagged ? (
+                            <span className="badge badge-error">
+                              Elevated failures
+                            </span>
+                          ) : (
+                            <span className="badge badge-success">OK</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {(trends.provider_breakdown ?? []).length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="text-base-content text-center">
+                        No activity in this range
                       </td>
                     </tr>
-                  );
-                })}
-                {(trends.provider_breakdown ?? []).length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={6}
-                      className="text-base-content text-center"
-                    >
-                      No activity in this range
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
       )}
