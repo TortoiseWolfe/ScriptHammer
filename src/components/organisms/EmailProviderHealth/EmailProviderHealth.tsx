@@ -96,7 +96,7 @@ export default function EmailProviderHealth({
             </div>
           </div>
         ) : (
-          <p className="text-base-content/70">Rate-limit status unavailable.</p>
+          <p className="text-base-content">Rate-limit status unavailable.</p>
         )}
       </section>
 
@@ -121,7 +121,7 @@ export default function EmailProviderHealth({
                   <div className="flex items-start justify-between">
                     <div>
                       <h3 className="text-lg font-bold">{p.name}</h3>
-                      <p className="text-base-content/70 text-sm">
+                      <p className="text-base-content text-sm">
                         Priority {p.priority}
                       </p>
                     </div>

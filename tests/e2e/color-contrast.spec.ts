@@ -1,5 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { readFileSync, readdirSync } from 'node:fs';
+import {
+  seedIsolatedAdmin,
+  deleteIsolatedAdmin,
+  openAuthedPage,
+  type IsolatedAdmin,
+} from './utils/test-user-factory';
 import { dirname, join } from 'node:path';
 
 // Pa11y's axe runner reports axe `incomplete` results as errors, which
@@ -201,7 +207,27 @@ test.describe('WCAG AAA color-contrast-enhanced (violations only)', () => {
 
   for (const theme of THEMES) {
     for (const path of PAGES) {
-      test(`${theme} — ${path}`, async ({ page }) => {
+      test(`${theme} — ${path}`, async ({ page: defaultPage, browser }) => {
+        // The six `/admin` routes need an ADMIN session (#454). Until now this
+        // sweep listed them and measured THE HOME PAGE: `AdminGate.tsx:81`
+        // redirects an authenticated non-admin to `/`, and nothing here
+        // asserted the probe landed where it asked. A populated, AAA-clean home
+        // page passed six times under other routes' names — not an absent
+        // measurement, a WRONG one that read as coverage.
+        const needsAdmin = path.startsWith('/admin');
+        let adminFixture: IsolatedAdmin | null = null;
+        let openedAdmin: Awaited<ReturnType<typeof openAuthedPage>> | null =
+          null;
+        let page = defaultPage;
+        if (needsAdmin) {
+          adminFixture = await seedIsolatedAdmin();
+          test.skip(!adminFixture, 'Admin client unavailable to seed an admin');
+          if (!adminFixture) return;
+          openedAdmin = await openAuthedPage(browser, adminFixture.session);
+          page = openedAdmin.page;
+          await page.setViewportSize({ width: 1280, height: 1024 });
+        }
+
         // ThemeScript.tsx reads localStorage.getItem('theme') before falling
         // back to prefers-color-scheme; seeding it in an init script runs
         // before that inline script.
@@ -230,6 +256,17 @@ test.describe('WCAG AAA color-contrast-enhanced (violations only)', () => {
         // resolves it. If that ever changes, the sweep would quietly measure a
         // different page and report it as template coverage — which is the
         // failure mode this whole ticket is about.
+        // Same guarantee as the template probe below, for the admin routes:
+        // a redirect here means everything measured belongs to another page.
+        if (needsAdmin) {
+          await expect(
+            page,
+            `${path}: redirected away before measuring. The admin fixture did ` +
+              `not take, and axe would be reporting the home page under this ` +
+              `route's name — which is #454 itself.`
+          ).toHaveURL(new RegExp(`${path.replace(/\//g, '\\/')}\\/?$`));
+        }
+
         const probe = TEMPLATE_PROBES[path];
         if (probe) {
           await expect(
@@ -283,6 +320,13 @@ test.describe('WCAG AAA color-contrast-enhanced (violations only)', () => {
           (n, v) => n + v.nodes.length,
           0
         );
+
+        // Tear the throwaway admin down BEFORE the assertion, so a violation
+        // does not leave a live admin account behind. `auth.setup.ts` sweeps
+        // orphans, but a failing test is exactly when you least want to rely
+        // on a backstop.
+        if (openedAdmin) await openedAdmin.close();
+        await deleteIsolatedAdmin(adminFixture);
 
         expect(
           details,

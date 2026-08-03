@@ -470,14 +470,29 @@
     0 2px 4px -2px rgb(0 0 0 / 0.2);
 }
 
-/* DaisyUI's .stat-title and .stat-desc ship with base-content at 60% alpha,
- * which falls short of WCAG AA (3.86:1 on scripthammer-light, needs 4.5:1).
- * Raising alpha to 80% gives ~7.1:1 on light and ~9.3:1 on dark — AAA on both. */
+/* DaisyUI's .stat-title and .stat-desc ship base-content at 60% alpha, which
+ * falls short of WCAG AA. This block already corrected that to 80% — and 80%
+ * is STILL SHORT, which nobody could see until #454's admin fixture let the AAA
+ * sweep reach an admin route.
+ *
+ * The old comment claimed "~7.1:1 on light". Measured on /admin/email:
+ *
+ *   .stat-title  #484f58 on #ebe5dd  =  6.62:1   against a 7:1 gate
+ *
+ * 7.1 was computed against **base-100**. A `.stats` block sits on **base-200**,
+ * and that is exactly the surface #462 records as the trap: `/80` measures 7.08
+ * on base-100 and 6.4–6.5 on base-200. The alpha was right for the surface it
+ * was checked on and wrong for the one it renders on.
+ *
+ * Solid, therefore — the same conclusion #411, #425 and #495 reached for
+ * `.label`, the 404 copy and the conversation timestamp. A stat's caption is
+ * the label for its number; there is no reading in which it should be dimmer
+ * than the text around it. */
 [data-theme='scripthammer-dark'] .stat-title,
 [data-theme='scripthammer-dark'] .stat-desc,
 [data-theme='scripthammer-light'] .stat-title,
 [data-theme='scripthammer-light'] .stat-desc {
-  color: color-mix(in oklab, var(--color-base-content) 80%, transparent);
+  color: var(--color-base-content);
 }
 
 /* Avatar glow/shadow — uses base-content so it auto-adapts:

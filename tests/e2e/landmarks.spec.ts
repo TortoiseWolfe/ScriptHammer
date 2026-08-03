@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test';
 import { readdirSync } from 'node:fs';
+import {
+  seedIsolatedAdmin,
+  deleteIsolatedAdmin,
+  openAuthedPage,
+  dismissCookieBanner,
+  type IsolatedAdmin,
+} from './utils/test-user-factory';
 import { join } from 'node:path';
 
 /**
@@ -35,33 +42,6 @@ import { join } from 'node:path';
 
 const APP_DIR = join(process.cwd(), 'src/app');
 
-/**
- * The six `/admin` routes, excluded together and for one reason.
- *
- * The E2E user is authenticated but NOT an admin, so `AdminGate.tsx:81` calls
- * `router.push('/')` and `:98` returns `null` while that navigation is in
- * flight. Measuring them would race the redirect: sometimes the blank frame,
- * sometimes `/`'s own landmark. A gate that reports different things on
- * different runs is worse than one that says plainly what it cannot see.
- *
- * This is the same missing admin fixture that **#454** is filed for (the AAA
- * contrast sweep lists all six and measures none) and that blocks **#430**.
- * When that fixture exists, delete this block — `AdminGate`'s authed wrapper is
- * already a `<main>`, so these routes should pass the moment they can be
- * reached.
- */
-const ADMIN_ROUTES = [
-  '/admin',
-  '/admin/audit',
-  '/admin/email',
-  '/admin/messaging',
-  '/admin/payments',
-  '/admin/users',
-];
-const ADMIN_REASON =
-  'E2E user is not an admin; AdminGate redirects to / — needs the admin ' +
-  'fixture tracked in #454/#430. AdminGate now renders <main> for a real admin.';
-
 /** Routes that cannot be measured, each with the reason. Never silent. */
 const EXCLUDED: Record<string, string> = {
   '/auth/callback':
@@ -70,7 +50,6 @@ const EXCLUDED: Record<string, string> = {
     'twin payloads are privacy-gated and gitignored; absent in a fresh checkout',
   '/chatt':
     'Cesium canvas host; the widget owns the viewport and headless Firefox has no WebGL',
-  ...Object.fromEntries(ADMIN_ROUTES.map((r) => [r, ADMIN_REASON])),
 };
 
 /** Dynamic segments need a real instance — the template alone proves nothing. */
@@ -123,8 +102,12 @@ const PATHS = [
  * not shrunk, they had stopped being looked at, and only the floor caught it
  * (#396). Raise it when routes are added.
  *
- * 36 = 44 `page.tsx` − 3 EXCLUDED − 6 ADMIN_ROUTES + 1 template probe. It is
- * the CURRENT measured coverage, which is what a floor should be.
+ * 42 = 44 `page.tsx` − 3 EXCLUDED + 1 template probe. It is the CURRENT
+ * measured coverage, which is what a floor should be.
+ *
+ * It was 36. The six `/admin` routes were excluded because the E2E user was not
+ * an admin and `AdminGate` bounced it; `seedIsolatedAdmin` (#454) removed that
+ * constraint, so they are measured now and the floor rose with them.
  *
  * **Not an instance of the #396 anti-pattern.** The first version said 40 —
  * above the achievable maximum, so it failed on a run where all 36 paths passed.
@@ -133,7 +116,7 @@ const PATHS = [
  * yourself reducing this because a run went red, the sweep shrank — find out
  * which routes stopped being measured before touching the number.
  */
-const MIN_PATHS = 36;
+const MIN_PATHS = 42;
 
 // Loudly, so a shrinking sweep can never read as a passing one.
 console.log(
@@ -160,12 +143,50 @@ test.describe('Landmarks and skip link', () => {
   });
 
   for (const path of PATHS) {
-    test(`${path} has one <main> and a working skip link`, async ({ page }) => {
-      const resp = await page.goto(path, {
+    test(`${path} has one <main> and a working skip link`, async ({
+      page: defaultPage,
+      browser,
+    }) => {
+      // The six `/admin` routes need an ADMIN session. `AdminGate.tsx:81`
+      // bounces an authenticated non-admin to `/`, and `/` has both a <main>
+      // and a skip link — so measuring them on the default page would PASS
+      // while measuring the home page. That is #454's defect exactly, and
+      // deleting the old exclusion without this would have re-created it here.
+      const needsAdmin = path.startsWith('/admin');
+      let adminFixture: IsolatedAdmin | null = null;
+      let openedAdmin: Awaited<ReturnType<typeof openAuthedPage>> | null = null;
+      let page = defaultPage;
+      let resp: Awaited<ReturnType<typeof defaultPage.goto>> = null;
+
+      if (needsAdmin) {
+        adminFixture = await seedIsolatedAdmin();
+        test.skip(!adminFixture, 'Admin client unavailable to seed an admin');
+        if (!adminFixture) return;
+        // `openAuthedPage` + our OWN goto, deliberately — not `openAdminAs`.
+        // That helper prepends NEXT_PUBLIC_BASE_PATH and navigates itself, so
+        // going again here with the bare path produced a 404: an absolute path
+        // REPLACES the basePath rather than appending to it. Navigating exactly
+        // once, with the same bare path every other route in this sweep uses,
+        // keeps admin and non-admin routes measured identically.
+        openedAdmin = await openAuthedPage(browser, adminFixture.session);
+        page = openedAdmin.page;
+      }
+      resp = await page.goto(path, {
         waitUntil: 'domcontentloaded',
         timeout: 45000,
       });
+      if (needsAdmin) await dismissCookieBanner(page);
       const status = resp?.status() ?? 0;
+
+      // Landing check, for the admin routes specifically: a redirect leaves
+      // every assertion below measuring `/`.
+      if (needsAdmin) {
+        await expect(
+          page,
+          `${path}: redirected away — the admin fixture did not take, and the ` +
+            `assertions below would be measuring the home page`
+        ).toHaveURL(new RegExp(`${path.replace(/\//g, '\\/')}\\/?$`));
+      }
 
       // A route template is REACHED, not enumerated — its probe path is
       // expected to 404. Everything else must be a real 200: see the header,
@@ -209,6 +230,9 @@ test.describe('Landmarks and skip link', () => {
         `${path}: skip link points at ${href}, which does not exist. A skip ` +
           `link with no target is worse than none — it silently does nothing.`
       ).toHaveCount(1);
+
+      if (openedAdmin) await openedAdmin.close();
+      await deleteIsolatedAdmin(adminFixture);
     });
   }
 

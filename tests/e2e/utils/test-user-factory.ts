@@ -100,6 +100,13 @@ export interface TestUser {
   password: string;
 }
 
+/**
+ * Email prefix for throwaway admins. Exported so the orphan sweep in
+ * `auth.setup.ts` matches on the SAME string the seeder uses — a sweep with its
+ * own copy of the literal silently stops matching the day one of them changes.
+ */
+export const ISO_ADMIN_PREFIX = 'iso-admin';
+
 let adminClient: SupabaseClient | null = null;
 
 /**
@@ -2699,6 +2706,139 @@ export async function openPaymentHubAs(
   const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
   const opened = await openAuthedPage(browser, session);
   await opened.page.goto(`${basePath}/payment`, {
+    waitUntil: 'domcontentloaded',
+  });
+  await dismissCookieBanner(opened.page);
+  return opened;
+}
+
+/**
+ * A throwaway user with `user_profiles.is_admin = true` — for specs that must
+ * actually RENDER an admin route rather than measure the redirect.
+ *
+ * ## Why this exists
+ *
+ * No E2E run had ever rendered an admin page. `AdminGate.tsx:81` calls
+ * `router.push('/')` for an authenticated non-admin, so three separate things
+ * were measuring the home page or nothing at all: the AAA contrast sweep
+ * reported six `/admin*` routes as swept while measuring `/` (#454), the admin
+ * table wells could not be verified (#430), and the landmark gate had to
+ * exclude those six routes outright.
+ *
+ * ## Why one UPDATE is enough
+ *
+ * `user_profiles.is_admin` is the SINGLE authority (#240), read live by the
+ * `is_admin()` SECURITY DEFINER RPC. `custom_access_token_hook` projects it
+ * into an `app_metadata` JWT claim, but that hook requires an out-of-band
+ * project-config registration and **no live RLS policy reads the claim** — so
+ * the column flip takes effect on the EXISTING session immediately, with no
+ * token refresh. (Older docs describe the claim as the authority; they predate
+ * #240.)
+ *
+ * ## Scope of what this grants
+ *
+ * `is_admin()` gates 25 policies across 9 tables — payments, messages,
+ * conversations, profiles, connections, subscriptions, audit logs and rate
+ * limits all become readable ACROSS USERS. That is why this is a throwaway per
+ * test rather than a flag on the shared storage-state user: every existing spec
+ * would otherwise gain cross-user reads, and row-count assertions would keep
+ * passing while measuring something else entirely.
+ *
+ * ALWAYS tear down with {@link deleteIsolatedAdmin} in a `finally`. A survivor
+ * is a real account that can read every message in the project; `auth.setup.ts`
+ * sweeps for orphans, but that is a backstop, not a substitute.
+ */
+export interface IsolatedAdmin {
+  user: TestUser;
+  session: InjectableSession;
+}
+
+/**
+ * Seed a throwaway admin. Returns null if the admin client is unavailable
+ * (same contract as {@link seedIsolatedPayment}), and THROWS if the promotion
+ * did not take — see below.
+ */
+export async function seedIsolatedAdmin(): Promise<IsolatedAdmin | null> {
+  const admin = getAdminClient();
+  if (!admin) return null;
+
+  const stamp = Date.now().toString().slice(-8);
+  const created = await createKeyedUserWithSession(
+    ISO_ADMIN_PREFIX,
+    'isoadm',
+    stamp
+  );
+  if (!created) return null;
+
+  const { error } = await admin
+    .from('user_profiles')
+    .update({ is_admin: true })
+    .eq('id', created.user.id);
+
+  if (error) {
+    console.warn('seedIsolatedAdmin: promotion failed:', error.message);
+    await deleteTestUser(created.user.id);
+    return null;
+  }
+
+  // VERIFY THE PROMOTION THROUGH THE USER'S OWN SESSION, not the service role.
+  //
+  // This is the whole point. A silently-unpromoted user still renders — it just
+  // renders the redirect — so every downstream assertion would measure the home
+  // page and pass. That is precisely the defect #454 describes, and without
+  // this check the fixture built to fix it would reproduce it. The service-role
+  // client cannot answer the question: it bypasses RLS and would say "true"
+  // regardless of what the user's own token can see.
+  const supabaseUrl =
+    process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (supabaseUrl && anonKey) {
+    const asUser = createClient(supabaseUrl, anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        headers: { Authorization: `Bearer ${created.session.access_token}` },
+      },
+    });
+    const { data: isAdmin, error: rpcErr } = await asUser.rpc('is_admin', {
+      check_user_id: created.user.id,
+    });
+    if (rpcErr || isAdmin !== true) {
+      await deleteTestUser(created.user.id);
+      throw new Error(
+        `seedIsolatedAdmin: is_admin() returned ${JSON.stringify(isAdmin)} for ` +
+          `${created.user.email} through the user's own session` +
+          (rpcErr ? ` (${rpcErr.message})` : '') +
+          '. Refusing to hand back a fixture that would silently measure the ' +
+          'redirect instead of the admin page.'
+      );
+    }
+  }
+
+  console.log(`✓ Isolated admin ${created.user.id}`);
+  return { user: created.user, session: created.session };
+}
+
+/** Tear down a throwaway admin. Safe with null. */
+export async function deleteIsolatedAdmin(
+  fixture: IsolatedAdmin | null
+): Promise<void> {
+  if (!fixture) return;
+  await deleteTestUser(fixture.user.id);
+  console.log('✓ Isolated admin torn down');
+}
+
+/**
+ * Open a fresh browser context as a throwaway admin, landing on `route`.
+ * Mirrors {@link openPaymentHubAs}.
+ */
+export async function openAdminAs(
+  browser: Browser,
+  session: InjectableSession,
+  route = '/admin'
+): Promise<OpenedParticipant> {
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+  const opened = await openAuthedPage(browser, session);
+  await opened.page.goto(`${basePath}${route}`, {
     waitUntil: 'domcontentloaded',
   });
   await dismissCookieBanner(opened.page);
