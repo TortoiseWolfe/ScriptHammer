@@ -90,20 +90,47 @@ test.describe('Admin console, rendered as an admin', () => {
 
         await assertLandedOnAdmin(page, route);
 
+        // WAIT FOR THE DATA, don't sleep at it. The admin panels render a
+        // `loading loading-spinner` until their RPCs return, and the tables do
+        // not exist before that. `page.evaluate` does NOT retry the way a
+        // web-first assertion does (#396, instance 5) — it snapshots the DOM
+        // once — so counting too early reports 0 scrollers and passes on
+        // nothing. That is exactly what happened: a 3.5s settle measured 0/0 on
+        // /admin/payments, which had measured 1/1 moments earlier.
+        await expect(
+          page.locator('.loading-spinner'),
+          `${route}: still loading after 30s — the count below would be taken ` +
+            `before the tables exist`
+        ).toHaveCount(0, { timeout: 30000 });
+
         // #430: the scroller is WRAPPED, not replaced — `sh-well` paints an
         // inset shadow BELOW its children, so on the `overflow-x-auto` div
         // itself the shadow is clipped inside the scroll area and hidden under
         // the table.
-        const counts = await page.evaluate(() => {
-          const scrollers = [...document.querySelectorAll('.overflow-x-auto')];
-          return {
-            total: scrollers.length,
-            welled: scrollers.filter((el) => !!el.closest('.sh-well')).length,
-            unwelled: scrollers
-              .filter((el) => !el.closest('.sh-well'))
-              .map((el) => (el.parentElement?.className || '').slice(0, 60)),
-          };
-        });
+        const readScrollers = () =>
+          page.evaluate(() => {
+            const scrollers = [
+              ...document.querySelectorAll('.overflow-x-auto'),
+            ];
+            return {
+              total: scrollers.length,
+              welled: scrollers.filter((el) => !!el.closest('.sh-well')).length,
+              unwelled: scrollers
+                .filter((el) => !el.closest('.sh-well'))
+                .map((el) => (el.parentElement?.className || '').slice(0, 60)),
+            };
+          });
+
+        // Retry the READ as well, so a table that paints a frame after the
+        // spinner clears cannot be missed.
+        await expect
+          .poll(async () => (await readScrollers()).unwelled.length, {
+            timeout: 15000,
+            message: `${route}: waiting for every scroller to be welled`,
+          })
+          .toBe(0);
+
+        const counts = await readScrollers();
 
         // Printed every run: a route measuring zero scrollers must be visibly
         // different from one measuring three.
