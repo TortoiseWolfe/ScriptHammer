@@ -399,6 +399,36 @@ The E2E suite ran against a single shared Supabase project for months and accumu
 
 **Verification it's active**: trigger two pushes within 1 minute; the second workflow shows "Queued, waiting for another workflow run" in the Actions UI.
 
+### Merging several PRs in quick succession can serve production with no CSS
+
+**Why**: GitHub Pages serves HTML with `cache-control: max-age=600`, and every deploy
+deletes the previous build's content-hashed CSS and JS. So for **ten minutes** after a
+deploy, a visitor can be holding HTML whose stylesheets no longer exist — a white page,
+no nav, the logo at its natural size, with a perfectly correct DOM. Reported from
+production four times (#438, #467, #476, #548).
+
+`scripts/retain-previous-assets.mjs` carries old assets forward so that visitor still
+resolves. It now chains across `RETAIN_GENERATIONS` (5) deploys — but before #548 it
+spanned exactly **one**, which is only enough at one deploy per cache window. Six PRs
+merged in 35 minutes, two of them 57 seconds apart, put real visitors two generations
+back and broke the site for them.
+
+**The trap is that docs-only PRs feel free.** `e2e.yml` has `paths-ignore` for
+`**/*.md`, `docs/**` and `.gitignore`, so markdown PRs skip the ~1-hour E2E mutex that
+paces everything else — and nothing else paces them. That is exactly how six merges
+landed in half an hour.
+
+**Now guarded by**: `scripts/check-stale-html.mjs` drives A → B → C and asserts a
+visitor holding A's HTML is still styled after **two** deploys, with a negative control
+that fails if one-generation retention ever stops breaking (i.e. if the harness has quietly
+stopped simulating a deploy). `scripts/__tests__/retain-previous-assets.test.js` asserts
+the chaining and the generation cap. Both run in CI — the first in the required
+`accessibility` check, the second via `pnpm test:scripts`.
+
+**Still worth pacing merges.** The guards make a burst survivable, not free: retention is
+capped at 5 generations, so more than five deploys inside one 10-minute window is still
+outside what anything protects.
+
 ### NEVER bypass commit hooks (no `--no-verify`)
 
 **Why**: husky + lint-staged + gitleaks all run pre-commit and catch real bugs. Yesterday's session almost shipped secrets in a doc PR; gitleaks caught it. The user explicitly forbids `--no-verify` unless they ask for it.
