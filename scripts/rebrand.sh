@@ -17,7 +17,7 @@
 #   --dry-run             Show what would change without modifying files
 #   --keep-cname          Do not update public/CNAME file (keep existing domain)
 #   --preserve-ssh        Keep SSH format for git remote (if currently SSH)
-#   --preserve-attribution Keep ScriptHammer attribution link in Footer
+#   --preserve-attribution No-op; attribution is always kept (rebrand:keep)
 #   --help                Show this help message
 #
 # Exit Codes:
@@ -30,7 +30,7 @@
 #   ./scripts/rebrand.sh MyApp myuser "My awesome application"
 #   ./scripts/rebrand.sh "My Cool App" myuser "Description" --dry-run
 #   ./scripts/rebrand.sh MyApp myuser "Description" --force
-#   ./scripts/rebrand.sh MyApp myuser "Description" --preserve-ssh --preserve-attribution
+#   ./scripts/rebrand.sh MyApp myuser "Description" --preserve-ssh --dry-run
 # =============================================================================
 
 set -euo pipefail
@@ -166,7 +166,7 @@ count_references() {
 # A fresh ScriptHammer clone contains hundreds of "ScriptHammer" references
 # across .ts/.tsx/.md/.yml files. A successfully-rebranded fork contains 0–4
 # (only the Footer attribution + this script's own constants — and even those
-# can be stripped with --preserve-attribution=false). The threshold below
+# is protected by `rebrand:keep` markers). The threshold below
 # uses < 5 as the "already rebranded" signal — well under any plausible
 # fresh-clone count, well above any plausible post-rebrand residual.
 detect_previous_rebrand() {
@@ -186,7 +186,13 @@ detect_previous_rebrand() {
         echo "Current project name appears to be: $current_name"
         echo ""
 
-        if [ "$FORCE" = false ]; then
+        if [ "$DRY_RUN" = true ]; then
+            # A dry run changes nothing, so there is nothing to confirm. Prompting
+            # here made --dry-run block on stdin forever in any non-interactive
+            # context (CI, the test harness, a pipe), which is why
+            # tests/rebrand/test-rebrand.sh hung at its second test (#522).
+            log_info "Dry run: proceeding without confirmation"
+        elif [ "$FORCE" = false ]; then
             read -p "Do you want to rebrand from \"$current_name\" to \"$DISPLAY_NAME\"? [y/N] " -n 1 -r
             echo
             if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -215,20 +221,25 @@ replace_in_files() {
 
     while IFS= read -r -d '' file; do
         if [ -f "$file" ]; then
-            # Skip Footer.tsx if --preserve-attribution is set
-            if [ "$PRESERVE_ATTRIBUTION" = true ] && [[ "$file" == *"Footer"* ]]; then
-                log_verbose "Skipping (--preserve-attribution): ${file#$REPO_ROOT/}"
-                continue
-            fi
 
             if grep -q "$search" "$file" 2>/dev/null; then
                 if [ "$DRY_RUN" = true ]; then
-                    log_verbose "[DRY-RUN] Would update: ${file#$REPO_ROOT/}"
+                    # Only claim a change if something UNmarked would actually move.
+                    if grep -v 'rebrand:keep' "$file" | grep -q "$search"; then
+                        log_verbose "[DRY-RUN] Would update: ${file#$REPO_ROOT/}"
+                        ((FILES_MODIFIED++)) || true
+                    fi
                 else
-                    sed "${SED_INPLACE[@]}" "s|$search|$replace|g" "$file"
+                    # Lines carrying `rebrand:keep` are skipped; everything else on
+                    # every other line still rebrands. Guarding by FILENAME never
+                    # worked - the old `*"Footer"*` pattern was case-sensitive and the
+                    # attribution lives in lowercase src/config/footer-links.ts, so
+                    # the one file the guard existed to protect was the one file it
+                    # never matched (#513).
+                    sed "${SED_INPLACE[@]}" "/rebrand:keep/!s|$search|$replace|g" "$file"
                     log_verbose "Updated: ${file#$REPO_ROOT/}"
+                    ((FILES_MODIFIED++)) || true
                 fi
-                ((FILES_MODIFIED++)) || true
             fi
         fi
     done < <(find "$REPO_ROOT" -type f \( \

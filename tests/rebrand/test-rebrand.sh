@@ -36,19 +36,19 @@ NC='\033[0m' # No Color
 # Test utilities
 log_pass() {
     echo -e "${GREEN}✓ PASS${NC}: $1"
-    ((TESTS_PASSED++))
+    TESTS_PASSED=$((TESTS_PASSED + 1))
 }
 
 log_fail() {
     echo -e "${RED}✗ FAIL${NC}: $1"
     echo -e "  ${YELLOW}Expected${NC}: $2"
     echo -e "  ${YELLOW}Got${NC}: $3"
-    ((TESTS_FAILED++))
+    TESTS_FAILED=$((TESTS_FAILED + 1))
 }
 
 run_test() {
     local test_name="$1"
-    ((TESTS_RUN++))
+    TESTS_RUN=$((TESTS_RUN + 1))
     echo -e "\n${YELLOW}Running${NC}: $test_name"
 }
 
@@ -68,6 +68,16 @@ setup_temp_dir() {
     echo "# ScriptHammer" > README.md
     echo "scripthammer.com" > CNAME
     echo "export const projectName = 'ScriptHammer';" > src/components/Logo.tsx
+    mkdir -p src/config
+    cat > src/config/footer-links.ts <<'FOOTER'
+export const FOOTER_LINKS = [
+  { href: 'https://crudgames.com', label: 'CRUDgames.com' },
+  {
+    href: 'https://github.com/TortoiseWolfe/ScriptHammer', // rebrand:keep
+    label: 'ScriptHammer', // rebrand:keep
+  },
+] as const;
+FOOTER
 
     # Copy the rebrand script to temp dir
     cp "$REBRAND_SCRIPT" "$TEMP_DIR/scripts/" 2>/dev/null || {
@@ -209,6 +219,37 @@ test_dry_run_no_changes() {
 # ============================================================================
 # T005e: Test re-rebrand detection prompts user
 # ============================================================================
+test_attribution_preserved() {
+    run_test "test_attribution_preserved"
+    setup_temp_dir
+
+    # A real rebrand, not a dry run - the point is what survives on disk.
+    "$TEMP_DIR/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --force >/dev/null 2>&1 || true
+
+    local footer="$TEMP_DIR/src/config/footer-links.ts"
+
+    if grep -q "TortoiseWolfe/ScriptHammer" "$footer"; then
+        log_pass "Attribution URL survives a rebrand"
+    else
+        log_fail "Attribution URL" "TortoiseWolfe/ScriptHammer intact" "$(cat "$footer")"
+    fi
+
+    if grep -q "label: 'ScriptHammer'" "$footer"; then
+        log_pass "Attribution label survives a rebrand"
+    else
+        log_fail "Attribution label" "label: 'ScriptHammer' intact" "$(cat "$footer")"
+    fi
+
+    # The guard must be surgical: everything NOT marked still rebrands.
+    if grep -q "MyApp" "$TEMP_DIR/src/components/Logo.tsx"; then
+        log_pass "Unmarked lines still rebrand"
+    else
+        log_fail "Unmarked rebrand" "MyApp in Logo.tsx" "$(cat "$TEMP_DIR/src/components/Logo.tsx")"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
 test_rerebrand_detection() {
     run_test "test_rerebrand_detection"
 
@@ -269,6 +310,7 @@ run_all_tests() {
     test_name_sanitization
     test_dry_run_no_changes
     test_rerebrand_detection
+    test_attribution_preserved
 
     echo ""
     echo "========================================"
@@ -297,6 +339,9 @@ if [ $# -eq 1 ]; then
             ;;
         test_rerebrand_detection)
             test_rerebrand_detection
+            ;;
+        test_attribution_preserved)
+            test_attribution_preserved
             ;;
         *)
             echo "Unknown test: $1"
