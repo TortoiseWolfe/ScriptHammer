@@ -62,6 +62,14 @@ function validateStructure(options = {}) {
     return report;
   }
 
+  // Carry the audit's bare-component figures through. Without them this script
+  // would print "All components follow the 5-file pattern" over 17 that do not
+  // — a green message hiding the exact thing #538 was filed about, just from
+  // the other direction.
+  report.knownBare = audit.knownBare || [];
+  report.newBare = audit.newBare || [];
+  report.complianceRate = audit.summary.complianceRate;
+
   // Filter components if requested
   let componentsToValidate = audit.components;
   if (filter) {
@@ -137,6 +145,31 @@ function validateComponent(component, strict) {
     errors: [],
     warnings: [],
   };
+
+  // A bare `<Name>.tsx` has no directory of its own (#538), so there is nothing
+  // to read and no filenames to name-check. `readdirSync` on a file throws
+  // ENOTDIR, and pointing it at the parent would name-check every sibling in
+  // src/components against this one component's name.
+  if (component.isBareFile) {
+    // A RECORDED bare component still counts against the compliance RATE — the
+    // audit already booked it as non-compliant. It just does not fail the
+    // build, because it is pre-existing debt tracked in #547. An UNRECORDED one
+    // is a regression and must go red, which is the whole point of #538.
+    if (!component.known) {
+      validation.valid = false;
+      component.missing.forEach((file) => {
+        validation.errors.push({
+          rule: 'required-file',
+          file,
+          message:
+            `Missing required file: ${file} — ${component.name} is a bare ` +
+            `<Name>.tsx with no component directory. Give it the 5-file pattern; ` +
+            `do not add it to KNOWN_BARE_COMPONENTS (#538, #396).`,
+        });
+      });
+    }
+    return validation;
+  }
 
   // Check for missing files (errors)
   if (component.status === 'non_compliant') {
@@ -281,14 +314,35 @@ function outputReport(report, format) {
     return;
   }
 
+  const bare = report.knownBare || [];
+
   // Console output
   if (report.valid) {
-    console.log(
-      '\n✅ All components follow the 5-file pattern (with accessibility tests)!\n'
-    );
-    console.log(
-      `Total: ${report.total} | Passed: ${report.passed} | Failed: ${report.failed}`
-    );
+    if (bare.length > 0) {
+      // "No regressions" is what green means here — NOT "everything complies".
+      // Say so, and name every one of them, so nobody reads this as 100% again.
+      console.log(
+        `\n✅ No new structure violations. Compliance rate: ${report.complianceRate}%\n`
+      );
+      console.log(
+        `Total: ${report.total} | Passed: ${report.passed} | Failed: ${report.failed}`
+      );
+      console.log(
+        `\n📋 ${bare.length} recorded bare component(s) still outside the 5-file pattern (#538, tracked in #547).`
+      );
+      console.log(
+        `   They count against the rate above and do not fail the build; a NEW one will.\n`
+      );
+      bare.forEach((comp) => console.log(`  ${comp.path} — ${comp.note}`));
+      console.log('');
+    } else {
+      console.log(
+        '\n✅ All components follow the 5-file pattern (with accessibility tests)!\n'
+      );
+      console.log(
+        `Total: ${report.total} | Passed: ${report.passed} | Failed: ${report.failed}`
+      );
+    }
   } else {
     console.error('\n❌ Component structure validation failed!\n');
     console.error(
