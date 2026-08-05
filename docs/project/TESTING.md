@@ -365,7 +365,7 @@ pnpm run test:e2e:live
 ./scripts/e2e-live-acceptance.sh tests/e2e/payment/08-subscription-lifecycle.spec.ts --project=chromium-gen
 ```
 
-The script encodes three gotchas that each fail with misleading symptoms:
+The script encodes four gotchas that each fail with misleading symptoms:
 
 1. **Root-path build** — CI has no `.env`, so its build has no basePath; the
    script builds with `NEXT_PUBLIC_BASE_PATH=` (empty). A basePath build under
@@ -377,6 +377,15 @@ The script encodes three gotchas that each fail with misleading symptoms:
    loads `/ScriptHammer` from `.env`, and the authed fixture helpers
    (`openAuthedPage`, `openSubscriptionsAs`, …) prepend it to navigations →
    app-styled 404s on a root-path build, while non-fixture specs still pass.
+4. **The build runs in the `builder` container, never in the dev container**
+   (#293, #508) — `docker compose run --rm builder pnpm build`. It used to run
+   in the dev container with an isolated `NEXT_DIST_DIR`, and that was not
+   enough: a build racing the live `next dev` died at "Collecting page data"
+   with `Cannot find module './6048.js'` six times across two days, exit 1 and
+   no test output, which reads exactly like a real build break. The script now
+   also recognises that signature and retries **once**, naming #508 when it
+   does — so if you ever see that message, some build has gone back to sharing
+   state with the dev server.
 
 Prereqs: seeded test users (`pnpm exec tsx scripts/seed-test-users.ts`), and
 in `.env`: `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_STRIPE_PRICE_ID`,

@@ -611,7 +611,10 @@ main() {
         echo ""
         echo "Next steps:"
         echo "  1. Run 'docker compose up --build' to rebuild with new configuration"
-        echo "  2. Run 'docker compose exec ${SANITIZED_NAME} pnpm run build' to verify build"
+        # NOT 'exec ${SANITIZED_NAME}' — a build in the dev container fights the
+        # dev server over .next and corrupts it (#293, #508). The builder service
+        # is the same image with its own .next volume.
+        echo "  2. Run 'docker compose run --rm builder pnpm run build' to verify build"
         echo "  3. Customize your theme colors in src/app/globals.css (see docs/CUSTOM-THEME.md)"
         echo "  4. Commit changes: git add -A && git commit -m \"Rebrand to ${DISPLAY_NAME}\""
     fi

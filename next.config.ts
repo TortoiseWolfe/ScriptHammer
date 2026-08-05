@@ -47,12 +47,17 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  // Overridable so production builds can run WHILE the dev server owns .next —
-  // `next dev` and `next build` sharing one distDir race during "Collecting
-  // page data" (spurious PageNotFoundError). scripts/e2e-live-acceptance.sh
-  // sets NEXT_DIST_DIR=.next-acceptance/build for exactly this reason (a
-  // subdir of a named volume: container-local FS, but not a mount point —
-  // export-mode builds rmdir the distDir root at the end).
+  // Overridable so a build can put its output somewhere other than .next.
+  // ONE live caller: scripts/serve-basepath.sh sets NEXT_DIST_DIR=out-basepath
+  // so the basePath-prefixed export (#157) lands ready to symlink-serve —
+  // under `output: 'export'` Next 15.5 replaces the distDir with the finished
+  // static site and never creates out/, so distDir IS the export dir.
+  //
+  // It is NOT the answer to "a build racing the dev server". That was
+  // scripts/e2e-live-acceptance.sh's use, and an isolated distDir did not stop
+  // the corruption — six failures in two days (#508). Builds belong in the
+  // `builder` service, which has its own .next volume and no dev server in it.
+  // If you are reaching for this to dodge a race, reach for that instead.
   distDir: process.env.NEXT_DIST_DIR || '.next',
   cleanDistDir: true,
   env: {

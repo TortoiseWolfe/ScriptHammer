@@ -56,11 +56,12 @@ services:
       - .:/app
       - node_modules:/app/node_modules
       - next_cache:/app/.next
-      # Isolated distDir for `pnpm run test:e2e:live` production builds. Must
-      # be a named volume like .next: build artifacts on the WSL2 bind mount
-      # are intermittently invisible to Next's page-data collection workers
-      # (spurious "Cannot find module for page" PageNotFoundError).
-      - next_acceptance:/app/.next-acceptance
+      # There is deliberately NO second distDir volume here any more (#508).
+      # `pnpm run test:e2e:live` used to build inside THIS container with
+      # NEXT_DIST_DIR pointed at a `next_acceptance` volume; an isolated distDir
+      # was not enough and the build still died six times in two days. It now
+      # runs in the `builder` service below, so there is no second build in this
+      # container to isolate.
     env_file:
       - .env
     environment:
@@ -90,9 +91,16 @@ services:
   # A production build must never run inside the dev-server container. Both
   # `next dev` and `next build` own /app/.next; when validate-ci.sh reached in
   # with `docker compose exec ... pnpm build`, the build clobbered the dev
-  # server's .next and every route 500'd. The escape hatch (NEXT_DIST_DIR,
-  # next.config.ts:50-57) only ever papered over that — it needs threading
-  # through every call site, forever, and one miss brings the outage back.
+  # server's .next and every route 500'd. The escape hatch (NEXT_DIST_DIR in
+  # next.config.ts) only ever papered over that — it needs threading through
+  # every call site, forever, and one miss brings the outage back.
+  #
+  # #508 is what one miss looks like. e2e-live-acceptance.sh DID thread it
+  # through, onto its own named volume, and the build still died six times in
+  # two days with `Cannot find module './6048.js'` — so the escape hatch is not
+  # merely fragile, it is insufficient. That script now runs here too, and
+  # tests/unit/no-build-in-dev-container.test.ts fails the build if a call site
+  # goes back to `docker compose exec … build`.
   #
   # A separate container makes the collision structurally impossible instead:
   # same image, same source, but its OWN .next volume. Nothing to remember.
@@ -126,7 +134,8 @@ services:
       - node_modules:/app/node_modules
       # NOT next_cache — that volume is the dev server's. This is the whole
       # point of the service. /app/.next is pre-created node-owned in the image
-      # (docker/Dockerfile:117-119), so this volume inherits that ownership.
+      # (docker/Dockerfile, the chown -R node:node step), so this volume
+      # inherits that ownership.
       - builder_next:/app/.next
     env_file:
       - .env
@@ -534,8 +543,6 @@ volumes:
   # The `builder` service's own .next — never the dev server's (#293).
   builder_next:
     name: '${COMPOSE_PROJECT_NAME:-scripthammer}_builder_next'
-  next_acceptance:
-    name: '${COMPOSE_PROJECT_NAME:-scripthammer}_next_acceptance'
   supabase_db:
     name: '${COMPOSE_PROJECT_NAME:-scripthammer}_supabase_db'
   supabase_storage:
