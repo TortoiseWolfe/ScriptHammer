@@ -15,7 +15,6 @@
 
 # next.js
 /.next/
-/.next-acceptance/
 /.next-basepath/
 /.next-ci/
 /out/

@@ -18,7 +18,6 @@ const eslintConfig = [
     ignores: [
       'node_modules/**',
       '.next/**',
-      '.next-acceptance/**',
       '.next-basepath/**',
       'out/**',
       'out-basepath/**',

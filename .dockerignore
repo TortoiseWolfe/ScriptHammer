@@ -97,6 +97,5 @@ storybook-static/
 # excluded. Read `transferring context` on a COLD builder.
 .pnpm-store/
 .chatt-verify/
-.next-acceptance/
 .speckit-tools/
 .speckit-cache/
