@@ -17,7 +17,7 @@ featuredImage: /blog-images/facebook-export-knowledge-graph/featured-og.svg
 featuredImageAlt: A knowledge graph of one connected component with two amber nodes left outside it, over the stats 31,030 records parsed, 3,331 people named, 82% hidden from the graph
 ogImage: /blog-images/facebook-export-knowledge-graph/featured-og.png
 ogTitle: 'I graphed 15 years of my own Facebook and found the work I forgot to answer'
-ogDescription: Turning a Facebook export into a queryable knowledge graph — the parsing traps, the concept layer that stops it becoming 266 disconnected stars, and the leads I had left unanswered for nine months.
+ogDescription: I parsed 15 years of my own Facebook into a knowledge graph I can query. Here is what broke along the way, and the two leads I had left sitting in it for nine months.
 twitterCard: summary_large_image
 ---
 
@@ -28,6 +28,8 @@ I answered both of them. I said scripthammer.com, I write custom software, websi
 I didn't know that until last night, when I finally parsed my own Facebook export. Nine months those sat there.. two local people who raised their hand, got a pitch, and then silence.
 
 That's the actual reason to do this.. not the graph, the graph is just how you find the thing.
+
+There's a reason I did it this week and not last year. I have something starting Monday that only works if I know where I already have standing, and I couldn't have told you. Not from memory. More on that at the end.
 
 ## Get your data first, it takes a while
 
@@ -47,8 +49,7 @@ called "Download your information", so that's what older guides say.
 
 Once you're there, hit **Create export** and pick:
 
-- **Export to device.** The other option transfers straight to Google Drive or Dropbox,
-  which is not what you want.
+- **Export to device.** The other option transfers straight to Google Drive or Dropbox, which is not what you want.
 - **All available information.** Not a custom selection.
 - **Date range: All time.**
 - **Format: HTML.** JSON is cleaner and the parser here doesn't handle it, so HTML.
@@ -77,6 +78,8 @@ So when I say later that I know what someone asked me, I don't. I know what I sa
 I use [graphify](https://github.com/safishamsi/graphify) for this. Drop it on a folder, get a knowledge graph.
 
 Except `.html` isn't in its splittable-file list, so its LLM path truncates every file at 20,000 characters. My comments file is 4.45MB. That's **0.45% of it**. The graph builds fine and looks fine.. and is built on almost nothing.
+
+![Two paths from a Facebook HTML export to a knowledge graph. Pointing graphify straight at the HTML truncates each file at 20,000 characters, which is 0.45 percent of a 4.45 megabyte file. Parsing to markdown first produces 26 files under 20,000 characters each, and the graph sees all of it.](/blog-images/facebook-export-knowledge-graph/pipeline.svg)
 
 So the corpus has to be markdown first. That's not an optimization, it's the whole job. Everything below is what it took to convert 26 files of Facebook's HTML into markdown without losing or inventing anything.
 
@@ -134,6 +137,8 @@ Once it's markdown the rest is straightforward. A few things that mattered:
 
 **Give it a concept layer.** This is the part I'd skip if I were you.. and it's the part that matters. If every person only connects to their group, you get 266 disconnected stars and no graph. I wrote a fixed vocabulary of technologies, topics and eras into every single corpus file, so an extraction agent working on file 200 emits the exact same node IDs as the one working on file 3. That's what stitches it together. My first build came out as one connected component with seven clean communities. Without that block it would have been sixty-odd islands.
 
+![Without a concept layer every person connects only to their own group, giving 266 disconnected stars and no graph. Writing a fixed vocabulary of technologies, topics and eras into every corpus file makes separate extraction runs emit the same node IDs, which stitches the whole thing into one connected component with seven communities.](/blog-images/facebook-export-knowledge-graph/concept-layer.svg)
+
 ## Two traps in the query tool
 
 **It truncates and doesn't tell you.** `graphify explain` on one of my groups showed 20 of 51 connections. A query showed 42 of 154 nodes. Exit code 0, no warning.. use the CLI to orient yourself, then count from `graph.json` for anything you're going to act on.
@@ -145,6 +150,8 @@ Once it's markdown the rest is straightforward. A few things that mattered:
 Some of this was uncomfortable.
 
 **I hid 82% of the people from myself.** I wrote a rule that only promoted someone into the graph if I'd talked to them twice, or if I'd made them an offer. Reasonable rule for keeping a graph clean.. completely wrong as a rule for finding leads, because "I replied to this person once and never followed up" is the exact shape of a missed opportunity. 3,331 named people in my records, 589 in the graph. The graph looked complete.. it wasn't, and it had no way to tell me.
+
+![Of 3,331 people named in the records, only 589 reached the graph. A rule that only promoted someone after two contacts or an offer filtered out 2,742 people, 82 percent, and single-contact leads are exactly the shape of a missed opportunity.](/blog-images/facebook-export-knowledge-graph/hidden-82.svg)
 
 **I made 15 collaboration offers and 10 got no follow-up.** The oldest is from 2024, a guy in Godot Developers where I wrote "I'd be interested in colaborating, do you have a repo on github?" and then apparently just wandered off.. the newest was two weeks old when I found it.
 
@@ -171,11 +178,39 @@ Five years of pitching once and walking away. That's not a data problem, that's 
 
 That last one is the general lesson. The graph is the inference layer and it's good for "who is similar to whom" and "what connects these two things". The parsed records are the truth layer. Five of the eight questions I most wanted answered came from the records, not the graph. Reach for truth first.
 
+![Two layers. The truth layer is records.jsonl, 31,030 rows, every one traceable to a byte range in the original HTML. The inference layer is graph.json, guesses capped at 0.85 confidence. Five of the eight questions worth answering came from the records, not the graph.](/blog-images/facebook-export-knowledge-graph/truth-vs-inference.svg)
+
+## What I'm doing about it
+
+I said at the top there was a reason I did this now.
+
+I have a thing starting Monday called The Forge. One build a month, done live, for one organization that can't pay for it, handed over MIT in their own repo when it's finished. The first one is RaisedPaws, a shelter adoption tracker that's already running.
+
+I'm going to write each one up as a Field Study instead of a case study. A case study is marketing. A field study says what broke.
+
+That's as much as I'll say here, because it isn't open yet.
+
+What the graph does for it is routing, and that distinction took me a while to get right. My first pass was an ideal-customer scorer. That was wrong, because the person I'm looking for is a shelter director and that person does not appear in this corpus at all. `nonprofit` returns 0 hits. `501c` returns 0. `shelter` returns D&D armour and `rescue` returns Chewbacca. Building a scorer on top of that would have manufactured signal out of nothing, which is the exact failure the rest of this post is about.
+
+So it ranks reconnection value instead, and sorts people into lanes. Local, plus an offer, or they asked first, goes in one lane. The gamedev cluster goes in another. Everyone else is an archive row I don't need to look at.
+
+The two Cleveland guys are in the first lane. They've been sitting there nine months and I didn't know the lane existed.
+
+If you'd rather watch the build than read about it, it's on Twitch at **[twitch.tv/TurtleWolfe](https://twitch.tv/TurtleWolfe)**:
+
+- **Forge Sessions.** Tuesday and Thursday, 7 to 10pm ET. The build itself.
+- **Triage Friday.** Friday, 12 to 12:45pm ET. I open the repo and label good-first-issues on air.
+- **Pair & Merge.** Sunday, by appointment. You bring a PR, we pair on it, it merges before the stream ends.
+
+Pair & Merge is the one I actually care about. Your first merged PR to a project is what decides whether you ever come back to it, and doing it live means your name is in the commit log and there's a recording you can send somebody.
+
 ## Before you publish anything
 
 The parsed output on my laptop names 3,331 real people, most of whom have no idea they're in a dataset. It also holds 2,991 photos, and once my full export lands it'll have private messages in it.
 
 None of that is in my repo. The code is versioned, the data never is, and the `.gitignore` was the first file I wrote rather than something I got around to. Everything derived is regenerable from the raw export anyway, so there's nothing to lose by leaving it out.
+
+There's a second rule I'd put right next to that one. Dating, singles, politics and fandom groups are gated out of the routing entirely. A gate, not a weight, so no combination of other signals can promote somebody out of it. Being in a group with you is not consent to be in your CRM.
 
 If you do this and you're tempted to put the graph somewhere convenient, don't. A private repo is one bad `git remote` away from a public one.
 
