@@ -41,7 +41,7 @@
  * printed as a warning rather than passing silently.
  */
 
-import { mkdir, writeFile, access } from 'node:fs/promises';
+import { mkdir, writeFile, access, readdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 const [outDir, liveBase] = process.argv.slice(2);
@@ -149,6 +149,64 @@ async function livePages() {
 
 const wanted = new Set();
 
+/** Generations-since-introduced for files this run retained. Filled in below. */
+const ages = new Map();
+
+/**
+ * How many generations back an asset is carried. Bounds `_next/static` so
+ * chaining cannot grow it forever (#548).
+ */
+const RETAIN_GENERATIONS = Number(process.env.RETAIN_GENERATIONS ?? 5);
+
+/**
+ * Publish `ASSET_MANIFEST.txt` + `ASSET_AGES.txt` describing what is on disk.
+ *
+ * CALLED ON EVERY EXIT PATH, INCLUDING THE FAILURES, AND THAT IS THE POINT.
+ *
+ * Writing the manifest used to be a separate workflow step that always ran.
+ * Folding it into this script (so it could describe what was retained, #548)
+ * quietly put it behind four `process.exit(1)`s. A transient network problem
+ * would then ship a build with NO manifest — and because the step is
+ * `continue-on-error`, the deploy still succeeds. The NEXT deploy would find
+ * nothing to read and fall back to crawling HTML, which finds 33 of 106 static
+ * files. One bad network moment, two degraded deploys.
+ *
+ * The build's own output is always knowable, so there is never a reason to
+ * publish nothing. A partial manifest is strictly better than none.
+ */
+async function publishManifest() {
+  const staticRoot = join(outDir, '_next/static');
+  const published = [];
+  async function walk(dir) {
+    for (const e of await readdir(dir, { withFileTypes: true })) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) {
+        await walk(p);
+      } else if (e.name !== 'ASSET_MANIFEST.txt' && e.name !== 'ASSET_AGES.txt') {
+        published.push(p.slice(outDir.length + 1));
+      }
+    }
+  }
+  try {
+    await walk(staticRoot);
+  } catch (err) {
+    console.log(`::warning::could not enumerate ${staticRoot}: ${err.message}`);
+    return;
+  }
+  published.sort();
+
+  await writeFile(join(staticRoot, 'ASSET_MANIFEST.txt'), published.join('\n') + '\n');
+  await writeFile(
+    join(staticRoot, 'ASSET_AGES.txt'),
+    // Anything not carried in by the retain loop is this build's own output: age 0.
+    published.map((rel) => `${ages.get(rel) ?? 0} ${rel}`).join('\n') + '\n'
+  );
+  console.log(
+    `manifest lists ${published.length} file(s) — this build's output plus ` +
+      `${ages.size} retained, carried up to ${RETAIN_GENERATIONS} generation(s)`
+  );
+}
+
 /**
  * PREFERRED SOURCE: the previous deploy's own manifest.
  *
@@ -181,6 +239,10 @@ if (pages === null) {
   // Non-zero so this is visibly a failure. The workflow step uses
   // `continue-on-error`, so the deploy still ships — but the step is marked
   // failed in the UI instead of printing a warning inside a green check.
+  // Still publish: this build's own files are knowable even when the live
+  // site is unreachable, and an empty manifest would degrade the NEXT deploy
+  // too.
+  await publishManifest();
   process.exit(1);
 }
 
@@ -198,6 +260,7 @@ if (!manifest)
   );
 if (!manifest && read === 0) {
   console.log('::error::listed pages but read none of them — retention is a NO-OP');
+  await publishManifest();
   process.exit(1);
 }
 if (!manifest && read < pages.length) {
@@ -218,9 +281,33 @@ for (const u of seed) {
 }
 console.log(`after one transitive pass: ${wanted.size} reference(s)`);
 
+/**
+ * GENERATION AGES (#548).
+ *
+ * `ASSET_AGES.txt` on the live build maps each published file to how many
+ * deploys ago it was introduced. Retaining a file bumps its age by one; past
+ * RETAIN_GENERATIONS it is dropped, which is what keeps chained retention from
+ * growing `_next/static` forever.
+ *
+ * Absent on the currently-live build (the first deploy after this lands), every
+ * retained file simply starts at age 1 — the ramp is one deploy, same as #476's.
+ */
+const liveAges = new Map();
+const agesRes = await get(`${BASE}/_next/static/ASSET_AGES.txt`);
+if (agesRes) {
+  for (const line of (await agesRes.text()).split('\n')) {
+    const m = line.trim().match(/^(\d+)\s+(.+)$/);
+    if (m) liveAges.set(m[2], Number(m[1]));
+  }
+  console.log(`live age table: ${liveAges.size} entry(ies)`);
+} else {
+  console.log('no age table on the live build — retained files start at age 1');
+}
+
 let retained = 0;
 let alreadyPresent = 0;
 let failed = 0;
+let tooOld = 0;
 
 for (const ref of wanted) {
   // Strip any basePath so the on-disk location matches the build output.
@@ -238,6 +325,15 @@ for (const ref of wanted) {
     /* not in the new build — that is exactly what we retain */
   }
 
+  // Age it forward, and stop carrying it once it is beyond the cap. This is the
+  // only thing bounding the chain, so it runs BEFORE the download — an expired
+  // asset should cost no request at all.
+  const age = (liveAges.get(rel) ?? 0) + 1;
+  if (age > RETAIN_GENERATIONS) {
+    tooOld++;
+    continue;
+  }
+
   // Fetch against BASE, not the origin. `path` carries whatever prefix the LIVE
   // HTML uses, and `rel` is prefix-free — so joining `rel` to BASE is the only
   // combination correct in both directions. Using the origin plus the live path
@@ -251,17 +347,20 @@ for (const ref of wanted) {
   const buf = Buffer.from(await res.arrayBuffer());
   await mkdir(dirname(dest), { recursive: true });
   await writeFile(dest, buf);
+  ages.set(rel, age);
   retained++;
 }
 
 console.log(
-  `\nretained ${retained} previous-build asset(s); ${alreadyPresent} already in the new build; ${failed} unreachable`
+  `\nretained ${retained} previous-build asset(s); ${alreadyPresent} already in the new build; ` +
+    `${failed} unreachable; ${tooOld} past ${RETAIN_GENERATIONS} generation(s)`
 );
 if (wanted.size === 0) {
   console.log(
     '::error::read the live site but found 0 asset references. The HTML shape ' +
       'this script matches on has probably changed — retention is a NO-OP.'
   );
+  await publishManifest();
   process.exit(1);
 }
 if (retained === 0 && alreadyPresent === 0) {
@@ -270,6 +369,7 @@ if (retained === 0 && alreadyPresent === 0) {
       `(${failed} unreachable) — retention is a NO-OP. The asset URLs being ` +
       'requested do not exist on the live host.'
   );
+  await publishManifest();
   process.exit(1);
 }
 if (retained === 0) {
@@ -278,3 +378,6 @@ if (retained === 0) {
       'live references already exist in this build, so no hashes changed.'
   );
 }
+
+await publishManifest();
+

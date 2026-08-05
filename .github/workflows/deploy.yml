@@ -171,26 +171,42 @@ jobs:
       # a green check, which is how the first version of this step would have
       # gone unnoticed — it collected 0 assets because the host could not resolve
       # the domain, and exited 0 anyway.
-      # This build's OWN manifest, so the NEXT deploy can retain every file it
-      # published rather than inferring the list by crawling HTML (#476).
-      # Measured: crawling finds 33 of 106 static files — all the CSS, but 26 of
-      # 85 chunks, because route chunks are named only from inside JS.
+      # Retention, and the manifest the NEXT deploy retains from, are ONE step:
+      # the manifest has to list what this build actually PUBLISHES — its own
+      # files plus everything it kept — and that is only knowable after the copy.
       #
-      # Written BEFORE the retention step so it lists this build's files only.
-      # Retention then reads the LIVE build's manifest and adds what is missing.
-      - name: Write this build's asset manifest (#476)
-        run: |
-          cd merged-output
-          find _next/static -type f | sort > _next/static/ASSET_MANIFEST.txt
-          echo "manifest lists $(wc -l < _next/static/ASSET_MANIFEST.txt) file(s)"
-
-      - name: Retain the previous build's assets (#476)
+      # A SEPARATE MANIFEST STEP RUNNING FIRST IS WHAT CAUSED #548. It listed
+      # only this build's own files, so every deploy forgot its grandparent and
+      # retention spanned exactly ONE generation. That is enough only if at most
+      # one deploy lands per HTML cache window — Pages sends `max-age=600`, so a
+      # visitor can hold this build's HTML for TEN MINUTES. Six PRs merged in 35
+      # minutes (two of them 57 seconds apart) put real visitors two generations
+      # behind, and their stylesheets had been deleted: white page, no nav, logo
+      # at natural size. Chained, a burst is survivable.
+      #
+      # Reproduced both ways by `scripts/check-stale-html.mjs`, which now drives
+      # A -> B -> C and asserts one-generation retention STILL breaks. If that
+      # negative control ever stops failing, the harness has stopped modelling a
+      # deploy rather than the bug being fixed.
+      #
+      # `continue-on-error` rather than `|| true`: a network problem must not
+      # block shipping, but it must be VISIBLE. `|| true` prints a warning inside
+      # a green check, which is how the first version of this step went
+      # unnoticed — it collected 0 assets because the host could not resolve the
+      # domain, and exited 0 anyway.
+      - name: Retain previous builds' assets and write the manifest (#476, #548)
         continue-on-error: true
         run: |
           node scripts/retain-previous-assets.mjs merged-output \
             "${SITE_URL:-https://scripthammer.com}"
         env:
           SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+          # How many generations back an asset is carried. Bounds _next/static so
+          # chaining cannot grow it forever: 5 is comfortably wider than any
+          # plausible burst and costs roughly five builds of static output. Do not
+          # lower it to reclaim space without checking it still exceeds the
+          # deploys-per-10-minutes this repo actually does (#548).
+          RETAIN_GENERATIONS: '5'
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

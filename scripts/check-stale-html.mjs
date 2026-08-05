@@ -41,15 +41,30 @@
  */
 
 import { createServer } from 'node:http';
-import { readFile, cp, rm, readdir, rename, writeFile, copyFile as cpFile } from 'node:fs/promises';
+import {
+  readFile,
+  cp,
+  rm,
+  readdir,
+  rename,
+  writeFile,
+  mkdir,
+  copyFile as cpFile,
+} from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
-import { join, extname, resolve } from 'node:path';
+import { join, extname, resolve, dirname } from 'node:path';
 import { chromium } from '@playwright/test';
 
 const OUT = resolve('out');
 const WORK = resolve('.stale-check');
 const DIR_A = join(WORK, 'a');
 const DIR_B = join(WORK, 'b');
+// A THIRD generation, because two deploys is where this actually broke (#548).
+// `b_pristine` is build B as the compiler emitted it, BEFORE retention copied
+// anything in — that snapshot is what lets us model the difference between a
+// manifest written before the retain step and one written after.
+const DIR_B_PRISTINE = join(WORK, 'b_pristine');
+const DIR_C = join(WORK, 'c');
 const PORT = Number(process.env.STALE_PORT ?? 4599);
 
 if (!existsSync(join(OUT, 'index.html'))) {
@@ -73,13 +88,19 @@ const MIME = {
   '.txt': 'text/plain; charset=utf-8',
 };
 
-/** Build B = build A with every stylesheet renamed and all references updated. */
-async function makeBuildB() {
-  await rm(WORK, { recursive: true, force: true });
-  await cp(OUT, DIR_A, { recursive: true });
-  await cp(OUT, DIR_B, { recursive: true });
+/**
+ * Produce the next generation: `to` is `from` with every stylesheet renamed and
+ * all references updated — one GitHub Pages deploy.
+ *
+ * This used to be `makeBuildB()`, hardcoded to A→B. It is parameterised because
+ * ONE deploy step was never the failing case: retention covers one generation,
+ * so a single deploy is always survivable. #548 broke on the SECOND deploy
+ * inside the HTTP-cache window, which a two-build harness cannot express.
+ */
+async function makeBuild(from, to, tag) {
+  await cp(from, to, { recursive: true });
 
-  const cssDir = join(DIR_B, '_next/static/css');
+  const cssDir = join(to, '_next/static/css');
   const files = (await readdir(cssDir)).filter((f) => f.endsWith('.css'));
   if (!files.length) throw new Error('build has no CSS to rename');
 
@@ -118,30 +139,68 @@ async function makeBuildB() {
       }
     }
   }
-  await walk(DIR_B);
+  await walk(to);
 
-  // B must also ship a DIFFERENT service worker, as a real deploy does — the
-  // worker stamps CACHE_VERSION with the commit SHA.
-  const swPath = join(DIR_B, 'sw.js');
+  // Each generation must also ship a DIFFERENT service worker, as a real deploy
+  // does — the worker stamps CACHE_VERSION with the commit SHA.
+  const swPath = join(to, 'sw.js');
   if (existsSync(swPath)) {
     const sw = await readFile(swPath, 'utf8');
     const bumped = sw.replace(
       /const CACHE_VERSION = '([^']+)'/,
-      (_m, v) => `const CACHE_VERSION = '${v}-buildB'`
+      (_m, v) => `const CACHE_VERSION = '${v}-${tag}'`
     );
-    if (bumped === sw) throw new Error('could not bump CACHE_VERSION in build B');
+    if (bumped === sw) throw new Error(`could not bump CACHE_VERSION in ${tag}`);
     await writeFile(swPath, bumped);
   }
 
-  // Assert the simulation is faithful: A's stylesheet names must NOT exist in B.
+  // Assert the simulation is faithful: the previous generation's stylesheet
+  // names must NOT exist in this one.
   for (const [from] of renames) {
     if (existsSync(join(cssDir, from)))
-      throw new Error(`build B still contains ${from} — deploy not simulated`);
+      throw new Error(`${tag} still contains ${from} — deploy not simulated`);
   }
   console.log(
-    `build B: renamed ${renames.length} stylesheet(s), rewrote ${rewritten} file(s), bumped the worker`
+    `${tag}: renamed ${renames.length} stylesheet(s), rewrote ${rewritten} file(s), bumped the worker`
   );
   return renames;
+}
+
+/**
+ * What the deploy's retain step does: copy every `_next/static` file present in
+ * the LIVE build that the new build does not have.
+ *
+ * The chaining is the whole point, and it is decided by ONE thing — whether the
+ * live build's manifest was written before or after its own retain step:
+ *
+ *   manifest written BEFORE  -> it lists only that build's own files, so each
+ *                               deploy retains exactly one generation and the
+ *                               one before it is deleted. This is #548.
+ *   manifest written AFTER   -> it lists what the build actually publishes,
+ *                               including what IT retained, so generations
+ *                               chain forward.
+ *
+ * Passing `from = <the live directory as published>` models the second;
+ * passing the pristine pre-retention snapshot models the first. That is exactly
+ * how the two cases below are told apart.
+ */
+async function retainInto(from, to) {
+  let copied = 0;
+  async function walk(dir) {
+    for (const e of await readdir(dir, { withFileTypes: true })) {
+      const p = join(dir, e.name);
+      const rel = p.slice(from.length + 1);
+      if (e.isDirectory()) {
+        await walk(p);
+      } else if (rel.startsWith('_next/static') && !existsSync(join(to, rel))) {
+        await mkdir(dirname(join(to, rel)), { recursive: true });
+        await cpFile(p, join(to, rel));
+        copied++;
+      }
+    }
+  }
+  await walk(join(from, '_next/static'));
+  return copied;
 }
 
 let ROOT = DIR_A;
@@ -205,7 +264,14 @@ async function styled(page) {
   });
 }
 
-const renames = await makeBuildB();
+await rm(WORK, { recursive: true, force: true });
+await cp(OUT, DIR_A, { recursive: true });
+const renames = await makeBuild(DIR_A, DIR_B, 'build B');
+// Snapshot B exactly as emitted, before any retention touches it. This is the
+// "manifest written BEFORE the retain step" view, and the burst case below
+// needs it to reproduce #548 faithfully.
+await cp(DIR_B, DIR_B_PRISTINE, { recursive: true });
+
 await new Promise((r) => server.listen(PORT, '127.0.0.1', r));
 const base = `http://127.0.0.1:${PORT}`;
 
@@ -332,6 +398,89 @@ if (missing.length)
     `the page requested ${missing.length} asset(s) that the deploy deleted: ${[...new Set(missing)].slice(0, 4).join(', ')}`
   );
 
+// ===========================================================================
+// SECOND DEPLOY — the case that actually shipped the outage (#548)
+// ===========================================================================
+//
+// Everything above proves ONE deploy is survivable. It always was: retention
+// covers one generation, so build A's assets live on inside build B.
+//
+// Production broke anyway, because six PRs merged in 35 minutes — two of them 57
+// seconds apart. GitHub Pages serves HTML with `max-age=600`, so a visitor can
+// hold build A's HTML for TEN MINUTES. By the time build C shipped, retention
+// had moved on to covering B, and A's stylesheets were gone from the origin.
+//
+// The distinction that decides it is one line in deploy.yml: whether a build's
+// ASSET_MANIFEST.txt is written before or after its own retain step. Written
+// before, it lists only that build's files and each deploy forgets its
+// grandparent. Written after, generations chain.
+//
+// Both are modelled below from the same snapshot, so this cannot pass by
+// accident in either direction.
+console.log('\n=== SECOND DEPLOY (#548): does a visitor still holding build A survive it? ===');
+
+await makeBuild(DIR_B_PRISTINE, DIR_C, 'build C');
+
+// (1) One-generation retention — today's behaviour. C retains from B AS EMITTED,
+//     which never contained A's stylesheets.
+const oneGen = await retainInto(DIR_B_PRISTINE, DIR_C);
+console.log(`\n--- one-generation retention: C kept ${oneGen} file(s) from B-as-emitted`);
+ROOT = DIR_C;
+const burstCold = await browser.newContext();
+const burstPage = await burstCold.newPage();
+missing.length = 0;
+await burstPage.goto(`${base}${BASE_PATH}/`, { waitUntil: 'load' });
+await burstPage.waitForTimeout(2500);
+const g1 = await styled(burstPage);
+console.log(`    rules=${g1.rules} headerH=${g1.headerH} bg=${g1.bodyBg}`);
+if (missing.length)
+  console.log(`    404s: ${[...new Set(missing)].slice(0, 4).join(', ')}`);
+await burstCold.close();
+
+const burstBroke = g1.rules < 100;
+if (burstBroke)
+  console.log(
+    `    ^ #548 reproduced: ${new Set(missing).size} stylesheet(s) 404 after two deploys`
+  );
+
+// (2) Chained retention — the fix. C retains from B AS PUBLISHED, which by then
+//     already held A's stylesheets, so they survive a second generation.
+console.log('\n--- chained retention: C keeps what B PUBLISHED (its own files + what B retained)');
+const chained = await retainInto(DIR_B, DIR_C);
+console.log(`    copied ${chained} additional file(s) into C`);
+const burstKept = await browser.newContext();
+const burstKeptPage = await burstKept.newPage();
+missing.length = 0;
+await burstKeptPage.goto(`${base}${BASE_PATH}/`, { waitUntil: 'load' });
+await burstKeptPage.waitForTimeout(2500);
+const g2 = await styled(burstKeptPage);
+console.log(`    rules=${g2.rules} headerH=${g2.headerH} bg=${g2.bodyBg}`);
+if (missing.length) console.log(`    404s: ${[...new Set(missing)].slice(0, 3).join(', ')}`);
+await burstKept.close();
+
+if (g2.rules < 100)
+  failures.push(
+    `TWO DEPLOYS STILL BREAK A RETURNING VISITOR: ${g2.rules} CSS rules with chained ` +
+      `retention (build A had ${a.rules}) — this is #548, unfixed`
+  );
+if (g2.headerH > 200)
+  failures.push(`still unstyled after two deploys: header ${g2.headerH}px`);
+if (missing.length)
+  failures.push(
+    `after two deploys the page requested ${missing.length} deleted asset(s): ` +
+      `${[...new Set(missing)].slice(0, 4).join(', ')}`
+  );
+
+// THE NEGATIVE CONTROL FOR THE BURST, and it matters more than the positive one.
+// If one-generation retention ever stops breaking here, this harness has quietly
+// stopped modelling a deploy — the same way a fresh browser context stopped
+// modelling a returning visitor, which is what hid this bug for three rounds.
+if (!burstBroke)
+  failures.push(
+    'the two-deploy case did NOT break under one-generation retention — the burst ' +
+      'is no longer being simulated, so treat this check as broken rather than passing'
+  );
+
 await browser.close();
 server.close();
 await rm(WORK, { recursive: true, force: true });
@@ -341,4 +490,6 @@ if (failures.length) {
   for (const f of failures) console.error(`  - ${f}`);
   process.exit(1);
 }
-console.log('\nSTALE-HTML CHECK PASSED — a returning visitor is styled across a deploy.');
+console.log(
+  '\nSTALE-HTML CHECK PASSED — a returning visitor is styled across a deploy, and across two.'
+);
