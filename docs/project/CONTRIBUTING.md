@@ -1,6 +1,6 @@
-# Contributing to CRUDkit
+# Contributing to ScriptHammer
 
-Thank you for your interest in contributing to CRUDkit! This document provides guidelines and instructions for contributing to the project.
+Thank you for your interest in contributing to ScriptHammer! This document provides guidelines and instructions for contributing to the project.
 
 ## Table of Contents
 
@@ -36,8 +36,8 @@ By participating in this project, you agree to abide by our code of conduct:
 
    ```bash
    # Fork on GitHub, then clone your fork
-   git clone https://github.com/YOUR_USERNAME/CRUDkit.git
-   cd CRUDkit
+   git clone https://github.com/YOUR_USERNAME/ScriptHammer.git
+   cd ScriptHammer
    ```
 
 2. **Setup Docker Environment**
@@ -288,7 +288,7 @@ We provide templates for:
 ## Project Structure
 
 ```
-CRUDkit/
+ScriptHammer/
 ├── .github/           # GitHub Actions and templates
 ├── .husky/            # Git hooks
 ├── .storybook/        # Storybook configuration
@@ -318,4 +318,4 @@ Contributors are recognized in:
 - Release notes
 - GitHub contributors page
 
-Thank you for contributing to CRUDkit! 🎉
+Thank you for contributing to ScriptHammer! 🎉
