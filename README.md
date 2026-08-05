@@ -4,6 +4,17 @@
 [![Live App](https://img.shields.io/badge/Live-scripthammer.com-2ea44f)](https://www.scripthammer.com/)
 [![Stars](https://img.shields.io/github/stars/TortoiseWolfe/ScriptHammer?style=social)](https://github.com/TortoiseWolfe/ScriptHammer)
 
+<p align="center">
+  <img
+    src="./docs/architecture/architecture-simple.png"
+    alt="ScriptHammer architecture overview. Your code is built ahead of time by pnpm into a Next.js static export served from GitHub Pages, so there is no application server. In the browser, a React app with a service worker and local storage talks directly to a managed Supabase backend providing Postgres with Row-Level Security, auth, realtime, and file storage. Twelve Deno Edge Functions handle anything needing a secret — payments, subscriptions, and email — and call out to Stripe, PayPal, and Resend, which webhook their results back."
+    width="900">
+</p>
+
+<p align="center">
+  <sub><b>How it fits together.</b> The <a href="./docs/architecture/architecture-detailed.png">full reference diagram</a> adds every table, Edge Function, and route — or read <a href="./docs/architecture/README.md">the architecture guide</a>.</sub>
+</p>
+
 A production Next.js 15 / React 19 / Supabase platform running live at [scripthammer.com](https://www.scripthammer.com/): OAuth and email auth, Stripe and PayPal payments through Supabase Edge Functions, end-to-end encrypted messaging with ECDH key exchange, an admin and moderation surface, and a WCAG-AA-accessible installable PWA — built on a strict atomic component pattern with Vitest, Playwright, and Pa11y test suites. It can also be forked as a base for your own app (see [Forking](#-forking-scripthammer-to-build-your-own)).
 
 ## 🚀 See it live
