@@ -218,3 +218,11 @@ graphify-out/
 
 # Local visual-verification scratch (#432) — session tokens live here.
 .pay-verify/
+
+# Stray tool output and screenshots that land in the repo root (#523)
+# Same rationale as #424: anything a tool leaves beside the file it edited is
+# untracked-but-not-ignored, so one `git add -A` commits it. The blog-images rule
+# matters most - public/ ships to the static export.
+.tmp-*
+/Screenshot *.png
+/public/blog-images/**/Screenshot *.png
