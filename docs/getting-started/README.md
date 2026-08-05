@@ -47,7 +47,7 @@ scripthammer-db         running (if applicable)
 
 ```bash
 # Enter the container
-docker compose exec app sh
+docker compose exec scripthammer sh
 
 # Check Node version
 node --version
@@ -198,7 +198,7 @@ docker compose up -d
 docker compose down
 
 # View logs
-docker compose logs -f app
+docker compose logs -f scripthammer
 
 # Rebuild after Dockerfile changes
 docker compose build --no-cache
@@ -208,7 +208,7 @@ docker compose build --no-cache
 
 ```bash
 # Enter container shell
-docker compose exec app sh
+docker compose exec scripthammer sh
 
 # Run development server
 pnpm run dev
@@ -256,7 +256,7 @@ src/components/Button/
 Use the generator:
 
 ```bash
-docker compose exec app pnpm run generate:component Button
+docker compose exec scripthammer pnpm run generate:component Button
 ```
 
 ---
@@ -311,7 +311,7 @@ See `.specify/memory/constitution.md` for full details.
 
 ```bash
 # Check logs
-docker compose logs app
+docker compose logs scripthammer
 
 # Rebuild from scratch
 docker compose down -v
@@ -380,7 +380,7 @@ npm run dev
 ```
 # Start development
 docker compose up -d
-docker compose exec app sh
+docker compose exec scripthammer sh
 
 # Feature workflow
 /speckit.specify → /speckit.clarify → /wireframe →

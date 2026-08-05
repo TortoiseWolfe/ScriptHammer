@@ -52,7 +52,7 @@ The GitHub secret contains all shard users (6 shards × 3 roles = 18 users) in o
 
 ```bash
 # Generate keys (one-time)
-docker compose exec app npx tsx scripts/generate-e2e-keys.ts > e2e-keys.json
+docker compose exec scripthammer npx tsx scripts/generate-e2e-keys.ts > e2e-keys.json
 
 # Store as GitHub secret
 gh secret set E2E_ENCRYPTION_KEYS < e2e-keys.json
@@ -99,7 +99,7 @@ Password is shared (from `TEST_USER_PRIMARY_PASSWORD` env var). Keys are unique 
 If you need new keys (e.g., adding more shards):
 
 ```bash
-docker compose exec app npx tsx scripts/generate-e2e-keys.ts > e2e-keys.json
+docker compose exec scripthammer npx tsx scripts/generate-e2e-keys.ts > e2e-keys.json
 gh secret set E2E_ENCRYPTION_KEYS < e2e-keys.json
 ```
 
