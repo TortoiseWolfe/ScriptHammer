@@ -89,7 +89,13 @@ test.describe('Capture Decryption Logs', () => {
       // User A signs in
       console.log('[Test] User A signing in...');
       await pageA.goto('/sign-in');
-      await pageA.waitForLoadState('networkidle');
+      // NOT `networkidle` (#506): Turnstile mounts here and opens a `blob:`
+      // worker request that never settles, so the network never goes idle.
+      // The guard at the top of this file only skips when the BACKEND enforces
+      // captcha — the hang is caused by the WIDGET, which renders whenever
+      // NEXT_PUBLIC_CAPTCHA_SITE_KEY is set. Those are independent, so this
+      // would hang the day backend enforcement is turned off. `fill()`
+      // auto-waits, so no explicit wait is needed at all.
       await dismissCookieBanner(pageA);
       await pageA.getByLabel('Email').fill(USER_A.email);
       await pageA.getByLabel('Password', { exact: true }).fill(USER_A.password);
