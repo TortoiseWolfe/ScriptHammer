@@ -313,7 +313,7 @@ git fetch upstream
 git merge upstream/main
 ```
 
-See [docs/FORKING.md](./docs/FORKING.md) for detailed sync instructions and [docs/FORKING-FEEDBACK.md](./docs/FORKING-FEEDBACK.md) for manual fixes if merging fails.
+See [docs/FORKING.md](./docs/FORKING.md) for detailed sync instructions, including what to do when a merge conflicts.
 
 ## ⚙️ Auto-Configuration
 

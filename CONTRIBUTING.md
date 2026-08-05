@@ -98,12 +98,11 @@ ScriptHammer/
 │   ├── foundation/              # Core features (000-006)
 │   ├── core-features/           # Main features (007-012)
 │   ├── auth-oauth/              # Auth features (013-016)
-│   └── ...
+│   └── <category>/<NNN-name>/wireframes/   # SVG wireframes, per feature
 ├── docs/
-│   ├── design/wireframes/       # SVG wireframes + viewer
 │   ├── blog/                    # Technical blog posts
 │   └── interoffice/             # Internal documentation
-├── src/                         # Application source (when implemented)
+├── src/                         # Application source
 │   ├── app/                     # Next.js App Router pages
 │   ├── components/              # React components (5-file pattern)
 │   ├── lib/                     # Utility functions
@@ -397,9 +396,18 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
    - Request re-review when ready
 
 5. **Merge Requirements**
-   - All CI checks pass
-   - At least one approval
-   - No unresolved conversations
+   - The two required status checks pass: `Test (20.x)` and `accessibility`
+   - `main` is protected, so a PR is the only route in — direct pushes are rejected
+     for everyone, admins included
+
+   Branch protection does **not** require an approving review, and does not require
+   conversations to be resolved. Request a review when the change warrants one, but
+   nothing blocks the merge while you wait for it.
+
+   Only those two checks are _required_ because they are the two workflows with no
+   `paths:` filter, so they report on every PR. A required check that never reports is
+   pending forever rather than skipped, which would make any docs-only PR permanently
+   unmergeable. The other workflows still run and should still be green.
 
 ---
 

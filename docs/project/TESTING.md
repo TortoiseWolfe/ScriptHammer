@@ -2,7 +2,7 @@
 
 ## Overview
 
-CRUDkit uses a comprehensive testing strategy to ensure code quality and reliability. Our testing stack includes:
+ScriptHammer uses a comprehensive testing strategy to ensure code quality and reliability. Our testing stack includes:
 
 - **Vitest**: Fast unit testing framework
 - **React Testing Library**: Component testing utilities
