@@ -97,6 +97,28 @@ jobs:
           # test.skip'd; the rest only assert UI render + consent flow.
           NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_e2e_dummy_not_a_real_key
           NEXT_PUBLIC_PAYPAL_CLIENT_ID: e2e_dummy_paypal_client_id
+          # Cloudflare's PUBLIC always-passes Turnstile key (#506). Documented,
+          # inert, and not a secret — it exists so automation can render the
+          # widget. https://developers.cloudflare.com/turnstile/troubleshooting/testing/
+          #
+          # Until now this var appeared ONLY in deploy.yml, and CaptchaWidget
+          # returns null without it (captcha.config.ts derives `enabled` from the
+          # key). So every E2E build since #353 rendered NO widget — which is how
+          # #488's 320px overflow shipped, and why a width gate added here would
+          # have been green whether or not the defect existed (#396's pattern).
+          #
+          # Measured on a root build carrying this key, /sign-in at 320px:
+          #   size: 'compact' (shipped)  -> 150x140, 0 elements past the viewport
+          #   size: 'normal'  (pre-#488) -> 300x65, 28 elements past the viewport
+          # The key renders WITHOUT an iframe — geometry lives on #cf-turnstile's
+          # own inline style — so a gate must measure the element, not wait for a
+          # frame.
+          #
+          # Deliberately NOT set for signup-mailer.yml (its own build; it drives
+          # real auth forms against local Supabase where captcha is off) nor for
+          # the basePath job below (its own build, and the `basepath` project
+          # does not measure this).
+          NEXT_PUBLIC_CAPTCHA_SITE_KEY: 1x00000000000000000000AA
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v6
@@ -125,7 +147,6 @@ jobs:
       github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 15
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -235,7 +256,6 @@ jobs:
       github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 15
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -427,7 +447,6 @@ jobs:
       github.event_name != 'pull_request' ||
       github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 15
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
@@ -926,12 +945,7 @@ jobs:
           # msg runs as a single shard (see chromium matrix note above).
           - { project: webkit-msg, browser: webkit, shard: 1/1 }
           # #116 Phase 2 — per-test fixture-isolation slice at workers>1.
-          - {
-              project: webkit-msg-iso,
-              browser: webkit,
-              shard: 1/1,
-              workers: 2,
-            }
+          - { project: webkit-msg-iso, browser: webkit, shard: 1/1, workers: 2 }
           - { project: webkit-gen, browser: webkit, shard: 1/6 }
           - { project: webkit-gen, browser: webkit, shard: 2/6 }
           - { project: webkit-gen, browser: webkit, shard: 3/6 }

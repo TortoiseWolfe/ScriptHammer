@@ -237,11 +237,17 @@ test.describe('WCAG AAA color-contrast-enhanced (violations only)', () => {
         );
 
         // NOT `networkidle`: /sign-in, /sign-up, /forgot-password and
-        // /messages/setup mount Cloudflare Turnstile, which polls forever, so
-        // the network never goes idle and the page never resolves. Measured —
-        // all four timed out at 25s. Those are the routes handling
-        // credentials, so losing them is the opposite of what this gate is
-        // for. domcontentloaded plus a settle covers every route.
+        // /messages/setup mount Cloudflare Turnstile, so the network never goes
+        // idle and the page never resolves. Measured — all four timed out at
+        // 25s. Those are the routes handling credentials, so losing them is the
+        // opposite of what this gate is for. domcontentloaded plus a settle
+        // covers every route.
+        //
+        // The mechanism, measured precisely in #506: Turnstile opens a `blob:`
+        // worker request that NEVER finishes — not periodic polling. This note
+        // was accurate and still did not stop the same trap reaching CI in
+        // `auth/session-persistence.spec.ts`, so it is now enforced by
+        // tests/unit/no-networkidle-on-captcha-routes.test.ts.
         await page.goto(path, { waitUntil: 'domcontentloaded' });
         // Give client-side redirects and hydration a chance to finish, so the
         // execution context is stable before axe is injected.

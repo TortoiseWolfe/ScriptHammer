@@ -34,7 +34,18 @@ test.describe('Session Persistence E2E', () => {
   // Each test starts fresh on sign-in page
   test.beforeEach(async ({ page }) => {
     await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle');
+    // NEVER `networkidle` on a Turnstile route (#506). /sign-in, /sign-up,
+    // /forgot-password and /messages/setup mount Cloudflare Turnstile, which
+    // opens a `blob:` worker request that NEVER settles — measured, the last
+    // event is a blob: REQ with no finish, and networkidle still had not fired
+    // after 30s. This hook consumed the whole 60s test timeout and turned CI
+    // red the first time e2e.yml carried a site key.
+    //
+    // A web-first assertion is the right replacement anyway: it retries, and
+    // it asserts the thing the test actually needs (a usable form) rather than
+    // a network condition that only correlates with it.
+    // Enforced by tests/unit/no-networkidle-on-captcha-routes.test.ts.
+    await expect(page.getByLabel('Email')).toBeVisible();
     await dismissCookieBanner(page);
   });
 
