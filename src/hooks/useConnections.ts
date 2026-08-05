@@ -124,7 +124,14 @@ export function useConnections() {
         }
       )
       .subscribe((status, err) => {
-        if (status === 'CHANNEL_ERROR') {
+        if (status === 'SUBSCRIBED') {
+          // RE-READ ON JOIN (#499). Anything written between `fetchConnections`
+          // above and this callback is published to nobody — a connection
+          // request accepted in the join window would sit invisible until the
+          // next unrelated event or a reload. Reuses the existing debounce so a
+          // join racing a real event costs one fetch, not two.
+          debouncedFetch();
+        } else if (status === 'CHANNEL_ERROR') {
           logger.error('Realtime subscription failed', {
             error: err?.message,
           });
