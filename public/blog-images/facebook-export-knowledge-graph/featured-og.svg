@@ -1,0 +1,80 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="I graphed 15 years of my own Facebook and found the work I forgot to answer — turning a Facebook export into a queryable knowledge graph">
+  <defs>
+    <linearGradient id="fbg-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#27272a"/>
+    </linearGradient>
+    <linearGradient id="fbg-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="fbg-warn" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#fbg-bg)"/>
+
+  <!-- subtle grid texture -->
+  <g opacity="0.06" stroke="#60a5fa" stroke-width="1">
+    <path d="M0 158 H1200 M0 316 H1200 M0 474 H1200"/>
+    <path d="M240 0 V630 M480 0 V630 M720 0 V630 M960 0 V630"/>
+  </g>
+
+  <!-- accent bar -->
+  <rect x="90" y="118" width="72" height="8" rx="4" fill="url(#fbg-accent)"/>
+
+  <!-- Graph motif, right side: one connected component, two nodes left out -->
+  <g transform="translate(830 315)">
+    <!-- edges -->
+    <g stroke="#60a5fa" stroke-width="2" opacity="0.5" fill="none">
+      <path d="M0 0 L -92 -74"/>
+      <path d="M0 0 L -60 66"/>
+      <path d="M0 0 L 86 -52"/>
+      <path d="M0 0 L 66 76"/>
+      <path d="M-92 -74 L -60 66"/>
+      <path d="M86 -52 L 66 76"/>
+      <path d="M-92 -74 L 86 -52"/>
+    </g>
+    <!-- hub -->
+    <circle cx="0" cy="0" r="19" fill="url(#fbg-accent)"/>
+    <!-- connected nodes -->
+    <circle cx="-92" cy="-74" r="12" fill="#93c5fd"/>
+    <circle cx="-60" cy="66" r="12" fill="#93c5fd"/>
+    <circle cx="86" cy="-52" r="12" fill="#93c5fd"/>
+    <circle cx="66" cy="76" r="12" fill="#93c5fd"/>
+    <!-- the ones the graph left out: unconnected, amber -->
+    <circle cx="150" cy="-130" r="13" fill="url(#fbg-warn)"/>
+    <circle cx="168" cy="150" r="13" fill="url(#fbg-warn)"/>
+    <g stroke="#f59e0b" stroke-width="2" stroke-dasharray="5 6" opacity="0.75" fill="none">
+      <path d="M150 -130 L 86 -52"/>
+      <path d="M168 150 L 66 76"/>
+    </g>
+  </g>
+
+  <!-- Title -->
+  <text x="90" y="212" fill="#fafafa" font-family="Georgia, 'Times New Roman', serif" font-size="58" font-weight="700">I graphed 15 years of my</text>
+  <text x="90" y="278" fill="#fafafa" font-family="Georgia, 'Times New Roman', serif" font-size="58" font-weight="700">own Facebook</text>
+
+  <!-- Subtitle -->
+  <text x="90" y="348" fill="#a1a1aa" font-family="Georgia, 'Times New Roman', serif" font-size="30">and found the work I forgot to answer</text>
+
+  <!-- Stat row -->
+  <g font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace">
+    <text x="90" y="436" fill="#60a5fa" font-size="34" font-weight="700">31,030</text>
+    <text x="90" y="464" fill="#71717a" font-size="17">records parsed</text>
+
+    <text x="300" y="436" fill="#60a5fa" font-size="34" font-weight="700">3,331</text>
+    <text x="300" y="464" fill="#71717a" font-size="17">people named</text>
+
+    <text x="500" y="436" fill="#fbbf24" font-size="34" font-weight="700">82%</text>
+    <text x="500" y="464" fill="#71717a" font-size="17">hidden from the graph</text>
+  </g>
+
+  <!-- Footer rule + byline -->
+  <rect x="90" y="516" width="1020" height="1" fill="#3f3f46"/>
+  <text x="90" y="556" fill="#71717a" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" font-size="19">scripthammer.com</text>
+  <text x="1110" y="556" fill="#52525b" font-family="ui-monospace, 'SFMono-Regular', Menlo, monospace" font-size="19" text-anchor="end">graphify · python · stdlib only</text>
+</svg>
