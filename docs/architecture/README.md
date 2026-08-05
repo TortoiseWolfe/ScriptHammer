@@ -23,6 +23,12 @@ System design reference for developers and architects.
 
 ScriptHammer is a **static-first web application** designed for deployment on GitHub Pages with Supabase as the backend-as-a-service.
 
+![ScriptHammer architecture overview: a Next.js static export on GitHub Pages, a managed Supabase backend for Postgres with Row-Level Security, auth, realtime and storage, and twelve Deno Edge Functions for anything requiring a secret.](./architecture-simple.png)
+
+<sub>The [detailed reference diagram](./architecture-detailed.png) expands this to every table, Edge Function and route. Both are rendered from the committed SVG sources beside them — edit the SVG, not the PNG.</sub>
+
+The ASCII rendering below says the same thing in plain text, for terminals and diffs:
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │                        GitHub Pages                              │
