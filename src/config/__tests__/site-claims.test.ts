@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { THEMES, THEME_COUNT } from '../themes';
+import {
+  THEMES,
+  THEME_COUNT,
+  HOUSE_THEME_COUNT,
+  DAISYUI_THEME_COUNT,
+} from '../themes';
 import { countWireframes } from '../wireframes';
 
 /**
@@ -67,6 +72,87 @@ describe('landing-page claims', () => {
     if (existsSync(manifest)) {
       expect(counted).toBe(JSON.parse(readFileSync(manifest, 'utf8')).total);
     }
+  });
+
+  it('prose surfaces do not state a theme count that disagrees with the list (#514)', () => {
+    // #408 derived the LANDING PAGE's count and stopped there. The same claim
+    // is repeated in prose the landing page does not own, and all three had
+    // drifted to 32 while 34 were registered: README.md, CLAUDE.md, and a
+    // published blog post.
+    //
+    // TWO NUMBERS ARE LEGITIMATE, which is the whole reason this drifts.
+    // "34 themes" (the total) and "32 DaisyUI themes" (theirs, excluding our
+    // two) are both true, so a reader who checks one against the other finds
+    // a mismatch that is not one — and "fixing" it makes a true sentence
+    // false. That is exactly what a blind 32->34 sweep did to three correct
+    // lines in the blog post while this was being written.
+    //
+    // So the rule is: any "<N> theme(s)" claim in these files must cite one of
+    // the two derived numbers. Add a theme and 34 becomes 35 while 32 stays
+    // 32; this fails on the stale 34 and leaves the DaisyUI figure alone.
+    const SURFACES = [
+      'README.md',
+      'CLAUDE.md',
+      'public/blog/scripthammer-intro.md',
+    ];
+    // THE RULE: a count must sit ADJACENT to the qualifier it describes.
+    //
+    // The first version of this just allowed {34, 32, 2} anywhere, and it
+    // could not fail. Mutation-tested by restoring the original stale line —
+    // "32 themes - DaisyUI light/dark variants", which claims 32 as the TOTAL
+    // — and the guard stayed green, because 32 is legitimate as the DaisyUI
+    // subset. A set of allowed numbers cannot distinguish "32 of them" from
+    // "32 of DaisyUI's", so it permitted exactly the sentence that started
+    // this ticket.
+    //
+    // Requiring adjacency removes the ambiguity instead of trying to parse it:
+    // an unqualified "N themes" means the total, "N DaisyUI themes" means
+    // theirs, "N house themes" means ours. Prose that wants the subset has to
+    // say so next to the number.
+    const expected = (qualifier: string): number => {
+      const q = qualifier.trim().toLowerCase();
+      if (q === 'house' || q === 'custom') return HOUSE_THEME_COUNT;
+      if (q === 'daisyui') return DAISYUI_THEME_COUNT;
+      return THEME_COUNT;
+    };
+
+    const wrong: string[] = [];
+    for (const rel of SURFACES) {
+      const full = join(process.cwd(), rel);
+      if (!existsSync(full)) continue;
+      readFileSync(full, 'utf8')
+        .split('\n')
+        .forEach((line, i) => {
+          // A line describing a RENAME is quoting strings, not making a claim.
+          // CLAUDE.md records "`32 Themes` → `34 Themes` broke seven locators
+          // (#408)" — that sentence has to keep both numbers to stay true, and
+          // rewriting it would destroy the warning it exists to give.
+          if (line.includes('→') || line.includes('->')) return;
+
+          for (const m of line.matchAll(
+            /\b(\d{1,3})\s+([\w-]+\s+)?themes?\b/gi
+          )) {
+            const n = Number(m[1]);
+            const want = expected(m[2] ?? '');
+            if (n !== want) {
+              wrong.push(
+                `${rel}:${i + 1}  "${m[0]}" — reads as ${want}, says ${n}` +
+                  `\n      ${line.trim().slice(0, 100)}`
+              );
+            }
+          }
+        });
+    }
+
+    expect(
+      wrong,
+      `A theme count in prose disagrees with src/config/themes.ts.\n` +
+        `Legitimate values are ${THEME_COUNT} (total) and ${DAISYUI_THEME_COUNT} ` +
+        `(DaisyUI's own, excluding our ${HOUSE_THEME_COUNT}).\n` +
+        `Do NOT "fix" this by editing the number in a sentence that says ` +
+        `"DaisyUI" — those are correct.\n\n` +
+        wrong.join('\n')
+    ).toEqual([]);
   });
 
   it('the "2,400+ tests" claim is still a floor and not a boast', () => {

@@ -13,10 +13,10 @@ categories:
   - documentation
 excerpt: Opinionated Next.js 15.5 template with PWA support, 32 DaisyUI themes, Docker-first development environment, and comprehensive testing suite.
 featuredImage: /blog-images/scripthammer-intro/featured-og.svg
-featuredImageAlt: Scripthammer - The Opinionated Next.js PWA Template with 32 themes and Docker development
+featuredImageAlt: Scripthammer - The Opinionated Next.js PWA Template with 34 themes and Docker development
 ogImage: /blog-images/scripthammer-intro/featured-og.png
 ogTitle: Scripthammer - Opinionated Next.js PWA Template
-ogDescription: Build production-ready Next.js apps with 32 themes, Docker development, PWA support, and comprehensive testing. No configuration hell.
+ogDescription: Build production-ready Next.js apps with 34 themes, Docker development, PWA support, and comprehensive testing. No configuration hell.
 twitterCard: summary_large_image
 ---
 
@@ -33,15 +33,15 @@ _The Scripthammer dashboard showing the theme switcher and component structure_
 
 - **[Next.js](https://nextjs.org/) 15.5.2** with App Router and static export support
 - **[React](https://react.dev/) 19.1.0** with [TypeScript](https://www.typescriptlang.org/) strict mode
-- **[Tailwind CSS](https://tailwindcss.com/) (Cascading Style Sheets) v4** with [DaisyUI](https://daisyui.com/) providing 32 built-in themes
+- **[Tailwind CSS](https://tailwindcss.com/) (Cascading Style Sheets) v4** with [DaisyUI](https://daisyui.com/) — 32 DaisyUI themes plus 2 house themes, 34 in total
 - **PWA Support** with offline capabilities via [Workbox](https://developer.chrome.com/docs/workbox/)
 - **[Docker](https://www.docker.com/)-First Development** - everything runs in containers
 
 ### ✨ Real Features That Work
 
-#### 🎨 32 Theme System
+#### 🎨 34 Theme System
 
-Not just light and dark mode - we ship with 32 complete themes from [DaisyUI](https://daisyui.com/):
+Not just light and dark mode - we ship 34 themes: 32 DaisyUI themes from [DaisyUI](https://daisyui.com/), plus 2 house themes of our own:
 
 - Classic: light, dark, cupcake, bumblebee
 - Modern: synthwave, cyberpunk, valentine, halloween

@@ -3,7 +3,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useAnalytics } from '@/hooks/useAnalytics';
 
-import { THEMES } from '@/config/themes';
+import {
+  THEMES,
+  THEME_COUNT,
+  HOUSE_THEME_COUNT,
+  DAISYUI_THEME_COUNT,
+} from '@/config/themes';
 import {
   applyTheme,
   readStoredTheme,
@@ -39,8 +44,14 @@ export function ThemeSwitcher() {
     <div className="card bg-base-200 shadow-xl">
       <div className="card-body">
         <h2 className="card-title">Theme Selector</h2>
+        {/* Derived, not written down (#514). Both numbers were hardcoded here
+            and happened to be correct — 34 = 2 + 32 — which is exactly how a
+            claim survives long enough to go stale: it reads right until
+            someone adds a theme, and then it is wrong on a live page with
+            nothing checking. */}
         <p className="text-base-content/85 text-sm">
-          Choose from 34 themes (2 custom + 32 DaisyUI)
+          Choose from {THEME_COUNT} themes ({HOUSE_THEME_COUNT} house +{' '}
+          {DAISYUI_THEME_COUNT} DaisyUI)
         </p>
 
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">

@@ -56,6 +56,23 @@ export type Theme = (typeof THEMES)[number];
 export const THEME_COUNT = THEMES.length;
 
 /**
+ * The split, also derived (#514).
+ *
+ * Prose about this project says "34 themes" in some places and "32 DaisyUI
+ * themes" in others, and BOTH are true — 34 total, of which 2 are ours. That
+ * is precisely why the numbers drift: a reader checking one against the other
+ * finds a mismatch that is not a mismatch, "corrects" it, and makes a true
+ * sentence false. Export both so copy can cite whichever it means and neither
+ * has to be typed by hand.
+ */
+export const HOUSE_THEME_COUNT = THEMES.filter((t) =>
+  t.startsWith('scripthammer-')
+).length;
+
+/** DaisyUI's own themes — the total minus the two we ship. */
+export const DAISYUI_THEME_COUNT = THEME_COUNT - HOUSE_THEME_COUNT;
+
+/**
  * The themes shown as full swatches on the landing page and `/themes` (#379).
  *
  * The 2a design drew six and named four that do not exist in this repo —
