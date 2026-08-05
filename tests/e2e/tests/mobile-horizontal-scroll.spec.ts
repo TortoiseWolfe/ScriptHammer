@@ -115,56 +115,37 @@ const INSTANCES: Record<string, string> = {
   '/docs/[slug]': '/docs/install-and-first-run',
 };
 
-/**
- * Routes with PRE-EXISTING overflow that the old `hidden`/`clip` excuse hid
- * (#511). These are NOT exclusions — they still run, and they run as
- * `test.fail()`, which means:
+/*
+ * THE KNOWN-OVERFLOW QUARANTINE IS GONE, and how it emptied is worth keeping.
  *
- *   - the defect still there  -> expected failure, run stays green
- *   - the defect FIXED        -> "expected to fail but passed" -> run goes RED
+ * When #506 stopped excusing clipped content, this sweep exposed six routes
+ * with real, pre-existing, previously invisible overflow. They were quarantined
+ * under `test.fail()` — asserting the defect was STILL THERE — rather than
+ * skipped, so that fixing one turned the suite red and forced its own removal.
  *
- * so the list cleans itself up and cannot quietly outlive the bug. A `skip`
- * would have done the opposite.
+ * It emptied in four steps, and the mechanism earned itself at three of them:
  *
- * Every entry was measured, and each is a real clip, not an artefact — on
- * `/blog/seo` and `/accessibility` `#main-content` genuinely scrolls
- * (clientWidth 320 vs scrollWidth 368 and 471), i.e. content is cut off and
- * unreachable. They are pre-existing: they fail identically with this split
- * applied to an unmodified `main`. Details and per-route evidence in #511.
+ *   8 -> 6  `/payment-demo` and `/payment-result` never belonged. They were
+ *           measured on a local build with no payment keys, which renders a
+ *           374px "Payment providers not configured" panel that CI never shows.
+ *           Both reported "Expected to fail, but passed". A skip list would
+ *           have quarantined two working routes in silence.
+ *   6 -> 4  `/account/audit` and `/payment` — header row needed `flex-wrap`.
+ *   4 -> 1  `/accessibility` (`.stats` is `inline-grid`, so content-sized, and
+ *           its own `overflow-x: auto` had nothing to scroll against), plus a
+ *           `<pre>`; `/blog/seo` (grid items default to `min-width: auto`, so
+ *           cards held 352px in a 288px column — measured, `min-width: 0` took
+ *           493 elements past the viewport down to 4); and a blog author row.
+ *   1 -> 0  `/account` — DaisyUI's `.label { white-space: nowrap }`, fixed
+ *           globally in `globals.css`. It had shared the header-row defect too,
+ *           and `test.fail()` is what distinguished "fixed" from "fixed one of
+ *           its two causes".
+ *
+ * With the list empty the machinery is deleted rather than left at zero: every
+ * one of the 42 routes is now simply required to pass. If a route ever needs
+ * quarantining again, reintroduce `test.fail()` — never `skip` — and give it a
+ * ceiling that only moves down. Full evidence: #511.
  */
-const KNOWN_OVERFLOW: Record<string, string> = {
-  // The 196px sh-btn-ghost that used to be listed here is FIXED. What is left
-  // is a second, unrelated cause: DaisyUI sets `.label { white-space: nowrap }`,
-  // so a 39-character field hint renders 330px wide and cannot wrap (#511).
-  '/account': 'a .label hint cannot wrap — DaisyUI forces nowrap (#511)',
-};
-
-/**
- * The quarantine may SHRINK, never grow. A new route landing in here is a new
- * defect being normalised, which is the #396 anti-pattern — so it fails the
- * suite rather than being absorbed. Lower this as routes are fixed.
- *
- * It has already come down twice, and `test.fail()` is why both times.
- *
- * 8 -> 6: `/payment-demo` and `/payment-result` were listed for a 374px
- * "Payment providers not configured" panel that only rendered because the local
- * build had no payment keys. CI sets dummy ones, the panel does not render, and
- * both reported "Expected to fail, but passed". A `skip` would have swallowed
- * that and quarantined two working routes.
- *
- * 6 -> 4: `/account/audit` and `/payment` were fixed by giving their header row
- * `flex-wrap`. `/account` shared that defect and still fails, for a SECOND and
- * unrelated reason — which is the other thing this mechanism is good for: it
- * distinguishes "fixed" from "fixed one of its two causes".
- *
- * 4 -> 1: `/accessibility` (`.stats` is `inline-grid`, so it is content-sized
- * and its own `overflow-x: auto` never engaged — `max-w-full` gives the scroller
- * something to scroll), `/blog/seo` (grid items default to `min-width: auto`;
- * measured, `min-width: 0` on the cards took 493 elements past the viewport down
- * to 4, and an unshrinkable text block accounted for the last 4), and the blog
- * post's author row (`flex-wrap`).
- */
-const MAX_KNOWN_OVERFLOW = 1;
 
 function enumerateRoutes(dir: string, prefix = ''): string[] {
   const out: string[] = [];
@@ -195,12 +176,7 @@ console.log(
       ? `\n[mobile-horizontal-scroll] excluded ${SKIPPED.length}:\n` +
         SKIPPED.map((r) => `  - ${r}: ${EXCLUDED[r]}`).join('\n')
       : '') +
-    `\n[mobile-horizontal-scroll] ${Object.keys(KNOWN_OVERFLOW).length} route(s) ` +
-    `quarantined as known pre-existing overflow (#511) — asserted STILL BROKEN, ` +
-    `so fixing one turns this suite red until it is removed from the list:\n` +
-    Object.entries(KNOWN_OVERFLOW)
-      .map(([r, why]) => `  - ${r}: ${why}`)
-      .join('\n')
+    `\n[mobile-horizontal-scroll] 0 routes quarantined — every swept route must pass (#511 closed)`
 );
 
 /**
@@ -271,28 +247,6 @@ function measureOverflow(vpWidth: number) {
 }
 
 test.describe('Horizontal Scroll Detection', () => {
-  test('the known-overflow quarantine only ever shrinks', () => {
-    const routes = Object.keys(KNOWN_OVERFLOW);
-    expect(
-      routes.length,
-      `${routes.length} routes are quarantined as known-broken, over the ceiling ` +
-        `of ${MAX_KNOWN_OVERFLOW}. Adding a route here normalises a NEW defect, ` +
-        `which is exactly the pattern #396 catalogues. Fix the route, or if it ` +
-        `genuinely belongs in the ledger, raise the ceiling in the same commit ` +
-        `that adds evidence to #511 — never to make a red run green.\n  ` +
-        routes.join('\n  ')
-    ).toBeLessThanOrEqual(MAX_KNOWN_OVERFLOW);
-
-    // Every quarantined route must actually be swept — an entry naming a route
-    // this file never visits is a dead line that reads like coverage.
-    const orphans = routes.filter((r) => !PAGES.includes(r));
-    expect(
-      orphans,
-      `quarantined route(s) that this sweep does not visit — stale entries, ` +
-        `delete them: ${orphans.join(', ')}`
-    ).toEqual([]);
-  });
-
   for (const url of PAGES) {
     // ONE navigation per route, then RESIZE. Four loads x 42 routes is four
     // times the CI cost for the same layout question, and layout re-runs on
@@ -300,13 +254,6 @@ test.describe('Horizontal Scroll Detection', () => {
     // reads its width only on mount will not re-evaluate, so a defect that
     // exists ONLY on a fresh load at one width would be missed.
     test(`No horizontal overflow on ${url}`, async ({ page }) => {
-      // Known pre-existing overflow (#511): assert it is STILL BROKEN rather
-      // than skipping. Fixing the route makes this "expected to fail but
-      // passed" and turns the suite red, which is the prompt to delete the
-      // entry. A skip would let the quarantine outlive the defect silently.
-      const known = KNOWN_OVERFLOW[url];
-      if (known) test.fail(true, known);
-
       // MEASURE THE FIRST-VISIT STATE, i.e. WITH the cookie banner.
       //
       // The global storage state seeds `cookie-consent`, so every spec in this
