@@ -34,16 +34,54 @@
  * pass. Measured unfiltered, it flagged 39 of 42 routes and 1228 elements. They
  * fell into three kinds and only one is a defect:
  *
- *   - clipped or scrolled by an ancestor — `IMG.leaflet-tile` extends past the
- *     map on purpose; DaisyUI puts `overflow-x: auto` on `.stats`, so a wide
- *     child is the design working. Content the user can reach by scrolling the
- *     element it lives in is the RECOMMENDED pattern, and content clipped by an
- *     ancestor produces no page scrollbar.
+ *   - SCROLLED by an ancestor — DaisyUI puts `overflow-x: auto` on `.stats`, so
+ *     a wide child is the design working. Content the user can reach by
+ *     scrolling the element it lives in is the RECOMMENDED pattern.
  *   - a transform artefact — `getBoundingClientRect` includes transforms, so
  *     the home page's scale-animating logo reports overflow no layout has.
  *     Asserting on it would be flaky by construction.
  *   - everything else. That is the defect, and after filtering it was exactly
  *     one element per route.
+ *
+ * #506 — `hidden` AND `clip` USED TO EXCUSE TOO, AND THEY ARE THE OPPOSITE CASE.
+ *
+ * The excuse list was `['hidden', 'clip', 'auto', 'scroll']`, which collapses
+ * two opposite outcomes. `auto`/`scroll` means the user can still REACH the
+ * content. `hidden`/`clip` means it is GONE — and an ancestor clip is precisely
+ * what stops overflow from producing the page scrollbar this file's secondary
+ * assertion looks for, so excusing it made the gate blind wherever it mattered
+ * most.
+ *
+ * Measured on a root build carrying Cloudflare's public test key, `/sign-in` at
+ * 320px:
+ *
+ *     CaptchaWidget size    widget    elements past the viewport
+ *     compact (shipped)     150x140    0
+ *     normal  (pre-#488)    300x65    28
+ *
+ * All 28 were excused by an ancestor with `overflow-x: clip`, and NONE of them
+ * was transform-excused. So on the exact defect #488 fixed, this gate reported
+ * green — the "gate that cannot fail" pattern catalogued in #396.
+ *
+ * NO `/map` CARVE-OUT IS NEEDED, and #506 predicted otherwise. That ticket says
+ * splitting these four "turns 4 leaflet tiles on /map into failures". It does
+ * not: the transform check below runs AFTER this one, leaflet positions its
+ * tiles with `translate3d`, and the home page's spinning logo is the transform
+ * artefact named above — so both fall through to that branch and are excused
+ * there. `/map` and `/` pass at all four widths. An allowlist would have been
+ * dead weight that grew with every future viewport-owning component.
+ *
+ * WHAT IT DID FIND: eight routes with real, pre-existing, previously invisible
+ * overflow — `#main-content` scrolls to 368px on `/blog/seo` and 471px on
+ * `/accessibility` inside a 320px frame. Those are quarantined in
+ * `KNOWN_OVERFLOW` below and ticketed as #511.
+ *
+ * A NOTE ON HOW THAT WAS NEARLY MISSED, because it is this file's own lesson
+ * turned on its author: the split was first checked against four routes (`/`,
+ * `/map`, `/blog`, `/themes`), all of which passed, and that was briefly taken
+ * to mean the split changed nothing anywhere. It changed eight routes. Four
+ * convenient routes are not forty-two, and two of the eight only reproduce in
+ * an AUTHENTICATED context, which an anonymous probe reports as clean.
  */
 
 import { test, expect } from '@playwright/test';
@@ -68,6 +106,42 @@ const INSTANCES: Record<string, string> = {
   '/blog/tags/[tag]': '/blog/tags/digital-twin',
   '/docs/[slug]': '/docs/install-and-first-run',
 };
+
+/**
+ * Routes with PRE-EXISTING overflow that the old `hidden`/`clip` excuse hid
+ * (#511). These are NOT exclusions — they still run, and they run as
+ * `test.fail()`, which means:
+ *
+ *   - the defect still there  -> expected failure, run stays green
+ *   - the defect FIXED        -> "expected to fail but passed" -> run goes RED
+ *
+ * so the list cleans itself up and cannot quietly outlive the bug. A `skip`
+ * would have done the opposite.
+ *
+ * Every entry was measured, and each is a real clip, not an artefact — on
+ * `/blog/seo` and `/accessibility` `#main-content` genuinely scrolls
+ * (clientWidth 320 vs scrollWidth 368 and 471), i.e. content is cut off and
+ * unreachable. They are pre-existing: they fail identically with this split
+ * applied to an unmodified `main`. Details and per-route evidence in #511.
+ */
+const KNOWN_OVERFLOW: Record<string, string> = {
+  '/accessibility': '.stats renders 455px wide at every mobile width (#511)',
+  '/account': 'a 196px sh-btn-ghost overruns 320/375 when authenticated (#511)',
+  '/account/audit': 'same authenticated 196px sh-btn-ghost (#511)',
+  '/blog/playable-city-chattanooga':
+    'the social-links row overruns 320px (#511)',
+  '/blog/seo': '439 elements past 320px — the card grid does not shrink (#511)',
+  '/payment': 'a 374px config block plus the authenticated sh-btn-ghost (#511)',
+  '/payment-demo': 'the same 374px config block (#511)',
+  '/payment-result': 'the same 374px config block (#511)',
+};
+
+/**
+ * The quarantine may SHRINK, never grow. A new route landing in here is a new
+ * defect being normalised, which is the #396 anti-pattern — so it fails the
+ * suite rather than being absorbed. Lower this as routes are fixed.
+ */
+const MAX_KNOWN_OVERFLOW = 8;
 
 function enumerateRoutes(dir: string, prefix = ''): string[] {
   const out: string[] = [];
@@ -97,7 +171,13 @@ console.log(
     (SKIPPED.length
       ? `\n[mobile-horizontal-scroll] excluded ${SKIPPED.length}:\n` +
         SKIPPED.map((r) => `  - ${r}: ${EXCLUDED[r]}`).join('\n')
-      : '')
+      : '') +
+    `\n[mobile-horizontal-scroll] ${Object.keys(KNOWN_OVERFLOW).length} route(s) ` +
+    `quarantined as known pre-existing overflow (#511) — asserted STILL BROKEN, ` +
+    `so fixing one turns this suite red until it is removed from the list:\n` +
+    Object.entries(KNOWN_OVERFLOW)
+      .map(([r, why]) => `  - ${r}: ${why}`)
+      .join('\n')
 );
 
 /**
@@ -106,7 +186,9 @@ console.log(
  * the filter is doing triage rather than silently swallowing everything.
  */
 function measureOverflow(vpWidth: number) {
-  const CLIPS = ['hidden', 'clip', 'auto', 'scroll'];
+  // `auto`/`scroll` ONLY (#506). `hidden`/`clip` used to sit in this list and
+  // are the opposite case — see the header. Do not add them back.
+  const REACHABLE = ['auto', 'scroll'];
   const real: string[] = [];
   let excused = 0;
 
@@ -121,8 +203,8 @@ function measureOverflow(vpWidth: number) {
       n && n !== document.documentElement;
       n = n.parentElement
     ) {
-      if (CLIPS.includes(getComputedStyle(n).overflowX)) {
-        why = 'clipped-or-scrolled';
+      if (REACHABLE.includes(getComputedStyle(n).overflowX)) {
+        why = 'scrollable';
         break;
       }
     }
@@ -166,6 +248,28 @@ function measureOverflow(vpWidth: number) {
 }
 
 test.describe('Horizontal Scroll Detection', () => {
+  test('the known-overflow quarantine only ever shrinks', () => {
+    const routes = Object.keys(KNOWN_OVERFLOW);
+    expect(
+      routes.length,
+      `${routes.length} routes are quarantined as known-broken, over the ceiling ` +
+        `of ${MAX_KNOWN_OVERFLOW}. Adding a route here normalises a NEW defect, ` +
+        `which is exactly the pattern #396 catalogues. Fix the route, or if it ` +
+        `genuinely belongs in the ledger, raise the ceiling in the same commit ` +
+        `that adds evidence to #511 — never to make a red run green.\n  ` +
+        routes.join('\n  ')
+    ).toBeLessThanOrEqual(MAX_KNOWN_OVERFLOW);
+
+    // Every quarantined route must actually be swept — an entry naming a route
+    // this file never visits is a dead line that reads like coverage.
+    const orphans = routes.filter((r) => !PAGES.includes(r));
+    expect(
+      orphans,
+      `quarantined route(s) that this sweep does not visit — stale entries, ` +
+        `delete them: ${orphans.join(', ')}`
+    ).toEqual([]);
+  });
+
   for (const url of PAGES) {
     // ONE navigation per route, then RESIZE. Four loads x 42 routes is four
     // times the CI cost for the same layout question, and layout re-runs on
@@ -173,6 +277,13 @@ test.describe('Horizontal Scroll Detection', () => {
     // reads its width only on mount will not re-evaluate, so a defect that
     // exists ONLY on a fresh load at one width would be missed.
     test(`No horizontal overflow on ${url}`, async ({ page }) => {
+      // Known pre-existing overflow (#511): assert it is STILL BROKEN rather
+      // than skipping. Fixing the route makes this "expected to fail but
+      // passed" and turns the suite red, which is the prompt to delete the
+      // entry. A skip would let the quarantine outlive the defect silently.
+      const known = KNOWN_OVERFLOW[url];
+      if (known) test.fail(true, known);
+
       // MEASURE THE FIRST-VISIT STATE, i.e. WITH the cookie banner.
       //
       // The global storage state seeds `cookie-consent`, so every spec in this
@@ -248,7 +359,8 @@ test.describe('Horizontal Scroll Detection', () => {
 
       expect(
         failures,
-        `Horizontal overflow on ${url} (${excusedTotal} element(s) excused as clipped/scrolled/transformed):\n${failures.join('\n')}`
+        `Horizontal overflow on ${url} (${excusedTotal} element(s) excused as ` +
+          `scrollable or transform-artefact — NOT as clipped; see #506):\n${failures.join('\n')}`
       ).toEqual([]);
     });
   }
