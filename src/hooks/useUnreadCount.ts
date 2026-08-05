@@ -81,7 +81,17 @@ export function useUnreadCount() {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        // RE-READ ON JOIN (#499). This hook already refetches on
+        // `visibilitychange` (below), which is why #499 ranks it low — a
+        // backgrounded tab recovers when the user returns. But a tab that
+        // stays FOREGROUND through the join window never fires that event, so
+        // a message arriving in those seconds leaves the badge stale for as
+        // long as the user keeps looking at it. Cheap to close.
+        if (status === 'SUBSCRIBED') {
+          fetchUnreadCount();
+        }
+      });
 
     channelRef.current = channel;
 

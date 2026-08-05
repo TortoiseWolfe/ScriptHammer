@@ -30,13 +30,20 @@ vi.mock('@/services/messaging/connection-service', () => ({
 
 // Capture the postgres_changes handler the hook registers so we can fire it.
 let changeHandler: ((payload: { eventType: string }) => void) | null = null;
+// ...and the subscribe status callback, which is the only way to drive the
+// channel-join path (#499). `subscribe` used to ignore its argument entirely.
+let statusCb: ((status: string, err?: { message?: string }) => void) | null =
+  null;
 const removeChannel = vi.fn();
 const mockChannel = {
   on: vi.fn((_evt: string, _filter: unknown, cb: typeof changeHandler) => {
     changeHandler = cb;
     return mockChannel;
   }),
-  subscribe: vi.fn(() => mockChannel),
+  subscribe: vi.fn((cb?: typeof statusCb) => {
+    statusCb = cb ?? null;
+    return mockChannel;
+  }),
 };
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => ({
@@ -52,6 +59,7 @@ describe('useConnections realtime (#35)', () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     changeHandler = null;
+    statusCb = null;
     getConnections.mockResolvedValue(emptyList);
   });
 
@@ -86,6 +94,63 @@ describe('useConnections realtime (#35)', () => {
       await Promise.resolve();
     });
     expect(getConnections).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it('resyncs on the FIRST SUBSCRIBED, so a change before the join is not missed (#499)', async () => {
+    // The channel join is not instant — #497 measured a row inserted ~2s after
+    // page load still missing 15s later. A connection accepted in that window
+    // is published to nobody, and nothing else here refetches, so the list
+    // stayed stale for the life of the page.
+    renderHook(() => useConnections());
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(getConnections).toHaveBeenCalledTimes(1); // mount fetch
+
+    // The join itself must trigger a re-read.
+    expect(
+      statusCb,
+      'subscribe() was called without a status callback — the hook cannot know ' +
+        'when the channel joined'
+    ).toBeTypeOf('function');
+    act(() => {
+      statusCb?.('SUBSCRIBED');
+    });
+
+    // Debounced, deliberately: a join racing a real event must cost one fetch.
+    expect(getConnections).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+      await Promise.resolve();
+    });
+    expect(getConnections).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  // NOTE ON WHAT THIS DOES AND DOES NOT PROVE: this one passes with the #499
+  // defect present — delete the SUBSCRIBED branch and it stays green, because
+  // the change handler alone also produces exactly one fetch. It is not
+  // resync coverage; the test above is. What it guards is the SHARED debounce:
+  // it would fail if a future edit made the join bypass it and double-fetch on
+  // every page load. Kept for that, labelled so nobody reads it as more.
+  it('coalesces a join that races a real event into ONE refetch (#499)', async () => {
+    renderHook(() => useConnections());
+    await act(async () => {
+      await Promise.resolve();
+    });
+    getConnections.mockClear();
+
+    act(() => {
+      statusCb?.('SUBSCRIBED');
+      changeHandler?.({ eventType: 'INSERT' });
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(1000);
+      await Promise.resolve();
+    });
+    // Both paths share the debounce, so this is 1 — not 2.
+    expect(getConnections).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
   });
 

@@ -399,6 +399,17 @@ export function useConversationList() {
       .subscribe((status, err) => {
         if (status === 'SUBSCRIBED') {
           logger.info('Realtime subscription active for conversations-list');
+          // RE-READ ON JOIN (#499). This branch used to log and stop — the
+          // clearest form of the defect, because "SUBSCRIBED" in the console
+          // looks like the subscription is working, and it is: it just cannot
+          // deliver anything that happened BEFORE it started listening.
+          // Joining is not instant (#497 measured a row still missing 15s
+          // later under shard load), so a conversation created in that window
+          // is published to nobody and the list stays stale.
+          //
+          // Reuses `debouncedLoad` rather than calling `load` directly, so a
+          // join that races an incoming event coalesces into one fetch.
+          debouncedLoad();
         } else if (status === 'CHANNEL_ERROR') {
           logger.error('Realtime subscription failed', { error: err?.message });
         } else if (status === 'TIMED_OUT') {
