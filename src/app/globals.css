@@ -113,6 +113,24 @@
  * ========================================================================= */
 .label {
   display: flex;
+
+  /* ------------------------------------------------------------------
+   * ...and a label must not be forced onto one line either (#511).
+   *
+   * DaisyUI ships `.label { white-space: nowrap }`. Every field hint in the
+   * product is a `.label`, so any hint longer than its container renders at
+   * its full single-line width and runs off the side. Measured on /account:
+   * "Your friendly name shown to other users" is 330px in a 288px column,
+   * and the layout frame's `overflow-x-clip` hid it from every gate until
+   * #506 stopped excusing clipped content.
+   *
+   * `normal` only changes what would otherwise overflow — a label short
+   * enough to fit already occupies one line and is unaffected. Verified
+   * across all 57 `.label` call sites by the horizontal-overflow sweep and
+   * `form-label-grid.spec.ts`, which is the gate that would catch a label
+   * wrapping where it should not.
+   * ------------------------------------------------------------------ */
+  white-space: normal;
 }
 
 @plugin "daisyui" {
