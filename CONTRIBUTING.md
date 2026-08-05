@@ -59,12 +59,12 @@ All commands run inside the Docker container:
 
 ```bash
 # Enter the container shell
-docker compose exec app sh
+docker compose exec scripthammer sh
 
 # Or run commands directly
-docker compose exec app pnpm run dev
-docker compose exec app pnpm run test
-docker compose exec app pnpm run lint
+docker compose exec scripthammer pnpm run dev
+docker compose exec scripthammer pnpm run test
+docker compose exec scripthammer pnpm run lint
 ```
 
 **Never run `npm install` or `pnpm install` on your host machine.** This violates the Docker-first principle and may cause inconsistencies.
@@ -190,7 +190,7 @@ src/components/Button/
 Use the component generator to ensure compliance:
 
 ```bash
-docker compose exec app pnpm run generate:component Button
+docker compose exec scripthammer pnpm run generate:component Button
 ```
 
 ### Component Structure
@@ -248,19 +248,19 @@ Write tests BEFORE implementation (RED-GREEN-REFACTOR):
 
 ```bash
 # All tests
-docker compose exec app pnpm run test
+docker compose exec scripthammer pnpm run test
 
 # Unit tests only
-docker compose exec app pnpm run test:unit
+docker compose exec scripthammer pnpm run test:unit
 
 # E2E tests
-docker compose exec app pnpm run test:e2e
+docker compose exec scripthammer pnpm run test:e2e
 
 # Accessibility tests
-docker compose exec app pnpm run test:a11y
+docker compose exec scripthammer pnpm run test:a11y
 
 # Watch mode for development
-docker compose exec app pnpm run test:watch
+docker compose exec scripthammer pnpm run test:watch
 ```
 
 ### Test File Examples
