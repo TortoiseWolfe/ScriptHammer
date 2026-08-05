@@ -26,7 +26,8 @@ export default function AccountAuditPage() {
     <ProtectedRoute>
       <main className="mx-auto w-full px-4 py-12 sm:px-6 md:py-16 lg:px-8">
         <div className="mx-auto max-w-3xl">
-          <div className="mb-6 flex items-center justify-between">
+          {/* `flex-wrap` is load-bearing — see the note in account/page.tsx (#511). */}
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-3xl font-bold">Security Activity</h1>
             <Link href="/account" className="sh-btn sh-btn-ghost">
               Back to Account

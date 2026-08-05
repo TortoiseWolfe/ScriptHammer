@@ -134,12 +134,13 @@ const INSTANCES: Record<string, string> = {
  */
 const KNOWN_OVERFLOW: Record<string, string> = {
   '/accessibility': '.stats renders 455px wide at every mobile width (#511)',
-  '/account': 'a 196px sh-btn-ghost overruns 320/375 when authenticated (#511)',
-  '/account/audit': 'same authenticated 196px sh-btn-ghost (#511)',
+  // The 196px sh-btn-ghost that used to be listed here is FIXED. What is left
+  // is a second, unrelated cause: DaisyUI sets `.label { white-space: nowrap }`,
+  // so a 39-character field hint renders 330px wide and cannot wrap (#511).
+  '/account': 'a .label hint cannot wrap — DaisyUI forces nowrap (#511)',
   '/blog/playable-city-chattanooga':
     'the social-links row overruns 320px (#511)',
   '/blog/seo': '439 elements past 320px — the card grid does not shrink (#511)',
-  '/payment': 'same authenticated 196px sh-btn-ghost (#511)',
 };
 
 /**
@@ -147,14 +148,20 @@ const KNOWN_OVERFLOW: Record<string, string> = {
  * defect being normalised, which is the #396 anti-pattern — so it fails the
  * suite rather than being absorbed. Lower this as routes are fixed.
  *
- * It has already come down once, and `test.fail()` is why. The list first had
- * EIGHT entries, adding `/payment-demo` and `/payment-result` for a 374px
- * "Payment providers not configured" panel — which only rendered because the
- * local build had no payment keys. CI sets dummy ones, the panel does not
- * render, and both routes reported "Expected to fail, but passed". A `skip`
- * would have swallowed that silently and quarantined two working routes.
+ * It has already come down twice, and `test.fail()` is why both times.
+ *
+ * 8 -> 6: `/payment-demo` and `/payment-result` were listed for a 374px
+ * "Payment providers not configured" panel that only rendered because the local
+ * build had no payment keys. CI sets dummy ones, the panel does not render, and
+ * both reported "Expected to fail, but passed". A `skip` would have swallowed
+ * that and quarantined two working routes.
+ *
+ * 6 -> 4: `/account/audit` and `/payment` were fixed by giving their header row
+ * `flex-wrap`. `/account` shared that defect and still fails, for a SECOND and
+ * unrelated reason — which is the other thing this mechanism is good for: it
+ * distinguishes "fixed" from "fixed one of its two causes".
  */
-const MAX_KNOWN_OVERFLOW = 6;
+const MAX_KNOWN_OVERFLOW = 4;
 
 function enumerateRoutes(dir: string, prefix = ''): string[] {
   const out: string[] = [];
