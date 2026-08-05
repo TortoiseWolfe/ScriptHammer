@@ -133,14 +133,10 @@ const INSTANCES: Record<string, string> = {
  * applied to an unmodified `main`. Details and per-route evidence in #511.
  */
 const KNOWN_OVERFLOW: Record<string, string> = {
-  '/accessibility': '.stats renders 455px wide at every mobile width (#511)',
   // The 196px sh-btn-ghost that used to be listed here is FIXED. What is left
   // is a second, unrelated cause: DaisyUI sets `.label { white-space: nowrap }`,
   // so a 39-character field hint renders 330px wide and cannot wrap (#511).
   '/account': 'a .label hint cannot wrap — DaisyUI forces nowrap (#511)',
-  '/blog/playable-city-chattanooga':
-    'the social-links row overruns 320px (#511)',
-  '/blog/seo': '439 elements past 320px — the card grid does not shrink (#511)',
 };
 
 /**
@@ -160,8 +156,15 @@ const KNOWN_OVERFLOW: Record<string, string> = {
  * `flex-wrap`. `/account` shared that defect and still fails, for a SECOND and
  * unrelated reason — which is the other thing this mechanism is good for: it
  * distinguishes "fixed" from "fixed one of its two causes".
+ *
+ * 4 -> 1: `/accessibility` (`.stats` is `inline-grid`, so it is content-sized
+ * and its own `overflow-x: auto` never engaged — `max-w-full` gives the scroller
+ * something to scroll), `/blog/seo` (grid items default to `min-width: auto`;
+ * measured, `min-width: 0` on the cards took 493 elements past the viewport down
+ * to 4, and an unshrinkable text block accounted for the last 4), and the blog
+ * post's author row (`flex-wrap`).
  */
-const MAX_KNOWN_OVERFLOW = 4;
+const MAX_KNOWN_OVERFLOW = 1;
 
 function enumerateRoutes(dir: string, prefix = ''): string[] {
   const out: string[] = [];

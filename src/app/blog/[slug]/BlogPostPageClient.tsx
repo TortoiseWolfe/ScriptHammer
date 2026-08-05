@@ -111,9 +111,14 @@ export default function BlogPostPageClient({
         {/* Compact Footer - Author + Share (PRP-017 T038) */}
         <div className="border-base-300 mt-6 border-t pt-4 sm:mt-8 sm:pt-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            {/* Left: Author info */}
+            {/* Left: Author info.
+                `flex-wrap` is load-bearing (#511): the social strip is one
+                44px touch target per platform (4 x 44 + 3 x 4 gap = 188px),
+                and pinned on one line with the avatar and the name/bio block
+                it runs past a 320px viewport — where the layout frame's
+                overflow-x-clip hid it from every gate until #506. */}
             {author && (
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 {/* Avatar */}
                 {author.avatar && (
                   <div className="avatar">

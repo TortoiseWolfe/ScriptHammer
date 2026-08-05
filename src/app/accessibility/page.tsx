@@ -121,21 +121,37 @@ export default function AccessibilityPage() {
                 Small text: These accessibility controls are saved to your
                 browser and will persist across sessions.
               </p>
+              {/* The scroller is INSIDE the well, not on it (#430, #511).
+                  `<pre>` preserves whitespace and will not wrap, so this block
+                  rendered 286px wide at x=56 and ran past a 320px viewport.
+                  `overflow-x-auto` makes it reachable by scrolling — the
+                  pattern "Pre/code blocks are responsive" already asserts. It
+                  must NOT go on the `sh-well` element itself: the well paints
+                  an inset shadow below its children, and on a scroll container
+                  that shadow is clipped inside the scroll area and disappears. */}
               <div className="mt-4">
-                <pre className="sh-well bg-base-200 rounded-box p-4 text-sm">
-                  <code>{`// Code example
+                <div className="sh-well bg-base-200 rounded-box p-4">
+                  <pre className="overflow-x-auto text-sm">
+                    <code>{`// Code example
 const settings = {
   fontSize: "${fontSize}",
   lineHeight: "${lineHeight}",
   fontFamily: "${fontFamily}"
 };`}</code>
-                </pre>
+                  </pre>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Current Settings Display */}
-          <div className="stats mt-8">
+          {/* `max-w-full` is what makes DaisyUI's own scroller work (#511).
+              `.stats` is `display: inline-grid` with `grid-auto-flow: column`
+              and `overflow-x: auto` — but an inline-grid is sized by its
+              CONTENT, so the box simply grew to 455px and the overflow rule
+              never engaged. Capping the width at the container gives the
+              `auto` something to scroll. */}
+          <div className="stats mt-8 max-w-full">
             <div className="stat">
               <div className="stat-title">Current Font Size</div>
               <div className="stat-value text-primary">{fontSize}</div>
