@@ -31,6 +31,20 @@
 #   ./scripts/rebrand.sh "My Cool App" myuser "Description" --dry-run
 #   ./scripts/rebrand.sh MyApp myuser "Description" --force
 #   ./scripts/rebrand.sh MyApp myuser "Description" --preserve-ssh --dry-run
+#
+# Preserving a string across a rebrand:
+#   Put `rebrand:keep` in a comment on the SAME LINE as the string you want to
+#   survive. That line is skipped by every replacement pass:
+#
+#     label: 'ScriptHammer',   // rebrand:keep
+#
+#   It is LINE-scoped, not file-scoped — a marker at the top of a file protects
+#   nothing below it. The token is deliberately brand-neutral: `scripthammer:keep`
+#   would itself contain the string being replaced.
+#
+#   The attribution link in src/config/footer-links.ts is protected this way,
+#   which is why --preserve-attribution is now a no-op. Removing the attribution
+#   is a one-line edit you are welcome to make. It is MIT.
 # =============================================================================
 
 set -euo pipefail
@@ -70,7 +84,13 @@ ORIGINAL_OWNER="TortoiseWolfe"
 # =============================================================================
 
 show_help() {
-    sed -n '2,35p' "$0" | sed 's/^# //' | sed 's/^#//'
+    # Print the header comment block, stopping at the first non-comment line.
+    #
+    # This used to be `sed -n '2,35p'`, a hardcoded range. Adding the
+    # rebrand:keep section to the header pushed it to line 48 and the help
+    # output would have been silently truncated mid-sentence — the range does
+    # not know the header grew, and nothing would have complained (#541).
+    awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"
     exit 0
 }
 

@@ -61,20 +61,46 @@ The `scripts/rebrand.sh` script automates updating 200+ files:
 # Preserve SSH format for git remote (if your origin is SSH)
 ./scripts/rebrand.sh MyProject myuser "Description" --preserve-ssh
 
-# Keep ScriptHammer attribution link in Footer component
-./scripts/rebrand.sh MyProject myuser "Description" --preserve-attribution
-
 # Combine options
-./scripts/rebrand.sh MyProject myuser "Description" --dry-run --preserve-ssh --preserve-attribution
+./scripts/rebrand.sh MyProject myuser "Description" --dry-run --preserve-ssh
 ```
 
-| Option                   | Description                                                |
-| ------------------------ | ---------------------------------------------------------- |
-| `--dry-run`              | Preview changes without modifying files                    |
-| `--force`                | Skip all confirmation prompts                              |
-| `--keep-cname`           | Don't update `public/CNAME` file (keep existing domain)    |
-| `--preserve-ssh`         | Keep SSH format (`git@github.com:`) if currently using SSH |
-| `--preserve-attribution` | Skip Footer.tsx to keep ScriptHammer attribution link      |
+| Option                   | Description                                                                                        |
+| ------------------------ | -------------------------------------------------------------------------------------------------- |
+| `--dry-run`              | Preview changes without modifying files                                                            |
+| `--force`                | Skip all confirmation prompts                                                                      |
+| `--keep-cname`           | Don't update `public/CNAME` file (keep existing domain)                                            |
+| `--preserve-ssh`         | Keep SSH format (`git@github.com:`) if currently using SSH                                         |
+| `--preserve-attribution` | **No-op.** Attribution is always kept — see below. Still parses, so scripts passing it don't break |
+
+### Keeping a string through a rebrand — `rebrand:keep`
+
+Put `rebrand:keep` in a comment **on the same line** as any string that must
+survive. The script skips that line in every replacement pass:
+
+```ts
+// src/config/footer-links.ts
+href: 'https://github.com/TortoiseWolfe/ScriptHammer', // rebrand:keep
+label: 'ScriptHammer', // rebrand:keep
+```
+
+Three things worth knowing:
+
+- **It is line-scoped, not file-scoped.** A marker at the top of a file protects
+  nothing below it.
+- **The token is deliberately brand-neutral.** `scripthammer:keep` would contain
+  the very string the second replacement pass searches for — a self-referential
+  trap.
+- **The attribution link uses this**, which is why `--preserve-attribution` is
+  now a no-op. Before #513 the flag skipped any file matching `*Footer*`
+  case-sensitively, and the attribution had moved to the lowercase
+  `src/config/footer-links.ts` — so the one file the flag existed to protect was
+  the one file it never matched. Every fork silently lost the link back,
+  including forks whose owners would have kept it.
+
+**Removing the attribution is a one-line edit and you are welcome to make it.**
+It is MIT. The default is "kept" so that losing it is a decision rather than an
+accident.
 
 ### Exit Codes
 
