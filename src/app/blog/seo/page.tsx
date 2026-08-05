@@ -182,10 +182,19 @@ export default async function SEODashboardPage() {
         {postsWithSEO.length > 0 ? (
           <div className="grid gap-6">
             {postsWithSEO.map(({ post, analysis }: any) => (
-              <div key={post.id} className="card bg-base-100 shadow-lg">
+              // `min-w-0` is load-bearing (#511). A grid item defaults to
+              // `min-width: auto`, i.e. it refuses to shrink below its content,
+              // so each card rendered 352px wide in a 288px column and every
+              // descendant inherited the overrun — 493 elements past a 320px
+              // viewport, all of it hidden by the layout frame's clip.
+              // Measured: adding min-width:0 to these cards takes that 493 to 4.
+              <div key={post.id} className="card bg-base-100 min-w-0 shadow-lg">
                 <div className="card-body">
-                  <div className="mb-4 flex items-start justify-between">
-                    <div>
+                  {/* The remaining 4 were this row: an unshrinkable text block
+                      pushed the badge ~3px past the edge. The text shrinks,
+                      the badge does not. */}
+                  <div className="mb-4 flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
                       <h3 className="mb-2 text-xl font-semibold">
                         <a
                           href={`/blog/${post.slug}`}
@@ -199,7 +208,7 @@ export default async function SEODashboardPage() {
                       </p>
                     </div>
                     <div
-                      className={`badge badge-lg ${seoAnalyzer.getScoreBadgeClass(analysis.score.overall)}`}
+                      className={`badge badge-lg shrink-0 ${seoAnalyzer.getScoreBadgeClass(analysis.score.overall)}`}
                     >
                       SEO: {analysis.score.overall}%
                     </div>
