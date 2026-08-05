@@ -324,7 +324,10 @@ git cherry-pick <commit-hash>
 
 ### If Merge Conflicts Are Too Complex
 
-See [FORKING-FEEDBACK.md](./FORKING-FEEDBACK.md) for a changelog of fixes you can apply manually.
+Open an issue with the conflicting paths on
+[ScriptHammer Issues](https://github.com/TortoiseWolfe/ScriptHammer/issues). Upstream
+changes that conflict badly for one fork usually conflict for others, so they are worth
+reporting rather than working around alone.
 
 ## Getting Help
 
