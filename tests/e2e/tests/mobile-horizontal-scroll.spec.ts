@@ -71,17 +71,25 @@
  * there. `/map` and `/` pass at all four widths. An allowlist would have been
  * dead weight that grew with every future viewport-owning component.
  *
- * WHAT IT DID FIND: eight routes with real, pre-existing, previously invisible
+ * WHAT IT DID FIND: six routes with real, pre-existing, previously invisible
  * overflow — `#main-content` scrolls to 368px on `/blog/seo` and 471px on
  * `/accessibility` inside a 320px frame. Those are quarantined in
  * `KNOWN_OVERFLOW` below and ticketed as #511.
  *
- * A NOTE ON HOW THAT WAS NEARLY MISSED, because it is this file's own lesson
- * turned on its author: the split was first checked against four routes (`/`,
- * `/map`, `/blog`, `/themes`), all of which passed, and that was briefly taken
- * to mean the split changed nothing anywhere. It changed eight routes. Four
- * convenient routes are not forty-two, and two of the eight only reproduce in
- * an AUTHENTICATED context, which an anonymous probe reports as clean.
+ * TWO NOTES ON HOW THAT WAS NEARLY GOT WRONG, both this file's own lesson
+ * turned on its author — measure the condition that fails, not the one in front
+ * of you:
+ *
+ *   1. The split was first checked against four routes (`/`, `/map`, `/blog`,
+ *      `/themes`), all of which pass, and that was briefly taken to mean it
+ *      changed nothing anywhere. It changed six. Four convenient routes are not
+ *      forty-two, and three of the six only reproduce AUTHENTICATED, which an
+ *      anonymous probe reports as clean.
+ *   2. The quarantine was first written with eight entries, because the local
+ *      build had no payment keys and rendered a "Payment providers not
+ *      configured" panel that CI — which sets dummy keys — never shows. The
+ *      build env has to match `e2e.yml`'s or the ledger records defects that
+ *      do not exist there.
  */
 
 import { test, expect } from '@playwright/test';
@@ -131,17 +139,22 @@ const KNOWN_OVERFLOW: Record<string, string> = {
   '/blog/playable-city-chattanooga':
     'the social-links row overruns 320px (#511)',
   '/blog/seo': '439 elements past 320px — the card grid does not shrink (#511)',
-  '/payment': 'a 374px config block plus the authenticated sh-btn-ghost (#511)',
-  '/payment-demo': 'the same 374px config block (#511)',
-  '/payment-result': 'the same 374px config block (#511)',
+  '/payment': 'same authenticated 196px sh-btn-ghost (#511)',
 };
 
 /**
  * The quarantine may SHRINK, never grow. A new route landing in here is a new
  * defect being normalised, which is the #396 anti-pattern — so it fails the
  * suite rather than being absorbed. Lower this as routes are fixed.
+ *
+ * It has already come down once, and `test.fail()` is why. The list first had
+ * EIGHT entries, adding `/payment-demo` and `/payment-result` for a 374px
+ * "Payment providers not configured" panel — which only rendered because the
+ * local build had no payment keys. CI sets dummy ones, the panel does not
+ * render, and both routes reported "Expected to fail, but passed". A `skip`
+ * would have swallowed that silently and quarantined two working routes.
  */
-const MAX_KNOWN_OVERFLOW = 8;
+const MAX_KNOWN_OVERFLOW = 6;
 
 function enumerateRoutes(dir: string, prefix = ''): string[] {
   const out: string[] = [];
