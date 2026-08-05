@@ -99,7 +99,26 @@ export function usePaymentRealtime(
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        // RE-READ ON JOIN (#499, the pattern proven in #497).
+        //
+        // Joining the channel is not instant — under 28-shard load #497
+        // measured a row inserted ~2s after page load still missing 15s later,
+        // three attempts running. Anything written between `fetchInitialData`
+        // above and this callback is published to nobody.
+        //
+        // That is a stale render for most consumers. Here it is worse: this
+        // hook backs /payment-result, and it has NO poll and NO focus refetch
+        // behind it, so a webhook UPDATE landing in the join window leaves the
+        // user on a stale status until they reload. Money path, unrecoverable.
+        //
+        // Every join re-reads, first or rejoin — unlike the list hooks there is
+        // no coalesced-burst indicator here for a first-join resync to inflate,
+        // so the two cases need no distinguishing.
+        if (status === 'SUBSCRIBED') {
+          void fetchInitialData();
+        }
+      });
 
     return () => {
       isMounted = false;

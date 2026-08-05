@@ -7,11 +7,28 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { usePaymentRealtime } from '@/hooks/usePaymentRealtime';
 import type { PaymentResult } from '@/types/payment';
 
+// Capture the subscribe status callback so a test can drive the channel-join
+// path directly — that is the only way to exercise the #499 resync, and the
+// reason `subscribe` is no longer a bare `mockReturnThis`.
+let statusCb: ((status: string) => void) | null = null;
+
 // Create mock instances
 const mockChannel = {
   on: vi.fn().mockReturnThis(),
-  subscribe: vi.fn().mockReturnThis(),
+  subscribe: vi.fn((cb?: (status: string) => void) => {
+    statusCb = cb ?? null;
+    return mockChannel;
+  }),
 };
+
+/**
+ * The row the mocked `maybeSingle()` currently returns. Mutable so a test can
+ * simulate a webhook landing between the initial fetch and the channel join —
+ * asserting the resync delivers the NEW value, not merely that a second query
+ * was issued. Counting queries would pass on a refetch that discarded its
+ * result.
+ */
+let currentRow: Partial<PaymentResult> = { status: 'succeeded' };
 
 const mockSupabase = {
   from: vi.fn(() => ({
@@ -23,7 +40,6 @@ const mockSupabase = {
             intent_id: 'intent-123',
             provider: 'stripe',
             transaction_id: 'txn_123',
-            status: 'succeeded',
             charged_amount: 2000,
             charged_currency: 'usd',
             provider_fee: 58,
@@ -33,6 +49,7 @@ const mockSupabase = {
             error_message: null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
+            ...currentRow,
           } as PaymentResult,
           error: null,
         })),
@@ -53,6 +70,8 @@ vi.mock('@/lib/supabase/client', () => ({
 describe('usePaymentRealtime', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    statusCb = null;
+    currentRow = { status: 'succeeded' };
   });
 
   it('should return initial loading state', () => {
@@ -118,6 +137,51 @@ describe('usePaymentRealtime', () => {
     );
     expect(mockChannel.on).toHaveBeenCalled();
     expect(mockChannel.subscribe).toHaveBeenCalled();
+  });
+
+  it('re-reads on channel join, so a webhook landing in the join window is not lost (#499)', async () => {
+    // The defect: joining is not instant — #497 measured a row inserted ~2s
+    // after load still missing 15s later. A webhook UPDATE in that window is
+    // published to nobody, and this hook has no poll behind it, so
+    // /payment-result strands on a stale status until the user reloads.
+    currentRow = { status: 'pending' };
+    const { result } = renderHook(() => usePaymentRealtime('test-result-123'));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.paymentResult?.status).toBe('pending');
+
+    // The webhook lands while the channel is still joining: the row changes,
+    // but no postgres_changes event is delivered for it.
+    currentRow = { status: 'succeeded' };
+    expect(result.current.paymentResult?.status).toBe('pending');
+
+    // Now the channel joins. THIS is what must trigger a re-read.
+    expect(
+      statusCb,
+      'subscribe() was called without a status callback — the hook cannot know ' +
+        'when the channel joined, which is the whole defect'
+    ).toBeTypeOf('function');
+    statusCb?.('SUBSCRIBED');
+
+    await waitFor(() =>
+      expect(result.current.paymentResult?.status).toBe('succeeded')
+    );
+  });
+
+  it('re-reads on a REJOIN too, not just the first join (#499)', async () => {
+    // A drop and recover has the same window as the initial join, so the
+    // resync cannot be gated on "first time only".
+    const { result } = renderHook(() => usePaymentRealtime('test-result-123'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    statusCb?.('SUBSCRIBED');
+    currentRow = { status: 'failed' };
+    statusCb?.('CHANNEL_ERROR');
+    statusCb?.('SUBSCRIBED');
+
+    await waitFor(() =>
+      expect(result.current.paymentResult?.status).toBe('failed')
+    );
   });
 
   it('should cleanup subscription on unmount', async () => {
