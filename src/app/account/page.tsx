@@ -22,7 +22,12 @@ export default function AccountPage() {
     <ProtectedRoute>
       <main className="mx-auto w-full px-4 py-12 sm:px-6 md:py-16 lg:px-8">
         <div className="mx-auto max-w-2xl">
-          <div className="mb-6 flex items-center justify-between">
+          {/* `flex-wrap` is load-bearing (#511): without it the h1 and the
+              196px ghost link are pinned to one line, and at 320/375 the link
+              runs past the viewport where the layout frame's overflow-x-clip
+              hides it. Wrapping puts the link on its own line only when it
+              cannot fit; nothing changes above `sm`. */}
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <h1 className="text-3xl font-bold">Account Settings</h1>
             <Link href="/profile" className="sh-btn sh-btn-ghost">
               Back to Profile
