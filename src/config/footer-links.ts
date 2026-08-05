@@ -16,7 +16,7 @@ export const FOOTER_LINKS = [
   { href: 'https://crudgames.com', label: 'CRUDgames.com' },
   { href: 'https://geolarp.com', label: 'geoLARP.com' },
   {
-    href: 'https://github.com/TortoiseWolfe/ScriptHammer',
-    label: 'ScriptHammer',
+    href: 'https://github.com/TortoiseWolfe/ScriptHammer', // rebrand:keep
+    label: 'ScriptHammer', // rebrand:keep
   },
 ] as const;
