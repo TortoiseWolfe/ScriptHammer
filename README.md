@@ -34,7 +34,7 @@ A real product, not a scaffold — see [docs/POSITIONING.md](./docs/POSITIONING.
 - 📱 **Offline-capable PWA** - Installable, service-worker offline support, background sync
 - ♿ **Accessibility** - WCAG AA compliant, colorblind assistance, font switching
 - 🔏 **Privacy compliance** - GDPR cookie consent gating analytics and tracking
-- 🎨 **32 themes** - DaisyUI light/dark variants with persistent selection
+- 🎨 **34 themes** - 2 house themes + 32 DaisyUI variants, with persistent selection
 - 🧩 **Component library** - Atomic design, Storybook-documented, generator-scaffolded
 - 🧪 **Tested** - Vitest unit tests, Playwright E2E across browsers, Pa11y accessibility, run in CI
 - 📊 **Monitored** - Web Vitals, Lighthouse scoring, consent-gated error monitoring
