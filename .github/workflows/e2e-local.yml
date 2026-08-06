@@ -1,0 +1,148 @@
+# Quoted deliberately: an unquoted `#` after whitespace starts a YAML comment,
+# which silently truncated this name to "E2E (local Supabase) —".
+name: 'E2E (local Supabase) — #575 prototype'
+
+# PROTOTYPE. Runs ALONGSIDE e2e.yml, never instead of it, until a full parity
+# run proves the two produce the same pass/fail set. Do not delete e2e.yml, do
+# not remove its mutex, and do not treat a green run here as coverage yet.
+#
+# WHY THIS EXISTS
+# Every painful property of e2e.yml traces to one fact: all 24 matrix jobs share
+# a single CLOUD Supabase project. The repo-wide mutex, `max-parallel: 2`, the
+# connection-priming curl and the up-to-50s stagger sleep are all workarounds for
+# contention on that one project. Measured cost: 68-min median, 25% of runs
+# cancelled at the 60-min job cap while queued, and #567 — CI exhausting the
+# production quota and taking prod down with it.
+#
+# A per-runner ephemeral stack has no contention, so none of those workarounds
+# are needed. Note what is ABSENT below: no `concurrency:` block at all.
+#
+# PROVEN LOCALLY 2026-08-06, while the cloud project was returning HTTP 402:
+#   local  /auth/v1/health -> 200      cloud -> 402
+#   public tables          -> 17       (identical to production)
+#   seed-test-users.ts     -> all four users created
+#   global-setup           -> "Sign-in successful", auth state saved
+#   mobile-check.spec.ts   -> 2 passed (16.4s)
+# global-setup is the exact gate that aborts on cloud with exceed_*_quota.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      # Only self-changes while this is a prototype. Widen deliberately, after
+      # the parity run — not as a drive-by.
+      - '.github/workflows/e2e-local.yml'
+
+# DELIBERATELY NO `concurrency:` BLOCK.
+# e2e.yml serializes every run repo-wide because they contend for one cloud
+# project. Nothing is shared here, so runs may go in parallel. Re-adding a mutex
+# would reintroduce the bottleneck this workflow exists to remove.
+
+jobs:
+  e2e-local:
+    name: E2E against an ephemeral per-runner Supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Local demo env (compose + build + tests share one set of creds)
+        run: |
+          # .env.local-supabase is TRACKED and holds the well-known PUBLIC
+          # Supabase demo keys. No repository secret is used anywhere in this
+          # workflow — which is the point: CI stops holding a production
+          # service-role key at all (see #574).
+          cp .env.local-supabase .env
+          sed -i 's|host\.docker\.internal|localhost|g' .env
+          grep -E '^(NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY|TEST_USER_)' .env.local-supabase >> "$GITHUB_ENV"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321"
+            echo "SUPABASE_ADMIN_URL=http://localhost:54321"
+          } >> "$GITHUB_ENV"
+
+      - name: Bring up local Supabase
+        run: |
+          docker compose --profile supabase up -d \
+            supabase-db supabase-kong supabase-auth supabase-rest \
+            supabase-realtime supabase-storage
+
+      - name: Wait for the stack to answer
+        run: |
+          set +e   # a non-zero curl inside the loop must not kill the step
+          for i in $(seq 1 40); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
+              -H "apikey: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
+              http://localhost:54321/auth/v1/health)
+            [ "$code" = "200" ] && { echo "auth ready after ${i} attempt(s)"; break; }
+            sleep 3
+          done
+          [ "$code" = "200" ] || { echo "::error::local Supabase never became ready (last=$code)"; exit 1; }
+
+      - name: Assert schema fidelity before trusting any result
+        run: |
+          # docker-compose.yml mounts the SAME monolithic migration production
+          # uses, as a file rather than a directory. If that ever silently stops
+          # applying, every test below would pass against an empty database and
+          # report green — the #396 shape. Fail loudly instead.
+          n=$(docker compose exec -T supabase-db psql -U postgres -d postgres -tAc \
+                "SELECT count(*) FROM information_schema.tables WHERE table_schema='public'")
+          echo "public tables: $n"
+          [ "$n" -ge 17 ] || { echo "::error::expected >=17 public tables, got $n — migration did not apply"; exit 1; }
+
+      - name: Setup Node + pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.16.1
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+
+      - name: Seed the E2E users
+        run: pnpm tsx scripts/seed-test-users.ts
+
+      - name: Build (root-served, pointed at the local stack)
+        run: pnpm build
+        env:
+          DISABLE_BASE_PATH: 'true'
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_e2e_dummy_not_a_real_key
+          NEXT_PUBLIC_PAYPAL_CLIENT_ID: e2e_dummy_paypal_client_id
+          # NEXT_PUBLIC_CAPTCHA_SITE_KEY is deliberately ABSENT — do not copy it
+          # from e2e.yml.
+          #
+          # `captcha.config.ts:62` derives `enabled: Boolean(siteKey)`, so setting
+          # the key is what makes the CLIENT demand a token. The local GoTrue never
+          # asked for one (docker-compose.yml sets no GOTRUE captcha vars). The
+          # first run of this workflow set it anyway, copied from e2e.yml, and
+          # every auth test failed with "Please complete the verification
+          # challenge" — a challenge nothing on the server side wanted.
+          #
+          # e2e.yml sets it for an unrelated reason: #488's 320px width gate needs
+          # the widget to actually render against the cloud stack. That reason does
+          # not apply here. `signup-mailer.yml`, which drives real auth forms
+          # against this same local stack, also omits it — follow that precedent.
+
+      - name: Install Playwright chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run one chromium shard
+        run: |
+          npx serve out -l 3000 &
+          npx wait-on http://localhost:3000 --timeout 60000
+          pnpm exec playwright test --project=chromium-gen --shard=1/6 --reporter=line
+        env:
+          CI: 'true'
+          SKIP_WEBSERVER: 'true'
+          BASE_URL: http://localhost:3000
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-local-report
+          path: playwright-report/
+          retention-days: 3
