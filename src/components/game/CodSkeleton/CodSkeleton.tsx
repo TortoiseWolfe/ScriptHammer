@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import FallbackPanel from '@/components/game/FallbackPanel';
+import ProceduralSky from '@/components/game/ProceduralSky';
 // Vendored, framework-agnostic Claude-of-Duty physics (MIT — see
 // src/lib/cod/NOTICE.md). Imported as .js via tsconfig `allowJs`; the class
 // shapes infer loosely, which is all this integration needs.
@@ -349,8 +350,7 @@ export default function CodSkeleton({
         onCreated={onCanvasCreated}
         aria-label="First-person walking skeleton — click to look, WASD to move, Space to jump"
       >
-        <color attach="background" args={[0x0d1015]} />
-        <fog attach="fog" args={[0x0d1015, 20, 90]} />
+        <ProceduralSky hour={16.5} />
         <FirstPersonWorld speed={speed} />
       </Canvas>
 
