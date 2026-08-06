@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  REFERENCE ARTIFACT — feature 050 (features/payments/050-commerce-catalog/)
+
+  This is the design prototype for the commerce storefront. It is source
+  material, never served. Two things in it must NOT be copied into the app:
+
+  1. THE GOOGLE FONTS LINKS BELOW. The app has a four-layer font system
+     (FONT_FAMILIES in src/config/accessibility-tokens.ts is the real one)
+     and loads nothing from a third-party origin. Use the app's stack.
+
+  2. THE CalendarEmbed mode="popup" RATIONALE near the bottom of this file,
+     which claims a popup avoids a second consent card. THAT IS FALSE.
+     src/components/atomic/CalendarEmbed/CalendarEmbed.tsx:64-76 evaluates
+     consent.functional UNCONDITIONALLY, before `mode` is read at line 90,
+     and popup loads Calendly's script anyway. The shipped design is a plain
+     prefilled outbound link, which loads no third-party script at all.
+
+  Everything else — the catalog, the cent amounts, the tamper demo, the
+  two-lane layout — is accurate and is the intended design.
+  ============================================================================
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ScriptHammer — Pricing Storefront Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f0d0b; --surface:#191512; --surface-2:#221c17; --line:#3a2f26;
+  --copper:#b87333; --brass:#d9a441; --patina:#5f8d7e;
+  --text:#ece4d9; --muted:#9c8f7f; --danger:#c4553d; --ok:#6f9e5c;
+  --radius:4px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+  line-height:1.55; -webkit-font-smoothing:antialiased;
+  background-image:radial-gradient(ellipse 80% 50% at 50% -10%, rgba(184,115,51,.10), transparent 70%);
+  min-height:100vh;
+}
+h1,h2,h3,.slab{font-family:'Special Elite',Courier,monospace;font-weight:400;letter-spacing:.01em}
+code,.mono{font-family:'IBM Plex Mono',ui-monospace,monospace}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+
+/* ---------- header ---------- */
+header{border-bottom:1px solid var(--line);background:rgba(15,13,11,.9);
+  backdrop-filter:blur(8px);position:sticky;top:0;z-index:40}
+.hdr{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:11px}
+.cog{width:30px;height:30px;flex:none;color:var(--copper);animation:spin 24s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.cog{animation:none}}
+.brand b{font-family:'Special Elite',monospace;font-size:1.18rem;letter-spacing:.04em;font-weight:400}
+.brand span{display:block;font-size:.6rem;letter-spacing:.28em;color:var(--muted);text-transform:uppercase}
+.hdr-note{font-size:.72rem;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.btn-ghost{background:none;border:1px solid var(--line);color:var(--muted);padding:7px 13px;
+  border-radius:var(--radius);font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;transition:.15s}
+.btn-ghost:hover{border-color:var(--copper);color:var(--brass)}
+.btn-ghost[aria-pressed="true"]{border-color:var(--copper);color:var(--brass);background:rgba(184,115,51,.1)}
+
+/* ---------- hero ---------- */
+.hero{padding:52px 0 30px;text-align:center}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-family:'IBM Plex Mono',monospace;
+  font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--brass);margin-bottom:18px}
+.eyebrow::before{content:"";width:30px;height:1px;background:var(--copper)}
+.hero h1{font-size:clamp(1.9rem,4.6vw,3rem);line-height:1.1;margin-bottom:16px}
+.hero p{color:var(--muted);max-width:600px;margin:0 auto;font-size:1.02rem}
+
+/* ---------- lane toggle ---------- */
+.lanes{display:flex;justify-content:center;margin:34px 0 8px}
+.lane-tabs{display:inline-flex;border:1px solid var(--line);border-radius:var(--radius);
+  background:var(--surface);padding:4px;gap:4px}
+.lane-tab{background:none;border:0;color:var(--muted);padding:9px 20px;border-radius:2px;cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;font-size:.76rem;letter-spacing:.1em;text-transform:uppercase;transition:.15s;
+  min-height:40px}
+.lane-tab[aria-selected="true"]{background:linear-gradient(180deg,var(--copper),#965d28);color:#160f08;font-weight:500}
+.lane-sub{text-align:center;color:var(--muted);font-size:.84rem;margin:14px 0 30px;min-height:1.4em}
+
+/* ---------- cards ---------- */
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));padding-bottom:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);
+  padding:24px 20px;display:flex;flex-direction:column;position:relative;transition:.18s}
+.card:hover{border-color:var(--copper);transform:translateY(-2px)}
+.card.feat{border-color:var(--copper);box-shadow:0 0 0 1px rgba(184,115,51,.25),0 14px 40px -18px rgba(184,115,51,.5)}
+.tag{position:absolute;top:-9px;left:20px;background:var(--copper);color:#160f08;font-size:.6rem;
+  letter-spacing:.16em;text-transform:uppercase;padding:3px 9px;border-radius:2px;font-weight:600;
+  font-family:'IBM Plex Mono',monospace}
+.card h3{font-size:1.16rem;margin-bottom:4px}
+.tagline{color:var(--muted);font-size:.79rem;min-height:2.4em;margin-bottom:14px}
+.price{display:flex;align-items:baseline;gap:5px;margin-bottom:4px}
+.price .amt{font-family:'Special Elite',monospace;font-size:2.1rem;color:var(--brass);line-height:1}
+.price .per{color:var(--muted);font-size:.8rem}
+.billing{font-family:'IBM Plex Mono',monospace;font-size:.63rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:18px}
+ul.feats{list-style:none;display:flex;flex-direction:column;gap:8px;margin-bottom:22px;flex:1}
+ul.feats li{font-size:.83rem;color:#cfc4b6;display:flex;gap:9px;align-items:flex-start;line-height:1.42}
+ul.feats li::before{content:"▸";color:var(--copper);flex:none;font-size:.78rem;line-height:1.5}
+.sku{font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:#6b5f52;letter-spacing:.08em;margin-bottom:12px}
+.btn{width:100%;padding:12px;border:0;border-radius:var(--radius);cursor:pointer;min-height:44px;
+  font-family:'IBM Plex Mono',monospace;font-size:.74rem;letter-spacing:.13em;text-transform:uppercase;
+  background:linear-gradient(180deg,var(--copper),#965d28);color:#160f08;font-weight:600;transition:.15s}
+.btn:hover{filter:brightness(1.13)}
+.btn.alt{background:none;border:1px solid var(--line);color:var(--text)}
+.btn.alt:hover{border-color:var(--copper);color:var(--brass);filter:none}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+
+/* ---------- drawer ---------- */
+.scrim{position:fixed;inset:0;background:rgba(6,5,4,.76);backdrop-filter:blur(3px);z-index:50;
+  opacity:0;pointer-events:none;transition:.22s}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(470px,100%);background:var(--surface);
+  border-left:1px solid var(--line);z-index:51;transform:translateX(100%);transition:transform .26s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;overflow:hidden}
+.drawer.on{transform:none}
+.dhead{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}
+.dhead h2{font-size:1.02rem}
+.dbody{padding:22px;overflow-y:auto;flex:1}
+.x{background:none;border:0;color:var(--muted);font-size:1.5rem;cursor:pointer;line-height:1;padding:4px 8px;min-height:44px;min-width:44px}
+.x:hover{color:var(--brass)}
+
+/* steps */
+.steps{display:flex;gap:6px;margin-bottom:22px}
+.step{flex:1;height:3px;background:var(--line);border-radius:2px;transition:.3s}
+.step.done{background:var(--copper)}
+.step-label{font-family:'IBM Plex Mono',monospace;font-size:.63rem;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--brass);margin-bottom:14px}
+
+.summary{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:20px}
+.srow{display:flex;justify-content:space-between;gap:12px;font-size:.86rem;padding:5px 0}
+.srow.tot{border-top:1px solid var(--line);margin-top:9px;padding-top:11px;font-size:1rem}
+.srow.tot b{color:var(--brass);font-family:'Special Elite',monospace;font-size:1.28rem}
+.srow .k{color:var(--muted)}
+.srow.disc .v{color:var(--ok)}
+
+label{display:block;font-family:'IBM Plex Mono',monospace;font-size:.64rem;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:6px;margin-top:14px}
+input,textarea{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius);
+  padding:11px 13px;color:var(--text);font-family:inherit;font-size:.9rem;min-height:44px}
+input:focus,textarea:focus{outline:2px solid var(--copper);outline-offset:1px;border-color:var(--copper)}
+textarea{min-height:76px;resize:vertical}
+.hint{font-size:.73rem;color:var(--muted);margin-top:6px}
+
+.notice{border:1px solid var(--line);border-left:3px solid var(--brass);background:var(--surface-2);
+  padding:13px 15px;border-radius:var(--radius);font-size:.82rem;color:#cfc4b6;margin-bottom:18px}
+.notice.warn{border-left-color:var(--danger)}
+.notice.ok{border-left-color:var(--ok)}
+.notice b{color:var(--text)}
+
+/* ---------- uploader ---------- */
+.drop{border:1.5px dashed var(--line);border-radius:var(--radius);padding:22px 16px;text-align:center;
+  cursor:pointer;transition:.16s;background:var(--surface-2)}
+.drop:hover,.drop.over{border-color:var(--copper);background:rgba(184,115,51,.07)}
+.drop svg{width:26px;height:26px;color:var(--copper);margin-bottom:7px}
+.drop b{display:block;font-size:.86rem;color:var(--text);margin-bottom:3px}
+.drop span{font-size:.73rem;color:var(--muted)}
+.files{display:flex;flex-direction:column;gap:9px;margin-top:12px}
+.file{display:flex;gap:11px;align-items:center;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:var(--radius);padding:9px 11px}
+.thumb{width:44px;height:44px;border-radius:3px;object-fit:cover;background:#2c241d;flex:none;
+  display:flex;align-items:center;justify-content:center;color:var(--copper);
+  font-family:'IBM Plex Mono',monospace;font-size:.58rem;font-weight:600;overflow:hidden}
+.fmeta{flex:1;min-width:0}
+.fname{font-size:.8rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fsize{font-family:'IBM Plex Mono',monospace;font-size:.64rem;color:var(--muted)}
+.kind{display:flex;gap:4px;margin-top:5px}
+.kind button{background:none;border:1px solid var(--line);color:var(--muted);border-radius:2px;
+  padding:3px 8px;font-size:.6rem;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;min-height:0}
+.kind button[aria-pressed="true"]{border-color:var(--copper);color:var(--brass);background:rgba(184,115,51,.14)}
+.frm{background:none;border:0;color:var(--muted);cursor:pointer;font-size:1.2rem;padding:4px 7px;line-height:1;flex:none}
+.frm:hover{color:var(--danger)}
+.bar{height:2px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--copper);width:0;transition:width .35s}
+
+/* ---------- calendly mock ---------- */
+.cal{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:18px;background:#fff;color:#1a1a2e}
+.cal-bar{background:#f8f9fb;border-bottom:1px solid #e5e7eb;padding:9px 14px;font-size:.7rem;
+  color:#4b5563;display:flex;justify-content:space-between;align-items:center;font-weight:600}
+.cal-body{padding:16px}
+.cal-body h4{font-family:'IBM Plex Sans',sans-serif;font-size:1rem;font-weight:600;margin-bottom:3px;color:#111827}
+.cal-body .who{font-size:.78rem;color:#6b7280;margin-bottom:12px}
+.slots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
+.slot{border:1px solid #d1d5db;border-radius:3px;padding:8px 4px;text-align:center;font-size:.74rem;
+  color:#0069ff;font-weight:600;cursor:pointer;background:#fff;min-height:36px}
+.slot:hover{background:#0069ff;color:#fff;border-color:#0069ff}
+.pre{background:#f0f4ff;border:1px solid #c7d7fe;border-radius:3px;padding:9px 11px;font-size:.72rem;color:#1e3a8a}
+.pre code{background:#dbe6fe;padding:1px 4px;border-radius:2px;font-size:.68rem}
+
+.talk{text-align:center;margin:26px 0 6px;padding:20px;border:1px solid var(--line);
+  border-radius:var(--radius);background:var(--surface)}
+.talk b{font-family:'Special Elite',monospace;font-size:1.05rem;display:block;margin-bottom:5px}
+.talk p{color:var(--muted);font-size:.85rem;margin-bottom:14px}
+.talk button{max-width:280px;margin:0 auto}
+
+/* processing */
+.proc{display:flex;flex-direction:column;gap:11px;margin:8px 0 20px}
+.pline{display:flex;gap:11px;align-items:flex-start;font-family:'IBM Plex Mono',monospace;font-size:.79rem;
+  color:#5f5548;transition:.2s}
+.pline.act{color:var(--brass)}
+.pline.fin{color:var(--ok)}
+.dot{width:9px;height:9px;border-radius:50%;background:currentColor;flex:none;margin-top:6px}
+.pline.act .dot{animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.78)}}
+.pline small{display:block;color:#5f5548;font-size:.68rem;margin-top:2px}
+
+.stripe-mock{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:18px}
+.stripe-bar{background:#635bff;color:#fff;padding:9px 14px;font-size:.72rem;font-weight:600;
+  letter-spacing:.08em;display:flex;justify-content:space-between;align-items:center}
+.stripe-body{padding:18px 16px;background:#fbfaff;color:#1a1a2e}
+.stripe-body .amt{font-size:1.9rem;font-weight:700;letter-spacing:-.02em}
+.stripe-body .lbl{font-size:.74rem;color:#6b7280;margin-bottom:3px}
+.stripe-body .ln{border-top:1px solid #e5e7eb;margin:13px 0;padding-top:13px;font-size:.82rem;color:#374151}
+
+/* dev panel */
+.dev{border-top:1px solid var(--line);background:#0b0908;padding:16px 22px;max-height:34vh;overflow-y:auto}
+.dev h4{font-family:'IBM Plex Mono',monospace;font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--patina);margin-bottom:10px;display:flex;justify-content:space-between}
+pre{font-family:'IBM Plex Mono',monospace;font-size:.68rem;line-height:1.55;color:#8fa89e;
+  white-space:pre-wrap;word-break:break-word;margin-bottom:11px}
+pre .c{color:#5f5548}
+pre .s{color:var(--brass)}
+pre .n{color:var(--patina)}
+pre .bad{color:var(--danger)}
+
+footer{border-top:1px solid var(--line);margin-top:56px;padding:26px 0 44px;color:var(--muted);font-size:.78rem}
+footer code{color:var(--brass);font-size:.75rem}
+.fgrid{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.fgrid b{color:var(--text);display:block;margin-bottom:5px;font-size:.82rem}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+</style>
+</head>
+<body>
+
+<header>
+ <div class="wrap hdr">
+  <div class="brand">
+   <svg class="cog" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zm0 6.2A2.2 2.2 0 1112 9.8a2.2 2.2 0 010 4.4z"/><path d="M20.3 13.1l-1.6-.9a6.9 6.9 0 000-2.4l1.6-.9a.7.7 0 00.3-.9l-1.5-2.6a.7.7 0 00-.9-.3l-1.6.9a7 7 0 00-2-1.2V3a.7.7 0 00-.7-.7h-3a.7.7 0 00-.7.7v1.8a7 7 0 00-2 1.2l-1.6-.9a.7.7 0 00-.9.3L3.2 8a.7.7 0 00.3.9l1.6.9a6.9 6.9 0 000 2.4l-1.6.9a.7.7 0 00-.3.9l1.5 2.6a.7.7 0 00.9.3l1.6-.9a7 7 0 002 1.2V21a.7.7 0 00.7.7h3a.7.7 0 00.7-.7v-1.8a7 7 0 002-1.2l1.6.9a.7.7 0 00.9-.3l1.5-2.6a.7.7 0 00-.3-.9z" opacity=".55"/></svg>
+   <div><b>SCRIPTHAMMER</b><span>The Forge</span></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+   <span class="hdr-note">PRD 016 · Demo</span>
+   <button class="btn-ghost" id="devToggle" aria-pressed="false">Dev panel</button>
+  </div>
+ </div>
+</header>
+
+<main class="wrap">
+ <section class="hero">
+  <div class="eyebrow">Two lanes, one checkout</div>
+  <h1>We don't sell business portals<br>without running one.</h1>
+  <p>Every package below is a row in the <code class="mono" style="color:var(--brass)">products</code> table. Pricing is resolved server-side at checkout — the browser never sets the amount.</p>
+ </section>
+
+ <div class="lanes">
+  <div class="lane-tabs" role="tablist" aria-label="Catalog lane">
+   <button class="lane-tab" role="tab" aria-selected="true" data-lane="service" id="tab-service">For your business</button>
+   <button class="lane-tab" role="tab" aria-selected="false" data-lane="product" id="tab-product">For developers</button>
+  </div>
+ </div>
+ <p class="lane-sub" id="laneSub"></p>
+
+ <section class="grid" id="grid" role="tabpanel" aria-labelledby="tab-service"></section>
+
+ <div class="talk">
+  <b>Not sure which one?</b>
+  <p>Book 15 minutes. Bring a screenshot of what you have in mind.</p>
+  <button class="btn alt" id="talkBtn">Book a call</button>
+ </div>
+
+ <footer>
+  <div class="fgrid">
+   <div><b>Already built</b>13 Supabase Edge Functions, Stripe + PayPal, webhooks, offline queue, subscription retry with grace period, GDPR consent gate, admin dashboard.</div>
+   <div><b>This PRD adds</b><code>products</code> and <code>orders</code> tables, a <code>create-order</code> Edge Function, guest checkout via anonymous auth, and the storefront you're looking at.</div>
+   <div><b>Blocker it removes</b><code>payment_intents.amount</code> is capped at <b style="color:var(--danger)">$999.99</b> in both config and schema. Nothing above Discovery can be sold until that ships.</div>
+  </div>
+ </footer>
+</main>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dTitle">
+ <div class="dhead">
+  <h2 id="dTitle">Checkout</h2>
+  <button class="x" id="closeD" aria-label="Close checkout">&times;</button>
+ </div>
+ <div class="dbody" id="dbody"></div>
+ <div class="dev" id="devPanel" hidden>
+  <h4><span>Edge Function trace</span><span id="devClear" style="cursor:pointer">clear</span></h4>
+  <div id="devLog"></div>
+ </div>
+</aside>
+
+<script>
+const CATALOG = {
+  service: [
+    { sku:'svc-discovery', name:'Discovery', amount:25000, type:'one_time',
+      tagline:'Prove it works before you commit.',
+      feats:['Deployed staging page on a real URL','Working contact form','Mobile + Lighthouse pass','Credited in full toward any build within 30 days'] },
+    { sku:'svc-landing', name:'Landing Page', amount:120000, type:'one_time', feat:true, tag:'Most common',
+      tagline:'One page. Live on your domain. Leads in your inbox.',
+      feats:['Single page, your domain, SSL','Form wired to your inbox and phone','Click-to-call + LocalBusiness schema','Lighthouse ≥ 90, OG tags, favicon','2 revision rounds'],
+      deposit:50 },
+    { sku:'svc-site', name:'Business Site', amount:350000, type:'one_time',
+      tagline:'The full presence, built to rank locally.',
+      feats:['5–7 pages incl. service pages','Project gallery','Local SEO + structured data','Blog scaffold + analytics','3 revision rounds'],
+      deposit:50 },
+    { sku:'svc-care', name:'Care Plan', amount:9900, type:'recurring', interval:'month',
+      tagline:'Someone answers when it breaks.',
+      feats:['Hosting, SSL, daily backups','Dependency + security updates','Uptime monitoring','30 min of edits per month'] },
+    { sku:'svc-care-pro', name:'Care Plan Pro', amount:24900, type:'recurring', interval:'month',
+      tagline:'Care Plan, plus someone who keeps it current.',
+      feats:['Everything in Care Plan','Content updates','Monthly performance report','2 hrs of edits, priority turnaround'] }
+  ],
+  product: [
+    { sku:'prd-forge', name:'Forge', amount:0, type:'free',
+      tagline:'The starter. Take it, ship it, keep it.',
+      feats:['Next.js 15 + React 19 + TypeScript','680+ tests, PWA, 34 themes','Auth, payments, encrypted messaging','MIT licensed, community support'] },
+    { sku:'prd-anvil', name:'Anvil', amount:14900, type:'one_time', feat:true, tag:'Best value',
+      tagline:'A vertical, productized.',
+      feats:['One industry template (Roofer, HVAC, Plumber, Landscaper)','Copy, layout, and schema tuned for the trade','Commercial license, unlimited client sites','Lifetime updates to that pack'] },
+    { sku:'prd-foundry', name:'Foundry', amount:4900, type:'recurring', interval:'month',
+      tagline:'Every pack, and the ones not built yet.',
+      feats:['All vertical packs','New packs as they ship','Private channel','Priority issue triage'] },
+    { sku:'prd-field-study', name:'Field Study', amount:250000, type:'one_time',
+      tagline:'Your first client site, built with you, on stream.',
+      feats:['Two weeks, done-with-you','Real client, real deployment','Recorded and yours to keep','Pricing and scoping coaching included'] }
+  ]
+};
+const SUBS = {
+  service:'Done-for-you builds for local businesses. Fixed scope, fixed price, no hourly surprises.',
+  product:'Build it yourself on the same rails this storefront runs on.'
+};
+
+const money = c => c === 0 ? 'Free' : '$' + (c/100).toLocaleString('en-US',{minimumFractionDigits:c%100?2:0, maximumFractionDigits:c%100?2:0});
+const $ = s => document.querySelector(s);
+let lane='service', sel=null, devOn=false;
+
+/* ---------- render catalog ---------- */
+function renderGrid(){
+  $('#laneSub').textContent = SUBS[lane];
+  $('#grid').setAttribute('aria-labelledby','tab-'+lane);
+  $('#grid').innerHTML = CATALOG[lane].map(p=>`
+    <article class="card${p.feat?' feat':''}">
+      ${p.tag?`<span class="tag">${p.tag}</span>`:''}
+      <div class="sku">${p.sku}</div>
+      <h3>${p.name}</h3>
+      <p class="tagline">${p.tagline}</p>
+      <div class="price"><span class="amt">${money(p.amount)}</span>${p.interval?`<span class="per">/ ${p.interval}</span>`:''}</div>
+      <div class="billing">${p.type==='recurring'?'Recurring':p.type==='free'?'Open source':'One-time'}${p.deposit?` · ${p.deposit}% deposit`:''}</div>
+      <ul class="feats">${p.feats.map(f=>`<li>${f}</li>`).join('')}</ul>
+      <button class="btn${p.type==='free'?' alt':''}" data-sku="${p.sku}">
+        ${p.type==='free'?'Clone the repo':p.type==='recurring'?'Subscribe':'Select'}
+      </button>
+    </article>`).join('');
+  $('#grid').querySelectorAll('button[data-sku]').forEach(b=>
+    b.addEventListener('click',()=>openCheckout(b.dataset.sku)));
+}
+document.querySelectorAll('.lane-tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.lane-tab').forEach(x=>x.setAttribute('aria-selected','false'));
+  t.setAttribute('aria-selected','true'); lane=t.dataset.lane; renderGrid();
+}));
+
+/* ---------- dev trace ---------- */
+function trace(title, body, cls){
+  const d=document.createElement('pre');
+  d.innerHTML = `<span class="c">// ${title}</span>\n${body}`;
+  if(cls) d.classList.add(cls);
+  $('#devLog').appendChild(d);
+  $('#devPanel').scrollTop = $('#devPanel').scrollHeight;
+}
+$('#devToggle').addEventListener('click',e=>{
+  devOn=!devOn; e.currentTarget.setAttribute('aria-pressed',devOn);
+  $('#devPanel').hidden=!devOn;
+});
+$('#devClear').addEventListener('click',()=>$('#devLog').innerHTML='');
+
+/* ---------- checkout ---------- */
+function openCheckout(sku){
+  sel = CATALOG[lane].find(p=>p.sku===sku);
+  $('#dTitle').textContent = sel.type==='free' ? 'Get the starter' : 'Checkout';
+  $('#scrim').classList.add('on'); $('#drawer').classList.add('on');
+  $('#devLog').innerHTML=''; files=[];
+  sel.type==='free' ? stepFree() : stepConsent();
+  $('#closeD').focus();
+}
+function closeCheckout(){ $('#scrim').classList.remove('on'); $('#drawer').classList.remove('on'); }
+$('#closeD').addEventListener('click',closeCheckout);
+$('#scrim').addEventListener('click',closeCheckout);
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeCheckout(); });
+
+const bar = n => `<div class="steps">${[1,2,3,4].map(i=>`<div class="step${i<=n?' done':''}"></div>`).join('')}</div>`;
+
+function summaryHTML(promo){
+  const dep = sel.deposit ? Math.round(sel.amount*sel.deposit/100) : null;
+  const disc = promo ? Math.round(sel.amount*0.25) : 0;
+  const net = sel.amount - disc;
+  const due = dep ? Math.round(net*sel.deposit/100) : net;
+  return `<div class="summary">
+    <div class="srow"><span class="k">${sel.name}</span><span class="v">${money(sel.amount)}${sel.interval?' / '+sel.interval:''}</span></div>
+    ${disc?`<div class="srow disc"><span class="k">FOUNDING25 (25% off)</span><span class="v">−${money(disc)}</span></div>`:''}
+    ${dep?`<div class="srow"><span class="k">Due on delivery</span><span class="v">${money(net-due)}</span></div>`:''}
+    <div class="srow tot"><span class="k">${dep?'Due today':'Total'}</span><b>${money(due)}</b></div>
+  </div>`;
+}
+
+/* step 1 — consent */
+function stepConsent(){
+  $('#dbody').innerHTML = bar(1) + `<div class="step-label">Step 1 of 4 · Consent</div>`
+  + summaryHTML(false)
+  + `<div class="notice"><b>Payment processing consent.</b> Continuing loads Stripe's SDK, which sets cookies and processes your data. Existing <code>PaymentConsentModal</code> handles this — no SDK script loads before you agree.</div>
+     <button class="btn" id="agree">Agree and continue</button>
+     <button class="btn alt" style="margin-top:9px" id="decline">Decline</button>`;
+  $('#agree').addEventListener('click',()=>{
+    trace('usePaymentConsent.grantConsent()','{ <span class="s">"payment_consent"</span>: <span class="s">"granted"</span>, <span class="s">"consent_date"</span>: <span class="s">"2026-08-06T01:42:11Z"</span> }');
+    stepIntake();
+  });
+  $('#decline').addEventListener('click',closeCheckout);
+}
+
+/* step 2 — intake */
+let files = [];
+const MAX_FILES = 8, MAX_BYTES = 10*1024*1024;
+const OK_MIME = ['image/jpeg','image/png','image/webp','image/heic','application/pdf'];
+const kb = b => b > 1048576 ? (b/1048576).toFixed(1)+' MB' : Math.round(b/1024)+' KB';
+
+function stepIntake(){
+  $('#dbody').innerHTML = bar(2) + `<div class="step-label">Step 2 of 4 · Your details</div>`
+  + summaryHTML(false)
+  + `<div class="notice"><b>No account required.</b> <code>signInAnonymously()</code> issues a real session so every existing RLS policy works unchanged. You can claim the account later.</div>
+     <label for="f-email">Email</label><input id="f-email" type="email" value="rigo@warriorroofing.example" autocomplete="email">
+     <label for="f-biz">Business name</label><input id="f-biz" value="Warrior Roofing Inc">
+     <label for="f-dom">Domain</label><input id="f-dom" placeholder="warriorroofingtn.com">
+     <label for="f-ref">Reference site <span style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="f-ref" value="https://warriorroofing.carrd.co">
+
+     <label>Screenshots or sketches</label>
+     <div class="drop" id="drop" role="button" tabindex="0" aria-label="Add screenshots or sketches">
+       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 16V4m0 0L8 8m4-4l4 4" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2" stroke-linecap="round"/></svg>
+       <b>Drop screenshots or sketches here</b>
+       <span>PNG, JPG, WebP, HEIC or PDF · up to 10 MB each · max 8</span>
+     </div>
+     <input type="file" id="fileIn" multiple accept="image/*,application/pdf" hidden>
+     <div class="files" id="fileList"></div>
+     <div class="hint" id="fileHint">Tag each one so we know whether it's your current site or the look you're after — it saves a round of emails.</div>
+
+     <label for="f-promo">Promo code <span style="text-transform:none;letter-spacing:0">(optional)</span></label><input id="f-promo" placeholder="FOUNDING25" class="mono">
+     <div class="hint">Codes validate server-side against <code>promo_codes</code>. A client-applied discount is never trusted.</div>
+     <label for="f-notes">Notes</label><textarea id="f-notes" placeholder="Anything we should know?"></textarea>
+     <button class="btn" style="margin-top:20px" id="go">Continue to payment</button>`;
+
+  const drop=$('#drop'), input=$('#fileIn');
+  drop.addEventListener('click',()=>input.click());
+  drop.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();input.click();} });
+  ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+  drop.addEventListener('drop',e=>addFiles(e.dataTransfer.files));
+  input.addEventListener('change',e=>addFiles(e.target.files));
+
+  $('#f-promo').addEventListener('input',e=>{
+    const on = e.target.value.trim().toUpperCase()==='FOUNDING25';
+    $('#dbody').querySelector('.summary').outerHTML = summaryHTML(on);
+  });
+  $('#go').addEventListener('click',()=>stepProcess($('#f-promo').value.trim().toUpperCase()==='FOUNDING25'));
+  renderFiles();
+}
+
+function addFiles(list){
+  const hint=$('#fileHint'); let rejected=[];
+  [...list].forEach(f=>{
+    if(files.length>=MAX_FILES){ rejected.push(`${f.name} — 8-file limit`); return; }
+    if(!OK_MIME.includes(f.type) && !/\.(heic|pdf)$/i.test(f.name)){ rejected.push(`${f.name} — type not allowed`); return; }
+    if(f.size>MAX_BYTES){ rejected.push(`${f.name} — ${kb(f.size)} over 10 MB`); return; }
+    const rec={ id:Math.random().toString(36).slice(2,8), name:f.name, size:f.size,
+                mime:f.type||'application/octet-stream', kind:null, url:null, pct:0 };
+    if(f.type.startsWith('image/') && f.type!=='image/heic'){
+      const r=new FileReader(); r.onload=e=>{ rec.url=e.target.result; renderFiles(); }; r.readAsDataURL(f);
+    }
+    files.push(rec);
+    trace('storage.from("intake-uploads").upload()',
+      `<span class="s">"a3f9c21/${rec.id}-${rec.name}"</span>  <span class="c">// {uid}/ prefix — RLS: split_part(name,'/',1) = auth.uid()</span>`);
+    let p=0; const t=setInterval(()=>{ p+=28; rec.pct=Math.min(p,100); renderFiles(); if(p>=100) clearInterval(t); },170);
+  });
+  hint.innerHTML = rejected.length
+    ? `<span style="color:var(--danger)">Rejected: ${rejected.join(' · ')}</span><br>The bucket enforces these limits server-side too — this check is a courtesy, not the control.`
+    : `Tag each one so we know whether it's your current site or the look you're after — it saves a round of emails.`;
+  renderFiles();
+}
+
+function renderFiles(){
+  const el=$('#fileList'); if(!el) return;
+  el.innerHTML = files.map(f=>`
+    <div class="file">
+      <div class="thumb">${f.url?`<img src="${f.url}" alt="" style="width:100%;height:100%;object-fit:cover">`:(/pdf/i.test(f.mime)?'PDF':/heic/i.test(f.mime+f.name)?'HEIC':'IMG')}</div>
+      <div class="fmeta">
+        <div class="fname">${f.name}</div>
+        <div class="fsize">${kb(f.size)}${f.pct<100?` · uploading ${f.pct}%`:' · stored'}</div>
+        ${f.pct<100?`<div class="bar"><i style="width:${f.pct}%"></i></div>`:`
+        <div class="kind">
+          <button data-k="current" data-id="${f.id}" aria-pressed="${f.kind==='current'}">What I have</button>
+          <button data-k="target"  data-id="${f.id}" aria-pressed="${f.kind==='target'}">What I want</button>
+        </div>`}
+      </div>
+      <button class="frm" data-rm="${f.id}" aria-label="Remove ${f.name}">&times;</button>
+    </div>`).join('');
+  el.querySelectorAll('[data-k]').forEach(b=>b.addEventListener('click',()=>{
+    const f=files.find(x=>x.id===b.dataset.id); f.kind = f.kind===b.dataset.k?null:b.dataset.k; renderFiles();
+  }));
+  el.querySelectorAll('[data-rm]').forEach(b=>b.addEventListener('click',()=>{
+    files=files.filter(x=>x.id!==b.dataset.rm); renderFiles();
+  }));
+}
+
+/* step 3 — processing */
+function stepProcess(promo){
+  const lines = [
+    ['supabase.auth.signInAnonymously()','session issued, no email required'],
+    ['POST /functions/v1/create-order','price resolved from products table'],
+    ['INSERT payment_intents (service-role)','client amount discarded'],
+    ['POST /functions/v1/create-stripe-checkout','session created from intent_id'],
+    ['Redirecting to checkout.stripe.com','hosted, PCI out of scope']
+  ];
+  $('#dbody').innerHTML = bar(3) + `<div class="step-label">Step 3 of 4 · Creating your order</div>
+    <div class="proc">${lines.map((l,i)=>`<div class="pline" id="p${i}"><span class="dot"></span><span>${l[0]}<small>${l[1]}</small></span></div>`).join('')}</div>`;
+
+  const disc = promo ? Math.round(sel.amount*0.25) : 0;
+  const net = sel.amount - disc;
+  const due = sel.deposit ? Math.round(net*sel.deposit/100) : net;
+
+  const traces = [
+    ()=>trace('anonymous session','{ <span class="s">"user"</span>: { <span class="s">"id"</span>: <span class="s">"a3f9…c21"</span>, <span class="s">"is_anonymous"</span>: <span class="n">true</span> } }'),
+    ()=>trace('→ create-order  (request)',`{\n  <span class="s">"product_id"</span>: <span class="s">"${sel.sku}"</span>,\n  <span class="s">"amount"</span>: <span class="bad">1</span>,          <span class="c">← tampered client value</span>\n  <span class="s">"promo_code"</span>: ${promo?'<span class="s">"FOUNDING25"</span>':'<span class="n">null</span>'},\n  <span class="s">"buyer_email"</span>: <span class="s">"rigo@warriorroofing.example"</span>,\n  <span class="s">"attachments"</span>: [${files.length?'\n'+files.map(f=>`    { <span class="s">"path"</span>: <span class="s">"a3f9c21/${f.id}-${f.name}"</span>, <span class="s">"kind"</span>: ${f.kind?`<span class="s">"${f.kind}"</span>`:'<span class="n">"unspecified"</span>'} }`).join(',\n')+'\n  ':''}]\n}`),
+    ()=>trace('← create-order  (response)',`{\n  <span class="c">// client "amount" ignored — resolved from products.id</span>\n  <span class="s">"order_id"</span>: <span class="s">"o_7fd2…"</span>,\n  <span class="s">"intent_id"</span>: <span class="s">"pi_4b8e…"</span>,\n  <span class="s">"list_amount"</span>: <span class="n">${sel.amount}</span>,\n  <span class="s">"discount_amount"</span>: <span class="n">${disc}</span>,\n  <span class="s">"amount_charged"</span>: <span class="n">${due}</span>,\n  <span class="s">"status"</span>: <span class="s">"pending"</span>\n}`),
+    ()=>trace('← create-stripe-checkout',`{ <span class="s">"url"</span>: <span class="s">"https://checkout.stripe.com/c/pay/cs_test_a1…"</span> }`),
+    ()=>{}
+  ];
+
+  let i=0;
+  (function tick(){
+    if(i>0){ const p=$('#p'+(i-1)); p.classList.remove('act'); p.classList.add('fin'); }
+    if(i<lines.length){
+      $('#p'+i).classList.add('act');
+      traces[i] && traces[i]();
+      i++; setTimeout(tick,780);
+    } else { setTimeout(()=>stepStripe(due,disc),620); }
+  })();
+}
+
+/* step 4 — stripe + result */
+function stepStripe(due,disc){
+  $('#dbody').innerHTML = bar(4) + `<div class="step-label">Step 4 of 4 · Hosted checkout</div>
+   <div class="stripe-mock">
+     <div class="stripe-bar"><span>checkout.stripe.com</span><span>TEST MODE</span></div>
+     <div class="stripe-body">
+       <div class="lbl">ScriptHammer · ${sel.name}</div>
+       <div class="amt">${money(due)}${sel.interval?' <span style="font-size:.9rem;font-weight:400;color:#6b7280">/ '+sel.interval+'</span>':''}</div>
+       <div class="ln">Card · 4242 4242 4242 4242 · 12/34 · 123</div>
+     </div>
+   </div>
+   <div class="notice warn"><b>The tamper check.</b> The browser sent <code>amount: 1</code>. Stripe is charging <b>${money(due)}</b> — the price came from the <code>products</code> row, not the request. That's the whole point of PRD 016 §8.1.</div>
+   <button class="btn" id="pay">Pay ${money(due)}</button>
+   <button class="btn alt" style="margin-top:9px" id="cancel">Cancel</button>`;
+  $('#cancel').addEventListener('click',closeCheckout);
+  $('#pay').addEventListener('click',()=>{
+    trace('stripe-webhook  (signature verified)',`{\n  <span class="s">"type"</span>: <span class="s">"payment_intent.succeeded"</span>,\n  <span class="s">"metadata"</span>: { <span class="s">"intent_id"</span>: <span class="s">"pi_4b8e…"</span> },\n  <span class="s">"amount_received"</span>: <span class="n">${due}</span>\n}`);
+    trace('UPDATE orders','<span class="s">status</span> <span class="c">pending → </span><span class="n">paid</span>  <span class="c">(webhook-driven only)</span>');
+    trace('→ send-payment-email','<span class="c">// receipt to buyer + intake summary to operator</span>');
+    stepDone(due);
+  });
+}
+function stepDone(due){
+  const dep = sel.deposit ? money(sel.amount - due) : null;
+  const tagged = files.filter(f=>f.kind).length;
+  $('#dbody').innerHTML = bar(4) + `<div class="step-label">Order confirmed</div>
+   <div class="notice ok"><b>Paid — ${money(due)}.</b> Order <code>o_7fd2…</code> is now <code>paid</code>. Receipt sent; the intake summary is in the operator's inbox and the job is in <code>/admin/orders</code>.</div>
+
+   <div class="cal">
+     <div class="cal-bar"><span>calendly.com/scripthammer/kickoff</span><span>PREFILLED</span></div>
+     <div class="cal-body">
+       <h4>Kickoff call · 30 min</h4>
+       <div class="who">Jonathan Pohlner · ScriptHammer</div>
+       <div class="slots">
+         <div class="slot">Fri 10:00</div><div class="slot">Fri 2:30</div><div class="slot">Mon 9:00</div>
+         <div class="slot">Mon 11:30</div><div class="slot">Tue 1:00</div><div class="slot">Tue 3:30</div>
+       </div>
+       <div class="pre">Prefilled from your order — name, email, and <code>utm_content=o_7fd2…</code> so the booking maps back to it. No retyping.</div>
+     </div>
+   </div>
+   <button class="btn" id="book">Book your kickoff call</button>
+
+   ${files.length?`<div class="notice" style="margin-top:18px"><b>${files.length} file${files.length>1?'s':''} attached${tagged?`, ${tagged} tagged`:''}.</b> Stored privately in <code>intake-uploads</code>; the operator opens them via signed URLs in <code>/admin/orders</code>.${tagged<files.length?` <span style="color:var(--muted)">Untagged files land as <code>unspecified</code> — which is exactly the ambiguity this field exists to kill.</span>`:''}</div>`:''}
+   ${dep?`<div class="notice"><b>Remaining ${dep}</b> is invoiced on delivery — <code>metadata.deposit_pct: 50</code> on the SKU, not a handshake in a WhatsApp thread.</div>`:''}
+   <div class="notice"><b>Scope is locked by the SKU.</b> ${sel.feats.length} deliverables and the revision count came from the <code>products</code> row. Excluded: photography, logo design, long-form copywriting, SEO campaigns.</div>
+   <button class="btn alt" id="done">Close</button>`;
+  $('#book').addEventListener('click',()=>{
+    trace('CalendarEmbed mode="popup"',`{\n  <span class="s">"url"</span>: <span class="s">"https://calendly.com/scripthammer/kickoff"</span>,\n  <span class="s">"prefill"</span>: { <span class="s">"name"</span>: <span class="s">"Warrior Roofing Inc"</span>, <span class="s">"email"</span>: <span class="s">"rigo@warriorroofing.example"</span> },\n  <span class="s">"utm"</span>: { <span class="s">"source"</span>: <span class="s">"scripthammer"</span>, <span class="s">"content"</span>: <span class="s">"o_7fd2…"</span> }\n}\n<span class="c">// popup, not inline — an inline embed would fire a SECOND consent</span>\n<span class="c">// card (consent.functional) seconds after the payment consent.</span>`);
+    $('#book').textContent='Opening Calendly…'; $('#book').disabled=true;
+  });
+  $('#done').addEventListener('click',closeCheckout);
+}
+
+/* pricing-page booking — inline embed, consent card first */
+$('#talkBtn').addEventListener('click',()=>{
+  sel=null; files=[];
+  $('#dTitle').textContent='Book a call';
+  $('#scrim').classList.add('on'); $('#drawer').classList.add('on');
+  $('#devLog').innerHTML='';
+  $('#dbody').innerHTML = `
+   <div class="notice"><b>Functional cookies required.</b> The inline embed loads Calendly's script. <code>CalendarEmbed</code> checks <code>useConsent().consent.functional</code> and renders <code>CalendarConsent</code> until you agree — nothing third-party loads first.</div>
+   <button class="btn" id="calAgree">Allow and load calendar</button>
+   <button class="btn alt" style="margin-top:9px" id="calNo">Not now</button>`;
+  $('#calNo').addEventListener('click',closeCheckout);
+  $('#calAgree').addEventListener('click',()=>{
+    trace('ConsentContext.update()','{ <span class="s">"functional"</span>: <span class="n">true</span> }  <span class="c">// now CalendlyProvider mounts</span>');
+    $('#dbody').innerHTML = `
+     <div class="cal">
+       <div class="cal-bar"><span>calendly.com/scripthammer/intro</span><span>INLINE EMBED</span></div>
+       <div class="cal-body">
+         <h4>Intro call · 15 min</h4>
+         <div class="who">Jonathan Pohlner · ScriptHammer</div>
+         <div class="slots">
+           <div class="slot">Fri 10:00</div><div class="slot">Fri 2:30</div><div class="slot">Mon 9:00</div>
+           <div class="slot">Mon 11:30</div><div class="slot">Tue 1:00</div><div class="slot">Tue 3:30</div>
+         </div>
+         <div class="pre">Theme-matched via <code>useEmbedThemeColor</code>. Provider swaps to Cal.com with one env var.</div>
+       </div>
+     </div>
+     <div class="notice">Bring a screenshot of a site you like. It's the fastest way to a real number.</div>
+     <button class="btn alt" id="calClose">Close</button>`;
+    $('#calClose').addEventListener('click',closeCheckout);
+  });
+});
+
+/* free tier */
+function stepFree(){
+  $('#dbody').innerHTML = `<div class="notice ok"><b>Forge is free and MIT licensed.</b> No checkout, no email wall.</div>
+   <pre style="background:var(--surface-2);border:1px solid var(--line);padding:14px;border-radius:4px;color:var(--text)">git clone https://github.com/\n  TortoiseWolfe/ScriptHammer.git\n\npnpm install\ndocker compose up</pre>
+   <div class="notice">Give back: file bugs, report what your users do with it, and come on the stream to talk about what you built.</div>
+   <button class="btn alt" id="done2">Close</button>`;
+  $('#done2').addEventListener('click',closeCheckout);
+}
+
+renderGrid();
+</script>
+</body>
+</html>

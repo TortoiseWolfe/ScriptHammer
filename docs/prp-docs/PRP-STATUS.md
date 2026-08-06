@@ -13,6 +13,26 @@
 
 ---
 
+## 2026-08-06 — Commerce Catalog & Storefront (feature 050) — PRD landed + corrected
+
+- **`docs/prp-docs/commerce-catalog-prd.md`** — server-authoritative product
+  catalog, `/pricing` storefront, guest checkout, order record, intake uploads,
+  and a pay-what-you-want tip jar. Ten SKUs across two lanes.
+- **`docs/design/commerce/pricing-demo.html`** — the working design prototype.
+  Reference only; it loads Google Fonts and encodes one rationale that is false
+  against current code. Both are flagged in a banner at the top of the file.
+- **Forcing function:** the `payment_intents` `amount <= 99999` CHECK makes a
+  $1,200 quote literally impossible today.
+- **Status: Draft, corrected.** Two audits checked every claim against the code;
+  eight were wrong and are marked `[CORRECTED]` in place. Notably the original
+  draft targeted `specs/016-`, which is both the dead tree and a colliding
+  number — this is **050** in `features/payments/`, since 049 is reserved for
+  Model City.
+- Next: `/speckit.specify` → `clarify` → wireframe gate → `plan` → `tasks`.
+  Do **not** use `scripts/prp-to-feature.sh`; it still writes to `docs/specs/`.
+
+---
+
 ## 2026-07-18 — Model City / Chattanooga Digital Twin (feature 049) — PRD + PRP drafted
 
 Concept extracted from the Claude Design prototypes into ScriptHammer docs (no code yet):
