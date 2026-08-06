@@ -34,11 +34,14 @@
     <rect x="60" y="164" width="740" height="212" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
     <text x="84" y="192" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Tell us about the job</text>
     <text x="84" y="220" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Email</text>
-    <rect x="84" y="228" width="330" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <rect x="84" y="228" width="220" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="100" y="254" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">you@example.com</text>
-    <text x="446" y="220" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Business name</text>
-    <rect x="446" y="228" width="330" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="462" y="254" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Warrior Roofing Inc</text>
+    <text x="320" y="220" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Phone</text>
+    <rect x="320" y="228" width="220" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="336" y="254" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">(423) 555-0137</text>
+    <text x="556" y="220" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Business name</text>
+    <rect x="556" y="228" width="220" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="572" y="254" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Warrior Roofing</text>
     <text x="84" y="296" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Domain</text>
     <rect x="84" y="304" width="330" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="100" y="330" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">warriorroofingtn.com</text>
@@ -108,33 +111,35 @@
     <circle cx="280" cy="132" r="11" fill="#dcc8a8" stroke="#b8a080"/>
     <text x="280" y="137" text-anchor="middle" fill="#374151" font-size="14" font-weight="bold">3</text>
 
-    <rect x="16" y="158" width="328" height="150" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <rect x="16" y="158" width="328" height="204" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
     <text x="36" y="184" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Tell us about the job</text>
     <rect x="36" y="196" width="288" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
     <text x="52" y="222" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">you@example.com</text>
     <rect x="36" y="250" width="288" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
-    <text x="52" y="276" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Warrior Roofing Inc</text>
+    <text x="52" y="276" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">(423) 555-0137</text>
+    <rect x="36" y="304" width="288" height="44" rx="4" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="52" y="330" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Warrior Roofing Inc</text>
 
-    <rect x="16" y="322" width="328" height="130" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="36" y="348" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">What you have and want</text>
-    <rect x="36" y="360" width="288" height="76" rx="8" fill="#f5f0e6" stroke="#b8a080" stroke-dasharray="6 4"/>
-    <text x="180" y="392" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Tap to add files</text>
-    <text x="180" y="416" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Up to 8. Tag each one.</text>
+    <rect x="16" y="374" width="328" height="110" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="36" y="398" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">What you have and want</text>
+    <rect x="36" y="408" width="288" height="62" rx="8" fill="#f5f0e6" stroke="#b8a080" stroke-dasharray="6 4"/>
+    <text x="180" y="434" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Tap to add files</text>
+    <text x="180" y="456" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">Up to 8. Tag each one.</text>
 
-    <rect x="16" y="466" width="328" height="96" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
-    <text x="36" y="492" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Order summary</text>
-    <text x="36" y="516" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Landing Page</text>
-    <text x="324" y="516" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#374151">$1,200.00</text>
-    <text x="36" y="544" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Total today</text>
-    <text x="324" y="544" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">$1,200.00</text>
+    <rect x="16" y="496" width="328" height="88" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="36" y="520" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Order summary</text>
+    <text x="36" y="542" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Landing Page</text>
+    <text x="324" y="542" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#374151">$1,200.00</text>
+    <text x="36" y="568" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Total today</text>
+    <text x="324" y="568" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">$1,200.00</text>
 
-    <rect x="36" y="578" width="288" height="44" rx="6" fill="#8b5cf6"/>
-    <text x="180" y="606" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Pay $1,200.00</text>
+    <rect x="36" y="596" width="288" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="180" y="624" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Pay $1,200.00</text>
 
     <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
 
     <g class="callout"><circle cx="332" cy="184" r="11" fill="#dc2626"/><text x="332" y="189" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
-    <g class="callout"><circle cx="332" cy="348" r="11" fill="#dc2626"/><text x="332" y="353" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="332" cy="398" r="11" fill="#dc2626"/><text x="332" y="403" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
   </g>
 
   <g id="annotations" transform="translate(40, 800)">

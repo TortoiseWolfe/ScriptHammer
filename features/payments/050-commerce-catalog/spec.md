@@ -317,7 +317,10 @@ all of the cost, none of the benefit.
 **Intake**
 
 - **FR-013**: Users MUST be able to describe the job at checkout, including a
-  business name, a destination, a reference, and free text.
+  business name, a **phone number**, a destination, a reference, and free text.
+  The phone number is not optional politeness: the catalog promises every build
+  ships with click-to-call and a form wired to the buyer's phone, and the product
+  cannot deliver that without asking for the number.
 - **FR-014**: Users MUST be able to attach up to eight files and tag each as
   something they have or something they want.
 - **FR-015**: System MUST enforce file size and type limits in a place the
