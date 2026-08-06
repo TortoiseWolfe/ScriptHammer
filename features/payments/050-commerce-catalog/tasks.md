@@ -66,7 +66,10 @@ All commands run in the container.
       $999.99 limit never applied to subscriptions at all).
 - [ ] **T004** `products` table + RLS + indexes, including `amount_mode`,
       `min_amount`, `max_amount` and the two CHECK constraints from PRD §6.
-- [ ] **T005** `orders` table + RLS + indexes.
+- [ ] **T005** `orders` table + RLS + indexes. `intake_data` includes **`phone`** — the
+      catalog sells click-to-call and "form wired to your inbox and phone" on every build,
+      which the product cannot deliver without asking for the number. Added to Phase 1
+      deliberately so the first sale carries it (#557).
 - [ ] **T006** [P] Seed all ten SKUs, including `tip-jar` as the sole
       `amount_mode='variable'` row.
 - [ ] **T007** [P] `src/types/commerce.ts` — `Product`, `Order`, `OrderStatus`,

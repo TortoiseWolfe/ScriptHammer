@@ -480,6 +480,11 @@ the client.
 ```jsonc
 {
   "business": "Warrior Roofing Inc",
+  // [CORRECTED] The original intake shape had no phone, while §5 promises every
+  // build ships with click-to-call and "form wired to your inbox and phone".
+  // For a contractor the phone IS the primary channel, and the product cannot
+  // deliver what the catalog sells without asking for it. Added in Phase 1.
+  "phone": "+14235550137",
   "domain": "warriorroofingtn.com",
   "notes": "Want it to look like the carrd but higher end",
   "reference_url": "https://warriorroofing.carrd.co",
