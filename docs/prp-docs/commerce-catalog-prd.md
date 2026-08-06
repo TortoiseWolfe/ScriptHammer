@@ -373,10 +373,13 @@ It must therefore:
    `docs/specs/015-payment-integration/`), and a QA plan even carries a test row
    for "preset amount selection." Adopt that vocabulary or explicitly supersede
    it — do not quietly create a second name for the same thing.
-2. `getCashAppLink(amount?)` and `getChimeLink()` exist at
-   `src/config/payment.ts:149-165`, their feature flags are computed at `:250-255`,
-   and **nothing in the app consumes them**. A zero-fee tip path is already
-   half-built. Decide whether the tip jar uses it.
+2. ~~Whether the tip jar uses the unconsumed Cash App / Chime links.~~
+   **`[DECIDED]` Yes — offered alongside card.** `getCashAppLink(amount?)` and
+   `getChimeLink()` at `src/config/payment.ts:149-165` become their own first
+   consumer, and `featureFlags.cashAppEnabled` / `chimeEnabled` stop being dead
+   code. Both are outbound handoffs with no callback, so a tip paid that way
+   produces **no order row and no receipt** — the UI must say so before the
+   tipper leaves the page. See §13.9.
 
 ### Positioning note
 
@@ -646,16 +649,19 @@ role and returns the id; the browser then redirects with
 endpoint. It still needs **rate limiting** and a **cleanup job** for
 `link_opened` rows that never convert.
 
-**Open question for `/speckit.clarify` — this is a real decision, not a detail.**
+**Attribution on this table is deliberately limited `[DECIDED]` — see §13.8.**
 The repo gates tracking at four points: the calendar embed on
 `consent.functional` (`CalendarEmbed.tsx:64-76`), `useAnalytics` on
 `consent.analytics` (early return in all eight functions), the GA script plus
-Google Consent Mode, and Sentry. **A server-side `invitee.created` handler
-writing `utm_*` bypasses every one of them** — a browser gate cannot constrain a
-server-to-server webhook. The defensible split is that booking-intent fields
-(name, email, invitee URI) are functional and already covered by the embed gate,
-while marketing attribution is exactly what the analytics gates exist to protect.
-Decide in the spec, not in review.
+Google Consent Mode, and Sentry. A server-side `invitee.created` handler writing
+`utm_*` would bypass every one of them — a browser gate cannot constrain a
+server-to-server webhook.
+
+**The handler therefore writes booking facts only**: `name`, `email`,
+`calendly_invitee_uri`, `scheduled_at`, `booking_status`. It never writes `utm`.
+The `utm` column holds only what the pre-sale click already knew, and
+`utm_content` is used to _locate_ the row rather than being retained as
+attribution. No consent-snapshot column is added.
 
 ### Changed: `webhook_events` for a third provider `[DECIDED]`
 
@@ -1022,6 +1028,8 @@ that never became a sale is still visible.
 ### Phase 4b — Tip jar (≈5 hrs) `[NEW]`
 
 - `TipJar` component (5-file pattern), `/tip` route
+- Card payment via `create-order`, plus the two fee-free direct methods with an
+  explicit "no receipt for this one" notice at the point of choice (§13.9)
 - `sh-shake` keyframe as an `@utility` in `globals.css`, honouring **both** the
   `prefers-reduced-motion` media query and `[data-reduce-motion='true']`
 - `useReducedMotion()` gate on the JS trigger
@@ -1131,19 +1139,49 @@ site the original draft did not know about.
    the same `invitee.created` webhook, so there is no form in front of the click
    and "unconverted" is simply a lead row that never reached `scheduled`.
 
-### Still open — for `/speckit.clarify`
+### Surfaced by the code audit — two closed, two for `/speckit.clarify`
 
-These are new, surfaced by the code audit rather than by the original draft:
+**8. May a server-side webhook write `utm_*` when four browser consent gates
+would have blocked it?** → **No. Booking facts only; the `leads` row carries no
+consent snapshot.** `[DECIDED]`
 
-1. **May a server-side webhook write `utm_*` when four browser consent gates
-   would have blocked it?** The proposed split is in §6 under `leads`. This is
-   the one with real privacy consequences.
-2. **Widen `webhook_events.provider`, or give Calendly its own table?** §6 assumes
-   widening.
-3. **Adopt or supersede the pre-existing `/donate` + `DonateButton` vocabulary?**
-   §5.
-4. **Use the already-built, unconsumed Cash App / Chime links as a zero-fee tip
-   path?** §5.
+The reasoning matters more than the answer, because the answer is easy to
+"correct" later by someone who assumes the wrong premise. The four gates all
+govern **third-party code running in the browser** — that is the ePrivacy
+surface, storing or reading something on a device. A server-side record of where
+a booking came from is a different question, and first-party attribution on a
+conversion event is normally lawful under legitimate interest when disclosed.
+
+So this was probably **permissible**. It is dropped on **value**, not legality:
+there are no campaigns running, volume is low enough that the operator knows each
+booking's source without a database, and the alternative costs a stored consent
+state, a write, a read-back, and a position to defend. Revisit when campaign
+volume makes the gap visible.
+
+Consequence for §6: `leads.utm` holds only what the pre-sale click knows, and the
+webhook never adds to it. `utm_content` is used to _find_ the row and is not
+retained as attribution.
+
+**9. Use the unconsumed Cash App / Chime links as a zero-fee tip path?** →
+**Yes, alongside card.** `[DECIDED]`
+
+On a $5 tip the processor fee is a meaningful fraction, and
+`getCashAppLink(amount?)` / `getChimeLink()` already exist at
+`src/config/payment.ts:149-165` with flags computed at `:250-255` and no
+consumer. The tip jar becomes their first consumer.
+
+**The trade-off is accepted explicitly:** both are outbound handoffs with no
+callback, so a tip paid that way produces **no `orders` row and no receipt** — it
+is visible only in the respective app. The UI must say so at the point of choice
+rather than let the tipper assume a receipt is coming. This also means
+`featureFlags.cashAppEnabled` / `chimeEnabled` stop being dead code.
+
+### Still open
+
+10. **Widen `webhook_events.provider`, or give Calendly its own table?** §6
+    assumes widening. Implementation-level; resolve in `plan.md`.
+11. **Adopt or supersede the pre-existing `/donate` + `DonateButton`
+    vocabulary?** §5. Naming only; resolve in `plan.md`.
 
 ---
 
