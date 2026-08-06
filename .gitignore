@@ -226,3 +226,17 @@ graphify-out/
 .tmp-*
 /Screenshot *.png
 /public/blog-images/**/Screenshot *.png
+
+# The rules above only catch files that happen to be NAMED `.tmp-*` or
+# `Screenshot *`. Working files arrive with arbitrary names — client photos,
+# estimates, exported diagrams — and four were sitting untracked at the root
+# when this was written. The repo tracks NO image, html or svg at its root
+# (`git ls-files | grep -v /` is markdown, config and lockfiles only), so
+# anchoring by extension is safe and does not depend on guessing a name.
+# Anything genuinely belonging to the project lives in `public/` or `docs/`.
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
+/*.html
+/*.svg
