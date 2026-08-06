@@ -971,7 +971,10 @@ export type Database = {
         };
         Returns: Json;
       };
-      cleanup_old_audit_logs: { Args: never; Returns: undefined };
+      cleanup_old_audit_logs: {
+        Args: { p_batch_size?: number; p_max_batches?: number };
+        Returns: number;
+      };
       is_admin: {
         Args: { check_user_id?: string };
         Returns: boolean;

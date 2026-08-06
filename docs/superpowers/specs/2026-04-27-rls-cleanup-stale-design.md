@@ -49,6 +49,15 @@ Steps 1–3 use service-role REST (PostgREST) for bulk efficiency. Step 4 uses t
 ### What's not deleted
 
 - `auth_audit_logs` rows — schema has no FK back; they age out via the existing `cleanup_old_audit_logs()` function (90-day retention). Deleting them on every test run would distort metrics if/when #49 lands.
+  - > **The premise was false when this was written (#585, 2026-08-06).** They did **not** age
+    > out. `cleanup_old_audit_logs()` existed but had no caller, so "the existing function"
+    > deleted nothing, and E2E churn accumulated here indefinitely — by August the table held
+    > 10,683 rows, 3,018 of them past the stated window, and was the largest in the database.
+    >
+    > The **decision** stands — audit rows still should not be deleted per test run, for the
+    > metrics reason given. Only its justification was wrong, and it is now true: retention is
+    > enforced daily by `.github/workflows/data-retention.yml`. Worth noting as a pattern —
+    > this is a decision that was made _because_ of a control nobody had verified was running.
 - `rate_limit_attempts` — same shape (no FK).
 - `webhook_events`, `payment_provider_config` — no `template_user_id`, no relevant ownership.
 

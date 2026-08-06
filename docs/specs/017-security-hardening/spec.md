@@ -477,6 +477,13 @@ As a user with a ScriptHammer account, I need my payment data and personal infor
 **Attributes**: Event ID, user ID, event type, timestamp, IP address, user agent, event data (JSONB)
 **Security Properties**: Append-only, 90-day retention, queryable by admins only
 
+> **Correction (#585, 2026-08-06).** The 90-day retention above was stated here from the
+> start and was **not in effect for the first ten months**. `cleanup_old_audit_logs()` existed
+> in the migration and nothing ever called it; the oldest row was four months old when this
+> was measured, and the table had become the largest in the database. It is now enforced by
+> `.github/workflows/data-retention.yml`, which deletes past the window and then re-counts to
+> prove it did. Retention claims in this repo should name their enforcer.
+
 ### Rate Limit Tracker
 
 **Purpose**: Server-side counter for failed authentication attempts
