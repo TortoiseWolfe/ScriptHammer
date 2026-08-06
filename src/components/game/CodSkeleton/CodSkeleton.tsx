@@ -45,13 +45,20 @@ export interface CodSkeletonProps {
 interface BoxSpec {
   size: [number, number, number];
   pos: [number, number, number];
+  /** Physics surface tag (drives collision/footing). */
   surface: 'dirt' | 'concrete' | 'wood';
+  /**
+   * CoD materials-forge surface id (defaults to `surface`). Kept DISTINCT per
+   * box so each mesh gets its own cached texture set — the forge caches by id,
+   * and same-id boxes would share (and clobber) each other's tiling `repeat`.
+   */
+  material?: string;
 }
 
 const LEVEL: readonly BoxSpec[] = [
   { size: [40, 2, 40], pos: [0, -1, 0], surface: 'dirt' }, // floor, top at y=0
   { size: [8, 0.4, 8], pos: [6, 0.2, -4], surface: 'concrete' }, // step-up, top y=0.40
-  { size: [0.5, 3, 12], pos: [-6, 1.5, 0], surface: 'concrete' }, // wall
+  { size: [0.5, 3, 12], pos: [-6, 1.5, 0], surface: 'concrete', material: 'brick' }, // wall
   { size: [1.6, 1, 1.6], pos: [3, 0.5, 4], surface: 'wood' }, // crate
 ];
 
@@ -103,6 +110,12 @@ function makeSurfaceTexture(
   return tex;
 }
 
+/** Tiling repeat from a box's two largest dims (~2 m tiles), clamped to >= 1. */
+function tileRepeat(size: [number, number, number]): [number, number] {
+  const s = [...size].sort((a, b) => b - a);
+  return [Math.max(1, Math.round(s[0] / 2)), Math.max(1, Math.round(s[1] / 2))];
+}
+
 /**
  * Inner scene: lives inside `<Canvas>`, so it may use useThree/useFrame.
  * Builds the collision world from LEVEL, renders LEVEL as meshes, and runs the
@@ -147,8 +160,8 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
         metalness: 0,
       });
 
-    return LEVEL.map((b, i) => {
-      if (i !== 0 || !gl) return standIn(b); // floor only; forge needs a renderer
+    return LEVEL.map((b) => {
+      if (!gl) return standIn(b); // forge needs a renderer (mocked test → stand-in)
       try {
         if (!forgeRef.current) {
           const forge = new MaterialSystem({ renderer: gl });
@@ -159,15 +172,16 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
         // in-flight R3F frame can't be corrupted (the forge's standalone path).
         const prevRT = gl.getRenderTarget();
         const prevAutoClear = gl.autoClear;
-        const set = forgeRef.current.getTextureSet(b.surface);
+        const set = forgeRef.current.getTextureSet(b.material ?? b.surface);
         gl.setRenderTarget(prevRT);
         gl.autoClear = prevAutoClear;
         if (!set || !set.albedo) return standIn(b);
+        const [rx, ry] = tileRepeat(b.size);
         for (const tex of [set.albedo, set.normal, set.orm]) {
           if (!tex) continue;
           tex.wrapS = THREE.RepeatWrapping;
           tex.wrapT = THREE.RepeatWrapping;
-          tex.repeat.set(8, 8);
+          tex.repeat.set(rx, ry);
         }
         return new THREE.MeshStandardMaterial({
           map: set.albedo,
