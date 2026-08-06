@@ -64,19 +64,38 @@ function buildChainScripts() {
   return [...new Set(found)];
 }
 
-/** Approximate GitHub's glob semantics closely enough to catch a widened rule. */
+/**
+ * Approximate GitHub's glob semantics closely enough to catch a widened rule.
+ *
+ * The subtlety that matters: in GitHub's implementation `**` matches the EMPTY
+ * string, so `'**\/*.md'` matches root-level `README.md`, not just
+ * `docs/thing.md`. Verified against PR #554, which changed only root-level
+ * README.md and produced zero E2E runs.
+ *
+ * A naive `split('**').join('.*')` gets this wrong — it compiles to `.*\/...`,
+ * which requires a slash and therefore reports root-level markdown as
+ * TRIGGERING E2E when it does not. That direction is the dangerous one: it makes
+ * the ignore list look narrower than it is, so a genuinely over-wide pattern
+ * could slip past the assertions below.
+ */
 function matches(filePath, pattern) {
-  const rx = new RegExp(
-    '^' +
-      pattern
-        .split('**')
-        .map((s) =>
-          s.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*')
-        )
-        .join('.*') +
-      '$'
-  );
-  return rx.test(filePath);
+  let out = '';
+  for (let i = 0; i < pattern.length; ) {
+    if (pattern.startsWith('**/', i)) {
+      out += '(?:.*/)?'; // `**/` may match nothing at all
+      i += 3;
+    } else if (pattern.startsWith('**', i)) {
+      out += '.*';
+      i += 2;
+    } else if (pattern[i] === '*') {
+      out += '[^/]*';
+      i += 1;
+    } else {
+      out += pattern[i].replace(/[.+^${}()|[\]\\]/, '\\$&');
+      i += 1;
+    }
+  }
+  return new RegExp('^' + out + '$').test(filePath);
 }
 
 describe('e2e.yml paths-ignore', () => {
@@ -134,6 +153,25 @@ describe('e2e.yml paths-ignore', () => {
       'a blanket scripts/** should swallow build-chain scripts; if it no longer ' +
         'does, this matcher is broken and the real assertion proves nothing'
     );
+  });
+
+  it('matches GitHub semantics for `**/` at the start of a pattern', () => {
+    // Regression guard. `**` matches the empty string in GitHub's globber, so
+    // `**/*.md` covers root-level files. Confirmed empirically: PR #554 changed
+    // only README.md and produced ZERO E2E runs.
+    //
+    // Getting this wrong understates what the ignore list already covers, which
+    // would let an over-wide pattern pass the build-chain assertion above.
+    assert.ok(
+      matches('README.md', '**/*.md'),
+      '**/*.md must match root-level md'
+    );
+    assert.ok(
+      matches('CONTRIBUTING.md', '**/*.md'),
+      'ditto for CONTRIBUTING.md'
+    );
+    assert.ok(matches('docs/thing.md', '**/*.md'), 'and nested md');
+    assert.ok(!matches('src/app/page.tsx', '**/*.md'), 'but not non-md');
   });
 
   it('still ignores the repo tooling E2E cannot reach', () => {
