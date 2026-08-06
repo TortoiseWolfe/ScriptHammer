@@ -474,6 +474,34 @@ export const User = ({ name, email }) => <div>{name}</div>;
 - Maintain color contrast ratios (WCAG AA)
 - Test with screen readers
 
+### Strings that must survive a rebrand — `rebrand:keep`
+
+This is a template. `scripts/rebrand.sh` rewrites the project name across 200+ files
+when someone forks it, so **any literal you add that must keep naming the upstream
+project needs to say so**. Mark it with `rebrand:keep` in a comment on the same line:
+
+```ts
+href: 'https://github.com/TortoiseWolfe/ScriptHammer', // rebrand:keep
+```
+
+- **Line-scoped, not file-scoped.** A marker at the top of a file protects nothing
+  below it.
+- **The token is deliberately brand-neutral.** `scripthammer:keep` would contain the
+  very string the rebrand searches for.
+- Prettier keeps a trailing `// rebrand:keep` on its own line, so formatting will not
+  separate the marker from what it protects.
+
+Typical cases are upstream URLs, the attribution link, and anything naming this
+repository as the _source_ rather than as the current project. When in doubt, ask
+whether a fork would still want that line to name the upstream project — if yes,
+mark it.
+
+Note that this section is written to survive its own advice: it describes the rule
+without embedding the project name in a sentence that a rebrand would falsify. That
+is usually easier than marking prose line by line.
+
+See [docs/FORKING.md](./docs/FORKING.md) for the fork-side view.
+
 ---
 
 ## Getting Help

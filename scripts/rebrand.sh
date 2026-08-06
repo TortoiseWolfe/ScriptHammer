@@ -31,6 +31,20 @@
 #   ./scripts/rebrand.sh "My Cool App" myuser "Description" --dry-run
 #   ./scripts/rebrand.sh MyApp myuser "Description" --force
 #   ./scripts/rebrand.sh MyApp myuser "Description" --preserve-ssh --dry-run
+#
+# Preserving a string across a rebrand:
+#   Put `rebrand:keep` in a comment on the SAME LINE as the string you want to
+#   survive. That line is skipped by every replacement pass:
+#
+#     label: 'ScriptHammer',   // rebrand:keep
+#
+#   It is LINE-scoped, not file-scoped — a marker at the top of a file protects
+#   nothing below it. The token is deliberately brand-neutral: `scripthammer:keep`
+#   would itself contain the string being replaced.
+#
+#   The attribution link in src/config/footer-links.ts is protected this way,
+#   which is why --preserve-attribution is now a no-op. Removing the attribution
+#   is a one-line edit you are welcome to make. It is MIT.
 # =============================================================================
 
 set -euo pipefail
@@ -70,7 +84,29 @@ ORIGINAL_OWNER="TortoiseWolfe"
 # =============================================================================
 
 show_help() {
-    sed -n '2,35p' "$0" | sed 's/^# //' | sed 's/^#//'
+    # Print the header comment block, stopping at the closing rule.
+    #
+    # This used to be `sed -n '2,35p'`, a hardcoded range. Adding the
+    # rebrand:keep section pushed the header to line 48, and the help output
+    # would have been silently truncated mid-sentence. The range does not know
+    # the header grew, and nothing would have complained (#541).
+    #
+    # The first replacement stopped at the first line that was not `#`-prefixed,
+    # which traded one silent truncation for another: a single genuinely blank
+    # line inside the header cut the output from 47 lines to 8. It only survived
+    # because the header happens to use bare `#` for its blank lines.
+    #
+    # So: skip blank lines rather than stopping on them, and stop on the closing
+    # `# ====` rule, which is a real terminator rather than an accident of
+    # formatting. tests/rebrand/test-rebrand.sh pins both the line count and the
+    # presence of the last section, so either truncation mode fails loudly.
+    awk '
+      NR == 1              { next }                       # shebang
+      /^# =+$/             { seen++; if (seen == 3) exit; next }
+      /^#/                 { sub(/^# ?/, ""); print; next }
+      /^[[:space:]]*$/     { print ""; next }              # blank line, keep going
+                           { exit }                       # real code, stop
+    ' "$0"
     exit 0
 }
 
