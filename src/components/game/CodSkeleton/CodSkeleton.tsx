@@ -10,6 +10,7 @@ import FallbackPanel from '@/components/game/FallbackPanel';
 import { StaticWorld } from '@/lib/cod/bvh';
 import { CharacterController } from '@/lib/cod/character';
 import { MASK } from '@/lib/cod/surfaces';
+import { MaterialSystem } from '@/lib/cod/materials';
 
 /**
  * CodSkeleton — first-person "walking skeleton" for the CoD extraction spike.
@@ -132,23 +133,65 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
     });
   }
 
-  // Procedural materials, one texture per box (repeat baked from top-face size).
-  const materials = useMemo(
-    () =>
-      LEVEL.map((b) => {
-        const tex = makeSurfaceTexture(
-          b.surface,
-          b.size[0] / 2,
-          b.size[2] / 2
-        );
+  // Materials: the FLOOR gets a real Claude-of-Duty procedural-PBR bake (the ⭐
+  // extract — albedo/normal/ORM rendered on the GPU at load, zero assets); the
+  // smaller boxes keep the zero-asset DataTexture stand-in for now. The forge
+  // needs a live WebGLRenderer, so it only runs when `gl` exists (the
+  // mocked-Canvas unit test has no gl and falls back to the stand-in).
+  const forgeRef = useRef<MaterialSystem | null>(null);
+  const materials = useMemo(() => {
+    const standIn = (b: BoxSpec): THREE.MeshStandardMaterial =>
+      new THREE.MeshStandardMaterial({
+        map: makeSurfaceTexture(b.surface, b.size[0] / 2, b.size[2] / 2),
+        roughness: 0.92,
+        metalness: 0,
+      });
+
+    return LEVEL.map((b, i) => {
+      if (i !== 0 || !gl) return standIn(b); // floor only; forge needs a renderer
+      try {
+        if (!forgeRef.current) {
+          const forge = new MaterialSystem({ renderer: gl });
+          void forge.init({}); // body is synchronous → full 1K bake, anisotropy 8
+          forgeRef.current = forge;
+        }
+        // Bake off-screen: save + restore the renderer's target/autoClear so an
+        // in-flight R3F frame can't be corrupted (the forge's standalone path).
+        const prevRT = gl.getRenderTarget();
+        const prevAutoClear = gl.autoClear;
+        const set = forgeRef.current.getTextureSet(b.surface);
+        gl.setRenderTarget(prevRT);
+        gl.autoClear = prevAutoClear;
+        if (!set || !set.albedo) return standIn(b);
+        for (const tex of [set.albedo, set.normal, set.orm]) {
+          if (!tex) continue;
+          tex.wrapS = THREE.RepeatWrapping;
+          tex.wrapT = THREE.RepeatWrapping;
+          tex.repeat.set(8, 8);
+        }
         return new THREE.MeshStandardMaterial({
-          map: tex,
-          roughness: 0.92,
+          map: set.albedo,
+          normalMap: set.normal,
+          roughnessMap: set.orm, // ORM: roughness in .g
+          metalnessMap: set.orm, // ORM: metalness in .b
+          roughness: 1,
           metalness: 0,
         });
-      }),
-    []
-  );
+      } catch (err) {
+        console.warn('[cod-skeleton] material forge bake failed; using stand-in', err);
+        return standIn(b);
+      }
+    });
+  }, [gl]);
+
+  // The forge owns the baked render targets — free it (and the materials) on unmount.
+  useEffect(() => {
+    return () => {
+      materials.forEach((m) => m.dispose());
+      forgeRef.current?.dispose();
+      forgeRef.current = null;
+    };
+  }, [materials]);
 
   // Input state (mutable refs — never triggers React re-render).
   const keys = useRef<Record<string, boolean>>({});
