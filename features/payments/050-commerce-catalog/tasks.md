@@ -9,6 +9,26 @@
 `[ID] [P?] [Story] Description` — `[P]` means parallelisable with its siblings.
 `[US-N]` names the user story the task serves.
 
+## Filed issues
+
+| Phase                   | Tasks     | Issue                                                                                    |
+| ----------------------- | --------- | ---------------------------------------------------------------------------------------- |
+| Epic                    | —         | [#555](https://github.com/TortoiseWolfe/ScriptHammer/issues/555)                         |
+| 0 — Wireframe gate      | T001      | [#556](https://github.com/TortoiseWolfe/ScriptHammer/issues/556) ⛔ blocks all below     |
+| 1 — Unblock the sale    | T002–T008 | [#557](https://github.com/TortoiseWolfe/ScriptHammer/issues/557)                         |
+| 2 — Storefront          | T009–T017 | [#558](https://github.com/TortoiseWolfe/ScriptHammer/issues/558)                         |
+| 2b — Intake attachments | T018–T023 | [#560](https://github.com/TortoiseWolfe/ScriptHammer/issues/560)                         |
+| 2c — Close GAP 3        | T024–T028 | [#559](https://github.com/TortoiseWolfe/ScriptHammer/issues/559)                         |
+| 3 — Fulfillment         | T029–T034 | [#561](https://github.com/TortoiseWolfe/ScriptHammer/issues/561)                         |
+| 3b — Booking + leads    | T035–T042 | [#562](https://github.com/TortoiseWolfe/ScriptHammer/issues/562)                         |
+| 4 — Polish              | T043–T047 | [#564](https://github.com/TortoiseWolfe/ScriptHammer/issues/564)                         |
+| 4b — Tip jar            | T048–T053 | [#563](https://github.com/TortoiseWolfe/ScriptHammer/issues/563)                         |
+| 5 — Cross-cutting       | T057–T059 | [#565](https://github.com/TortoiseWolfe/ScriptHammer/issues/565) — **not** gated by #556 |
+
+T054–T056 (provider-unconfigured rendering, Pa11y, 5-file validation) are
+verification steps that ride along with whichever phase introduces the screens,
+so they have no issue of their own.
+
 ## Path conventions
 
 Schema changes edit the **single monolithic migration**
