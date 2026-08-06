@@ -267,13 +267,18 @@ graph TD
 
 ## Enhancements (post-v0.4 audit — not in the 47-feature count above)
 
-| Order | Feature | Name                                  | Status                                                                  | Depends On                |
-| ----- | ------- | ------------------------------------- | ----------------------------------------------------------------------- | ------------------------- |
-| —     | **047** | Three.js Game (`/game/3d`)            | Shipped (PR #95)                                                        | 006                       |
-| —     | **048** | Combined Arms (squad FPS)             | Specified (`features/enhancements/048-combined-arms/`)                  | 047                       |
-| —     | **049** | Model City / Chattanooga Digital Twin | **PRP draft** — `model-city-prd.md` · `docs/prp-docs/model-city-prp.md` | the `/chatt` twin (built) |
+| Order | Feature | Name                                  | Status                                                                                               | Depends On                |
+| ----- | ------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------- |
+| —     | **047** | Three.js Game (`/game/3d`)            | Shipped (PR #95)                                                                                     | 006                       |
+| —     | **048** | Combined Arms (squad FPS)             | Specified (`features/enhancements/048-combined-arms/`)                                               | 047                       |
+| —     | **049** | Model City / Chattanooga Digital Twin | **PRP draft** — `model-city-prd.md` · `docs/prp-docs/model-city-prp.md`                              | the `/chatt` twin (built) |
+| —     | **050** | Commerce Catalog & Storefront         | **PRD landed** — `docs/prp-docs/commerce-catalog-prd.md` · `features/payments/050-commerce-catalog/` | 038–042 (payment rails)   |
 
 Model City's Phase 0 (the browser twin) already ships as the `/chatt` Cesium atlas + `scripts/bake/`; feature **049** builds the net-new registry / Civic League / planning-board planes on top. First slice = the Model City planning board (see the PRP). Live roadmap: issue #115.
+
+Feature **050** puts a catalog on top of the payment rails that features 038–042 already shipped: a server-authoritative `products` table, a public `/pricing` storefront, guest checkout, an `orders` record, and a pay-what-you-want tip jar. The forcing function is a real lead — the `payment_intents` `amount <= 99999` CHECK makes a $1,200 quote impossible today.
+
+> **049 is reserved, so this is 050.** `create-new-feature.sh` auto-numbering computes the next number from existing dirs and branches, and 049 has no directory yet — so it will suggest **049** and silently take Model City's slot. Pass `--number 50` explicitly. Verified 2026-08-06.
 
 ---
 
