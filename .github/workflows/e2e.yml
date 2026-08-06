@@ -9,6 +9,14 @@ on:
     # the manual button remain the safety net. NOT ignored on purpose: `.github/**`
     # (this workflow lives here — a workflow edit must still be E2E-tested) and
     # `supabase/functions/**` (an E2E flow could indirectly hit a deployed function).
+    #
+    # The repo-tooling entries at the bottom are NAMED INDIVIDUALLY, never as
+    # `scripts/**`. Most of scripts/ genuinely bears on the browser build —
+    # generate-sitemap.js, sync-wireframes.sh and sync-cesium.sh all run in
+    # `prebuild`, and strip-css-script-tags.mjs runs in `build`. A blanket ignore
+    # would stop testing the thing that produced #348 and #548, and nothing would
+    # fail to tell you. Only files E2E cannot reach belong here; verify with
+    # `grep -rl <file> tests/e2e/` and the prebuild/build chains before adding one.
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
@@ -18,6 +26,14 @@ on:
       - 'LICENSE'
       - '.gitignore'
       - '.vscode/**'
+      # Repo tooling — no Playwright spec references these, e2e.yml never invokes
+      # them, and none is in the prebuild/build chain. They are gated by
+      # `test:scripts` inside the required `Test (20.x)` check instead.
+      - 'scripts/audit-components.js'
+      - 'scripts/validate-structure.js'
+      - 'scripts/rebrand.sh'
+      - 'scripts/__tests__/**'
+      - 'tests/rebrand/**'
   pull_request:
     branches: [main]
     paths-ignore:
@@ -29,6 +45,13 @@ on:
       - 'LICENSE'
       - '.gitignore'
       - '.vscode/**'
+      # Keep in sync with the push block above — see the comment there for why
+      # these are named individually rather than as `scripts/**`.
+      - 'scripts/audit-components.js'
+      - 'scripts/validate-structure.js'
+      - 'scripts/rebrand.sh'
+      - 'scripts/__tests__/**'
+      - 'tests/rebrand/**'
   schedule:
     - cron: '0 6 * * 1' # Monday 6 AM UTC — full 3-browser run
   workflow_dispatch:
