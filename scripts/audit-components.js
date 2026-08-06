@@ -12,6 +12,66 @@ const path = require('path');
 const glob = require('glob');
 
 /**
+ * The repo root, derived from this file rather than the cwd, so
+ * KNOWN_BARE_COMPONENTS keys resolve the same way no matter where the
+ * validator is invoked from.
+ */
+const REPO_ROOT = path.resolve(__dirname, '..');
+
+/**
+ * Every component that existed as a bare `<Name>.tsx` rather than a five-file
+ * directory when this discovery was written (#538). A RATCHET, not a pardon.
+ *
+ * Before #538 the discovery step only ever enumerated directories, so a bare
+ * file could not be reported as non-compliant — it was structurally invisible,
+ * and the validator printed 100% while these sat outside the pattern it exists
+ * to enforce. Not being enumerated is not the same as passing, but it reads
+ * identically in the summary.
+ *
+ * TWO THINGS FOLLOW, AND THEY ARE DELIBERATELY DIFFERENT:
+ *
+ *   - Every entry here counts as NON-COMPLIANT in the reported rate. That is
+ *     why the number dropped from a false 100%. The rate tells the truth.
+ *   - The BUILD fails only on a bare component that is NOT recorded here. The
+ *     existing debt is visible and tracked (#547); a NEW one is a regression.
+ *
+ * So this list may shrink and must never grow. Adding an entry to make a run
+ * green is the exact failure catalogued in #396 — if you are tempted, the
+ * component wants its four files instead.
+ *
+ * #538 named six of these. The discovery found seventeen.
+ */
+const KNOWN_BARE_COMPONENTS = {
+  // App-shell singletons, all mounted directly in src/app/layout.tsx.
+  'src/components/AccessibilityScript.tsx':
+    'Inlined <script>, must run before hydration — no rendered DOM to story or axe',
+  'src/components/ThemeScript.tsx':
+    'Inlined <script>, must run before hydration — no rendered DOM to story or axe',
+  'src/components/ErrorBoundary.tsx':
+    'Class component wrapping the whole tree in layout.tsx',
+  'src/components/Footer.tsx': 'App-shell singleton mounted in layout.tsx',
+  'src/components/GlobalNav.tsx':
+    'App-shell singleton mounted in layout.tsx — 837 lines, the strongest candidate to move',
+  'src/components/PWAInstall.tsx': 'App-shell singleton mounted in layout.tsx',
+
+  // Ordinary components that simply never adopted the pattern. #538 did not
+  // know about these eleven; the discovery found them.
+  'src/components/theme/ThemeSwitcher.tsx': 'Never adopted the pattern',
+  'src/components/privacy/PrivacyActions.tsx': 'Never adopted the pattern',
+  'src/components/privacy/CookieActions.tsx': 'Never adopted the pattern',
+  'src/components/navigation/FontSizeControl.tsx': 'Never adopted the pattern',
+  'src/components/molecular/DisqusComments.tsx': 'Never adopted the pattern',
+  'src/components/forms/ValidatedInput.tsx': 'Never adopted the pattern',
+  'src/components/forms/FormField.tsx': 'Never adopted the pattern',
+  'src/components/forms/FormError.tsx': 'Never adopted the pattern',
+  'src/components/calendar/CalendarConsent.tsx': 'Never adopted the pattern',
+  'src/components/calendar/providers/CalendlyProvider.tsx':
+    'Never adopted the pattern',
+  'src/components/calendar/providers/CalComProvider.tsx':
+    'Never adopted the pattern',
+};
+
+/**
  * Required files for each component
  */
 const REQUIRED_FILES = {
@@ -62,8 +122,12 @@ function auditComponents(options = {}) {
     },
     compliant: [],
     nonCompliant: [],
+    knownBare: [],
+    newBare: [],
     components: [],
   };
+  report.summary.knownBare = 0;
+  report.summary.newBare = 0;
 
   // Check if path exists
   if (!fs.existsSync(componentsPath)) {
@@ -108,6 +172,41 @@ function auditComponents(options = {}) {
       });
     }
   });
+
+  // Bare `<Name>.tsx` components (#538). These are counted in `total` AND in
+  // `nonCompliant` on purpose: excluding them from the denominator would leave
+  // the rate at 100% and hide the very thing this discovery exists to surface.
+  findBareComponentFiles(componentsPath, ignore, componentDirs).forEach(
+    (file) => {
+      const componentName = path.basename(file, '.tsx');
+      const analysis = analyzeBareComponent(file, componentName);
+
+      report.components.push(analysis);
+      report.summary.total++;
+      report.summary.nonCompliant++;
+      report.nonCompliant.push({
+        name: componentName,
+        path: file,
+        missing: analysis.missing,
+        fixable: true,
+        priority: analysis.missing.length,
+        bareFile: true,
+        known: analysis.known,
+      });
+
+      if (analysis.known) {
+        report.summary.knownBare++;
+        report.knownBare.push({
+          name: componentName,
+          path: file,
+          note: analysis.bareNote,
+        });
+      } else {
+        report.summary.newBare++;
+        report.newBare.push({ name: componentName, path: file });
+      }
+    }
+  );
 
   // Calculate compliance rate
   if (report.summary.total > 0) {
@@ -166,6 +265,101 @@ function findComponentDirectories(basePath, ignorePatterns) {
   });
 
   return dirs;
+}
+
+/**
+ * Find components that are a bare `<Name>.tsx` file rather than a directory (#538).
+ *
+ * `findComponentDirectories` filters its glob to `isDirectory()`, which is why
+ * these could never be reported: not being enumerated is not the same as
+ * passing, but it reads identically in the summary.
+ *
+ * A `.tsx` is bare when it is a component root that does NOT sit inside the
+ * directory named after it. `Button/Button.tsx` has a parent named `Button`, so
+ * it belongs to a component directory already counted. `components/Footer.tsx`
+ * has a parent named `components`, so nothing has counted it.
+ */
+function findBareComponentFiles(basePath, ignorePatterns, componentDirs = []) {
+  const known = new Set(componentDirs.map((d) => path.resolve(d)));
+
+  return glob
+    .sync(path.join(basePath, '**/*.tsx'), {
+      ignore: ignorePatterns.map((p) => path.join(basePath, '**', p, '**')),
+      nodir: true,
+    })
+    .filter((file) => {
+      const base = path.basename(file, '.tsx');
+
+      // `index.tsx` is a barrel, and `X.test`/`X.stories`/`X.accessibility.test`
+      // are a component's own satellites — none of them is a component root.
+      if (base === 'index' || base.includes('.')) return false;
+
+      // An internal of an already-counted component is NOT a second component.
+      // SpinningLogo/ScriptHammerLogo.tsx and MapContainer/MapContainerInner.tsx
+      // are private parts of SpinningLogo and MapContainer, both compliant; the
+      // five-file pattern has never required a suite per internal file. Without
+      // this guard the discovery reports helpers as missing components, which is
+      // a different wrong number rather than the right one.
+      if (known.has(path.resolve(path.dirname(file)))) return false;
+
+      // The load-bearing test: is this file inside the directory named for it?
+      return path.basename(path.dirname(file)) !== base;
+    });
+}
+
+/**
+ * Analyze a bare `<Name>.tsx` component (#538).
+ *
+ * It cannot reuse `analyzeComponent`: that starts with
+ * `readdirSync(componentPath)` and a bare component has no directory of its
+ * own. Everything the pattern requires except the component file itself is
+ * missing by definition.
+ */
+function analyzeBareComponent(filePath, componentName) {
+  // Keyed by PATH, not name: two `FormField.tsx` in different directories are
+  // two different components, and a name-keyed baseline would silently pardon
+  // the second one.
+  //
+  // Anchored to THIS FILE's location, never process.cwd(). Keying off the cwd
+  // meant the baseline only matched when the validator ran from the repo root:
+  //
+  //   cwd=/app          -> 'src/components/Footer.tsx'      matches
+  //   cwd=/app/src      -> 'components/Footer.tsx'          misses
+  //   cwd=/app/scripts  -> '../src/components/Footer.tsx'   misses
+  //
+  // A miss makes every recorded component read as NEW, so the gate fails with
+  // "17 NEW bare components" — which is false, and says nothing about the cwd
+  // that caused it. It failed closed rather than open, which is the safer
+  // direction, but a gate whose job is telling the truth should not lie about
+  // which components are new.
+  const key = path
+    .relative(REPO_ROOT, path.resolve(filePath))
+    .split(path.sep)
+    .join('/');
+  const note = KNOWN_BARE_COMPONENTS[key];
+
+  return {
+    name: componentName,
+    path: filePath,
+    category: detectCategory(filePath),
+    isBareFile: true,
+    files: {
+      component: { exists: true, path: filePath, valid: true, errors: [] },
+      index: { exists: false, path: null, valid: false, errors: [] },
+      test: { exists: false, path: null, valid: false, errors: [] },
+      story: { exists: false, path: null, valid: false, errors: [] },
+      accessibility: { exists: false, path: null, valid: false, errors: [] },
+    },
+    status: 'non_compliant',
+    known: Boolean(note),
+    bareNote: note || null,
+    missing: [
+      REQUIRED_FILES.index,
+      REQUIRED_FILES.test(componentName),
+      REQUIRED_FILES.story(componentName),
+      REQUIRED_FILES.accessibility(componentName),
+    ],
+  };
 }
 
 /**
@@ -309,7 +503,32 @@ function outputConsoleReport(report) {
   console.log('='.repeat(50));
   console.log(`✅ Compliant: ${report.summary.compliant} components`);
   console.log(`❌ Non-compliant: ${report.summary.nonCompliant} components`);
+  console.log(
+    `   of which bare files: ${report.summary.knownBare} recorded, ${report.summary.newBare} NEW`
+  );
   console.log(`📈 Compliance Rate: ${report.summary.complianceRate}%`);
+
+  // Printed EVERY run, with a note each — the same rule the contrast gate
+  // follows. A baseline nobody sees is indistinguishable from a pass (#396).
+  if (report.knownBare.length > 0) {
+    console.log(
+      '\n📋 Recorded bare components (#538) — counted against the rate above, tracked in #547.'
+    );
+    console.log('   This list may shrink and must never grow.\n');
+    report.knownBare.forEach((comp) => {
+      console.log(`  ${comp.path} — ${comp.note}`);
+    });
+  }
+
+  if (report.newBare.length > 0) {
+    console.log(
+      '\n🚨 NEW bare components — not in the recorded baseline. Give them the 5-file pattern;'
+    );
+    console.log(
+      '   do NOT add them to KNOWN_BARE_COMPONENTS to make this pass (#396).\n'
+    );
+    report.newBare.forEach((comp) => console.log(`  ${comp.path}`));
+  }
 
   if (report.nonCompliant.length > 0) {
     console.log('\n⚠️  Non-compliant Components:\n');
@@ -358,6 +577,9 @@ module.exports.validateIndexFile = validateIndexFile;
 module.exports.validateTestFile = validateTestFile;
 module.exports.validateStoryFile = validateStoryFile;
 module.exports.validateAccessibilityFile = validateAccessibilityFile;
+module.exports.findBareComponentFiles = findBareComponentFiles;
+module.exports.analyzeBareComponent = analyzeBareComponent;
+module.exports.KNOWN_BARE_COMPONENTS = KNOWN_BARE_COMPONENTS;
 
 // CLI execution
 if (require.main === module) {
