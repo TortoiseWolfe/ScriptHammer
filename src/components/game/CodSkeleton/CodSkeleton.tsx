@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import FallbackPanel from '@/components/game/FallbackPanel';
 import ProceduralSky from '@/components/game/ProceduralSky';
+import { useFootsteps } from '@/lib/cod/audio/useFootsteps';
 // Vendored, framework-agnostic Claude-of-Duty physics (MIT — see
 // src/lib/cod/NOTICE.md). Imported as .js via tsconfig `allowJs`; the class
 // shapes infer loosely, which is all this integration needs.
@@ -214,6 +215,9 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
   const pitch = useRef(0);
   const accum = useRef(0);
 
+  // Surface-keyed procedural footsteps (Web Audio; resumed on the pointer-lock click).
+  const { resume: resumeAudio, step: stepAudio } = useFootsteps();
+
   // Keyboard + pointer-lock. Guarded so the mocked-Canvas unit test (gl === undefined)
   // bails cleanly instead of touching a missing renderer.
   useEffect(() => {
@@ -228,6 +232,7 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
       keys.current[e.key.toLowerCase()] = false;
     };
     const click = (): void => {
+      resumeAudio(); // ride the gesture — browser autoplay leaves the context suspended
       if (document.pointerLockElement !== dom) dom.requestPointerLock();
     };
     const move = (e: MouseEvent): void => {
@@ -247,7 +252,7 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
       dom.removeEventListener('click', click);
       document.removeEventListener('mousemove', move);
     };
-  }, [gl]);
+  }, [gl, resumeAudio]);
 
   useFrame((_state, delta) => {
     const cc = ccRef.current;
@@ -255,6 +260,7 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
     // Fixed-step accumulator so physics feel is framerate-independent.
     accum.current += Math.min(delta, 0.1);
     const k = keys.current;
+    let moved = 0;
     while (accum.current >= FIXED) {
       accum.current -= FIXED;
       cc.velocity.y += GRAVITY * FIXED;
@@ -276,10 +282,12 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
       cc.velocity.x = wx;
       cc.velocity.z = wz;
       if (k[' '] && cc.grounded) cc.velocity.y = JUMP;
-      cc.move(cc.velocity.x * FIXED, cc.velocity.y * FIXED, cc.velocity.z * FIXED);
+      // move() returns distance travelled — accumulate it for the footstep cadence.
+      moved += cc.move(cc.velocity.x * FIXED, cc.velocity.y * FIXED, cc.velocity.z * FIXED);
     }
     camera.position.set(cc.position.x, cc.position.y + EYE, cc.position.z);
     camera.rotation.set(pitch.current, yaw.current, 0, 'YXZ');
+    stepAudio(moved, cc.grounded, cc.groundSurfaceName);
   });
 
   return (
