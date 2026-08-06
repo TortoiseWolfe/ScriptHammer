@@ -24,6 +24,7 @@ fi
 
 # Test counters
 TESTS_RUN=0
+GROUPS_RUN=0
 TESTS_PASSED=0
 TESTS_FAILED=0
 
@@ -34,8 +35,15 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Test utilities
+# TESTS_RUN counts ASSERTIONS, the same unit as TESTS_PASSED and TESTS_FAILED
+# (#549). It used to be incremented once per test GROUP by run_test, so the
+# summary printed things like "Total: 5 / Passed: 11" — passed exceeding total,
+# and no way to reconcile the two numbers. A summary you cannot read is a
+# summary you cannot use to catch the next #522, which is the bug where this
+# harness exited 1 having run nothing at all.
 log_pass() {
     echo -e "${GREEN}✓ PASS${NC}: $1"
+    TESTS_RUN=$((TESTS_RUN + 1))
     TESTS_PASSED=$((TESTS_PASSED + 1))
 }
 
@@ -43,12 +51,13 @@ log_fail() {
     echo -e "${RED}✗ FAIL${NC}: $1"
     echo -e "  ${YELLOW}Expected${NC}: $2"
     echo -e "  ${YELLOW}Got${NC}: $3"
+    TESTS_RUN=$((TESTS_RUN + 1))
     TESTS_FAILED=$((TESTS_FAILED + 1))
 }
 
 run_test() {
     local test_name="$1"
-    TESTS_RUN=$((TESTS_RUN + 1))
+    GROUPS_RUN=$((GROUPS_RUN + 1))
     echo -e "\n${YELLOW}Running${NC}: $test_name"
 }
 
@@ -146,6 +155,55 @@ test_argument_validation() {
         else
             log_fail "Two arguments" "exit code 1" "exit code $exit_code"
         fi
+    fi
+
+    cd "$REPO_ROOT"
+}
+
+# ============================================================================
+# --help must print the WHOLE header, and no code (#541)
+#
+# show_help has now truncated silently twice. First as `sed -n '2,35p'`, a
+# hardcoded range that stopped knowing where the header ended the moment the
+# header grew. Then as an awk that stopped at the first non-`#` line, which cut
+# the output from 47 lines to 8 the instant a genuinely blank line appeared
+# inside the header.
+#
+# Both failures printed a plausible-looking help text and exited 0. Nothing
+# caught either, because --help had no test at all. This is that test: it pins a
+# floor on the line count, requires the LAST section to be present, and requires
+# that no code leaks past the closing rule.
+# ============================================================================
+test_help_output_is_complete() {
+    run_test "test_help_output_is_complete"
+    setup_temp_dir
+
+    local help_out line_count
+    help_out=$("$TEMP_DIR/scripts/rebrand.sh" --help 2>&1)
+    line_count=$(printf '%s\n' "$help_out" | wc -l)
+
+    # Floor, not an exact match, so adding to the header does not fail the test.
+    # 30 is comfortably below the current 44 and far above either truncation.
+    if [ "$line_count" -ge 30 ]; then
+        log_pass "--help prints the full header ($line_count lines)"
+    else
+        log_fail "--help output truncated" "at least 30 lines" "$line_count lines"
+    fi
+
+    # The last section of the header. If the printer stops early for any reason,
+    # this is what goes missing first.
+    if printf '%s\n' "$help_out" | grep -q 'rebrand:keep'; then
+        log_pass "--help reaches the last header section"
+    else
+        log_fail "--help missing last section" "rebrand:keep documented" "absent"
+    fi
+
+    # And it must stop at the header. Leaking the script body would mean the
+    # terminator is not being honoured.
+    if printf '%s\n' "$help_out" | grep -qE 'set -euo pipefail|SCRIPT_DIR='; then
+        log_fail "--help leaked script body" "header only" "shell code present"
+    else
+        log_pass "--help stops at the header, no code leaked"
     fi
 
     cd "$REPO_ROOT"
@@ -307,6 +365,7 @@ run_all_tests() {
     fi
 
     test_argument_validation
+    test_help_output_is_complete
     test_name_sanitization
     test_dry_run_no_changes
     test_rerebrand_detection
@@ -316,7 +375,7 @@ run_all_tests() {
     echo "========================================"
     echo "Test Summary"
     echo "========================================"
-    echo -e "Total:  $TESTS_RUN"
+    echo -e "Assertions: $TESTS_RUN  (across $GROUPS_RUN test groups)"
     echo -e "${GREEN}Passed${NC}: $TESTS_PASSED"
     echo -e "${RED}Failed${NC}: $TESTS_FAILED"
 
@@ -330,6 +389,9 @@ if [ $# -eq 1 ]; then
     case "$1" in
         test_argument_validation)
             test_argument_validation
+            ;;
+        test_help_output_is_complete)
+            test_help_output_is_complete
             ;;
         test_name_sanitization)
             test_name_sanitization

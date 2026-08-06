@@ -84,13 +84,29 @@ ORIGINAL_OWNER="TortoiseWolfe"
 # =============================================================================
 
 show_help() {
-    # Print the header comment block, stopping at the first non-comment line.
+    # Print the header comment block, stopping at the closing rule.
     #
     # This used to be `sed -n '2,35p'`, a hardcoded range. Adding the
-    # rebrand:keep section to the header pushed it to line 48 and the help
-    # output would have been silently truncated mid-sentence — the range does
-    # not know the header grew, and nothing would have complained (#541).
-    awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' "$0"
+    # rebrand:keep section pushed the header to line 48, and the help output
+    # would have been silently truncated mid-sentence. The range does not know
+    # the header grew, and nothing would have complained (#541).
+    #
+    # The first replacement stopped at the first line that was not `#`-prefixed,
+    # which traded one silent truncation for another: a single genuinely blank
+    # line inside the header cut the output from 47 lines to 8. It only survived
+    # because the header happens to use bare `#` for its blank lines.
+    #
+    # So: skip blank lines rather than stopping on them, and stop on the closing
+    # `# ====` rule, which is a real terminator rather than an accident of
+    # formatting. tests/rebrand/test-rebrand.sh pins both the line count and the
+    # presence of the last section, so either truncation mode fails loudly.
+    awk '
+      NR == 1              { next }                       # shebang
+      /^# =+$/             { seen++; if (seen == 3) exit; next }
+      /^#/                 { sub(/^# ?/, ""); print; next }
+      /^[[:space:]]*$/     { print ""; next }              # blank line, keep going
+                           { exit }                       # real code, stop
+    ' "$0"
     exit 0
 }
 
