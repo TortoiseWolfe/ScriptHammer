@@ -144,6 +144,16 @@ Feature 005 is an **exemplary security specification** that systematically addre
 
 **Strength**: Explicitly defines what to log, retention period, and queryability. GDPR/PCI-ready.
 
+> **Retracted in part (#585, 2026-08-06).** "GDPR/PCI-ready" rested on a retention period that
+> was **defined but never enforced**. `cleanup_old_audit_logs()` had no caller for ten months,
+> so audit rows accumulated indefinitely — the opposite of the storage-limitation principle
+> this line claims readiness for. Defining a retention period and enforcing one are different
+> controls, and this audit checked only the first.
+>
+> Enforcement landed 2026-08-06 (`.github/workflows/data-retention.yml`). Note the privacy
+> policy still does not state a retention period to users; that gap is tracked in #585 and is
+> the larger of the two exposures.
+
 ---
 
 ### A10: Server-Side Request Forgery (SSRF) - N/A

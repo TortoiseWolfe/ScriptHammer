@@ -291,7 +291,10 @@ CREATE INDEX IF NOT EXISTS idx_auth_audit_logs_created_at ON auth_audit_logs(cre
 CREATE INDEX IF NOT EXISTS idx_auth_audit_logs_ip_address ON auth_audit_logs(ip_address);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_event ON auth_audit_logs(user_id, event_type, created_at DESC);
 
-COMMENT ON TABLE auth_audit_logs IS 'Security audit trail for all auth events (90-day retention)';
+-- The "(90-day retention)" half of this comment was untrue for ten months: the
+-- function existed, nothing called it (#585). It now names its own enforcer, so
+-- the claim is checkable rather than asserted.
+COMMENT ON TABLE auth_audit_logs IS 'Security audit trail for all auth events. 90-day retention, enforced by cleanup_old_audit_logs() via .github/workflows/data-retention.yml (#585).';
 
 -- Idempotent extension of auth_audit_logs.event_type CHECK to include
 -- 'payment_retry' (#43, B1). The CREATE TABLE above picks up the new
@@ -409,15 +412,59 @@ EXCEPTION
 END;
 $$;
 
--- Cleanup old audit logs (90 days)
-CREATE OR REPLACE FUNCTION cleanup_old_audit_logs()
-RETURNS void
+-- Cleanup old audit logs (90 days) — #585
+--
+-- THIS FUNCTION EXISTED FROM THE INITIAL MIGRATION AND WAS NEVER CALLED. For ten
+-- months the table COMMENT above, two security audits and one E2E-teardown design
+-- decision all cited its 90-day window as though it were in force, and it deleted
+-- nothing; the oldest row was four months old when #585 measured it. The caller
+-- now lives in .github/workflows/data-retention.yml. If you ever remove that
+-- caller, correct those documents in the same change — a retention claim with no
+-- job behind it is precisely the defect this ticket was.
+--
+-- Batched on purpose: auth_audit_logs carries FIVE indexes (lines 288-292), so
+-- every deleted row costs five index updates, and the original unbounded DELETE
+-- built one working set as large as the whole backlog. Note the call is still a
+-- SINGLE transaction — plpgsql functions cannot COMMIT — so this bounds
+-- per-statement work, not transaction duration. That is enough here: the rows are
+-- 90+ days old in an append-only table, so no live writer contends for them.
+--
+-- Returns the number of rows removed, so a caller can log a COUNT. Never log the
+-- rows themselves: they carry ip_address, user_agent and event_data.
+-- (scripts/cleanup-expired-intents.ts:73-78 prints customer_email per deleted
+-- row. Do not copy that here.)
+DROP FUNCTION IF EXISTS cleanup_old_audit_logs();
+CREATE OR REPLACE FUNCTION cleanup_old_audit_logs(
+  p_batch_size INT DEFAULT 5000,
+  p_max_batches INT DEFAULT 100
+)
+RETURNS INT
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  v_cutoff TIMESTAMPTZ := NOW() - INTERVAL '90 days';
+  v_batch  INT;
+  v_total  INT := 0;
 BEGIN
-    DELETE FROM auth_audit_logs WHERE created_at < NOW() - INTERVAL '90 days';
+  FOR i IN 1..p_max_batches LOOP
+    DELETE FROM auth_audit_logs
+    WHERE id IN (
+      SELECT id
+      FROM auth_audit_logs
+      WHERE created_at < v_cutoff
+      ORDER BY created_at
+      LIMIT p_batch_size
+    );
+    GET DIAGNOSTICS v_batch = ROW_COUNT;
+    v_total := v_total + v_batch;
+    -- A short batch means the cutoff is drained; stop rather than burning
+    -- the remaining iterations on empty DELETEs.
+    EXIT WHEN v_batch < p_batch_size;
+  END LOOP;
+
+  RETURN v_total;
 END;
 $$;
 

@@ -27,6 +27,13 @@ Implement production-ready authentication system using Supabase Auth with email/
 - [x] T009 [P] Add database triggers in migration: auto-create user profile on sign-up (included in 001_create_auth_tables.sql)
 - [x] T010 [P] Add database triggers in migration: auto-update timestamps on profile changes (included in 001_create_auth_tables.sql)
 - [x] T011 [P] Add database function in migration: cleanup_old_audit_logs() for 90-day retention (included in 001_create_auth_tables.sql)
+  - ⚠️ This checkbox covered only **creating** the function, and read for ten months as
+    though retention were live. Nothing called it (#585). Scheduling was a separate task
+    that was never written down — which is exactly why the box could be ticked truthfully
+    while the behaviour was absent.
+- [x] T011b Schedule it. `.github/workflows/data-retention.yml` (#585, 2026-08-06) — not
+      `pg_cron`, which is not installed on this project (the migration enables only `uuid-ossp`
+      and `pgcrypto`).
 - [x] T012 Create supabase/migrations/002_update_payment_rls.sql (update payment_intents RLS policies to use auth.uid())
 
 ## Phase 3.3: Contract Tests (TDD Phase 1) ⚠️ MUST FAIL BEFORE IMPLEMENTATION
