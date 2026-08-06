@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <!-- ScriptHammer Desktop Footer (INCLUDE - for template injection)
+       Position: Bottom of desktop mockup container
+       Width: 1280px (matches wireframe desktop container width - 16:9 at 720 height)
+       Height: 80px
+       Corners: Rounded BOTTOM only (rx=8) to match container -->
+
+  <g id="site-footer">
+    <!-- Footer background - rounded BOTTOM corners only -->
+    <path d="M 0 0 L 1280 0 L 1280 72 A 8 8 0 0 1 1272 80 L 8 80 A 8 8 0 0 1 0 72 Z" fill="#dcc8a8" stroke="#b8a080"/>
+
+    <!-- Left section: Brand + tagline -->
+    <!-- CUSTOMIZE: Change product name and tagline when forking -->
+    <g transform="translate(20, 20)">
+      <rect x="0" y="0" width="24" height="24" rx="4" fill="#8b5cf6"/>
+      <text x="34" y="18" fill="#1a1a2e" font-family="system-ui, sans-serif" font-size="14px" font-weight="700">ScriptHammer</text>
+      <text x="0" y="45" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14px">Product planning template</text>
+    </g>
+
+    <!-- Center section: Navigation links -->
+    <g transform="translate(450, 25)">
+      <text x="0" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="14px" font-weight="500">Features</text>
+      <text x="80" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="14px" font-weight="500">Documentation</text>
+      <text x="200" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="14px" font-weight="500">GitHub</text>
+      <text x="270" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="14px" font-weight="500">Privacy</text>
+      <text x="330" y="0" fill="#374151" font-family="system-ui, sans-serif" font-size="14px" font-weight="500">Terms</text>
+      <text x="0" y="25" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14px">Built with Next.js 15, Supabase, and Tailwind CSS</text>
+    </g>
+
+    <!-- Right section: Copyright -->
+    <!-- CUSTOMIZE: Change product name and year when forking -->
+    <g transform="translate(1260, 30)">
+      <text x="0" y="0" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14px" text-anchor="end">© ScriptHammer 2026</text>
+      <text x="0" y="20" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14px" text-anchor="end">MIT License</text>
+    </g>
+  </g>
+</svg>
