@@ -88,11 +88,19 @@ run_check "TypeScript type check" "pnpm type-check"
 # wired into no workflow and no hook, so nothing ever ran it (#373 B2).
 run_check "Breakpoint config" "pnpm validate:breakpoints"
 
-# 3. Unit tests
-run_check "Unit tests" "pnpm test --run"
-
-# 4. Test coverage (optional - can be slow)
+# 3. Unit tests — FULL RUN ONLY, never under --quick.
+#
+# --quick is what .husky/pre-push invokes, on every single push. This step is
+# ~3m45s and `Test (20.x)` re-runs the identical suite minutes later; it is the
+# largest single duplication in the loop (#573). The fast checks above (lint,
+# type-check, breakpoints — ~37s combined) stay, because catching a typo before
+# burning a CI slot is worth 37 seconds. Re-running 4282 tests to learn what CI
+# will tell you anyway is not.
+#
+# This also removes a reason to reach for `git push --no-verify`, which
+# pre-push's own help text advertises — a gate routinely bypassed is not a gate.
 if [ "$1" != "--quick" ]; then
+    run_check "Unit tests" "pnpm test --run"
     run_check "Test coverage" "pnpm test:coverage"
 fi
 
