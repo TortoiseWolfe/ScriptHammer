@@ -11,13 +11,20 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
 
+    # Only the public NEXT_PUBLIC_* pair. This job's Supabase calls are ALL
+    # mocked (tests/setup.ts mocks @/lib/supabase/{client,server} globally) and
+    # every test that would need a real backend is excluded in vitest.config.ts
+    # with reasons like "requires service role key". So SUPABASE_SERVICE_ROLE_KEY
+    # and TEST_USER_PRIMARY_PASSWORD were materialised in the environment of the
+    # single highest-frequency workflow in the repo, and nothing could use them.
+    #
+    # The service-role key bypasses RLS entirely — it is the credential the whole
+    # conformance suite exists to make unnecessary. Do not re-add it here without
+    # a test that actually needs it. #574
     env:
       NEXT_PUBLIC_DEPLOY_URL: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      TEST_USER_PRIMARY_EMAIL: ${{ vars.TEST_USER_PRIMARY_EMAIL }}
-      TEST_USER_PRIMARY_PASSWORD: ${{ secrets.TEST_USER_PRIMARY_PASSWORD }}
 
     strategy:
       matrix:
