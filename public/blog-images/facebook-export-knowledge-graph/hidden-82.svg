@@ -1,0 +1,34 @@
+<svg viewBox="0 0 1200 440" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Of 3,331 people named in the records, only 589 reached the graph. A rule that only promoted someone after two contacts or an offer filtered out 2,742 people, 82 percent, and single-contact leads are exactly the shape of a missed opportunity.">
+  <defs>
+    <linearGradient id="h82-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#27272a"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="440" fill="url(#h82-bg)" rx="10"/>
+
+  <text x="48" y="54" fill="#fafafa" font-family="Georgia, serif" font-size="27" font-weight="700">I hid 82% of the people from myself</text>
+
+  <!-- IN THE RECORDS -->
+  <text x="48" y="104" fill="#71717a" font-family="ui-monospace, Menlo, monospace" font-size="15">IN THE RECORDS</text>
+  <text x="48" y="152" fill="#e4e4e7" font-family="ui-monospace, Menlo, monospace" font-size="42" font-weight="700">3,331</text>
+  <text x="48" y="178" fill="#71717a" font-family="ui-monospace, Menlo, monospace" font-size="15">people named</text>
+
+  <!-- the full bar -->
+  <rect x="48" y="204" width="1104" height="46" rx="5" fill="#3f3f46"/>
+  <rect x="48" y="204" width="195" height="46" rx="5" fill="#60a5fa"/>
+  <text x="146" y="234" fill="#18181b" font-family="ui-monospace, Menlo, monospace" font-size="17" font-weight="700" text-anchor="middle">589</text>
+  <text x="700" y="234" fill="#a1a1aa" font-family="ui-monospace, Menlo, monospace" font-size="17" text-anchor="middle">2,742 filtered out</text>
+
+  <!-- labels under the bar -->
+  <text x="48" y="278" fill="#60a5fa" font-family="ui-monospace, Menlo, monospace" font-size="15">reached the graph</text>
+  <text x="1152" y="278" fill="#fbbf24" font-family="ui-monospace, Menlo, monospace" font-size="15" text-anchor="end">82%</text>
+
+  <!-- the rule -->
+  <rect x="48" y="308" width="1104" height="82" rx="8" fill="#27272a" stroke="#fbbf24" stroke-width="1.5"/>
+  <text x="72" y="340" fill="#fbbf24" font-family="ui-monospace, Menlo, monospace" font-size="15" font-weight="700">THE RULE THAT DID IT</text>
+  <text x="72" y="368" fill="#e4e4e7" font-family="Georgia, serif" font-size="18">promote a person only if I talked to them twice, or made them an offer</text>
+
+  <text x="48" y="422" fill="#a1a1aa" font-family="Georgia, serif" font-size="16" font-style="italic">Reasonable for keeping a graph clean. "Replied once, never followed up" is the exact shape of a missed lead.</text>
+</svg>

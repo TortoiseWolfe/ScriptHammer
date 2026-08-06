@@ -1,0 +1,90 @@
+<svg viewBox="0 0 1200 470" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Without a concept layer every person connects only to their own group, giving 266 disconnected stars and no graph. Writing a fixed vocabulary of technologies, topics and eras into every corpus file makes separate extraction runs emit the same node IDs, which stitches the whole thing into one connected component with seven communities.">
+  <defs>
+    <linearGradient id="cl-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#27272a"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="470" fill="url(#cl-bg)" rx="10"/>
+
+  <text x="48" y="54" fill="#fafafa" font-family="Georgia, serif" font-size="27" font-weight="700">The part I'd skip if I were you, and the part that matters</text>
+
+  <line x1="600" y1="90" x2="600" y2="404" stroke="#3f3f46" stroke-width="1"/>
+
+  <!-- ============ LEFT: disconnected stars ============ -->
+  <text x="48" y="112" fill="#fbbf24" font-family="ui-monospace, Menlo, monospace" font-size="15" font-weight="700">NO CONCEPT LAYER</text>
+
+  <g>
+    <!-- star 1 -->
+    <g transform="translate(146 200)">
+      <g stroke="#52525b" stroke-width="1.5" opacity="0.8">
+        <path d="M0 0 L-40 -26 M0 0 L38 -30 M0 0 L-32 32 M0 0 L36 28 M0 0 L2 -46"/>
+      </g>
+      <circle cx="0" cy="0" r="12" fill="#71717a"/>
+      <circle cx="-40" cy="-26" r="5" fill="#52525b"/><circle cx="38" cy="-30" r="5" fill="#52525b"/>
+      <circle cx="-32" cy="32" r="5" fill="#52525b"/><circle cx="36" cy="28" r="5" fill="#52525b"/>
+      <circle cx="2" cy="-46" r="5" fill="#52525b"/>
+    </g>
+    <!-- star 2 -->
+    <g transform="translate(330 168)">
+      <g stroke="#52525b" stroke-width="1.5" opacity="0.8">
+        <path d="M0 0 L-36 -22 M0 0 L34 -26 M0 0 L-28 30 M0 0 L32 26"/>
+      </g>
+      <circle cx="0" cy="0" r="12" fill="#71717a"/>
+      <circle cx="-36" cy="-22" r="5" fill="#52525b"/><circle cx="34" cy="-26" r="5" fill="#52525b"/>
+      <circle cx="-28" cy="30" r="5" fill="#52525b"/><circle cx="32" cy="26" r="5" fill="#52525b"/>
+    </g>
+    <!-- star 3 -->
+    <g transform="translate(250 320)">
+      <g stroke="#52525b" stroke-width="1.5" opacity="0.8">
+        <path d="M0 0 L-38 -24 M0 0 L36 -28 M0 0 L-30 28 M0 0 L34 24 M0 0 L-2 -44"/>
+      </g>
+      <circle cx="0" cy="0" r="12" fill="#71717a"/>
+      <circle cx="-38" cy="-24" r="5" fill="#52525b"/><circle cx="36" cy="-28" r="5" fill="#52525b"/>
+      <circle cx="-30" cy="28" r="5" fill="#52525b"/><circle cx="34" cy="24" r="5" fill="#52525b"/>
+      <circle cx="-2" cy="-44" r="5" fill="#52525b"/>
+    </g>
+    <!-- star 4 -->
+    <g transform="translate(452 300)">
+      <g stroke="#52525b" stroke-width="1.5" opacity="0.8">
+        <path d="M0 0 L-34 -26 M0 0 L32 -22 M0 0 L-26 30"/>
+      </g>
+      <circle cx="0" cy="0" r="12" fill="#71717a"/>
+      <circle cx="-34" cy="-26" r="5" fill="#52525b"/><circle cx="32" cy="-22" r="5" fill="#52525b"/>
+      <circle cx="-26" cy="30" r="5" fill="#52525b"/>
+    </g>
+  </g>
+
+  <text x="48" y="392" fill="#fbbf24" font-family="ui-monospace, Menlo, monospace" font-size="30" font-weight="700">266</text>
+  <text x="48" y="418" fill="#71717a" font-family="ui-monospace, Menlo, monospace" font-size="15">disconnected stars, and no graph</text>
+
+  <!-- ============ RIGHT: one connected component ============ -->
+  <text x="648" y="112" fill="#60a5fa" font-family="ui-monospace, Menlo, monospace" font-size="15" font-weight="700">FIXED VOCABULARY IN EVERY FILE</text>
+
+  <g transform="translate(890 250)">
+    <g stroke="#60a5fa" stroke-width="1.6" opacity="0.55" fill="none">
+      <path d="M-140 -60 L-42 -84 M-42 -84 L60 -70 M60 -70 L150 -34
+               M-140 -60 L-70 20 M-70 20 L20 -6 M20 -6 L110 26
+               M110 26 L150 -34 M-70 20 L-30 92 M-30 92 L70 84
+               M70 84 L110 26 M20 -6 L-42 -84 M20 -6 L60 -70
+               M-30 92 L20 -6 M150 -34 L60 -70"/>
+    </g>
+    <!-- concept hubs, brighter -->
+    <circle cx="20" cy="-6" r="13" fill="#60a5fa"/>
+    <circle cx="-70" cy="20" r="11" fill="#60a5fa"/>
+    <circle cx="110" cy="26" r="11" fill="#60a5fa"/>
+    <!-- members -->
+    <circle cx="-140" cy="-60" r="7" fill="#93c5fd"/>
+    <circle cx="-42" cy="-84" r="7" fill="#93c5fd"/>
+    <circle cx="60" cy="-70" r="7" fill="#93c5fd"/>
+    <circle cx="150" cy="-34" r="7" fill="#93c5fd"/>
+    <circle cx="-30" cy="92" r="7" fill="#93c5fd"/>
+    <circle cx="70" cy="84" r="7" fill="#93c5fd"/>
+  </g>
+
+  <text x="648" y="392" fill="#60a5fa" font-family="ui-monospace, Menlo, monospace" font-size="30" font-weight="700">1</text>
+  <text x="648" y="418" fill="#71717a" font-family="ui-monospace, Menlo, monospace" font-size="15">connected component, 7 clean communities</text>
+
+  <text x="48" y="452" fill="#a1a1aa" font-family="Georgia, serif" font-size="16" font-style="italic">The agent working on file 200 has to emit the same node IDs as the one working on file 3.</text>
+</svg>

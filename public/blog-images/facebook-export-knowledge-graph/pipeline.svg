@@ -1,0 +1,77 @@
+<svg viewBox="0 0 1200 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Two paths from a Facebook HTML export to a knowledge graph. Pointing graphify straight at the HTML truncates each file at 20,000 characters, which is 0.45 percent of a 4.45 megabyte file. Parsing to markdown first produces 26 files under 20,000 characters each, and the graph sees all of it.">
+  <defs>
+    <linearGradient id="pl-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#27272a"/>
+    </linearGradient>
+    <marker id="pl-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#60a5fa"/>
+    </marker>
+    <marker id="pl-arrow-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#f59e0b"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="520" fill="url(#pl-bg)" rx="10"/>
+
+  <text x="48" y="52" fill="#fafafa" font-family="Georgia, serif" font-size="27" font-weight="700">Why you can't just point a graph tool at it</text>
+
+  <!-- ================= THE DIRECT PATH ================= -->
+  <text x="48" y="104" fill="#fbbf24" font-family="ui-monospace, Menlo, monospace" font-size="15" font-weight="700">STRAIGHT AT THE HTML</text>
+
+  <rect x="48" y="122" width="212" height="86" rx="8" fill="#27272a" stroke="#52525b" stroke-width="1.5"/>
+  <text x="154" y="154" fill="#e4e4e7" font-family="ui-monospace, Menlo, monospace" font-size="15" text-anchor="middle">comments.html</text>
+  <text x="154" y="180" fill="#71717a" font-family="ui-monospace, Menlo, monospace" font-size="14" text-anchor="middle">4.45 MB</text>
+
+  <line x1="268" y1="165" x2="352" y2="165" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#pl-arrow-warn)"/>
+
+  <rect x="360" y="122" width="212" height="86" rx="8" fill="#27272a" stroke="#52525b" stroke-width="1.5"/>
+  <text x="466" y="154" fill="#e4e4e7" font-family="ui-monospace, Menlo, monospace" font-size="15" text-anchor="middle">graphify</text>
+  <text x="466" y="180" fill="#71717a" font-family="ui-monospace, Menlo, monospace" font-size="14" text-anchor="middle">.html not splittable</text>
+
+  <line x1="580" y1="165" x2="664" y2="165" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#pl-arrow-warn)"/>
+
+  <!-- truncation bar: 0.45% read, the rest discarded -->
+  <rect x="672" y="132" width="480" height="30" rx="4" fill="#3f3f46"/>
+  <rect x="672" y="132" width="9" height="30" rx="4" fill="#fbbf24"/>
+  <text x="672" y="188" fill="#fbbf24" font-family="ui-monospace, Menlo, monospace" font-size="15" font-weight="700">first 20,000 characters</text>
+  <text x="1152" y="188" fill="#71717a" font-family="ui-monospace, Menlo, monospace" font-size="14" text-anchor="end">the other 99.55% never read</text>
+  <text x="672" y="214" fill="#a1a1aa" font-family="Georgia, serif" font-size="16" font-style="italic">The graph builds fine, looks fine, and is built on almost nothing.</text>
+
+  <!-- divider -->
+  <line x1="48" y1="252" x2="1152" y2="252" stroke="#3f3f46" stroke-width="1"/>
+
+  <!-- ================= THE MARKDOWN PATH ================= -->
+  <text x="48" y="296" fill="#60a5fa" font-family="ui-monospace, Menlo, monospace" font-size="15" font-weight="700">MARKDOWN FIRST</text>
+
+  <rect x="48" y="314" width="212" height="86" rx="8" fill="#27272a" stroke="#52525b" stroke-width="1.5"/>
+  <text x="154" y="346" fill="#e4e4e7" font-family="ui-monospace, Menlo, monospace" font-size="15" text-anchor="middle">26 HTML files</text>
+  <text x="154" y="372" fill="#71717a" font-family="ui-monospace, Menlo, monospace" font-size="14" text-anchor="middle">html.parser, 0.27s</text>
+
+  <line x1="268" y1="357" x2="352" y2="357" stroke="#60a5fa" stroke-width="2.5" marker-end="url(#pl-arrow)"/>
+
+  <rect x="360" y="314" width="212" height="86" rx="8" fill="#27272a" stroke="#60a5fa" stroke-width="1.5"/>
+  <text x="466" y="346" fill="#e4e4e7" font-family="ui-monospace, Menlo, monospace" font-size="15" text-anchor="middle">one file per group</text>
+  <text x="466" y="372" fill="#60a5fa" font-family="ui-monospace, Menlo, monospace" font-size="14" text-anchor="middle">each under 20K chars</text>
+
+  <line x1="580" y1="357" x2="664" y2="357" stroke="#60a5fa" stroke-width="2.5" marker-end="url(#pl-arrow)"/>
+
+  <rect x="672" y="314" width="212" height="86" rx="8" fill="#27272a" stroke="#60a5fa" stroke-width="1.5"/>
+  <text x="778" y="346" fill="#e4e4e7" font-family="ui-monospace, Menlo, monospace" font-size="15" text-anchor="middle">+ concept layer</text>
+  <text x="778" y="372" fill="#71717a" font-family="ui-monospace, Menlo, monospace" font-size="14" text-anchor="middle">fixed vocabulary</text>
+
+  <line x1="892" y1="357" x2="976" y2="357" stroke="#60a5fa" stroke-width="2.5" marker-end="url(#pl-arrow)"/>
+
+  <circle cx="1064" cy="357" r="40" fill="none" stroke="#60a5fa" stroke-width="2"/>
+  <circle cx="1064" cy="357" r="9" fill="#60a5fa"/>
+  <circle cx="1038" cy="335" r="5" fill="#93c5fd"/>
+  <circle cx="1090" cy="337" r="5" fill="#93c5fd"/>
+  <circle cx="1044" cy="382" r="5" fill="#93c5fd"/>
+  <circle cx="1086" cy="380" r="5" fill="#93c5fd"/>
+  <g stroke="#60a5fa" stroke-width="1.5" opacity="0.6">
+    <path d="M1064 357 L1038 335 M1064 357 L1090 337 M1064 357 L1044 382 M1064 357 L1086 380"/>
+  </g>
+  <text x="1064" y="424" fill="#e4e4e7" font-family="ui-monospace, Menlo, monospace" font-size="14" text-anchor="middle">the whole corpus</text>
+
+  <text x="48" y="470" fill="#a1a1aa" font-family="Georgia, serif" font-size="16">The conversion is not an optimization. It is the whole job.</text>
+</svg>
