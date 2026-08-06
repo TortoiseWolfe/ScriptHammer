@@ -55,6 +55,14 @@ on:
   schedule:
     - cron: '0 6 * * 1' # Monday 6 AM UTC — full 3-browser run
   workflow_dispatch:
+    inputs:
+      budget_override:
+        description: >-
+          Reason for bypassing the cloud-quota circuit breaker (#567). Leave empty
+          to respect the budget. A bare "true" is not accepted — state why, because
+          the reason is the audit trail.
+        required: false
+        type: string
 
 concurrency:
   # Repo-wide mutex: every E2E run shares one Supabase project, and concurrent
@@ -71,10 +79,42 @@ env:
 
 jobs:
   # ============================================
+  # STEP 0: Cloud-quota circuit breaker (#567)
+  # ============================================
+  #
+  # THE `concurrency` MUTEX ABOVE IS NOT A LIMIT. It serializes runs; it does not
+  # cap them. On 2026-08-05 thirty full runs queued politely and then each executed
+  # in full — orderly, not fewer. 44 runs across 3.9 days consumed an entire month
+  # of the Supabase free tier (egress, MAU and realtime all exceeded) and took
+  # production down until the billing cycle reset.
+  #
+  # This job is the actual cap. `build` needs it, and every other job traces back
+  # to `build`, so there is no path around it.
+  #
+  # It fails CLOSED: if the run history cannot be read, it blocks. A quota guard
+  # that opens on error is one an error can bypass.
+  #
+  # To bypass deliberately, dispatch with a reason — the reason is the audit trail:
+  #   gh workflow run e2e.yml -f budget_override='verifying the #575 cutover'
+  budget:
+    name: Cloud-quota budget
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check recent E2E run rate against the quota budget
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          E2E_BUDGET_OVERRIDE: ${{ inputs.budget_override }}
+        run: node scripts/ci/e2e-budget-guard.mjs
+
+  # ============================================
   # STEP 1: Build once, cache for all shards
   # ============================================
   build:
     name: Build
+    needs: budget
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
