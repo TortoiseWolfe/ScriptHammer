@@ -16,10 +16,13 @@ import { OfflineRetryBanner } from '@/components/payment/OfflineRetryBanner';
 import { featureFlags } from '@/config/payment';
 import { getInternalUrl } from '@/config/project.config';
 import { getPaymentStatus } from '@/lib/payments/payment-service';
+import { handleStripeRedirect } from '@/lib/payments/stripe';
+import { classifyReturn, UUID_RE } from '@/lib/payments/payment-return';
 
 type ResultState =
   | { kind: 'loading' }
   | { kind: 'missing-id' }
+  | { kind: 'checkout-cancelled' }
   | { kind: 'not-configured' }
   | { kind: 'loaded'; resultId: string }
   | { kind: 'not-found'; intentId: string }
@@ -27,43 +30,102 @@ type ResultState =
 
 function PaymentResultContent() {
   const searchParams = useSearchParams();
+  // THREE ways a buyer arrives here, and until now only the first was handled:
+  //
+  //   ?id=<uuid>                      our own links (PaymentButton, history)
+  //   ?session_id=cs_…&status=…       Stripe's success_url — the REAL purchase
+  //                                   path (create-stripe-checkout/index.ts:145,
+  //                                   create-stripe-subscription/index.ts:116)
+  //   ?status=cancelled               Stripe's cancel_url, carrying NO id at all
+  //
+  // Reading only `id` meant every completed Stripe payment landed on the
+  // "no payment ID" screen, and a buyer who backed out saw the same thing as a
+  // broken link. handleStripeRedirect() — the function that bridges session_id to
+  // an intent id — had zero callers anywhere in the repo.
   const intentId = searchParams?.get('id') ?? null;
+  const sessionId = searchParams?.get('session_id') ?? null;
+  const status = searchParams?.get('status') ?? null;
+
   const [state, setState] = useState<ResultState>({ kind: 'loading' });
   const [retryCount, setRetryCount] = useState(0);
+  // Resolved from session_id when Stripe sent us here; otherwise the ?id= value.
+  const [resolvedIntentId, setResolvedIntentId] = useState<string | null>(null);
 
   const noProvidersConfigured =
     !featureFlags.stripeEnabled && !featureFlags.paypalEnabled;
 
+  // Step 1 — turn whatever the URL carries into an intent id.
   useEffect(() => {
-    if (noProvidersConfigured) {
+    // Single `cancelled` flag and a single return, so every branch gets the same
+    // cleanup — an effect that returns a teardown on some paths and undefined on
+    // others is TS7030, and worse, easy to get subtly wrong on unmount.
+    let cancelled = false;
+
+    // The decision itself lives in classifyReturn() so it can be tested without
+    // React or auth — see src/lib/payments/__tests__/payment-return.test.ts.
+    const route = classifyReturn({
+      id: intentId,
+      sessionId,
+      status,
+      providersConfigured: !noProvidersConfigured,
+    });
+
+    if (route.kind === 'not-configured') {
       setState({ kind: 'not-configured' });
-      return;
+    } else if (route.kind === 'intent') {
+      setState({ kind: 'loading' });
+      setResolvedIntentId(route.intentId);
+    } else if (route.kind === 'session') {
+      setState({ kind: 'loading' });
+      handleStripeRedirect(route.sessionId)
+        .then(({ intentId: resolved, error }) => {
+          if (cancelled) return;
+          if (resolved && UUID_RE.test(resolved)) {
+            // Resolve the real state from our own records either way. `success`
+            // is deliberately ignored here: a redirect is not proof of payment —
+            // the webhook is — so we show whatever payment_results actually says.
+            setResolvedIntentId(resolved);
+            return;
+          }
+          setState({
+            kind: 'error',
+            message: error ?? 'Could not verify the Stripe session',
+          });
+        })
+        .catch((err: unknown) => {
+          if (cancelled) return;
+          setState({
+            kind: 'error',
+            message:
+              err instanceof Error ? err.message : 'Failed to verify session',
+          });
+        });
+    } else if (route.kind === 'cancelled') {
+      setState({ kind: 'checkout-cancelled' });
+    } else {
+      setState({ kind: 'missing-id' });
     }
 
-    if (!intentId) {
-      setState({ kind: 'missing-id' });
-      return;
-    }
+    return () => {
+      cancelled = true;
+    };
+  }, [intentId, sessionId, status, noProvidersConfigured]);
 
-    // Validate UUID format
-    const uuidPattern =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidPattern.test(intentId)) {
-      setState({ kind: 'missing-id' });
-      return;
-    }
+  // Step 2 — resolve the payment status once an intent id is known.
+  useEffect(() => {
+    if (!resolvedIntentId || noProvidersConfigured) return;
 
     let cancelled = false;
 
     async function verify() {
       try {
-        const result = await getPaymentStatus(intentId!);
+        const result = await getPaymentStatus(resolvedIntentId!);
         if (cancelled) return;
 
         if (result) {
           setState({ kind: 'loaded', resultId: result.id });
         } else {
-          setState({ kind: 'not-found', intentId: intentId! });
+          setState({ kind: 'not-found', intentId: resolvedIntentId! });
         }
       } catch (err) {
         if (cancelled) return;
@@ -87,7 +149,7 @@ function PaymentResultContent() {
     return () => {
       cancelled = true;
     };
-  }, [intentId, noProvidersConfigured, retryCount]);
+  }, [resolvedIntentId, noProvidersConfigured, retryCount]);
 
   // Feature flag gate
   if (state.kind === 'not-configured') {
@@ -116,6 +178,41 @@ function PaymentResultContent() {
               See <code>docs/PAYMENT-DEPLOYMENT.md</code> for the full setup
               walkthrough.
             </p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Stripe's cancel_url lands here with `?status=cancelled` and no id. That is a
+  // buyer who changed their mind, not an error — nothing failed, nothing was
+  // charged, and the useful thing to offer is the way back.
+  if (state.kind === 'checkout-cancelled') {
+    return (
+      <main className="container mx-auto px-4 py-6 sm:px-6 sm:py-8 md:py-12 lg:px-8">
+        <div className="flex flex-col items-center gap-6 text-center">
+          <div role="status" className="alert alert-info max-w-lg">
+            <div>
+              <p className="font-semibold">Checkout cancelled</p>
+              <p className="text-sm">
+                You were not charged. Your selection is still there if you want
+                to pick up where you left off.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link
+              href={getInternalUrl('/pricing')}
+              className="btn btn-primary min-h-11 min-w-11"
+            >
+              Back to pricing
+            </Link>
+            <Link
+              href={getInternalUrl('/payment')}
+              className="btn btn-ghost min-h-11 min-w-11"
+            >
+              View your payments
+            </Link>
           </div>
         </div>
       </main>
