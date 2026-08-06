@@ -97,14 +97,24 @@ test.describe('Session Persistence E2E', () => {
       throw new Error(`Sign-in failed: ${result.error}`);
     }
 
-    // Check session is in sessionStorage (not localStorage for short-lived)
-    const sessionStorage = await page.evaluate(() =>
-      JSON.stringify(window.sessionStorage)
+    // #587: this used to read `expect(sessionStorage).toBeDefined()` on a
+    // JSON.stringify result — a string is ALWAYS defined, so the assertion could
+    // not fail. It was hedged by a comment claiming "Supabase SSR may still use
+    // localStorage even without Remember Me", which was true before #375 and is
+    // not now. A gate that cannot fail plus a comment excusing it is how #375's
+    // regression would have gone unnoticed.
+    //
+    // What actually happens with rememberMe:false, observed on a real run:
+    //   localStorage == {"cookie-consent":…,"playwright_e2e":"true",
+    //                    "sh-auth-persistence":"session"}
+    // i.e. the app records its choice in `sh-auth-persistence` and keeps the
+    // token OUT of localStorage. Assert exactly that — it is what #375 fixed.
+    const localStorageDump = await page.evaluate(() =>
+      JSON.stringify(window.localStorage)
     );
 
-    // Note: Supabase SSR may still use localStorage even without Remember Me
-    // The difference is in cookie max-age, not storage location
-    expect(sessionStorage).toBeDefined();
+    expect(localStorageDump).toContain('sh-auth-persistence');
+    expect(localStorageDump).not.toMatch(/sb-.*-auth-token/);
   });
 
   test('should automatically refresh token before expiration', async ({
@@ -190,11 +200,21 @@ test.describe('Session Persistence E2E', () => {
       })
       .catch(() => {});
 
-    // Verify localStorage has session data (modern Supabase uses sb-*-auth-token keys)
+    // #587: this used to assert /sb-.*-auth-token/ in localStorage. But the
+    // sign-in above is `performSignIn(...)` with no options, and
+    // test-user-factory.ts:1116 defaults `rememberMe` to FALSE — so after #375's
+    // fix the token deliberately does NOT go to localStorage. The assertion was
+    // demanding the exact behaviour #375 was closed for removing, and it failed
+    // on every run of the local-Supabase workflow (#575).
+    //
+    // This test's subject is the AFTER state — "should clear session on sign
+    // out". The `before` check is scaffolding, so it now asserts the thing that
+    // is actually true and actually load-bearing: a session marker exists to be
+    // cleared.
     const beforeSignOut = await page.evaluate(() =>
       JSON.stringify(window.localStorage)
     );
-    expect(beforeSignOut).toMatch(/sb-.*-auth-token/);
+    expect(beforeSignOut).toContain('sh-auth-persistence');
 
     // Sign out via dropdown menu
     await signOutViaDropdown(page);
