@@ -135,7 +135,24 @@ refresh_token_reuse_interval = 10
 # Allow/disallow new user signups to your project.
 enable_signup = true
 # Allow/disallow anonymous sign-ins to your project.
-enable_anonymous_sign_ins = false
+#
+# Guest checkout (#557). A buyer gets a real auth.uid() with no email/password
+# step, so every existing RLS policy keeps working unmodified, and the session can
+# be upgraded to a permanent account later by linking an email.
+#
+# ENABLED FOR THE LOCAL STACK ONLY.
+#
+# The production equivalent is `external_anonymous_users_enabled` in
+# scripts/supabase/auth-config.json, and it is deliberately NOT set there yet, for
+# two reasons. First, that file is the desired state the daily Auth Config Drift
+# gate compares production against — adding a key production does not have turns
+# that gate red every day until it is applied, and a gate that is always red is a
+# gate nobody reads. Second, enabling it publicly creates an anonymous-session
+# surface (30/hr/IP) while MAU is one of the three quotas currently at 402.
+#
+# Flipping it in production is a deliberate step once the quota resets, tracked on
+# #557. Rate limit is pre-staged at [auth.rate_limit].anonymous_users below.
+enable_anonymous_sign_ins = true
 # Allow/disallow testing manual linking of accounts
 enable_manual_linking = false
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.

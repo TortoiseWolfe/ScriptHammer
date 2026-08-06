@@ -30,6 +30,11 @@ DELETE FROM storage.buckets WHERE id = 'avatars';
 
 -- Drop in dependency order (children before parents)
 
+-- Commerce catalog (#557). Children before parents: orders references both
+-- products and payment_intents, so it must go first.
+DROP TABLE IF EXISTS orders CASCADE;
+DROP TABLE IF EXISTS products CASCADE;
+
 -- Payment tables (depend on auth.users via foreign keys)
 DROP TABLE IF EXISTS webhook_events CASCADE;
 DROP TABLE IF EXISTS payment_results CASCADE;
