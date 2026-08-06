@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c7ddf5"/>
+      <stop offset="100%" stop-color="#b8d4f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <text x="960" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="700" fill="#4b5563" letter-spacing="1">PRICING STOREFRONT - /pricing</text>
+  <text x="40" y="52" fill="#8b5cf6" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">DESKTOP (16:9)</text>
+  <text x="1500" y="52" fill="#d946ef" font-family="system-ui, sans-serif" font-size="15" font-weight="bold">MOBILE</text>
+
+  <g id="desktop" transform="translate(40, 60)">
+    <rect width="1280" height="720" rx="8" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-desktop.svg#desktop-header" x="0" y="0"/>
+
+    <text x="640" y="96" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="#1f2937">Pricing</text>
+    <text x="640" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Two lanes, one checkout. No account needed to buy.</text>
+
+    <!-- LaneToggle -->
+    <rect x="420" y="138" width="440" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <rect x="424" y="142" width="216" height="36" rx="4" fill="#8b5cf6"/>
+    <text x="532" y="165" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">For Your Business</text>
+    <text x="750" y="165" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">For Developers</text>
+
+    <!-- PricingCard x3 -->
+    <rect x="60" y="204" width="360" height="248" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="84" y="234" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Discovery</text>
+    <text x="84" y="268" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="#1f2937">$250</text>
+    <text x="84" y="292" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">one-time</text>
+    <text x="84" y="322" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Staging page on a real URL</text>
+    <text x="84" y="344" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Working contact form</text>
+    <text x="84" y="366" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Credited toward any build</text>
+    <rect x="84" y="392" width="312" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="240" y="420" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Choose Discovery</text>
+
+    <rect x="460" y="204" width="360" height="248" rx="8" fill="#dcc8a8" stroke="#8b5cf6" stroke-width="3"/>
+    <text x="484" y="234" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Landing Page</text>
+    <text x="484" y="268" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="#1f2937">$1,200</text>
+    <text x="484" y="292" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">one-time</text>
+    <text x="484" y="322" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Single page, live on your domain</text>
+    <text x="484" y="344" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Form wired to inbox and phone</text>
+    <text x="484" y="366" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Lighthouse 90+, 2 revisions</text>
+    <rect x="484" y="392" width="312" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="640" y="420" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Choose Landing Page</text>
+
+    <rect x="860" y="204" width="360" height="248" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="884" y="234" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Business Site</text>
+    <text x="884" y="268" font-family="system-ui, sans-serif" font-size="28" font-weight="bold" fill="#1f2937">$3,500</text>
+    <text x="884" y="292" font-family="system-ui, sans-serif" font-size="14" fill="#4b5563">one-time</text>
+    <text x="884" y="322" font-family="system-ui, sans-serif" font-size="14" fill="#374151">5 to 7 pages, service pages</text>
+    <text x="884" y="344" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Project gallery, local SEO</text>
+    <text x="884" y="366" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Blog scaffold, 3 revisions</text>
+    <rect x="884" y="392" width="312" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="1040" y="420" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Choose Business Site</text>
+
+    <!-- Recurring plans -->
+    <rect x="60" y="472" width="1160" height="86" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="84" y="500" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Care Plan</text>
+    <text x="84" y="524" font-family="system-ui, sans-serif" font-size="14" fill="#374151">$99/mo — hosting, backups, updates, 30 min of edits. Cancel anytime; your site stays up.</text>
+    <text x="84" y="546" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Care Plan Pro $249/mo adds content updates, monthly report and 2 hr of edits.</text>
+    <rect x="908" y="496" width="288" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="1052" y="524" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Compare plans</text>
+
+    <!-- Pre-sale booking -->
+    <text x="400" y="596" text-anchor="end" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Not sure which one?</text>
+    <rect x="420" y="576" width="300" height="40" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="570" y="601" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">Book a 15-min intro call</text>
+
+    <use href="includes/footer-desktop.svg#site-footer" x="0" y="640"/>
+
+    <g class="callout"><circle cx="640" cy="160" r="14" fill="#dc2626"/><text x="640" y="165" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="640" cy="268" r="14" fill="#dc2626"/><text x="640" y="273" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="1240" cy="515" r="14" fill="#dc2626"/><text x="1240" y="520" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text></g>
+    <g class="callout"><circle cx="760" cy="580" r="14" fill="#dc2626"/><text x="760" y="585" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="mobile" transform="translate(1360, 60)">
+    <rect width="360" height="720" rx="24" fill="#e8d4b8" stroke="#b8a080"/>
+    <use href="includes/header-mobile.svg#mobile-header-group" x="0" y="0"/>
+
+    <text x="180" y="104" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="#1f2937">Pricing</text>
+
+    <rect x="16" y="122" width="328" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <rect x="20" y="126" width="160" height="36" rx="4" fill="#8b5cf6"/>
+    <text x="100" y="149" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Business</text>
+    <text x="262" y="149" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#374151">Developers</text>
+
+    <rect x="16" y="180" width="328" height="132" rx="8" fill="#dcc8a8" stroke="#8b5cf6" stroke-width="3"/>
+    <text x="36" y="206" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Landing Page</text>
+    <text x="36" y="238" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="#1f2937">$1,200</text>
+    <rect x="36" y="254" width="288" height="44" rx="6" fill="#8b5cf6"/>
+    <text x="180" y="282" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#e8d4b8">Choose Landing Page</text>
+
+    <rect x="16" y="324" width="328" height="112" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="36" y="350" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Business Site</text>
+    <text x="36" y="378" font-family="system-ui, sans-serif" font-size="22" font-weight="bold" fill="#1f2937">$3,500</text>
+    <rect x="36" y="392" width="288" height="36" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="180" y="416" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#1f2937">Choose Business Site</text>
+
+    <rect x="16" y="448" width="328" height="86" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <text x="36" y="474" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Care Plan</text>
+    <text x="36" y="498" font-family="system-ui, sans-serif" font-size="14" fill="#374151">$99/mo — cancel anytime,</text>
+    <text x="36" y="518" font-family="system-ui, sans-serif" font-size="14" fill="#374151">your site stays up.</text>
+
+    <rect x="36" y="556" width="288" height="44" rx="6" fill="#f5f0e6" stroke="#b8a080"/>
+    <text x="180" y="584" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#8b5cf6">Book a 15-min intro call</text>
+
+    <use href="includes/footer-mobile.svg#mobile-bottom-nav" x="0" y="664"/>
+
+    <g class="callout"><circle cx="332" cy="110" r="11" fill="#dc2626"/><text x="332" y="115" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text></g>
+    <g class="callout"><circle cx="332" cy="238" r="11" fill="#dc2626"/><text x="332" y="243" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text></g>
+    <g class="callout"><circle cx="332" cy="542" r="11" fill="#dc2626"/><text x="332" y="547" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text></g>
+  </g>
+
+  <g id="annotations" transform="translate(40, 800)">
+    <rect width="1840" height="220" rx="8" fill="#dcc8a8" stroke="#b8a080"/>
+    <g transform="translate(20, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">1</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">LaneToggle</text>
+      <a href="#us-001" transform="translate(140, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <a href="#fr-006" transform="translate(202, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">FR-006</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Two audiences, one catalog. Services for</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">businesses, products for developers.</text>
+      <text x="38" y="80" font-family="system-ui, sans-serif" font-size="14" fill="#374151">No duplicated underlying items.</text>
+    </g>
+    <g transform="translate(480, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">2</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">PricingCard</text>
+      <a href="#us-001" transform="translate(140, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-001</text></a>
+      <a href="#fr-002" transform="translate(202, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">FR-002</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Price is read from the catalog, never from</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">the card. A submitted amount is discarded,</text>
+      <text x="38" y="80" font-family="system-ui, sans-serif" font-size="14" fill="#374151">not validated — rejecting it leaks the price.</text>
+    </g>
+    <g transform="translate(940, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">3</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">Recurring plans</text>
+      <a href="#us-005" transform="translate(160, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-005</text></a>
+      <a href="#fr-005" transform="translate(222, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">FR-005</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Plan identifiers resolve from the catalog.</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Cancellation stops maintenance, not hosting</text>
+      <text x="38" y="80" font-family="system-ui, sans-serif" font-size="14" fill="#374151">— stated here, before payment.</text>
+    </g>
+    <g transform="translate(1400, 16)">
+      <circle cx="14" cy="14" r="12" fill="#dc2626"/>
+      <text x="14" y="19" text-anchor="middle" fill="#fff" font-size="14" font-weight="bold">4</text>
+      <text x="38" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#1f2937">BookingCta</text>
+      <a href="#us-006" transform="translate(140, 5)"><rect width="56" height="22" rx="11" fill="#0891b2"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">US-006</text></a>
+      <a href="#fr-024" transform="translate(202, 5)"><rect width="56" height="22" rx="11" fill="#2563eb"/><text x="28" y="17" text-anchor="middle" fill="#f5f0e6" font-size="14" font-weight="700">FR-024</text></a>
+      <text x="38" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Records one conversation, then redirects.</text>
+      <text x="38" y="62" font-family="system-ui, sans-serif" font-size="14" fill="#374151">No form in front of the click. Unconverted</text>
+      <text x="38" y="80" font-family="system-ui, sans-serif" font-size="14" fill="#374151">calls stay visible to the operator.</text>
+    </g>
+    <g transform="translate(20, 130)">
+      <text x="0" y="19" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#4b5563" letter-spacing="1">WHAT SHIPS</text>
+      <text x="0" y="44" font-family="system-ui, sans-serif" font-size="14" fill="#374151">New route src/app/pricing/page.tsx — public, renders with no payment provider configured (FR-027).</text>
+      <text x="0" y="64" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Components PricingTable / PricingCard / LaneToggle / BookingCta, each 5-file per the generator.</text>
+      <text x="0" y="84" font-family="system-ui, sans-serif" font-size="14" fill="#374151">Reads src/lib/commerce/catalog.ts. Buy actions route to /checkout?sku= — a real URL, not a drawer.</text>
+    </g>
+  </g>
+  <text x="40" y="1060" fill="#374151" font-family="system-ui, sans-serif" font-size="18" font-weight="bold">050:01 | Pricing Storefront (/pricing) | ScriptHammer</text>
+</svg>

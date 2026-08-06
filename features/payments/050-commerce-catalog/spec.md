@@ -249,6 +249,34 @@ out-of-range and nonsense amounts are refused.
 
 ---
 
+## UI Mockup
+
+Wireframe gate (#556) **PASSED 2026-08-06** — all five screens validate with 0 errors, and
+the repo-wide sweep is 70/71 (the one failure, `animated-logo.svg`, predates this work).
+
+| Screen            | Wireframe                                                     | Stories          | Review                                             |
+| ----------------- | ------------------------------------------------------------- | ---------------- | -------------------------------------------------- |
+| `/pricing`        | [`01-pricing.svg`](./wireframes/01-pricing.svg)               | US-1, US-5, US-6 | [issues](./wireframes/01-pricing.issues.md)        |
+| `/checkout`       | [`02-checkout.svg`](./wireframes/02-checkout.svg)             | US-1, US-3, US-5 | [issues](./wireframes/02-checkout.issues.md)       |
+| `/payment-result` | [`03-payment-result.svg`](./wireframes/03-payment-result.svg) | US-1, US-2, US-4 | [issues](./wireframes/03-payment-result.issues.md) |
+| `/admin/orders`   | [`04-admin-orders.svg`](./wireframes/04-admin-orders.svg)     | US-2, US-3, US-4 | [issues](./wireframes/04-admin-orders.issues.md)   |
+| `/tip`            | [`05-tip-jar.svg`](./wireframes/05-tip-jar.svg)               | US-1, US-2, US-7 | [issues](./wireframes/05-tip-jar.issues.md)        |
+
+All seven user stories are represented across the set.
+
+**One design decision was settled here rather than in the spec**, because the two source
+documents disagreed. `docs/design/commerce/pricing-demo.html` implements checkout as a
+**drawer** over `/pricing`; the PRD §9 and this spec say `/checkout` is a **route**. The
+wireframes draw the route, and the prototype's stepper and visual language carry over
+unchanged — only the container differs.
+
+Route wins on five grounds specific to this product: a quote can be emailed as
+`…/checkout?sku=`; checkout should remove navigation rather than keep the grid visible
+behind a scrim; the provider redirect leaves and returns, and a URL costs nothing to return
+to; a drawer is a modal, carrying focus-trap, scroll-lock and focus-restore obligations
+against a hard a11y gate; and at 390px the drawer becomes a full-screen overlay anyway —
+all of the cost, none of the benefit.
+
 ## Requirements _(mandatory)_
 
 ### Functional Requirements

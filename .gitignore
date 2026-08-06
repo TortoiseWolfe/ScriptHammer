@@ -122,6 +122,11 @@ storybook-static/
 # Project-local authoring conventions doc (ScriptHammer-specific as-is
 # wireframe rules). Extension-shipped; re-apply on update if wiped.
 !.specify/extensions/*/AUTHORING-AS-IS.md
+# Accumulated cross-feature wireframe lessons, written by wireframe review and
+# read by /speckit.wireframe.prep. Project-local knowledge, not extension
+# payload — without this line the file is silently ignored, prep keeps reporting
+# it missing, and every feature relearns the same rules from validator errors.
+!.specify/extensions/*/GENERAL_ISSUES.md
 # Registered wireframe-extension skills. The payload is installed by
 # `./specify extension add wireframe`, but we track the SKILL.md copies so
 # local ScriptHammer-specific preamble (path conventions) persists across

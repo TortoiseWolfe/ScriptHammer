@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+<!-- ScriptHammer Mobile Bottom Nav (INCLUDE - for template injection)
+     Position: Bottom of mobile mockup container
+     Width: 360px (matches wireframe mobile container width)
+     Height: 56px
+     Corners: Rounded BOTTOM only (rx=24) to match mobile container
+     NOTE: All tabs inactive by default. Set active state per-page.
+
+     USAGE: Inject content directly into wireframe SVG with appropriate transform.
+     Icons are inline paths (nested <use href="#symbol"> doesn't work with external refs).
+-->
+
+<g id="mobile-bottom-nav">
+  <!-- Background - rounded BOTTOM corners only (matches container rx=24) -->
+  <path d="M 0 0 L 360 0 L 360 32 A 24 24 0 0 1 336 56 L 24 56 A 24 24 0 0 1 0 32 Z" fill="#dcc8a8" stroke="#b8a080"/>
+
+  <!-- Home tab (inactive by default) - bottom-left corner rounded (rx=24) -->
+  <g id="tab-home" transform="translate(0, 0)">
+    <path d="M 0 0 L 90 0 L 90 56 L 24 56 A 24 24 0 0 1 0 32 L 0 0 Z" fill="transparent"/>
+    <g transform="translate(33, 6)">
+      <path fill="#1a1a2e" d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69a.75.75 0 1 0 1.06-1.061l-8.689-8.69a2.25 2.25 0 0 0-3.182 0l-8.69 8.69a.75.75 0 1 0 1.061 1.06l8.69-8.689Z"/>
+      <path fill="#1a1a2e" d="m12 5.432 8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 0 1-.75-.75v-4.5a.75.75 0 0 0-.75-.75h-3a.75.75 0 0 0-.75.75V21a.75.75 0 0 1-.75.75H5.625a1.875 1.875 0 0 1-1.875-1.875v-6.198a2.29 2.29 0 0 0 .091-.086L12 5.432Z"/>
+    </g>
+    <text x="45" y="44" text-anchor="middle" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14px">Home</text>
+  </g>
+
+  <!-- Features tab (inactive by default) -->
+  <g id="tab-features" transform="translate(90, 0)">
+    <rect width="90" height="56" fill="transparent"/>
+    <g transform="translate(33, 6)">
+      <path fill="#1a1a2e" d="M14.6152 1.59492C14.9164 1.76287 15.0643 2.1146 14.9736 2.44734L12.9819 9.75H20.25C20.5486 9.75 20.8188 9.92718 20.9378 10.2011C21.0569 10.475 21.0021 10.7934 20.7983 11.0117L10.2983 22.2617C10.063 22.5139 9.68601 22.573 9.38478 22.4051C9.08354 22.2371 8.93567 21.8854 9.02641 21.5527L11.018 14.25H3.74999C3.45134 14.25 3.18115 14.0728 3.06213 13.7989C2.9431 13.525 2.99792 13.2066 3.20169 12.9883L13.7017 1.73826C13.937 1.48613 14.314 1.42698 14.6152 1.59492Z"/>
+    </g>
+    <text x="45" y="44" text-anchor="middle" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14px">Features</text>
+  </g>
+
+  <!-- Docs tab (inactive by default) -->
+  <g id="tab-docs" transform="translate(180, 0)">
+    <rect width="90" height="56" fill="transparent"/>
+    <g transform="translate(33, 6)">
+      <path fill="#1a1a2e" d="M5.625 1.5C4.58947 1.5 3.75 2.33947 3.75 3.375V20.625C3.75 21.6605 4.58947 22.5 5.625 22.5H18.375C19.4105 22.5 20.25 21.6605 20.25 20.625V12.75C20.25 10.6789 18.5711 9 16.5 9H14.625C13.5895 9 12.75 8.16053 12.75 7.125V5.25C12.75 3.17893 11.0711 1.5 9 1.5H5.625ZM7.5 15C7.5 14.5858 7.83579 14.25 8.25 14.25H15.75C16.1642 14.25 16.5 14.5858 16.5 15C16.5 15.4142 16.1642 15.75 15.75 15.75H8.25C7.83579 15.75 7.5 15.4142 7.5 15ZM8.25 17.25C7.83579 17.25 7.5 17.5858 7.5 18C7.5 18.4142 7.83579 18.75 8.25 18.75H12C12.4142 18.75 12.75 18.4142 12.75 18C12.75 17.5858 12.4142 17.25 12 17.25H8.25Z"/>
+      <path fill="#1a1a2e" d="M12.9712 1.8159C13.768 2.73648 14.25 3.93695 14.25 5.25V7.125C14.25 7.33211 14.4179 7.5 14.625 7.5H16.5C17.8131 7.5 19.0135 7.98204 19.9341 8.77881C19.0462 5.37988 16.3701 2.70377 12.9712 1.8159Z"/>
+    </g>
+    <text x="45" y="44" text-anchor="middle" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14px">Docs</text>
+  </g>
+
+  <!-- Account tab (inactive by default) - bottom-right corner rounded (rx=24) -->
+  <g id="tab-account" transform="translate(270, 0)">
+    <path d="M 0 0 L 90 0 L 90 32 A 24 24 0 0 1 66 56 L 0 56 L 0 0 Z" fill="transparent"/>
+    <g transform="translate(33, 6)">
+      <path fill="#1a1a2e" fill-rule="evenodd" clip-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z"/>
+    </g>
+    <text x="45" y="44" text-anchor="middle" fill="#4b5563" font-family="system-ui, sans-serif" font-size="14px">Account</text>
+  </g>
+</g>
+
+<!-- ACTIVE STATE TEMPLATE (copy to wireframe to activate a tab)
+To make Home active (bottom-left rounded rx=24), add this AFTER the bottom nav:
+<g transform="translate(x, y)">  // same position as bottom nav
+  <path d="M 0 0 L 90 0 L 90 56 L 24 56 A 24 24 0 0 1 0 32 L 0 0 Z" fill="#8b5cf6"/>
+  <g transform="translate(33, 6)">
+    <path fill="#fff" d="M11.47 3.841a.75.75 0 0 1 1.06 0l8.69 8.69..."/>
+    <path fill="#fff" d="m12 5.432 8.159 8.159c.03.03.06.058..."/>
+  </g>
+  <text x="45" y="44" text-anchor="middle" fill="#fff" font-size="14" font-weight="600">Home</text>
+</g>
+
+To make Account active (bottom-right rounded rx=24), use:
+  <path d="M 0 0 L 90 0 L 90 32 A 24 24 0 0 1 66 56 L 0 56 L 0 0 Z" fill="#8b5cf6"/>
+
+Middle tabs (Features, Docs) use regular rect:
+  <rect width="90" height="56" fill="#8b5cf6"/>
+-->
+</svg>
