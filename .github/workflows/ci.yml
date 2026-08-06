@@ -64,8 +64,16 @@ jobs:
       - name: Validate breakpoint configuration
         run: pnpm validate:breakpoints
 
-      - name: Run tests
-        run: pnpm test --run
+      # NOTE: there is deliberately no separate `pnpm test --run` step here.
+      # It ran the identical suite that "Check test coverage" runs below —
+      # `vitest --run` vs `vitest run --coverage`, same runner, same discovery,
+      # the coverage `exclude` at vitest.config.ts:72 filters REPORTING, not
+      # execution. Measured on 46be768: both produced 395 files / 4282 tests
+      # over the same 373 named files, zero unique to the plain run. So it cost
+      # ~3m45s per run of a REQUIRED check and bought nothing. #573
+      #
+      # If you ever need the uninstrumented timing, run it locally — do not
+      # re-add it here.
 
       # Eight node:test files under scripts/__tests__/ cover the tooling
       # scripts CI itself runs — detect-project.js (step above), validate-

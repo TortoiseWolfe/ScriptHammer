@@ -52,8 +52,17 @@ jobs:
       - name: Run accessibility tests
         run: pnpm run test:a11y:ci
 
-      - name: Run component accessibility tests
-        run: pnpm test -- --run Button.accessibility Card.accessibility Text.accessibility
+      # NOTE: the component accessibility specs are deliberately NOT re-run here.
+      # This step used to run Button/Card/Text.accessibility — an arbitrary 3 of
+      # the 10+ *.accessibility.test.tsx files in the repo — and all three are
+      # already executed by ci.yml's suite (verified on 46be768: they appear in
+      # its 373-file run). It cost ~3m45s of a 7-minute REQUIRED check, more
+      # than half of it, and over 90% of that was vitest startup rather than
+      # accessibility testing.
+      #
+      # What this workflow uniquely provides is Pa11y against the real built
+      # output plus the #476 stale-HTML guard. Component-level a11y assertions
+      # belong to the unit suite and are gated there. #573
 
       - name: Upload Pa11y screenshots
         if: failure()
