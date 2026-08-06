@@ -98,6 +98,26 @@ services:
           hide_groups_header: true
           allow: [admin, anon]
 
+  # ── Edge Functions ───────────────────────────────────────────────────
+  #
+  # Without this route the edge-runtime container is unreachable: every
+  # /functions/v1/* call 404s at Kong regardless of whether a function exists.
+  #
+  # Deliberately NO key-auth/acl plugins, matching production. These functions
+  # authenticate the CALLER themselves via the Authorization bearer token
+  # (_shared/auth.ts), and several must be reachable by an anonymous session for
+  # guest checkout. An apikey gate here would reject the exact traffic they are
+  # built to serve — note src/lib/payments/stripe.ts sends Authorization only,
+  # and no apikey header at all.
+  - name: functions-v1
+    url: http://supabase-edge-runtime:9000/
+    routes:
+      - name: functions-v1-all
+        strip_path: true
+        paths: [/functions/v1/]
+    plugins:
+      - name: cors
+
   # ── GraphQL (PostgREST RPC) ──────────────────────────────────────────
   - name: graphql-v1
     url: http://supabase-rest:3000/rpc/graphql
