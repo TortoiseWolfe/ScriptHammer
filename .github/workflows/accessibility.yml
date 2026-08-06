@@ -10,12 +10,12 @@ jobs:
   accessibility:
     runs-on: ubuntu-latest
 
+    # Only the public NEXT_PUBLIC_* pair — this job builds the static export and
+    # runs pa11y plus three component a11y specs, none of which reach a backend.
+    # See the note in ci.yml; same reasoning, same ticket. #574
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-      TEST_USER_PRIMARY_EMAIL: ${{ vars.TEST_USER_PRIMARY_EMAIL }}
-      TEST_USER_PRIMARY_PASSWORD: ${{ secrets.TEST_USER_PRIMARY_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v5
