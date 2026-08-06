@@ -5,16 +5,22 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import FallbackPanel from '@/components/game/FallbackPanel';
 import ProceduralSky from '@/components/game/ProceduralSky';
-import { useFootsteps } from '@/lib/cod/audio/useFootsteps';
-import { useFootstepDust } from '@/lib/cod/fx/useFootstepDust';
-import { useCameraFeel } from '@/lib/cod/player/useCameraFeel';
-// Vendored, framework-agnostic Claude-of-Duty physics (MIT — see
-// src/lib/cod/NOTICE.md). Imported as .js via tsconfig `allowJs`; the class
-// shapes infer loosely, which is all this integration needs.
-import { StaticWorld } from '@/lib/cod/bvh';
-import { CharacterController } from '@/lib/cod/character';
-import { MASK } from '@/lib/cod/surfaces';
-import { MaterialSystem } from '@/lib/cod/materials';
+// The harvested Claude-of-Duty game toolkit (MIT) — consumed via its public
+// barrel (@/lib/cod). Physics classes are typed via hand-written .d.ts; the
+// materials forge stays loose-typed via allowJs.
+import {
+  StaticWorld,
+  CharacterController,
+  MASK,
+  MaterialSystem,
+  useFootsteps,
+  useFootstepDust,
+  useCameraFeel,
+  useQuality,
+  QUALITY_TIERS,
+  bus,
+} from '@/lib/cod';
+import type { QualityTier } from '@/lib/cod';
 
 /**
  * CodSkeleton — first-person "walking skeleton" for the CoD extraction spike.
@@ -146,14 +152,9 @@ function tileRepeat(size: [number, number, number]): [number, number] {
  * Builds the collision world from LEVEL, renders LEVEL as meshes, and runs the
  * fixed-step character controller each frame.
  */
-function FirstPersonWorld({
-  speed = 4.5,
-  onStance,
-}: {
-  speed?: number;
-  onStance?: (s: Stance) => void;
-}): React.ReactElement {
+function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactElement {
   const { camera, gl } = useThree();
+  const { preset } = useQuality(); // quality tier → anisotropy + particle budget
 
   // Build the static collision world + character controller once, from the same
   // LEVEL specs that render below. Pure CPU (geometry + BVH) — no GL needed.
@@ -213,6 +214,7 @@ function FirstPersonWorld({
           tex.wrapS = THREE.RepeatWrapping;
           tex.wrapT = THREE.RepeatWrapping;
           tex.repeat.set(rx, ry);
+          tex.anisotropy = preset.anisotropy; // quality tier → texture sharpness
         }
         return new THREE.MeshStandardMaterial({
           map: set.albedo,
@@ -227,7 +229,7 @@ function FirstPersonWorld({
         return standIn(b);
       }
     });
-  }, [gl]);
+  }, [gl, preset.anisotropy]);
 
   // The forge owns the baked render targets — free it (and the materials) on unmount.
   useEffect(() => {
@@ -248,8 +250,11 @@ function FirstPersonWorld({
 
   // Surface-keyed procedural footsteps (Web Audio; resumed on the pointer-lock click).
   const { resume: resumeAudio, step: stepAudio } = useFootsteps();
-  // Surface-tinted footstep dust puffs (GPU particles), driven off the same cadence.
-  const { emit: emitDust, tick: tickDust } = useFootstepDust();
+  // Surface-tinted footstep dust puffs (GPU particles). Pool size scales with the
+  // quality tier's particle budget.
+  const { emit: emitDust, tick: tickDust } = useFootstepDust(
+    Math.round(preset.particleBudget / 16)
+  );
   // First-person camera weight: head-bob + landing punch (vendored springs).
   const { apply: applyCameraFeel } = useCameraFeel();
 
@@ -261,9 +266,10 @@ function FirstPersonWorld({
       if (!cc || next === stanceRef.current) return;
       if (!cc.setHeight(STANCE[next].height)) return;
       stanceRef.current = next;
-      onStance?.(next);
+      // Cross-<Canvas>-boundary event — the HUD (outside the Canvas) subscribes.
+      bus.emit('player:stance', { stance: next });
     },
-    [onStance]
+    []
   );
 
   // Keyboard + pointer-lock. Guarded so the mocked-Canvas unit test (gl === undefined)
@@ -404,7 +410,13 @@ export default function CodSkeleton({
 }: CodSkeletonProps = {}): React.ReactElement {
   const [webglOk, setWebglOk] = useState<boolean>(() => isWebGLAvailable());
   const [stance, setStance] = useState<Stance>('stand');
+  const { tier, preset, setTier } = useQuality();
   const handleRetry = useCallback(() => setWebglOk(isWebGLAvailable()), []);
+
+  // The stance HUD is driven by the toolkit event bus: the source of truth lives
+  // inside the <Canvas> (FirstPersonWorld), and the bus carries the event across
+  // that boundary to this outer HUD — no prop-drill. (bus.on returns unsubscribe.)
+  useEffect(() => bus.on('player:stance', (e) => setStance(e.stance as Stance)), []);
 
   const onCanvasCreated = useCallback(
     (state: { gl: { domElement: HTMLCanvasElement } }) => {
@@ -431,14 +443,21 @@ export default function CodSkeleton({
   return (
     <div className={wrapperClass} data-webgl-ok="true">
       <Canvas
-        dpr={[1, 2]}
+        dpr={Math.max(
+          0.5,
+          Math.min(
+            2,
+            ((typeof window !== 'undefined' && window.devicePixelRatio) || 1) *
+              preset.renderScale
+          )
+        )}
         camera={{ position: [0, EYE, 10], fov: 70, near: 0.1, far: 200 }}
         gl={{ preserveDrawingBuffer: false }}
         onCreated={onCanvasCreated}
         aria-label="First-person walking skeleton — click to look, WASD to move, Space to jump"
       >
         <ProceduralSky hour={16.5} />
-        <FirstPersonWorld speed={speed} onStance={setStance} />
+        <FirstPersonWorld speed={speed} />
       </Canvas>
 
       {/* DOM chrome over the canvas: stance badge + crosshair + controls hint. */}
@@ -448,6 +467,20 @@ export default function CodSkeleton({
       >
         {stance.toUpperCase()}
       </div>
+      {/* Quality tier selector — drives dpr, texture anisotropy, particle pool. */}
+      <select
+        aria-label="Quality tier"
+        value={tier}
+        onChange={(e) => setTier(e.target.value as QualityTier)}
+        data-quality={tier}
+        className="bg-base-300/70 text-base-content absolute top-2 right-2 rounded px-2 py-1 text-xs capitalize"
+      >
+        {QUALITY_TIERS.map((t) => (
+          <option key={t} value={t}>
+            {t}
+          </option>
+        ))}
+      </select>
       <div
         aria-hidden="true"
         className="pointer-events-none absolute top-1/2 left-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/70"

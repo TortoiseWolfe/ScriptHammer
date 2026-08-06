@@ -39,12 +39,14 @@ describe('CodSkeleton', () => {
     expect(container.firstChild).toBeInTheDocument();
   });
 
-  it('passes dpr=[1,2] to the canvas', () => {
+  it('passes a quality-driven dpr (0 < dpr <= 2) to the canvas', () => {
     const { getByTestId } = render(<CodSkeleton />);
     const props = JSON.parse(
       getByTestId('canvas-mock').getAttribute('data-props') ?? '{}'
     );
-    expect(props.dpr).toEqual([1, 2]);
+    expect(typeof props.dpr).toBe('number');
+    expect(props.dpr).toBeGreaterThan(0);
+    expect(props.dpr).toBeLessThanOrEqual(2);
   });
 });
 

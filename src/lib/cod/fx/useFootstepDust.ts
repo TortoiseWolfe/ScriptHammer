@@ -81,21 +81,21 @@ export interface UseFootstepDust {
  * on the GPU (one instanced draw). SSR/jsdom-safe — no GPU objects are built
  * without a renderer — and everything is disposed on unmount.
  */
-export function useFootstepDust(): UseFootstepDust {
+export function useFootstepDust(capacity = 512): UseFootstepDust {
   const { gl, scene } = useThree();
 
   const state = useMemo<DustState | null>(() => {
     if (!gl) return null; // SSR / mocked-Canvas → no-op
     const sprite = roundSprite();
     const layer = new ParticleLayer({
-      capacity: 512,
+      capacity: Math.max(64, capacity), // e.g. from the quality tier's particleBudget
       mode: 'lit',
       atlas: sprite,
       cols: 1,
       soft: false, // drops the depth-texture dependency
     });
     return { layer, sprite, rng: new Rng(0xf007), now: 0 };
-  }, [gl]);
+  }, [gl, capacity]);
 
   useEffect(() => {
     if (!state || !scene) return;

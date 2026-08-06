@@ -282,6 +282,17 @@ Feature **050** puts a catalog on top of the payment rails that features 038–0
 
 ---
 
+## Game toolkit (enhancements)
+
+| Order | Feature | Name             | Depends On          |
+| ----- | ------- | ---------------- | ------------------- |
+| —     | **051** | CoD Game Toolkit | 047 (Three.js game) |
+
+Phase 2a (toolkit foundation: `@/lib/cod` public API + core gems, wired into the
+`/game/cod-skeleton` demo) is implemented on `spike/cod-walking-skeleton`. Phase 2b
+(the gauntlet-loop game-demo generator skill) is designed in
+`docs/prp-docs/cod-game-toolkit-prp.md`, not yet built.
+
 ## Related Documents
 
 | Document          | Location                               |
