@@ -44,7 +44,8 @@ export interface CameraFeel {
     cc: ControllerLike,
     moved: number,
     dt: number,
-    yaw: number
+    yaw: number,
+    bobScale?: number
   ) => void;
 }
 
@@ -75,7 +76,8 @@ export function useCameraFeel(): CameraFeel {
       cc: ControllerLike,
       moved: number,
       dt: number,
-      yaw: number
+      yaw: number,
+      bobScale = 1
     ) => {
       if (!camera || !cc) return;
 
@@ -92,8 +94,9 @@ export function useCameraFeel(): CameraFeel {
       s.bobAmp += (wantAmp - s.bobAmp) * k;
       s.bobPhase += moved * BOB_FREQ;
 
-      const bobY = Math.sin(s.bobPhase) * BOB_AMP * s.bobAmp;
-      const bobX = Math.cos(s.bobPhase * 0.5) * BOB_LAT * s.bobAmp;
+      const amp = s.bobAmp * bobScale;
+      const bobY = Math.sin(s.bobPhase) * BOB_AMP * amp;
+      const bobX = Math.cos(s.bobPhase * 0.5) * BOB_LAT * amp;
 
       // Lateral sway along the camera's right vector (from yaw).
       const rx = Math.cos(yaw);

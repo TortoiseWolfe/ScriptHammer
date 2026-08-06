@@ -7,8 +7,14 @@ import { Rng } from './rng';
 import { NoiseBank, gain } from './dsp';
 import { footstep } from './foley';
 
-/** Metres travelled per footstep. */
-const STRIDE = 2.2;
+/** Metres travelled per footstep, by gait. */
+const STRIDE_BY_GAIT: Record<string, number> = {
+  sprint: 2.6,
+  run: 2.4,
+  walk: 2.2,
+  crouch: 1.6,
+  prone: 1.4,
+};
 
 interface Voice {
   node: AudioNode;
@@ -41,7 +47,12 @@ export interface UseFootsteps {
    * Returns `true` on the frame a footstep fires — so the same cadence can drive
    * other effects (e.g. dust).
    */
-  step: (distance: number, grounded: boolean, surface: string) => boolean;
+  step: (
+    distance: number,
+    grounded: boolean,
+    surface: string,
+    gait?: string
+  ) => boolean;
 }
 
 /**
@@ -85,7 +96,12 @@ export function useFootsteps(): UseFootsteps {
   }, [s]);
 
   const step = useCallback(
-    (distance: number, grounded: boolean, surface: string): boolean => {
+    (
+      distance: number,
+      grounded: boolean,
+      surface: string,
+      gait = 'walk'
+    ): boolean => {
       const actx = s.actx;
       if (!actx || actx.state !== 'running') return false;
 
@@ -106,14 +122,15 @@ export function useFootsteps(): UseFootsteps {
         s.acc = 0; // airtime must not bank a step
         return false;
       }
+      const stride = STRIDE_BY_GAIT[gait] ?? 2.2;
       s.acc += Math.abs(distance);
-      if (s.acc < STRIDE) return false;
-      s.acc -= STRIDE;
+      if (s.acc < stride) return false;
+      s.acc -= stride;
 
       const v = footstep(s.actx, s.bank, s.rng, {
         when: actx.currentTime,
         surface: surface || 'concrete', // identity: foley keys == the 12 physics names
-        gait: 'walk',
+        gait,
       });
       if (s.master) v.node.connect(s.master);
       s.live.push({ node: v.node, end: v.end });

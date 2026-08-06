@@ -50,7 +50,7 @@ interface BoxSpec {
   size: [number, number, number];
   pos: [number, number, number];
   /** Physics surface tag (drives collision/footing). */
-  surface: 'dirt' | 'concrete' | 'wood';
+  surface: 'dirt' | 'concrete' | 'wood' | 'metal';
   /**
    * CoD materials-forge surface id (defaults to `surface`). Kept DISTINCT per
    * box so each mesh gets its own cached texture set — the forge caches by id,
@@ -64,12 +64,15 @@ const LEVEL: readonly BoxSpec[] = [
   { size: [8, 0.4, 8], pos: [6, 0.2, -4], surface: 'concrete' }, // step-up, top y=0.40
   { size: [0.5, 3, 12], pos: [-6, 1.5, 0], surface: 'concrete', material: 'brick' }, // wall
   { size: [1.6, 1, 1.6], pos: [3, 0.5, 4], surface: 'wood' }, // crate
+  // Low overhang across the forward path: underside at 1.05 m — crouch/prone to pass.
+  { size: [6, 0.3, 0.6], pos: [0, 1.2, 3], surface: 'metal', material: 'steel' },
 ];
 
 const SURFACE_TINT: Record<string, [number, number, number]> = {
   dirt: [120, 92, 58],
   concrete: [150, 150, 155],
   wood: [150, 110, 64],
+  metal: [150, 152, 160],
 };
 
 // Fixed-step + feel constants.
@@ -79,6 +82,24 @@ const JUMP = 7;
 const EYE = 1.55;
 const LOOK_SENS = 0.0022;
 const PITCH_LIMIT = 1.5; // ~86°
+
+type Stance = 'stand' | 'crouch' | 'prone';
+interface StanceCfg {
+  height: number;
+  eye: number;
+  /** Speed as a fraction of the base walk speed. */
+  speedRatio: number;
+  gait: string;
+  bobScale: number;
+  dustScale: number;
+}
+const STANCE: Record<Stance, StanceCfg> = {
+  stand: { height: 1.75, eye: 1.55, speedRatio: 1, gait: 'walk', bobScale: 1, dustScale: 1 },
+  crouch: { height: 1.0, eye: 0.85, speedRatio: 0.49, gait: 'crouch', bobScale: 0.5, dustScale: 0.4 },
+  prone: { height: 0.5, eye: 0.35, speedRatio: 0.24, gait: 'crouch', bobScale: 0.2, dustScale: 0.25 },
+};
+/** Sprint = a modifier on the standing stance (Shift + moving forward). */
+const SPRINT = { speedRatio: 1.55, gait: 'sprint', bobScale: 1.4, dustScale: 1.6 };
 
 /** Zero-asset procedural surface texture: per-surface tint + hash noise + grid. */
 function makeSurfaceTexture(
@@ -125,7 +146,13 @@ function tileRepeat(size: [number, number, number]): [number, number] {
  * Builds the collision world from LEVEL, renders LEVEL as meshes, and runs the
  * fixed-step character controller each frame.
  */
-function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactElement {
+function FirstPersonWorld({
+  speed = 4.5,
+  onStance,
+}: {
+  speed?: number;
+  onStance?: (s: Stance) => void;
+}): React.ReactElement {
   const { camera, gl } = useThree();
 
   // Build the static collision world + character controller once, from the same
@@ -216,6 +243,8 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
   const yaw = useRef(0);
   const pitch = useRef(0);
   const accum = useRef(0);
+  const stanceRef = useRef<Stance>('stand');
+  const eyeRef = useRef(STANCE.stand.eye);
 
   // Surface-keyed procedural footsteps (Web Audio; resumed on the pointer-lock click).
   const { resume: resumeAudio, step: stepAudio } = useFootsteps();
@@ -224,6 +253,19 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
   // First-person camera weight: head-bob + landing punch (vendored springs).
   const { apply: applyCameraFeel } = useCameraFeel();
 
+  // Change stance via the physics capsule; a raise blocked by a low ceiling
+  // (canFit → setHeight returns false) leaves the current stance in place.
+  const applyStance = useCallback(
+    (next: Stance) => {
+      const cc = ccRef.current;
+      if (!cc || next === stanceRef.current) return;
+      if (!cc.setHeight(STANCE[next].height)) return;
+      stanceRef.current = next;
+      onStance?.(next);
+    },
+    [onStance]
+  );
+
   // Keyboard + pointer-lock. Guarded so the mocked-Canvas unit test (gl === undefined)
   // bails cleanly instead of touching a missing renderer.
   useEffect(() => {
@@ -231,8 +273,17 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
     const dom = gl.domElement;
 
     const down = (e: KeyboardEvent): void => {
-      keys.current[e.key.toLowerCase()] = true;
+      const key = e.key.toLowerCase();
+      keys.current[key] = true;
       if (e.key === ' ' || e.key.startsWith('Arrow')) e.preventDefault();
+      // Edge-triggered stance toggles (ignore auto-repeat).
+      if (!e.repeat) {
+        if (key === 'c') {
+          applyStance(stanceRef.current === 'crouch' ? 'stand' : 'crouch');
+        } else if (key === 'x') {
+          applyStance(stanceRef.current === 'prone' ? 'stand' : 'prone');
+        }
+      }
     };
     const up = (e: KeyboardEvent): void => {
       keys.current[e.key.toLowerCase()] = false;
@@ -258,14 +309,24 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
       dom.removeEventListener('click', click);
       document.removeEventListener('mousemove', move);
     };
-  }, [gl, resumeAudio]);
+  }, [gl, resumeAudio, applyStance]);
 
   useFrame((_state, delta) => {
     const cc = ccRef.current;
     if (!cc || !camera) return;
+
+    // Resolve the current stance → speed / gait / feel for this frame.
+    const k = keys.current;
+    const stance = stanceRef.current;
+    const cfg = STANCE[stance];
+    const sprinting = stance === 'stand' && !!k['shift'] && !!k['w'];
+    const moveSpeed = speed * (sprinting ? SPRINT.speedRatio : cfg.speedRatio);
+    const gait = sprinting ? SPRINT.gait : cfg.gait;
+    const bobScale = sprinting ? SPRINT.bobScale : cfg.bobScale;
+    const dustScale = sprinting ? SPRINT.dustScale : cfg.dustScale;
+
     // Fixed-step accumulator so physics feel is framerate-independent.
     accum.current += Math.min(delta, 0.1);
-    const k = keys.current;
     let moved = 0;
     while (accum.current >= FIXED) {
       accum.current -= FIXED;
@@ -279,26 +340,30 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
       let wz = -sy * str - cy * fwd;
       const wl = Math.hypot(wx, wz);
       if (wl > 1e-6) {
-        wx = (wx / wl) * speed;
-        wz = (wz / wl) * speed;
+        wx = (wx / wl) * moveSpeed;
+        wz = (wz / wl) * moveSpeed;
       } else {
         wx = 0;
         wz = 0;
       }
       cc.velocity.x = wx;
       cc.velocity.z = wz;
-      if (k[' '] && cc.grounded) cc.velocity.y = JUMP;
+      // Jump only from a standing stance.
+      if (k[' '] && cc.grounded && stance === 'stand') cc.velocity.y = JUMP;
       // move() returns distance travelled — accumulate it for the footstep cadence.
       moved += cc.move(cc.velocity.x * FIXED, cc.velocity.y * FIXED, cc.velocity.z * FIXED);
     }
-    camera.position.set(cc.position.x, cc.position.y + EYE, cc.position.z);
+
+    // Glide the camera eye-height toward the stance target (crouch/stand transitions).
+    eyeRef.current += (cfg.eye - eyeRef.current) * (1 - Math.exp(-delta / 0.09));
+    camera.position.set(cc.position.x, cc.position.y + eyeRef.current, cc.position.z);
     camera.rotation.set(pitch.current, yaw.current, 0, 'YXZ');
-    // Head-bob + landing punch layered on the base transform.
-    applyCameraFeel(camera, cc, moved, delta, yaw.current);
-    // One cadence drives both the footstep sound and a surface-tinted dust puff.
-    const didStep = stepAudio(moved, cc.grounded, cc.groundSurfaceName);
+    // Head-bob (scaled by stance) + landing punch.
+    applyCameraFeel(camera, cc, moved, delta, yaw.current, bobScale);
+    // One cadence drives the footstep sound + surface-tinted dust (both stance-scaled).
+    const didStep = stepAudio(moved, cc.grounded, cc.groundSurfaceName, gait);
     if (didStep) {
-      emitDust(cc.position.x, cc.position.y, cc.position.z, cc.groundSurfaceName);
+      emitDust(cc.position.x, cc.position.y, cc.position.z, cc.groundSurfaceName, dustScale);
     }
     tickDust(delta);
   });
@@ -338,6 +403,7 @@ export default function CodSkeleton({
   speed = 4.5,
 }: CodSkeletonProps = {}): React.ReactElement {
   const [webglOk, setWebglOk] = useState<boolean>(() => isWebGLAvailable());
+  const [stance, setStance] = useState<Stance>('stand');
   const handleRetry = useCallback(() => setWebglOk(isWebGLAvailable()), []);
 
   const onCanvasCreated = useCallback(
@@ -372,16 +438,22 @@ export default function CodSkeleton({
         aria-label="First-person walking skeleton — click to look, WASD to move, Space to jump"
       >
         <ProceduralSky hour={16.5} />
-        <FirstPersonWorld speed={speed} />
+        <FirstPersonWorld speed={speed} onStance={setStance} />
       </Canvas>
 
-      {/* DOM chrome over the canvas: crosshair + controls hint. */}
+      {/* DOM chrome over the canvas: stance badge + crosshair + controls hint. */}
+      <div
+        data-stance={stance}
+        className="bg-base-300/70 text-base-content absolute top-2 left-2 rounded px-2 py-1 text-xs font-semibold tracking-wider"
+      >
+        {stance.toUpperCase()}
+      </div>
       <div
         aria-hidden="true"
         className="pointer-events-none absolute top-1/2 left-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/70"
       />
       <p className="bg-base-300/70 text-base-content absolute bottom-2 left-2 rounded px-2 py-1 text-xs">
-        Click to capture the mouse · WASD move · Space jump · Esc to release
+        Click to capture · WASD move · Shift sprint · C crouch · X prone · Space jump
       </p>
     </div>
   );

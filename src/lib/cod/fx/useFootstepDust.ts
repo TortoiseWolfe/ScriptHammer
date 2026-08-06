@@ -57,8 +57,17 @@ interface DustState {
 }
 
 export interface UseFootstepDust {
-  /** Emit a surface-tinted dust puff at world (x,y,z). Call on a footstep. */
-  emit: (x: number, y: number, z: number, surface: string) => void;
+  /**
+   * Emit a surface-tinted dust puff at world (x,y,z). Call on a footstep.
+   * `intensity` scales the particle count (e.g. more when sprinting).
+   */
+  emit: (
+    x: number,
+    y: number,
+    z: number,
+    surface: string,
+    intensity?: number
+  ) => void;
   /** Advance + upload the particle sim. Call once per frame with the frame dt. */
   tick: (dt: number) => void;
 }
@@ -99,12 +108,13 @@ export function useFootstepDust(): UseFootstepDust {
   }, [state, scene]);
 
   const emit = useCallback(
-    (x: number, y: number, z: number, surface: string) => {
+    (x: number, y: number, z: number, surface: string, intensity = 1) => {
       if (!state) return;
       const [r, g, b] = TINT[surface] ?? DEFAULT_TINT;
       const rng = state.rng;
+      const count = Math.max(1, Math.round(PUFF * intensity));
       // Radial cone rising from the feet — mirrors impacts.js concrete dust.
-      for (let i = 0; i < PUFF; i++) {
+      for (let i = 0; i < count; i++) {
         const s = resetSpawn();
         const ang = rng.float() * Math.PI * 2;
         const sp = rng.range(0.2, 0.9);

@@ -63,4 +63,20 @@ describe('useCameraFeel', () => {
     apply(cam, landed, 0, DT, 0);
     expect(Math.abs(cam.position.y - BASE_Y)).toBeLessThan(0.01); // recovered
   });
+
+  it('bobScale multiplies the head-bob amplitude', () => {
+    const cc = { grounded: true, landingSpeed: 0 };
+    const peak = (scale: number): number => {
+      const { result } = renderHook(() => useCameraFeel());
+      const { apply } = result.current;
+      let max = 0;
+      for (let i = 0; i < 120; i++) {
+        const cam = baseCam();
+        apply(cam, cc, WALK, DT, 0, scale);
+        max = Math.max(max, cam.position.y - BASE_Y);
+      }
+      return max;
+    };
+    expect(peak(2)).toBeGreaterThan(peak(1) * 1.5); // ~2×, with margin
+  });
 });
