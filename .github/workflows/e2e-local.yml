@@ -111,7 +111,20 @@ jobs:
           DISABLE_BASE_PATH: 'true'
           NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_e2e_dummy_not_a_real_key
           NEXT_PUBLIC_PAYPAL_CLIENT_ID: e2e_dummy_paypal_client_id
-          NEXT_PUBLIC_CAPTCHA_SITE_KEY: 1x00000000000000000000AA
+          # NEXT_PUBLIC_CAPTCHA_SITE_KEY is deliberately ABSENT — do not copy it
+          # from e2e.yml.
+          #
+          # `captcha.config.ts:62` derives `enabled: Boolean(siteKey)`, so setting
+          # the key is what makes the CLIENT demand a token. The local GoTrue never
+          # asked for one (docker-compose.yml sets no GOTRUE captcha vars). The
+          # first run of this workflow set it anyway, copied from e2e.yml, and
+          # every auth test failed with "Please complete the verification
+          # challenge" — a challenge nothing on the server side wanted.
+          #
+          # e2e.yml sets it for an unrelated reason: #488's 320px width gate needs
+          # the widget to actually render against the cloud stack. That reason does
+          # not apply here. `signup-mailer.yml`, which drives real auth forms
+          # against this same local stack, also omits it — follow that precedent.
 
       - name: Install Playwright chromium
         run: pnpm exec playwright install --with-deps chromium
