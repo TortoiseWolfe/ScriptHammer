@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import FallbackPanel from '@/components/game/FallbackPanel';
 import ProceduralSky from '@/components/game/ProceduralSky';
 import { useFootsteps } from '@/lib/cod/audio/useFootsteps';
+import { useFootstepDust } from '@/lib/cod/fx/useFootstepDust';
 // Vendored, framework-agnostic Claude-of-Duty physics (MIT — see
 // src/lib/cod/NOTICE.md). Imported as .js via tsconfig `allowJs`; the class
 // shapes infer loosely, which is all this integration needs.
@@ -217,6 +218,8 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
 
   // Surface-keyed procedural footsteps (Web Audio; resumed on the pointer-lock click).
   const { resume: resumeAudio, step: stepAudio } = useFootsteps();
+  // Surface-tinted footstep dust puffs (GPU particles), driven off the same cadence.
+  const { emit: emitDust, tick: tickDust } = useFootstepDust();
 
   // Keyboard + pointer-lock. Guarded so the mocked-Canvas unit test (gl === undefined)
   // bails cleanly instead of touching a missing renderer.
@@ -287,7 +290,12 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
     }
     camera.position.set(cc.position.x, cc.position.y + EYE, cc.position.z);
     camera.rotation.set(pitch.current, yaw.current, 0, 'YXZ');
-    stepAudio(moved, cc.grounded, cc.groundSurfaceName);
+    // One cadence drives both the footstep sound and a surface-tinted dust puff.
+    const didStep = stepAudio(moved, cc.grounded, cc.groundSurfaceName);
+    if (didStep) {
+      emitDust(cc.position.x, cc.position.y, cc.position.z, cc.groundSurfaceName);
+    }
+    tickDust(delta);
   });
 
   return (

@@ -38,8 +38,10 @@ export interface UseFootsteps {
    * with the distance travelled this frame, the grounded flag, and the surface
    * underfoot. Fires a surface-keyed footstep every STRIDE metres; also prunes
    * finished voices. Allocates only when a step actually fires (never per frame).
+   * Returns `true` on the frame a footstep fires — so the same cadence can drive
+   * other effects (e.g. dust).
    */
-  step: (distance: number, grounded: boolean, surface: string) => void;
+  step: (distance: number, grounded: boolean, surface: string) => boolean;
 }
 
 /**
@@ -83,9 +85,9 @@ export function useFootsteps(): UseFootsteps {
   }, [s]);
 
   const step = useCallback(
-    (distance: number, grounded: boolean, surface: string) => {
+    (distance: number, grounded: boolean, surface: string): boolean => {
       const actx = s.actx;
-      if (!actx || actx.state !== 'running') return;
+      if (!actx || actx.state !== 'running') return false;
 
       // Prune finished voices in-frame (no timers).
       const now = actx.currentTime;
@@ -102,10 +104,10 @@ export function useFootsteps(): UseFootsteps {
 
       if (!grounded) {
         s.acc = 0; // airtime must not bank a step
-        return;
+        return false;
       }
       s.acc += Math.abs(distance);
-      if (s.acc < STRIDE) return;
+      if (s.acc < STRIDE) return false;
       s.acc -= STRIDE;
 
       const v = footstep(s.actx, s.bank, s.rng, {
@@ -115,6 +117,7 @@ export function useFootsteps(): UseFootsteps {
       });
       if (s.master) v.node.connect(s.master);
       s.live.push({ node: v.node, end: v.end });
+      return true; // a footstep fired this call
     },
     [s]
   );
