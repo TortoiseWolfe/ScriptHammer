@@ -7,6 +7,7 @@ import FallbackPanel from '@/components/game/FallbackPanel';
 import ProceduralSky from '@/components/game/ProceduralSky';
 import { useFootsteps } from '@/lib/cod/audio/useFootsteps';
 import { useFootstepDust } from '@/lib/cod/fx/useFootstepDust';
+import { useCameraFeel } from '@/lib/cod/player/useCameraFeel';
 // Vendored, framework-agnostic Claude-of-Duty physics (MIT — see
 // src/lib/cod/NOTICE.md). Imported as .js via tsconfig `allowJs`; the class
 // shapes infer loosely, which is all this integration needs.
@@ -220,6 +221,8 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
   const { resume: resumeAudio, step: stepAudio } = useFootsteps();
   // Surface-tinted footstep dust puffs (GPU particles), driven off the same cadence.
   const { emit: emitDust, tick: tickDust } = useFootstepDust();
+  // First-person camera weight: head-bob + landing punch (vendored springs).
+  const { apply: applyCameraFeel } = useCameraFeel();
 
   // Keyboard + pointer-lock. Guarded so the mocked-Canvas unit test (gl === undefined)
   // bails cleanly instead of touching a missing renderer.
@@ -290,6 +293,8 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
     }
     camera.position.set(cc.position.x, cc.position.y + EYE, cc.position.z);
     camera.rotation.set(pitch.current, yaw.current, 0, 'YXZ');
+    // Head-bob + landing punch layered on the base transform.
+    applyCameraFeel(camera, cc, moved, delta, yaw.current);
     // One cadence drives both the footstep sound and a surface-tinted dust puff.
     const didStep = stepAudio(moved, cc.grounded, cc.groundSurfaceName);
     if (didStep) {
