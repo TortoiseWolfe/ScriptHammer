@@ -735,8 +735,8 @@ jobs:
 
       - name: Prime Supabase connection pool
         env:
-          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         run: |
           # Wake Supabase free tier and warm the connection pool.
           # Without this, the first query from each shard takes 10-30s.
@@ -923,8 +923,8 @@ jobs:
           CI: true
       - name: Prime Supabase connection pool
         env:
-          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         run: |
           curl -sf "${SUPABASE_URL}/rest/v1/user_profiles?select=id&limit=1" \
             -H "apikey: ${SUPABASE_KEY}" \
@@ -1086,8 +1086,8 @@ jobs:
           CI: true
       - name: Prime Supabase connection pool
         env:
-          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
-          SUPABASE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         run: |
           curl -sf "${SUPABASE_URL}/rest/v1/user_profiles?select=id&limit=1" \
             -H "apikey: ${SUPABASE_KEY}" \
