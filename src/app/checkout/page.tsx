@@ -439,13 +439,25 @@ function CheckoutContent() {
 
       <header className="mb-8">
         <h1 className="mb-2 !text-2xl font-bold sm:!text-3xl">Checkout</h1>
+        {/* This said "No account needed. Terms are shown before payment." until
+            2026-08-07. #613 replaced guest checkout with a required account and
+            updated the copy on the GATE (see the signed-out branch above) but not
+            here — so a buyer who had just been made to create an account was then
+            told they did not need one. The two branches of this page must agree
+            about whether an account is required. */}
         <p className="text-base-content">
-          No account needed. Terms are shown before payment.
+          Signed in — your order is saved to your account. Terms are shown
+          before payment.
         </p>
       </header>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_20rem]">
-        <div className="order-2 min-w-0 lg:order-1">
+        {/* sh-plate is the raised panel the rest of the product puts a form on —
+            /sign-in and /reset-password both use exactly this (sign-in/page.tsx:135).
+            Without it the intake fields floated directly on the page background,
+            which is the largest single reason this screen did not look like the
+            rest of the app. */}
+        <div className="sh-plate order-2 min-w-0 rounded-[26px] px-6 py-8 sm:px-8 lg:order-1">
           <IntakeForm
             onSubmit={onSubmit}
             busy={busy}
