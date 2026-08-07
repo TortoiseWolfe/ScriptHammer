@@ -48,6 +48,15 @@ export const metadata: Metadata = {
  * they can be matched to catalog rows directly.
  */
 
+/**
+ * Buy actions route to /checkout?sku= — a real URL, not a drawer and not the
+ * booking page. 01-pricing.svg:163 specified this from the start; the first
+ * implementation sent all nine buttons to /schedule, which books a call and
+ * takes no money.
+ */
+const checkoutHref = (sku: string) =>
+  `/checkout?sku=${encodeURIComponent(sku)}`;
+
 type Product = {
   sku: string;
   name: string;
@@ -77,7 +86,7 @@ const BUSINESS: Product[] = [
       'Credited in full toward any build within 30 days',
     ],
     cta: 'Select',
-    href: '/schedule',
+    href: '',
     primary: true,
   },
   {
@@ -94,7 +103,7 @@ const BUSINESS: Product[] = [
       '2 revision rounds',
     ],
     cta: 'Select',
-    href: '/schedule',
+    href: '',
     tag: 'Most common',
     featured: true,
     primary: true,
@@ -113,7 +122,7 @@ const BUSINESS: Product[] = [
       '3 revision rounds',
     ],
     cta: 'Select',
-    href: '/schedule',
+    href: '',
     primary: true,
   },
   {
@@ -130,7 +139,7 @@ const BUSINESS: Product[] = [
       '30 min of edits per month',
     ],
     cta: 'Subscribe',
-    href: '/schedule',
+    href: '',
     primary: true,
   },
   {
@@ -147,7 +156,7 @@ const BUSINESS: Product[] = [
       '2 hrs of edits, priority turnaround',
     ],
     cta: 'Subscribe',
-    href: '/schedule',
+    href: '',
     primary: true,
   },
 ];
@@ -181,7 +190,7 @@ const DEVELOPERS: Product[] = [
       'Lifetime updates to that pack',
     ],
     cta: 'Select',
-    href: '/schedule',
+    href: '',
     tag: 'Best value',
     featured: true,
     primary: true,
@@ -200,7 +209,7 @@ const DEVELOPERS: Product[] = [
       'Priority issue triage',
     ],
     cta: 'Subscribe',
-    href: '/schedule',
+    href: '',
     primary: true,
   },
   {
@@ -216,13 +225,16 @@ const DEVELOPERS: Product[] = [
       'Pricing and scoping coaching included',
     ],
     cta: 'Select',
-    href: '/schedule',
+    href: '',
     primary: true,
   },
 ];
 
 function Card({ p }: { p: Product }) {
-  const external = p.href.startsWith('http');
+  // An empty href means "this is a buy action" — derive the checkout URL from the
+  // SKU so the data cannot drift out of step with the route.
+  const href = p.href || checkoutHref(p.sku);
+  const external = href.startsWith('http');
   const btn = `${styles.btn} ${p.primary ? styles.btnPrimary : ''} ${mono.className}`;
 
   // No Tailwind padding on .card — the module sets 24px 20px to match the demo.
@@ -262,11 +274,11 @@ function Card({ p }: { p: Product }) {
           across cards with different bullet counts. */}
       <div>
         {external ? (
-          <a className={btn} href={p.href} target="_blank" rel="noreferrer">
+          <a className={btn} href={href} target="_blank" rel="noreferrer">
             {p.cta}
           </a>
         ) : (
-          <Link className={btn} href={p.href}>
+          <Link className={btn} href={href}>
             {p.cta}
           </Link>
         )}

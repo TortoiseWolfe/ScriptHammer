@@ -35,6 +35,7 @@ import {
 import {
   resolveOrder,
   fingerprintRequest,
+  buildOrderRow,
   type ProductRow,
 } from './resolve.ts';
 
@@ -171,17 +172,16 @@ serve(async (req) => {
     const balanceDue = decision.fullPriceCents - decision.amountCents;
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .insert({
-        intent_id: intent.id,
-        product_id: productId,
-        // Null for a guest who never creates an account. The anonymous uid is on
-        // the intent; this column is for a real account.
-        buyer_user_id: null,
-        buyer_email: buyerEmail,
-        amount_charged: decision.amountCents,
-        status: 'pending',
-        intake_data: body.intake ?? {},
-      })
+      .insert(
+        buildOrderRow({
+          intentId: intent.id,
+          productId,
+          buyerUserId: userId,
+          buyerEmail,
+          amountCents: decision.amountCents,
+          intake: body.intake,
+        })
+      )
       .select('id')
       .single();
 

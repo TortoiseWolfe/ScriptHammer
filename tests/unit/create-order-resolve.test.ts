@@ -5,6 +5,7 @@ import {
   decideIdempotency,
   depositPercent,
   fingerprintRequest,
+  buildOrderRow,
   MIN_CHARGE_CENTS,
   type ProductRow,
   type IdempotencyLookup,
@@ -358,5 +359,52 @@ describe('request fingerprint', () => {
 describe('constants stay honest', () => {
   it('the minimum charge matches the payment_intents floor', () => {
     expect(MIN_CHARGE_CENTS).toBe(100);
+  });
+});
+
+/**
+ * REGRESSION GUARD for the defect the first end-to-end run found.
+ *
+ * `orders`' only buyer-facing policy is `SELECT USING (auth.uid() =
+ * buyer_user_id)`. The original code wrote `buyer_user_id: null` for guests, so
+ * the buyer could never read the order they had just paid for and /checkout's
+ * return leg would never render the booking step.
+ *
+ * These assert the OWNERSHIP, not merely that a row comes back — an assertion
+ * like `expect(row).toBeTruthy()` would have passed against the bug.
+ */
+describe('buildOrderRow — the buyer must own the row', () => {
+  const base = {
+    intentId: 'i-1',
+    productId: 'svc-landing',
+    buyerUserId: 'u-guest-1',
+    buyerEmail: 'guest@example.com',
+    amountCents: 60000,
+  };
+
+  it('carries the authenticated uid, so RLS can match auth.uid()', () => {
+    expect(buildOrderRow(base).buyer_user_id).toBe('u-guest-1');
+  });
+
+  it('never writes a null owner — that row would be unreadable by its buyer', () => {
+    expect(buildOrderRow(base).buyer_user_id).not.toBeNull();
+    // An anonymous uid is a real auth.users id; there is no guest exemption.
+    expect(() => buildOrderRow({ ...base, buyerUserId: '' })).toThrow(
+      /buyerUserId is required/
+    );
+  });
+
+  it('puts intake on intake_data, never on payment metadata (1KB cap)', () => {
+    const row = buildOrderRow({ ...base, intake: { phone: '(423) 555-0137' } });
+    expect(row.intake_data).toEqual({ phone: '(423) 555-0137' });
+    expect(row).not.toHaveProperty('metadata');
+  });
+
+  it('defaults intake_data to an object, not null', () => {
+    expect(buildOrderRow(base).intake_data).toEqual({});
+  });
+
+  it('opens as pending — only the webhook may mark an order paid', () => {
+    expect(buildOrderRow(base).status).toBe('pending');
   });
 });

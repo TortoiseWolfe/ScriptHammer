@@ -16,12 +16,28 @@
 
 name: ${COMPOSE_PROJECT_NAME:-scripthammer}
 
+# Demo keys from Supabase self-hosting docs — LOCAL DEV ONLY, never deploy.
+# https://supabase.com/docs/guides/self-hosting/docker
+#
+# THESE READ `SUPABASE_LOCAL_*`, NOT `SUPABASE_*`, AND THAT IS THE WHOLE POINT.
+# `.env` holds CLOUD credentials, and it sets `SUPABASE_SERVICE_ROLE_KEY`. When
+# these lines read that name, the local stack was handed a key signed by the
+# CLOUD project's secret while every local service still verified against
+# JWT_SECRET below — so the key was rejected by our own PostgREST.
+#
+# What made it expensive to find is that the failure was SPLIT. `.env` happens
+# not to set `SUPABASE_ANON_KEY`, so anon fell through to the working demo
+# default; only service-role was poisoned. Anonymous reads worked perfectly and
+# every service-role write died with "Invalid authentication credentials" — which
+# reads like a broken function, not a broken key. create-order returned a bare
+# 500 for exactly this reason.
+#
+# The keys and the secret are a matched pair: a key is only valid if it was
+# signed by JWT_SECRET. Override all three together or none of them.
 x-supabase-env: &supabase-env
-  # Demo keys from Supabase self-hosting docs — LOCAL DEV ONLY, never deploy.
-  # https://supabase.com/docs/guides/self-hosting/docker
-  JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
-  ANON_KEY: ${SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlLWRlbW8iLCJpYXQiOjE2NDE3NjkyMDAsImV4cCI6MTc5OTUzNTYwMH0.F_rDxRTPE8OU83L_CNgEGXfmirMXmMMugT29Cvc8ygQ}
-  SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UtZGVtbyIsImlhdCI6MTY0MTc2OTIwMCwiZXhwIjoxNzk5NTM1NjAwfQ.5z-pJI1qwZg1LE5yavGLqum65WOnnaaI5eZ3V00pLww}
+  JWT_SECRET: ${SUPABASE_LOCAL_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+  ANON_KEY: ${SUPABASE_LOCAL_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlLWRlbW8iLCJpYXQiOjE2NDE3NjkyMDAsImV4cCI6MTc5OTUzNTYwMH0.F_rDxRTPE8OU83L_CNgEGXfmirMXmMMugT29Cvc8ygQ}
+  SERVICE_ROLE_KEY: ${SUPABASE_LOCAL_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UtZGVtbyIsImlhdCI6MTY0MTc2OTIwMCwiZXhwIjoxNzk5NTM1NjAwfQ.5z-pJI1qwZg1LE5yavGLqum65WOnnaaI5eZ3V00pLww}
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-your-super-secret-and-long-postgres-password}
 
 services:
@@ -261,7 +277,7 @@ services:
       GOTRUE_JWT_AUD: authenticated
       GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
       GOTRUE_JWT_EXP: 3600
-      GOTRUE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      GOTRUE_JWT_SECRET: ${SUPABASE_LOCAL_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
       GOTRUE_EXTERNAL_EMAIL_ENABLED: 'true'
       # Guest checkout (#557/#558). supabase/config.toml also carries this, but
       # that file is read ONLY by the Supabase CLI — which this repo does not and
@@ -316,9 +332,9 @@ services:
       PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD:-your-super-secret-and-long-postgres-password}@supabase-db:5432/postgres
       PGRST_DB_SCHEMAS: public,storage,graphql_public
       PGRST_DB_ANON_ROLE: anon
-      PGRST_JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      PGRST_JWT_SECRET: ${SUPABASE_LOCAL_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
       PGRST_DB_USE_LEGACY_GUCS: 'false'
-      PGRST_APP_SETTINGS_JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      PGRST_APP_SETTINGS_JWT_SECRET: ${SUPABASE_LOCAL_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
       PGRST_APP_SETTINGS_JWT_EXP: 3600
 
   supabase-realtime:
@@ -337,7 +353,7 @@ services:
       DB_NAME: postgres
       DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
       DB_ENC_KEY: supabaserealtime
-      API_JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      API_JWT_SECRET: ${SUPABASE_LOCAL_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
       SECRET_KEY_BASE: ${SUPABASE_REALTIME_SECRET:-0123456789012345678901234567890123456789012345678901234567890123}
       ERL_AFLAGS: -proto_dist inet_tcp
       DNS_NODES: "''"
@@ -356,7 +372,7 @@ services:
           '/dev/null',
           'http://localhost:4000/api/tenants/realtime-dev/health',
           '-H',
-          'Authorization: Bearer ${SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE}',
+          'Authorization: Bearer ${SUPABASE_LOCAL_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE}',
         ]
       interval: 5s
       timeout: 5s
@@ -374,7 +390,7 @@ services:
     environment:
       <<: *supabase-env
       POSTGREST_URL: http://supabase-rest:3000
-      PGRST_JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      PGRST_JWT_SECRET: ${SUPABASE_LOCAL_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
       DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD:-your-super-secret-and-long-postgres-password}@supabase-db:5432/postgres
       FILE_SIZE_LIMIT: 52428800
       STORAGE_BACKEND: file
@@ -431,8 +447,8 @@ services:
       # production — so auth, RLS and the service-role path are exercised for
       # real rather than short-circuited to Postgres.
       SUPABASE_URL: http://supabase-kong:8000
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlLWRlbW8iLCJpYXQiOjE2NDE3NjkyMDAsImV4cCI6MTc5OTUzNTYwMH0.F_rDxRTPE8OU83L_CNgEGXfmirMXmMMugT29Cvc8ygQ}
-      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UtZGVtbyIsImlhdCI6MTY0MTc2OTIwMCwiZXhwIjoxNzk5NTM1NjAwfQ.5z-pJI1qwZg1LE5yavGLqum65WOnnaaI5eZ3V00pLww}
+      SUPABASE_ANON_KEY: ${SUPABASE_LOCAL_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlLWRlbW8iLCJpYXQiOjE2NDE3NjkyMDAsImV4cCI6MTc5OTUzNTYwMH0.F_rDxRTPE8OU83L_CNgEGXfmirMXmMMugT29Cvc8ygQ}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_LOCAL_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UtZGVtbyIsImlhdCI6MTY0MTc2OTIwMCwiZXhwIjoxNzk5NTM1NjAwfQ.5z-pJI1qwZg1LE5yavGLqum65WOnnaaI5eZ3V00pLww}
       SUPABASE_DB_URL: postgres://postgres:${POSTGRES_PASSWORD:-your-super-secret-and-long-postgres-password}@supabase-db:5432/postgres
       # _shared/cors.ts derives its allowed origins from this, and the checkout
       # functions build redirect URLs from it.
@@ -480,8 +496,8 @@ services:
       DEFAULT_PROJECT_NAME: Local
       SUPABASE_URL: http://supabase-kong:8000
       SUPABASE_PUBLIC_URL: http://localhost:${SH_SUPABASE_API_PORT:-54321}
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE}
-      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q}
+      SUPABASE_ANON_KEY: ${SUPABASE_LOCAL_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_LOCAL_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q}
       NEXT_PUBLIC_ENABLE_LOGS: 'false'
       NEXT_ANALYTICS_BACKEND_PROVIDER: postgres
 
@@ -583,7 +599,7 @@ services:
       # outside Development if it's left at the demo default.
       ConnectionStrings__DefaultConnection: 'Host=supabase-db;Port=5432;Database=postgres;Username=dotnet_app;Password=${DOTNET_DB_PASSWORD:-${POSTGRES_PASSWORD:-your-super-secret-and-long-postgres-password}}'
       # Same HS256 secret GoTrue/PostgREST validate against.
-      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
+      SUPABASE_JWT_SECRET: ${SUPABASE_LOCAL_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
       CORS_ORIGINS: 'http://localhost:3000,http://localhost:3002,http://127.0.0.1:3002'
     volumes:
       - ./dotnet-messaging:/app

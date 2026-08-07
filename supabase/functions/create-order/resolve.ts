@@ -326,3 +326,49 @@ export function fingerprintRequest(parts: {
   }
   return h.toString(16).padStart(8, '0');
 }
+
+/**
+ * Build the `orders` row.
+ *
+ * THIS EXISTS BECAUSE OF A REAL DEFECT, and the defect was invisible to every
+ * test that existed at the time. The first version inlined this in index.ts and
+ * hardcoded `buyer_user_id: null`, reasoning that a guest "has no account yet".
+ *
+ * `orders`' only buyer-facing policy is `SELECT USING (auth.uid() =
+ * buyer_user_id)`. A null there is therefore not a neutral placeholder — it
+ * makes the row unreadable by the one person entitled to read it. The order was
+ * written correctly, priced correctly, and could never be seen again by the
+ * buyer, so /checkout's return leg would sit on "still being confirmed" forever.
+ *
+ * An anonymous session is a real `auth.users` row with a real uid. RLS has no
+ * concept of a second-class user, so neither does this.
+ *
+ * It is a separate pure function so the invariant is unit-testable: index.ts
+ * cannot be imported from vitest (Deno URL imports), which is exactly why the
+ * original bug shipped past a green suite.
+ */
+export function buildOrderRow(input: {
+  intentId: string;
+  productId: string;
+  buyerUserId: string;
+  buyerEmail: string;
+  amountCents: number;
+  intake?: Record<string, unknown>;
+}): Record<string, unknown> {
+  if (!input.buyerUserId) {
+    // Refusing beats writing a row nobody can read. The caller already has the
+    // uid — getAuthenticatedUserId throws before this point if it does not.
+    throw new Error('buildOrderRow: buyerUserId is required');
+  }
+  return {
+    intent_id: input.intentId,
+    product_id: input.productId,
+    buyer_user_id: input.buyerUserId,
+    buyer_email: input.buyerEmail,
+    amount_charged: input.amountCents,
+    status: 'pending',
+    // Unbounded JSONB. Deliberately NOT payment metadata, which is capped at 1KB
+    // serialised and which a job description blows straight past.
+    intake_data: input.intake ?? {},
+  };
+}
