@@ -187,7 +187,8 @@ describe('EmbodiedController', () => {
     c.step(DT);
     expect(c.facingYaw).toBeCloseTo(0.3, 5);
 
-    // Mount, then hold D (right = +1): the steered heading turns one way…
+    // Mount, then hold D (right = +1) = steer RIGHT: heading DECREASES (camera
+    // looks −sin h,−cos h, so a smaller heading rotates toward +X = screen-right).
     c.setInput(input({ mount: true, yaw: 0 }));
     c.step(DT);
     expect(c.riding).toBe(true);
@@ -195,12 +196,12 @@ describe('EmbodiedController', () => {
     c.setInput(input({ right: 1, yaw: 0 }));
     stepN(c, 60); // ~1 s of steering
     const hRight = c.facingYaw;
-    expect(hRight).toBeGreaterThan(h0 + 0.2);
+    expect(hRight).toBeLessThan(h0 - 0.2);
 
-    // …and holding A (right = −1) turns it back the other way.
+    // …and holding A (right = −1) = steer LEFT turns it back the other way.
     c.setInput(input({ right: -1, yaw: 0 }));
     stepN(c, 90);
-    expect(c.facingYaw).toBeLessThan(hRight);
+    expect(c.facingYaw).toBeGreaterThan(hRight);
     c.dispose();
   });
 

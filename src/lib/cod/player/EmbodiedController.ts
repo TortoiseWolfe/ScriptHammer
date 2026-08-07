@@ -386,7 +386,10 @@ export class EmbodiedController {
       if (this.riding_) {
         // Bicycle: A/D steers the heading, W/S throttles ALONG it — no strafe,
         // reverse allowed — with momentum. This is what makes it ride like a bike.
-        this.bikeHeading_ += this.bike.turnRate * str * this.fixedStep;
+        // Sign: with the camera looking (−sin h, −cos h), an INCREASING heading
+        // turns toward −X (screen-left). D (right = +1) must turn RIGHT, so it
+        // DECREASES the heading — hence the minus.
+        this.bikeHeading_ -= this.bike.turnRate * str * this.fixedStep;
         const tx = -Math.sin(this.bikeHeading_) * speed * fwd;
         const tz = -Math.cos(this.bikeHeading_) * speed * fwd;
         cc.velocity.x += (tx - cc.velocity.x) * bikeK;
