@@ -155,6 +155,7 @@ export default function TwinWorld({
         slug={slug}
         manifest={manifest}
         palette={palette}
+        warehouseModels={warehouseModels}
         onError={onError}
         onTwinPlaced={onTwinPlaced}
         onGroundReady={onGroundReady}
