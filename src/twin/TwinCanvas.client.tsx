@@ -683,7 +683,12 @@ function SceneInner({
         position={d.sunPos}
         intensity={mode === 'walk' ? 2.0 : d.sunIntensity}
         color={mode === 'walk' ? 0xfff4e6 : d.sunColor}
-        castShadow
+        // Shadows OFF in first-person Walk: the shadow camera spans the whole
+        // ~2.6 km diorama (framing.panMax), so the shadow pass re-draws EVERY
+        // caster (8k massing + 129 scans) into a 2048² map every frame — roughly
+        // HALF the walk render workload for shadows you barely see on foot.
+        // Kept for the orbit/miniature where cast shadows read as depth. (#perf)
+        castShadow={mode !== 'walk'}
       />
       <TwinWorld
         slug={slug}
