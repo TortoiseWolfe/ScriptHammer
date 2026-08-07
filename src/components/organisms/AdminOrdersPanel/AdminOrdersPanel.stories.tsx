@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import AdminOrdersPanel from './AdminOrdersPanel';
 
 const meta: Meta<typeof AdminOrdersPanel> = {
-  title: 'Organisms/AdminOrdersPanel',
+  title: 'Components/Organisms/AdminOrdersPanel',
   component: AdminOrdersPanel,
   parameters: {
     layout: 'padded',
