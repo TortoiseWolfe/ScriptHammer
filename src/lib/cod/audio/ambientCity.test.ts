@@ -9,7 +9,55 @@
 
 import { describe, it, expect } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { useAmbientCity } from './ambientCity';
+import { useAmbientCity, planVehiclePass, VEHICLE_PEAK_CEIL } from './ambientCity';
+import { Rng } from './rng';
+
+describe('planVehiclePass — passing-vehicle recipe (pure, deterministic)', () => {
+  it('is deterministic for a given seed', () => {
+    const a = planVehiclePass(new Rng(0x1234));
+    const b = planVehiclePass(new Rng(0x1234));
+    expect(a).toEqual(b);
+  });
+
+  it('stays subtle — peak is a positive gain at or under the bed ceiling', () => {
+    // The audible guarantee that vehicles never mask the footsteps.
+    for (let seed = 1; seed <= 200; seed++) {
+      const p = planVehiclePass(new Rng(seed));
+      expect(p.peak).toBeGreaterThan(0);
+      expect(p.peak).toBeLessThanOrEqual(VEHICLE_PEAK_CEIL);
+    }
+  });
+
+  it('sweeps fully across the stereo field (panFrom = −panTo, |pan| = 1)', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const p = planVehiclePass(new Rng(seed));
+      expect(Math.abs(p.panFrom)).toBe(1);
+      expect(Math.abs(p.panTo)).toBe(1);
+      expect(p.panFrom).toBe(-p.panTo);
+      expect(p.panTo).toBe(p.dir);
+    }
+  });
+
+  it('Doppler-shifts downward (approaching rate > receding rate), both near unity', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      const p = planVehiclePass(new Rng(seed));
+      expect(p.rateFrom).toBeGreaterThan(p.rateTo);
+      // Subtle — a pass, not a race car.
+      expect(p.rateFrom).toBeLessThan(1.2);
+      expect(p.rateTo).toBeGreaterThan(0.85);
+    }
+  });
+
+  it('has a plausible pass duration and engine-body band', () => {
+    for (let seed = 1; seed <= 50; seed++) {
+      const p = planVehiclePass(new Rng(seed));
+      expect(p.dur).toBeGreaterThanOrEqual(2.6);
+      expect(p.dur).toBeLessThanOrEqual(4.0);
+      expect(p.band).toBeGreaterThanOrEqual(150);
+      expect(p.band).toBeLessThanOrEqual(260);
+    }
+  });
+});
 
 describe('useAmbientCity', () => {
   it('returns resume + start + stop callbacks', () => {

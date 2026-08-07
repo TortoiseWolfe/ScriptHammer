@@ -5,7 +5,9 @@ import { useCallback, useEffect, useRef } from 'react';
 // src/lib/cod/audio/NOTICE.md). Pure Web Audio, zero assets. `ambience` was one
 // of the modules NOT vendored upstream (NOTICE.md), so this is a clean addition
 // built from the same DSP layer footsteps use: looping NoiseBank beds + biquad +
-// gain + slow LFOs, plus a sparse lookahead scheduler for tonal bird chirps.
+// gain + slow LFOs, plus a sparse lookahead scheduler for two transient voices —
+// tonal bird chirps and stereo-panned passing vehicles (a Doppler-shifted rumble
+// that sweeps across the field) — layered UNDER the wind/traffic bed for depth.
 import { Rng } from './rng';
 import { NoiseBank, biquad, gain, osc, series, sweep, ad, semis } from './dsp';
 
@@ -20,10 +22,59 @@ interface AmbientState {
   nodes: AudioNode[];
   /** Sources (bed loops + LFOs) needing an explicit .stop(). */
   sources: AudioScheduledSourceNode[];
-  /** Bird lookahead scheduler. */
+  /** Bird + passing-vehicle lookahead scheduler. */
   birdTimer: ReturnType<typeof setInterval> | null;
   /** AudioContext time of the next scheduled bird chirp. */
   nextChirp: number;
+  /** AudioContext time of the next scheduled passing vehicle. */
+  nextVehicle: number;
+}
+
+/** A passing vehicle's tunable parameters, derived deterministically from the
+ *  seeded Rng. Split out as a pure function so the "stays subtle, sits under the
+ *  bed, sweeps fully across, Doppler-shifts down" contract is unit-testable
+ *  without Web Audio (jsdom has none). See ambientCity.test.ts. */
+export interface VehiclePlan {
+  /** +1 pans left→right, −1 right→left. */
+  dir: 1 | -1;
+  /** Pass duration (s) — approach through recede. */
+  dur: number;
+  /** Peak gain at closest approach; capped so it never masks footsteps. */
+  peak: number;
+  /** Playback rate approaching (Doppler up) — always > `rateTo`. */
+  rateFrom: number;
+  /** Playback rate receding (Doppler down). */
+  rateTo: number;
+  /** Engine/tire body centre frequency (Hz). */
+  band: number;
+  /** Stereo pan at t0 (= −dir) and at the end (= dir). */
+  panFrom: -1 | 1;
+  panTo: -1 | 1;
+}
+
+/** Upper bound on a passing vehicle's peak gain — the audible guarantee that the
+ *  layer stays UNDER the wind/traffic/bird bed and never muddies the footsteps. */
+export const VEHICLE_PEAK_CEIL = 0.2;
+
+/** Seconds between passing vehicles (sparse, so each pass reads as an event). */
+const VEHICLE_MIN_GAP = 7;
+const VEHICLE_MAX_GAP = 16;
+
+/** Pure, deterministic recipe for one passing vehicle. Invariants (guarded by
+ *  the unit test): peak ∈ (0, VEHICLE_PEAK_CEIL]; the pan sweeps fully across
+ *  (panFrom = −panTo, |pan| = 1); and rateFrom > rateTo (a Doppler drop). */
+export function planVehiclePass(rng: Rng): VehiclePlan {
+  const dir: 1 | -1 = rng.float() < 0.5 ? 1 : -1;
+  return {
+    dir,
+    dur: rng.range(2.6, 4.0),
+    peak: rng.range(0.08, 0.16), // ≤ VEHICLE_PEAK_CEIL by construction
+    rateFrom: rng.range(1.03, 1.08), // approaching
+    rateTo: rng.range(0.92, 0.97), // receding — always below rateFrom
+    band: rng.range(150, 260),
+    panFrom: (-dir) as -1 | 1,
+    panTo: dir,
+  };
 }
 
 export interface UseAmbientCity {
@@ -35,8 +86,9 @@ export interface UseAmbientCity {
   resume: () => void;
   /**
    * Build + play the looping ambient beds (wind + distant traffic) and start the
-   * bird scheduler. Idempotent; safe to call before `resume()` — the graph is
-   * built on the (possibly still-suspended) context and sounds once resumed.
+   * bird + passing-vehicle scheduler. Idempotent; safe to call before `resume()`
+   * — the graph is built on the (possibly still-suspended) context and sounds
+   * once resumed.
    */
   start: () => void;
   /** Fade out + stop the beds and the bird scheduler. Keeps the context alive so
@@ -69,6 +121,58 @@ function chirp(actx: AudioContext, rng: Rng, dest: AudioNode, t0: number): void 
   }
 }
 
+/** One passing vehicle: a looping brown-noise rumble band-limited to an engine/
+ *  tire body, panned across the stereo field while its gain swells to a peak at
+ *  closest approach, its pitch Doppler-drops, and its low-pass opens then closes.
+ *  Short-lived and self-terminating (like `chirp`); connects to the shared master
+ *  so `stop()`'s master fade silences a pass already in flight. */
+function vehiclePass(
+  actx: AudioContext,
+  bank: NoiseBank,
+  rng: Rng,
+  dest: AudioNode,
+  t0: number
+): void {
+  const p = planVehiclePass(rng);
+  const half = p.dur * 0.5;
+  const panner = actx.createStereoPanner();
+  const src = bank.source('brown', rng, p.rateFrom, true); // rolling rumble
+  const bp = biquad(actx, 'bandpass', p.band, 0.8);
+  const lp = biquad(actx, 'lowpass', 700, 0.7);
+  const g = gain(actx, 0.0001);
+  series(src, bp, lp, g).connect(panner);
+  panner.connect(dest);
+
+  // Pan sweep across the field — the primary "passing" cue.
+  panner.pan.setValueAtTime(p.panFrom, t0);
+  panner.pan.linearRampToValueAtTime(p.panTo, t0 + p.dur);
+  // Doppler: approaching pitch → receding pitch.
+  src.playbackRate.setValueAtTime(p.rateFrom, t0);
+  src.playbackRate.linearRampToValueAtTime(p.rateTo, t0 + p.dur);
+  // Gain swell — rise to peak at closest approach, fade out.
+  g.gain.setValueAtTime(0.0001, t0);
+  g.gain.linearRampToValueAtTime(p.peak, t0 + half);
+  g.gain.linearRampToValueAtTime(0.0001, t0 + p.dur);
+  // Brightness opens at closest approach then closes (subtle).
+  lp.frequency.setValueAtTime(650, t0);
+  lp.frequency.linearRampToValueAtTime(1400, t0 + half);
+  lp.frequency.linearRampToValueAtTime(600, t0 + p.dur);
+
+  src.start(t0, src._offset ?? 0);
+  src.stop(t0 + p.dur + 0.15);
+  // Release the (short) node chain once the source ends; nothing else refs it.
+  src.onended = () => {
+    try {
+      panner.disconnect();
+      g.disconnect();
+      lp.disconnect();
+      bp.disconnect();
+    } catch {
+      /* already gone */
+    }
+  };
+}
+
 /**
  * Procedural ambient-city bed for first-person Walk mode (Web Audio, zero
  * assets). Harvest-not-embed: no engine, the caller drives resume/start/stop
@@ -88,6 +192,7 @@ export function useAmbientCity(): UseAmbientCity {
     sources: [],
     birdTimer: null,
     nextChirp: 0,
+    nextVehicle: 0,
   }).current;
 
   // Lazily construct the context/master/bank. Returns false when Web Audio is
@@ -162,17 +267,25 @@ export function useAmbientCity(): UseAmbientCity {
     s.sources.push(wind, gust, traf, swell);
     s.nodes.push(windLP, windGain, gustDepth, trafHP, trafLP, trafGain, swellDepth);
 
-    // Birds — sparse lookahead scheduler (standard Web Audio pattern): schedule
-    // chirps up to 1.5 s ahead, 4–11 s apart, only while the context is running.
+    // Sparse lookahead scheduler (standard Web Audio pattern): schedule the two
+    // transient voices up to 1.5 s ahead, only while the context is running —
+    // birds 4–11 s apart, passing vehicles 7–16 s apart. Each guarded so a paused
+    // tab that resumes with a large clock jump can't spawn an unbounded burst.
     s.nextChirp = now + rng.range(2, 6);
+    s.nextVehicle = now + rng.range(4, 9);
     s.birdTimer = setInterval(() => {
       const a = s.actx;
-      if (!a || a.state !== 'running' || !s.rng || !s.master) return;
+      if (!a || a.state !== 'running' || !s.rng || !s.master || !s.bank) return;
       const ahead = a.currentTime + 1.5;
       let guard = 0;
       while (s.nextChirp < ahead && guard++ < 8) {
         chirp(a, s.rng, s.master, s.nextChirp);
         s.nextChirp += s.rng.range(4, 11);
+      }
+      guard = 0;
+      while (s.nextVehicle < ahead && guard++ < 4) {
+        vehiclePass(a, s.bank, s.rng, s.master, s.nextVehicle);
+        s.nextVehicle += s.rng.range(VEHICLE_MIN_GAP, VEHICLE_MAX_GAP);
       }
     }, 500);
   }, [s, ensure]);
