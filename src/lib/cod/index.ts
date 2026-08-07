@@ -11,6 +11,8 @@
 // ── React hooks (client) ──────────────────────────────────────────────────────
 export { useFootsteps } from './audio/useFootsteps';
 export type { UseFootsteps } from './audio/useFootsteps';
+export { useAmbientCity } from './audio/ambientCity';
+export type { UseAmbientCity } from './audio/ambientCity';
 export { useFootstepDust } from './fx/useFootstepDust';
 export type { UseFootstepDust } from './fx/useFootstepDust';
 export { useCameraFeel } from './player/useCameraFeel';

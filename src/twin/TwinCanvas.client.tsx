@@ -28,6 +28,7 @@ import { Rig, RigMode, RigWaypoint } from '@/stage/Rig';
 import {
   EmbodiedController,
   useFootsteps,
+  useAmbientCity,
   useFootstepDust,
   useCameraFeel,
   bus,
@@ -435,6 +436,13 @@ function SceneInner({
   // look and calls `walkMove`, which returns the eye position. Feel/audio/dust
   // come from the toolkit hooks (safe here — SceneInner is inside <Canvas>).
   const { resume: resumeAudio, step: stepAudio } = useFootsteps();
+  // Looping procedural city bed (wind + distant traffic + birds), sitting UNDER
+  // the footsteps mix. Its own AudioContext; woken by the same gesture (below).
+  const {
+    resume: resumeAmbient,
+    start: startAmbient,
+    stop: stopAmbient,
+  } = useAmbientCity();
   const { emit: emitDust, tick: tickDust } = useFootstepDust(256);
   const { apply: applyCameraFeel } = useCameraFeel();
 
@@ -538,14 +546,27 @@ function SceneInner({
   useEffect(() => {
     if (mode !== 'walk') return;
     const dom = gl.domElement;
-    const kick = () => resumeAudio();
+    const kick = () => {
+      resumeAudio();
+      resumeAmbient();
+    };
     dom.addEventListener('click', kick);
     window.addEventListener('keydown', kick);
     return () => {
       dom.removeEventListener('click', kick);
       window.removeEventListener('keydown', kick);
     };
-  }, [mode, gl, resumeAudio]);
+  }, [mode, gl, resumeAudio, resumeAmbient]);
+
+  // Play the ambient city bed only while in Walk mode: build + start the loops on
+  // enter (they sound once the gesture above resumes the context), fade + stop on
+  // exit/unmount. Separate from the resume effect so the bed's lifecycle is tied
+  // to Walk, not to the first gesture.
+  useEffect(() => {
+    if (mode !== 'walk') return;
+    startAmbient();
+    return () => stopAmbient();
+  }, [mode, startAmbient, stopAmbient]);
 
   // First-person needs a tiny near plane. The twin's default (framing.cameraNear
   // ≈ 5 m, tuned for the miniature orbit) sits FARTHER than the ground under your
