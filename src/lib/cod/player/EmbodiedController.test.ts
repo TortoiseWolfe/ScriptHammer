@@ -178,7 +178,7 @@ describe('EmbodiedController', () => {
     c.dispose();
   });
 
-  it('A/D steers the bike heading while riding; on foot facingYaw tracks look', () => {
+  it('bike steering only bites while rolling (no pivot-in-place); on foot facingYaw tracks look', () => {
     const c = EmbodiedController.fromMeshes([{ mesh: floor(), surface: 'dirt' }]);
     c.teleport(0, 0, 0);
 
@@ -193,14 +193,22 @@ describe('EmbodiedController', () => {
     c.step(DT);
     expect(c.riding).toBe(true);
     const h0 = c.facingYaw;
+
+    // Steer with NO throttle: standing still, the front wheel can't turn the bike
+    // (non-holonomic - no pivot in place).
     c.setInput(input({ right: 1, yaw: 0 }));
-    stepN(c, 60); // ~1 s of steering
+    stepN(c, 60);
+    expect(c.facingYaw).toBeCloseTo(h0, 3);
+
+    // Roll forward AND steer right (W+D): the heading now turns right (decreases).
+    c.setInput(input({ forward: 1, right: 1, yaw: 0 }));
+    stepN(c, 60);
     const hRight = c.facingYaw;
-    expect(hRight).toBeLessThan(h0 - 0.2);
+    expect(hRight).toBeLessThan(h0 - 0.1);
 
     // …and holding A (right = −1) = steer LEFT turns it back the other way.
-    c.setInput(input({ right: -1, yaw: 0 }));
-    stepN(c, 90);
+    c.setInput(input({ forward: 1, right: -1, yaw: 0 }));
+    stepN(c, 60);
     expect(c.facingYaw).toBeGreaterThan(hRight);
     c.dispose();
   });

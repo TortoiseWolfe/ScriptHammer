@@ -76,8 +76,14 @@ export interface BikeCfg {
   brakeTau: number;
   /** How close (m) the player must be to the parked bike to mount it. */
   mountRadius: number;
-  /** Steering rate, rad/s — how fast A/D turns the bike's heading. */
+  /** Max steering rate, rad/s — the cap A/D can turn the heading at (reached only
+   *  once rolling; see turnGain). */
   turnRate: number;
+  /** How steering authority ramps with roll speed, rad/s per m/s. The heading
+   *  turns at min(turnRate, turnGain · speed), so at a standstill (speed 0) the
+   *  front wheel does NOT rotate the bike — it needs forward motion to bite
+   *  (a bicycle is non-holonomic; you can't pivot in place). */
+  turnGain: number;
 }
 
 export interface EmbodiedConfig {
@@ -123,7 +129,8 @@ const DEFAULT_BIKE: BikeCfg = {
   accelTau: 0.35, // snappy pick-up — reaches cruise in ~1 s (was a sluggish 1.0)
   brakeTau: 1.5, // a short roll on release, not a long glide
   mountRadius: 3, // a touch more forgiving to walk up and mount
-  turnRate: 2.2, // A/D steers ~126°/s
+  turnRate: 2.2, // steering-rate CAP (rad/s), reached only while rolling
+  turnGain: 0.5, // steering authority ramps with speed; 0 at a standstill
 };
 
 /** Collision radius of the parked bike as a walk-through obstacle, m (a bike is
@@ -385,11 +392,16 @@ export class EmbodiedController {
       cc.velocity.y += this.gravity * this.fixedStep;
       if (this.riding_) {
         // Bicycle: A/D steers the heading, W/S throttles ALONG it — no strafe,
-        // reverse allowed — with momentum. This is what makes it ride like a bike.
-        // Sign: with the camera looking (−sin h, −cos h), an INCREASING heading
-        // turns toward −X (screen-left). D (right = +1) must turn RIGHT, so it
-        // DECREASES the heading — hence the minus.
-        this.bikeHeading_ -= this.bike.turnRate * str * this.fixedStep;
+        // reverse allowed — with momentum. NON-HOLONOMIC: the heading only turns
+        // as the bike ROLLS — the turn rate scales with current ground speed
+        // (capped at turnRate), so at a standstill A/D does nothing. You can't
+        // pivot in place; the front wheel needs forward motion to consume the
+        // steering. Sign: the camera looks (−sin h, −cos h), so an INCREASING
+        // heading turns screen-LEFT — D (right = +1) must turn RIGHT, so it
+        // DECREASES the heading, hence the minus.
+        const rollSpeed = Math.hypot(cc.velocity.x, cc.velocity.z);
+        const turn = Math.min(this.bike.turnRate, this.bike.turnGain * rollSpeed);
+        this.bikeHeading_ -= turn * str * this.fixedStep;
         const tx = -Math.sin(this.bikeHeading_) * speed * fwd;
         const tz = -Math.cos(this.bikeHeading_) * speed * fwd;
         cc.velocity.x += (tx - cc.velocity.x) * bikeK;
