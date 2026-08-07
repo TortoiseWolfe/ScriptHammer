@@ -126,7 +126,7 @@ def load(d: str, schema: str, table: str):
         return json.load(fh)
 
 
-def insert_sql(schema: str, table: str, rows: list, cols: list) -> str:
+def insert_sql(schema: str, table: str, rows: list, cols: list, pk: list) -> str:
     """
     json_populate_recordset maps JSON keys to columns by name, so the payload
     survives a column being added later.
@@ -146,11 +146,62 @@ def insert_sql(schema: str, table: str, rows: list, cols: list) -> str:
     while f"${tag}$" in payload:
         tag += "x"
     collist = ", ".join(f'"{c}"' for c in cols)
+
+    # UPSERT, NOT `DO NOTHING`. `on_auth_user_created` fires as each auth.users
+    # row is inserted and writes a DEFAULT user_profiles row. With DO NOTHING the
+    # trigger's placeholder won and the real profile was silently discarded: the
+    # first production restore came back with 11 wrong fields, including the
+    # owner's `is_admin` flipped True -> False and every display_name nulled.
+    #
+    # Nothing else caught it. Row counts matched, the uuid sets were identical and
+    # every orphan check was zero — because the rows existed, they were just the
+    # wrong rows. Only a field-by-field diff against the backup found it.
+    #
+    # The backup is the authority, so conflicts overwrite.
+    if pk:
+        target = ", ".join(f'"{c}"' for c in pk)
+        sets = ", ".join(f'"{c}" = EXCLUDED."{c}"' for c in cols if c not in pk)
+        conflict = f"ON CONFLICT ({target}) DO UPDATE SET {sets}" if sets else "ON CONFLICT DO NOTHING"
+    else:
+        conflict = "ON CONFLICT DO NOTHING"
     return (
         f"INSERT INTO {schema}.{table} ({collist}) "
         f"SELECT {collist} FROM json_populate_recordset(NULL::{schema}.{table}, ${tag}${payload}${tag}$) "
-        f"ON CONFLICT DO NOTHING"
+        f"{conflict}"
     )
+
+
+def primary_key(exec_sql, schema: str, table: str) -> list:
+    """Primary-key columns, used as the ON CONFLICT target."""
+    out = exec_sql(
+        "select string_agg(a.attname, ',' order by k.ord) "
+        "from pg_index i "
+        "join lateral unnest(i.indkey) with ordinality as k(attnum, ord) on true "
+        "join pg_attribute a on a.attrelid = i.indrelid and a.attnum = k.attnum "
+        f"where i.indrelid = '{schema}.{table}'::regclass and i.indisprimary"
+    )
+    raw = out.strip()
+    if raw.startswith("["):
+        try:
+            raw = json.loads(raw)[0]["string_agg"] or ""
+        except (json.JSONDecodeError, IndexError, KeyError, TypeError):
+            raw = ""
+    return [c for c in raw.split(",") if c]
+
+
+def insert_chunked(exec_sql, schema: str, table: str, rows: list, cols: list,
+                   pk: list, size: int = 500) -> None:
+    """
+    Insert in slices.
+
+    `auth_audit_logs` is 7,661 rows and the Management API answered
+    "request entity too large" — a transport limit, not SQL, and it only appears
+    on the biggest table. The local dry run never hit it because psql-on-stdin
+    has no such ceiling, so this is the one failure mode a local rehearsal
+    cannot surface. 500 rows keeps the biggest table here comfortably under it.
+    """
+    for i in range(0, len(rows), size):
+        exec_sql(insert_sql(schema, table, rows[i:i + size], cols, pk))
 
 
 def insertable_columns(exec_sql, schema: str, table: str) -> list:
@@ -211,7 +262,8 @@ def main() -> int:
             print(f"  {schema}.{table:<24} 0 (empty)")
             continue
         cols = insertable_columns(exec_sql, schema, table)
-        exec_sql(insert_sql(schema, table, rows, cols))
+        pk = primary_key(exec_sql, schema, table)
+        insert_chunked(exec_sql, schema, table, rows, cols, pk)
         print(f"  {schema}.{table:<24} {len(rows)}")
 
     for fn in sorted(os.listdir(d)):
@@ -225,7 +277,8 @@ def main() -> int:
             continue
         try:
             cols = insertable_columns(exec_sql, schema, table)
-            exec_sql(insert_sql(schema, table, rows, cols))
+            pk = primary_key(exec_sql, schema, table)
+            insert_chunked(exec_sql, schema, table, rows, cols, pk)
             print(f"  {schema}.{table:<24} {len(rows)}")
         except RuntimeError as e:
             print(f"  {schema}.{table:<24} FAILED: {str(e)[:120]}")

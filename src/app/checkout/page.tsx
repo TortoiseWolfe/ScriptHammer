@@ -14,6 +14,9 @@ import { getPaymentStatus } from '@/lib/payments/payment-service';
 import { UUID_RE } from '@/lib/payments/payment-return';
 import { PaymentConsentModal } from '@/components/payment/PaymentConsentModal';
 import { usePaymentConsent } from '@/hooks/usePaymentConsent';
+import { useAuth } from '@/contexts/AuthContext';
+import SignInForm from '@/components/auth/SignInForm';
+import SignUpForm from '@/components/auth/SignUpForm';
 import CheckoutSummary, {
   previewAmountDue,
 } from '@/components/payment/CheckoutSummary';
@@ -22,13 +25,27 @@ import IntakeForm, { type IntakeFormData } from '@/components/forms/IntakeForm';
 import type { Product } from '@/types/commerce';
 
 /**
- * /checkout?sku=… — details, intake, payment, then booking, on one URL.
+ * /checkout?sku=… — sign in, details, intake, payment, then booking, on one URL.
  *
- * NOT WRAPPED IN ProtectedRoute, and that is the point. Every other payment page
- * in this repo is, which is exactly what makes guest checkout impossible there
- * (FR-007: no account required to buy). A guest gets an anonymous Supabase
- * session, which is a real auth.uid() — so every RLS policy keeps working
- * unmodified — without an email or a password.
+ * A REAL ACCOUNT IS REQUIRED TO BUY, and this replaced an anonymous-session flow.
+ * FR-007 originally said no account was needed, and the first implementation used
+ * `signInAnonymously()`. The owner overruled it: money must be attached to an
+ * account that cannot evaporate.
+ *
+ * That is not a preference, it closes a real defect (#611). An anonymous session
+ * lives in localStorage and its auth.users row carries no email, so clearing the
+ * browser or switching device orphaned a paid order with no way to sign in, no
+ * address to recover from and no password to reset. Requiring an account dissolves
+ * that rather than patching it — no guest orders can exist.
+ *
+ * STILL NOT WRAPPED IN ProtectedRoute. That would bounce to /sign-in and lose the
+ * `?sku=`, dropping the buyer back on a page that has forgotten what they wanted.
+ * The gate is rendered inline instead, so the URL never changes.
+ *
+ * SIGNING UP DOES NOT PRODUCE A SESSION. `mailer_autoconfirm` is off, so Supabase
+ * returns a user with no session until the address is confirmed. The gate below
+ * therefore keys off `session`, not off the form's `onSuccess` — a new account has
+ * to confirm by email and come back before it can pay.
  *
  * THE BUYER DOES LEAVE FOR STRIPE. That is unavoidable with hosted Checkout.
  * What keeps this one page is where they come back to: create-stripe-checkout
@@ -70,6 +87,9 @@ function CheckoutContent() {
   const [stage, setStage] = useState<Stage>({ kind: 'loading' });
   const [buyer, setBuyer] = useState<{ name?: string; email?: string }>({});
   const { hasConsent, ready: consentReady } = usePaymentConsent();
+  const { session, isLoading: authLoading } = useAuth();
+  const [authTab, setAuthTab] = useState<'signin' | 'signup'>('signin');
+  const [justSignedUp, setJustSignedUp] = useState(false);
 
   /**
    * One nonce per page load, folded into the Idempotency-Key.
@@ -185,19 +205,14 @@ function CheckoutContent() {
       setBuyer({ name: intake.name, email: intake.email });
 
       try {
-        // A guest needs a session before create-order will talk to them. An
-        // anonymous user is a real auth.users row, so nothing downstream changes.
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData.session) {
-          const { error } = await supabase.auth.signInAnonymously();
-          if (error)
-            throw new Error(
-              `Could not start a guest session: ${error.message}`
-            );
-        }
+        // The gate above guarantees a session before this form renders, so this
+        // is a guard rather than a flow step. It replaced a `signInAnonymously()`
+        // call: never mint an identity here, because an order must belong to an
+        // account the buyer can sign back into.
         const { data: fresh } = await supabase.auth.getSession();
         const token = fresh.session?.access_token;
-        if (!token) throw new Error('Could not start a guest session');
+        if (!token)
+          throw new Error('Your session expired — please sign in again.');
 
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-order`,
@@ -348,6 +363,74 @@ function CheckoutContent() {
   const product = stage.product;
   const busy = stage.kind === 'submitting';
   const due = previewAmountDue(product);
+
+  // ---- the account gate -------------------------------------------------
+  // Rendered in place of the intake form, never as a redirect, so `?sku=` and the
+  // order summary stay on screen while they sign in. Someone who has chosen a
+  // $3,500 package should not lose that choice to an auth bounce.
+  if (!authLoading && !session) {
+    return shell(
+      <>
+        <header className="mb-8">
+          <h1 className="mb-2 !text-2xl font-bold sm:!text-3xl">Checkout</h1>
+          <p className="text-base-content">
+            Your order is tied to an account, so you can always come back to it.
+          </p>
+        </header>
+
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_20rem]">
+          <div className="order-2 min-w-0 lg:order-1">
+            <div
+              role="tablist"
+              aria-label="Sign in or create an account"
+              className="tabs tabs-boxed mb-6"
+            >
+              {(['signin', 'signup'] as const).map((t) => (
+                <button
+                  key={t}
+                  role="tab"
+                  type="button"
+                  aria-selected={authTab === t}
+                  className={`tab min-h-11 ${authTab === t ? 'tab-active' : ''}`}
+                  onClick={() => setAuthTab(t)}
+                >
+                  {t === 'signin' ? 'Sign in' : 'Create an account'}
+                </button>
+              ))}
+            </div>
+
+            {authTab === 'signin' ? (
+              // No onSuccess handler needed: useAuth() publishes the new session
+              // and this component re-renders past the gate on its own.
+              <SignInForm />
+            ) : (
+              <>
+                <SignUpForm onSuccess={() => setJustSignedUp(true)} />
+                {justSignedUp && (
+                  // Sign-up does NOT create a session while mailer_autoconfirm is
+                  // off, so say what actually has to happen next rather than
+                  // leaving them on a form that looks like it failed.
+                  <div role="status" className="alert alert-info mt-4">
+                    <div className="min-w-0">
+                      <p className="font-semibold">Confirm your email</p>
+                      <p className="text-sm">
+                        We sent you a link. Open it, then return to this page —
+                        your selection is kept in the address bar.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          <div className="order-1 min-w-0 lg:order-2">
+            <CheckoutSummary product={product} amountDueNow={due} />
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return shell(
     <>
