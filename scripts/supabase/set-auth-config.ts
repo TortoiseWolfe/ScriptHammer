@@ -15,8 +15,27 @@
  * Env:
  *   SUPABASE_ACCESS_TOKEN              — Management API token (from dashboard)
  *   NEXT_PUBLIC_SUPABASE_PROJECT_REF   — short project ref, e.g. "abcd1234"
+ *   RESEND_API_KEY                     — becomes smtp_pass when SMTP is configured
+ *   TURNSTILE_SECRET_KEY               — becomes security_captcha_secret
  *
- * Both are in .env.local (gitignored). Script refuses to run without them.
+ * All are read from the environment, falling back to `.env` (gitignored).
+ *
+ * SECRET-BEARING FIELDS (#622). `auth-config.json` is committed, so it holds no
+ * secrets — but two of the features it declares are broken or dangerous without
+ * one, and the Management API takes the secret as a sibling field:
+ *
+ *   smtp_host, smtp_user, …      need `smtp_pass`
+ *   security_captcha_enabled     needs `security_captcha_secret`
+ *
+ * Before this was handled, `--apply` sent the visible fields and omitted the
+ * secrets. That is strictly worse than the drift it "fixes": SMTP with no
+ * password sends NOTHING (vs. a working fallback mailer), and CAPTCHA with no
+ * secret REJECTS EVERY SIGNUP. On 2026-08-07 the drift check told an operator to
+ * run exactly this command against a production project whose SMTP was unset.
+ *
+ * So: inject each secret from env when present, and when it is absent SKIP that
+ * feature's fields entirely rather than half-applying them. A gap you can see
+ * beats a config that looks applied and silently does not work.
  */
 
 import { readFileSync } from 'node:fs';
@@ -26,6 +45,86 @@ import { dirname } from 'node:path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+/**
+ * Read a var from the environment, falling back to `.env`.
+ *
+ * Nothing preloads dotenv for this script, so in a normal local shell every
+ * secret below would read as absent and silently take the "skip" path. CI passes
+ * them as real env vars and takes the first branch.
+ */
+function envOrDotenv(names: string[]): string | undefined {
+  for (const n of names) {
+    const v = process.env[n];
+    if (v && v.length > 0) return v;
+  }
+  let raw = '';
+  try {
+    raw = readFileSync(resolve(__dirname, '..', '..', '.env'), 'utf8');
+  } catch {
+    return undefined;
+  }
+  for (const line of raw.split('\n')) {
+    const t = line.trim();
+    if (!t || t.startsWith('#')) continue;
+    const eq = t.indexOf('=');
+    if (eq < 1) continue;
+    const key = t.slice(0, eq).trim();
+    if (!names.includes(key)) continue;
+    const val = t
+      .slice(eq + 1)
+      .trim()
+      .replace(/^["']|["']$/g, '');
+    if (val) return val;
+  }
+  return undefined;
+}
+
+/**
+ * A feature whose declared fields are inert or harmful without a companion
+ * secret that the committed config file deliberately does not carry.
+ */
+type SecretRule = {
+  label: string;
+  /** the Management API field that carries the secret */
+  secretField: string;
+  /** env var names to source it from, in priority order */
+  envNames: string[];
+  /** true when the desired config actually turns this feature on */
+  wanted: (desired: AuthConfig) => boolean;
+  /** fields to withhold entirely when the secret is missing */
+  fields: string[];
+  /** what goes wrong if applied without the secret */
+  harm: string;
+};
+
+const SECRET_RULES: SecretRule[] = [
+  {
+    label: 'SMTP',
+    secretField: 'smtp_pass',
+    envNames: ['SUPABASE_SMTP_PASS', 'RESEND_API_KEY'],
+    wanted: (d) => typeof d.smtp_host === 'string' && d.smtp_host.length > 0,
+    fields: [
+      'smtp_host',
+      'smtp_port',
+      'smtp_user',
+      'smtp_admin_email',
+      'smtp_sender_name',
+    ],
+    harm: 'a custom SMTP host with no password sends NOTHING — worse than the built-in fallback mailer',
+  },
+  {
+    label: 'CAPTCHA',
+    secretField: 'security_captcha_secret',
+    // TURNSTILE_SECRET is the name scripts/check-captcha.mjs already uses; keep
+    // one name for one secret. Run that script BEFORE enabling — it validates the
+    // secret against Cloudflare siteverify and exits non-zero when it is unsafe.
+    envNames: ['TURNSTILE_SECRET', 'SUPABASE_AUTH_CAPTCHA_SECRET'],
+    wanted: (d) => d.security_captcha_enabled === true,
+    fields: ['security_captcha_enabled', 'security_captcha_provider'],
+    harm: 'CAPTCHA enabled with no secret REJECTS EVERY SIGNUP',
+  },
+];
 
 type CliArgs = {
   apply: boolean;
@@ -241,12 +340,54 @@ async function main(): Promise<void> {
   const patch: AuthConfig = {};
   for (const { key, to } of diff) patch[key] = to;
 
+  // Attach each secret, or withhold the whole feature. See SECRET_RULES (#622).
+  const withheld = new Set<string>();
+  for (const rule of SECRET_RULES) {
+    if (!rule.wanted(desired)) continue;
+    // Nothing from this feature is being changed — no secret needed.
+    if (!rule.fields.some((f) => f in patch)) continue;
+
+    const secret = envOrDotenv(rule.envNames);
+    if (secret) {
+      patch[rule.secretField] = secret;
+      console.log(
+        `  ${rule.label}: attaching ${rule.secretField} from ${rule.envNames[0]} (…${secret.slice(-4)})`
+      );
+    } else {
+      for (const f of rule.fields) {
+        delete patch[f];
+        withheld.add(f);
+      }
+      console.warn(
+        `\n  ⚠ ${rule.label}: WITHHELD — no ${rule.secretField} found in ${rule.envNames.join(' or ')}.\n` +
+          `    Applying it anyway would mean: ${rule.harm}.\n` +
+          `    Set the secret and re-run; these stay drifted until you do: ${rule.fields.join(', ')}`
+      );
+    }
+  }
+
+  if (Object.keys(patch).length === 0) {
+    console.error(
+      '\n✗ Every proposed change was withheld for a missing secret. Nothing applied.'
+    );
+    process.exit(1);
+  }
+
   console.log('Applying PATCH...');
   await patchAuthConfig(projectRef, token, patch);
 
   console.log('Verifying...');
   const after = await getAuthConfig(projectRef, token);
-  const residual = computeDiff(after, desired);
+  // Withheld fields are still drifted BY DESIGN — verifying them would fail on
+  // the gap this run deliberately refused to paper over.
+  const residual = computeDiff(after, desired).filter(
+    (r) => !withheld.has(r.key)
+  );
+  if (withheld.size > 0) {
+    console.warn(
+      `\n⚠ ${withheld.size} field(s) left drifted for want of a secret: ${[...withheld].join(', ')}`
+    );
+  }
   if (residual.length > 0) {
     console.error('✗ Verification FAILED — some fields did not stick:');
     for (const r of residual) {
