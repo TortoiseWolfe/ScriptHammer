@@ -178,6 +178,32 @@ describe('EmbodiedController', () => {
     c.dispose();
   });
 
+  it('A/D steers the bike heading while riding; on foot facingYaw tracks look', () => {
+    const c = EmbodiedController.fromMeshes([{ mesh: floor(), surface: 'dirt' }]);
+    c.teleport(0, 0, 0);
+
+    // On foot, the facing IS the look yaw (no steering decoupling).
+    c.setInput(input({ yaw: 0.3 }));
+    c.step(DT);
+    expect(c.facingYaw).toBeCloseTo(0.3, 5);
+
+    // Mount, then hold D (right = +1): the steered heading turns one way…
+    c.setInput(input({ mount: true, yaw: 0 }));
+    c.step(DT);
+    expect(c.riding).toBe(true);
+    const h0 = c.facingYaw;
+    c.setInput(input({ right: 1, yaw: 0 }));
+    stepN(c, 60); // ~1 s of steering
+    const hRight = c.facingYaw;
+    expect(hRight).toBeGreaterThan(h0 + 0.2);
+
+    // …and holding A (right = −1) turns it back the other way.
+    c.setInput(input({ right: -1, yaw: 0 }));
+    stepN(c, 90);
+    expect(c.facingYaw).toBeLessThan(hRight);
+    c.dispose();
+  });
+
   it('collide() ejects a feet position poking through a façade', () => {
     // A building footprint x,z ∈ [−3, 3].
     const c = EmbodiedController.fromMeshes([

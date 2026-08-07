@@ -72,6 +72,13 @@ export function makeWalkMove(
     }
     prevV = vDown;
 
+    // While riding, the camera yaw FOLLOWS the bike heading, so A/D visibly
+    // steers the view — turning the bike turns what you see, even at a standstill.
+    // Without this the Rig kept cam.rotation on the mouse yaw (Rig._walk), so the
+    // bike curved under you but the view never turned, reading as "steering does
+    // nothing". Pitch stays mouse-controlled; on foot, look is untouched.
+    if (ctrl.riding) rig.yaw = ctrl.facingYaw;
+
     ctrl.eyePosition(eye.position);
     if (deps.viewRef.current === 'third') {
       // Chase cam: pull the camera back behind the look direction + up a bit, so
