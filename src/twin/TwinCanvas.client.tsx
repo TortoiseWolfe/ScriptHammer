@@ -31,6 +31,8 @@ import {
   useAmbientCity,
   useFootstepDust,
   useCameraFeel,
+  useWeather,
+  type WeatherKind,
   bus,
 } from '@/lib/cod';
 import { makeWalkMove, type BikeView } from '@/stage/embodiedWalk';
@@ -145,6 +147,11 @@ export function parseHourParam(search: string): number {
   if (v == null || v.trim() === '') return 13; // absent or bare `?hour=`
   const n = Number(v);
   return Number.isFinite(n) ? Math.min(24, Math.max(0, n)) : 13;
+}
+
+/** `?weather=rain` turns on ambient rain in Walk mode; anything else → none. */
+export function parseWeatherParam(search: string): WeatherKind {
+  return new URLSearchParams(search).get('weather') === 'rain' ? 'rain' : 'none';
 }
 
 function SceneInner({
@@ -328,6 +335,17 @@ function SceneInner({
       ),
     []
   );
+  // Ambient weather (?weather=rain) — reuses the CoD GPU particle layer, only in
+  // Walk. tick() is a no-op when disabled, so the useFrame is free otherwise.
+  const weatherKind = useMemo(
+    () =>
+      parseWeatherParam(
+        typeof window !== 'undefined' ? window.location.search : ''
+      ),
+    []
+  );
+  const weather = useWeather(mode === 'walk' ? weatherKind : 'none');
+  useFrame((_, dt) => weather.tick(dt));
   const bricks = useMemo(
     () => ({ bricks: PALETTES[paletteKey].bricks }),
     [paletteKey]

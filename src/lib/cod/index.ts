@@ -15,6 +15,8 @@ export { useAmbientCity } from './audio/ambientCity';
 export type { UseAmbientCity } from './audio/ambientCity';
 export { useFootstepDust } from './fx/useFootstepDust';
 export type { UseFootstepDust } from './fx/useFootstepDust';
+export { useWeather } from './fx/useWeather';
+export type { UseWeather, WeatherKind } from './fx/useWeather';
 export { useCameraFeel } from './player/useCameraFeel';
 export type { CameraFeel } from './player/useCameraFeel';
 
