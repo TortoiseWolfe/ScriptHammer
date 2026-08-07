@@ -6,6 +6,17 @@ name: 'E2E (local Supabase) — #575 prototype'
 # run proves the two produce the same pass/fail set. Do not delete e2e.yml, do
 # not remove its mutex, and do not treat a green run here as coverage yet.
 #
+# NOW THE FULL 24-JOB MATRIX (#575 step 1). It mirrors e2e.yml's three matrices
+# exactly — same projects, same shard counts, same `workers: 2` on the msg-iso
+# entries — because parity is only meaningful if the two run the SAME work.
+#
+# What it does NOT mirror is the contention machinery. e2e.yml splits into three
+# per-browser jobs each capped at `max-parallel: 2` for one reason: to hold peak
+# load on the single shared CLOUD project down to 6 concurrent shards. Every
+# runner here brings up its own Supabase, so there is nothing to contend for and
+# all 24 can run at once. Copying the caps would import the bottleneck this
+# workflow exists to delete.
+#
 # WHY THIS EXISTS
 # Every painful property of e2e.yml traces to one fact: all 24 matrix jobs share
 # a single CLOUD Supabase project. The repo-wide mutex, `max-parallel: 2`, the
@@ -27,6 +38,15 @@ name: 'E2E (local Supabase) — #575 prototype'
 
 on:
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Commit to TEST (workflow definition still comes from the branch you dispatch)'
+        required: false
+        default: de0f7f080c8d75949e4e6c89fdf66ab7d3da8029
+  # Dispatching with --ref de0f7f0 would run THAT commit's copy of this file — the
+  # old single-shard prototype — so the widened matrix could never reach the
+  # baseline code. Checking the ref out as an INPUT instead keeps the two
+  # separable: definition from the branch, code under test from `ref`.
   pull_request:
     branches: [main]
     paths:
@@ -41,13 +61,55 @@ on:
 
 jobs:
   e2e-local:
-    name: E2E against an ephemeral per-runner Supabase
+    name: ${{ matrix.project }} ${{ matrix.shard }}
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
+
+    strategy:
+      # NO max-parallel. See the header — the caps in e2e.yml protect a shared
+      # cloud project that does not exist here.
+      fail-fast: false
+      matrix:
+        include:
+          # ===== CHROMIUM =====
+          - { project: chromium-msg, browser: chromium, shard: 1/1 }
+          - { project: chromium-msg-iso, browser: chromium, shard: 1/1, workers: 2 }
+          - { project: chromium-gen, browser: chromium, shard: 1/6 }
+          - { project: chromium-gen, browser: chromium, shard: 2/6 }
+          - { project: chromium-gen, browser: chromium, shard: 3/6 }
+          - { project: chromium-gen, browser: chromium, shard: 4/6 }
+          - { project: chromium-gen, browser: chromium, shard: 5/6 }
+          - { project: chromium-gen, browser: chromium, shard: 6/6 }
+          # ===== FIREFOX =====
+          - { project: firefox-msg, browser: firefox, shard: 1/1 }
+          - { project: firefox-msg-iso, browser: firefox, shard: 1/1, workers: 2 }
+          - { project: firefox-gen, browser: firefox, shard: 1/6 }
+          - { project: firefox-gen, browser: firefox, shard: 2/6 }
+          - { project: firefox-gen, browser: firefox, shard: 3/6 }
+          - { project: firefox-gen, browser: firefox, shard: 4/6 }
+          - { project: firefox-gen, browser: firefox, shard: 5/6 }
+          - { project: firefox-gen, browser: firefox, shard: 6/6 }
+          # ===== WEBKIT =====
+          - { project: webkit-msg, browser: webkit, shard: 1/1 }
+          - { project: webkit-msg-iso, browser: webkit, shard: 1/1, workers: 2 }
+          - { project: webkit-gen, browser: webkit, shard: 1/6 }
+          - { project: webkit-gen, browser: webkit, shard: 2/6 }
+          - { project: webkit-gen, browser: webkit, shard: 3/6 }
+          - { project: webkit-gen, browser: webkit, shard: 4/6 }
+          - { project: webkit-gen, browser: webkit, shard: 5/6 }
+          - { project: webkit-gen, browser: webkit, shard: 6/6 }
 
     steps:
-      - name: Checkout code
+      - name: Checkout the code under test
         uses: actions/checkout@v5
+        with:
+          # Empty on pull_request → the PR head, as usual.
+          ref: ${{ inputs.ref || github.sha }}
+
+      - name: Say plainly what is being tested
+        run: |
+          echo "workflow definition : ${{ github.sha }}"
+          echo "code under test     : $(git rev-parse HEAD)"
 
       - name: Local demo env (compose + build + tests share one set of creds)
         run: |
@@ -126,23 +188,165 @@ jobs:
           # not apply here. `signup-mailer.yml`, which drives real auth forms
           # against this same local stack, also omits it — follow that precedent.
 
-      - name: Install Playwright chromium
-        run: pnpm exec playwright install --with-deps chromium
+      - name: Install Playwright (${{ matrix.browser }})
+        run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
 
-      - name: Run one chromium shard
+      - name: Run ${{ matrix.project }} ${{ matrix.shard }}
         run: |
           npx serve out -l 3000 &
           npx wait-on http://localhost:3000 --timeout 60000
-          pnpm exec playwright test --project=chromium-gen --shard=1/6 --reporter=line
+          # JSON as well as line: parity is decided on COUNTS, and the line
+          # reporter's summary is not machine-readable. `|| true` so a failing
+          # shard still uploads its results — a parity run that discards the
+          # numbers from the shards that failed cannot diagnose the mismatch,
+          # which is the only reason to do the run at all. The parity job below
+          # is what fails the workflow.
+          # Mirrors e2e.yml:791-801 exactly. `workers` is a CLI FLAG, not an env
+          # var the config reads — playwright.config.ts hardcodes `workers: 1` on
+          # CI (:88) and only the per-job `--workers` flag lifts the iso shards to
+          # 2. Passing it as an unread env var would silently run msg-iso serially,
+          # changing results on the one project whose whole point is parallelism —
+          # and quietly breaking the parity comparison this run exists to make.
+          WORKERS_FLAG=""
+          if [ -n "$WORKERS" ]; then
+            WORKERS_FLAG="--workers=$WORKERS"
+          fi
+          pnpm exec playwright test \
+            --project=${{ matrix.project }} --shard=${{ matrix.shard }} \
+            $WORKERS_FLAG \
+            --reporter=line,json || true
         env:
           CI: 'true'
           SKIP_WEBSERVER: 'true'
           BASE_URL: http://localhost:3000
+          PLAYWRIGHT_JSON_OUTPUT_NAME: results.json
+          WORKERS: ${{ matrix.workers }}
 
-      - name: Upload report
+      - name: Name this shard's artifact
+        if: always()
+        id: slug
+        run: echo "id=${{ matrix.project }}-$(echo '${{ matrix.shard }}' | tr '/' '-')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload results
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: e2e-local-report
-          path: playwright-report/
+          # 24 jobs uploading `e2e-local-report` would collide; upload-artifact v4+
+          # errors on a duplicate name, so every shard needs its own.
+          name: e2e-local-${{ steps.slug.outputs.id }}
+          path: |
+            playwright-report/
+            results.json
           retention-days: 3
+
+  # ==========================================================================
+  # PARITY — the only thing that makes this run worth doing (#575 step 2)
+  # ==========================================================================
+  #
+  # "All 24 jobs went green" is NOT parity. A local stack that silently skipped
+  # every auth test would also report all-green — that is the #396 shape, and it
+  # is exactly what a migration that failed to apply would look like.
+  #
+  # Parity is a COUNT match against the last green cloud run before the quota
+  # died: run 31048279017, SHA de0f7f0, 2026-08-05T21:21:26Z.
+  #
+  #   passed 1807 · skipped 194 · flaky 0
+  #
+  # Those numbers are falsifiable; "it passed" is not. They are recorded in #575
+  # because the run's artifacts expire 2026-08-12T22:13Z — after which a mismatch
+  # cannot be diffed against anything until the quota refills on 2026-09-02.
+  #
+  # THIS JOB ONLY MEANS ANYTHING WHEN RUN ON de0f7f0. On any other SHA the test
+  # set has moved and a mismatch says nothing, so it reports the counts and stops
+  # rather than failing a PR for a difference it cannot interpret.
+  parity:
+    name: Parity vs cloud baseline (1807/194/0)
+    needs: e2e-local
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve which commit was actually tested
+        id: tested
+        run: echo "sha=${{ inputs.ref || github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/download-artifact@v6
+        with:
+          pattern: e2e-local-*
+          path: shards
+
+      - name: Total the shards and compare
+        env:
+          # The commit the TESTS ran against — not github.sha, which is the branch
+          # carrying this workflow file. Comparing the wrong one would either skip
+          # the check on a real parity run or fail every PR against a baseline that
+          # does not describe it.
+          TESTED_SHA: ${{ steps.tested.outputs.sha }}
+        run: |
+          set -uo pipefail
+          python3 - <<'EOF'
+          import json, os, pathlib, sys
+
+          BASE = {"passed": 1807, "skipped": 194, "flaky": 0}
+          BASE_SHA = "de0f7f080c8d75949e4e6c89fdf66ab7d3da8029"
+
+          files = sorted(pathlib.Path("shards").rglob("results.json"))
+          if not files:
+              print("::error::no results.json found — every shard failed before reporting")
+              sys.exit(1)
+
+          tot = {"passed": 0, "skipped": 0, "flaky": 0, "failed": 0}
+
+          def walk(suite):
+              for spec in suite.get("specs", []):
+                  for t in spec.get("tests", []):
+                      st = t.get("status")          # expected|skipped|flaky|unexpected
+                      if st == "expected":   tot["passed"]  += 1
+                      elif st == "skipped":  tot["skipped"] += 1
+                      elif st == "flaky":    tot["flaky"]   += 1
+                      else:                  tot["failed"]  += 1
+              for child in suite.get("suites", []):
+                  walk(child)
+
+          for f in files:
+              try:
+                  data = json.loads(f.read_text())
+              except json.JSONDecodeError:
+                  print(f"::warning::{f} is not valid JSON — shard produced no usable result")
+                  continue
+              for s in data.get("suites", []):
+                  walk(s)
+
+          print(f"shards reporting: {len(files)}/24")
+          print(f"  passed  {tot['passed']:>5}   baseline {BASE['passed']}")
+          print(f"  skipped {tot['skipped']:>5}   baseline {BASE['skipped']}")
+          print(f"  flaky   {tot['flaky']:>5}   baseline {BASE['flaky']}")
+          print(f"  failed  {tot['failed']:>5}")
+
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary:
+              with open(summary, "a") as fh:
+                  fh.write("### E2E local parity\n\n")
+                  fh.write("| | local | cloud baseline |\n|---|---|---|\n")
+                  for k in ("passed", "skipped", "flaky"):
+                      mark = "OK" if tot[k] == BASE[k] else "DIFF"
+                      fh.write(f"| {k} | {tot[k]} | {BASE[k]} | {mark} |\n")
+                  fh.write(f"| failed | {tot['failed']} | 0 | |\n")
+
+          on_baseline = os.environ.get("TESTED_SHA", "") == BASE_SHA
+          if not on_baseline:
+              print("")
+              print("NOT the baseline SHA — reporting only. The cloud numbers describe")
+              print(f"{BASE_SHA[:8]}; on any other commit the test set has moved and a")
+              print("difference is uninterpretable. Re-run this workflow on that SHA to")
+              print("decide parity (workflow_dispatch, before 2026-08-12).")
+              sys.exit(0)
+
+          if len(files) != 24:
+              print(f"::error::only {len(files)} of 24 shards reported")
+              sys.exit(1)
+          bad = [k for k in BASE if tot[k] != BASE[k]]
+          if bad or tot["failed"]:
+              print(f"::error::parity MISMATCH on {bad or ['failed']} — do not switch e2e.yml")
+              sys.exit(1)
+          print("PARITY: local matches the cloud baseline exactly.")
+          EOF
