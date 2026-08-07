@@ -390,6 +390,56 @@ services:
       timeout: 5s
       retries: 10
 
+  # ──────────────────────────────────────────────────────────────────────
+  # Edge Functions runtime
+  #
+  # THE TENTH LEG. This stack was assembled without it, so `POST
+  # /functions/v1/<name>` 404'd locally while the same call worked in production
+  # — every Edge Function was untestable except by deploying it. The
+  # `[edge_runtime]` block in supabase/config.toml does NOT cover this: that file
+  # is read only by the Supabase CLI, which this repo does not (and by policy
+  # cannot) install.
+  #
+  # Needs the Kong route in docker/supabase/kong.yml to be reachable; the
+  # container alone is not enough.
+  # ──────────────────────────────────────────────────────────────────────
+  supabase-edge-runtime:
+    profiles: [supabase]
+    image: supabase/edge-runtime:v1.67.4
+    restart: unless-stopped
+    depends_on:
+      supabase-db:
+        condition: service_healthy
+    volumes:
+      # Read-only: a function must never be able to rewrite itself at runtime.
+      - ./supabase/functions:/home/deno/functions:ro
+      # The router lives outside supabase/functions/ so that directory stays
+      # exactly the set of deployable functions. See its header for why.
+      - ./docker/supabase/edge-main:/home/deno/main:ro
+    environment:
+      <<: *supabase-env
+      # Functions reach the rest of the stack THROUGH Kong, exactly as they do in
+      # production — so auth, RLS and the service-role path are exercised for
+      # real rather than short-circuited to Postgres.
+      SUPABASE_URL: http://supabase-kong:8000
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlLWRlbW8iLCJpYXQiOjE2NDE3NjkyMDAsImV4cCI6MTc5OTUzNTYwMH0.F_rDxRTPE8OU83L_CNgEGXfmirMXmMMugT29Cvc8ygQ}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIiwiaXNzIjoic3VwYWJhc2UtZGVtbyIsImlhdCI6MTY0MTc2OTIwMCwiZXhwIjoxNzk5NTM1NjAwfQ.5z-pJI1qwZg1LE5yavGLqum65WOnnaaI5eZ3V00pLww}
+      SUPABASE_DB_URL: postgres://postgres:${POSTGRES_PASSWORD:-your-super-secret-and-long-postgres-password}@supabase-db:5432/postgres
+      # _shared/cors.ts derives its allowed origins from this, and the checkout
+      # functions build redirect URLs from it.
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      # JWT verification happens INSIDE each function via
+      # _shared/auth.ts::getAuthenticatedUserId, which returns the user id rather
+      # than merely asserting a valid token. Letting the runtime reject first
+      # would mask the 401-vs-403 distinction those functions are careful about.
+      VERIFY_JWT: 'false'
+      # Provider secrets. Absent by default — a function that needs Stripe will
+      # say so plainly instead of the stack refusing to start.
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      PAYPAL_CLIENT_ID: ${PAYPAL_CLIENT_ID:-}
+      PAYPAL_CLIENT_SECRET: ${PAYPAL_CLIENT_SECRET:-}
+    command: ['start', '--main-service', '/home/deno/main']
+
   supabase-meta:
     profiles: [supabase]
     image: supabase/postgres-meta:v0.91.0
