@@ -12,6 +12,7 @@ import type {
 import Buildings, { type BuildingPalette } from './Buildings';
 import Terrain from './Terrain';
 import HouseModel from './HouseModel';
+import Water from './Water';
 import { elevationAt, minElevation } from './terrainSample';
 
 /** buildings-wide.json entry — raw WGS84 footprints (src/twin/cesium/overpass.ts
@@ -164,6 +165,11 @@ export default function WideCity({
         manifest={data.wideManifest}
         onMeshReady={onTerrainMesh}
       />
+      {/* The Tennessee River — a full-extent Y=0.5 plane that shows through only
+          where the wide terrain carves the channel to the valley floor (~Y=0).
+          Same layer the narrow TwinWorld path renders; chatt's manifest is
+          water:true. */}
+      {manifest.site.water === true && <Water manifest={data.wideManifest} />}
       <Buildings
         buildings={data.buildings}
         palette={palette}
