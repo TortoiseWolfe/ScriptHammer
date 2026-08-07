@@ -105,6 +105,52 @@ jobs:
             *) echo "::error::deployed bundle targets$found but vars.NEXT_PUBLIC_SUPABASE_URL is $WANT"; exit 1 ;;
           esac
 
+      # WHY THIS EXISTS. On 2026-08-07 production was found serving a Stripe TEST
+      # publishable key (#629). Every purchasable package — a $3,500 build among
+      # them — ran a test-mode transaction. A buyer completed intake, entered a
+      # card and reached a success screen; no money moved. Every internal signal
+      # said "sold", because within test mode the sale genuinely succeeded. The
+      # only place the difference shows is a bank account, and nothing checks that.
+      #
+      # EXPECTED MODE IS A REPO VARIABLE, defaulting to `test`. Hard-failing on
+      # `pk_test_` today would red this suite on every deploy until Stripe business
+      # verification completes — which is real, but permanent red is how a suite
+      # stops being read, and it would mask the checks below it. Instead the guard
+      # asserts the deployed mode MATCHES the declared intent, so it catches an
+      # unexpected key change in either direction right now, and becomes the
+      # live-key gate the moment `PAYMENT_MODE_EXPECTED` is set to `live`.
+      #
+      # Set it to `live` as part of going live. That is the whole ceremony.
+      - name: Deployed bundle ships the expected Stripe key mode
+        env:
+          SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
+          EXPECTED: ${{ vars.PAYMENT_MODE_EXPECTED || 'test' }}
+        run: |
+          set -uo pipefail
+          html=$(curl -fsS --max-time 30 "${SITE}/checkout/?sku=svc-site") || {
+            echo "::error::could not fetch the checkout page"; exit 1; }
+          found=""
+          for chunk in $(printf '%s' "$html" | grep -oE '/_next/static/chunks/[^"]+\.js' | sort -u); do
+            hit=$(curl -fsS --max-time 30 "${SITE}${chunk}" \
+                  | grep -oE 'pk_(test|live)_' | sort -u || true)
+            [ -n "$hit" ] && found="$found $hit"
+          done
+          found=$(printf '%s' "$found" | tr ' ' '\n' | grep -v '^$' | sort -u | tr '\n' ' ')
+          echo "expected mode : $EXPECTED"
+          echo "in bundle     :$found"
+
+          if [ -z "$found" ]; then
+            echo "::error::no Stripe publishable key found in any deployed chunk — checkout cannot charge at all"
+            exit 1
+          fi
+          case "$found" in
+            *"pk_${EXPECTED}_"*) echo "match — production is in ${EXPECTED} mode" ;;
+            *) echo "::error::production ships$found but PAYMENT_MODE_EXPECTED is '${EXPECTED}'. If this is the go-live deploy, set the repo variable; if not, the wrong key shipped."; exit 1 ;;
+          esac
+          if [ "$EXPECTED" = "test" ]; then
+            echo "::warning::Production is in Stripe TEST mode — no customer can pay. Tracked in #629."
+          fi
+
       - name: Install Playwright (chromium)
         run: |
           for i in 1 2 3; do
