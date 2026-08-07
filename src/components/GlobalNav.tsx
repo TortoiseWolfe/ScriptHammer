@@ -318,6 +318,11 @@ export function GlobalNav() {
   const navItems: NavEntry[] = [
     { href: '/docs', label: 'Docs' },
     { href: '/blog', label: 'Blog' },
+    // Top-level so the walkable/bikeable 3D Chattanooga isn't buried under
+    // Demos → Diorama → ⋯ → Walk. Deep-links straight in: ?diorama picks the
+    // Three renderer, ?walk opens first-person Walk mode. reload:true so both
+    // query flags are read at mount (same reason Atlas/Diorama reload below).
+    { href: '/chatt?diorama&walk', label: 'Play', reload: true },
     {
       label: 'Demos',
       items: [

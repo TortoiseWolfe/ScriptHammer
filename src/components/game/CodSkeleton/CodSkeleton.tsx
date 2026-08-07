@@ -9,9 +9,7 @@ import ProceduralSky from '@/components/game/ProceduralSky';
 // barrel (@/lib/cod). Physics classes are typed via hand-written .d.ts; the
 // materials forge stays loose-typed via allowJs.
 import {
-  StaticWorld,
-  CharacterController,
-  MASK,
+  EmbodiedController,
   MaterialSystem,
   useFootsteps,
   useFootstepDust,
@@ -20,7 +18,7 @@ import {
   QUALITY_TIERS,
   bus,
 } from '@/lib/cod';
-import type { QualityTier } from '@/lib/cod';
+import type { QualityTier, Stance, StanceCfg } from '@/lib/cod';
 
 /**
  * CodSkeleton — first-person "walking skeleton" for the CoD extraction spike.
@@ -81,24 +79,15 @@ const SURFACE_TINT: Record<string, [number, number, number]> = {
   metal: [150, 152, 160],
 };
 
-// Fixed-step + feel constants.
-const FIXED = 1 / 120;
-const GRAVITY = -22;
-const JUMP = 7;
+// Look/eye constants. Physics tunables (fixed-step, gravity, jump) now live in
+// the EmbodiedController config below.
 const EYE = 1.55;
 const LOOK_SENS = 0.0022;
 const PITCH_LIMIT = 1.5; // ~86°
 
-type Stance = 'stand' | 'crouch' | 'prone';
-interface StanceCfg {
-  height: number;
-  eye: number;
-  /** Speed as a fraction of the base walk speed. */
-  speedRatio: number;
-  gait: string;
-  bobScale: number;
-  dustScale: number;
-}
+// Stance + sprint tuning passed to the controller — the spike's exact values, so
+// the extraction leaves the demo's feel unchanged. `Stance`/`StanceCfg` are the
+// toolkit's types now.
 const STANCE: Record<Stance, StanceCfg> = {
   stand: { height: 1.75, eye: 1.55, speedRatio: 1, gait: 'walk', bobScale: 1, dustScale: 1 },
   crouch: { height: 1.0, eye: 0.85, speedRatio: 0.49, gait: 'crouch', bobScale: 0.5, dustScale: 0.4 },
@@ -156,27 +145,39 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
   const { camera, gl } = useThree();
   const { preset } = useQuality(); // quality tier → anisotropy + particle budget
 
-  // Build the static collision world + character controller once, from the same
-  // LEVEL specs that render below. Pure CPU (geometry + BVH) — no GL needed.
-  const worldRef = useRef<StaticWorld | null>(null);
-  const ccRef = useRef<CharacterController | null>(null);
-  if (worldRef.current === null) {
-    const world = new StaticWorld();
-    for (const b of LEVEL) {
-      const mesh = new THREE.Mesh(new THREE.BoxGeometry(...b.size));
-      mesh.position.set(...b.pos);
-      world.addMesh(mesh, b.surface);
-    }
-    world.build();
-    worldRef.current = world;
-    ccRef.current = new CharacterController(world, {
-      radius: 0.32,
-      height: 1.75,
-      stepHeight: 0.42,
-      mask: MASK.CHARACTER,
-      position: { x: 0, y: 0.2, z: 10 },
-    });
+  // Build the embodied controller once, from the same LEVEL specs that render
+  // below (the collider bakes those meshes). Pure CPU — no GL needed. Config is
+  // the spike's exact numbers so the extraction preserves the demo's feel.
+  const ctrlRef = useRef<EmbodiedController | null>(null);
+  if (ctrlRef.current === null) {
+    ctrlRef.current = EmbodiedController.fromMeshes(
+      LEVEL.map((b) => {
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(...b.size));
+        mesh.position.set(...b.pos);
+        return { mesh, surface: b.surface };
+      }),
+      {
+        radius: 0.32,
+        height: 1.75,
+        stepHeight: 0.42,
+        gravity: -22,
+        jump: 7,
+        walkSpeed: speed,
+        fixedStep: 1 / 120,
+        stances: STANCE,
+        sprint: SPRINT,
+        spawn: { x: 0, y: 0.2, z: 10 },
+        onStanceChange: (s) => bus.emit('player:stance', { stance: s }),
+      }
+    );
   }
+  useEffect(
+    () => () => {
+      ctrlRef.current?.dispose();
+      ctrlRef.current = null;
+    },
+    []
+  );
 
   // Materials: the FLOOR gets a real Claude-of-Duty procedural-PBR bake (the ⭐
   // extract — albedo/normal/ORM rendered on the GPU at load, zero assets); the
@@ -244,9 +245,8 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
   const keys = useRef<Record<string, boolean>>({});
   const yaw = useRef(0);
   const pitch = useRef(0);
-  const accum = useRef(0);
-  const stanceRef = useRef<Stance>('stand');
-  const eyeRef = useRef(STANCE.stand.eye);
+  // Reused scratch for the per-frame eye position (no allocation in useFrame).
+  const eyeScratch = useRef({ x: 0, y: 0, z: 0 });
 
   // Surface-keyed procedural footsteps (Web Audio; resumed on the pointer-lock click).
   const { resume: resumeAudio, step: stepAudio } = useFootsteps();
@@ -258,38 +258,17 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
   // First-person camera weight: head-bob + landing punch (vendored springs).
   const { apply: applyCameraFeel } = useCameraFeel();
 
-  // Change stance via the physics capsule; a raise blocked by a low ceiling
-  // (canFit → setHeight returns false) leaves the current stance in place.
-  const applyStance = useCallback(
-    (next: Stance) => {
-      const cc = ccRef.current;
-      if (!cc || next === stanceRef.current) return;
-      if (!cc.setHeight(STANCE[next].height)) return;
-      stanceRef.current = next;
-      // Cross-<Canvas>-boundary event — the HUD (outside the Canvas) subscribes.
-      bus.emit('player:stance', { stance: next });
-    },
-    []
-  );
-
   // Keyboard + pointer-lock. Guarded so the mocked-Canvas unit test (gl === undefined)
-  // bails cleanly instead of touching a missing renderer.
+  // bails cleanly instead of touching a missing renderer. Stance toggles (C/X)
+  // are edge-detected inside the controller from the held key state — no
+  // in-handler edge logic needed here.
   useEffect(() => {
     if (!gl || typeof window === 'undefined') return;
     const dom = gl.domElement;
 
     const down = (e: KeyboardEvent): void => {
-      const key = e.key.toLowerCase();
-      keys.current[key] = true;
+      keys.current[e.key.toLowerCase()] = true;
       if (e.key === ' ' || e.key.startsWith('Arrow')) e.preventDefault();
-      // Edge-triggered stance toggles (ignore auto-repeat).
-      if (!e.repeat) {
-        if (key === 'c') {
-          applyStance(stanceRef.current === 'crouch' ? 'stand' : 'crouch');
-        } else if (key === 'x') {
-          applyStance(stanceRef.current === 'prone' ? 'stand' : 'prone');
-        }
-      }
     };
     const up = (e: KeyboardEvent): void => {
       keys.current[e.key.toLowerCase()] = false;
@@ -315,61 +294,42 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
       dom.removeEventListener('click', click);
       document.removeEventListener('mousemove', move);
     };
-  }, [gl, resumeAudio, applyStance]);
+  }, [gl, resumeAudio]);
 
   useFrame((_state, delta) => {
-    const cc = ccRef.current;
-    if (!cc || !camera) return;
+    const ctrl = ctrlRef.current;
+    if (!ctrl || !camera) return;
 
-    // Resolve the current stance → speed / gait / feel for this frame.
+    // Feed the controller this frame's normalized input (it owns the fixed-step
+    // gravity/move loop, stances, and eye glide).
     const k = keys.current;
-    const stance = stanceRef.current;
-    const cfg = STANCE[stance];
-    const sprinting = stance === 'stand' && !!k['shift'] && !!k['w'];
-    const moveSpeed = speed * (sprinting ? SPRINT.speedRatio : cfg.speedRatio);
-    const gait = sprinting ? SPRINT.gait : cfg.gait;
-    const bobScale = sprinting ? SPRINT.bobScale : cfg.bobScale;
-    const dustScale = sprinting ? SPRINT.dustScale : cfg.dustScale;
+    ctrl.setInput({
+      forward: (k['w'] ? 1 : 0) - (k['s'] ? 1 : 0),
+      right: (k['d'] ? 1 : 0) - (k['a'] ? 1 : 0),
+      jump: !!k[' '],
+      sprint: !!k['shift'],
+      crouch: !!k['c'],
+      prone: !!k['x'],
+      mount: !!k['b'],
+      yaw: yaw.current,
+    });
+    ctrl.step(delta);
 
-    // Fixed-step accumulator so physics feel is framerate-independent.
-    accum.current += Math.min(delta, 0.1);
-    let moved = 0;
-    while (accum.current >= FIXED) {
-      accum.current -= FIXED;
-      cc.velocity.y += GRAVITY * FIXED;
-      const fwd = (k['w'] ? 1 : 0) - (k['s'] ? 1 : 0);
-      const str = (k['d'] ? 1 : 0) - (k['a'] ? 1 : 0);
-      const sy = Math.sin(yaw.current);
-      const cy = Math.cos(yaw.current);
-      // forward = (-sy,0,-cy), right = (cy,0,-sy)
-      let wx = cy * str - sy * fwd;
-      let wz = -sy * str - cy * fwd;
-      const wl = Math.hypot(wx, wz);
-      if (wl > 1e-6) {
-        wx = (wx / wl) * moveSpeed;
-        wz = (wz / wl) * moveSpeed;
-      } else {
-        wx = 0;
-        wz = 0;
-      }
-      cc.velocity.x = wx;
-      cc.velocity.z = wz;
-      // Jump only from a standing stance.
-      if (k[' '] && cc.grounded && stance === 'stand') cc.velocity.y = JUMP;
-      // move() returns distance travelled — accumulate it for the footstep cadence.
-      moved += cc.move(cc.velocity.x * FIXED, cc.velocity.y * FIXED, cc.velocity.z * FIXED);
-    }
-
-    // Glide the camera eye-height toward the stance target (crouch/stand transitions).
-    eyeRef.current += (cfg.eye - eyeRef.current) * (1 - Math.exp(-delta / 0.09));
-    camera.position.set(cc.position.x, cc.position.y + eyeRef.current, cc.position.z);
+    const eye = ctrl.eyePosition(eyeScratch.current);
+    camera.position.set(eye.x, eye.y, eye.z);
     camera.rotation.set(pitch.current, yaw.current, 0, 'YXZ');
     // Head-bob (scaled by stance) + landing punch.
-    applyCameraFeel(camera, cc, moved, delta, yaw.current, bobScale);
+    applyCameraFeel(camera, ctrl, ctrl.movedThisFrame, delta, yaw.current, ctrl.bobScale);
     // One cadence drives the footstep sound + surface-tinted dust (both stance-scaled).
-    const didStep = stepAudio(moved, cc.grounded, cc.groundSurfaceName, gait);
+    const didStep = stepAudio(
+      ctrl.movedThisFrame,
+      ctrl.grounded,
+      ctrl.groundSurfaceName,
+      ctrl.gait
+    );
     if (didStep) {
-      emitDust(cc.position.x, cc.position.y, cc.position.z, cc.groundSurfaceName, dustScale);
+      const p = ctrl.position;
+      emitDust(p.x, p.y, p.z, ctrl.groundSurfaceName, ctrl.dustScale);
     }
     tickDust(delta);
   });

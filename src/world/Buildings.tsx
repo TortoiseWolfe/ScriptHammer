@@ -1,11 +1,12 @@
 'use client';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import {
   Shape,
   ExtrudeGeometry,
   BufferGeometry,
   BufferAttribute,
   Color,
+  type Mesh,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import type { Building, TerrainGrid, Manifest } from '@/lib/manifest';
@@ -78,6 +79,7 @@ export default function Buildings({
   grid,
   manifest,
   opacity = 1,
+  onMeshReady,
 }: {
   buildings: Building[];
   palette: BuildingPalette;
@@ -85,7 +87,12 @@ export default function Buildings({
   manifest: Manifest;
   /** Layer fade (registration checks against the aerial); 1 = opaque. */
   opacity?: number;
+  /** Hands the merged buildings mesh to the composition root once built, so a
+   *  physics layer (Walk-mode collision, #226) can bake it into a BVH. Fires
+   *  whenever the merged geometry changes. */
+  onMeshReady?: (mesh: Mesh) => void;
 }) {
+  const meshRef = useRef<Mesh>(null);
   const { geometry } = useMemo(() => {
     const minE = minElevation(grid);
     const nonHero = buildings.filter((b) => !b.swap);
@@ -109,9 +116,21 @@ export default function Buildings({
     };
   }, [buildings, palette, grid, manifest]);
 
+  // Publish the merged mesh for the physics layer (#226). Keyed on `geometry`
+  // so a rebuild (new footprints) hands over a fresh mesh; guarded on the ref so
+  // the faded-out (opacity 0, unmounted) frames never emit a stale handle.
+  useEffect(() => {
+    if (meshRef.current && onMeshReady) onMeshReady(meshRef.current);
+  }, [geometry, onMeshReady]);
+
   if (opacity <= 0) return null;
   return (
-    <mesh geometry={geometry} castShadow={opacity >= 1} receiveShadow>
+    <mesh
+      ref={meshRef}
+      geometry={geometry}
+      castShadow={opacity >= 1}
+      receiveShadow
+    >
       {/* UNCONDITIONALLY transparent: three bakes an OPAQUE define into the
           program when a material mounts with transparent=false, and flipping
           `transparent` at runtime never recompiles — the fade would silently

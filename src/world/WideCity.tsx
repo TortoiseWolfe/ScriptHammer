@@ -1,6 +1,6 @@
 'use client';
 import { Suspense, useEffect, useState } from 'react';
-import { TextureLoader, Texture } from 'three';
+import { TextureLoader, Texture, type Mesh } from 'three';
 import { createProjection } from '@/lib/enu';
 import { loadSiteJson, siteAssetUrl, loadHouse } from '@/lib/manifest';
 import type {
@@ -12,6 +12,7 @@ import type {
 import Buildings, { type BuildingPalette } from './Buildings';
 import Terrain from './Terrain';
 import HouseModel from './HouseModel';
+import { elevationAt, minElevation } from './terrainSample';
 
 /** buildings-wide.json entry — raw WGS84 footprints (src/twin/cesium/overpass.ts
  *  `LiveBuilding`). `lonLat` is a FLAT [lon,lat,lon,lat,…] ring. */
@@ -48,6 +49,9 @@ export default function WideCity({
   palette,
   onError,
   onTwinPlaced,
+  onGroundReady,
+  onBuildingsMesh,
+  onTerrainMesh,
 }: {
   slug: string;
   manifest: Manifest;
@@ -56,6 +60,15 @@ export default function WideCity({
   /** Reports the embedded twin's wide-frame position + label once placed, so
    *  the HUD can offer an in-diorama fly-to instead of a separate page (#332). */
   onTwinPlaced?: (t: { x: number; z: number; label: string }) => void;
+  /** Hands the composition root a terrain sampler (runtime Y at ENU x/z) once
+   *  the wide grid loads — so Walk-mode ground-follow (and the trolley) ride ON
+   *  the hills. The narrow TwinWorld path wires this too; the wide path did not
+   *  until #226. */
+  onGroundReady?: (groundAt: (x: number, z: number) => number) => void;
+  /** Hands over the merged buildings mesh for Walk-mode BVH collision (#226). */
+  onBuildingsMesh?: (mesh: Mesh) => void;
+  /** Hands over the ground mesh for the Walk-mode physics floor (#226). */
+  onTerrainMesh?: (mesh: Mesh) => void;
 }) {
   const [data, setData] = useState<WideData | null>(null);
 
@@ -132,6 +145,16 @@ export default function WideCity({
     };
   }, [slug, manifest, onError, onTwinPlaced]);
 
+  // Publish the wide terrain sampler once the grid loads — same normalization
+  // (elevationAt − minE) the mesh uses, so Walk-mode feet ride ON the terrain
+  // the same way buildings are seated on it. Mirrors TwinWorld's narrow path.
+  useEffect(() => {
+    if (!data || !onGroundReady) return;
+    const { grid, wideManifest } = data;
+    const min = minElevation(grid);
+    onGroundReady((x, z) => elevationAt(grid, wideManifest, x, z) - min);
+  }, [data, onGroundReady]);
+
   if (!data) return null;
   return (
     <>
@@ -139,12 +162,14 @@ export default function WideCity({
         grid={data.grid}
         drape={data.drape}
         manifest={data.wideManifest}
+        onMeshReady={onTerrainMesh}
       />
       <Buildings
         buildings={data.buildings}
         palette={palette}
         grid={data.grid}
         manifest={data.wideManifest}
+        onMeshReady={onBuildingsMesh}
       />
       {data.twin ? (
         <Suspense fallback={null}>

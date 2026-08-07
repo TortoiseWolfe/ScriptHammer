@@ -33,6 +33,17 @@ export type { HitRecord, AddMeshOptions } from './bvh';
 export { CharacterController } from './character';
 export type { CharacterControllerOptions, Vec3 } from './character';
 
+// ── Embodied first-person controller (physics + gravity + stances) ────────────
+export { EmbodiedController } from './player/EmbodiedController';
+export type {
+  EmbodiedConfig,
+  EmbodiedInput,
+  Stance,
+  StanceCfg,
+  SprintCfg,
+  Vec3Like,
+} from './player/EmbodiedController';
+
 // ── Materials · particles · sky · springs (vendored JS, loose-typed) ──────────
 export { MaterialSystem } from './materials';
 export { ParticleLayer, resetSpawn } from './fx/particles';

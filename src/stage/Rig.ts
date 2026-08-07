@@ -138,6 +138,13 @@ export class Rig {
 
   groundHeight: ((x: number, z: number) => number) | null;
   collide: ((pos: Vector3, r: number) => void) | null;
+  /** Walk-mode delegate: owns feet + stance, returns the eye position for the
+   *  Rig to place the camera (rotation stays the Rig's). null → the legacy
+   *  kinematic glide below. Lets an embodied physics controller drive Walk
+   *  without CoD ever entering this generic/liftable file. */
+  walkMove:
+    | ((dt: number, rig: Rig) => { x: number; y: number; z: number } | null)
+    | null;
   onCaption:
     | ((
         cap: RigWaypoint | null,
@@ -240,6 +247,7 @@ export class Rig {
     // callbacks (app supplies)
     this.groundHeight = null; // (x,z) -> y
     this.collide = null; // (pos, r) -> mutate pos
+    this.walkMove = null; // walk-mode embodied delegate (EmbodiedController)
     this.onCaption = null;
     this.onModeInternal = null;
 
@@ -576,6 +584,17 @@ export class Rig {
   }
 
   _walk(dt: number): void {
+    // Embodied delegate (EmbodiedController) owns feet + stance when injected;
+    // the Rig still owns look. A null return (meshes still loading) falls back to
+    // the legacy kinematic glide so Walk is never dead.
+    if (this.walkMove) {
+      const eye = this.walkMove(dt, this);
+      if (eye) {
+        this.cam.position.set(eye.x, eye.y, eye.z);
+        this.cam.rotation.set(this.pitch, this.yaw, 0, 'YXZ');
+        return;
+      }
+    }
     this._driveAvatar(dt, this.yaw);
     const a = this.avatar;
     const eyeY = a.pos.y + this.o.eye;

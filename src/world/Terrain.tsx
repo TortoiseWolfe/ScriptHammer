@@ -1,6 +1,6 @@
 'use client';
-import { useMemo } from 'react';
-import { PlaneGeometry, Texture } from 'three';
+import { useEffect, useMemo, useRef } from 'react';
+import { PlaneGeometry, Texture, type Mesh } from 'three';
 import type { TerrainGrid, Manifest } from '@/lib/manifest';
 import { bilinear, assertExtent, minElevation } from './terrainSample';
 import { materialKit } from '@/stage/materialKit';
@@ -9,11 +9,17 @@ export default function Terrain({
   grid,
   drape,
   manifest,
+  onMeshReady,
 }: {
   grid: TerrainGrid;
   drape: Texture;
   manifest: Manifest;
+  /** Hands the displaced ground mesh to the composition root once built, so a
+   *  physics layer (Walk-mode gravity/step/slope, #226) can bake it as the floor.
+   *  Fires whenever the geometry rebuilds. */
+  onMeshReady?: (mesh: Mesh) => void;
 }) {
+  const meshRef = useRef<Mesh>(null);
   const geometry = useMemo(() => {
     const w = manifest.groundWm,
       h = manifest.groundHm;
@@ -34,5 +40,14 @@ export default function Terrain({
   }, [grid, manifest]);
 
   const material = useMemo(() => materialKit.drapedGround(drape), [drape]);
-  return <mesh geometry={geometry} material={material} receiveShadow />;
+
+  // Publish the ground mesh for the physics floor (#226). Keyed on `geometry` so
+  // a rebuild hands over the fresh mesh; guarded on the ref.
+  useEffect(() => {
+    if (meshRef.current && onMeshReady) onMeshReady(meshRef.current);
+  }, [geometry, onMeshReady]);
+
+  return (
+    <mesh ref={meshRef} geometry={geometry} material={material} receiveShadow />
+  );
 }
