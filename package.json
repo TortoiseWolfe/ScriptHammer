@@ -75,6 +75,7 @@
     "generate:component": "plop component",
     "generate:blog": "node scripts/generate-blog-data.js",
     "test:e2e": "playwright test",
+    "test:visual": "playwright test --config playwright.visual.config.ts",
     "test:a11y": "pa11y-ci --config config/pa11yci.json",
     "test:a11y:dev": "start-server-and-test dev http://localhost:3000 test:a11y",
     "test:a11y:ci": "start-server-and-test 'serve out -p 3000' http://localhost:3000 test:a11y",
