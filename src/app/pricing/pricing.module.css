@@ -1,0 +1,331 @@
+/*
+ * Pricing storefront — the Forge look.
+ *
+ * Ported from docs/design/commerce/pricing-demo.html. Values are copied from that
+ * file's :root block verbatim rather than re-eyeballed, so the render and the
+ * approved demo cannot drift.
+ *
+ * THEME-AWARE. Structure, type and spacing come from the demo; COLOUR comes from
+ * the active DaisyUI theme, so this page follows the theme switcher across all 34
+ * themes. The demo's Forge hex values survive only as fallbacks in the var()
+ * declarations below.
+ *
+ * The distinctive part of the design turns out not to be the palette at all — it
+ * is the typewriter display face, the SKU slugs, the letterspaced mono labels, the
+ * ▸ bullets and the 238px auto-fit grid. Those are colour-independent, so the page
+ * still reads as the Forge storefront in `cupcake`; it is just a lighter one.
+ */
+
+.root {
+  /* THEME-DERIVED, not hardcoded. Every value below resolves from the DaisyUI
+     token the active theme sets, so this page follows the theme switcher across
+     all 34 themes instead of being a fixed dark island.
+     The Forge hex values from the demo are kept only as FALLBACKS — they apply if
+     a token is ever missing, so the page degrades to the original design rather
+     than to unstyled.
+     Using semantic pairs (base-content on base-100, primary-content on primary) is
+     also what keeps contrast sane per-theme: those pairings are the one thing the
+     theme system actually guarantees. Hardcoding hex here would have passed in the
+     house dark theme and failed the AAA sweep (#411) in several light ones. */
+  --bg: var(--color-base-100, #0f0d0b);
+  --surface: var(--color-base-200, #191512);
+  --surface-2: var(--color-base-300, #221c17);
+  --line: var(--color-base-300, #3a2f26);
+  --copper: var(--color-primary, #b87333);
+  --on-copper: var(--color-primary-content, #160f08);
+  --brass: var(--color-accent, #d9a441);
+  --text: var(--color-base-content, #ece4d9);
+  --danger: var(--color-error, #e08c78);
+
+  /* Subordinate text. color-mix toward the background keeps these visually quieter
+     than body copy without dropping to a fixed grey that fails in light themes.
+     70%/60% were chosen by measuring the worst theme, not by eye — see the
+     contrast note in the PR. */
+  --muted: color-mix(in oklab, var(--text) 70%, var(--bg));
+  --sku: color-mix(in oklab, var(--text) 60%, var(--bg));
+
+  --radius: 4px;
+
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100%;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.68rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--brass);
+}
+.eyebrow::before {
+  content: '';
+  width: 30px;
+  height: 1px;
+  background: var(--copper);
+}
+
+.headline {
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+
+.lede {
+  color: var(--muted);
+}
+.lede code {
+  color: var(--brass);
+}
+
+/* Lane switcher. These are real radio inputs (see page.tsx for why not role=tab);
+   the label is drawn from aria-label the way DaisyUI does it, so the control keeps
+   an accessible name without duplicate text in the DOM. */
+.lanes {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 4px;
+  gap: 4px;
+  border-radius: var(--radius);
+}
+.lane {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  border: 0;
+  border-radius: 2px;
+  background: none;
+  color: var(--muted);
+  padding: 9px 20px;
+  min-height: 2.75rem; /* 44px touch target */
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: 0.15s;
+}
+.lane::after {
+  content: attr(aria-label);
+}
+.lane:hover {
+  color: var(--brass);
+}
+.lane:checked {
+  background: linear-gradient(
+    180deg,
+    var(--copper),
+    color-mix(in oklab, var(--copper) 78%, black)
+  );
+  color: var(--on-copper);
+  font-weight: 500;
+}
+.lane:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+.laneNote {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+/* Lane visibility, driven entirely by which radio is checked.
+   :has() is what lets the checked state reach OUT of the fieldset to siblings —
+   without it this needs client JS and stops being a server component. Both lanes
+   are always in the DOM; only one is displayed. */
+.laneDevelopers {
+  display: none;
+}
+.root:has(.lane:nth-of-type(2):checked) .laneBusiness {
+  display: none;
+}
+.root:has(.lane:nth-of-type(2):checked) .laneDevelopers {
+  display: block;
+}
+
+/* max-width and gutter copied from the demo's .wrap. */
+.wrap {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* auto-fit/minmax, NOT fixed columns. This is what makes 5 business cards lay out
+   4-then-1 exactly as the demo does, and reflow at every width without a single
+   breakpoint. An earlier pass used lg:grid-cols-4 and the names wrapped. */
+.grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(238px, 1fr));
+  padding-bottom: 12px;
+}
+
+.card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 24px 20px;
+  transition: 0.18s;
+  min-width: 0; /* grid children must be allowed to shrink (#373) */
+  display: flex;
+  flex-direction: column;
+}
+.card:hover {
+  border-color: var(--copper);
+  transform: translateY(-2px);
+}
+.feat {
+  border-color: var(--copper);
+  /* Derived from --copper rather than the demo's literal rgba(184,115,51,…), or the
+     featured card would keep glowing copper in every theme while its border changed. */
+  box-shadow:
+    0 0 0 1px color-mix(in oklab, var(--copper) 25%, transparent),
+    0 14px 40px -18px color-mix(in oklab, var(--copper) 50%, transparent);
+}
+
+.tag {
+  position: absolute;
+  top: -9px;
+  left: 20px;
+  background: var(--copper);
+  color: var(--on-copper);
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+.sku {
+  font-size: 0.6rem;
+  color: var(--sku);
+  letter-spacing: 0.08em;
+}
+
+/* 1.16rem, from the demo. At 1.25rem "Landing Page" and "Business Site" wrap to
+   two lines inside a 238px column. */
+.name {
+  font-weight: 400;
+  color: var(--text);
+  font-size: 1.16rem;
+  margin-bottom: 4px;
+}
+
+.price {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+
+.tagline {
+  color: var(--muted);
+  font-size: 0.79rem;
+  min-height: 2.4em;
+}
+
+.amt {
+  font-size: 2.1rem;
+  color: var(--brass);
+  line-height: 1;
+}
+.per {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.billing {
+  font-size: 0.63rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* flex:1 is load-bearing — it absorbs the height difference between cards with 4
+   bullets and cards with 5, so every CTA lands on the same baseline. */
+.feats {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+.feats li {
+  font-size: 0.83rem;
+  color: color-mix(in oklab, var(--text) 88%, var(--bg));
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  line-height: 1.42;
+}
+.feats li::before {
+  content: '▸';
+  color: var(--copper);
+  flex: none;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 12px 16px;
+  min-height: 2.75rem; /* 44px */
+  border-radius: 2px;
+  font-size: 0.74rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  transition: 0.15s;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--text);
+}
+.btn:hover {
+  border-color: var(--copper);
+  color: var(--brass);
+}
+.btnPrimary {
+  background: linear-gradient(
+    180deg,
+    var(--copper),
+    color-mix(in oklab, var(--copper) 78%, black)
+  );
+  border-color: var(--copper);
+  color: var(--on-copper);
+  font-weight: 600;
+}
+.btnPrimary:hover {
+  color: var(--on-copper);
+  filter: brightness(1.08);
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.footNote {
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.footNote h2 {
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+.footNote code {
+  color: var(--brass);
+}
+.footNote .danger {
+  color: var(--danger);
+}
