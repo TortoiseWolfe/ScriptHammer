@@ -289,9 +289,12 @@ function SceneInner({
   const d = useMemo(() => computeDay(day), [day]);
   const grade = useMemo(() => {
     const g = applyProfile(d.gradeBase, PALETTES[paletteKey]);
-    // The tilt-shift vignette darkens the frame edges — great for a miniature,
-    // gloomy on foot. Flatten it for Walk.
-    return mode === 'walk' ? { ...g, vignette: 0 } : g;
+    // Walk mode drops the moody miniature grade (heavy vignette + boosted sepia
+    // saturation/contrast) for a bright, neutral street-level look, so the aerial
+    // ground + façades read true instead of crushed dark-brown.
+    return mode === 'walk'
+      ? { saturation: 1.02, contrast: 0.98, vignette: 0 }
+      : g;
   }, [d, paletteKey, mode]);
   // Stable object identities: fresh literals here would re-trigger StageCore's
   // effects and rebuild the merged building geometry on every re-render (the
@@ -608,32 +611,37 @@ function SceneInner({
     >
       {/* First-person Walk gets a real procedural sky dome + IBL (which also
           lifts the buildings); the miniature modes keep the flat colour. */}
-      {mode === 'walk' && <ProceduralSky hour={13} />}
+      {mode === 'walk' && <ProceduralSky hour={13} showDome={false} />}
       {/* Sky background + atmospheric fog, ranged to the model's extents so
           they add depth without hiding the city. Walk brightens the fill,
           neutralises the brown ground-bounce, and hazes toward the sky. */}
-      <color attach="background" args={[d.skyColor]} />
+      <color
+        attach="background"
+        args={[mode === 'walk' ? 0x9fc4e8 : d.skyColor]}
+      />
       <fog
         attach="fog"
         args={[
           mode === 'walk' ? 0xbcd2e8 : d.fogColor,
-          framing.fogNear,
-          framing.fogFar,
+          mode === 'walk' ? 400 : framing.fogNear,
+          mode === 'walk' ? 6000 : framing.fogFar,
         ]}
       />
-      <ambientLight intensity={mode === 'walk' ? d.ambient * 3 : d.ambient} />
+      {/* Walk mode uses a fixed bright key (independent of the moody day/grade) so
+          the street reads in full daylight; miniature modes keep the day cycle. */}
+      <ambientLight intensity={mode === 'walk' ? 0.75 : d.ambient} />
       <hemisphereLight
         args={[
-          d.hemiSky,
+          mode === 'walk' ? 0xbfd4ff : d.hemiSky,
           mode === 'walk' ? 0x9aa0a8 : d.hemiGround,
-          mode === 'walk' ? d.hemiIntensity * 2 : d.hemiIntensity,
+          mode === 'walk' ? 1.1 : d.hemiIntensity,
         ]}
       />
       <directionalLight
         ref={sunRef}
         position={d.sunPos}
-        intensity={mode === 'walk' ? d.sunIntensity * 1.15 : d.sunIntensity}
-        color={d.sunColor}
+        intensity={mode === 'walk' ? 2.0 : d.sunIntensity}
+        color={mode === 'walk' ? 0xfff4e6 : d.sunColor}
         castShadow
       />
       <TwinWorld
