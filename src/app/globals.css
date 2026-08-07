@@ -343,8 +343,8 @@
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
   --border: 1px;
-  --depth: 0; /* flat planes with hairline rules, per the comp */
-  --noise: 0;
+  --depth: 1;
+  --noise: 1;
 }
 
 /* ============================================================================
@@ -491,13 +491,19 @@
   .card:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-light']
   .card:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-forge']
+  .card:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-dark']
   .alert:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-light']
+  .alert:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-forge']
   .alert:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-dark']
   .modal-box:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-light']
+  .modal-box:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-forge']
   .modal-box:not(.sh-plate):not(.sh-well):not(.sh-groove) {
   box-shadow: var(--sh-plate);
 }
@@ -506,6 +512,8 @@
 [data-theme='scripthammer-dark']
   .stats:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-light']
+  .stats:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-forge']
   .stats:not(.sh-plate):not(.sh-well):not(.sh-groove) {
   box-shadow: var(--sh-well);
 }
@@ -516,20 +524,29 @@
   .input:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-light']
   .input:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-forge']
+  .input:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-dark']
   .select:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-light']
+  .select:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-forge']
   .select:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-dark']
   .textarea:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-light']
+  .textarea:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-forge']
   .textarea:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-dark']
   .file-input:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-light']
+  .file-input:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-forge']
   .file-input:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-dark'] .table thead th,
-[data-theme='scripthammer-light'] .table thead th {
+[data-theme='scripthammer-light'] .table thead th,
+[data-theme='scripthammer-forge'] .table thead th {
   box-shadow: var(--sh-groove);
 }
 
@@ -543,6 +560,10 @@
 [data-theme='scripthammer-light']
   .btn:not(.btn-ghost):not(.btn-link):not(.sh-plate):not(.sh-well):not(
     .sh-groove
+  ),
+[data-theme='scripthammer-forge']
+  .btn:not(.btn-ghost):not(.btn-link):not(.sh-plate):not(.sh-well):not(
+    .sh-groove
   ) {
   box-shadow: var(--sh-plate);
 }
@@ -550,12 +571,15 @@
 [data-theme='scripthammer-dark']
   .btn:not(.btn-ghost):not(.btn-link):not(.btn-disabled):active,
 [data-theme='scripthammer-light']
+  .btn:not(.btn-ghost):not(.btn-link):not(.btn-disabled):active,
+[data-theme='scripthammer-forge']
   .btn:not(.btn-ghost):not(.btn-link):not(.btn-disabled):active {
   box-shadow: var(--sh-groove);
 }
 
 [data-theme='scripthammer-dark'] .btn:hover,
-[data-theme='scripthammer-light'] .btn:hover {
+[data-theme='scripthammer-light'] .btn:hover,
+[data-theme='scripthammer-forge'] .btn:hover {
   box-shadow:
     0 4px 8px -1px rgb(0 0 0 / 0.3),
     0 2px 4px -2px rgb(0 0 0 / 0.2);
@@ -582,7 +606,9 @@
 [data-theme='scripthammer-dark'] .stat-title,
 [data-theme='scripthammer-dark'] .stat-desc,
 [data-theme='scripthammer-light'] .stat-title,
-[data-theme='scripthammer-light'] .stat-desc {
+[data-theme='scripthammer-forge'] .stat-title,
+[data-theme='scripthammer-light'] .stat-desc,
+[data-theme='scripthammer-forge'] .stat-desc {
   color: var(--color-base-content);
 }
 
@@ -1034,6 +1060,7 @@ p:not([class*='text-']) {
 
 /* Dark background for map container before tiles load */
 [data-theme='scripthammer-dark'] .leaflet-container,
+[data-theme='scripthammer-forge'] .leaflet-container,
 [data-theme='dark'] .leaflet-container,
 [data-theme='dracula'] .leaflet-container,
 [data-theme='synthwave'] .leaflet-container,
@@ -1051,6 +1078,7 @@ p:not([class*='text-']) {
 
 /* Invert OSM tiles for dark mode — preserves color/detail unlike CartoDB dark_all */
 [data-theme='scripthammer-dark'] .leaflet-tile-pane,
+[data-theme='scripthammer-forge'] .leaflet-tile-pane,
 [data-theme='dark'] .leaflet-tile-pane,
 [data-theme='dracula'] .leaflet-tile-pane,
 [data-theme='synthwave'] .leaflet-tile-pane,
@@ -1107,6 +1135,7 @@ p:not([class*='text-']) {
 
 /* Fix Leaflet controls for dark mode */
 [data-theme='scripthammer-dark'] .leaflet-control,
+[data-theme='scripthammer-forge'] .leaflet-control,
 [data-theme='dark'] .leaflet-control,
 [data-theme='dracula'] .leaflet-control,
 [data-theme='synthwave'] .leaflet-control,
@@ -1128,6 +1157,7 @@ p:not([class*='text-']) {
 }
 
 [data-theme='scripthammer-dark'] .leaflet-control a,
+[data-theme='scripthammer-forge'] .leaflet-control a,
 [data-theme='dark'] .leaflet-control a,
 [data-theme='dracula'] .leaflet-control a,
 [data-theme='synthwave'] .leaflet-control a,
