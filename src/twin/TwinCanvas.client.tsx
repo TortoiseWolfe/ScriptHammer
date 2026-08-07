@@ -136,6 +136,17 @@ export function parseOrthoParam(search: string): {
   };
 }
 
+/** `?hour=N` (0–24) sets the procedural-sky time of day; default 13 (bright
+ *  afternoon). ONLY the sky dome follows it — the Walk key lighting stays fixed
+ *  and bright, so the street reads at any hour (no moody day-cycle recoupling,
+ *  which is what darkened the scene before). Malformed → the default. */
+export function parseHourParam(search: string): number {
+  const v = new URLSearchParams(search).get('hour');
+  if (v == null || v.trim() === '') return 13; // absent or bare `?hour=`
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.min(24, Math.max(0, n)) : 13;
+}
+
 function SceneInner({
   slug,
   manifest,
@@ -307,6 +318,15 @@ function SceneInner({
       blur: crisp ? 0 : PALETTES[paletteKey].maxBlur,
     }),
     [paletteKey, crisp]
+  );
+  // Time of day for the procedural sky (?hour=N, default 13). Read once — the
+  // URL param is a static override like ?walk/?house. Drives ONLY the sky dome.
+  const skyHour = useMemo(
+    () =>
+      parseHourParam(
+        typeof window !== 'undefined' ? window.location.search : ''
+      ),
+    []
   );
   const bricks = useMemo(
     () => ({ bricks: PALETTES[paletteKey].bricks }),
@@ -611,7 +631,7 @@ function SceneInner({
     >
       {/* First-person Walk gets a real procedural sky dome + IBL (which also
           lifts the buildings); the miniature modes keep the flat colour. */}
-      {mode === 'walk' && <ProceduralSky hour={13} />}
+      {mode === 'walk' && <ProceduralSky hour={skyHour} />}
       {/* Sky background + atmospheric fog, ranged to the model's extents so
           they add depth without hiding the city. Walk brightens the fill,
           neutralises the brown ground-bounce, and hazes toward the sky. */}
