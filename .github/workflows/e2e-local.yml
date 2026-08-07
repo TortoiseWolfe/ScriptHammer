@@ -188,8 +188,27 @@ jobs:
           # not apply here. `signup-mailer.yml`, which drives real auth forms
           # against this same local stack, also omits it — follow that precedent.
 
-      - name: Install Playwright (${{ matrix.browser }})
-        run: pnpm exec playwright install --with-deps ${{ matrix.browser }}
+      - name: Install Playwright (chromium + ${{ matrix.browser }})
+        run: |
+          # CHROMIUM IS NOT OPTIONAL ON A FIREFOX OR WEBKIT JOB.
+          #
+          # Every *-gen / *-msg project declares `dependencies: ['setup']`, and
+          # auth.setup.ts runs in CHROMIUM. Installing only the matrix browser
+          # makes setup fail to launch — and Playwright then SKIPS every dependent
+          # test rather than failing it. The first full-matrix run reported all 24
+          # jobs green with firefox and webkit at passed=0, 667 skipped each, "no
+          # reason recorded". Only the parity count check caught it (#396 shape).
+          #
+          # e2e.yml gets away with `--with-deps "$BROWSER"` because it runs ONE
+          # shared Auth Setup job and passes storage-state-auth.json to the matrix
+          # as an artifact. That cannot work here: every runner has its own
+          # Supabase with its own users, so a state minted on another runner is
+          # worthless. Each job runs its own setup, so each job needs chromium.
+          for i in 1 2 3; do
+            pnpm exec playwright install --with-deps chromium ${{ matrix.browser }} && break
+            echo "Retry $i: playwright install failed, retrying in 10s..."
+            sleep 10
+          done
 
       - name: Run ${{ matrix.project }} ${{ matrix.shard }}
         run: |
@@ -221,6 +240,43 @@ jobs:
           BASE_URL: http://localhost:3000
           PLAYWRIGHT_JSON_OUTPUT_NAME: results.json
           WORKERS: ${{ matrix.workers }}
+
+      - name: This shard must have actually executed something
+        if: always()
+        run: |
+          # `|| true` above is deliberate — a failing shard still has to upload its
+          # numbers or a mismatch cannot be diagnosed. The cost is that a shard
+          # which ran NOTHING looks exactly like one that passed.
+          #
+          # That is not hypothetical: the first full-matrix run showed 24 green
+          # jobs while firefox and webkit executed zero tests each (setup could not
+          # launch, so every dependent test was skipped rather than failed). Only
+          # the aggregate parity check noticed. A green tick per shard is read far
+          # more often than a count at the end, so make the shard itself say so.
+          python3 - <<'EOF'
+          import json, os, sys
+          try:
+              d = json.load(open("results.json"))
+          except Exception as e:
+              print(f"::error::no readable results.json ({e}) — this shard reported nothing")
+              sys.exit(1)
+          ran = skipped = 0
+          def walk(s):
+              global ran, skipped
+              for spec in s.get("specs", []):
+                  for t in spec.get("tests", []):
+                      if t.get("status") == "skipped": skipped += 1
+                      else: ran += 1
+              for c in s.get("suites", []): walk(c)
+          for s_ in d.get("suites", []): walk(s_)
+          print(f"executed {ran}, skipped {skipped}")
+          if ran == 0:
+              print(f"::error::this shard executed 0 tests ({skipped} skipped) — "
+                    "a green tick here would be meaningless. Usual cause: the `setup` "
+                    "dependency could not launch, so Playwright skipped everything "
+                    "downstream instead of failing.")
+              sys.exit(1)
+          EOF
 
       - name: Name this shard's artifact
         if: always()
