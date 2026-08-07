@@ -347,6 +347,71 @@ export function fingerprintRequest(parts: {
  * cannot be imported from vitest (Deno URL imports), which is exactly why the
  * original bug shipped past a green suite.
  */
+/** FR-014. Mirrors MAX_FILES in src/lib/commerce/intake-upload.ts. */
+export const MAX_ATTACHMENTS = 8;
+
+const ATTACHMENT_KINDS = ['current', 'target', 'unspecified'] as const;
+
+/**
+ * Re-derive which attachments this buyer is actually entitled to claim (T021).
+ *
+ * The client sends `intake.attachments` as an array it composed itself. Storage RLS
+ * already stops a buyer WRITING outside `{their uid}/…`, but nothing stops them
+ * POSTing an order whose attachment list points at somebody else's path — and
+ * /admin/orders renders those paths through signed URLs, which are minted with
+ * service-role and therefore honour no RLS at all. Trusting the echoed list would
+ * turn "guess a path" into "have the operator open it for you".
+ *
+ * So ownership is recomputed here from the authenticated uid rather than believed:
+ * anything not under `${buyerUserId}/` is dropped, the list is capped, and only the
+ * four known fields survive. Silently dropping rather than rejecting is deliberate —
+ * a buyer whose upload half-failed should still be able to complete a purchase, and
+ * the operator sees the files that genuinely exist.
+ *
+ * Pure and exported for the same reason as buildOrderRow: index.ts cannot be
+ * imported from vitest, and an unverifiable security check is not a security check.
+ */
+export function sanitizeAttachments(
+  raw: unknown,
+  buyerUserId: string
+): Array<Record<string, unknown>> {
+  if (!Array.isArray(raw) || !buyerUserId) return [];
+  const prefix = `${buyerUserId}/`;
+  const out: Array<Record<string, unknown>> = [];
+  const seen = new Set<string>();
+
+  for (const item of raw) {
+    if (out.length >= MAX_ATTACHMENTS) break;
+    if (!item || typeof item !== 'object') continue;
+    const a = item as Record<string, unknown>;
+    const path = typeof a.path === 'string' ? a.path : '';
+
+    // The whole check. `startsWith` alone is not enough: a path may not then climb
+    // back out with `..`, and it must stay a single segment under the uid so it
+    // cannot address another user's folder.
+    if (!path.startsWith(prefix)) continue;
+    if (path.includes('..')) continue;
+    if (path.slice(prefix.length).includes('/')) continue;
+    if (seen.has(path)) continue;
+    seen.add(path);
+
+    const kind = ATTACHMENT_KINDS.includes(
+      a.kind as (typeof ATTACHMENT_KINDS)[number]
+    )
+      ? (a.kind as string)
+      : 'unspecified';
+
+    out.push({
+      path,
+      name: typeof a.name === 'string' ? a.name.slice(0, 255) : 'attachment',
+      bytes: typeof a.bytes === 'number' && a.bytes >= 0 ? a.bytes : 0,
+      mime: typeof a.mime === 'string' ? a.mime.slice(0, 128) : '',
+      kind,
+    });
+  }
+  return out;
+}
+
 export function buildOrderRow(input: {
   intentId: string;
   productId: string;
@@ -360,6 +425,18 @@ export function buildOrderRow(input: {
     // uid — getAuthenticatedUserId throws before this point if it does not.
     throw new Error('buildOrderRow: buyerUserId is required');
   }
+
+  const intake = { ...(input.intake ?? {}) };
+  // Always overwrite, never merge: if the client sent no attachments key at all we
+  // must still not leave a stale or absent one, and if it sent a hostile one it must
+  // not survive. `sanitizeAttachments` returning [] for junk is the desired outcome.
+  if ('attachments' in intake || Array.isArray(intake.attachments)) {
+    intake.attachments = sanitizeAttachments(
+      intake.attachments,
+      input.buyerUserId
+    );
+  }
+
   return {
     intent_id: input.intentId,
     product_id: input.productId,
@@ -369,6 +446,6 @@ export function buildOrderRow(input: {
     status: 'pending',
     // Unbounded JSONB. Deliberately NOT payment metadata, which is capped at 1KB
     // serialised and which a job description blows straight past.
-    intake_data: input.intake ?? {},
+    intake_data: intake,
   };
 }

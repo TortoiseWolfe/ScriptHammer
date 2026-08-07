@@ -1202,6 +1202,122 @@ AS $$
 $$;
 GRANT EXECUTE ON FUNCTION public.is_admin(UUID) TO authenticated, anon;
 
+-- ============================================================================
+-- STORAGE: intake-uploads bucket (#560, FR-014 … FR-018)
+-- ============================================================================
+--
+-- What the buyer shows us at checkout: screenshots of the site they have, and
+-- sketches or references for the one they want. Tagged have/want in the UI and
+-- stored under `{auth.uid()}/…` so ownership is a property of the PATH.
+--
+-- WHY THIS LIVES HERE AND NOT WITH THE `avatars` BUCKET ABOVE. The SELECT and
+-- DELETE policies call public.is_admin(), and CREATE POLICY resolves the function
+-- at creation time — so it has to be defined first. is_admin() is declared
+-- immediately above. Moving this block up next to `avatars` for tidiness breaks
+-- the migration with `function public.is_admin() does not exist`.
+--
+-- PRIVATE, unlike `avatars`. FR-016: an attachment is readable by the buyer who
+-- uploaded it and by the operator, nobody else. `public = false` means no
+-- unauthenticated URL exists at all; /admin/orders renders these through signed
+-- URLs (T022).
+--
+-- THE LIMITS ARE ON THE BUCKET, WHICH IS THE POINT. FR-015 requires size and type
+-- to be enforced "in a place the buyer's device cannot bypass", and SC-011 tests
+-- exactly that by removing the browser-side check. `file_size_limit` and
+-- `allowed_mime_types` are enforced by storage-api itself, so the client-side
+-- validation in src/lib/commerce/intake-upload.ts is a courtesy that produces a
+-- good error message — never the control.
+--
+-- HEIC IS ALLOWED THOUGH WE CANNOT THUMBNAIL IT (FR-018). A phone photo straight
+-- from an iPhone is the single most likely thing a buyer sends; rejecting it
+-- because we cannot draw a preview would be refusing the common case. Both
+-- image/heic and image/heif are listed because the two are used interchangeably
+-- and browsers disagree. The uploader sets an explicit contentType from the file
+-- extension when the browser reports none, which it often does for HEIC — without
+-- that, the upload arrives as application/octet-stream and this allowlist rejects
+-- a file the product promises to accept.
+INSERT INTO storage.buckets (
+  id,
+  name,
+  public,
+  file_size_limit,
+  allowed_mime_types
+)
+VALUES (
+  'intake-uploads',
+  'intake-uploads',
+  false,                                             -- FR-016: never public
+  10485760,                                          -- 10MB per file (FR-015)
+  ARRAY[
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/heic',                                    -- FR-018: accepted, not previewable
+    'image/heif',
+    'application/pdf'
+  ]
+)
+ON CONFLICT (id) DO UPDATE
+  SET public             = EXCLUDED.public,
+      file_size_limit    = EXCLUDED.file_size_limit,
+      allowed_mime_types = EXCLUDED.allowed_mime_types;
+-- DO UPDATE, not DO NOTHING. These three columns ARE the server-side enforcement
+-- (FR-015). With DO NOTHING a re-run silently keeps whatever limits the bucket
+-- already had, so tightening or widening them here would be a no-op against any
+-- project where the bucket exists — the change would appear applied and not be.
+
+DROP POLICY IF EXISTS "Buyers can upload own intake files" ON storage.objects;
+DROP POLICY IF EXISTS "Buyers and operator can read intake files" ON storage.objects;
+DROP POLICY IF EXISTS "Buyers can replace own intake files" ON storage.objects;
+DROP POLICY IF EXISTS "Buyers and operator can delete intake files" ON storage.objects;
+
+-- split_part(name, '/', 1), not storage.foldername() — same first-path-segment
+-- result using only pg_catalog built-ins, so no pg_depend edge is created on a
+-- storage function that storage-api later needs to DROP. See the long note above
+-- the avatar policies; getting this wrong crash-loops storage-api on a fresh
+-- local initdb.
+
+-- INSERT: a buyer may only write under their own uid prefix.
+CREATE POLICY "Buyers can upload own intake files"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'intake-uploads' AND
+  auth.uid()::text = split_part(name, '/', 1)
+);
+
+-- SELECT: the buyer who owns the prefix, or the operator (FR-016).
+CREATE POLICY "Buyers and operator can read intake files"
+ON storage.objects FOR SELECT
+TO authenticated
+USING (
+  bucket_id = 'intake-uploads' AND (
+    auth.uid()::text = split_part(name, '/', 1)
+    OR public.is_admin()
+  )
+);
+
+-- UPDATE: needed for upsert on retry (same path, second attempt).
+CREATE POLICY "Buyers can replace own intake files"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (
+  bucket_id = 'intake-uploads' AND
+  auth.uid()::text = split_part(name, '/', 1)
+);
+
+-- DELETE: the buyer removing a file before submitting, and the operator for the
+-- 7-day sweep of abandoned checkouts (FR-017, T023).
+CREATE POLICY "Buyers and operator can delete intake files"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'intake-uploads' AND (
+    auth.uid()::text = split_part(name, '/', 1)
+    OR public.is_admin()
+  )
+);
+
 -- custom_access_token_hook(): Supabase Auth calls this at token-mint time
 -- (login + refresh) with the pending JWT claims. We merge the derived
 -- is_admin flag (from the user_profiles column) into app_metadata so the
