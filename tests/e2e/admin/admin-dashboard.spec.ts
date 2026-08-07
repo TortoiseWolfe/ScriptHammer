@@ -472,6 +472,7 @@ test.describe('Admin Dashboard E2E', () => {
 
       const tabs = [
         { name: 'Payments', url: /\/admin\/payments/ },
+        { name: 'Orders', url: /\/admin\/orders/ },
         { name: 'Audit Trail', url: /\/admin\/audit/ },
         { name: 'Users', url: /\/admin\/users/ },
         { name: 'Messaging', url: /\/admin\/messaging/ },
