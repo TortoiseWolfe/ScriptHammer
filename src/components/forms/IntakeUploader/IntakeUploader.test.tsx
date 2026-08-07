@@ -197,6 +197,36 @@ describe('IntakeUploader', () => {
     expect(document.querySelector('img')).toBeNull();
   });
 
+  // Reported from production: the bucket did not exist, every row read "Bucket
+  // not found", and underneath them the page still said "Tag each one". Telling
+  // someone to do something they cannot see how to do is worse than saying
+  // nothing — they assume the fault is theirs.
+  describe('the tagging hint', () => {
+    it('is absent when there is nothing to tag', () => {
+      render(<IntakeUploader value={[]} onChange={() => {}} />);
+      expect(screen.queryByText(/What I have/)).toBeNull();
+      expect(screen.queryByText(/saves a round of emails/)).toBeNull();
+    });
+
+    it('is absent when every upload failed', async () => {
+      vi.mocked(uploadIntakeFile).mockResolvedValue({
+        error: 'Bucket not found',
+      });
+      render(<IntakeUploader value={[]} onChange={() => {}} />);
+      drop([makeFile('roof.png', 2048, 'image/png')]);
+      expect(await screen.findByText('Bucket not found')).toBeInTheDocument();
+      expect(screen.queryByText(/saves a round of emails/)).toBeNull();
+    });
+
+    it('appears once a file is stored, and names the controls', () => {
+      render(<IntakeUploader value={[attachment()]} onChange={() => {}} />);
+      expect(screen.getByText(/saves a round of emails/)).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'What I have' })
+      ).toBeInTheDocument();
+    });
+  });
+
   it('stops accepting input once full', () => {
     const existing = Array.from({ length: MAX_FILES }, (_, i) =>
       attachment({ path: `uid/${i}.png` })
