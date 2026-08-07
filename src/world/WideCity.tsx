@@ -5,6 +5,7 @@ import { createProjection } from '@/lib/enu';
 import { loadSiteJson, siteAssetUrl, loadHouse } from '@/lib/manifest';
 import type {
   Building,
+  Street,
   TerrainGrid,
   Manifest,
   HouseInfo,
@@ -13,6 +14,7 @@ import Buildings, { type BuildingPalette } from './Buildings';
 import Terrain from './Terrain';
 import HouseModel from './HouseModel';
 import Water from './Water';
+import Roads from './Roads';
 import { elevationAt, minElevation } from './terrainSample';
 
 /** buildings-wide.json entry — raw WGS84 footprints (src/twin/cesium/overpass.ts
@@ -27,6 +29,7 @@ interface WideLiveBuilding {
 interface WideData {
   grid: TerrainGrid;
   buildings: Building[];
+  streets: Street[];
   drape: Texture;
   wideManifest: Manifest;
   twin: { slug: string; house: HouseInfo } | null;
@@ -129,8 +132,36 @@ export default function WideCity({
           }
           return { id: b.id, ring, height: b.heightM, rule: b.rule };
         });
+      // Roads: streets.json is baked in the NARROW box frame. Reproject each
+      // polyline into the wide/atlasBox frame the SAME offset-exact way buildings
+      // are — narrow ENU → lon/lat (narrowProj.enuToLonLat) → wide ENU
+      // (proj.lonLatToEnu); both projections use the same site vectorOffsetM, so
+      // the round-trip recovers the true position. Best-effort: a site without
+      // streets.json (or a bad parse) just renders no roads, never a blank city.
+      // Coverage is the narrow corridor (where you spawn/walk), not the whole
+      // atlasBox — acceptable for v1; a wide streets bake would extend it.
+      let streets: Street[] = [];
+      try {
+        const narrow = await loadSiteJson<Street[]>(slug, 'streets.json');
+        const narrowProj = createProjection(
+          manifest.box,
+          manifest.vectorOffsetM
+        );
+        streets = narrow.map((s) => {
+          const pts: number[] = [];
+          for (let i = 0; i + 1 < s.pts.length; i += 2) {
+            const [lon, lat] = narrowProj.enuToLonLat(s.pts[i], s.pts[i + 1]);
+            const [wx, wz] = proj.lonLatToEnu(lon, lat);
+            pts.push(wx, wz);
+          }
+          return { pts };
+        });
+      } catch (e) {
+        console.warn('[WideCity] streets skipped:', e);
+      }
+
       if (!alive) return;
-      setData({ grid, buildings, drape, wideManifest, twin });
+      setData({ grid, buildings, streets, drape, wideManifest, twin });
       if (twin && embed)
         onTwinPlaced?.({
           x: twin.house.x,
@@ -170,6 +201,13 @@ export default function WideCity({
           Same layer the narrow TwinWorld path renders; chatt's manifest is
           water:true. */}
       {manifest.site.water === true && <Water manifest={data.wideManifest} />}
+      {/* Road ribbons — narrow streets reprojected into the wide frame (corridor
+          coverage). Terrain-riding asphalt so streets read at ground level. */}
+      <Roads
+        streets={data.streets}
+        grid={data.grid}
+        manifest={data.wideManifest}
+      />
       <Buildings
         buildings={data.buildings}
         palette={palette}
