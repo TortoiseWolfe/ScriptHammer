@@ -10,6 +10,22 @@ import type { Rig } from './Rig';
 /** Camera view while riding the bike. */
 export type BikeView = 'first' | 'third';
 
+/**
+ * Unit "backward" direction for the third-person chase cam: the negation of the
+ * camera's forward vector for a YXZ (pitch-about-X, yaw-about-Y) rotation. Placing
+ * the camera at `eye + back · chaseBackDir` puts the player exactly on the view
+ * axis, so the body/bike stays centred in frame whatever the aim — the fix for the
+ * chase cam losing the rider. Always unit length (cos²+sin² = 1), as the world
+ * raycast (`cameraDistance`) requires. Pure + exported for a regression test.
+ */
+export function chaseBackDir(
+  yaw: number,
+  pitch: number
+): { x: number; y: number; z: number } {
+  const cp = Math.cos(pitch);
+  return { x: Math.sin(yaw) * cp, y: -Math.sin(pitch), z: Math.cos(yaw) * cp };
+}
+
 export interface WalkFeelDeps {
   /** Shared first/third-person toggle (flipped by V while riding). */
   viewRef: { current: BikeView };
@@ -88,26 +104,22 @@ export function makeWalkMove(
 
     ctrl.eyePosition(eye.position);
     if (deps.viewRef.current === 'third') {
-      // Chase cam: pull back behind the FACING (bike heading while riding, look
-      // yaw on foot) + up a bit. Raycast the pull-back against the world so the
-      // camera tucks in against a wall/building behind you instead of clipping
-      // straight through it.
-      const back = 8;
-      const up = 3;
+      // Chase cam: sit `back` metres behind the player ALONG THE CURRENT VIEW
+      // DIRECTION (the Rig's pitch+yaw, which is what actually orients the
+      // camera). Placing the camera at −forward·back puts the player exactly on
+      // the view axis, so the body/bike stays CENTRED no matter where you aim —
+      // the old fixed rear+up offset let it fall out of frame (bug: "3rd person
+      // has no view of the bike"). Raycast the pull-back so the camera tucks in
+      // against a wall/building behind you instead of clipping through it.
+      const back = 6;
       const ex = eye.position.x;
       const ey = eye.position.y;
       const ez = eye.position.z;
-      const vx = Math.sin(ctrl.facingYaw) * back;
-      const vz = Math.cos(ctrl.facingYaw) * back;
-      const len = Math.hypot(vx, up, vz);
-      const inv = len > 1e-6 ? 1 / len : 0;
-      const dx = vx * inv;
-      const dy = up * inv;
-      const dz = vz * inv;
-      const allowed = ctrl.cameraDistance(ex, ey, ez, dx, dy, dz, len, 0.35);
-      eye.position.x = ex + dx * allowed;
-      eye.position.y = ey + dy * allowed;
-      eye.position.z = ez + dz * allowed;
+      const b = chaseBackDir(rig.yaw, rig.pitch);
+      const allowed = ctrl.cameraDistance(ex, ey, ez, b.x, b.y, b.z, back, 0.35);
+      eye.position.x = ex + b.x * allowed;
+      eye.position.y = ey + b.y * allowed;
+      eye.position.z = ez + b.z * allowed;
     } else {
       // First-person / on-foot: fold head-bob + landing punch into the eye.
       deps.applyCameraFeel(eye, ctrl, ctrl.movedThisFrame, dt, rig.yaw, ctrl.bobScale);
