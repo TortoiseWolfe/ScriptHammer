@@ -1,50 +1,89 @@
 name: Supabase Keep-Alive
 
-# Runs every 5 days to prevent Supabase Cloud free tier from auto-pausing (pauses after 7 days)
-# Using 5-day interval for safety margin
+# Supabase Cloud free-tier projects auto-pause after 7 days without activity.
+# 5-day cadence leaves a safety margin.
+#
+# WHY THIS WAS REWRITTEN (2026-08-07)
+# The previous version pinged ONE project — whatever `vars.NEXT_PUBLIC_SUPABASE_URL`
+# happened to hold. Every other project the owner runs was outside its scope and
+# paused on schedule with nothing to prevent it. Five were found paused at once,
+# across a SECOND Supabase account this workflow had no idea existed.
+#
+# It also failed silently in the way that matters most: for a period it was priming
+# a project that had been DELETED, and a keepalive that errors looks exactly like a
+# keepalive nobody reads. Its failure step printed a message and exited 1 — correct,
+# but nothing routes a scheduled-run failure anywhere a human sees it.
+#
+# So: a LIST of project refs, the Management API rather than the anon-key data path
+# (it answers even when a project is quota-restricted, which the data API does not),
+# and a summary that names every project and its outcome so the log is readable at a
+# glance rather than requiring a dig.
+
 on:
   schedule:
-    # Runs at 3:00 AM UTC on days 1, 6, 11, 16, 21, 26 of each month (never more than 5 days apart)
+    # 3:00 AM UTC on the 1st, 6th, 11th, 16th, 21st, 26th — never more than 5 days apart
     - cron: '0 3 1,6,11,16,21,26 * *'
-  workflow_dispatch: # Allows manual trigger from Actions tab
+  workflow_dispatch:
 
 jobs:
-  prime-supabase:
+  keepalive:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      # Install pnpm BEFORE setup-node — this is the order pnpm/action-setup
-      # requires so its shim lands on PATH and setup-node's `cache: 'pnpm'` can
-      # resolve pnpm. The previous (setup-node → pnpm) order left pnpm off PATH
-      # for the later `pnpm run prime` step under the v10→v11 PNPM_HOME layout
-      # migration. Mirrors the working "Install pnpm" step in e2e.yml.
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 10.16.1
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: 20.x
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Prime Supabase instance
+      - name: Ping every project
         env:
-          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-        run: pnpm run prime
-
-      - name: Notify on failure
-        if: failure()
+          # Comma-separated project refs. A repo VARIABLE, not a secret: refs are not
+          # sensitive, and a secret cannot be read back to check what it holds — which
+          # is precisely how this repo ended up deploying against a deleted project.
+          REFS: ${{ vars.SUPABASE_KEEPALIVE_REFS }}
+          # Projects span two Supabase accounts, so two tokens. Each ref is tried with
+          # each token; whichever authenticates wins.
+          TOKEN_A: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          TOKEN_B: ${{ secrets.SUPABASE_ACCESS_TOKEN_ALT }}
         run: |
-          echo "❌ Supabase priming failed!"
-          echo "The instance may be paused or the URL/keys may be incorrect."
-          echo "Check the workflow logs and verify your Supabase project is active."
-          exit 1
+          set -uo pipefail
+
+          if [ -z "${REFS:-}" ]; then
+            echo "::error::vars.SUPABASE_KEEPALIVE_REFS is empty — nothing is being kept alive"
+            exit 1
+          fi
+
+          fail=0
+          summary=""
+
+          for ref in $(printf '%s' "$REFS" | tr ',' ' '); do
+            [ -z "$ref" ] && continue
+            ok=0
+            for tok in "${TOKEN_A:-}" "${TOKEN_B:-}"; do
+              [ -z "$tok" ] && continue
+              # A query is real database activity. A status GET is not — the whole
+              # point is to touch the database so Supabase does not consider it idle.
+              code=$(curl -s -o /tmp/out.json -w '%{http_code}' --max-time 60 -X POST \
+                "https://api.supabase.com/v1/projects/${ref}/database/query" \
+                -H "Authorization: Bearer ${tok}" \
+                -H 'Content-Type: application/json' \
+                -d '{"query":"select 1 as keepalive"}')
+              if [ "$code" = "200" ] || [ "$code" = "201" ]; then ok=1; break; fi
+            done
+
+            if [ "$ok" = "1" ]; then
+              echo "  OK    $ref"
+              summary="${summary}\n| \`${ref}\` | ✅ pinged |"
+            else
+              # Named explicitly: "one project failed" is not actionable, and the
+              # reason this rewrite exists is that nobody could tell WHICH.
+              echo "::error::keepalive failed for ${ref} (last HTTP ${code:-none}) — it may be paused, deleted, or the token lacks access"
+              echo "  FAIL  $ref"
+              summary="${summary}\n| \`${ref}\` | ❌ FAILED |"
+              fail=1
+            fi
+          done
+
+          {
+            echo "### Supabase keep-alive"
+            echo ""
+            echo "| project | result |"
+            echo "|---|---|"
+            printf '%b\n' "$summary"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          exit $fail

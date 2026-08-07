@@ -18,7 +18,26 @@
 
 -- Clean up any existing test user BEFORE transaction
 -- (auth.users changes can't be rolled back, so do this first)
-DELETE FROM auth.users WHERE email = 'test@example.com';
+--
+-- GUARDED, BECAUSE THIS IS THE FIRST STATEMENT AND IT USED TO ABORT EVERYTHING.
+-- `auth.users` is owned by `supabase_auth_admin` on Supabase Cloud, and the
+-- `postgres` role the Management API connects as has no DELETE on it. So this
+-- line raised `42501: permission denied for schema auth` before the transaction
+-- below even opened — the whole file applied nothing, and the error named the
+-- schema rather than the statement, which sent the search to the auth.users
+-- TRIGGER further down instead of here (#567 org migration).
+--
+-- The delete is convenience for re-running against a stack that already has a
+-- seeded test user. It is not required for a fresh project, so failing to
+-- perform it must not stop the schema from being created.
+DO $cleanup_test_user$
+BEGIN
+  DELETE FROM auth.users WHERE email = 'test@example.com';
+EXCEPTION
+  WHEN insufficient_privilege THEN
+    RAISE NOTICE 'skipping test-user cleanup: no DELETE on auth.users (expected on Supabase Cloud)';
+END
+$cleanup_test_user$;
 
 -- Wrap everything in a transaction - all or nothing
 BEGIN;
@@ -206,6 +225,18 @@ CREATE TABLE IF NOT EXISTS edge_idempotency_keys (
 CREATE INDEX IF NOT EXISTS idx_edge_idempotency_lookup
   ON edge_idempotency_keys(idempotency_key, function_name);
 
+-- Fingerprint of the request that first used a key (#558). Without it, a client
+-- that reuses one key across two different SKUs gets the FIRST order replayed
+-- back silently — a wrong-product order with nothing to surface it. create-order
+-- compares this and returns 409 on a mismatch, which is the rule Stripe applies:
+-- a key is a promise about one request.
+--
+-- Nullable on purpose. Rows written before this column existed have no
+-- fingerprint, and the safe reading of NULL is "cannot prove it was different",
+-- so those replay rather than 409.
+ALTER TABLE edge_idempotency_keys
+  ADD COLUMN IF NOT EXISTS request_fingerprint TEXT;
+
 COMMENT ON TABLE edge_idempotency_keys IS 'Idempotency cache for outbound payment Edge Functions (#106)';
 
 -- Webhook events (with retry fields from Feature 017)
@@ -238,6 +269,224 @@ CREATE INDEX IF NOT EXISTS idx_webhook_events_retry ON webhook_events(next_retry
 CREATE INDEX IF NOT EXISTS idx_webhook_events_failed ON webhook_events(permanently_failed, created_at DESC) WHERE permanently_failed = TRUE;
 
 COMMENT ON TABLE webhook_events IS 'Webhook notifications with idempotency and retry';
+
+-- ----------------------------------------------------------------------------
+-- COMMERCE CATALOG (Feature 050, Phase 1 — #557)
+-- ----------------------------------------------------------------------------
+--
+-- The premise of this feature in one line: THE BUYER'S DEVICE STOPS BEING ABLE
+-- TO NAME A PRICE. `products` is the only authority on what something costs;
+-- create-order (#558) resolves from it and DISCARDS any amount in the request.
+-- FR-002 says "discarded, not validated" deliberately — a validator that rejects
+-- a mismatched amount leaks the real price and turns a silent server-authoritative
+-- design into an oracle.
+
+-- Raise the payment ceiling to $3,500 (T002).
+--
+-- THE CEILING IS A BLAST-RADIUS CONTROL, NOT A BUSINESS RULE, so it is set to the
+-- most expensive thing actually sold (svc-site, $3,500) rather than to a round
+-- number with room to spare. The PRD proposed $25,000; at that height a bug or a
+-- compromised client could mint a charge seven times larger than anything real,
+-- and nothing downstream would question it.
+--
+-- scripts/__tests__/payment-ceiling.test.js asserts this stays >= the priciest
+-- active product, so adding a dearer SKU fails loudly instead of silently
+-- creating one that cannot be sold.
+--
+-- THE INLINE CHECK AT payment_intents.amount IS NOT ENOUGH ON ITS OWN. That
+-- constraint lives inside `CREATE TABLE IF NOT EXISTS`, so on an already
+-- provisioned database (i.e. production) re-running this file does NOT change it
+-- — editing the line above is a no-op there. The DROP + ADD below is what
+-- actually moves it, the same idiom used at subscriptions_status_check and
+-- auth_audit_logs_event_type_check for exactly this reason.
+--
+-- Two of the three business packages ($1,200 Landing Page, $3,500 Business Site)
+-- sat above the old $999.99 ceiling, so the catalog advertised prices the system
+-- could not charge.
+ALTER TABLE payment_intents DROP CONSTRAINT IF EXISTS payment_intents_amount_check;
+ALTER TABLE payment_intents ADD CONSTRAINT payment_intents_amount_check
+  CHECK (amount >= 100 AND amount <= 350000);  -- $1.00 .. $3,500.00
+
+-- subscriptions.plan_amount had a floor and NO ceiling at all, so the $999.99
+-- limit never applied to subscriptions in the first place (T003).
+ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_plan_amount_check;
+ALTER TABLE subscriptions ADD CONSTRAINT subscriptions_plan_amount_check
+  CHECK (plan_amount >= 100 AND plan_amount <= 350000);
+
+-- Guest checkout: a buyer must be able to hold an intent without an account.
+-- An anonymous Supabase session still yields a real auth.uid(), so every existing
+-- RLS policy keeps working unmodified; this only stops requiring one.
+ALTER TABLE payment_intents ALTER COLUMN template_user_id DROP NOT NULL;
+
+-- Catalog. Seeded here, edited only by service_role or the admin panel.
+CREATE TABLE IF NOT EXISTS products (
+  id                TEXT PRIMARY KEY,                        -- 'svc-landing'
+  lane              TEXT NOT NULL CHECK (lane IN ('service','product')),
+  name              TEXT NOT NULL,
+  tagline           TEXT,
+  description       TEXT,
+  -- Cents. For amount_mode='variable' this is the SUGGESTED default.
+  amount            INTEGER NOT NULL CHECK (amount >= 0),
+  amount_mode       TEXT NOT NULL DEFAULT 'fixed'
+                      CHECK (amount_mode IN ('fixed','variable')),
+  min_amount        INTEGER,
+  max_amount        INTEGER,
+  currency          TEXT NOT NULL DEFAULT 'usd'
+                      CHECK (currency IN ('usd','eur','gbp','cad','aud')),
+  type              TEXT NOT NULL CHECK (type IN ('one_time','recurring')),
+  interval          TEXT CHECK (interval IN ('month','year') OR interval IS NULL),
+  stripe_price_id   TEXT,
+  paypal_plan_id    TEXT,
+  features          JSONB NOT NULL DEFAULT '[]'::jsonb,
+  metadata          JSONB NOT NULL DEFAULT '{}'::jsonb,
+  sort_order        INTEGER NOT NULL DEFAULT 0,
+  active            BOOLEAN NOT NULL DEFAULT true,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Named, and added via DROP/ADD rather than inline, for the same reason as the
+-- amount ceiling above: an inline constraint never reaches an existing database.
+--
+-- A variable SKU without bounds is an unbounded charge.
+ALTER TABLE products DROP CONSTRAINT IF EXISTS products_variable_bounds_check;
+ALTER TABLE products ADD CONSTRAINT products_variable_bounds_check
+  CHECK (amount_mode = 'fixed'
+         OR (min_amount IS NOT NULL AND max_amount IS NOT NULL
+             AND min_amount <= max_amount));
+
+-- A recurring SKU with no provider price is an unresolvable subscription.
+--
+-- DELIBERATE DEVIATION FROM PRD §6, which omits the `NOT active` clause. Without
+-- it the three recurring SKUs cannot be seeded at all — we have no real Stripe
+-- price ids yet, and the constraint would reject the INSERT outright. Seeding
+-- obvious placeholder ids instead would satisfy the check while leaving a SKU
+-- that looks sellable and is not, which is worse.
+-- This version encodes the rule that actually matters: an ACTIVE recurring SKU
+-- must have somewhere to bill. Inactive rows are catalog entries awaiting
+-- configuration, and cannot be activated until they have one.
+ALTER TABLE products DROP CONSTRAINT IF EXISTS products_recurring_provider_check;
+ALTER TABLE products ADD CONSTRAINT products_recurring_provider_check
+  CHECK (type = 'one_time'
+         OR NOT active
+         OR stripe_price_id IS NOT NULL
+         OR paypal_plan_id IS NOT NULL);
+
+CREATE INDEX IF NOT EXISTS idx_products_lane_sort ON products(lane, sort_order) WHERE active;
+
+COMMENT ON TABLE products IS 'Commerce catalog — the ONLY authority on price. Client-supplied amounts are discarded, never validated (FR-002, #557).';
+
+-- Orders. One item per order; a Care Plan attached at checkout is a second order.
+CREATE TABLE IF NOT EXISTS orders (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  intent_id         UUID REFERENCES payment_intents(id),
+  subscription_id   UUID REFERENCES subscriptions(id),
+  product_id        TEXT NOT NULL REFERENCES products(id),
+  buyer_user_id     UUID REFERENCES auth.users(id),   -- nullable: guest checkout
+  buyer_email       TEXT NOT NULL,
+  quantity          INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
+  amount_charged    INTEGER NOT NULL,                 -- cents, resolved server-side
+  promo_code        TEXT,
+  discount_amount   INTEGER NOT NULL DEFAULT 0,
+  status            TEXT NOT NULL DEFAULT 'pending'
+                      CHECK (status IN ('pending','paid','fulfilling','delivered','refunded','canceled')),
+  fulfillment_notes TEXT,
+  -- Includes `phone`. Not politeness: the catalog promises every build ships with
+  -- click-to-call and a form wired to the buyer's phone, and the product cannot
+  -- deliver what it sells without asking for the number (FR-013). In Phase 1
+  -- deliberately, so the very first sale carries it.
+  intake_data       JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- An order must point at something that can actually be charged.
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_payable_check;
+ALTER TABLE orders ADD CONSTRAINT orders_payable_check
+  CHECK (intent_id IS NOT NULL OR subscription_id IS NOT NULL);
+
+CREATE INDEX IF NOT EXISTS idx_orders_buyer_user_id ON orders(buyer_user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_buyer_email ON orders(buyer_email);
+CREATE INDEX IF NOT EXISTS idx_orders_status_created ON orders(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_product_id ON orders(product_id);
+CREATE INDEX IF NOT EXISTS idx_orders_intent_id ON orders(intent_id);
+
+COMMENT ON TABLE orders IS 'One order per purchase. status is advanced by the webhook and the admin panel only — never by the buyer (FR-011).';
+
+-- Catalog seed (T006). Ten SKUs, ids matching the storefront exactly so a card on
+-- /pricing and a row here are the same thing. Idempotent: ON CONFLICT re-asserts
+-- price and copy, so this file remains the source of truth for both.
+--
+-- The three RECURRING rows are seeded INACTIVE. They have no Stripe price id or
+-- PayPal plan id yet, and products_recurring_provider_check will not let them be
+-- activated until they do. That is the intended safety property, not an oversight
+-- — a subscription SKU that is visible but unbillable is how you take money you
+-- cannot fulfil.
+--
+-- prd-forge is $0 and can never produce a payment_intent (that table's floor is
+-- 100 cents). It is display-only by design: its call to action is "Clone the
+-- repo", pointing at GitHub, not at checkout.
+INSERT INTO products (id, lane, name, tagline, amount, amount_mode, min_amount, max_amount,
+                      type, interval, features, metadata, sort_order, active)
+VALUES
+  ('svc-discovery', 'service', 'Discovery', 'Prove it works before you commit.',
+   25000, 'fixed', NULL, NULL, 'one_time', NULL,
+   '["Deployed staging page on a real URL","Working contact form","Mobile + Lighthouse pass","Credited in full toward any build within 30 days"]'::jsonb,
+   '{"credits_toward":["svc-landing","svc-site"],"credit_window_days":30}'::jsonb, 10, true),
+
+  ('svc-landing', 'service', 'Landing Page', 'One page. Live on your domain. Leads in your inbox.',
+   120000, 'fixed', NULL, NULL, 'one_time', NULL,
+   '["Single page, your domain, SSL","Form wired to your inbox and phone","Click-to-call + LocalBusiness schema","Lighthouse >= 90, OG tags, favicon","2 revision rounds"]'::jsonb,
+   '{"deposit_pct":50}'::jsonb, 20, true),
+
+  ('svc-site', 'service', 'Business Site', 'The full presence, built to rank locally.',
+   350000, 'fixed', NULL, NULL, 'one_time', NULL,
+   '["5-7 pages incl. service pages","Project gallery","Local SEO + structured data","Blog scaffold + analytics","3 revision rounds"]'::jsonb,
+   '{"deposit_pct":50}'::jsonb, 30, true),
+
+  ('svc-care', 'service', 'Care Plan', 'Someone answers when it breaks.',
+   9900, 'fixed', NULL, NULL, 'recurring', 'month',
+   '["Hosting, SSL, daily backups","Dependency + security updates","Uptime monitoring","30 min of edits per month"]'::jsonb,
+   '{"attach_at_checkout":true}'::jsonb, 40, false),
+
+  ('svc-care-pro', 'service', 'Care Plan Pro', 'Care Plan, plus someone who keeps it current.',
+   24900, 'fixed', NULL, NULL, 'recurring', 'month',
+   '["Everything in Care Plan","Content updates","Monthly performance report","2 hrs of edits, priority turnaround"]'::jsonb,
+   '{"attach_at_checkout":true}'::jsonb, 50, false),
+
+  ('prd-forge', 'product', 'Forge', 'The starter. Take it, ship it, keep it.',
+   0, 'fixed', NULL, NULL, 'one_time', NULL,
+   '["Next.js 15 + React 19 + TypeScript","680+ tests, PWA, 34 themes","Auth, payments, encrypted messaging","MIT licensed, community support"]'::jsonb,
+   '{"purchasable":false,"external_url":"https://github.com/TortoiseWolfe/ScriptHammer"}'::jsonb, 10, true),
+
+  ('prd-anvil', 'product', 'Anvil', 'A vertical, productized.',
+   14900, 'fixed', NULL, NULL, 'one_time', NULL,
+   '["One industry template (Roofer, HVAC, Plumber, Landscaper)","Copy, layout, and schema tuned for the trade","Commercial license, unlimited client sites","Lifetime updates to that pack"]'::jsonb,
+   '{}'::jsonb, 20, true),
+
+  ('prd-foundry', 'product', 'Foundry', 'Every pack, and the ones not built yet.',
+   4900, 'fixed', NULL, NULL, 'recurring', 'month',
+   '["All vertical packs","New packs as they ship","Private channel","Priority issue triage"]'::jsonb,
+   '{}'::jsonb, 30, false),
+
+  ('prd-field-study', 'product', 'Field Study', 'Your first client site, built with you, on stream.',
+   250000, 'fixed', NULL, NULL, 'one_time', NULL,
+   '["Two weeks, done-with-you","Real client, real deployment","Recorded and yours to keep","Pricing and scoping coaching included"]'::jsonb,
+   '{}'::jsonb, 40, true),
+
+  -- The ONLY variable-amount SKU. Bounds are the ones the tip-jar screen states
+  -- to the visitor: "$1 to $500. Whole dollars."
+  ('tip-jar', 'product', 'Tip Jar', 'The template is free and stays free. This is only if you want to.',
+   1500, 'variable', 100, 50000, 'one_time', NULL,
+   '["Suggested $5 / $15 / $50","Nothing is gated","Any amount, once"]'::jsonb,
+   '{"presets":[500,1500,5000],"whole_dollars_only":true}'::jsonb, 50, true)
+ON CONFLICT (id) DO UPDATE SET
+  lane = EXCLUDED.lane, name = EXCLUDED.name, tagline = EXCLUDED.tagline,
+  amount = EXCLUDED.amount, amount_mode = EXCLUDED.amount_mode,
+  min_amount = EXCLUDED.min_amount, max_amount = EXCLUDED.max_amount,
+  type = EXCLUDED.type, interval = EXCLUDED.interval,
+  features = EXCLUDED.features, metadata = EXCLUDED.metadata,
+  sort_order = EXCLUDED.sort_order, updated_at = NOW();
 
 -- ============================================================================
 -- PART 2: AUTHENTICATION TABLES
@@ -291,7 +540,10 @@ CREATE INDEX IF NOT EXISTS idx_auth_audit_logs_created_at ON auth_audit_logs(cre
 CREATE INDEX IF NOT EXISTS idx_auth_audit_logs_ip_address ON auth_audit_logs(ip_address);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_event ON auth_audit_logs(user_id, event_type, created_at DESC);
 
-COMMENT ON TABLE auth_audit_logs IS 'Security audit trail for all auth events (90-day retention)';
+-- The "(90-day retention)" half of this comment was untrue for ten months: the
+-- function existed, nothing called it (#585). It now names its own enforcer, so
+-- the claim is checkable rather than asserted.
+COMMENT ON TABLE auth_audit_logs IS 'Security audit trail for all auth events. 90-day retention, enforced by cleanup_old_audit_logs() via .github/workflows/data-retention.yml (#585).';
 
 -- Idempotent extension of auth_audit_logs.event_type CHECK to include
 -- 'payment_retry' (#43, B1). The CREATE TABLE above picks up the new
@@ -409,15 +661,59 @@ EXCEPTION
 END;
 $$;
 
--- Cleanup old audit logs (90 days)
-CREATE OR REPLACE FUNCTION cleanup_old_audit_logs()
-RETURNS void
+-- Cleanup old audit logs (90 days) — #585
+--
+-- THIS FUNCTION EXISTED FROM THE INITIAL MIGRATION AND WAS NEVER CALLED. For ten
+-- months the table COMMENT above, two security audits and one E2E-teardown design
+-- decision all cited its 90-day window as though it were in force, and it deleted
+-- nothing; the oldest row was four months old when #585 measured it. The caller
+-- now lives in .github/workflows/data-retention.yml. If you ever remove that
+-- caller, correct those documents in the same change — a retention claim with no
+-- job behind it is precisely the defect this ticket was.
+--
+-- Batched on purpose: auth_audit_logs carries FIVE indexes (lines 288-292), so
+-- every deleted row costs five index updates, and the original unbounded DELETE
+-- built one working set as large as the whole backlog. Note the call is still a
+-- SINGLE transaction — plpgsql functions cannot COMMIT — so this bounds
+-- per-statement work, not transaction duration. That is enough here: the rows are
+-- 90+ days old in an append-only table, so no live writer contends for them.
+--
+-- Returns the number of rows removed, so a caller can log a COUNT. Never log the
+-- rows themselves: they carry ip_address, user_agent and event_data.
+-- (scripts/cleanup-expired-intents.ts:73-78 prints customer_email per deleted
+-- row. Do not copy that here.)
+DROP FUNCTION IF EXISTS cleanup_old_audit_logs();
+CREATE OR REPLACE FUNCTION cleanup_old_audit_logs(
+  p_batch_size INT DEFAULT 5000,
+  p_max_batches INT DEFAULT 100
+)
+RETURNS INT
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  v_cutoff TIMESTAMPTZ := NOW() - INTERVAL '90 days';
+  v_batch  INT;
+  v_total  INT := 0;
 BEGIN
-    DELETE FROM auth_audit_logs WHERE created_at < NOW() - INTERVAL '90 days';
+  FOR i IN 1..p_max_batches LOOP
+    DELETE FROM auth_audit_logs
+    WHERE id IN (
+      SELECT id
+      FROM auth_audit_logs
+      WHERE created_at < v_cutoff
+      ORDER BY created_at
+      LIMIT p_batch_size
+    );
+    GET DIAGNOSTICS v_batch = ROW_COUNT;
+    v_total := v_total + v_batch;
+    -- A short batch means the cutoff is drained; stop rather than burning
+    -- the remaining iterations on empty DELETEs.
+    EXIT WHEN v_batch < p_batch_size;
+  END LOOP;
+
+  RETURN v_total;
 END;
 $$;
 
@@ -495,6 +791,18 @@ $$;
 -- PART 5: TRIGGERS
 -- ============================================================================
 
+DROP TRIGGER IF EXISTS update_products_updated_at ON products;
+CREATE TRIGGER update_products_updated_at
+    BEFORE UPDATE ON products
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_orders_updated_at ON orders;
+CREATE TRIGGER update_orders_updated_at
+    BEFORE UPDATE ON orders
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
 DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
 CREATE TRIGGER update_user_profiles_updated_at
     BEFORE UPDATE ON user_profiles
@@ -521,9 +829,37 @@ CREATE TRIGGER on_auth_user_created
 -- Cloud this INSERT works as-is because storage has already migrated there.
 -- Forward-fill the three columns here so the INSERT succeeds; storage's own
 -- ADD COLUMN IF NOT EXISTS will no-op when it catches up later.
-ALTER TABLE storage.buckets ADD COLUMN IF NOT EXISTS public             boolean DEFAULT false;
-ALTER TABLE storage.buckets ADD COLUMN IF NOT EXISTS file_size_limit    bigint;
-ALTER TABLE storage.buckets ADD COLUMN IF NOT EXISTS allowed_mime_types text[];
+--
+-- GUARDED, BECAUSE `IF NOT EXISTS` IS NOT ENOUGH. Postgres checks ownership
+-- BEFORE the IF-NOT-EXISTS short-circuit, and on Supabase Cloud storage.buckets
+-- is owned by `supabase_storage_admin`. So on cloud these three lines fail with
+-- `42501: must be owner of table buckets` even though every column already
+-- exists and the statements would be no-ops. That aborts the entire migration
+-- in its transaction — 0 tables created — which is exactly what happened when
+-- this file was first applied to a fresh cloud project (#567 org migration).
+--
+-- Checking the catalog first means cloud skips the ALTER entirely and only the
+-- local stack, where the columns really are missing and we really are the owner,
+-- executes it.
+DO $storage_cols$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_schema = 'storage' AND table_name = 'buckets'
+                   AND column_name = 'public') THEN
+    ALTER TABLE storage.buckets ADD COLUMN public boolean DEFAULT false;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_schema = 'storage' AND table_name = 'buckets'
+                   AND column_name = 'file_size_limit') THEN
+    ALTER TABLE storage.buckets ADD COLUMN file_size_limit bigint;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_schema = 'storage' AND table_name = 'buckets'
+                   AND column_name = 'allowed_mime_types') THEN
+    ALTER TABLE storage.buckets ADD COLUMN allowed_mime_types text[];
+  END IF;
+END
+$storage_cols$;
 
 INSERT INTO storage.buckets (
   id,
@@ -608,6 +944,8 @@ ALTER TABLE webhook_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payment_provider_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE auth_audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 
 -- Payment intents (Feature 017: Stricter policies)
 DROP POLICY IF EXISTS "Users can view own payment intents" ON payment_intents;
@@ -675,6 +1013,40 @@ CREATE POLICY "Service updates webhook events" ON webhook_events
 DROP POLICY IF EXISTS "Users view provider config" ON payment_provider_config;
 CREATE POLICY "Users view provider config" ON payment_provider_config
   FOR SELECT USING (true);
+
+-- Commerce catalog (#557).
+--
+-- products is world-readable when active — a visitor must see prices before they
+-- have any session at all. Nothing writes it from a client, ever: price lives
+-- here precisely so the browser cannot name one.
+DROP POLICY IF EXISTS "Anyone can view active products" ON products;
+CREATE POLICY "Anyone can view active products" ON products
+  FOR SELECT USING (active = true);
+
+DROP POLICY IF EXISTS "Products are not client-writable" ON products;
+CREATE POLICY "Products are not client-writable" ON products
+  FOR ALL USING (false) WITH CHECK (false);
+
+-- A buyer reads their own orders and writes none of them. FR-011: buyers must not
+-- be able to write an order's fulfillment stage, so there is no client UPDATE
+-- policy at all — the webhook and the admin panel are the only writers.
+-- An anonymous session is still a session, so a guest cannot read another guest's
+-- order; auth.uid() differs per anonymous user.
+DROP POLICY IF EXISTS "Buyers can view own orders" ON orders;
+CREATE POLICY "Buyers can view own orders" ON orders
+  FOR SELECT USING (auth.uid() = buyer_user_id);
+
+DROP POLICY IF EXISTS "Service role can insert orders" ON orders;
+CREATE POLICY "Service role can insert orders" ON orders
+  FOR INSERT TO service_role WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Service role can update orders" ON orders;
+CREATE POLICY "Service role can update orders" ON orders
+  FOR UPDATE TO service_role USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Orders cannot be deleted by users" ON orders;
+CREATE POLICY "Orders cannot be deleted by users" ON orders
+  FOR DELETE USING (false);
 
 -- User profiles
 -- Note: "Users view own profile" provides full access to own profile
@@ -830,6 +1202,122 @@ AS $$
 $$;
 GRANT EXECUTE ON FUNCTION public.is_admin(UUID) TO authenticated, anon;
 
+-- ============================================================================
+-- STORAGE: intake-uploads bucket (#560, FR-014 … FR-018)
+-- ============================================================================
+--
+-- What the buyer shows us at checkout: screenshots of the site they have, and
+-- sketches or references for the one they want. Tagged have/want in the UI and
+-- stored under `{auth.uid()}/…` so ownership is a property of the PATH.
+--
+-- WHY THIS LIVES HERE AND NOT WITH THE `avatars` BUCKET ABOVE. The SELECT and
+-- DELETE policies call public.is_admin(), and CREATE POLICY resolves the function
+-- at creation time — so it has to be defined first. is_admin() is declared
+-- immediately above. Moving this block up next to `avatars` for tidiness breaks
+-- the migration with `function public.is_admin() does not exist`.
+--
+-- PRIVATE, unlike `avatars`. FR-016: an attachment is readable by the buyer who
+-- uploaded it and by the operator, nobody else. `public = false` means no
+-- unauthenticated URL exists at all; /admin/orders renders these through signed
+-- URLs (T022).
+--
+-- THE LIMITS ARE ON THE BUCKET, WHICH IS THE POINT. FR-015 requires size and type
+-- to be enforced "in a place the buyer's device cannot bypass", and SC-011 tests
+-- exactly that by removing the browser-side check. `file_size_limit` and
+-- `allowed_mime_types` are enforced by storage-api itself, so the client-side
+-- validation in src/lib/commerce/intake-upload.ts is a courtesy that produces a
+-- good error message — never the control.
+--
+-- HEIC IS ALLOWED THOUGH WE CANNOT THUMBNAIL IT (FR-018). A phone photo straight
+-- from an iPhone is the single most likely thing a buyer sends; rejecting it
+-- because we cannot draw a preview would be refusing the common case. Both
+-- image/heic and image/heif are listed because the two are used interchangeably
+-- and browsers disagree. The uploader sets an explicit contentType from the file
+-- extension when the browser reports none, which it often does for HEIC — without
+-- that, the upload arrives as application/octet-stream and this allowlist rejects
+-- a file the product promises to accept.
+INSERT INTO storage.buckets (
+  id,
+  name,
+  public,
+  file_size_limit,
+  allowed_mime_types
+)
+VALUES (
+  'intake-uploads',
+  'intake-uploads',
+  false,                                             -- FR-016: never public
+  10485760,                                          -- 10MB per file (FR-015)
+  ARRAY[
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/heic',                                    -- FR-018: accepted, not previewable
+    'image/heif',
+    'application/pdf'
+  ]
+)
+ON CONFLICT (id) DO UPDATE
+  SET public             = EXCLUDED.public,
+      file_size_limit    = EXCLUDED.file_size_limit,
+      allowed_mime_types = EXCLUDED.allowed_mime_types;
+-- DO UPDATE, not DO NOTHING. These three columns ARE the server-side enforcement
+-- (FR-015). With DO NOTHING a re-run silently keeps whatever limits the bucket
+-- already had, so tightening or widening them here would be a no-op against any
+-- project where the bucket exists — the change would appear applied and not be.
+
+DROP POLICY IF EXISTS "Buyers can upload own intake files" ON storage.objects;
+DROP POLICY IF EXISTS "Buyers and operator can read intake files" ON storage.objects;
+DROP POLICY IF EXISTS "Buyers can replace own intake files" ON storage.objects;
+DROP POLICY IF EXISTS "Buyers and operator can delete intake files" ON storage.objects;
+
+-- split_part(name, '/', 1), not storage.foldername() — same first-path-segment
+-- result using only pg_catalog built-ins, so no pg_depend edge is created on a
+-- storage function that storage-api later needs to DROP. See the long note above
+-- the avatar policies; getting this wrong crash-loops storage-api on a fresh
+-- local initdb.
+
+-- INSERT: a buyer may only write under their own uid prefix.
+CREATE POLICY "Buyers can upload own intake files"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'intake-uploads' AND
+  auth.uid()::text = split_part(name, '/', 1)
+);
+
+-- SELECT: the buyer who owns the prefix, or the operator (FR-016).
+CREATE POLICY "Buyers and operator can read intake files"
+ON storage.objects FOR SELECT
+TO authenticated
+USING (
+  bucket_id = 'intake-uploads' AND (
+    auth.uid()::text = split_part(name, '/', 1)
+    OR public.is_admin()
+  )
+);
+
+-- UPDATE: needed for upsert on retry (same path, second attempt).
+CREATE POLICY "Buyers can replace own intake files"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (
+  bucket_id = 'intake-uploads' AND
+  auth.uid()::text = split_part(name, '/', 1)
+);
+
+-- DELETE: the buyer removing a file before submitting, and the operator for the
+-- 7-day sweep of abandoned checkouts (FR-017, T023).
+CREATE POLICY "Buyers and operator can delete intake files"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'intake-uploads' AND (
+    auth.uid()::text = split_part(name, '/', 1)
+    OR public.is_admin()
+  )
+);
+
 -- custom_access_token_hook(): Supabase Auth calls this at token-mint time
 -- (login + refresh) with the pending JWT claims. We merge the derived
 -- is_admin flag (from the user_profiles column) into app_metadata so the
@@ -880,6 +1368,12 @@ DROP POLICY IF EXISTS "Admin can view all audit logs" ON auth_audit_logs;
 CREATE POLICY "Admin can view all audit logs" ON auth_audit_logs
   FOR SELECT USING (
     is_admin()  -- #240: live column authority (was: JWT claim, which could drift/linger)
+  );
+
+DROP POLICY IF EXISTS "Admin can view all orders" ON orders;
+CREATE POLICY "Admin can view all orders" ON orders
+  FOR SELECT USING (
+    is_admin()  -- the fulfillment queue at /admin/orders (#561) reads through this
   );
 
 DROP POLICY IF EXISTS "Admin can view all payment intents" ON payment_intents;
@@ -1664,6 +2158,14 @@ GRANT SELECT, INSERT, UPDATE ON subscriptions TO authenticated;
 GRANT SELECT ON payment_provider_config TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON user_profiles TO authenticated;
 GRANT SELECT, INSERT ON auth_audit_logs TO authenticated;
+GRANT SELECT ON products TO authenticated;
+GRANT SELECT ON orders TO authenticated;
+
+-- Anonymous visitors browsing /pricing before any sign-in. RLS alone is not
+-- enough: a policy says WHICH rows, a grant says whether the role may touch the
+-- table at all. There is no other GRANT ... TO anon in this file, so this is
+-- deliberate and narrow — SELECT on the catalog, nothing else.
+GRANT SELECT ON products TO anon;
 
 -- Service role (full access)
 GRANT ALL ON payment_intents TO service_role;
@@ -1673,6 +2175,8 @@ GRANT ALL ON webhook_events TO service_role;
 GRANT ALL ON payment_provider_config TO service_role;
 GRANT ALL ON user_profiles TO service_role;
 GRANT ALL ON auth_audit_logs TO service_role;
+GRANT ALL ON products TO service_role;
+GRANT ALL ON orders TO service_role;
 
 -- ============================================================================
 -- PART 8: SEED TEST USER (Primary)
@@ -2745,6 +3249,7 @@ COMMENT ON TABLE group_keys IS 'Encrypted symmetric group keys per member per ve
 -- ============================================================================
 -- Created:
 --   ✅ Payment tables: payment_intents, payment_results, subscriptions, webhook_events, payment_provider_config
+--   ✅ Commerce tables: products, orders (Feature 050 Phase 1, #557)
 --   ✅ Auth tables: user_profiles, auth_audit_logs
 --   ✅ Security tables: rate_limit_attempts
 --   ✅ Messaging tables: user_connections, conversations, messages, user_encryption_keys, conversation_keys, typing_indicators
@@ -2752,7 +3257,7 @@ COMMENT ON TABLE group_keys IS 'Encrypted symmetric group keys per member per ve
 --   ✅ Storage buckets: avatars (5MB limit, public read)
 --   ✅ Functions: update_updated_at_column, create_user_profile, cleanup_old_audit_logs, check_rate_limit, record_failed_attempt, update_conversation_timestamp, assign_sequence_number
 --   ✅ Admin RPC functions: admin_payment_stats, admin_auth_stats, admin_user_stats, admin_messaging_stats, admin_payment_trends, admin_audit_trends, admin_list_users, admin_messaging_trends, admin_overview
---   ✅ Triggers: on_auth_user_created, update_user_profiles_updated_at, on_message_inserted, before_message_insert
+--   ✅ Triggers: on_auth_user_created, update_user_profiles_updated_at, on_message_inserted, before_message_insert, update_products_updated_at, update_orders_updated_at
 --   ✅ RLS policies: All tables + storage.objects protected with auth.uid() (35 + 9 admin policies)
 --   ✅ Admin RLS policies: 9 read-only policies for admin dashboard (is_admin check)
 --   ✅ Avatar policies: 4 policies (user isolation + public read)

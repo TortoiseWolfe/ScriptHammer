@@ -188,7 +188,19 @@ export function validateEmailConfig(): void {
 
 export const paymentLimits = {
   minAmount: 100, // $1.00 in cents
-  maxAmount: 99999, // $999.99 in cents
+  // $3,500.00 in cents — exactly the most expensive catalog item (svc-site).
+  //
+  // Deliberately NOT a round number with headroom. The ceiling bounds the damage
+  // when something goes wrong; setting it far above real revenue means a bug can
+  // charge far above real revenue. scripts/__tests__/payment-ceiling.test.js keeps
+  // it in step with the catalog (#557).
+  //
+  // THIS IS DOCUMENTATION, NOT ENFORCEMENT. validatePaymentAmount() below is
+  // called from payment-service.ts, which runs in the BROWSER — a tampered
+  // client skips it entirely. The only real control is the CHECK constraint on
+  // payment_intents.amount. Keep this in step with the migration so the two do
+  // not drift, but never rely on it.
+  maxAmount: 350_000,
 } as const;
 
 export const supportedCurrencies: Currency[] = [

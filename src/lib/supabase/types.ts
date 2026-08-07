@@ -409,6 +409,132 @@ export type Database = {
           },
         ];
       };
+      // Commerce catalog (#557). Added by hand alongside the migration — this
+      // file is the client's view of the schema and drifting from it is how a
+      // .from('products') call type-errors while the table exists.
+      products: {
+        Row: {
+          id: string;
+          lane: string;
+          name: string;
+          tagline: string | null;
+          description: string | null;
+          amount: number;
+          amount_mode: string;
+          min_amount: number | null;
+          max_amount: number | null;
+          currency: string;
+          type: string;
+          interval: string | null;
+          stripe_price_id: string | null;
+          paypal_plan_id: string | null;
+          features: Json;
+          metadata: Json;
+          sort_order: number;
+          active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          lane: string;
+          name: string;
+          tagline?: string | null;
+          description?: string | null;
+          amount: number;
+          amount_mode?: string;
+          min_amount?: number | null;
+          max_amount?: number | null;
+          currency?: string;
+          type: string;
+          interval?: string | null;
+          stripe_price_id?: string | null;
+          paypal_plan_id?: string | null;
+          features?: Json;
+          metadata?: Json;
+          sort_order?: number;
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          lane?: string;
+          name?: string;
+          tagline?: string | null;
+          description?: string | null;
+          amount?: number;
+          amount_mode?: string;
+          min_amount?: number | null;
+          max_amount?: number | null;
+          currency?: string;
+          type?: string;
+          interval?: string | null;
+          stripe_price_id?: string | null;
+          paypal_plan_id?: string | null;
+          features?: Json;
+          metadata?: Json;
+          sort_order?: number;
+          active?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      orders: {
+        Row: {
+          id: string;
+          intent_id: string | null;
+          subscription_id: string | null;
+          product_id: string;
+          buyer_user_id: string | null;
+          buyer_email: string;
+          quantity: number;
+          amount_charged: number;
+          promo_code: string | null;
+          discount_amount: number;
+          status: string;
+          fulfillment_notes: string | null;
+          intake_data: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          intent_id?: string | null;
+          subscription_id?: string | null;
+          product_id: string;
+          buyer_user_id?: string | null;
+          buyer_email: string;
+          quantity?: number;
+          amount_charged: number;
+          promo_code?: string | null;
+          discount_amount?: number;
+          status?: string;
+          fulfillment_notes?: string | null;
+          intake_data?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          intent_id?: string | null;
+          subscription_id?: string | null;
+          product_id?: string;
+          buyer_user_id?: string | null;
+          buyer_email?: string;
+          quantity?: number;
+          amount_charged?: number;
+          promo_code?: string | null;
+          discount_amount?: number;
+          status?: string;
+          fulfillment_notes?: string | null;
+          intake_data?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       payment_intents: {
         Row: {
           amount: number;
@@ -971,7 +1097,10 @@ export type Database = {
         };
         Returns: Json;
       };
-      cleanup_old_audit_logs: { Args: never; Returns: undefined };
+      cleanup_old_audit_logs: {
+        Args: { p_batch_size?: number; p_max_batches?: number };
+        Returns: number;
+      };
       is_admin: {
         Args: { check_user_id?: string };
         Returns: boolean;

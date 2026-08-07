@@ -30,6 +30,11 @@ DELETE FROM storage.buckets WHERE id = 'avatars';
 
 -- Drop in dependency order (children before parents)
 
+-- Commerce catalog (#557). Children before parents: orders references both
+-- products and payment_intents, so it must go first.
+DROP TABLE IF EXISTS orders CASCADE;
+DROP TABLE IF EXISTS products CASCADE;
+
 -- Payment tables (depend on auth.users via foreign keys)
 DROP TABLE IF EXISTS webhook_events CASCADE;
 DROP TABLE IF EXISTS payment_results CASCADE;
@@ -73,7 +78,13 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
 DROP FUNCTION IF EXISTS create_user_profile() CASCADE;
 DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
+-- Both signatures: the original took no arguments, the batched replacement takes
+-- (p_batch_size, p_max_batches) with defaults (#585). `DROP FUNCTION name()` with
+-- explicit empty parens matches ONLY the zero-arg overload, so dropping just one
+-- of these would leave the other behind on a database created at the other
+-- revision.
 DROP FUNCTION IF EXISTS cleanup_old_audit_logs() CASCADE;
+DROP FUNCTION IF EXISTS cleanup_old_audit_logs(INT, INT) CASCADE;
 DROP FUNCTION IF EXISTS check_rate_limit(TEXT, TEXT, INET) CASCADE;
 DROP FUNCTION IF EXISTS record_failed_attempt(TEXT, TEXT, INET) CASCADE;
 DROP FUNCTION IF EXISTS update_conversation_timestamp() CASCADE;

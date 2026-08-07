@@ -63,6 +63,48 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Runs BEFORE the browser suite: it is cheap, and if production is pointed at
+      # the wrong backend every test below is meaningless.
+      #
+      # WHY THIS EXISTS. On 2026-08-07 production served a bundle pointing at a
+      # Supabase project that had been DELETED, for hours, behind entirely green
+      # checks. The deploy reads `vars.*`; the operator was setting `gh secret set`.
+      # Same names, two stores, and secrets are write-only so the divergence was
+      # invisible to inspection.
+      #
+      # Nothing caught it because every check asked the BACKEND whether it was alive.
+      # It was — just not the one the bundle called. The only assertion that could
+      # have caught it is this one: what the deployed JavaScript actually points at,
+      # compared against what we intended to deploy.
+      - name: Deployed bundle points at the intended Supabase project
+        env:
+          SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
+          WANT: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${WANT:-}" ]; then
+            echo "::error::vars.NEXT_PUBLIC_SUPABASE_URL is empty — the build has no backend"
+            exit 1
+          fi
+          html=$(curl -fsS --max-time 30 "${SITE}/pricing/")
+          found=""
+          for chunk in $(printf '%s' "$html" | grep -oE '/_next/static/chunks/[^"]+\.js' | sort -u); do
+            hit=$(curl -fsS --max-time 30 "${SITE}${chunk}" \
+                  | grep -oE 'https://[a-z0-9]+\.supabase\.co' | sort -u || true)
+            [ -n "$hit" ] && found="$found $hit"
+          done
+          found=$(printf '%s' "$found" | tr ' ' '\n' | grep -v '^$' | sort -u | tr '\n' ' ')
+          echo "intended: $WANT"
+          echo "in bundle:$found"
+          if [ -z "$found" ]; then
+            echo "::error::no Supabase URL found in any deployed chunk — the build shipped without a backend"
+            exit 1
+          fi
+          case " $found " in
+            *" $WANT "*) echo "match" ;;
+            *) echo "::error::deployed bundle targets$found but vars.NEXT_PUBLIC_SUPABASE_URL is $WANT"; exit 1 ;;
+          esac
+
       - name: Install Playwright (chromium)
         run: |
           for i in 1 2 3; do

@@ -81,6 +81,25 @@ const nextConfig: NextConfig = {
             vendor: {
               name: 'vendor',
               test: /[\\/]node_modules[\\/]/,
+              // JS ONLY (#625). Without this, the group claims node_modules CSS
+              // too — webpack treats stylesheets as modules — so the `vendor`
+              // chunk held JS *and* 43KB of CSS, webpack emitted both `vendor.js`
+              // and `vendor.css` under one chunk name, and the chunk loader wrote
+              // `<script src="…/vendor.css">`. The browser then parsed a
+              // stylesheet as JavaScript: `SyntaxError: Invalid or unexpected
+              // token` on every page load.
+              //
+              // That is the defect `scripts/strip-css-script-tags.mjs` was written
+              // for. It attributes the bug to Next and strips the tags out of the
+              // EXPORT, which fixes production and leaves `next dev` throwing on
+              // every page — permanent console noise that hides real errors.
+              //
+              // A REGEX, not the string 'javascript/auto'. Webpack 5 gives ES
+              // modules the type `javascript/esm`, so the exact string would
+              // quietly stop matching most of the tree and scatter the vendor
+              // chunk. `/javascript/` covers auto, esm and dynamic while still
+              // excluding `css/mini-extract`.
+              type: /javascript/,
               priority: 10,
               reuseExistingChunk: true,
             },
@@ -88,6 +107,7 @@ const nextConfig: NextConfig = {
             common: {
               name: 'common',
               minChunks: 2,
+              type: /javascript/, // same reason as `vendor` (#625)
               priority: 5,
               reuseExistingChunk: true,
             },
@@ -110,6 +130,7 @@ const nextConfig: NextConfig = {
             leaflet: {
               test: /[\\/]node_modules[\\/](leaflet|react-leaflet)[\\/]/,
               name: 'leaflet',
+              type: /javascript/, // JS only — see `vendor` (#625)
               priority: 20,
             },
             // `cesium` is a THIN RE-EXPORT SHELL. Since the monorepo split the
@@ -121,6 +142,7 @@ const nextConfig: NextConfig = {
             cesium: {
               test: /[\\/]node_modules[\\/](cesium|@cesium)[\\/]/,
               name: 'cesium',
+              type: /javascript/, // JS only — see `vendor` (#625)
               priority: 20,
             },
             // three.js (#291). `three` itself is the real 2.66MB package (not a
@@ -132,6 +154,7 @@ const nextConfig: NextConfig = {
             three: {
               test: /[\\/]node_modules[\\/](three|three-stdlib|three-mesh-bvh|@react-three[\\/](fiber|drei)|troika-three-text|troika-three-utils|troika-worker-utils|meshline|camera-controls|maath|@monogrid[\\/]gainmap-js|stats-gl|@mediapipe[\\/]tasks-vision|postprocessing)[\\/]/,
               name: 'three',
+              type: /javascript/, // JS only — see `vendor` (#625)
               priority: 20,
             },
           },

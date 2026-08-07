@@ -100,18 +100,23 @@ export async function createCheckoutSession(
 }
 
 /**
- * Handle return from Stripe Checkout
- * Verifies session and updates payment status
+ * Handle the return from Stripe Checkout.
+ *
+ * Stripe's `success_url` carries only its own `session_id`
+ * (create-stripe-checkout/index.ts:145), while every lookup on our side is keyed
+ * on the payment_intent id. This bridges the two, so it returns `intentId` and not
+ * just a boolean — /payment-result needs the id to resolve the real status.
+ *
+ * NO Stripe.js LOAD. This previously called `getStripe()` and threw "Stripe failed
+ * to load" — while never using the returned object. It is a plain authenticated
+ * fetch to our own Edge Function, so making it depend on a third-party script
+ * loading meant an adblocker or a slow CDN could strand a buyer who had already
+ * paid, on the page whose whole job is telling them the payment worked.
  */
 export async function handleStripeRedirect(
   sessionId: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; intentId?: string; error?: string }> {
   try {
-    const stripe = await getStripe();
-    if (!stripe) {
-      throw new Error('Stripe failed to load');
-    }
-
     // Retrieve session to check status
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/verify-stripe-session`,
@@ -130,13 +135,20 @@ export async function handleStripeRedirect(
       throw new Error(error.error || 'Failed to verify session');
     }
 
-    const { payment_status } = await response.json();
+    const { payment_status, intent_id } = await response.json();
 
+    // `intent_id` is returned on BOTH branches. An unpaid session is still a real
+    // session belonging to a real intent, and /payment-result should resolve and
+    // show its actual state rather than falling back to a generic error — the
+    // webhook, not this redirect, is what makes a payment authoritative.
     if (payment_status === 'paid') {
-      return { success: true };
-    } else {
-      return { success: false, error: 'Payment not completed' };
+      return { success: true, intentId: intent_id };
     }
+    return {
+      success: false,
+      intentId: intent_id,
+      error: 'Payment not completed',
+    };
   } catch (error) {
     return {
       success: false,

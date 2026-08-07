@@ -117,6 +117,16 @@ The authentication and security feature specs demonstrate strong security archit
 
 **Strength**: 90-day retention, no sensitive data in logs (FR-032).
 
+> **Retracted in part (#585, 2026-08-06).** The retention half of this strength was not true
+> when this audit was written and stayed untrue for ten months. `cleanup_old_audit_logs()`
+> existed but had **no caller** — no cron, no workflow, no script — so nothing aged out. This
+> audit rated a function that had never run. Enforcement landed 2026-08-06 via
+> `.github/workflows/data-retention.yml`. The "no sensitive data in logs" half is unaffected.
+>
+> Kept rather than edited: this is a dated audit record, and what it concluded at the time is
+> the point. The lesson is that an audit should verify a control **executes**, not merely that
+> it exists in the schema.
+
 ### A10: SSRF
 
 **Status**: N/A

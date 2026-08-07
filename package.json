@@ -38,6 +38,8 @@
     "supabase:local:down": "docker compose --profile supabase down",
     "supabase:auth-config": "tsx scripts/supabase/set-auth-config.ts",
     "supabase:auth-config:check": "tsx scripts/supabase/set-auth-config.ts --check",
+    "supabase:retention": "tsx scripts/supabase/cleanup-audit-logs.ts",
+    "supabase:retention:check": "tsx scripts/supabase/cleanup-audit-logs.ts --check",
     "test:e2e:signup-mailer": "playwright test --config playwright.signup-mailer.config.ts",
     "test:e2e:smoke": "playwright test --config playwright.smoke.config.ts",
     "supabase:secrets": "tsx scripts/supabase/set-edge-function-secrets.ts",

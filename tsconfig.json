@@ -47,5 +47,9 @@
     }
   },
   "include": ["**/*.ts", "**/*.tsx", "next-env.d.ts", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", ".next", "out", "supabase", "scripts"]
+  // "docker" holds local-stack infrastructure, and docker/supabase/edge-main is
+  // DENO code — it imports from deno.land and uses the Deno global, neither of
+  // which exists in this project's Node/browser lib set. Same reasoning as
+  // "supabase", which is excluded for exactly the same reason.
+  "exclude": ["node_modules", ".next", "out", "supabase", "scripts", "docker"]
 }

@@ -1,0 +1,75 @@
+# Data retention (#585).
+#
+# `cleanup_old_audit_logs()` has existed in the monolithic migration since the
+# initial commit and was NEVER CALLED. Meanwhile the table COMMENT, two security
+# audits and one E2E-teardown design decision all cited its 90-day window as
+# though it were in force. Ten months on, the oldest row was four months old and
+# auth_audit_logs was the largest table in the database. This workflow is the
+# missing caller.
+#
+# WHY ITS OWN FILE, not a step in auth-config-drift.yml (which already holds the
+# same two secrets, and which #585 suggested as the home): that workflow's check
+# is named "Auth Config Drift". A red X there has to mean the live auth config
+# diverged from the repo. If an audit-log DELETE timed out and reddened it, the
+# check would be lying about what it verified — the same class of defect this
+# ticket is fixing. Secrets are repo-scoped, so a separate file costs nothing.
+#
+# No service-role key. This uses the Management API pair (SUPABASE_ACCESS_TOKEN +
+# SUPABASE_PROJECT_REF), which is deliberate: #574 is about getting the
+# service-role credential OUT of CI, not about giving it another home.
+
+name: Data Retention
+
+on:
+  # Deliberately NOT on push or pull_request. This workflow MUTATES production
+  # data; it should run on a schedule a human chose, not incidentally on every
+  # merge. Use the dispatch button for an out-of-band run.
+  schedule:
+    - cron: '30 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: data-retention
+  cancel-in-progress: false
+
+jobs:
+  audit-logs:
+    name: auth_audit_logs past the 90-day window are deleted
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.16.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The script deletes, then RE-COUNTS and fails if rows past the window
+      # survived a run that deleted nothing. Without that second query this job
+      # would report success on any HTTP 200 — a retention job that cannot
+      # detect its own failure, which is what #585 is about.
+      #
+      # It also cross-checks its RETENTION_DAYS constant against the INTERVAL in
+      # the migration, so the number cannot drift between the enforcer and the
+      # documents that quote it.
+      #
+      # A restricted project (#567, HTTP 402) exits 0 with a ::warning:: — that
+      # is a quota incident, not a retention defect, and a job that goes red for
+      # the duration of one trains people to ignore it.
+      - name: Enforce auth_audit_logs retention
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: pnpm supabase:retention

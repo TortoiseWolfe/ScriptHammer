@@ -270,6 +270,18 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 SELECT cron.schedule('cleanup-audit-logs', '0 2 * * *', 'SELECT cleanup_old_audit_logs()');
 ```
 
+> **Correction (#585, 2026-08-06).** That `cron.schedule` line **never existed anywhere but
+> this document.** `pg_cron` is not installed on this project — the migration enables only
+> `uuid-ossp` and `pgcrypto` — so the schedule was never created and the function was never
+> called, for ten months, while three other documents cited its 90-day window as a security
+> strength.
+>
+> The real schedule is `.github/workflows/data-retention.yml`, which calls
+> `cleanup_old_audit_logs()` daily through the Management API and then re-counts to prove the
+> rows are gone. The live function is also batched and returns the number of rows deleted —
+> see `supabase/migrations/20251006_complete_monolithic_setup.sql`, which is the source of
+> truth; the snippet above is a design sketch and no longer matches it.
+
 ## Data Flow Diagrams
 
 ### Sign-up Flow

@@ -323,6 +323,12 @@ export function GlobalNav() {
     // Three renderer, ?walk opens first-person Walk mode. reload:true so both
     // query flags are read at mount (same reason Atlas/Diorama reload below).
     { href: '/chatt?diorama&walk', label: 'Play', reload: true },
+    // TOP LEVEL, deliberately not inside Demos. Until this landed, the only
+    // payment-adjacent destination in the whole nav was `/payment-demo` labelled
+    // "Payments" — a DEMO, sitting in the Demos menu between Diorama and Game.
+    // Nothing anywhere led a buyer to a price. A storefront you cannot navigate to
+    // is not a storefront.
+    { href: '/pricing', label: 'Pricing' },
     {
       label: 'Demos',
       items: [

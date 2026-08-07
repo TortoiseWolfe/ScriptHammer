@@ -67,7 +67,7 @@ const GROOVE_FACTS = [
 // the earlier `label · detail` pair wrapped to two lines and broke the rhythm.
 //
 // Two accessible names here are load-bearing E2E anchors: this list must keep
-// a link whose name contains "34 Themes" (seven locators, #408) and one
+// a link whose name contains "35 Themes" (seven locators, #408) and one
 // matching /accessible/i (homepage.spec.ts). Both are asserted below.
 const STATS: readonly {
   value: string;
@@ -412,7 +412,7 @@ export default function Home() {
                 className="sh-well bg-base-100 rounded-box focus-visible:ring-primary flex min-h-11 flex-col gap-1 px-5 py-5 focus-visible:ring-2"
               >
                 {/* value and label in one line so the accessible name reads
-                    "34 Themes …" — seven E2E locators across three specs match
+                    "35 Themes …" — seven E2E locators across three specs match
                     on that substring (#408). */}
                 {/* Archivo Black, not mono — and filled with the comp's
                     top-to-bottom fade. Solid `color` stays as the fallback if

@@ -31,7 +31,7 @@ export type SubscriptionStatus =
 export interface PaymentIntent {
   id: string; // UUID
   template_user_id: string; // UUID
-  amount: number; // Cents (100-99999)
+  amount: number; // Cents (100-350000 = $1.00-$3,500.00) — see migration CHECK
   currency: Currency;
   type: PaymentType;
   interval: PaymentInterval | null;
