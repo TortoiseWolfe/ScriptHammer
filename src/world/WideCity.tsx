@@ -16,6 +16,7 @@ import Terrain from './Terrain';
 import HouseModel from './HouseModel';
 import Water from './Water';
 import Roads from './Roads';
+import CityProps from './CityProps';
 import WarehouseModels from './WarehouseModels';
 import { elevationAt, minElevation } from './terrainSample';
 
@@ -241,6 +242,13 @@ export default function WideCity({
       {/* Road ribbons — narrow streets reprojected into the wide frame (corridor
           coverage). Terrain-riding asphalt so streets read at ground level. */}
       <Roads
+        streets={data.streets}
+        grid={data.grid}
+        manifest={data.wideManifest}
+      />
+      {/* Zero-asset city life — instanced street trees + parked cars scattered
+          along the streets so the city isn't dead-empty. */}
+      <CityProps
         streets={data.streets}
         grid={data.grid}
         manifest={data.wideManifest}
