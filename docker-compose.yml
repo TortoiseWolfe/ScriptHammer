@@ -263,6 +263,15 @@ services:
       GOTRUE_JWT_EXP: 3600
       GOTRUE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-super-secret-jwt-token-with-at-least-32-characters-long}
       GOTRUE_EXTERNAL_EMAIL_ENABLED: 'true'
+      # Guest checkout (#557/#558). supabase/config.toml also carries this, but
+      # that file is read ONLY by the Supabase CLI — which this repo does not and
+      # by policy cannot install — so THIS is the setting that actually does
+      # anything for the local stack. Without it signInAnonymously() returns 422
+      # anonymous_provider_disabled and no guest can buy.
+      #
+      # Not enabled in production yet: anonymous sessions raise MAU, one of the
+      # three quotas at 402 until the cycle resets.
+      GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED: 'true'
       # Default 'true' = normal local dev auto-confirms (fast, no email step).
       # The signup-mailer E2E (#288) sets GOTRUE_MAILER_AUTOCONFIRM=false so GoTrue
       # sends a REAL confirmation email into supabase-mail (Mailpit) that the test

@@ -206,6 +206,18 @@ CREATE TABLE IF NOT EXISTS edge_idempotency_keys (
 CREATE INDEX IF NOT EXISTS idx_edge_idempotency_lookup
   ON edge_idempotency_keys(idempotency_key, function_name);
 
+-- Fingerprint of the request that first used a key (#558). Without it, a client
+-- that reuses one key across two different SKUs gets the FIRST order replayed
+-- back silently — a wrong-product order with nothing to surface it. create-order
+-- compares this and returns 409 on a mismatch, which is the rule Stripe applies:
+-- a key is a promise about one request.
+--
+-- Nullable on purpose. Rows written before this column existed have no
+-- fingerprint, and the safe reading of NULL is "cannot prove it was different",
+-- so those replay rather than 409.
+ALTER TABLE edge_idempotency_keys
+  ADD COLUMN IF NOT EXISTS request_fingerprint TEXT;
+
 COMMENT ON TABLE edge_idempotency_keys IS 'Idempotency cache for outbound payment Edge Functions (#106)';
 
 -- Webhook events (with retry fields from Feature 017)
