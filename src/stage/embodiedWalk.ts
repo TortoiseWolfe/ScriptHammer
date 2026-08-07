@@ -64,23 +64,25 @@ export function makeWalkMove(
     });
     ctrl.step(dt);
 
-    // V toggles first/third-person while riding; always first on foot.
+    // V toggles first/third-person — on foot AND on the bike — so you can watch
+    // your character walk, crouch and lie down, not just ride.
     const vDown = rig.down('KeyV');
-    if (vDown && !prevV && ctrl.riding) {
+    if (vDown && !prevV) {
       deps.viewRef.current = deps.viewRef.current === 'first' ? 'third' : 'first';
     }
     prevV = vDown;
-    if (!ctrl.riding) deps.viewRef.current = 'first';
 
     ctrl.eyePosition(eye.position);
-    if (ctrl.riding && deps.viewRef.current === 'third') {
+    if (deps.viewRef.current === 'third') {
       // Chase cam: pull the camera back behind the look direction + up a bit, so
       // you see yourself on the bike. The Rig still applies (pitch, yaw), so it
       // looks forward over your shoulder.
       const back = 8;
       const up = 3;
-      eye.position.x += Math.sin(rig.yaw) * back;
-      eye.position.z += Math.cos(rig.yaw) * back;
+      // Trail the FACING (bike heading while riding, look yaw on foot) so the
+      // camera stays behind the bike even when the mouse free-looks around.
+      eye.position.x += Math.sin(ctrl.facingYaw) * back;
+      eye.position.z += Math.cos(ctrl.facingYaw) * back;
       eye.position.y += up;
     } else {
       // First-person / on-foot: fold head-bob + landing punch into the eye.

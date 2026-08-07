@@ -129,9 +129,10 @@ describe('EmbodiedController', () => {
     stepN(c, 180);
     const walkX = c.position.x;
 
-    // Mount (edge on B), then ride forward for the same 3 s.
+    // Mount (edge on B), seeding the bike heading toward +x (yaw −π/2), then ride
+    // forward for the same 3 s. On the bike, forward drives ALONG the heading.
     c.teleport(0, 0, 0);
-    c.setInput(input({ mount: true }));
+    c.setInput(input({ mount: true, yaw: -Math.PI / 2 }));
     c.step(DT);
     expect(c.riding).toBe(true);
     c.setInput(input({ forward: 1, yaw: -Math.PI / 2 }));

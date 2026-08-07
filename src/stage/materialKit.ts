@@ -9,8 +9,13 @@ export const materialKit = {
       ...opts,
     });
   },
-  drapedGround(texture: Texture) {
+  drapedGround(texture: Texture, anisotropy = 1) {
     texture.colorSpace = SRGBColorSpace;
+    // Anisotropic filtering keeps the aerial imagery sharp at the grazing angles
+    // you see at street level (default 1 = a smeared mip). Caller passes the
+    // renderer's max.
+    texture.anisotropy = Math.max(texture.anisotropy, anisotropy);
+    texture.needsUpdate = true;
     return new MeshStandardMaterial({
       map: texture,
       roughness: 1,

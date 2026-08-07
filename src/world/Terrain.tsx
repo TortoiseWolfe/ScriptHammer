@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useRef } from 'react';
+import { useThree } from '@react-three/fiber';
 import { PlaneGeometry, Texture, type Mesh } from 'three';
 import type { TerrainGrid, Manifest } from '@/lib/manifest';
 import { bilinear, assertExtent, minElevation } from './terrainSample';
@@ -39,7 +40,12 @@ export default function Terrain({
     return g;
   }, [grid, manifest]);
 
-  const material = useMemo(() => materialKit.drapedGround(drape), [drape]);
+  // Anisotropic filtering keeps the aerial sharp at grazing street-level angles.
+  const maxAniso = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
+  const material = useMemo(
+    () => materialKit.drapedGround(drape, maxAniso),
+    [drape, maxAniso]
+  );
 
   // Publish the ground mesh for the physics floor (#226). Keyed on `geometry` so
   // a rebuild hands over the fresh mesh; guarded on the ref.

@@ -66,7 +66,10 @@ export default function Bike({
   });
 
   return (
-    <group ref={ref} visible={false}>
+    // Real-world scale: the base model (~1.7 m long / ~1 m tall) IS a real bike, so
+    // keep it near 1× next to the ~1.8 m rider (a hair up for presence). Origin at
+    // tyre-contact so uniform scale keeps the wheels grounded.
+    <group ref={ref} visible={false} scale={1.05}>
       {/* Wheels: axle along X (discs in the YZ plane), tyre contact at y=0. */}
       <mesh position={[0, 0.34, -0.5]} rotation={[0, Math.PI / 2, 0]} castShadow>
         <torusGeometry args={[0.34, 0.03, 8, 20]} />

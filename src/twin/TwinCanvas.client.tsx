@@ -15,7 +15,14 @@ import {
   type Mesh,
   type Vector3,
 } from 'three';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import StageCore, { StageHandle } from '@/stage/StageCore';
 import { Rig, RigMode, RigWaypoint } from '@/stage/Rig';
 import {
@@ -29,6 +36,8 @@ import { makeWalkMove, type BikeView } from '@/stage/embodiedWalk';
 import TwinWorld from '@/world/TwinWorld';
 import Trolley from '@/agents/trolley';
 import Bike from '@/agents/bike';
+import PlayerCharacter from '@/agents/playerCharacter';
+import ProceduralSky from '@/components/game/ProceduralSky';
 import Hud, { HudCaption, HudLink, HudOption, HudSlider } from '@/stage/Hud';
 import PlacementEditor from './PlacementEditor';
 import SelectedBuildingCard from './SelectedBuildingCard';
@@ -270,15 +279,19 @@ function SceneInner({
   // the lens after mount.
   useEffect(() => {
     const cam = camera as import('three').PerspectiveCamera;
-    cam.fov = PALETTES[paletteKey].fov;
+    // First-person needs a normal-lens fov; the "toy" palette's telephoto 34
+    // is claustrophobic on foot. Wider only in Walk; palette fov otherwise.
+    cam.fov = mode === 'walk' ? 72 : PALETTES[paletteKey].fov;
     cam.updateProjectionMatrix();
-  }, [camera, paletteKey]);
+  }, [camera, paletteKey, mode]);
 
   const d = useMemo(() => computeDay(day), [day]);
-  const grade = useMemo(
-    () => applyProfile(d.gradeBase, PALETTES[paletteKey]),
-    [d, paletteKey]
-  );
+  const grade = useMemo(() => {
+    const g = applyProfile(d.gradeBase, PALETTES[paletteKey]);
+    // The tilt-shift vignette darkens the frame edges — great for a miniature,
+    // gloomy on foot. Flatten it for Walk.
+    return mode === 'walk' ? { ...g, vignette: 0 } : g;
+  }, [d, paletteKey, mode]);
   // Stable object identities: fresh literals here would re-trigger StageCore's
   // effects and rebuild the merged building geometry on every re-render (the
   // tour emits a caption every few seconds).
@@ -518,13 +531,20 @@ function SceneInner({
     if (walkCtrl) onWalkReady?.();
   }, [walkCtrl, onWalkReady]);
 
-  // Resume Web Audio on the pointer-lock gesture (autoplay policy) while walking.
+  // Resume Web Audio on the FIRST gesture in Walk — click OR keypress. The
+  // `?walk` deep-link ("Play") auto-enters Walk with no canvas click, so keydown
+  // (WASD) must also wake the AudioContext or footsteps stay silent. resume() is
+  // idempotent.
   useEffect(() => {
     if (mode !== 'walk') return;
     const dom = gl.domElement;
-    const onClick = () => resumeAudio();
-    dom.addEventListener('click', onClick);
-    return () => dom.removeEventListener('click', onClick);
+    const kick = () => resumeAudio();
+    dom.addEventListener('click', kick);
+    window.addEventListener('keydown', kick);
+    return () => {
+      dom.removeEventListener('click', kick);
+      window.removeEventListener('keydown', kick);
+    };
   }, [mode, gl, resumeAudio]);
 
   // First-person needs a tiny near plane. The twin's default (framing.cameraNear
@@ -565,16 +585,33 @@ function SceneInner({
       ortho={ortho}
       registerHandle={registerHandle}
     >
+      {/* First-person Walk gets a real procedural sky dome + IBL (which also
+          lifts the buildings); the miniature modes keep the flat colour. */}
+      {mode === 'walk' && <ProceduralSky hour={13} />}
       {/* Sky background + atmospheric fog, ranged to the model's extents so
-          they add depth without hiding the city. */}
+          they add depth without hiding the city. Walk brightens the fill,
+          neutralises the brown ground-bounce, and hazes toward the sky. */}
       <color attach="background" args={[d.skyColor]} />
-      <fog attach="fog" args={[d.fogColor, framing.fogNear, framing.fogFar]} />
-      <ambientLight intensity={d.ambient} />
-      <hemisphereLight args={[d.hemiSky, d.hemiGround, d.hemiIntensity]} />
+      <fog
+        attach="fog"
+        args={[
+          mode === 'walk' ? 0xbcd2e8 : d.fogColor,
+          framing.fogNear,
+          framing.fogFar,
+        ]}
+      />
+      <ambientLight intensity={mode === 'walk' ? d.ambient * 3 : d.ambient} />
+      <hemisphereLight
+        args={[
+          d.hemiSky,
+          mode === 'walk' ? 0x9aa0a8 : d.hemiGround,
+          mode === 'walk' ? d.hemiIntensity * 2 : d.hemiIntensity,
+        ]}
+      />
       <directionalLight
         ref={sunRef}
         position={d.sunPos}
-        intensity={d.sunIntensity}
+        intensity={mode === 'walk' ? d.sunIntensity * 1.15 : d.sunIntensity}
         color={d.sunColor}
         castShadow
       />
@@ -617,6 +654,13 @@ function SceneInner({
       {/* The rideable bike — parked in the world once the walk controller exists. */}
       {walkCtrl && (
         <Bike ctrlRef={walkCtrlRef} viewRef={viewRef} onNearBike={onNearBike} />
+      )}
+      {/* Your visible body — a rigged, animated human shown in third-person (V),
+          posed by stance/riding. Suspends while the glTF loads. */}
+      {walkCtrl && (
+        <Suspense fallback={null}>
+          <PlayerCharacter ctrlRef={walkCtrlRef} viewRef={viewRef} />
+        </Suspense>
       )}
     </StageCore>
   );
@@ -1002,7 +1046,7 @@ function TwinCanvasInner({
           buildingsOpacity={buildingsOpacity}
           // Tilt-shift blur off for close-up study AND while editing — 0.5 m
           // nudges are invisible through the miniature blur.
-          crisp={houseFocused || editMode}
+          crisp={houseFocused || editMode || mode === 'walk'}
           paletteKey={paletteKey}
           day={day}
           mode={mode}

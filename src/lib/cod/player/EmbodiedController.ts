@@ -75,6 +75,8 @@ export interface BikeCfg {
   brakeTau: number;
   /** How close (m) the player must be to the parked bike to mount it. */
   mountRadius: number;
+  /** Steering rate, rad/s — how fast A/D turns the bike's heading. */
+  turnRate: number;
 }
 
 export interface EmbodiedConfig {
@@ -120,6 +122,7 @@ const DEFAULT_BIKE: BikeCfg = {
   accelTau: 0.35, // snappy pick-up — reaches cruise in ~1 s (was a sluggish 1.0)
   brakeTau: 1.5, // a short roll on release, not a long glide
   mountRadius: 3, // a touch more forgiving to walk up and mount
+  turnRate: 2.2, // A/D steers ~126°/s
 };
 
 const ZERO_INPUT: EmbodiedInput = {
@@ -160,6 +163,8 @@ export class EmbodiedController {
   /** The parked bike's world position + facing (a real object you return to). */
   private readonly bikePos_ = { x: 0, y: 0, z: 0 };
   private bikeYaw_ = 0;
+  /** Live steered heading while riding (rad); A/D turns it, W/S drives along it. */
+  private bikeHeading_ = 0;
   private accum = 0;
   private eye: number;
 
@@ -240,9 +245,10 @@ export class EmbodiedController {
   get bikeYaw(): number {
     return this.bikeYaw_;
   }
-  /** Current look yaw fed in (radians) — for orienting a third-person model. */
+  /** Facing for the third-person model + chase cam: the bike's steered heading
+   *  while riding, else the camera look yaw. */
   get facingYaw(): number {
-    return this.input.yaw;
+    return this.riding_ ? this.bikeHeading_ : this.input.yaw;
   }
   /** On foot AND within mountRadius of the parked bike → B will mount it. */
   get nearBike(): boolean {
@@ -299,6 +305,7 @@ export class EmbodiedController {
         this.onStanceChange?.(this.stance);
       } else if (this.nearBike) {
         this.riding_ = true;
+        this.bikeHeading_ = inp.yaw; // start pointing where you were looking
         if (this.stance !== 'stand') this.applyStance('stand');
         this.onStanceChange?.('bike');
       }
@@ -345,8 +352,8 @@ export class EmbodiedController {
 
     // Bike momentum: approach the target velocity (accelerate while pedalling,
     // roll on when coasting) instead of snapping — the "vehicle" feel. On foot,
-    // velocity snaps (crisp FPS control).
-    const moving = fwd !== 0 || str !== 0;
+    // velocity snaps (crisp FPS control). Steering-only (no throttle) coasts.
+    const moving = this.riding_ ? fwd !== 0 : fwd !== 0 || str !== 0;
     const bikeK =
       1 -
       Math.exp(-this.fixedStep / (moving ? this.bike.accelTau : this.bike.brakeTau));
@@ -358,21 +365,27 @@ export class EmbodiedController {
     while (this.accum >= this.fixedStep) {
       this.accum -= this.fixedStep;
       cc.velocity.y += this.gravity * this.fixedStep;
-      // forward = (−sy, 0, −cy), right = (cy, 0, −sy)
-      let wx = cy * str - sy * fwd;
-      let wz = -sy * str - cy * fwd;
-      const wl = Math.hypot(wx, wz);
-      if (wl > 1e-6) {
-        wx = (wx / wl) * speed;
-        wz = (wz / wl) * speed;
-      } else {
-        wx = 0;
-        wz = 0;
-      }
       if (this.riding_) {
-        cc.velocity.x += (wx - cc.velocity.x) * bikeK;
-        cc.velocity.z += (wz - cc.velocity.z) * bikeK;
+        // Bicycle: A/D steers the heading, W/S throttles ALONG it — no strafe,
+        // reverse allowed — with momentum. This is what makes it ride like a bike.
+        this.bikeHeading_ += this.bike.turnRate * str * this.fixedStep;
+        const tx = -Math.sin(this.bikeHeading_) * speed * fwd;
+        const tz = -Math.cos(this.bikeHeading_) * speed * fwd;
+        cc.velocity.x += (tx - cc.velocity.x) * bikeK;
+        cc.velocity.z += (tz - cc.velocity.z) * bikeK;
       } else {
+        // On foot: camera-relative omnidirectional WASD, snapped (crisp).
+        // forward = (−sy, 0, −cy), right = (cy, 0, −sy)
+        let wx = cy * str - sy * fwd;
+        let wz = -sy * str - cy * fwd;
+        const wl = Math.hypot(wx, wz);
+        if (wl > 1e-6) {
+          wx = (wx / wl) * speed;
+          wz = (wz / wl) * speed;
+        } else {
+          wx = 0;
+          wz = 0;
+        }
         cc.velocity.x = wx;
         cc.velocity.z = wz;
       }
