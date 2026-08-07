@@ -4,6 +4,8 @@ import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import IntakeUploader from '@/components/forms/IntakeUploader';
+import type { IntakeAttachment } from '@/types/commerce';
 
 /**
  * What the buyer tells us about the job, captured at checkout.
@@ -63,6 +65,17 @@ export interface IntakeFormProps {
   /** Label for the submit button; the page sets the amount. */
   submitLabel?: string;
   className?: string;
+  /**
+   * Attachments (FR-014). Deliberately NOT part of the zod schema and NOT part of
+   * `IntakeFormData`: a file is uploaded the moment it is chosen, so by submit time
+   * it is already a storage path rather than a form value. Threading it through
+   * react-hook-form would mean validating something that has already happened.
+   *
+   * Optional so the form still renders without an uploader — Storybook, and any
+   * consumer that does not want attachments, get the fields and nothing else.
+   */
+  attachments?: IntakeAttachment[];
+  onAttachmentsChange?: (attachments: IntakeAttachment[]) => void;
 }
 
 interface FieldProps {
@@ -136,6 +149,8 @@ export default function IntakeForm({
   busy = false,
   submitLabel = 'Continue to payment',
   className = '',
+  attachments,
+  onAttachmentsChange,
 }: IntakeFormProps) {
   const {
     register,
@@ -314,6 +329,20 @@ export default function IntakeForm({
             className={cls(errors.notes, 'textarea')}
           />
         </Field>
+
+        {/*
+          Rendered only when the page supplies BOTH halves. FR-014 belongs to the
+          checkout, but IntakeForm is also used without attachments (Storybook, and
+          any consumer that just wants the fields) — an uploader with nowhere to
+          report to would upload a buyer's files into a void.
+        */}
+        {attachments && onAttachmentsChange && (
+          <IntakeUploader
+            value={attachments}
+            onChange={onAttachmentsChange}
+            disabled={busy}
+          />
+        )}
       </fieldset>
 
       {/* `sh-btn sh-btn-primary` (globals.css:830, :847) — the 2a button the rest

@@ -1,14 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import {
-  resolveOrder,
-  resolveChargeAmount,
+  MAX_ATTACHMENTS,
+  MIN_CHARGE_CENTS,
+  buildOrderRow,
   decideIdempotency,
   depositPercent,
   fingerprintRequest,
-  buildOrderRow,
-  MIN_CHARGE_CENTS,
-  type ProductRow,
+  resolveChargeAmount,
+  resolveOrder,
+  sanitizeAttachments,
   type IdempotencyLookup,
+  type ProductRow,
 } from '../../supabase/functions/create-order/resolve';
 
 /**
@@ -406,5 +408,138 @@ describe('buildOrderRow — the buyer must own the row', () => {
 
   it('opens as pending — only the webhook may mark an order paid', () => {
     expect(buildOrderRow(base).status).toBe('pending');
+  });
+});
+
+/**
+ * T021 — ownership of an attachment is recomputed server-side, never believed.
+ *
+ * Storage RLS stops a buyer WRITING outside their own prefix. It does not stop them
+ * POSTing an order whose attachment list names someone else's path, and
+ * /admin/orders signs those paths with service-role — which honours no RLS. Without
+ * this, "guess a path" becomes "have the operator open it for you".
+ */
+describe('sanitizeAttachments (T021)', () => {
+  const uid = '11111111-2222-3333-4444-555555555555';
+  const other = '99999999-8888-7777-6666-555555555555';
+  const ok = (path: string) => ({
+    path,
+    name: 'a.png',
+    bytes: 10,
+    mime: 'image/png',
+    kind: 'current',
+  });
+
+  it('keeps the buyer’s own attachments', () => {
+    const out = sanitizeAttachments([ok(`${uid}/a.png`)], uid);
+    expect(out).toHaveLength(1);
+    expect(out[0].path).toBe(`${uid}/a.png`);
+  });
+
+  it('drops a path belonging to another user', () => {
+    expect(sanitizeAttachments([ok(`${other}/secret.png`)], uid)).toEqual([]);
+  });
+
+  it('drops a path that climbs out with ..', () => {
+    expect(
+      sanitizeAttachments([ok(`${uid}/../${other}/secret.png`)], uid)
+    ).toEqual([]);
+  });
+
+  it('drops a path that nests below the uid folder', () => {
+    expect(sanitizeAttachments([ok(`${uid}/sub/deep.png`)], uid)).toEqual([]);
+  });
+
+  it('drops a prefix that merely starts with the uid string', () => {
+    // `${uid}-evil/…` startsWith(uid) is true; startsWith(`${uid}/`) is not.
+    expect(sanitizeAttachments([ok(`${uid}-evil/x.png`)], uid)).toEqual([]);
+  });
+
+  it('caps the list at eight (FR-014)', () => {
+    const many = Array.from({ length: 20 }, (_, i) => ok(`${uid}/${i}.png`));
+    expect(sanitizeAttachments(many, uid)).toHaveLength(MAX_ATTACHMENTS);
+  });
+
+  it('de-duplicates repeated paths', () => {
+    expect(
+      sanitizeAttachments([ok(`${uid}/a.png`), ok(`${uid}/a.png`)], uid)
+    ).toHaveLength(1);
+  });
+
+  it('normalises an unknown kind rather than storing it', () => {
+    const out = sanitizeAttachments(
+      [{ ...ok(`${uid}/a.png`), kind: 'admin-only' }],
+      uid
+    );
+    expect(out[0].kind).toBe('unspecified');
+  });
+
+  it('strips fields the client invented', () => {
+    const out = sanitizeAttachments(
+      [{ ...ok(`${uid}/a.png`), is_admin: true, signedUrl: 'http://x' }],
+      uid
+    );
+    expect(Object.keys(out[0]).sort()).toEqual([
+      'bytes',
+      'kind',
+      'mime',
+      'name',
+      'path',
+    ]);
+  });
+
+  it('survives junk instead of throwing', () => {
+    expect(sanitizeAttachments(null, uid)).toEqual([]);
+    expect(sanitizeAttachments('nope', uid)).toEqual([]);
+    expect(sanitizeAttachments([null, 3, 'x'], uid)).toEqual([]);
+    expect(sanitizeAttachments([ok(`${uid}/a.png`)], '')).toEqual([]);
+  });
+});
+
+describe('buildOrderRow sanitises attachments before they reach the row', () => {
+  const uid = '11111111-2222-3333-4444-555555555555';
+  const base = {
+    intentId: 'i',
+    productId: 'svc-site',
+    buyerUserId: uid,
+    buyerEmail: 'b@example.com',
+    amountCents: 100,
+  };
+
+  it('drops a foreign path supplied by the client', () => {
+    const row = buildOrderRow({
+      ...base,
+      intake: {
+        business: 'Warrior Roofing',
+        attachments: [
+          {
+            path: `${uid}/mine.png`,
+            name: 'mine.png',
+            bytes: 1,
+            mime: 'image/png',
+            kind: 'target',
+          },
+          {
+            path: `99999999-0000-0000-0000-000000000000/theirs.png`,
+            name: 't',
+            bytes: 1,
+            mime: 'image/png',
+            kind: 'target',
+          },
+        ],
+      },
+    });
+    const intake = row.intake_data as Record<string, unknown>;
+    expect(intake.attachments).toHaveLength(1);
+    expect((intake.attachments as { path: string }[])[0].path).toBe(
+      `${uid}/mine.png`
+    );
+    // the rest of the intake is untouched
+    expect(intake.business).toBe('Warrior Roofing');
+  });
+
+  it('leaves an order with no attachments key alone', () => {
+    const row = buildOrderRow({ ...base, intake: { business: 'X' } });
+    expect(row.intake_data).toEqual({ business: 'X' });
   });
 });

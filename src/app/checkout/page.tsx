@@ -22,7 +22,7 @@ import CheckoutSummary, {
 } from '@/components/payment/CheckoutSummary';
 import BookingStep from '@/components/payment/BookingStep';
 import IntakeForm, { type IntakeFormData } from '@/components/forms/IntakeForm';
-import type { Product } from '@/types/commerce';
+import type { IntakeAttachment, Product } from '@/types/commerce';
 
 /**
  * /checkout?sku=… — sign in, details, intake, payment, then booking, on one URL.
@@ -90,6 +90,14 @@ function CheckoutContent() {
   const { session, isLoading: authLoading } = useAuth();
   const [authTab, setAuthTab] = useState<'signin' | 'signup'>('signin');
   const [justSignedUp, setJustSignedUp] = useState(false);
+
+  /**
+   * Attachments live here, not in IntakeForm's zod schema (FR-014). A file is
+   * uploaded the moment it is chosen, so by submit time it is already a storage
+   * path — there is nothing left to validate. Holding it on the page also means a
+   * failed create-order does not lose files the buyer already uploaded.
+   */
+  const [attachments, setAttachments] = useState<IntakeAttachment[]>([]);
 
   /**
    * One nonce per page load, folded into the Idempotency-Key.
@@ -237,6 +245,10 @@ function CheckoutContent() {
                 domain: intake.domain || undefined,
                 reference_url: intake.reference_url || undefined,
                 notes: intake.notes || undefined,
+                // create-order re-derives ownership of every path from the
+                // authenticated uid and drops anything that is not this buyer's
+                // (sanitizeAttachments, T021). This list is a claim, not a grant.
+                attachments,
               },
             }),
           }
@@ -275,7 +287,13 @@ function CheckoutContent() {
         });
       }
     },
-    [stage, attemptNonce]
+    // `attachments` is NOT optional here. Without it this callback closes over the
+    // list as it was on the render that created it — which is always the empty one,
+    // because files are attached after the form first paints. The order would post
+    // `attachments: []` no matter how many files the buyer uploaded, and nothing
+    // would look wrong: the uploads succeed, the thumbnails appear, the order is
+    // created. Only the operator, later, finds nothing attached.
+    [stage, attemptNonce, attachments]
   );
 
   // ---- render ------------------------------------------------------------
@@ -461,6 +479,8 @@ function CheckoutContent() {
           <IntakeForm
             onSubmit={onSubmit}
             busy={busy}
+            attachments={attachments}
+            onAttachmentsChange={setAttachments}
             submitLabel={`Pay ${(due / 100).toLocaleString('en-US', {
               style: 'currency',
               currency: product.currency.toUpperCase(),
