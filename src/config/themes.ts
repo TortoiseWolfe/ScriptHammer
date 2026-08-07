@@ -16,6 +16,7 @@
 export const THEMES = [
   'scripthammer-dark',
   'scripthammer-light',
+  'scripthammer-forge',
   'light',
   'dark',
   'cupcake',

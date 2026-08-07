@@ -106,7 +106,7 @@ Full guide: [docs/FORKING.md](./docs/FORKING.md). Fresh-fork walkthrough: [docs/
 - 📱 **Installable app.** Works offline, syncs in the background.
 - ♿ **Accessibility.** WCAG AA, colorblind assistance, font switching.
 - 🔏 **Privacy.** Cookie consent gates analytics and tracking.
-- 🎨 **34 themes.** 2 house themes plus 32 DaisyUI variants, and it remembers your pick.
+- 🎨 **35 themes.** 3 house themes plus 32 DaisyUI variants, and it remembers your pick.
 - 🧩 **Component library.** Atomic design, documented in Storybook, scaffolded by a generator.
 - 🧪 **Tested.** Vitest, Playwright across browsers, and Pa11y, all in CI.
 
