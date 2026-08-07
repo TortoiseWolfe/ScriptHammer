@@ -77,3 +77,34 @@ console.log(
   `✅ strip-css-script-tags (#348): removed ${removed} <script src="*.css"> tag(s) ` +
     `from ${touched}/${htmlFiles.length} HTML file(s).`
 );
+
+/**
+ * ZERO IS NOW THE EXPECTED RESULT (#625).
+ *
+ * #348 read this as a Next bug and stripped the tags out of the export. It was
+ * ours: `next.config.ts`'s `vendor` cacheGroup matched every module under
+ * node_modules with no type filter, so it claimed CSS as well as JS, and webpack
+ * emitted `vendor.css` under a chunk name the loader then wrote a `<script>` for.
+ * `type: /javascript/` on the cacheGroups fixed the cause, and this script has
+ * removed 0 ever since.
+ *
+ * Which makes a NON-zero count meaningful for the first time: the root cause is
+ * back. Stripping still runs first, so production is never shipped broken by this
+ * check — but the build then fails loudly instead of printing a number into a log
+ * nobody reads. That silent-success mode is exactly how the basePath variant went
+ * on shipping the bug (see the skip message above).
+ *
+ * If a Next upgrade reintroduces this upstream, this failing IS the notification.
+ * Set STRIP_CSS_ALLOW_REMOVALS=1 to ship anyway while you investigate.
+ */
+if (removed > 0 && process.env.STRIP_CSS_ALLOW_REMOVALS !== '1') {
+  console.error(
+    `\n✗ Expected 0 removals. ${removed} means the #625 root cause has regressed —\n` +
+      `  a splitChunks cacheGroup in next.config.ts is claiming CSS modules again\n` +
+      `  (check that each group still carries \`type: /javascript/\`), or Next has\n` +
+      `  reintroduced the bug upstream.\n` +
+      `  The tags WERE stripped, so this export is safe to serve.\n` +
+      `  Override with STRIP_CSS_ALLOW_REMOVALS=1 if you need to ship first.`
+  );
+  process.exit(1);
+}
