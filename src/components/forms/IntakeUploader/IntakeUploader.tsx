@@ -340,10 +340,24 @@ export default function IntakeUploader({
         </ul>
       )}
 
-      <p className="text-base-content mt-2 text-xs">
-        Tag each one so we know whether it&apos;s your current site or the look
-        you&apos;re after — it saves a round of emails.
-      </p>
+      {/*
+        Only when there is something to tag. The tag chips render per SUCCESSFULLY
+        uploaded file, so before any upload lands — and, worse, when every upload
+        has FAILED — this sentence instructed the buyer to use controls that were
+        not on the screen. Reported from production the day uploads went live: the
+        bucket did not exist, every row showed "Bucket not found", and underneath
+        them the page still said "Tag each one".
+
+        Telling someone to do something they cannot see how to do is worse than
+        saying nothing; they assume the fault is theirs.
+      */}
+      {value.length > 0 && (
+        <p className="text-base-content mt-2 text-xs">
+          Use <strong>What I have</strong> and <strong>What I want</strong> on
+          each file above, so we know which is your current site and which is
+          the look you&apos;re after — it saves a round of emails.
+        </p>
+      )}
     </div>
   );
 }
