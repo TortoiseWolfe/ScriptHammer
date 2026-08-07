@@ -12,7 +12,8 @@
  *   Body: { session_id: string }
  *
  * RESPONSE
- *   200 OK: { payment_status: 'paid' | 'unpaid' | 'no_payment_required' }
+ *   200 OK: { payment_status: 'paid' | 'unpaid' | 'no_payment_required',
+ *             intent_id: string }
  *   400 Bad Request: { error: string }
  *   401 Unauthorized: { error: string }
  *   403 Forbidden: { error: string } (caller does not own the underlying intent)
@@ -125,8 +126,14 @@ serve(async (req) => {
       );
     }
 
+    // `intent_id` is returned so the caller can bridge a Stripe `session_id` back
+    // to our own payment_intent — /payment-result is reached by Stripe's redirect,
+    // which carries only the session id, and every downstream lookup is keyed on
+    // the intent. Safe to disclose: ownership was just proven above, so this is the
+    // caller's own id and nothing else's.
     return jsonResponse(req, {
       payment_status: session.payment_status,
+      intent_id: intentId,
     });
   } catch (err) {
     if (err instanceof UnauthorizedError) {
