@@ -137,6 +137,7 @@
   themes:
     scripthammer-dark --default,
     scripthammer-light,
+    scripthammer-forge,
     light,
     dark,
     cupcake,
@@ -267,6 +268,78 @@
   --radius-selector: 0.75rem;
   --radius-field: 0.5rem;
   --radius-box: 1.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 1;
+}
+
+/* ScriptHammer Forge — the commerce design import, made AAA-safe
+ *
+ * Palette measured off `docs/design/commerce/pricing-demo.html` by RENDERING it
+ * and reading pixels back through a canvas, not by parsing the CSS as text.
+ * That distinction has cost this repo twice (#379): a tag-stripping read drops
+ * every gradient and image and produces a confident, wrong answer.
+ *
+ * The demo declares eleven custom properties. FIVE OF THEM CANNOT BE USED AS
+ * TEXT AS DRAWN — measured against the demo's own three surfaces (#0f0d0b,
+ * #191512, #221c17), where this repo gates at AAA 7:1:
+ *
+ *     copper  #b87333   5.12 / 4.79 / 4.44   fails AA
+ *     patina  #5f8d7e   5.17 / 4.84 / 4.49   fails AA
+ *     danger  #c4553d   4.35 / 4.07 / 3.78   fails AA
+ *     ok      #6f9e5c   6.21 / 5.81 / 5.39   AA only
+ *     muted   #9c8f7f   6.14 / 5.75 / 5.33   AA only
+ *
+ * The demo's own primary button — light label on copper — measures 3.01:1.
+ *
+ * So the drawn values are kept for the three surfaces, the text and brass (all
+ * AAA as-is), and the remaining five are lifted in HSL — hue and saturation
+ * held, lightness raised to the minimum that clears 7:1 on the WORST of the
+ * three surfaces. Checking against base-100 alone is the exact mistake #411
+ * found in the light theme, where every colour was honestly verified on one
+ * surface and failed on the one underneath it.
+ *
+ * PRIMARY IS BRASS, NOT COPPER. Near-black on brass is 8.62:1; on copper it is
+ * 5.12:1 and no amount of content-colour juggling fixes that without changing
+ * the fill. Copper stays in the palette as `secondary` (lifted), so the family
+ * survives while the button that carries text is the one that can. */
+@plugin "daisyui/theme" {
+  name: 'scripthammer-forge';
+  default: false;
+  color-scheme: dark;
+
+  --color-base-100: #0f0d0b; /* --bg, as drawn */
+  --color-base-200: #191512; /* --surface, as drawn */
+  --color-base-300: #221c17; /* --surface-2, as drawn */
+  --color-base-content: #ece4d9; /* --text — 15.39/14.40/13.37 */
+
+  --color-primary: #d9a441; /* --brass, as drawn — 8.62/8.07/7.49 */
+  --color-primary-content: #0f0d0b; /* 8.62:1 on the fill */
+
+  --color-secondary: #d59c68; /* --copper lifted from #b87333 — 7.06 */
+  --color-secondary-content: #0f0d0b;
+
+  --color-accent: #8ab0a4; /* --patina lifted from #5f8d7e — 7.08 */
+  --color-accent-content: #0f0d0b;
+
+  --color-neutral: #221c17;
+  --color-neutral-content: #b1a69a; /* --muted lifted from #9c8f7f — 7.06 */
+
+  --color-info: #8ab0a4; /* the demo declares none; patina stands in */
+  --color-info-content: #0f0d0b;
+  --color-success: #8cb37c; /* --ok lifted from #6f9e5c — 7.07 */
+  --color-success-content: #0f0d0b;
+  --color-warning: #d9a441; /* brass doubles as warning */
+  --color-warning-content: #0f0d0b;
+  --color-error: #db9788; /* --danger lifted from #c4553d — 7.05 */
+  --color-error-content: #0f0d0b;
+
+  /* The demo's --radius is 4px throughout — machined, not rounded. */
+  --radius-selector: 0.25rem;
+  --radius-field: 0.25rem;
+  --radius-box: 0.25rem;
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
   --border: 1px;
@@ -418,13 +491,19 @@
   .card:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-light']
   .card:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-forge']
+  .card:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-dark']
   .alert:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-light']
+  .alert:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-forge']
   .alert:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-dark']
   .modal-box:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-light']
+  .modal-box:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-forge']
   .modal-box:not(.sh-plate):not(.sh-well):not(.sh-groove) {
   box-shadow: var(--sh-plate);
 }
@@ -433,6 +512,8 @@
 [data-theme='scripthammer-dark']
   .stats:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-light']
+  .stats:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-forge']
   .stats:not(.sh-plate):not(.sh-well):not(.sh-groove) {
   box-shadow: var(--sh-well);
 }
@@ -443,20 +524,29 @@
   .input:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-light']
   .input:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-forge']
+  .input:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-dark']
   .select:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-light']
+  .select:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-forge']
   .select:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-dark']
   .textarea:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-light']
+  .textarea:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-forge']
   .textarea:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-dark']
   .file-input:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-light']
+  .file-input:not(.sh-plate):not(.sh-well):not(.sh-groove),
+[data-theme='scripthammer-forge']
   .file-input:not(.sh-plate):not(.sh-well):not(.sh-groove),
 [data-theme='scripthammer-dark'] .table thead th,
-[data-theme='scripthammer-light'] .table thead th {
+[data-theme='scripthammer-light'] .table thead th,
+[data-theme='scripthammer-forge'] .table thead th {
   box-shadow: var(--sh-groove);
 }
 
@@ -470,6 +560,10 @@
 [data-theme='scripthammer-light']
   .btn:not(.btn-ghost):not(.btn-link):not(.sh-plate):not(.sh-well):not(
     .sh-groove
+  ),
+[data-theme='scripthammer-forge']
+  .btn:not(.btn-ghost):not(.btn-link):not(.sh-plate):not(.sh-well):not(
+    .sh-groove
   ) {
   box-shadow: var(--sh-plate);
 }
@@ -477,12 +571,15 @@
 [data-theme='scripthammer-dark']
   .btn:not(.btn-ghost):not(.btn-link):not(.btn-disabled):active,
 [data-theme='scripthammer-light']
+  .btn:not(.btn-ghost):not(.btn-link):not(.btn-disabled):active,
+[data-theme='scripthammer-forge']
   .btn:not(.btn-ghost):not(.btn-link):not(.btn-disabled):active {
   box-shadow: var(--sh-groove);
 }
 
 [data-theme='scripthammer-dark'] .btn:hover,
-[data-theme='scripthammer-light'] .btn:hover {
+[data-theme='scripthammer-light'] .btn:hover,
+[data-theme='scripthammer-forge'] .btn:hover {
   box-shadow:
     0 4px 8px -1px rgb(0 0 0 / 0.3),
     0 2px 4px -2px rgb(0 0 0 / 0.2);
@@ -509,7 +606,9 @@
 [data-theme='scripthammer-dark'] .stat-title,
 [data-theme='scripthammer-dark'] .stat-desc,
 [data-theme='scripthammer-light'] .stat-title,
-[data-theme='scripthammer-light'] .stat-desc {
+[data-theme='scripthammer-forge'] .stat-title,
+[data-theme='scripthammer-light'] .stat-desc,
+[data-theme='scripthammer-forge'] .stat-desc {
   color: var(--color-base-content);
 }
 
@@ -961,6 +1060,7 @@ p:not([class*='text-']) {
 
 /* Dark background for map container before tiles load */
 [data-theme='scripthammer-dark'] .leaflet-container,
+[data-theme='scripthammer-forge'] .leaflet-container,
 [data-theme='dark'] .leaflet-container,
 [data-theme='dracula'] .leaflet-container,
 [data-theme='synthwave'] .leaflet-container,
@@ -978,6 +1078,7 @@ p:not([class*='text-']) {
 
 /* Invert OSM tiles for dark mode — preserves color/detail unlike CartoDB dark_all */
 [data-theme='scripthammer-dark'] .leaflet-tile-pane,
+[data-theme='scripthammer-forge'] .leaflet-tile-pane,
 [data-theme='dark'] .leaflet-tile-pane,
 [data-theme='dracula'] .leaflet-tile-pane,
 [data-theme='synthwave'] .leaflet-tile-pane,
@@ -1034,6 +1135,7 @@ p:not([class*='text-']) {
 
 /* Fix Leaflet controls for dark mode */
 [data-theme='scripthammer-dark'] .leaflet-control,
+[data-theme='scripthammer-forge'] .leaflet-control,
 [data-theme='dark'] .leaflet-control,
 [data-theme='dracula'] .leaflet-control,
 [data-theme='synthwave'] .leaflet-control,
@@ -1055,6 +1157,7 @@ p:not([class*='text-']) {
 }
 
 [data-theme='scripthammer-dark'] .leaflet-control a,
+[data-theme='scripthammer-forge'] .leaflet-control a,
 [data-theme='dark'] .leaflet-control a,
 [data-theme='dracula'] .leaflet-control a,
 [data-theme='synthwave'] .leaflet-control a,
