@@ -204,6 +204,56 @@ describe('EmbodiedController', () => {
     c.dispose();
   });
 
+  it('the parked bike blocks walk-through once you have stepped clear of it', () => {
+    const c = EmbodiedController.fromMeshes([{ mesh: floor(), surface: 'dirt' }]);
+    // Bike is parked at the origin (spawn). Walk out +x to arm it as solid…
+    c.teleport(0, 0, 0);
+    c.setInput(input({ forward: 1, yaw: -Math.PI / 2 })); // forward → +x
+    stepN(c, 120);
+    expect(c.position.x).toBeGreaterThan(1.2); // clear of the bike core
+
+    // …then walk back −x straight at it: blocked short of the core, not through.
+    c.setInput(input({ forward: 1, yaw: Math.PI / 2 })); // forward → −x
+    stepN(c, 240);
+    expect(c.position.x).toBeGreaterThan(0.6); // stopped ~ (0.5 + 0.4) out
+    expect(c.nearBike).toBe(true); // still close enough to mount
+    c.dispose();
+  });
+
+  it('does not punt you off the bike on the frame you dismount (arm-gated)', () => {
+    const c = EmbodiedController.fromMeshes([{ mesh: floor(), surface: 'dirt' }]);
+    c.teleport(0, 0, 1);
+    c.setInput(input({ mount: true, yaw: 0 }));
+    c.step(DT);
+    expect(c.riding).toBe(true);
+    // Dismount (edge-triggered: release, then press): the bike parks at your
+    // feet; you must NOT be shoved away.
+    c.setInput(input({ mount: false }));
+    c.step(DT);
+    c.setInput(input({ mount: true }));
+    c.step(DT);
+    expect(c.riding).toBe(false);
+    const before = { x: c.position.x, z: c.position.z };
+    c.setInput(input()); // stand still a moment
+    stepN(c, 20);
+    expect(Math.hypot(c.position.x - before.x, c.position.z - before.z)).toBeLessThan(0.2);
+    c.dispose();
+  });
+
+  it('cameraDistance pulls the chase cam in when a wall is behind, else full', () => {
+    const c = EmbodiedController.fromMeshes([
+      { mesh: floor(), surface: 'dirt' },
+      { mesh: box(0.5, 6, 12, 4, 3, 0), surface: 'concrete' }, // wall x∈[3.75,4.25]
+    ]);
+    // Toward −x: open air → the full requested pull-back.
+    expect(c.cameraDistance(0, 1.7, 0, -1, 0, 0, 8, 0.3)).toBeCloseTo(8, 3);
+    // Toward +x: the wall at x≈3.75 clips it, so it stops short (minus pad).
+    const blocked = c.cameraDistance(0, 1.7, 0, 1, 0, 0, 8, 0.3);
+    expect(blocked).toBeGreaterThan(2);
+    expect(blocked).toBeLessThan(4);
+    c.dispose();
+  });
+
   it('collide() ejects a feet position poking through a façade', () => {
     // A building footprint x,z ∈ [−3, 3].
     const c = EmbodiedController.fromMeshes([

@@ -81,16 +81,26 @@ export function makeWalkMove(
 
     ctrl.eyePosition(eye.position);
     if (deps.viewRef.current === 'third') {
-      // Chase cam: pull the camera back behind the look direction + up a bit, so
-      // you see yourself on the bike. The Rig still applies (pitch, yaw), so it
-      // looks forward over your shoulder.
+      // Chase cam: pull back behind the FACING (bike heading while riding, look
+      // yaw on foot) + up a bit. Raycast the pull-back against the world so the
+      // camera tucks in against a wall/building behind you instead of clipping
+      // straight through it.
       const back = 8;
       const up = 3;
-      // Trail the FACING (bike heading while riding, look yaw on foot) so the
-      // camera stays behind the bike even when the mouse free-looks around.
-      eye.position.x += Math.sin(ctrl.facingYaw) * back;
-      eye.position.z += Math.cos(ctrl.facingYaw) * back;
-      eye.position.y += up;
+      const ex = eye.position.x;
+      const ey = eye.position.y;
+      const ez = eye.position.z;
+      const vx = Math.sin(ctrl.facingYaw) * back;
+      const vz = Math.cos(ctrl.facingYaw) * back;
+      const len = Math.hypot(vx, up, vz);
+      const inv = len > 1e-6 ? 1 / len : 0;
+      const dx = vx * inv;
+      const dy = up * inv;
+      const dz = vz * inv;
+      const allowed = ctrl.cameraDistance(ex, ey, ez, dx, dy, dz, len, 0.35);
+      eye.position.x = ex + dx * allowed;
+      eye.position.y = ey + dy * allowed;
+      eye.position.z = ez + dz * allowed;
     } else {
       // First-person / on-foot: fold head-bob + landing punch into the eye.
       deps.applyCameraFeel(eye, ctrl, ctrl.movedThisFrame, dt, rig.yaw, ctrl.bobScale);

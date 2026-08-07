@@ -15,6 +15,7 @@
 import { StaticWorld } from '../bvh';
 import { CharacterController } from '../character';
 import { MASK } from '../surfaces';
+import { makeHitRecord } from '../math';
 import type { Mesh } from 'three';
 
 export type Stance = 'stand' | 'crouch' | 'prone';
@@ -125,6 +126,11 @@ const DEFAULT_BIKE: BikeCfg = {
   turnRate: 2.2, // A/D steers ~126°/s
 };
 
+/** Collision radius of the parked bike as a walk-through obstacle, m (a bike is
+ *  ~0.5 m wide). It only blocks the inner core, well inside `mountRadius`, so B
+ *  can still mount from arm's length. */
+const BIKE_COLLIDE_RADIUS = 0.5;
+
 const ZERO_INPUT: EmbodiedInput = {
   forward: 0,
   right: 0,
@@ -163,6 +169,15 @@ export class EmbodiedController {
   /** The parked bike's world position + facing (a real object you return to). */
   private readonly bikePos_ = { x: 0, y: 0, z: 0 };
   private bikeYaw_ = 0;
+  /** The parked bike blocks walk-through, but only once you've stepped clear of
+   *  it — so spawning/dismounting on top of it never punts you. Re-armed (false)
+   *  every time it's (re)parked. */
+  private bikeArmed_ = false;
+  /** Reused hit record for the chase-cam raycast (no per-frame allocation). */
+  private readonly camHit_ = makeHitRecord();
+  /** Capsule radius (matches the CharacterController); the bike-collision push
+   *  uses it to keep the body's edge out of the bike core. */
+  private readonly radius_: number;
   /** Live steered heading while riding (rad); A/D turns it, W/S drives along it. */
   private bikeHeading_ = 0;
   private accum = 0;
@@ -195,6 +210,7 @@ export class EmbodiedController {
       mask: MASK.CHARACTER,
       position: config.spawn ?? { x: 0, y: 0, z: 0 },
     });
+    this.radius_ = config.radius ?? 0.4;
     this.eye = stand.eye;
     // Bike starts parked at the spawn point (mountable from frame 0).
     const sp = config.spawn ?? { x: 0, y: 0, z: 0 };
@@ -264,6 +280,7 @@ export class EmbodiedController {
     this.bikePos_.y = y;
     this.bikePos_.z = z;
     this.bikeYaw_ = yaw;
+    this.bikeArmed_ = false; // becomes solid only after you step clear of it
   }
   get triCount(): number {
     return this.world.triCount;
@@ -301,7 +318,8 @@ export class EmbodiedController {
         this.bikePos_.x = cc.position.x;
         this.bikePos_.y = cc.position.y;
         this.bikePos_.z = cc.position.z;
-        this.bikeYaw_ = inp.yaw;
+        this.bikeYaw_ = this.bikeHeading_;
+        this.bikeArmed_ = false; // don't punt yourself off the bike you just left
         this.onStanceChange?.(this.stance);
       } else if (this.nearBike) {
         this.riding_ = true;
@@ -401,6 +419,25 @@ export class EmbodiedController {
     }
     this.movedThisFrame = moved;
 
+    // Parked-bike collision: on foot the bike is a solid object you can't walk
+    // through. It arms (becomes solid) only once you've stepped clear of its
+    // core, so spawning or dismounting on top of it never shoves you. The push
+    // goes through cc.move so it slides along walls instead of tunnelling you
+    // into one. Mounting is unaffected: the blocked core (BIKE_COLLIDE_RADIUS)
+    // is well inside mountRadius.
+    if (!this.riding_) {
+      const dxb = cc.position.x - this.bikePos_.x;
+      const dzb = cc.position.z - this.bikePos_.z;
+      const d = Math.hypot(dxb, dzb);
+      const solidR = BIKE_COLLIDE_RADIUS + this.radius_;
+      if (!this.bikeArmed_) {
+        if (d > solidR + 0.2) this.bikeArmed_ = true; // stepped clear → now solid
+      } else if (d > 1e-4 && d < solidR) {
+        const corr = solidR - d;
+        cc.move((dxb / d) * corr, 0, (dzb / d) * corr);
+      }
+    }
+
     // Glide the eye toward the target (smooth stance / mount transitions).
     this.eye += (eyeTarget - this.eye) * (1 - Math.exp(-dt / 0.09));
     return moved;
@@ -412,6 +449,31 @@ export class EmbodiedController {
     out.y = this.cc.position.y + this.eye;
     out.z = this.cc.position.z;
     return out;
+  }
+
+  /** Longest unobstructed distance a third-person camera can pull back along the
+   *  unit direction (dx,dy,dz) from the eye (ox,oy,oz) before it would clip world
+   *  geometry. Raycasts the static world and stops `pad` metres short of the
+   *  first hit, so the chase cam tucks in against a wall behind you instead of
+   *  seeing through it. Returns `dist` unobstructed. */
+  cameraDistance(
+    ox: number,
+    oy: number,
+    oz: number,
+    dx: number,
+    dy: number,
+    dz: number,
+    dist: number,
+    pad = 0.3
+  ): number {
+    const out = this.camHit_;
+    if (
+      this.world.raycast(ox, oy, oz, dx, dy, dz, dist, MASK.CHARACTER, out) &&
+      out.hit
+    ) {
+      return Math.max(0.25, out.t - pad);
+    }
+    return dist;
   }
 
   /** Kinematic-caller seam (unboarded follow): push a feet position out of solids.
