@@ -49,7 +49,7 @@ type CliArgs = {
 function parseArgs(argv: string[]): CliArgs {
   const args: CliArgs = {
     apply: false,
-    configPath: resolve(__dirname, 'edge-function-secrets.json'),
+    configPath: resolve(__dirname, '..', '..', '.env'),
   };
 
   for (let i = 0; i < argv.length; i++) {
@@ -161,6 +161,76 @@ function validateNames(secrets: DesiredSecrets): void {
   }
 }
 
+/**
+ * Which `.env` keys are Edge Function secrets.
+ *
+ * An allow-list, NOT "everything in .env". The file also holds GH_TOKEN, the
+ * Supabase access token, test-user passwords and local UID/GID — none of which any
+ * Edge Function should ever see, and several of which would be actively dangerous
+ * in the function runtime.
+ */
+const EDGE_SECRET_KEYS = [
+  'STRIPE_SECRET_KEY',
+  'STRIPE_WEBHOOK_SECRET',
+  'PAYPAL_CLIENT_ID',
+  'PAYPAL_CLIENT_SECRET',
+  'PAYPAL_WEBHOOK_ID',
+  'NEXT_PUBLIC_PAYPAL_CLIENT_ID',
+  'NEXT_PUBLIC_SITE_URL',
+  'RESEND_API_KEY',
+] as const;
+
+/**
+ * Read the desired secrets from `.env`.
+ *
+ * WAS a separate `edge-function-secrets.json`. That file had to be kept in sync with
+ * `.env` by hand, sat at mode 644 (#614), and split the answer to "where are this
+ * project's secrets?" across two places — which is why a full credential rotation
+ * could not be scripted, and why the OAuth and Turnstile secrets were nowhere at all
+ * when the Supabase project was deleted (#567).
+ *
+ * A `.json` path still works, so an operator with an existing sidecar is not broken.
+ */
+function readDesiredSecrets(configPath: string): DesiredSecrets {
+  const raw = readFileSync(configPath, 'utf8');
+
+  if (configPath.endsWith('.json')) {
+    const parsed = JSON.parse(raw) as unknown;
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      Array.isArray(parsed)
+    ) {
+      throw new Error('config must be a JSON object of { "NAME": "value" }');
+    }
+    // Keys beginning with "_" are comments/metadata, never sent as secrets.
+    return Object.fromEntries(
+      Object.entries(parsed as Record<string, unknown>).filter(
+        ([k]) => !k.startsWith('_')
+      )
+    ) as DesiredSecrets;
+  }
+
+  const out: Record<string, string> = {};
+  for (const line of raw.split('\n')) {
+    const t = line.trim();
+    if (!t || t.startsWith('#')) continue;
+    const eq = t.indexOf('=');
+    if (eq < 1) continue;
+    const key = t.slice(0, eq).trim();
+    // Empty values are the deliberate placeholders for credentials that are not
+    // recoverable yet (OAuth, Turnstile). Pushing an empty string would overwrite a
+    // good value in the vault with nothing, so skip them.
+    const val = t
+      .slice(eq + 1)
+      .trim()
+      .replace(/^["']|["']$/g, '');
+    if (!val) continue;
+    if ((EDGE_SECRET_KEYS as readonly string[]).includes(key)) out[key] = val;
+  }
+  return out as DesiredSecrets;
+}
+
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
 
@@ -188,27 +258,13 @@ async function main(): Promise<void> {
 
   let desired: DesiredSecrets;
   try {
-    const raw = readFileSync(args.configPath, 'utf8');
-    const parsed = JSON.parse(raw) as unknown;
-    if (
-      typeof parsed !== 'object' ||
-      parsed === null ||
-      Array.isArray(parsed)
-    ) {
-      throw new Error('config must be a JSON object of { "NAME": "value" }');
-    }
-    // Keys beginning with "_" are comments/metadata, never sent as secrets.
-    desired = Object.fromEntries(
-      Object.entries(parsed as Record<string, unknown>).filter(
-        ([k]) => !k.startsWith('_')
-      )
-    ) as DesiredSecrets;
+    desired = readDesiredSecrets(args.configPath);
   } catch (err) {
     console.error(
-      `✗ Could not read/parse ${args.configPath}: ${(err as Error).message}`
+      `✗ Could not read ${args.configPath}: ${(err as Error).message}`
     );
     console.error(
-      '  Copy scripts/supabase/edge-function-secrets.example.json → edge-function-secrets.json and fill it.'
+      '  Secrets live in .env. See the "Payment provider secrets" block there.'
     );
     process.exit(1);
   }
