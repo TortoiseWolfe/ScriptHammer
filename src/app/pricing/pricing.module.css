@@ -307,6 +307,31 @@
   filter: brightness(1.08);
 }
 
+/* A package that cannot be bought yet. Occupies the CTA slot so cards keep the
+   same height and .feats' flex:1 still lands every action on one baseline.
+   Deliberately NOT a <button disabled> and NOT a link: there is nowhere to go,
+   and a disabled control invites clicking to find that out.
+
+   Dashed border rather than dimmed text — muting the label is the obvious way to
+   say "inactive" and it would drop this below the 7:1 the a11y gate enforces
+   (globals.css:61-85 documents the same trap for DaisyUI's .label). The text
+   stays full-contrast; the BORDER carries the meaning. */
+.btnSoon {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 12px 16px;
+  min-height: 2.75rem; /* 44px, matching .btn so the grid does not shift */
+  border-radius: 2px;
+  font-size: 0.74rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  border: 1px dashed var(--line);
+  background: none;
+  color: var(--text);
+  cursor: default;
+}
+
 .panel {
   background: var(--surface);
   border: 1px solid var(--line);

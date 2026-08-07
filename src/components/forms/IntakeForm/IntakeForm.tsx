@@ -80,28 +80,48 @@ interface FieldProps {
  */
 function Field({ id, label, error, required, hint, children }: FieldProps) {
   return (
-    <div className="min-w-0">
-      <label htmlFor={id} className="label">
-        <span className="text-base-content">{label}</span>
+    // The row shape is lifted from SignInForm.tsx:278-298, which is the form
+    // pattern the 2a refresh actually landed on. This component previously used a
+    // bare `<div>` with the label sitting directly on top of the input and NO
+    // spacing utility between them — reported as "labels too close to inputs".
+    // `gap-2` IS that missing breathing room; there is no margin anywhere else to
+    // supply it, because DaisyUI's `.label` ships only its own padding.
+    //
+    // `items-start`, not SignInForm's `items-center`: this form has hints, error
+    // text and a 4-row textarea. Centering would float a short label against the
+    // middle of a tall control, and the hint/error belong under the INPUT column,
+    // not under the label.
+    <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:gap-x-6">
+      <label
+        htmlFor={id}
+        className="label sm:w-44 sm:shrink-0 sm:pt-2 sm:text-right"
+      >
+        {/* `label-text`, not a raw `text-base-content` span. globals.css:61-85
+            re-colours `.label`/`.label-text` repo-wide because DaisyUI mutes them
+            to 5.86:1, under the 7:1 gate — using the DaisyUI class is what opts
+            this field into that correction. */}
+        <span className="label-text">{label}</span>
         {required && (
           <span className="text-error" aria-hidden="true">
             *
           </span>
         )}
       </label>
-      {children}
-      {hint && !error && (
-        <p id={`${id}-hint`} className="text-base-content mt-1 text-xs">
-          {hint}
-        </p>
-      )}
-      {error && (
-        <p id={`${id}-error`} className="mt-1 text-sm">
-          <span className="text-error" role="alert" aria-live="polite">
-            {error}
-          </span>
-        </p>
-      )}
+      <div className="min-w-0 flex-1">
+        {children}
+        {hint && !error && (
+          <p id={`${id}-hint`} className="text-base-content mt-1 text-xs">
+            {hint}
+          </p>
+        )}
+        {error && (
+          <p id={`${id}-error`} className="mt-1 text-sm">
+            <span className="text-error" role="alert" aria-live="polite">
+              {error}
+            </span>
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -144,8 +164,17 @@ export default function IntakeForm({
     if (first) setFocus(first);
   }, [errors, setFocus]);
 
+  // `-bordered` and `min-h-11` were both missing. Bare `.input` renders without
+  // the outline every other form in the product has, and no min-height meant these
+  // controls sat under the 44px touch target the repo mandates — on the one form
+  // that takes money, and invisible to `mobile-touch-targets.spec.ts` because that
+  // spec measures buttons and links.
+  //
+  // Nothing here sets a box-shadow: globals.css:523-551 already gives `.input` and
+  // `.textarea` the `--sh-groove` recess under the house themes. Hand-adding one
+  // would double it.
   const cls = (bad: unknown, base = 'input') =>
-    `${base} w-full min-w-0 ${bad ? `${base}-error` : ''}`;
+    `${base} ${base}-bordered min-h-11 w-full min-w-0 ${bad ? `${base}-error` : ''}`;
 
   const aria = (id: keyof IntakeFormData, hasHint = false) => ({
     id,
@@ -287,11 +316,18 @@ export default function IntakeForm({
         </Field>
       </fieldset>
 
-      {/* min-h-11 = the 44px touch target this repo requires. */}
+      {/* `sh-btn sh-btn-primary` (globals.css:830, :847) — the 2a button the rest
+          of the product uses, not DaisyUI's `.btn`. Two reasons this is not
+          cosmetic: `btn-primary` reads as DISABLED on scripthammer-dark
+          (SignInForm.tsx:386-391 documents the same finding), and this was the
+          only primary action on the checkout that did not look like the ones on
+          the home, blog and status pages.
+          `sh-btn` sets min-height 2.75rem itself, so min-h-11 is belt-and-braces
+          for any theme that overrides it. */}
       <button
         type="submit"
         disabled={busy}
-        className="btn btn-primary min-h-11 w-full min-w-11"
+        className="sh-btn sh-btn-primary min-h-11 w-full min-w-11 justify-center"
       >
         {busy ? 'Working…' : submitLabel}
       </button>
