@@ -239,6 +239,224 @@ CREATE INDEX IF NOT EXISTS idx_webhook_events_failed ON webhook_events(permanent
 
 COMMENT ON TABLE webhook_events IS 'Webhook notifications with idempotency and retry';
 
+-- ----------------------------------------------------------------------------
+-- COMMERCE CATALOG (Feature 050, Phase 1 — #557)
+-- ----------------------------------------------------------------------------
+--
+-- The premise of this feature in one line: THE BUYER'S DEVICE STOPS BEING ABLE
+-- TO NAME A PRICE. `products` is the only authority on what something costs;
+-- create-order (#558) resolves from it and DISCARDS any amount in the request.
+-- FR-002 says "discarded, not validated" deliberately — a validator that rejects
+-- a mismatched amount leaks the real price and turns a silent server-authoritative
+-- design into an oracle.
+
+-- Raise the payment ceiling to $3,500 (T002).
+--
+-- THE CEILING IS A BLAST-RADIUS CONTROL, NOT A BUSINESS RULE, so it is set to the
+-- most expensive thing actually sold (svc-site, $3,500) rather than to a round
+-- number with room to spare. The PRD proposed $25,000; at that height a bug or a
+-- compromised client could mint a charge seven times larger than anything real,
+-- and nothing downstream would question it.
+--
+-- scripts/__tests__/payment-ceiling.test.js asserts this stays >= the priciest
+-- active product, so adding a dearer SKU fails loudly instead of silently
+-- creating one that cannot be sold.
+--
+-- THE INLINE CHECK AT payment_intents.amount IS NOT ENOUGH ON ITS OWN. That
+-- constraint lives inside `CREATE TABLE IF NOT EXISTS`, so on an already
+-- provisioned database (i.e. production) re-running this file does NOT change it
+-- — editing the line above is a no-op there. The DROP + ADD below is what
+-- actually moves it, the same idiom used at subscriptions_status_check and
+-- auth_audit_logs_event_type_check for exactly this reason.
+--
+-- Two of the three business packages ($1,200 Landing Page, $3,500 Business Site)
+-- sat above the old $999.99 ceiling, so the catalog advertised prices the system
+-- could not charge.
+ALTER TABLE payment_intents DROP CONSTRAINT IF EXISTS payment_intents_amount_check;
+ALTER TABLE payment_intents ADD CONSTRAINT payment_intents_amount_check
+  CHECK (amount >= 100 AND amount <= 350000);  -- $1.00 .. $3,500.00
+
+-- subscriptions.plan_amount had a floor and NO ceiling at all, so the $999.99
+-- limit never applied to subscriptions in the first place (T003).
+ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_plan_amount_check;
+ALTER TABLE subscriptions ADD CONSTRAINT subscriptions_plan_amount_check
+  CHECK (plan_amount >= 100 AND plan_amount <= 350000);
+
+-- Guest checkout: a buyer must be able to hold an intent without an account.
+-- An anonymous Supabase session still yields a real auth.uid(), so every existing
+-- RLS policy keeps working unmodified; this only stops requiring one.
+ALTER TABLE payment_intents ALTER COLUMN template_user_id DROP NOT NULL;
+
+-- Catalog. Seeded here, edited only by service_role or the admin panel.
+CREATE TABLE IF NOT EXISTS products (
+  id                TEXT PRIMARY KEY,                        -- 'svc-landing'
+  lane              TEXT NOT NULL CHECK (lane IN ('service','product')),
+  name              TEXT NOT NULL,
+  tagline           TEXT,
+  description       TEXT,
+  -- Cents. For amount_mode='variable' this is the SUGGESTED default.
+  amount            INTEGER NOT NULL CHECK (amount >= 0),
+  amount_mode       TEXT NOT NULL DEFAULT 'fixed'
+                      CHECK (amount_mode IN ('fixed','variable')),
+  min_amount        INTEGER,
+  max_amount        INTEGER,
+  currency          TEXT NOT NULL DEFAULT 'usd'
+                      CHECK (currency IN ('usd','eur','gbp','cad','aud')),
+  type              TEXT NOT NULL CHECK (type IN ('one_time','recurring')),
+  interval          TEXT CHECK (interval IN ('month','year') OR interval IS NULL),
+  stripe_price_id   TEXT,
+  paypal_plan_id    TEXT,
+  features          JSONB NOT NULL DEFAULT '[]'::jsonb,
+  metadata          JSONB NOT NULL DEFAULT '{}'::jsonb,
+  sort_order        INTEGER NOT NULL DEFAULT 0,
+  active            BOOLEAN NOT NULL DEFAULT true,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Named, and added via DROP/ADD rather than inline, for the same reason as the
+-- amount ceiling above: an inline constraint never reaches an existing database.
+--
+-- A variable SKU without bounds is an unbounded charge.
+ALTER TABLE products DROP CONSTRAINT IF EXISTS products_variable_bounds_check;
+ALTER TABLE products ADD CONSTRAINT products_variable_bounds_check
+  CHECK (amount_mode = 'fixed'
+         OR (min_amount IS NOT NULL AND max_amount IS NOT NULL
+             AND min_amount <= max_amount));
+
+-- A recurring SKU with no provider price is an unresolvable subscription.
+--
+-- DELIBERATE DEVIATION FROM PRD §6, which omits the `NOT active` clause. Without
+-- it the three recurring SKUs cannot be seeded at all — we have no real Stripe
+-- price ids yet, and the constraint would reject the INSERT outright. Seeding
+-- obvious placeholder ids instead would satisfy the check while leaving a SKU
+-- that looks sellable and is not, which is worse.
+-- This version encodes the rule that actually matters: an ACTIVE recurring SKU
+-- must have somewhere to bill. Inactive rows are catalog entries awaiting
+-- configuration, and cannot be activated until they have one.
+ALTER TABLE products DROP CONSTRAINT IF EXISTS products_recurring_provider_check;
+ALTER TABLE products ADD CONSTRAINT products_recurring_provider_check
+  CHECK (type = 'one_time'
+         OR NOT active
+         OR stripe_price_id IS NOT NULL
+         OR paypal_plan_id IS NOT NULL);
+
+CREATE INDEX IF NOT EXISTS idx_products_lane_sort ON products(lane, sort_order) WHERE active;
+
+COMMENT ON TABLE products IS 'Commerce catalog — the ONLY authority on price. Client-supplied amounts are discarded, never validated (FR-002, #557).';
+
+-- Orders. One item per order; a Care Plan attached at checkout is a second order.
+CREATE TABLE IF NOT EXISTS orders (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  intent_id         UUID REFERENCES payment_intents(id),
+  subscription_id   UUID REFERENCES subscriptions(id),
+  product_id        TEXT NOT NULL REFERENCES products(id),
+  buyer_user_id     UUID REFERENCES auth.users(id),   -- nullable: guest checkout
+  buyer_email       TEXT NOT NULL,
+  quantity          INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
+  amount_charged    INTEGER NOT NULL,                 -- cents, resolved server-side
+  promo_code        TEXT,
+  discount_amount   INTEGER NOT NULL DEFAULT 0,
+  status            TEXT NOT NULL DEFAULT 'pending'
+                      CHECK (status IN ('pending','paid','fulfilling','delivered','refunded','canceled')),
+  fulfillment_notes TEXT,
+  -- Includes `phone`. Not politeness: the catalog promises every build ships with
+  -- click-to-call and a form wired to the buyer's phone, and the product cannot
+  -- deliver what it sells without asking for the number (FR-013). In Phase 1
+  -- deliberately, so the very first sale carries it.
+  intake_data       JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- An order must point at something that can actually be charged.
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_payable_check;
+ALTER TABLE orders ADD CONSTRAINT orders_payable_check
+  CHECK (intent_id IS NOT NULL OR subscription_id IS NOT NULL);
+
+CREATE INDEX IF NOT EXISTS idx_orders_buyer_user_id ON orders(buyer_user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_buyer_email ON orders(buyer_email);
+CREATE INDEX IF NOT EXISTS idx_orders_status_created ON orders(status, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_orders_product_id ON orders(product_id);
+CREATE INDEX IF NOT EXISTS idx_orders_intent_id ON orders(intent_id);
+
+COMMENT ON TABLE orders IS 'One order per purchase. status is advanced by the webhook and the admin panel only — never by the buyer (FR-011).';
+
+-- Catalog seed (T006). Ten SKUs, ids matching the storefront exactly so a card on
+-- /pricing and a row here are the same thing. Idempotent: ON CONFLICT re-asserts
+-- price and copy, so this file remains the source of truth for both.
+--
+-- The three RECURRING rows are seeded INACTIVE. They have no Stripe price id or
+-- PayPal plan id yet, and products_recurring_provider_check will not let them be
+-- activated until they do. That is the intended safety property, not an oversight
+-- — a subscription SKU that is visible but unbillable is how you take money you
+-- cannot fulfil.
+--
+-- prd-forge is $0 and can never produce a payment_intent (that table's floor is
+-- 100 cents). It is display-only by design: its call to action is "Clone the
+-- repo", pointing at GitHub, not at checkout.
+INSERT INTO products (id, lane, name, tagline, amount, amount_mode, min_amount, max_amount,
+                      type, interval, features, metadata, sort_order, active)
+VALUES
+  ('svc-discovery', 'service', 'Discovery', 'Prove it works before you commit.',
+   25000, 'fixed', NULL, NULL, 'one_time', NULL,
+   '["Deployed staging page on a real URL","Working contact form","Mobile + Lighthouse pass","Credited in full toward any build within 30 days"]'::jsonb,
+   '{"credits_toward":["svc-landing","svc-site"],"credit_window_days":30}'::jsonb, 10, true),
+
+  ('svc-landing', 'service', 'Landing Page', 'One page. Live on your domain. Leads in your inbox.',
+   120000, 'fixed', NULL, NULL, 'one_time', NULL,
+   '["Single page, your domain, SSL","Form wired to your inbox and phone","Click-to-call + LocalBusiness schema","Lighthouse >= 90, OG tags, favicon","2 revision rounds"]'::jsonb,
+   '{"deposit_pct":50}'::jsonb, 20, true),
+
+  ('svc-site', 'service', 'Business Site', 'The full presence, built to rank locally.',
+   350000, 'fixed', NULL, NULL, 'one_time', NULL,
+   '["5-7 pages incl. service pages","Project gallery","Local SEO + structured data","Blog scaffold + analytics","3 revision rounds"]'::jsonb,
+   '{"deposit_pct":50}'::jsonb, 30, true),
+
+  ('svc-care', 'service', 'Care Plan', 'Someone answers when it breaks.',
+   9900, 'fixed', NULL, NULL, 'recurring', 'month',
+   '["Hosting, SSL, daily backups","Dependency + security updates","Uptime monitoring","30 min of edits per month"]'::jsonb,
+   '{"attach_at_checkout":true}'::jsonb, 40, false),
+
+  ('svc-care-pro', 'service', 'Care Plan Pro', 'Care Plan, plus someone who keeps it current.',
+   24900, 'fixed', NULL, NULL, 'recurring', 'month',
+   '["Everything in Care Plan","Content updates","Monthly performance report","2 hrs of edits, priority turnaround"]'::jsonb,
+   '{"attach_at_checkout":true}'::jsonb, 50, false),
+
+  ('prd-forge', 'product', 'Forge', 'The starter. Take it, ship it, keep it.',
+   0, 'fixed', NULL, NULL, 'one_time', NULL,
+   '["Next.js 15 + React 19 + TypeScript","680+ tests, PWA, 34 themes","Auth, payments, encrypted messaging","MIT licensed, community support"]'::jsonb,
+   '{"purchasable":false,"external_url":"https://github.com/TortoiseWolfe/ScriptHammer"}'::jsonb, 10, true),
+
+  ('prd-anvil', 'product', 'Anvil', 'A vertical, productized.',
+   14900, 'fixed', NULL, NULL, 'one_time', NULL,
+   '["One industry template (Roofer, HVAC, Plumber, Landscaper)","Copy, layout, and schema tuned for the trade","Commercial license, unlimited client sites","Lifetime updates to that pack"]'::jsonb,
+   '{}'::jsonb, 20, true),
+
+  ('prd-foundry', 'product', 'Foundry', 'Every pack, and the ones not built yet.',
+   4900, 'fixed', NULL, NULL, 'recurring', 'month',
+   '["All vertical packs","New packs as they ship","Private channel","Priority issue triage"]'::jsonb,
+   '{}'::jsonb, 30, false),
+
+  ('prd-field-study', 'product', 'Field Study', 'Your first client site, built with you, on stream.',
+   250000, 'fixed', NULL, NULL, 'one_time', NULL,
+   '["Two weeks, done-with-you","Real client, real deployment","Recorded and yours to keep","Pricing and scoping coaching included"]'::jsonb,
+   '{}'::jsonb, 40, true),
+
+  -- The ONLY variable-amount SKU. Bounds are the ones the tip-jar screen states
+  -- to the visitor: "$1 to $500. Whole dollars."
+  ('tip-jar', 'product', 'Tip Jar', 'The template is free and stays free. This is only if you want to.',
+   1500, 'variable', 100, 50000, 'one_time', NULL,
+   '["Suggested $5 / $15 / $50","Nothing is gated","Any amount, once"]'::jsonb,
+   '{"presets":[500,1500,5000],"whole_dollars_only":true}'::jsonb, 50, true)
+ON CONFLICT (id) DO UPDATE SET
+  lane = EXCLUDED.lane, name = EXCLUDED.name, tagline = EXCLUDED.tagline,
+  amount = EXCLUDED.amount, amount_mode = EXCLUDED.amount_mode,
+  min_amount = EXCLUDED.min_amount, max_amount = EXCLUDED.max_amount,
+  type = EXCLUDED.type, interval = EXCLUDED.interval,
+  features = EXCLUDED.features, metadata = EXCLUDED.metadata,
+  sort_order = EXCLUDED.sort_order, updated_at = NOW();
+
 -- ============================================================================
 -- PART 2: AUTHENTICATION TABLES
 -- ============================================================================
@@ -542,6 +760,18 @@ $$;
 -- PART 5: TRIGGERS
 -- ============================================================================
 
+DROP TRIGGER IF EXISTS update_products_updated_at ON products;
+CREATE TRIGGER update_products_updated_at
+    BEFORE UPDATE ON products
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_orders_updated_at ON orders;
+CREATE TRIGGER update_orders_updated_at
+    BEFORE UPDATE ON orders
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
 DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
 CREATE TRIGGER update_user_profiles_updated_at
     BEFORE UPDATE ON user_profiles
@@ -655,6 +885,8 @@ ALTER TABLE webhook_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payment_provider_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE auth_audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 
 -- Payment intents (Feature 017: Stricter policies)
 DROP POLICY IF EXISTS "Users can view own payment intents" ON payment_intents;
@@ -722,6 +954,40 @@ CREATE POLICY "Service updates webhook events" ON webhook_events
 DROP POLICY IF EXISTS "Users view provider config" ON payment_provider_config;
 CREATE POLICY "Users view provider config" ON payment_provider_config
   FOR SELECT USING (true);
+
+-- Commerce catalog (#557).
+--
+-- products is world-readable when active — a visitor must see prices before they
+-- have any session at all. Nothing writes it from a client, ever: price lives
+-- here precisely so the browser cannot name one.
+DROP POLICY IF EXISTS "Anyone can view active products" ON products;
+CREATE POLICY "Anyone can view active products" ON products
+  FOR SELECT USING (active = true);
+
+DROP POLICY IF EXISTS "Products are not client-writable" ON products;
+CREATE POLICY "Products are not client-writable" ON products
+  FOR ALL USING (false) WITH CHECK (false);
+
+-- A buyer reads their own orders and writes none of them. FR-011: buyers must not
+-- be able to write an order's fulfillment stage, so there is no client UPDATE
+-- policy at all — the webhook and the admin panel are the only writers.
+-- An anonymous session is still a session, so a guest cannot read another guest's
+-- order; auth.uid() differs per anonymous user.
+DROP POLICY IF EXISTS "Buyers can view own orders" ON orders;
+CREATE POLICY "Buyers can view own orders" ON orders
+  FOR SELECT USING (auth.uid() = buyer_user_id);
+
+DROP POLICY IF EXISTS "Service role can insert orders" ON orders;
+CREATE POLICY "Service role can insert orders" ON orders
+  FOR INSERT TO service_role WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Service role can update orders" ON orders;
+CREATE POLICY "Service role can update orders" ON orders
+  FOR UPDATE TO service_role USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Orders cannot be deleted by users" ON orders;
+CREATE POLICY "Orders cannot be deleted by users" ON orders
+  FOR DELETE USING (false);
 
 -- User profiles
 -- Note: "Users view own profile" provides full access to own profile
@@ -927,6 +1193,12 @@ DROP POLICY IF EXISTS "Admin can view all audit logs" ON auth_audit_logs;
 CREATE POLICY "Admin can view all audit logs" ON auth_audit_logs
   FOR SELECT USING (
     is_admin()  -- #240: live column authority (was: JWT claim, which could drift/linger)
+  );
+
+DROP POLICY IF EXISTS "Admin can view all orders" ON orders;
+CREATE POLICY "Admin can view all orders" ON orders
+  FOR SELECT USING (
+    is_admin()  -- the fulfillment queue at /admin/orders (#561) reads through this
   );
 
 DROP POLICY IF EXISTS "Admin can view all payment intents" ON payment_intents;
@@ -1711,6 +1983,14 @@ GRANT SELECT, INSERT, UPDATE ON subscriptions TO authenticated;
 GRANT SELECT ON payment_provider_config TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON user_profiles TO authenticated;
 GRANT SELECT, INSERT ON auth_audit_logs TO authenticated;
+GRANT SELECT ON products TO authenticated;
+GRANT SELECT ON orders TO authenticated;
+
+-- Anonymous visitors browsing /pricing before any sign-in. RLS alone is not
+-- enough: a policy says WHICH rows, a grant says whether the role may touch the
+-- table at all. There is no other GRANT ... TO anon in this file, so this is
+-- deliberate and narrow — SELECT on the catalog, nothing else.
+GRANT SELECT ON products TO anon;
 
 -- Service role (full access)
 GRANT ALL ON payment_intents TO service_role;
@@ -1720,6 +2000,8 @@ GRANT ALL ON webhook_events TO service_role;
 GRANT ALL ON payment_provider_config TO service_role;
 GRANT ALL ON user_profiles TO service_role;
 GRANT ALL ON auth_audit_logs TO service_role;
+GRANT ALL ON products TO service_role;
+GRANT ALL ON orders TO service_role;
 
 -- ============================================================================
 -- PART 8: SEED TEST USER (Primary)
@@ -2792,6 +3074,7 @@ COMMENT ON TABLE group_keys IS 'Encrypted symmetric group keys per member per ve
 -- ============================================================================
 -- Created:
 --   ✅ Payment tables: payment_intents, payment_results, subscriptions, webhook_events, payment_provider_config
+--   ✅ Commerce tables: products, orders (Feature 050 Phase 1, #557)
 --   ✅ Auth tables: user_profiles, auth_audit_logs
 --   ✅ Security tables: rate_limit_attempts
 --   ✅ Messaging tables: user_connections, conversations, messages, user_encryption_keys, conversation_keys, typing_indicators
@@ -2799,7 +3082,7 @@ COMMENT ON TABLE group_keys IS 'Encrypted symmetric group keys per member per ve
 --   ✅ Storage buckets: avatars (5MB limit, public read)
 --   ✅ Functions: update_updated_at_column, create_user_profile, cleanup_old_audit_logs, check_rate_limit, record_failed_attempt, update_conversation_timestamp, assign_sequence_number
 --   ✅ Admin RPC functions: admin_payment_stats, admin_auth_stats, admin_user_stats, admin_messaging_stats, admin_payment_trends, admin_audit_trends, admin_list_users, admin_messaging_trends, admin_overview
---   ✅ Triggers: on_auth_user_created, update_user_profiles_updated_at, on_message_inserted, before_message_insert
+--   ✅ Triggers: on_auth_user_created, update_user_profiles_updated_at, on_message_inserted, before_message_insert, update_products_updated_at, update_orders_updated_at
 --   ✅ RLS policies: All tables + storage.objects protected with auth.uid() (35 + 9 admin policies)
 --   ✅ Admin RLS policies: 9 read-only policies for admin dashboard (is_admin check)
 --   ✅ Avatar policies: 4 policies (user isolation + public read)
