@@ -70,6 +70,30 @@ type Product = {
   tag?: string;
   featured?: boolean;
   primary?: boolean;
+  /**
+   * Advertise the package, but do not offer a way to buy it.
+   *
+   * Set for every SKU whose catalog row is `active = false`. `/checkout` refuses
+   * an inactive SKU with "That package is not available", so a Buy button here
+   * was a dead end — reported from production for `svc-care` and `svc-care-pro`,
+   * and true of `prd-foundry` too, which nobody had clicked yet. Three of the
+   * eight buttons on this page went nowhere, and they were every subscription.
+   *
+   * These three are inactive DELIBERATELY, not by oversight. A recurring SKU
+   * needs a plan registered at the payment provider, and the database enforces
+   * it (`products_recurring_provider_check`: an active recurring row must carry
+   * a `stripe_price_id` or a `paypal_plan_id`). All three carry neither, so they
+   * literally cannot be activated until those plans exist. See src/types/commerce.ts:77.
+   *
+   * Clearing this flag without creating the plans first does not make the
+   * package sellable — it moves the failure from an honest "not available",
+   * shown BEFORE the buyer invests anything, to a declined charge AFTER they
+   * have filled in the intake form and entered a card.
+   *
+   * Enforced by tests/e2e/commerce/pricing-links.spec.ts, which walks every
+   * checkout link on this page and fails if one dead-ends.
+   */
+  comingSoon?: boolean;
 };
 
 const BUSINESS: Product[] = [
@@ -141,6 +165,7 @@ const BUSINESS: Product[] = [
     cta: 'Subscribe',
     href: '',
     primary: true,
+    comingSoon: true,
   },
   {
     sku: 'svc-care-pro',
@@ -158,6 +183,7 @@ const BUSINESS: Product[] = [
     cta: 'Subscribe',
     href: '',
     primary: true,
+    comingSoon: true,
   },
 ];
 
@@ -211,6 +237,7 @@ const DEVELOPERS: Product[] = [
     cta: 'Subscribe',
     href: '',
     primary: true,
+    comingSoon: true,
   },
   {
     sku: 'prd-field-study',
@@ -236,6 +263,9 @@ function Card({ p }: { p: Product }) {
   const href = p.href || checkoutHref(p.sku);
   const external = href.startsWith('http');
   const btn = `${styles.btn} ${p.primary ? styles.btnPrimary : ''} ${mono.className}`;
+  // Never gets .btnPrimary — a copper-filled slab reads as the primary action of
+  // the card, which is the opposite of what this says.
+  const btnSoon = `${styles.btnSoon} ${mono.className}`;
 
   // No Tailwind padding on .card — the module sets 24px 20px to match the demo.
   // A `p-5` utility would fight it and win.
@@ -273,7 +303,14 @@ function Card({ p }: { p: Product }) {
       {/* .feats carries flex:1, which is what pins every CTA to the same baseline
           across cards with different bullet counts. */}
       <div>
-        {external ? (
+        {p.comingSoon ? (
+          // No <a> and no <button> — see Product.comingSoon. Emitting a disabled
+          // control would still invite the click that discovers the dead end, and
+          // emitting a link is the bug this replaces.
+          <span className={btnSoon} data-testid="coming-soon">
+            Coming soon
+          </span>
+        ) : external ? (
           <a className={btn} href={href} target="_blank" rel="noreferrer">
             {p.cta}
           </a>
