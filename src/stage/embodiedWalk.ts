@@ -51,6 +51,7 @@ export function makeWalkMove(
   // Persistent scratch — no per-frame allocation.
   const eye = { position: { x: 0, y: 0, z: 0 } };
   let prevV = false;
+  let prevFacing: number | null = null; // last bike heading, for the steer→view delta
   return (dt, rig) => {
     ctrl.setInput({
       forward: (rig.down('KeyW') ? 1 : 0) - (rig.down('KeyS') ? 1 : 0),
@@ -72,12 +73,18 @@ export function makeWalkMove(
     }
     prevV = vDown;
 
-    // While riding, the camera yaw FOLLOWS the bike heading, so A/D visibly
-    // steers the view — turning the bike turns what you see, even at a standstill.
-    // Without this the Rig kept cam.rotation on the mouse yaw (Rig._walk), so the
-    // bike curved under you but the view never turned, reading as "steering does
-    // nothing". Pitch stays mouse-controlled; on foot, look is untouched.
-    if (ctrl.riding) rig.yaw = ctrl.facingYaw;
+    // While riding, steering nudges the view by the SAME delta the bike heading
+    // turns — added to the Rig's yaw, not replacing it — so A/D turns what you see
+    // AND the mouse can still swivel your head freely on top. (Hard-setting
+    // yaw = heading is what locked the head in place.) On foot, look is entirely
+    // the Rig's own mouse yaw — untouched.
+    if (ctrl.riding) {
+      if (prevFacing === null) prevFacing = ctrl.facingYaw;
+      rig.yaw += ctrl.facingYaw - prevFacing;
+      prevFacing = ctrl.facingYaw;
+    } else {
+      prevFacing = null;
+    }
 
     ctrl.eyePosition(eye.position);
     if (deps.viewRef.current === 'third') {

@@ -127,13 +127,18 @@ export default function Buildings({
     if (meshRef.current && onMeshReady) onMeshReady(meshRef.current);
   }, [geometry, onMeshReady]);
 
-  // Skin the buildings with the CoD procedural-PBR forge (brick façade albedo +
-  // normal + ORM) instead of a flat colour; the per-building colour stays as a
-  // vertexColors TINT so they read varied. The forge needs a live renderer, so the
-  // mocked-Canvas unit test (no gl) falls back to the flat material. Bakes once
-  // (opacity is 1 in the wide/walk path). Mirrors CodSkeleton's render-target
-  // save/restore so an in-flight frame isn't corrupted. Stays UNCONDITIONALLY
-  // transparent so the opacity fade can recompile-free (see the old note).
+  // Skin the buildings with the CoD procedural-PBR forge for brick RELIEF
+  // (normalMap + ORM roughness) while the WALL COLOUR comes from the per-building
+  // `vertexColors` tint (the palette brick). The brick *albedo* map is deliberately
+  // NOT used: multiplying that dark brick albedo (linear ~0.03–0.15) by the warm
+  // tint drove every mass to ~(0.07,0.015,0.004) — near-black, and the same hue as
+  // the aerial ground, so the whole city vanished at street level (regression from
+  // the "brick city" change). Dropping the albedo restores the bright, visible
+  // palette colour the masses had before, and the normal/roughness keep the façade
+  // texture. The forge needs a live renderer, so the mocked-Canvas unit test (no
+  // gl) falls back to the flat material. Bakes once. Mirrors CodSkeleton's
+  // render-target save/restore. Stays UNCONDITIONALLY transparent so the opacity
+  // fade can recompile-free (see the old note).
   const gl = useThree((s) => s.gl);
   const forgeRef = useRef<MaterialSystem | null>(null);
   const material = useMemo(() => {
@@ -162,7 +167,8 @@ export default function Buildings({
       // UVs are in metres (ExtrudeGeometry over metre footprints); ~3 m per tile
       // reads like a real façade. Tune `rep` if bricks look too big / small.
       const rep = 1 / 3;
-      for (const t of [set.albedo, set.normal, set.orm]) {
+      // Tile only the relief maps — the albedo is intentionally unused (see note).
+      for (const t of [set.normal, set.orm]) {
         if (!t) continue;
         t.wrapS = RepeatWrapping;
         t.wrapT = RepeatWrapping;
@@ -170,7 +176,8 @@ export default function Buildings({
         t.anisotropy = maxAniso;
       }
       return new MeshStandardMaterial({
-        map: set.albedo,
+        // No `map`: the vertexColors tint IS the wall colour (bright, visible);
+        // the dark brick albedo would multiply it to near-black.
         normalMap: set.normal,
         roughnessMap: set.orm, // ORM: roughness in .g
         metalnessMap: set.orm, // ORM: metalness in .b

@@ -255,6 +255,55 @@ describe('EmbodiedController', () => {
     c.dispose();
   });
 
+  it('sprint (Shift) covers clearly more ground than a plain walk', () => {
+    const walkThenMeasure = (sprint: boolean) => {
+      const c = EmbodiedController.fromMeshes([
+        { mesh: floor(), surface: 'dirt' },
+      ]);
+      c.teleport(0, 0, 0);
+      c.setInput(input({ forward: 1, sprint, yaw: -Math.PI / 2 })); // +x
+      stepN(c, 120);
+      const x = c.position.x;
+      c.dispose();
+      return x;
+    };
+    const walk = walkThenMeasure(false);
+    const sprint = walkThenMeasure(true);
+    expect(sprint).toBeGreaterThan(walk * 1.5); // ~2.2× by default; guard the boost
+  });
+
+  it('crouch is slower than walking, and prone is slower than crouch', () => {
+    const travel = (stance: 'stand' | 'crouch' | 'prone') => {
+      const c = EmbodiedController.fromMeshes([
+        { mesh: floor(), surface: 'dirt' },
+      ]);
+      c.teleport(0, 0, 0);
+      // Stance is an edge-triggered toggle: press once to enter, then hold + move.
+      if (stance !== 'stand') {
+        c.setInput(input({ [stance]: true } as Partial<EmbodiedInput>));
+        c.step(DT);
+        expect(c.stance).toBe(stance);
+      }
+      c.setInput(
+        input({
+          forward: 1,
+          yaw: -Math.PI / 2,
+          crouch: stance === 'crouch',
+          prone: stance === 'prone',
+        })
+      );
+      stepN(c, 120);
+      const x = c.position.x;
+      c.dispose();
+      return x;
+    };
+    const stand = travel('stand');
+    const crouch = travel('crouch');
+    const prone = travel('prone');
+    expect(crouch).toBeLessThan(stand);
+    expect(prone).toBeLessThan(crouch);
+  });
+
   it('collide() ejects a feet position poking through a façade', () => {
     // A building footprint x,z ∈ [−3, 3].
     const c = EmbodiedController.fromMeshes([

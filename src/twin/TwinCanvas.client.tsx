@@ -611,7 +611,7 @@ function SceneInner({
     >
       {/* First-person Walk gets a real procedural sky dome + IBL (which also
           lifts the buildings); the miniature modes keep the flat colour. */}
-      {mode === 'walk' && <ProceduralSky hour={13} showDome={false} />}
+      {mode === 'walk' && <ProceduralSky hour={13} />}
       {/* Sky background + atmospheric fog, ranged to the model's extents so
           they add depth without hiding the city. Walk brightens the fill,
           neutralises the brown ground-bounce, and hazes toward the sky. */}
@@ -623,18 +623,21 @@ function SceneInner({
         attach="fog"
         args={[
           mode === 'walk' ? 0xbcd2e8 : d.fogColor,
-          mode === 'walk' ? 400 : framing.fogNear,
+          mode === 'walk' ? 1500 : framing.fogNear,
           mode === 'walk' ? 6000 : framing.fogFar,
         ]}
       />
       {/* Walk mode uses a fixed bright key (independent of the moody day/grade) so
-          the street reads in full daylight; miniature modes keep the day cycle. */}
-      <ambientLight intensity={mode === 'walk' ? 0.75 : d.ambient} />
+          the street reads in full daylight; miniature modes keep the day cycle.
+          Ambient is kept MODERATE (not flooded) so building colours stay saturated
+          and the sun/hemisphere still model form — too much flat ambient washes the
+          façades pastel. */}
+      <ambientLight intensity={mode === 'walk' ? 0.55 : d.ambient} />
       <hemisphereLight
         args={[
           mode === 'walk' ? 0xbfd4ff : d.hemiSky,
           mode === 'walk' ? 0x9aa0a8 : d.hemiGround,
-          mode === 'walk' ? 1.1 : d.hemiIntensity,
+          mode === 'walk' ? 0.7 : d.hemiIntensity,
         ]}
       />
       <directionalLight
