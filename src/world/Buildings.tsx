@@ -1,13 +1,18 @@
 'use client';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import {
   Shape,
   ExtrudeGeometry,
   BufferGeometry,
   BufferAttribute,
   Color,
+  MeshStandardMaterial,
+  RepeatWrapping,
+  type Mesh,
 } from 'three';
+import { useThree } from '@react-three/fiber';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { MaterialSystem } from '@/lib/cod';
 import type { Building, TerrainGrid, Manifest } from '@/lib/manifest';
 import { ringToShape } from './geometry';
 import { elevationAt, minElevation } from './terrainSample';
@@ -78,6 +83,7 @@ export default function Buildings({
   grid,
   manifest,
   opacity = 1,
+  onMeshReady,
 }: {
   buildings: Building[];
   palette: BuildingPalette;
@@ -85,7 +91,12 @@ export default function Buildings({
   manifest: Manifest;
   /** Layer fade (registration checks against the aerial); 1 = opaque. */
   opacity?: number;
+  /** Hands the merged buildings mesh to the composition root once built, so a
+   *  physics layer (Walk-mode collision, #226) can bake it into a BVH. Fires
+   *  whenever the merged geometry changes. */
+  onMeshReady?: (mesh: Mesh) => void;
 }) {
+  const meshRef = useRef<Mesh>(null);
   const { geometry } = useMemo(() => {
     const minE = minElevation(grid);
     const nonHero = buildings.filter((b) => !b.swap);
@@ -109,24 +120,95 @@ export default function Buildings({
     };
   }, [buildings, palette, grid, manifest]);
 
+  // Publish the merged mesh for the physics layer (#226). Keyed on `geometry`
+  // so a rebuild (new footprints) hands over a fresh mesh; guarded on the ref so
+  // the faded-out (opacity 0, unmounted) frames never emit a stale handle.
+  useEffect(() => {
+    if (meshRef.current && onMeshReady) onMeshReady(meshRef.current);
+  }, [geometry, onMeshReady]);
+
+  // Skin the buildings with the CoD procedural-PBR forge for brick RELIEF
+  // (normalMap + ORM roughness) while the WALL COLOUR comes from the per-building
+  // `vertexColors` tint (the palette brick). The brick *albedo* map is deliberately
+  // NOT used: multiplying that dark brick albedo (linear ~0.03–0.15) by the warm
+  // tint drove every mass to ~(0.07,0.015,0.004) — near-black, and the same hue as
+  // the aerial ground, so the whole city vanished at street level (regression from
+  // the "brick city" change). Dropping the albedo restores the bright, visible
+  // palette colour the masses had before, and the normal/roughness keep the façade
+  // texture. The forge needs a live renderer, so the mocked-Canvas unit test (no
+  // gl) falls back to the flat material. Bakes once. Mirrors CodSkeleton's
+  // render-target save/restore. Stays UNCONDITIONALLY transparent so the opacity
+  // fade can recompile-free (see the old note).
+  const gl = useThree((s) => s.gl);
+  const forgeRef = useRef<MaterialSystem | null>(null);
+  const material = useMemo(() => {
+    const flat = () =>
+      new MeshStandardMaterial({
+        vertexColors: true,
+        roughness: 0.92,
+        metalness: 0,
+        transparent: true,
+        opacity,
+      });
+    if (!gl) return flat();
+    try {
+      if (!forgeRef.current) {
+        const forge = new MaterialSystem({ renderer: gl });
+        void forge.init({}); // synchronous body → full bake
+        forgeRef.current = forge;
+      }
+      const prevRT = gl.getRenderTarget();
+      const prevAutoClear = gl.autoClear;
+      const set = forgeRef.current.getTextureSet('brick');
+      gl.setRenderTarget(prevRT);
+      gl.autoClear = prevAutoClear;
+      if (!set || !set.albedo) return flat();
+      const maxAniso = gl.capabilities.getMaxAnisotropy();
+      // UVs are in metres (ExtrudeGeometry over metre footprints); ~3 m per tile
+      // reads like a real façade. Tune `rep` if bricks look too big / small.
+      const rep = 1 / 3;
+      // Tile only the relief maps — the albedo is intentionally unused (see note).
+      for (const t of [set.normal, set.orm]) {
+        if (!t) continue;
+        t.wrapS = RepeatWrapping;
+        t.wrapT = RepeatWrapping;
+        t.repeat.set(rep, rep);
+        t.anisotropy = maxAniso;
+      }
+      return new MeshStandardMaterial({
+        // No `map`: the vertexColors tint IS the wall colour (bright, visible);
+        // the dark brick albedo would multiply it to near-black.
+        normalMap: set.normal,
+        roughnessMap: set.orm, // ORM: roughness in .g
+        metalnessMap: set.orm, // ORM: metalness in .b
+        vertexColors: true,
+        roughness: 1,
+        metalness: 0,
+        transparent: true,
+        opacity,
+      });
+    } catch (err) {
+      console.warn('[Buildings] forge skin failed; flat fallback', err);
+      return flat();
+    }
+  }, [gl, opacity]);
+
+  useEffect(
+    () => () => {
+      forgeRef.current?.dispose();
+      forgeRef.current = null;
+    },
+    []
+  );
+
   if (opacity <= 0) return null;
   return (
-    <mesh geometry={geometry} castShadow={opacity >= 1} receiveShadow>
-      {/* UNCONDITIONALLY transparent: three bakes an OPAQUE define into the
-          program when a material mounts with transparent=false, and flipping
-          `transparent` at runtime never recompiles — the fade would silently
-          no-op until a full unmount/remount cycle. One merged mesh, so the
-          transparent-pass sorting cost is nil. depthWrite stays on while
-          fading: self-overlap artifacts are acceptable for a diagnostic layer
-          and it avoids sort popping. Shadows drop while faded so a ghosted
-          layer doesn't cast solid shadows on the aerial. */}
-      <meshStandardMaterial
-        vertexColors
-        roughness={0.92}
-        metalness={0}
-        transparent
-        opacity={opacity}
-      />
-    </mesh>
+    <mesh
+      ref={meshRef}
+      geometry={geometry}
+      material={material}
+      castShadow={opacity >= 1}
+      receiveShadow
+    />
   );
 }

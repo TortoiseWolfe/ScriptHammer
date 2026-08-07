@@ -12,13 +12,35 @@ import {
   LinearSRGBColorSpace,
   type DirectionalLight,
   type Group,
+  type Mesh,
   type Vector3,
 } from 'three';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import StageCore, { StageHandle } from '@/stage/StageCore';
 import { Rig, RigMode, RigWaypoint } from '@/stage/Rig';
+import {
+  EmbodiedController,
+  useFootsteps,
+  useAmbientCity,
+  useFootstepDust,
+  useCameraFeel,
+  useWeather,
+  type WeatherKind,
+  bus,
+} from '@/lib/cod';
+import { makeWalkMove, type BikeView } from '@/stage/embodiedWalk';
 import TwinWorld from '@/world/TwinWorld';
 import Trolley from '@/agents/trolley';
+import Bike from '@/agents/bike';
+import PlayerCharacter from '@/agents/playerCharacter';
+import ProceduralSky from '@/components/game/ProceduralSky';
 import Hud, { HudCaption, HudLink, HudOption, HudSlider } from '@/stage/Hud';
 import PlacementEditor from './PlacementEditor';
 import SelectedBuildingCard from './SelectedBuildingCard';
@@ -85,7 +107,8 @@ export function modesForSite(
 const MODE_HINTS: Partial<Record<CameraMode, HudCaption>> = {
   walk: {
     name: 'Walk',
-    blurb: 'Click the scene to look around · WASD to move · Shift to sprint',
+    blurb:
+      'Click to look · WASD · Shift sprint · B bike · V view · C crouch · X prone · Space jump',
   },
   follow: {
     name: 'Ride',
@@ -115,6 +138,22 @@ export function parseOrthoParam(search: string): {
   };
 }
 
+/** `?hour=N` (0–24) sets the procedural-sky time of day; default 13 (bright
+ *  afternoon). ONLY the sky dome follows it — the Walk key lighting stays fixed
+ *  and bright, so the street reads at any hour (no moody day-cycle recoupling,
+ *  which is what darkened the scene before). Malformed → the default. */
+export function parseHourParam(search: string): number {
+  const v = new URLSearchParams(search).get('hour');
+  if (v == null || v.trim() === '') return 13; // absent or bare `?hour=`
+  const n = Number(v);
+  return Number.isFinite(n) ? Math.min(24, Math.max(0, n)) : 13;
+}
+
+/** `?weather=rain` turns on ambient rain in Walk mode; anything else → none. */
+export function parseWeatherParam(search: string): WeatherKind {
+  return new URLSearchParams(search).get('weather') === 'rain' ? 'rain' : 'none';
+}
+
 function SceneInner({
   slug,
   manifest,
@@ -135,6 +174,8 @@ function SceneInner({
   registerHandle,
   registerRig,
   onFps,
+  onNearBike,
+  onWalkReady,
   warehouseModels,
   modelOverrides,
   selectedModel,
@@ -169,6 +210,10 @@ function SceneInner({
   registerRig?: (rig: Rig) => void;
   /** ~2 Hz averaged frame rate for the HUD counter (#259 perf work). */
   onFps?: (fps: number) => void;
+  /** Walk mode: near/far transitions of the parked bike, for the ride prompt. */
+  onNearBike?: (near: boolean) => void;
+  /** Fires once the embodied walk controller is built (deep-link gating). */
+  onWalkReady?: () => void;
   warehouseModels?: WarehouseModelsInfo | null;
   modelOverrides?: Record<string, TwinPlacementOverride>;
   selectedModel?: string | null;
@@ -253,15 +298,22 @@ function SceneInner({
   // the lens after mount.
   useEffect(() => {
     const cam = camera as import('three').PerspectiveCamera;
-    cam.fov = PALETTES[paletteKey].fov;
+    // First-person needs a normal-lens fov; the "toy" palette's telephoto 34
+    // is claustrophobic on foot. Wider only in Walk; palette fov otherwise.
+    cam.fov = mode === 'walk' ? 72 : PALETTES[paletteKey].fov;
     cam.updateProjectionMatrix();
-  }, [camera, paletteKey]);
+  }, [camera, paletteKey, mode]);
 
   const d = useMemo(() => computeDay(day), [day]);
-  const grade = useMemo(
-    () => applyProfile(d.gradeBase, PALETTES[paletteKey]),
-    [d, paletteKey]
-  );
+  const grade = useMemo(() => {
+    const g = applyProfile(d.gradeBase, PALETTES[paletteKey]);
+    // Walk mode drops the moody miniature grade (heavy vignette + boosted sepia
+    // saturation/contrast) for a bright, neutral street-level look, so the aerial
+    // ground + façades read true instead of crushed dark-brown.
+    return mode === 'walk'
+      ? { saturation: 1.02, contrast: 0.98, vignette: 0 }
+      : g;
+  }, [d, paletteKey, mode]);
   // Stable object identities: fresh literals here would re-trigger StageCore's
   // effects and rebuild the merged building geometry on every re-render (the
   // tour emits a caption every few seconds).
@@ -274,6 +326,26 @@ function SceneInner({
     }),
     [paletteKey, crisp]
   );
+  // Time of day for the procedural sky (?hour=N, default 13). Read once — the
+  // URL param is a static override like ?walk/?house. Drives ONLY the sky dome.
+  const skyHour = useMemo(
+    () =>
+      parseHourParam(
+        typeof window !== 'undefined' ? window.location.search : ''
+      ),
+    []
+  );
+  // Ambient weather (?weather=rain) — reuses the CoD GPU particle layer, only in
+  // Walk. tick() is a no-op when disabled, so the useFrame is free otherwise.
+  const weatherKind = useMemo(
+    () =>
+      parseWeatherParam(
+        typeof window !== 'undefined' ? window.location.search : ''
+      ),
+    []
+  );
+  const weather = useWeather(mode === 'walk' ? weatherKind : 'none');
+  useFrame((_, dt) => weather.tick(dt));
   const bricks = useMemo(
     () => ({ bricks: PALETTES[paletteKey].bricks }),
     [paletteKey]
@@ -397,6 +469,158 @@ function SceneInner({
     (x: number, z: number) => groundAtRef.current?.(x, z) ?? 0,
     []
   );
+
+  // ── Walk-mode embodied physics (#226) ──────────────────────────────────────
+  // The world hands over its terrain + buildings meshes; we bake BOTH into a CoD
+  // StaticWorld and let an EmbodiedController own the first-person avatar
+  // (gravity, jump, step-up, slopes, crouch/prone) in Walk mode. The Rig keeps
+  // look and calls `walkMove`, which returns the eye position. Feel/audio/dust
+  // come from the toolkit hooks (safe here — SceneInner is inside <Canvas>).
+  const { resume: resumeAudio, step: stepAudio } = useFootsteps();
+  // Looping procedural city bed (wind + distant traffic + birds), sitting UNDER
+  // the footsteps mix. Its own AudioContext; woken by the same gesture (below).
+  const {
+    resume: resumeAmbient,
+    start: startAmbient,
+    stop: stopAmbient,
+  } = useAmbientCity();
+  const { emit: emitDust, tick: tickDust } = useFootstepDust(256);
+  const { apply: applyCameraFeel } = useCameraFeel();
+
+  const buildingsMeshRef = useRef<Mesh | null>(null);
+  const terrainMeshRef = useRef<Mesh | null>(null);
+  const walkCtrlRef = useRef<EmbodiedController | null>(null);
+  const spawnRef = useRef<{ x: number; z: number } | null>(null);
+  const [walkCtrl, setWalkCtrl] = useState<EmbodiedController | null>(null);
+  const viewRef = useRef<BikeView>('first'); // first/third-person while on the bike
+
+  // Build the embodied controller once BOTH the terrain (floor) and buildings
+  // (walls) meshes have arrived. The terrain is the floor gravity needs.
+  const tryBuildWalk = useCallback(() => {
+    const buildings = buildingsMeshRef.current;
+    const terrain = terrainMeshRef.current;
+    if (!buildings || !terrain) return;
+    walkCtrlRef.current?.dispose();
+    const ctrl = EmbodiedController.fromMeshes(
+      [
+        { mesh: terrain, surface: 'dirt' },
+        { mesh: buildings, surface: 'concrete' },
+      ],
+      { onStanceChange: (s) => bus.emit('player:stance', { stance: s }) }
+    );
+    // Spawn on a street: the embedded-twin location if known, else the framing
+    // home focus, at terrain height. teleport() depenetrates + probes ground.
+    const sx = spawnRef.current?.x ?? framing.homeFocus[0];
+    const sz = spawnRef.current?.z ?? framing.homeFocus[2];
+    const sy = groundAtRef.current?.(sx, sz) ?? 0;
+    ctrl.teleport(sx, sy, sz);
+    ctrl.parkBike(sx, sy, sz); // the bike starts parked at your feet
+    walkCtrlRef.current = ctrl;
+    setWalkCtrl(ctrl);
+  }, [framing]);
+
+  const handleBuildingsMesh = useCallback(
+    (mesh: Mesh) => {
+      buildingsMeshRef.current = mesh;
+      tryBuildWalk();
+    },
+    [tryBuildWalk]
+  );
+  const handleTerrainMesh = useCallback(
+    (mesh: Mesh) => {
+      terrainMeshRef.current = mesh;
+      tryBuildWalk();
+    },
+    [tryBuildWalk]
+  );
+  // Record the embedded-twin street position as the walk spawn, then lift it up.
+  const handleTwinPlaced = useCallback(
+    (t: { x: number; z: number; label: string }) => {
+      spawnRef.current = { x: t.x, z: t.z };
+      onTwinPlaced?.(t);
+    },
+    [onTwinPlaced]
+  );
+
+  // Bind the Rig seams whenever the rig or the built controller changes.
+  // groundHeight (analytic sampler) serves follow mode; walkMove + collide serve
+  // the embodied walk. Cleared on rebind/unmount; the controller is disposed on
+  // rebuild (above) and on unmount (below).
+  useEffect(() => {
+    rig.groundHeight = (x, z) => groundAtRef.current?.(x, z) ?? 0;
+    if (walkCtrl) {
+      rig.walkMove = makeWalkMove(walkCtrl, {
+        stepAudio,
+        emitDust,
+        tickDust,
+        applyCameraFeel,
+        viewRef,
+      });
+      rig.collide = (pos) => walkCtrl.collide(pos, 0.4); // unboarded-follow reuse
+    }
+    return () => {
+      rig.groundHeight = null;
+      rig.walkMove = null;
+      rig.collide = null;
+    };
+  }, [rig, walkCtrl, stepAudio, emitDust, tickDust, applyCameraFeel]);
+
+  // Dispose the physics world on unmount.
+  useEffect(
+    () => () => {
+      walkCtrlRef.current?.dispose();
+      walkCtrlRef.current = null;
+    },
+    []
+  );
+
+  // Tell the composition root the embodied controller is live, so a `?walk`
+  // deep-link can enter Walk only now (not during the kinematic-glide window).
+  useEffect(() => {
+    if (walkCtrl) onWalkReady?.();
+  }, [walkCtrl, onWalkReady]);
+
+  // Resume Web Audio on the FIRST gesture in Walk — click OR keypress. The
+  // `?walk` deep-link ("Play") auto-enters Walk with no canvas click, so keydown
+  // (WASD) must also wake the AudioContext or footsteps stay silent. resume() is
+  // idempotent.
+  useEffect(() => {
+    if (mode !== 'walk') return;
+    const dom = gl.domElement;
+    const kick = () => {
+      resumeAudio();
+      resumeAmbient();
+    };
+    dom.addEventListener('click', kick);
+    window.addEventListener('keydown', kick);
+    return () => {
+      dom.removeEventListener('click', kick);
+      window.removeEventListener('keydown', kick);
+    };
+  }, [mode, gl, resumeAudio, resumeAmbient]);
+
+  // Play the ambient city bed only while in Walk mode: build + start the loops on
+  // enter (they sound once the gesture above resumes the context), fade + stop on
+  // exit/unmount. Separate from the resume effect so the bed's lifecycle is tied
+  // to Walk, not to the first gesture.
+  useEffect(() => {
+    if (mode !== 'walk') return;
+    startAmbient();
+    return () => stopAmbient();
+  }, [mode, startAmbient, stopAmbient]);
+
+  // First-person needs a tiny near plane. The twin's default (framing.cameraNear
+  // ≈ 5 m, tuned for the miniature orbit) sits FARTHER than the ground under your
+  // feet, so Walk mode clips straight through the terrain. Shrink it while
+  // walking; restore on exit.
+  useEffect(() => {
+    const cam = camera as import('three').PerspectiveCamera;
+    const near = mode === 'walk' ? 0.1 : framing.cameraNear;
+    if (cam.near !== near) {
+      cam.near = near;
+      cam.updateProjectionMatrix();
+    }
+  }, [mode, camera, framing.cameraNear]);
   const handleTrolleyTick = useCallback((pos: Vector3, heading: number) => {
     trolleyTarget.current.position.x = pos.x;
     trolleyTarget.current.position.y = pos.y;
@@ -423,17 +647,42 @@ function SceneInner({
       ortho={ortho}
       registerHandle={registerHandle}
     >
+      {/* First-person Walk gets a real procedural sky dome + IBL (which also
+          lifts the buildings); the miniature modes keep the flat colour. */}
+      {mode === 'walk' && <ProceduralSky hour={skyHour} />}
       {/* Sky background + atmospheric fog, ranged to the model's extents so
-          they add depth without hiding the city. */}
-      <color attach="background" args={[d.skyColor]} />
-      <fog attach="fog" args={[d.fogColor, framing.fogNear, framing.fogFar]} />
-      <ambientLight intensity={d.ambient} />
-      <hemisphereLight args={[d.hemiSky, d.hemiGround, d.hemiIntensity]} />
+          they add depth without hiding the city. Walk brightens the fill,
+          neutralises the brown ground-bounce, and hazes toward the sky. */}
+      <color
+        attach="background"
+        args={[mode === 'walk' ? 0x9fc4e8 : d.skyColor]}
+      />
+      <fog
+        attach="fog"
+        args={[
+          mode === 'walk' ? 0xbcd2e8 : d.fogColor,
+          mode === 'walk' ? 1500 : framing.fogNear,
+          mode === 'walk' ? 6000 : framing.fogFar,
+        ]}
+      />
+      {/* Walk mode uses a fixed bright key (independent of the moody day/grade) so
+          the street reads in full daylight; miniature modes keep the day cycle.
+          Ambient is kept MODERATE (not flooded) so building colours stay saturated
+          and the sun/hemisphere still model form — too much flat ambient washes the
+          façades pastel. */}
+      <ambientLight intensity={mode === 'walk' ? 0.55 : d.ambient} />
+      <hemisphereLight
+        args={[
+          mode === 'walk' ? 0xbfd4ff : d.hemiSky,
+          mode === 'walk' ? 0x9aa0a8 : d.hemiGround,
+          mode === 'walk' ? 0.7 : d.hemiIntensity,
+        ]}
+      />
       <directionalLight
         ref={sunRef}
         position={d.sunPos}
-        intensity={d.sunIntensity}
-        color={d.sunColor}
+        intensity={mode === 'walk' ? 2.0 : d.sunIntensity}
+        color={mode === 'walk' ? 0xfff4e6 : d.sunColor}
         castShadow
       />
       <TwinWorld
@@ -451,7 +700,9 @@ function SceneInner({
         onHouseGround={onHouseGround}
         onGroundReady={handleGroundReady}
         onError={onWorldError}
-        onTwinPlaced={onTwinPlaced}
+        onTwinPlaced={handleTwinPlaced}
+        onBuildingsMesh={handleBuildingsMesh}
+        onTerrainMesh={handleTerrainMesh}
       />
       {gizmoTarget && gizmoBase && patchOverride ? (
         <WarehouseGizmo
@@ -469,6 +720,17 @@ function SceneInner({
           onTick={handleTrolleyTick}
           groundAt={trolleyGroundAt}
         />
+      )}
+      {/* The rideable bike — parked in the world once the walk controller exists. */}
+      {walkCtrl && (
+        <Bike ctrlRef={walkCtrlRef} viewRef={viewRef} onNearBike={onNearBike} />
+      )}
+      {/* Your visible body — a rigged, animated human shown in third-person (V),
+          posed by stance/riding. Suspends while the glTF loads. */}
+      {walkCtrl && (
+        <Suspense fallback={null}>
+          <PlayerCharacter ctrlRef={walkCtrlRef} viewRef={viewRef} />
+        </Suspense>
       )}
     </StageCore>
   );
@@ -615,9 +877,31 @@ function TwinCanvasInner({
       ),
     []
   );
+  // `?walk` drops you straight into first-person Walk mode (the navbar "Play"
+  // link), instead of the default orbit/tour — so the game isn't buried behind
+  // the ⋯ mode overflow.
+  const walkParam = useMemo(
+    () =>
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).has('walk'),
+    []
+  );
   const [mode, setMode] = useState<CameraMode>(
     orthoParam.on ? 'ortho' : hasTour ? 'tour' : 'orbit'
   );
+  // `?walk` deep-link (the navbar "Play" link): do NOT enter Walk until the
+  // embodied controller has been built from the city meshes. Entering early makes
+  // the Rig fall back to its kinematic glide — which moves at the orbit
+  // move-speed (~1,200 m/s) with no terrain-follow: "running under the city at
+  // high speed". So land in orbit while the city loads, then switch once.
+  const [walkReady, setWalkReady] = useState(false);
+  const didAutoWalk = useRef(false);
+  useEffect(() => {
+    if (walkParam && walkReady && !didAutoWalk.current) {
+      didAutoWalk.current = true;
+      setMode('walk');
+    }
+  }, [walkParam, walkReady]);
   const orthoFrame = useMemo<OrthoFrame | undefined>(() => {
     if (mode !== 'ortho') return undefined;
     if (!orthoParam.frame) return framing.ortho;
@@ -645,6 +929,12 @@ function TwinCanvasInner({
     z: number;
     label: string;
   } | null>(null);
+  // Walk-mode stance (#226): the embodied controller (inside <Canvas>) emits
+  // `player:stance` across the bus; the badge below (walk only) reflects it.
+  const [stance, setStance] = useState<string>('stand');
+  useEffect(() => bus.on('player:stance', (e) => setStance(e.stance)), []);
+  // Walk mode: true while standing next to the parked bike (drives the prompt).
+  const [nearBike, setNearBike] = useState(false);
 
   // --- Warehouse layer: directory + placement editor (#259) ---
   // The whole editor surface (edit mode, selection, overrides + persistence,
@@ -826,7 +1116,7 @@ function TwinCanvasInner({
           buildingsOpacity={buildingsOpacity}
           // Tilt-shift blur off for close-up study AND while editing — 0.5 m
           // nudges are invisible through the miniature blur.
-          crisp={houseFocused || editMode}
+          crisp={houseFocused || editMode || mode === 'walk'}
           paletteKey={paletteKey}
           day={day}
           mode={mode}
@@ -838,6 +1128,8 @@ function TwinCanvasInner({
           registerHandle={registerHandle}
           registerRig={registerRig}
           onFps={showFps ? setFps : undefined}
+          onNearBike={setNearBike}
+          onWalkReady={() => setWalkReady(true)}
           warehouseModels={warehouseModels}
           modelOverrides={modelOverrides}
           selectedModel={selectedModel}
@@ -888,6 +1180,47 @@ function TwinCanvasInner({
           ) : null}
         </div>
       ) : null}
+      {mode === 'walk' && (
+        <div
+          data-stance={stance}
+          style={{
+            position: 'absolute',
+            top: 84,
+            left: 16,
+            padding: '6px 10px',
+            background: 'rgba(12, 16, 24, 0.72)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: 8,
+            color: '#f0ead8',
+            fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+            fontSize: 12,
+            fontWeight: 700,
+            letterSpacing: '0.08em',
+            zIndex: 11,
+          }}
+        >
+          {stance.toUpperCase()}
+        </div>
+      )}
+      {mode === 'walk' && nearBike && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 116,
+            left: 16,
+            padding: '6px 10px',
+            background: 'rgba(12, 16, 24, 0.72)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: 8,
+            color: '#f0ead8',
+            fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+            fontSize: 12,
+            zIndex: 11,
+          }}
+        >
+          🚲 Press B to ride
+        </div>
+      )}
       {worldError && (
         <div
           role="alert"

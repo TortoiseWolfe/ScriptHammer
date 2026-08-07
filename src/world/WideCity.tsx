@@ -1,17 +1,24 @@
 'use client';
-import { Suspense, useEffect, useState } from 'react';
-import { TextureLoader, Texture } from 'three';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { TextureLoader, Texture, type Mesh } from 'three';
 import { createProjection } from '@/lib/enu';
 import { loadSiteJson, siteAssetUrl, loadHouse } from '@/lib/manifest';
 import type {
   Building,
+  Street,
   TerrainGrid,
   Manifest,
   HouseInfo,
+  WarehouseModelsInfo,
 } from '@/lib/manifest';
 import Buildings, { type BuildingPalette } from './Buildings';
 import Terrain from './Terrain';
 import HouseModel from './HouseModel';
+import Water from './Water';
+import Roads from './Roads';
+import CityProps from './CityProps';
+import WarehouseModels from './WarehouseModels';
+import { elevationAt, minElevation } from './terrainSample';
 
 /** buildings-wide.json entry — raw WGS84 footprints (src/twin/cesium/overpass.ts
  *  `LiveBuilding`). `lonLat` is a FLAT [lon,lat,lon,lat,…] ring. */
@@ -25,6 +32,7 @@ interface WideLiveBuilding {
 interface WideData {
   grid: TerrainGrid;
   buildings: Building[];
+  streets: Street[];
   drape: Texture;
   wideManifest: Manifest;
   twin: { slug: string; house: HouseInfo } | null;
@@ -46,16 +54,32 @@ export default function WideCity({
   slug,
   manifest,
   palette,
+  warehouseModels,
   onError,
   onTwinPlaced,
+  onGroundReady,
+  onBuildingsMesh,
+  onTerrainMesh,
 }: {
   slug: string;
   manifest: Manifest;
   palette: BuildingPalette;
+  /** Real landmark GLBs (models.json), narrow-frame — reprojected into the wide
+   *  frame here and rendered read-only (no editor gizmo in the walk path). */
+  warehouseModels?: WarehouseModelsInfo | null;
   onError?: (message: string) => void;
   /** Reports the embedded twin's wide-frame position + label once placed, so
    *  the HUD can offer an in-diorama fly-to instead of a separate page (#332). */
   onTwinPlaced?: (t: { x: number; z: number; label: string }) => void;
+  /** Hands the composition root a terrain sampler (runtime Y at ENU x/z) once
+   *  the wide grid loads — so Walk-mode ground-follow (and the trolley) ride ON
+   *  the hills. The narrow TwinWorld path wires this too; the wide path did not
+   *  until #226. */
+  onGroundReady?: (groundAt: (x: number, z: number) => number) => void;
+  /** Hands over the merged buildings mesh for Walk-mode BVH collision (#226). */
+  onBuildingsMesh?: (mesh: Mesh) => void;
+  /** Hands over the ground mesh for the Walk-mode physics floor (#226). */
+  onTerrainMesh?: (mesh: Mesh) => void;
 }) {
   const [data, setData] = useState<WideData | null>(null);
 
@@ -115,8 +139,36 @@ export default function WideCity({
           }
           return { id: b.id, ring, height: b.heightM, rule: b.rule };
         });
+      // Roads: streets.json is baked in the NARROW box frame. Reproject each
+      // polyline into the wide/atlasBox frame the SAME offset-exact way buildings
+      // are — narrow ENU → lon/lat (narrowProj.enuToLonLat) → wide ENU
+      // (proj.lonLatToEnu); both projections use the same site vectorOffsetM, so
+      // the round-trip recovers the true position. Best-effort: a site without
+      // streets.json (or a bad parse) just renders no roads, never a blank city.
+      // Coverage is the narrow corridor (where you spawn/walk), not the whole
+      // atlasBox — acceptable for v1; a wide streets bake would extend it.
+      let streets: Street[] = [];
+      try {
+        const narrow = await loadSiteJson<Street[]>(slug, 'streets.json');
+        const narrowProj = createProjection(
+          manifest.box,
+          manifest.vectorOffsetM
+        );
+        streets = narrow.map((s) => {
+          const pts: number[] = [];
+          for (let i = 0; i + 1 < s.pts.length; i += 2) {
+            const [lon, lat] = narrowProj.enuToLonLat(s.pts[i], s.pts[i + 1]);
+            const [wx, wz] = proj.lonLatToEnu(lon, lat);
+            pts.push(wx, wz);
+          }
+          return { pts };
+        });
+      } catch (e) {
+        console.warn('[WideCity] streets skipped:', e);
+      }
+
       if (!alive) return;
-      setData({ grid, buildings, drape, wideManifest, twin });
+      setData({ grid, buildings, streets, drape, wideManifest, twin });
       if (twin && embed)
         onTwinPlaced?.({
           x: twin.house.x,
@@ -132,6 +184,47 @@ export default function WideCity({
     };
   }, [slug, manifest, onError, onTwinPlaced]);
 
+  // Publish the wide terrain sampler once the grid loads — same normalization
+  // (elevationAt − minE) the mesh uses, so Walk-mode feet ride ON the terrain
+  // the same way buildings are seated on it. Mirrors TwinWorld's narrow path.
+  useEffect(() => {
+    if (!data || !onGroundReady) return;
+    const { grid, wideManifest } = data;
+    const min = minElevation(grid);
+    onGroundReady((x, z) => elevationAt(grid, wideManifest, x, z) - min);
+  }, [data, onGroundReady]);
+
+  // Real landmark GLBs are anchored (models.json) in the NARROW box frame.
+  // Reproject each anchor into the wide/atlasBox frame the same offset-exact way
+  // buildings/streets are (narrow enuToLonLat → wide lonLatToEnu), so they land
+  // at their true locations. Hook stays above the early return (rules of hooks).
+  const wideModels = useMemo<WarehouseModelsInfo | null>(() => {
+    if (!warehouseModels) return null;
+    const narrowProj = createProjection(manifest.box, manifest.vectorOffsetM);
+    const wideProj = createProjection(
+      manifest.atlasBox ?? manifest.box,
+      manifest.vectorOffsetM
+    );
+    return {
+      ...warehouseModels,
+      models: warehouseModels.models.map((e) => {
+        const [lon, lat] = narrowProj.enuToLonLat(e.x, e.z);
+        const [wx, wz] = wideProj.lonLatToEnu(lon, lat);
+        return { ...e, x: wx, z: wz };
+      }),
+    };
+  }, [warehouseModels, manifest]);
+
+  // Hide the massing box under each landmark GLB so the model IS the building
+  // there (no double geometry) — mirrors TwinWorld's narrow visibleBuildings.
+  const visibleBuildings = useMemo(() => {
+    if (!data) return [];
+    const hide = new Set<number>(warehouseModels?.hideBuildingIds ?? []);
+    return hide.size
+      ? data.buildings.filter((b) => !hide.has(b.id))
+      : data.buildings;
+  }, [data, warehouseModels]);
+
   if (!data) return null;
   return (
     <>
@@ -139,18 +232,51 @@ export default function WideCity({
         grid={data.grid}
         drape={data.drape}
         manifest={data.wideManifest}
+        onMeshReady={onTerrainMesh}
+      />
+      {/* The Tennessee River — a full-extent Y=0.5 plane that shows through only
+          where the wide terrain carves the channel to the valley floor (~Y=0).
+          Same layer the narrow TwinWorld path renders; chatt's manifest is
+          water:true. */}
+      {manifest.site.water === true && <Water manifest={data.wideManifest} />}
+      {/* Road ribbons — narrow streets reprojected into the wide frame (corridor
+          coverage). Terrain-riding asphalt so streets read at ground level. */}
+      <Roads
+        streets={data.streets}
+        grid={data.grid}
+        manifest={data.wideManifest}
+      />
+      {/* Zero-asset city life — instanced street trees + parked cars scattered
+          along the streets so the city isn't dead-empty. */}
+      <CityProps
+        streets={data.streets}
+        grid={data.grid}
+        manifest={data.wideManifest}
       />
       <Buildings
-        buildings={data.buildings}
+        buildings={visibleBuildings}
         palette={palette}
         grid={data.grid}
         manifest={data.wideManifest}
+        onMeshReady={onBuildingsMesh}
       />
       {data.twin ? (
         <Suspense fallback={null}>
           <HouseModel
             slug={data.twin.slug}
             house={data.twin.house}
+            grid={data.grid}
+            manifest={data.wideManifest}
+          />
+        </Suspense>
+      ) : null}
+      {/* Real landmark GLBs at their true (reprojected) locations — read-only in
+          the wide/Walk path (the editor gizmo is narrow-path only). */}
+      {wideModels ? (
+        <Suspense fallback={null}>
+          <WarehouseModels
+            slug={slug}
+            info={wideModels}
             grid={data.grid}
             manifest={data.wideManifest}
           />

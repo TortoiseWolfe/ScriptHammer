@@ -1,6 +1,6 @@
 'use client';
 import { Suspense, useEffect, useMemo, useState } from 'react';
-import { TextureLoader, Texture } from 'three';
+import { TextureLoader, Texture, type Mesh } from 'three';
 import { loadSiteJson, siteAssetUrl, hasWideExtent } from '@/lib/manifest';
 import { createProjection } from '@/lib/enu';
 import type {
@@ -47,6 +47,8 @@ export default function TwinWorld({
   onGroundReady,
   onError,
   onTwinPlaced,
+  onBuildingsMesh,
+  onTerrainMesh,
 }: {
   slug: string;
   manifest: Manifest;
@@ -77,6 +79,11 @@ export default function TwinWorld({
   /** Wide sites only: reports the embedded twin's wide-frame position + label
    *  once placed, so the HUD can offer an in-diorama fly-to (#332). */
   onTwinPlaced?: (t: { x: number; z: number; label: string }) => void;
+  /** Wide sites only: hands over the merged buildings mesh for Walk-mode BVH
+   *  collision (#226). */
+  onBuildingsMesh?: (mesh: Mesh) => void;
+  /** Wide sites only: hands over the ground mesh for the Walk-mode physics floor. */
+  onTerrainMesh?: (mesh: Mesh) => void;
 }) {
   const [data, setData] = useState<WorldData | null>(null);
   // Wide sites (chatt) render the full atlasBox city + embedded twin (WideCity)
@@ -148,8 +155,12 @@ export default function TwinWorld({
         slug={slug}
         manifest={manifest}
         palette={palette}
+        warehouseModels={warehouseModels}
         onError={onError}
         onTwinPlaced={onTwinPlaced}
+        onGroundReady={onGroundReady}
+        onBuildingsMesh={onBuildingsMesh}
+        onTerrainMesh={onTerrainMesh}
       />
     );
   }
