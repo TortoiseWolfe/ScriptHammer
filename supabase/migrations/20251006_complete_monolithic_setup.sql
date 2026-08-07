@@ -18,7 +18,26 @@
 
 -- Clean up any existing test user BEFORE transaction
 -- (auth.users changes can't be rolled back, so do this first)
-DELETE FROM auth.users WHERE email = 'test@example.com';
+--
+-- GUARDED, BECAUSE THIS IS THE FIRST STATEMENT AND IT USED TO ABORT EVERYTHING.
+-- `auth.users` is owned by `supabase_auth_admin` on Supabase Cloud, and the
+-- `postgres` role the Management API connects as has no DELETE on it. So this
+-- line raised `42501: permission denied for schema auth` before the transaction
+-- below even opened — the whole file applied nothing, and the error named the
+-- schema rather than the statement, which sent the search to the auth.users
+-- TRIGGER further down instead of here (#567 org migration).
+--
+-- The delete is convenience for re-running against a stack that already has a
+-- seeded test user. It is not required for a fresh project, so failing to
+-- perform it must not stop the schema from being created.
+DO $cleanup_test_user$
+BEGIN
+  DELETE FROM auth.users WHERE email = 'test@example.com';
+EXCEPTION
+  WHEN insufficient_privilege THEN
+    RAISE NOTICE 'skipping test-user cleanup: no DELETE on auth.users (expected on Supabase Cloud)';
+END
+$cleanup_test_user$;
 
 -- Wrap everything in a transaction - all or nothing
 BEGIN;
@@ -810,9 +829,37 @@ CREATE TRIGGER on_auth_user_created
 -- Cloud this INSERT works as-is because storage has already migrated there.
 -- Forward-fill the three columns here so the INSERT succeeds; storage's own
 -- ADD COLUMN IF NOT EXISTS will no-op when it catches up later.
-ALTER TABLE storage.buckets ADD COLUMN IF NOT EXISTS public             boolean DEFAULT false;
-ALTER TABLE storage.buckets ADD COLUMN IF NOT EXISTS file_size_limit    bigint;
-ALTER TABLE storage.buckets ADD COLUMN IF NOT EXISTS allowed_mime_types text[];
+--
+-- GUARDED, BECAUSE `IF NOT EXISTS` IS NOT ENOUGH. Postgres checks ownership
+-- BEFORE the IF-NOT-EXISTS short-circuit, and on Supabase Cloud storage.buckets
+-- is owned by `supabase_storage_admin`. So on cloud these three lines fail with
+-- `42501: must be owner of table buckets` even though every column already
+-- exists and the statements would be no-ops. That aborts the entire migration
+-- in its transaction — 0 tables created — which is exactly what happened when
+-- this file was first applied to a fresh cloud project (#567 org migration).
+--
+-- Checking the catalog first means cloud skips the ALTER entirely and only the
+-- local stack, where the columns really are missing and we really are the owner,
+-- executes it.
+DO $storage_cols$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_schema = 'storage' AND table_name = 'buckets'
+                   AND column_name = 'public') THEN
+    ALTER TABLE storage.buckets ADD COLUMN public boolean DEFAULT false;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_schema = 'storage' AND table_name = 'buckets'
+                   AND column_name = 'file_size_limit') THEN
+    ALTER TABLE storage.buckets ADD COLUMN file_size_limit bigint;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                 WHERE table_schema = 'storage' AND table_name = 'buckets'
+                   AND column_name = 'allowed_mime_types') THEN
+    ALTER TABLE storage.buckets ADD COLUMN allowed_mime_types text[];
+  END IF;
+END
+$storage_cols$;
 
 INSERT INTO storage.buckets (
   id,
