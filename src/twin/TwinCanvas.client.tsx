@@ -10,7 +10,6 @@ import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import {
   NoToneMapping,
   LinearSRGBColorSpace,
-  type DirectionalLight,
   type Group,
   type Mesh,
   type Vector3,
@@ -379,37 +378,6 @@ function SceneInner({
     [rig]
   );
 
-  // Shadow fit (#259 iter-4 review): three's defaults — 512² map, ±5 m ortho
-  // frustum — over a multi-km scene meant every surface sampled the same few
-  // texels, reading as acne/shimmer while orbiting. Fit the frustum to the
-  // ground extents (symmetric half-span: valid for any sun azimuth), scale
-  // the map, and lean on normalBias (surface-slope offset, no peter-panning
-  // at these texel sizes). Imperative because shadow-camera props applied
-  // post-mount don't refresh the projection matrix, and resizing mapSize
-  // must dispose the already-allocated map.
-  const sunRef = useRef<DirectionalLight | null>(null);
-  useEffect(() => {
-    const sun = sunRef.current;
-    if (!sun) return;
-    const half = Math.max(framing.panMaxX, framing.panMaxZ);
-    const cam = sun.shadow.camera;
-    cam.left = -half;
-    cam.right = half;
-    cam.top = half;
-    cam.bottom = -half;
-    cam.near = 1;
-    cam.far = Math.hypot(d.sunPos[0], d.sunPos[1], d.sunPos[2]) + half;
-    cam.updateProjectionMatrix();
-    if (
-      sun.shadow.mapSize.x !== 2048 &&
-      sun.shadow.map // resize after allocation → must drop the old target
-    ) {
-      sun.shadow.map.dispose();
-      sun.shadow.map = null;
-    }
-    sun.shadow.mapSize.set(2048, 2048);
-    sun.shadow.normalBias = 1;
-  }, [framing, d]);
 
   // Honest perf sampling (#259). renderer.info auto-resets after EVERY
   // gl.render — with the EffectComposer chain the last post pass would report
@@ -679,16 +647,11 @@ function SceneInner({
         ]}
       />
       <directionalLight
-        ref={sunRef}
+        // Sun DIFFUSE only — no shadow map (retired above); the drape + IBL carry
+        // the baked shadows. Brighter/neutral in Walk so the street reads on foot.
         position={d.sunPos}
         intensity={mode === 'walk' ? 2.0 : d.sunIntensity}
         color={mode === 'walk' ? 0xfff4e6 : d.sunColor}
-        // Shadows OFF in first-person Walk: the shadow camera spans the whole
-        // ~2.6 km diorama (framing.panMax), so the shadow pass re-draws EVERY
-        // caster (8k massing + 129 scans) into a 2048² map every frame — roughly
-        // HALF the walk render workload for shadows you barely see on foot.
-        // Kept for the orbit/miniature where cast shadows read as depth. (#perf)
-        castShadow={mode !== 'walk'}
       />
       <TwinWorld
         slug={slug}
@@ -1083,10 +1046,11 @@ function TwinCanvasInner({
       }}
     >
       <Canvas
-        // "percentage" = PCFShadowMap. three r184 deprecated PCFSoftShadowMap
-        // (R3F's `shadows` bool default) and silently substitutes PCF anyway,
-        // warning on EVERY shadow render — same map, no console spam.
-        shadows="percentage"
+        // No real-time shadow map (#perf): a STATIC city on a satellite drape that
+        // already carries real baked sun shadows, lit by the sky's IBL environment.
+        // A whole-diorama PCF shadow pass re-drew every building every frame for
+        // shadows the photo already has (measured: ~half the walk workload) —
+        // retired. Movers get a cheap blob shadow instead.
         onPointerMissed={handlePointerMissed}
         dpr={[1, 1.75]}
         gl={{
