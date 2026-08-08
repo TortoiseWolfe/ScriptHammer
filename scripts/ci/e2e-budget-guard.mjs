@@ -52,6 +52,19 @@ export const DEFAULT_LIMITS = { day: 10, month: 30 };
 export const WORKFLOW_FILE = 'e2e.yml';
 
 /**
+ * When the Supabase project currently being metered came into service.
+ *
+ * The #567 migration deleted the old project and created `ozbdyopxmeqmwnfsmglp`
+ * around 2026-08-07T06:00Z. Runs before this point were billed to a project that
+ * no longer exists, so counting them tells you nothing about today's quota — see
+ * budgetWindowStart() for the measurement.
+ *
+ * Override with E2E_BUDGET_BACKEND_EPOCH (ISO 8601), or set it empty to fall back
+ * to a pure billing-cycle window.
+ */
+export const BACKEND_EPOCH = '2026-08-07T06:00:00Z';
+
+/**
  * The Supabase billing cycle runs 2nd → 2nd (confirmed from the invoice history:
  * Apr 02, May 02, Jun 02, Jul 02, Aug 02, all $0.00, one per cycle reset).
  *
@@ -72,6 +85,39 @@ export function cycleStart(now) {
   // Before the 2nd we are still inside the cycle that opened last month.
   const start = now.getTime() >= thisMonth ? thisMonth : Date.UTC(y, m - 1, 2);
   return new Date(start).toISOString();
+}
+
+/**
+ * Where the monthly count should actually start: the later of the billing
+ * boundary and the epoch of the backend being metered.
+ *
+ * A quota is a property of a BACKEND, not of a calendar. When the Supabase
+ * project is replaced, runs made against the old one are not evidence about the
+ * new one — the resource they consumed no longer exists.
+ *
+ * Measured 2026-08-08: of 88 counted runs in the 2026-08-02 cycle, **61 predated
+ * the #567 migration** and had been billed to a project deleted on 2026-08-07.
+ * The live project answered HTTP 200 on `/rest/v1` and `/auth/v1/health` and was
+ * not quota-restricted at all — the breaker was refusing on behalf of a backend
+ * that no longer existed, and would have gone on refusing until Sept 2.
+ *
+ * Kept SEPARATE from cycleStart() on purpose: that function means "when did the
+ * billing cycle open", which is still true and still tested. This one means
+ * "how far back is the evidence still about the thing we are metering".
+ *
+ * A future epoch is ignored rather than trusted — it would otherwise start the
+ * window after `now` and count nothing at all, which is a silent open gate.
+ *
+ * @param {Date} now
+ * @param {string|null|undefined} backendEpochIso ISO 8601; empty/invalid disables
+ * @returns {string} ISO timestamp to count from (UTC)
+ */
+export function budgetWindowStart(now, backendEpochIso = BACKEND_EPOCH) {
+  const start = Date.parse(cycleStart(now));
+  const epoch = Date.parse(backendEpochIso ?? '');
+  const usable =
+    Number.isFinite(epoch) && epoch > start && epoch <= now.getTime();
+  return new Date(usable ? epoch : start).toISOString();
 }
 
 /**
@@ -258,6 +304,12 @@ async function main() {
   const repo = env.GITHUB_REPOSITORY;
   const token = env.GITHUB_TOKEN;
   const limits = limitsFromEnv(env);
+  // Empty string is a deliberate opt-out (pure billing-cycle window), so only
+  // an ABSENT variable falls back to the constant.
+  const backendEpoch =
+    env.E2E_BUDGET_BACKEND_EPOCH === undefined
+      ? BACKEND_EPOCH
+      : env.E2E_BUDGET_BACKEND_EPOCH;
 
   if (!repo || !token) {
     console.error(
@@ -281,7 +333,7 @@ async function main() {
     monthCount = await countRuns(fetch, {
       repo,
       token,
-      sinceIso: cycleStart(new Date(now)),
+      sinceIso: budgetWindowStart(new Date(now), backendEpoch),
     });
   } catch (err) {
     apiFailed = true;
@@ -302,7 +354,7 @@ async function main() {
   );
   console.log(
     `  this cycle ..... ${apiFailed ? '?' : monthCount} / ${limits.month}` +
-      `   (since ${cycleStart(new Date(now)).slice(0, 10)})`
+      `   (since ${budgetWindowStart(new Date(now), backendEpoch).slice(0, 10)})`
   );
   console.log(`  mode ........... ${mode}`);
   console.log(`  verdict ........ ${verdict.code}`);
