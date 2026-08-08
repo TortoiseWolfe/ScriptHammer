@@ -26,7 +26,7 @@ import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { Box3, Color, FrontSide, Group } from 'three';
 import type { Mesh, MeshStandardMaterial, Object3D } from 'three';
 import type { ThreeEvent } from '@react-three/fiber';
-import { Detailed, useGLTF } from '@react-three/drei';
+import { useGLTF } from '@react-three/drei';
 import { siteAssetUrl } from '@/lib/manifest';
 import type {
   Manifest,
@@ -39,10 +39,6 @@ import { applyOverrides } from '@/lib/placement';
 import { elevationAt, minElevation } from './terrainSample';
 
 const LOD_NAMES = ['LOD0', 'LOD1', 'LOD2'] as const;
-const LOD_DISTANCES = [0, 150, 400];
-// SketchUp geometry has mixed winding; buildings must read from every angle.
-// Raising hysteresis damps LOD boundary dithering during orbit (review #4).
-const LOD_HYSTERESIS = 0.25;
 const HIGHLIGHT = new Color(0x66aaff);
 
 /** Ref handle the editor's gizmo attaches to (the placed group). */
@@ -91,6 +87,11 @@ function SampledBuilding({
           return c;
         });
         mesh.material = Array.isArray(mesh.material) ? cloned : cloned[0];
+        // Meshopt/quantized GLBs ship a wrong bounding volume → THREE frustum-
+        // culls the model at some camera angles (it vanishes). Recompute from the
+        // decoded positions so culling is correct and off-screen landmarks cull.
+        mesh.geometry.computeBoundingBox();
+        mesh.geometry.computeBoundingSphere();
       }
     });
     const found = LOD_NAMES.map((n) => scene.getObjectByName(n)).filter(
@@ -185,15 +186,13 @@ function SampledBuilding({
       rotation={rotation}
       scale={scale}
     >
-      {lods.length === 1 ? (
-        <primitive object={lods[0]} />
-      ) : (
-        <Detailed distances={LOD_DISTANCES} hysteresis={LOD_HYSTERESIS}>
-          {lods.map((o, i) => (
-            <primitive key={`${i}-${o.name}`} object={o} />
-          ))}
-        </Detailed>
-      )}
+      {/* Render LOD0 directly. The abstraction bake's LOD1/LOD2 are unreliable
+          and, for these models, ~equivalent to LOD0 (measured: no tri change when
+          forced to LOD0), so drei <Detailed>'s per-frame distance switching over
+          129 models was pure overhead — and a risk of showing a degenerate far
+          level. LOD0 is the good level; show it at every distance. Off-screen ones
+          cull (bounds recomputed above). */}
+      <primitive object={lods[0]} />
     </group>
   );
 }
