@@ -18,6 +18,7 @@ import { useFrame } from '@react-three/fiber';
 import { Group } from 'three';
 import type { EmbodiedController } from '@/lib/cod';
 import type { BikeView } from '@/stage/embodiedWalk';
+import { GroundBlob } from './blobShadow';
 
 const FRAME_COLOR = 0x2a6f97; // teal frame
 const TIRE_COLOR = 0x141414;
@@ -108,6 +109,10 @@ export default function Bike({
         <boxGeometry args={[0.12, 0.06, 0.28]} />
         <meshStandardMaterial color={0x111111} roughness={0.85} />
       </mesh>
+      {/* Fake ground shadow — a child, so it follows the bike and hides with it
+          (parked / ridden-third show it; ridden-first hides). Real-time shadow
+          map was retired; only movers get a blob. */}
+      <GroundBlob size={2} opacity={0.45} />
     </group>
   );
 }
