@@ -156,4 +156,52 @@ test.describe('@smoke production deploy (#288)', () => {
         `regressed — check security_captcha_enabled and the Turnstile secret.`
     ).toBe('captcha_failed');
   });
+
+  /**
+   * THE 3D ROUTE ACTUALLY RENDERS.
+   *
+   * `/chatt/?diorama` served a "Page Error" card in production for a day and a
+   * half (from 7c3d95e1) and nothing noticed. `twin-walk-visible.spec.ts` and
+   * `landmarks.spec.ts` do load /chatt — but E2E has been quota-blocked (#567,
+   * #575), so neither has run. This suite is the only gate that executes against
+   * the live origin, and it did not cover the route at all.
+   *
+   * The failure was an ASSET 404 that useGLTF threw during render straight into
+   * the error boundary — a page that returns HTTP 200 and shows a stack-trace
+   * card. Status-code checks cannot see it; this asserts what a visitor sees.
+   */
+  test('the 3D route renders instead of erroring (@smoke)', async ({
+    page,
+  }) => {
+    const uncaught: string[] = [];
+    page.on('pageerror', (e) => uncaught.push(String(e).slice(0, 200)));
+
+    // Relative: playwright.smoke.config.ts sets baseURL to the live origin,
+    // exactly as the other tests in this file do.
+    const res = await page.goto('/chatt/?diorama', {
+      waitUntil: 'domcontentloaded',
+      timeout: 60_000,
+    });
+    expect(res?.status(), 'the route itself must serve').toBeLessThan(400);
+
+    // The canvas mounts and models stream in; an error boundary replaces the
+    // whole subtree, so give it long enough to have actually failed.
+    await page.waitForTimeout(15_000);
+
+    const body =
+      (await page
+        .locator('body')
+        .innerText()
+        .catch(() => '')) || '';
+    expect(
+      /Page Error|encountered an error and cannot be displayed/i.test(body),
+      `The 3D route rendered an error boundary. Most likely an asset URL: check ` +
+        `for a trailing slash on a file path (getInternalUrl vs getAssetUrl).`
+    ).toBe(false);
+
+    expect(
+      uncaught,
+      `Uncaught exception(s) on /chatt/?diorama: ${uncaught.join(' | ')}`
+    ).toEqual([]);
+  });
 });

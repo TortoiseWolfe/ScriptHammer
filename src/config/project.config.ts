@@ -109,6 +109,37 @@ function normalizePagePath(path: string): string {
  */
 export function getInternalUrl(path: string): string {
   const config = getProjectConfig();
+
+  // THIS IS A PAGE HELPER. Handed an asset path it appends a trailing slash and
+  // produces a URL that 404s — `/models/CesiumMan.glb/` when the file is served
+  // at `/models/CesiumMan.glb`. That shipped (7c3d95e1) and left `/chatt/?diorama`
+  // showing a "Page Error" card in production for a day and a half, because
+  // useGLTF throws a failed fetch during render straight into the error boundary.
+  //
+  // The two helpers sit next to each other and differ by one trailing slash, so
+  // the swap is easy to make and invisible in review. Make it loud instead:
+  // throw where a developer or CI will see it, and in production fall back to the
+  // asset-correct form so a visitor is never served the broken URL. Failing safe
+  // in production and hard everywhere else is deliberate — a warning nobody reads
+  // is how this reached users in the first place.
+  // Scoped to INTERNAL paths. Two call sites pass data-driven hrefs
+  // (TwinCanvas from twins/<slug>/links.local.json), and while manifest.ts:42
+  // documents those as app-internal, throwing on input this function does not
+  // control would be a worse bug than the one being prevented. Anything carrying
+  // a scheme is somebody else's URL — leave it alone.
+  const isInternal =
+    !/^[a-z][a-z0-9+.-]*:/i.test(path) && !path.startsWith('//');
+  const lastSegment = path.split(/[?#]/)[0].split('/').pop() ?? '';
+  if (isInternal && /\.[a-z0-9]{2,5}$/i.test(lastSegment)) {
+    const message =
+      `getInternalUrl('${path}') looks like a static asset. It is for PAGE ` +
+      `navigations and appends a trailing slash, which 404s for a file. ` +
+      `Use getAssetUrl() instead.`;
+    if (process.env.NODE_ENV !== 'production') throw new Error(message);
+    console.warn(`[project.config] ${message}`);
+    return getAssetUrl(path);
+  }
+
   return `${config.basePath}${normalizePagePath(path)}`;
 }
 
