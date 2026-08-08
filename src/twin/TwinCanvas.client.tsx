@@ -476,16 +476,33 @@ function SceneInner({
       ],
       { onStanceChange: (s) => bus.emit('player:stance', { stance: s }) }
     );
-    // Spawn on a street: the embedded-twin location if known, else the framing
-    // home focus, at terrain height. teleport() depenetrates + probes ground.
-    const sx = spawnRef.current?.x ?? framing.homeFocus[0];
-    const sz = spawnRef.current?.z ?? framing.homeFocus[2];
+    // Spawn among the RIVERFRONT LANDMARKS, not the embedded twin. The twin
+    // (east-main-street) reprojects ~5 km from the downtown landmark cluster, so
+    // spawning there leaves every landmark fogged out (walk Fog near 1500 / far
+    // 6000) and unseeable — the "I can't see these buildings" bug. The wide path
+    // drops site.framing (so framing.homeFocus is the atlasBox origin here), so
+    // instead reproject the AUTHORED narrow homeFocus ([-100,-2000], the
+    // riverfront) into the wide frame the SAME way the landmark anchors are
+    // (narrow enu → lon/lat → wide enu). That lands ~300-470 m from the cluster,
+    // well inside the fog. Narrow sites (no atlasBox) keep the twin/home spawn.
+    const authored = manifest.site.framing?.homeFocus;
+    let sx: number;
+    let sz: number;
+    if (authored && manifest.atlasBox) {
+      const nProj = createProjection(manifest.box, manifest.vectorOffsetM);
+      const wProj = createProjection(manifest.atlasBox, manifest.vectorOffsetM);
+      const [lon, lat] = nProj.enuToLonLat(authored[0], authored[2]);
+      [sx, sz] = wProj.lonLatToEnu(lon, lat);
+    } else {
+      sx = spawnRef.current?.x ?? framing.homeFocus[0];
+      sz = spawnRef.current?.z ?? framing.homeFocus[2];
+    }
     const sy = groundAtRef.current?.(sx, sz) ?? 0;
     ctrl.teleport(sx, sy, sz);
     ctrl.parkBike(sx, sy, sz); // the bike starts parked at your feet
     walkCtrlRef.current = ctrl;
     setWalkCtrl(ctrl);
-  }, [framing]);
+  }, [framing, manifest]);
 
   const handleBuildingsMesh = useCallback(
     (mesh: Mesh) => {
