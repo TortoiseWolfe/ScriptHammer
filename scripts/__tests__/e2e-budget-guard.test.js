@@ -386,3 +386,107 @@ test('budgetWindowStart: never returns a window start in the future', async () =
     );
   }
 });
+
+// ── the guard must not count ITSELF (#647).
+//
+// Its own run is `in_progress` while the budget job executes, and runConsumedQuota
+// treats any non-completed run as having spent quota — correct in general, an
+// off-by-one when applied to itself. It makes the effective limit `day - 1`: at
+// limit-1 the guard adds itself, reaches the limit exactly, and refuses.
+//
+// Measured 2026-08-08: a manual read at 15:59Z said 9/10 OK; the budget job on the
+// run created at 16:00Z reported 10/10 DAY_EXCEEDED with nothing else in between,
+// and the reading fell back to 9/10 once that run finished with every shard
+// skipped. #644 merged with no E2E behind it because of it.
+
+// Shape must satisfy listRuns(): `ok`, and a body carrying BOTH `total_count` and
+// `workflow_runs`, or it throws before the exclusion is ever reached.
+// `in_progress` is the state that matters here — runConsumedQuota counts any
+// non-completed run as spent, which is precisely why self-counting was an
+// off-by-one rather than a rounding detail.
+const RUNS_FIXTURE = (ids) => ({
+  ok: true,
+  json: async () => ({
+    total_count: ids.length,
+    workflow_runs: ids.map((id) => ({
+      id,
+      status: 'in_progress',
+      conclusion: null,
+    })),
+  }),
+});
+
+test('countRuns EXCLUDES the current run', async () => {
+  const { countRuns } = await import(MOD);
+  const fetchImpl = async () => RUNS_FIXTURE([111, 222, 333]);
+  const n = await countRuns(fetchImpl, {
+    repo: 'o/r',
+    token: 't',
+    sinceIso: '2026-08-07T00:00:00Z',
+    excludeRunId: '222',
+  });
+  assert.strictEqual(n, 2, 'the run doing the asking must not count itself');
+});
+
+test('countRuns counts everything when there is no self to exclude', async () => {
+  // Local/dry-run invocation: GITHUB_RUN_ID is absent, so nothing is excluded.
+  const { countRuns } = await import(MOD);
+  const fetchImpl = async () => RUNS_FIXTURE([111, 222, 333]);
+  for (const exclude of [null, undefined]) {
+    const n = await countRuns(fetchImpl, {
+      repo: 'o/r',
+      token: 't',
+      sinceIso: '2026-08-07T00:00:00Z',
+      excludeRunId: exclude,
+    });
+    assert.strictEqual(n, 3, `excludeRunId=${exclude} should exclude nothing`);
+  }
+});
+
+test('countRuns matches the run id across string/number types', async () => {
+  // GITHUB_RUN_ID arrives as a string; the API returns a number. A strict ===
+  // between them silently excludes nothing and restores the off-by-one.
+  const { countRuns } = await import(MOD);
+  const fetchImpl = async () => RUNS_FIXTURE([111, 222, 333]);
+  const n = await countRuns(fetchImpl, {
+    repo: 'o/r',
+    token: 't',
+    sinceIso: '2026-08-07T00:00:00Z',
+    excludeRunId: 222, // number, while run.id is also a number — and vice versa
+  });
+  assert.strictEqual(n, 2);
+});
+
+test('the off-by-one it fixes: at limit-1, self-counting would refuse', async () => {
+  // The whole defect, end to end. 9 other runs + itself = 10 = the limit.
+  const { countRuns, evaluate, DEFAULT_LIMITS } = await import(MOD);
+  const ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 999];
+  const fetchImpl = async () => RUNS_FIXTURE(ids);
+
+  const counted = await countRuns(fetchImpl, {
+    repo: 'o/r',
+    token: 't',
+    sinceIso: '2026-08-07T00:00:00Z',
+    excludeRunId: '999',
+  });
+  assert.strictEqual(counted, 9);
+  assert.strictEqual(
+    evaluate({ dayCount: counted, monthCount: 0, limits: DEFAULT_LIMITS })
+      .allowed,
+    true,
+    '9 others under a limit of 10 must be allowed'
+  );
+
+  const selfCounted = await countRuns(fetchImpl, {
+    repo: 'o/r',
+    token: 't',
+    sinceIso: '2026-08-07T00:00:00Z',
+  });
+  assert.strictEqual(selfCounted, 10);
+  assert.strictEqual(
+    evaluate({ dayCount: selfCounted, monthCount: 0, limits: DEFAULT_LIMITS })
+      .allowed,
+    false,
+    'counting itself is what produced the observed 10/10 DAY_EXCEEDED'
+  );
+});

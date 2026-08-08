@@ -30,6 +30,7 @@
  *   E2E_BUDGET_OVERRIDE  a non-empty REASON to bypass; logged as a warning
  *   E2E_BUDGET_DAY       override the daily cap (testing)
  *   E2E_BUDGET_MONTH     override the monthly cap (testing)
+ *   GITHUB_RUN_ID        set by Actions; the run excludes ITSELF from the count
  */
 
 import { pathToFileURL } from 'node:url';
@@ -267,10 +268,27 @@ export async function runConsumedQuota(fetchImpl, { repo, token, run }) {
  *
  * The unit of measure has to be quota spent, not runs recorded.
  */
-export async function countRuns(fetchImpl, { repo, token, sinceIso }) {
+export async function countRuns(
+  fetchImpl,
+  { repo, token, sinceIso, excludeRunId = null }
+) {
   const runs = await listRuns(fetchImpl, { repo, token, sinceIso });
   let n = 0;
   for (const run of runs) {
+    // THE GUARD MUST NOT COUNT ITSELF. Its own run is `in_progress` while the
+    // budget job executes, and runConsumedQuota treats any non-completed run as
+    // having spent quota (correct in general — an in-flight run really might be
+    // testing right now). Applied to itself that is an off-by-one which makes the
+    // effective limit `day - 1`: the guard can never permit a run when the count
+    // sits at limit-1, because adding itself reaches the limit exactly.
+    //
+    // Measured 2026-08-08: a manual read at 15:59Z said 9/10 OK; the budget job on
+    // the run created at 16:00Z reported 10/10 DAY_EXCEEDED and blocked. Nothing
+    // else had run in between. After that run finished with every shard skipped,
+    // the reading returned to 9/10. #644 merged with no E2E behind it because of
+    // this, which is exactly what the merge ordering was meant to avoid.
+    if (excludeRunId != null && String(run.id) === String(excludeRunId))
+      continue;
     if (await runConsumedQuota(fetchImpl, { repo, token, run })) n++;
   }
   return n;
@@ -306,6 +324,9 @@ async function main() {
   const limits = limitsFromEnv(env);
   // Empty string is a deliberate opt-out (pure billing-cycle window), so only
   // an ABSENT variable falls back to the constant.
+  // GitHub sets GITHUB_RUN_ID for the run this job belongs to. Absent locally,
+  // where there is no self to exclude.
+  const selfRunId = env.GITHUB_RUN_ID || null;
   const backendEpoch =
     env.E2E_BUDGET_BACKEND_EPOCH === undefined
       ? BACKEND_EPOCH
@@ -329,11 +350,13 @@ async function main() {
       repo,
       token,
       sinceIso: iso(24 * 60 * 60 * 1000),
+      excludeRunId: selfRunId,
     });
     monthCount = await countRuns(fetch, {
       repo,
       token,
       sinceIso: budgetWindowStart(new Date(now), backendEpoch),
+      excludeRunId: selfRunId,
     });
   } catch (err) {
     apiFailed = true;
