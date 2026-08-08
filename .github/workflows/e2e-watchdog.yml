@@ -95,7 +95,31 @@ jobs:
           # tick, forever — verified against `48e11ba`, whose E2E is
           # `completed/failure`. The #444 loss is specifically CANCELLED (or no
           # run at all), which is the one state that leaves no check-runs behind.
-          COVERED=$(echo "$RUNS" | jq '[.[] | select(.status=="completed" and .conclusion!="cancelled" and .conclusion!="skipped")] | length')
+          # A run reaching a terminal state is NOT the same as a test running
+          # (#639). When the #567 budget guard blocks, `build` has `needs: budget`
+          # so every E2E job skips, and the run still completes as `failure` —
+          # not `cancelled`, not `skipped`. The old test counted that as coverage
+          # and reported "E2E executed and reported for this commit" when zero
+          # tests had run. Observed on 030557fc and 2fe891e7: 0 shards, reported
+          # covered.
+          #
+          # So ask the jobs, not the run: did any `E2E (…)` shard get past
+          # `skipped`? Same question scripts/ci/e2e-budget-guard.mjs asks.
+          EXECUTED=0
+          BLOCKED=0
+          for RID in $(echo "$RUNS" | jq -r '.[] | select(.status=="completed" and .conclusion!="cancelled") | .id'); do
+            RAN=$(gh api "repos/$REPO/actions/runs/$RID/jobs?per_page=100" \
+                    --jq '[.jobs[] | select(.name | startswith("E2E (")) | select(.conclusion != "skipped")] | length' \
+                  2>/dev/null) || RAN=""
+            if [ -n "$RAN" ] && [ "$RAN" -gt 0 ] 2>/dev/null; then
+              EXECUTED=$((EXECUTED + 1))
+            else
+              # Includes the unreadable-API case on purpose: "I could not tell"
+              # must never become "dispatch the most expensive workflow here".
+              BLOCKED=$((BLOCKED + 1))
+            fi
+          done
+          COVERED="$EXECUTED"
 
           # In flight, in any of the three waiting/running states. Re-dispatching
           # on top of one of these is how a watchdog turns into a dispatch loop —
@@ -108,7 +132,8 @@ jobs:
             echo ""
             echo "| | count |"
             echo "|---|---|"
-            echo "| executed (completed, not cancelled) | $COVERED |"
+            echo "| executed (a shard actually ran) | $EXECUTED |"
+            echo "| blocked (completed, but every shard skipped) | $BLOCKED |"
             echo "| in flight (queued/in_progress/pending) | $INFLIGHT |"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
@@ -125,18 +150,41 @@ jobs:
             exit 0
           fi
 
-          # Nothing completed, nothing running. On `main` this is the #444 loss:
-          # firefox and webkit never ran for this commit and nothing anywhere
-          # says so.
+          # BLOCKED is the third outcome, and it must NOT dispatch. A run whose
+          # shards all skipped was almost certainly stopped by the #567 quota
+          # breaker; dispatching into a tripped breaker produces another blocked
+          # run every three hours, forever — and each one counts against the very
+          # budget keeping it tripped. Report it and stop. This is the half of
+          # #639 that is easy to miss: fixing the coverage test WITHOUT this turns
+          # an over-reporting watchdog into an unbounded dispatch loop.
+          if [ "$BLOCKED" -gt 0 ]; then
+            echo "::warning title=E2E ran but tested nothing::main@$SHORT has $BLOCKED completed E2E run(s) in which every shard skipped — almost certainly the #567 quota breaker. NOT dispatching; that would just burn another blocked run."
+            {
+              echo "🟠 **Blocked, not covered.** \`main@$SHORT\` has $BLOCKED completed E2E run(s)"
+              echo "in which no shard executed — the run reached a terminal state without testing"
+              echo "anything, which is what the #567 quota breaker produces."
+              echo ""
+              echo "**Deliberately not re-dispatching.** Doing so would add another blocked run"
+              echo "to the count that is keeping the breaker tripped."
+              echo ""
+              echo "Fix the budget (see #640/#643), then re-run \`e2e.yml\` against \`main\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # Nothing completed, nothing running, nothing blocked. On `main` this is
+          # the #444 loss: no run exists for this commit and nothing says so.
           echo "::warning title=main has no E2E coverage::main@$SHORT has no completed E2E run and none in flight — re-dispatching. This is #444."
           {
             echo "🔴 **No E2E coverage for \`main@$SHORT\`, and nothing in flight.**"
             echo ""
-            echo "PR runs are chromium-only, so firefox and webkit have never executed"
-            echo "for this commit. A run cancelled while \`pending\` creates no check-runs,"
-            echo "which is why nothing else reported a problem (#444)."
+            echo "A run cancelled while \`pending\` creates no check-runs, which is why"
+            echo "nothing else reported a problem (#444)."
             echo ""
-            echo "Re-dispatching \`e2e.yml\` against \`main\`."
+            echo "Re-dispatching \`e2e.yml\` against \`main\` — **chromium only**. Firefox and"
+            echo "WebKit are opt-in since #643 (weekly cron, a \`full-e2e\`-labelled PR, or a"
+            echo "dispatch with \`full_browsers\`), so this restores the same coverage a merge"
+            echo "gets, not the 24-job matrix."
           } >> "$GITHUB_STEP_SUMMARY"
 
           gh workflow run e2e.yml --repo "$REPO" --ref main

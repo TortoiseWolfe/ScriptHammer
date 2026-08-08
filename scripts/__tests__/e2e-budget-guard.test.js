@@ -306,3 +306,83 @@ test('the limits are the measured ones, not round numbers someone liked', async 
   // 2026-08-05 saw 30 runs in one day; 10 stops that at a third.
   assert.strictEqual(DEFAULT_LIMITS.day, 10);
 });
+
+// ── budgetWindowStart — a quota belongs to a BACKEND, not to a calendar (#640).
+//
+// The #567 migration deleted the old Supabase project on 2026-08-07. Of the 88
+// runs counted in the 2026-08-02 cycle, 61 had been billed to that dead project,
+// and the breaker went on refusing on its behalf. Counting evidence about a
+// resource that no longer exists is the bug these cases pin.
+
+test('budgetWindowStart: an epoch inside the cycle wins over the billing boundary', async () => {
+  const { budgetWindowStart } = await import(MOD);
+  assert.strictEqual(
+    budgetWindowStart(new Date('2026-08-08T12:00:00Z'), '2026-08-07T06:00:00Z'),
+    '2026-08-07T06:00:00.000Z'
+  );
+});
+
+test('budgetWindowStart: an epoch BEFORE the cycle does not widen the window', async () => {
+  // The backend predates this cycle, so the billing boundary is the real limit.
+  const { budgetWindowStart } = await import(MOD);
+  assert.strictEqual(
+    budgetWindowStart(new Date('2026-08-08T12:00:00Z'), '2026-06-01T00:00:00Z'),
+    '2026-08-02T00:00:00.000Z'
+  );
+});
+
+test('budgetWindowStart: a FUTURE epoch is ignored, not trusted', async () => {
+  // Otherwise the window starts after `now`, nothing is counted, and the guard
+  // silently opens — the failure mode this whole file exists to prevent.
+  const { budgetWindowStart } = await import(MOD);
+  assert.strictEqual(
+    budgetWindowStart(new Date('2026-08-08T12:00:00Z'), '2027-01-01T00:00:00Z'),
+    '2026-08-02T00:00:00.000Z'
+  );
+});
+
+test('budgetWindowStart: empty or invalid epoch falls back to the billing cycle', async () => {
+  // `null` and empty/garbage strings mean "disable the epoch". `undefined` does
+  // NOT appear here on purpose — it triggers the default parameter, i.e. "use the
+  // shipped epoch", which is the same distinction main() draws when reading
+  // E2E_BUDGET_BACKEND_EPOCH: an ABSENT variable keeps the default, an empty one
+  // opts out. Asserting otherwise here is what caught the ambiguity.
+  const { budgetWindowStart } = await import(MOD);
+  for (const bad of ['', '   ', 'not-a-date', null]) {
+    assert.strictEqual(
+      budgetWindowStart(new Date('2026-08-08T12:00:00Z'), bad),
+      '2026-08-02T00:00:00.000Z',
+      `epoch ${JSON.stringify(bad)} should disable the epoch, not the guard`
+    );
+  }
+});
+
+test('budgetWindowStart: an ABSENT epoch keeps the default, an EMPTY one opts out', async () => {
+  // The pair that makes the distinction above executable rather than a comment.
+  const { budgetWindowStart } = await import(MOD);
+  const now = new Date('2026-08-08T12:00:00Z');
+  assert.strictEqual(budgetWindowStart(now), '2026-08-07T06:00:00.000Z');
+  assert.strictEqual(budgetWindowStart(now, ''), '2026-08-02T00:00:00.000Z');
+});
+
+test('budgetWindowStart: the shipped default reflects the live backend', async () => {
+  const { budgetWindowStart, BACKEND_EPOCH } = await import(MOD);
+  assert.strictEqual(BACKEND_EPOCH, '2026-08-07T06:00:00Z');
+  assert.strictEqual(
+    budgetWindowStart(new Date('2026-08-08T12:00:00Z')),
+    '2026-08-07T06:00:00.000Z'
+  );
+});
+
+test('budgetWindowStart: never returns a window start in the future', async () => {
+  // Property check across the whole cycle rather than one date.
+  const { budgetWindowStart } = await import(MOD);
+  for (let d = 2; d <= 28; d++) {
+    const now = new Date(Date.UTC(2026, 7, d, 9, 0, 0));
+    const got = Date.parse(budgetWindowStart(now));
+    assert.ok(
+      got <= now.getTime(),
+      `window start ${new Date(got).toISOString()} is after now ${now.toISOString()}`
+    );
+  }
+});

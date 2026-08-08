@@ -63,6 +63,18 @@ on:
           the reason is the audit trail.
         required: false
         type: string
+      full_browsers:
+        description: >-
+          Also run Firefox and WebKit (24 jobs instead of 8). Off by default.
+          Cross-browser used to run on every push to main, which made the
+          post-merge run 62% of all Supabase load for the whole repo (#643).
+          It now runs on the weekly cron, on a `full-e2e`-labelled PR, or here.
+          NOT gated on `event_name != 'pull_request'`: 9 of 10 recent dispatches
+          were the watchdog bot, and an event-name gate hands a bot the 24-job
+          matrix.
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   # Repo-wide mutex: every E2E run shares one Supabase project, and concurrent
@@ -827,18 +839,29 @@ jobs:
     # Lever 1: depends only on the build/auth artifacts (same as e2e/chromium),
     # NOT on the chromium job — so all 3 browsers run in parallel.
     needs: [smoke, rate-limiting, auth-setup]
-    # Lever 2: chromium gates every PR; firefox + webkit run on push-to-main,
-    # the weekly cron, and workflow_dispatch — keeping PR feedback fast. A PR
-    # touching WebKit/Firefox-sensitive code can opt back in with the `full-e2e`
-    # label (e.g. messaging error-string handling — see the real Safari "Load
-    # failed" retry bug fixed in commit 7fb7563).
-    # Fork-PR guard folded into the existing label gate: even a `full-e2e`-labeled
-    # PR from a fork lacks secrets, so require the PR head to be this repo.
+    # Cross-browser is OPT-IN (#643). It used to run on every push to main, which
+    # made the post-merge run 62% of all Supabase load in the repo — main was 46%
+    # of runs, and this is the only place firefox/webkit ever executed. It now
+    # runs on the weekly cron, on a `full-e2e`-labelled same-repo PR (e.g.
+    # messaging error-string handling — see the real Safari "Load failed" retry
+    # bug fixed in 7fb7563), or on a deliberate dispatch. Chromium still gates
+    # every PR and still runs post-merge, so a merged commit is never untested.
+    #
+    # NO `always()` HERE — deleting it is the point (#640). It was added by
+    # 5da9cef9 for the serial chain (firefox needed chromium, webkit needed
+    # firefox) so one red browser would not cancel the others. 9807b6d8 deleted
+    # that chain and never touched this `if:`. What it did instead was override
+    # the `needs:` skip, so a budget-blocked push started 16 jobs that died at
+    # "Download build", never reached "Run E2E tests", and were counted as spent
+    # quota because their conclusion was `failure` rather than `skipped`. That is
+    # 32 of 88 counted runs in one cycle. Fork PRs lack secrets, hence the
+    # same-repo check.
     if: >-
-      always() && !cancelled() &&
-      (github.event_name != 'pull_request' ||
-       (github.event.pull_request.head.repo.full_name == github.repository &&
-        contains(github.event.pull_request.labels.*.name, 'full-e2e')))
+      github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' && inputs.full_browsers) ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       contains(github.event.pull_request.labels.*.name, 'full-e2e'))
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -998,15 +1021,16 @@ jobs:
     runs-on: ubuntu-latest
     # Lever 1: depends only on build/auth artifacts, NOT firefox — all 3 parallel.
     needs: [smoke, rate-limiting, auth-setup]
-    # Lever 2: see e2e-firefox above — skipped on PRs (chromium gates those)
-    # unless the PR carries the `full-e2e` label; runs on push-to-main + cron.
-    # Fork-PR guard folded in (see e2e-firefox): fork PRs lack secrets, so require
-    # the PR head to be this repo even when `full-e2e`-labeled.
+    # Opt-in cross-browser and no `always()` — see e2e-firefox above for both, in
+    # full. Same gate deliberately: weekly cron, a `full-e2e`-labelled same-repo
+    # PR, or an explicit dispatch. Never on a bare push, and never on a bot
+    # dispatch that did not ask for it.
     if: >-
-      always() && !cancelled() &&
-      (github.event_name != 'pull_request' ||
-       (github.event.pull_request.head.repo.full_name == github.repository &&
-        contains(github.event.pull_request.labels.*.name, 'full-e2e')))
+      github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_dispatch' && inputs.full_browsers) ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       contains(github.event.pull_request.labels.*.name, 'full-e2e'))
     timeout-minutes: 60
     strategy:
       fail-fast: false
