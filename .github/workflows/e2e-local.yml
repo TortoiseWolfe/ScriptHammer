@@ -127,14 +127,28 @@ jobs:
 
       - name: Bring up local Supabase
         run: |
-          # supabase-edge-runtime is NOT optional (#575). kong.yml:112 routes
-          # /functions/v1/ at it, so leaving it out makes every Edge Function call
-          # a Kong 5xx against an unresolvable upstream — which surfaces as a
-          # product failure ("Failed to retry payment" in the dunning-retry spec)
-          # rather than as anything pointing at a missing container.
-          docker compose --profile supabase up -d \
-            supabase-db supabase-kong supabase-auth supabase-rest \
-            supabase-realtime supabase-storage supabase-edge-runtime
+          # THE SERVICE LIST MUST NOT ASSUME THE CHECKED-OUT CODE HAS IT.
+          #
+          # This workflow's DEFINITION comes from the branch; docker-compose.yml
+          # comes from `ref`. supabase-edge-runtime was added in c30dc06d (#598),
+          # AFTER the de0f7f0 parity baseline — so naming it unconditionally made
+          # `docker compose up` fail with "no such service" and killed all 25 jobs
+          # before a single test ran. Any service added after the baseline has the
+          # same shape, so ask the compose file rather than hard-coding.
+          SERVICES="supabase-db supabase-kong supabase-auth supabase-rest supabase-realtime supabase-storage"
+          if docker compose --profile supabase config --services 2>/dev/null | grep -qx 'supabase-edge-runtime'; then
+            # kong.yml routes /functions/v1/ at it; without it every Edge Function
+            # call is a Kong 5xx against an unresolvable upstream, which surfaces
+            # as a PRODUCT error ("Failed to retry payment") rather than as
+            # anything pointing at a missing container.
+            SERVICES="$SERVICES supabase-edge-runtime"
+            echo "EDGE_RUNTIME_PRESENT=1" >> "$GITHUB_ENV"
+          else
+            echo "EDGE_RUNTIME_PRESENT=0" >> "$GITHUB_ENV"
+            echo "::notice::this commit predates the local edge runtime (#598) — Edge Function specs cannot pass here"
+          fi
+          echo "starting: $SERVICES"
+          docker compose --profile supabase up -d $SERVICES
 
       - name: Wait for the stack to answer
         run: |
@@ -148,22 +162,26 @@ jobs:
           done
           [ "$code" = "200" ] || { echo "::error::local Supabase never became ready (last=$code)"; exit 1; }
 
-          # And the functions route specifically. A missing edge runtime does not
-          # stop /auth/v1/health answering, so the wait above passes while every
-          # Edge Function call 5xxs — the exact way this stayed invisible.
-          # 404 is a PASS here: it means Kong reached the runtime and the runtime
-          # said "no such function". A 5xx means the upstream is not there at all.
-          for i in $(seq 1 30); do
-            fc=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
-              -H "apikey: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
-              http://localhost:54321/functions/v1/__readiness_probe__)
-            case "$fc" in 2*|4*) echo "edge runtime reachable after ${i} attempt(s) (HTTP $fc)"; break;; esac
-            sleep 3
-          done
-          case "$fc" in
-            2*|4*) ;;
-            *) echo "::error::edge runtime never became reachable through Kong (last=$fc) — Edge Function specs would fail as product errors"; exit 1 ;;
-          esac
+          # And the functions route, when this commit HAS an edge runtime. A
+          # missing one does not stop /auth/v1/health answering, so the wait above
+          # passes while every Edge Function call 5xxs — the exact way this stayed
+          # invisible. 404 is a PASS: Kong reached the runtime and it said "no such
+          # function". A 5xx means the upstream is not there at all.
+          if [ "${EDGE_RUNTIME_PRESENT:-0}" = "1" ]; then
+            for i in $(seq 1 30); do
+              fc=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
+                -H "apikey: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
+                http://localhost:54321/functions/v1/__readiness_probe__)
+              case "$fc" in 2*|4*) echo "edge runtime reachable after ${i} attempt(s) (HTTP $fc)"; break;; esac
+              sleep 3
+            done
+            case "$fc" in
+              2*|4*) ;;
+              *) echo "::error::edge runtime never became reachable through Kong (last=$fc) — Edge Function specs would fail as product errors"; exit 1 ;;
+            esac
+          else
+            echo "edge runtime absent at this commit — skipping its readiness probe"
+          fi
 
       - name: Assert schema fidelity before trusting any result
         run: |
