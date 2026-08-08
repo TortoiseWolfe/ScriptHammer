@@ -182,20 +182,120 @@ test('countRuns throws when total_count is missing', async () => {
   );
 });
 
-test('countRuns returns total_count, not the page length', async () => {
-  // total_count covers the whole filtered set; per_page caps at 100. A busy cycle
-  // past 100 runs must still count correctly.
+/**
+ * THE BUG THIS REPLACES (2026-08-07). countRuns used to return `total_count` — every
+ * workflow-run RECORD in the window. A run this guard itself blocked at step 0 consumed
+ * zero Supabase quota and was counted exactly like a full 24-job run.
+ *
+ * That made the guard self-reinforcing: once tripped, every push added another
+ * blocked-but-counted run, so the count climbed on activity that spent nothing and could
+ * never fall back under the limit while anyone worked. Observed at 49/10 in 24h against
+ * a one-day-old project whose data API answered 200, not 402.
+ *
+ * These tests exist so the unit of measure cannot silently revert to "runs recorded".
+ */
+const runsPage = (runs) => ({
+  ok: true,
+  json: async () => ({ total_count: runs.length, workflow_runs: runs }),
+});
+const jobsPage = (jobs) => ({ ok: true, json: async () => ({ jobs }) });
+
+const BLOCKED = { id: 1, status: 'completed', conclusion: 'failure' };
+const REAL_FAIL = { id: 2, status: 'completed', conclusion: 'failure' };
+const PASSED = { id: 3, status: 'completed', conclusion: 'success' };
+
+/** Routes run-list vs jobs calls; jobs answer per run id. */
+const fetchFor = (runs, jobsById) => async (url) => {
+  if (url.includes('/jobs')) {
+    const id = Number(url.match(/runs\/(\d+)\/jobs/)[1]);
+    return jobsPage(jobsById[id] ?? []);
+  }
+  return runsPage(url.includes('page=1') ? runs : []);
+};
+
+test('a run this guard blocked does NOT count — it spent no quota', async () => {
   const { countRuns } = await import(MOD);
-  const fakeFetch = async () => ({
-    ok: true,
-    json: async () => ({ total_count: 382, workflow_runs: [{}, {}] }),
-  });
-  const n = await countRuns(fakeFetch, {
+  const n = await countRuns(
+    fetchFor([BLOCKED], {
+      // every matrix job skipped: build needs budget, so nothing downstream ran
+      1: [
+        { name: 'E2E (chromium-gen 1/6)', conclusion: 'skipped' },
+        { name: 'E2E (webkit-msg 1/1)', conclusion: 'skipped' },
+      ],
+    }),
+    { repo: 'o/r', token: 't', sinceIso: '2026-08-02' }
+  );
+  assert.strictEqual(n, 0);
+});
+
+test('a run that genuinely failed tests DOES count — it spent quota', async () => {
+  const { countRuns } = await import(MOD);
+  const n = await countRuns(
+    fetchFor([REAL_FAIL], {
+      2: [
+        { name: 'E2E (chromium-gen 1/6)', conclusion: 'failure' },
+        { name: 'E2E (webkit-msg 1/1)', conclusion: 'success' },
+      ],
+    }),
+    { repo: 'o/r', token: 't', sinceIso: '2026-08-02' }
+  );
+  assert.strictEqual(n, 1);
+});
+
+test('blocked and real runs in one window are told apart', async () => {
+  const { countRuns } = await import(MOD);
+  const n = await countRuns(
+    fetchFor([BLOCKED, REAL_FAIL, PASSED], {
+      1: [{ name: 'E2E (chromium-gen 1/6)', conclusion: 'skipped' }],
+      2: [{ name: 'E2E (chromium-gen 1/6)', conclusion: 'failure' }],
+    }),
+    { repo: 'o/r', token: 't', sinceIso: '2026-08-02' }
+  );
+  // BLOCKED excluded; REAL_FAIL and PASSED counted. Not 3.
+  assert.strictEqual(n, 2);
+});
+
+test('a success needs no jobs lookup and still counts', async () => {
+  const { countRuns } = await import(MOD);
+  let jobCalls = 0;
+  const fetchImpl = async (url) => {
+    if (url.includes('/jobs')) {
+      jobCalls++;
+      return jobsPage([]);
+    }
+    return runsPage(url.includes('page=1') ? [PASSED] : []);
+  };
+  const n = await countRuns(fetchImpl, {
     repo: 'o/r',
     token: 't',
     sinceIso: '2026-08-02',
   });
-  assert.strictEqual(n, 382);
+  assert.strictEqual(n, 1);
+  assert.strictEqual(jobCalls, 0, 'unambiguous runs must not cost an API call');
+});
+
+test('counts conservatively when the jobs endpoint fails', async () => {
+  // Under-counting spends the quota this guard protects; over-counting costs a re-run.
+  const { countRuns } = await import(MOD);
+  const fetchImpl = async (url) => {
+    if (url.includes('/jobs')) throw new Error('boom');
+    return runsPage(url.includes('page=1') ? [BLOCKED] : []);
+  };
+  const n = await countRuns(fetchImpl, {
+    repo: 'o/r',
+    token: 't',
+    sinceIso: '2026-08-02',
+  });
+  assert.strictEqual(n, 1);
+});
+
+test('an in-progress run counts without a jobs lookup', async () => {
+  const { countRuns } = await import(MOD);
+  const n = await countRuns(
+    fetchFor([{ id: 9, status: 'in_progress', conclusion: null }], {}),
+    { repo: 'o/r', token: 't', sinceIso: '2026-08-02' }
+  );
+  assert.strictEqual(n, 1);
 });
 
 test('the limits are the measured ones, not round numbers someone liked', async () => {

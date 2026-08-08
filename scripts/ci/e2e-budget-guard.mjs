@@ -141,28 +141,93 @@ export function evaluate({
   };
 }
 
-/** Count workflow runs created at or after `sinceIso`. Throws on any API problem. */
+const GH_HEADERS = (token) => ({
+  Authorization: `Bearer ${token}`,
+  Accept: 'application/vnd.github+json',
+  'X-GitHub-Api-Version': '2022-11-28',
+});
+
+/** Pages this workflow's runs created at or after `sinceIso`. Throws on any API problem. */
+async function listRuns(fetchImpl, { repo, token, sinceIso, maxPages = 6 }) {
+  const runs = [];
+  for (let page = 1; page <= maxPages; page++) {
+    const url =
+      `https://api.github.com/repos/${repo}/actions/workflows/${WORKFLOW_FILE}/runs` +
+      `?created=%3E%3D${encodeURIComponent(sinceIso)}&per_page=100&page=${page}`;
+    const res = await fetchImpl(url, { headers: GH_HEADERS(token) });
+    if (!res.ok) {
+      throw new Error(`GitHub API ${res.status}: ${await res.text()}`);
+    }
+    const body = await res.json();
+    if (typeof body.total_count !== 'number') {
+      throw new Error('GitHub API response missing total_count');
+    }
+    const batch = Array.isArray(body.workflow_runs) ? body.workflow_runs : [];
+    runs.push(...batch);
+    if (runs.length >= body.total_count || batch.length === 0) break;
+  }
+  return runs;
+}
+
+/**
+ * Did this run actually execute E2E — i.e. did it SPEND Supabase quota?
+ *
+ * A blocked run is `completed`/`failure` with every downstream job `skipped`, because
+ * `build` has `needs: budget`. That is indistinguishable from a genuine test failure by
+ * conclusion alone, so the ambiguous case is the only one that costs an extra API call:
+ *
+ *   success / in-progress / queued  -> it ran (or is running). Count it, no call.
+ *   cancelled                       -> may have run partially. Count it, no call.
+ *   failure                         -> ambiguous. Ask the jobs endpoint.
+ *
+ * Counted conservatively on any doubt, including a jobs-endpoint error: over-counting
+ * costs a delayed run, under-counting costs the quota this guard exists to protect.
+ */
+export async function runConsumedQuota(fetchImpl, { repo, token, run }) {
+  if (run.status !== 'completed') return true;
+  if (run.conclusion !== 'failure') return true;
+
+  try {
+    const res = await fetchImpl(
+      `https://api.github.com/repos/${repo}/actions/runs/${run.id}/jobs?per_page=100`,
+      { headers: GH_HEADERS(token) }
+    );
+    if (!res.ok) return true;
+    const body = await res.json();
+    const jobs = Array.isArray(body.jobs) ? body.jobs : [];
+    // The matrix jobs are named `E2E (<project> <shard>)`. If none of them got past
+    // `skipped`, no browser started and no Supabase request was made.
+    return jobs.some(
+      (j) => /^E2E \(/.test(j.name ?? '') && j.conclusion !== 'skipped'
+    );
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Count runs since `sinceIso` that actually consumed quota.
+ *
+ * WHY NOT `total_count` (#635-adjacent, found 2026-08-07). The original counted every
+ * workflow-run RECORD in the window, filtered only by creation time. A run this guard
+ * itself blocked at step 0 — zero browsers, zero Supabase requests — was counted exactly
+ * like a full 24-job run.
+ *
+ * That made the guard self-reinforcing: once tripped, every push created another
+ * blocked-but-counted run, so the count climbed on activity that consumed nothing and
+ * could never fall back under the limit while anyone was working. Observed at 49/10 in
+ * 24h against a one-day-old project whose data API was answering 200, not 402 — the
+ * guard was protecting a quota nobody had touched.
+ *
+ * The unit of measure has to be quota spent, not runs recorded.
+ */
 export async function countRuns(fetchImpl, { repo, token, sinceIso }) {
-  const url =
-    `https://api.github.com/repos/${repo}/actions/workflows/${WORKFLOW_FILE}/runs` +
-    `?created=%3E%3D${encodeURIComponent(sinceIso)}&per_page=100`;
-  const res = await fetchImpl(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
-  });
-  if (!res.ok) {
-    throw new Error(`GitHub API ${res.status}: ${await res.text()}`);
+  const runs = await listRuns(fetchImpl, { repo, token, sinceIso });
+  let n = 0;
+  for (const run of runs) {
+    if (await runConsumedQuota(fetchImpl, { repo, token, run })) n++;
   }
-  const body = await res.json();
-  if (typeof body.total_count !== 'number') {
-    throw new Error('GitHub API response missing total_count');
-  }
-  // total_count reflects the full filtered set, not just this page, so a busy
-  // window past 100 runs is still counted correctly.
-  return body.total_count;
+  return n;
 }
 
 function limitsFromEnv(env) {
@@ -178,7 +243,17 @@ function limitsFromEnv(env) {
 
 async function main() {
   const argv = process.argv.slice(2);
-  const dryRun = argv.includes('--dry-run');
+  // Modes (env E2E_BUDGET_MODE, default "block"):
+  //   block    — over budget is a build failure. The default, because this guard
+  //              exists after CI took production down (#567).
+  //   annotate — surface it loudly (::warning:: + summary) but exit 0.
+  //
+  // Mirrors FLAKY_GATE_MODE in scripts/check-flaky-count.mjs:13-18, deliberately.
+  // The point is de-escalation WITHOUT a code edit: `.github/**` is not in
+  // `paths-ignore`, so editing this file to relax the guard triggers another run of
+  // the very workflow it is blocking. A repo variable can be flipped from a phone.
+  const mode = (process.env.E2E_BUDGET_MODE || 'block').trim().toLowerCase();
+  const dryRun = argv.includes('--dry-run') || mode === 'annotate';
   const env = process.env;
   const repo = env.GITHUB_REPOSITORY;
   const token = env.GITHUB_TOKEN;
@@ -229,6 +304,7 @@ async function main() {
     `  this cycle ..... ${apiFailed ? '?' : monthCount} / ${limits.month}` +
       `   (since ${cycleStart(new Date(now)).slice(0, 10)})`
   );
+  console.log(`  mode ........... ${mode}`);
   console.log(`  verdict ........ ${verdict.code}`);
   console.log(`  ${verdict.message}`);
 
@@ -243,7 +319,11 @@ async function main() {
       `::error::E2E blocked by the cloud-quota circuit breaker — ${verdict.message}`
     );
     if (dryRun) {
-      console.log('(--dry-run: would have blocked, exiting 0)');
+      console.log(
+        mode === 'annotate'
+          ? '::warning::E2E_BUDGET_MODE=annotate — over budget, running anyway.'
+          : '(--dry-run: would have blocked, exiting 0)'
+      );
       process.exit(0);
     }
     process.exit(1);
