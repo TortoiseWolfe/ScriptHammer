@@ -127,9 +127,28 @@ jobs:
 
       - name: Bring up local Supabase
         run: |
-          docker compose --profile supabase up -d \
-            supabase-db supabase-kong supabase-auth supabase-rest \
-            supabase-realtime supabase-storage
+          # THE SERVICE LIST MUST NOT ASSUME THE CHECKED-OUT CODE HAS IT.
+          #
+          # This workflow's DEFINITION comes from the branch; docker-compose.yml
+          # comes from `ref`. supabase-edge-runtime was added in c30dc06d (#598),
+          # AFTER the de0f7f0 parity baseline — so naming it unconditionally made
+          # `docker compose up` fail with "no such service" and killed all 25 jobs
+          # before a single test ran. Any service added after the baseline has the
+          # same shape, so ask the compose file rather than hard-coding.
+          SERVICES="supabase-db supabase-kong supabase-auth supabase-rest supabase-realtime supabase-storage"
+          if docker compose --profile supabase config --services 2>/dev/null | grep -qx 'supabase-edge-runtime'; then
+            # kong.yml routes /functions/v1/ at it; without it every Edge Function
+            # call is a Kong 5xx against an unresolvable upstream, which surfaces
+            # as a PRODUCT error ("Failed to retry payment") rather than as
+            # anything pointing at a missing container.
+            SERVICES="$SERVICES supabase-edge-runtime"
+            echo "EDGE_RUNTIME_PRESENT=1" >> "$GITHUB_ENV"
+          else
+            echo "EDGE_RUNTIME_PRESENT=0" >> "$GITHUB_ENV"
+            echo "::notice::this commit predates the local edge runtime (#598) — Edge Function specs cannot pass here"
+          fi
+          echo "starting: $SERVICES"
+          docker compose --profile supabase up -d $SERVICES
 
       - name: Wait for the stack to answer
         run: |
@@ -142,6 +161,27 @@ jobs:
             sleep 3
           done
           [ "$code" = "200" ] || { echo "::error::local Supabase never became ready (last=$code)"; exit 1; }
+
+          # And the functions route, when this commit HAS an edge runtime. A
+          # missing one does not stop /auth/v1/health answering, so the wait above
+          # passes while every Edge Function call 5xxs — the exact way this stayed
+          # invisible. 404 is a PASS: Kong reached the runtime and it said "no such
+          # function". A 5xx means the upstream is not there at all.
+          if [ "${EDGE_RUNTIME_PRESENT:-0}" = "1" ]; then
+            for i in $(seq 1 30); do
+              fc=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
+                -H "apikey: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
+                http://localhost:54321/functions/v1/__readiness_probe__)
+              case "$fc" in 2*|4*) echo "edge runtime reachable after ${i} attempt(s) (HTTP $fc)"; break;; esac
+              sleep 3
+            done
+            case "$fc" in
+              2*|4*) ;;
+              *) echo "::error::edge runtime never became reachable through Kong (last=$fc) — Edge Function specs would fail as product errors"; exit 1 ;;
+            esac
+          else
+            echo "edge runtime absent at this commit — skipping its readiness probe"
+          fi
 
       - name: Assert schema fidelity before trusting any result
         run: |
@@ -240,6 +280,34 @@ jobs:
           BASE_URL: http://localhost:3000
           PLAYWRIGHT_JSON_OUTPUT_NAME: results.json
           WORKERS: ${{ matrix.workers }}
+          # EVERY JOB MUST DO ITS OWN FULL SETUP (#575).
+          #
+          # auth.setup.ts:146 gates the second half of setup on
+          # `!CI || AUTH_SETUP_JOB === 'true'`. e2e.yml can leave it unset on its
+          # matrix because it runs ONE dedicated Auth Setup job and hands
+          # storage-state-auth-b.json to the shards as an artifact. That is
+          # impossible here: every runner brings up its own Supabase with its own
+          # users, so a state minted on another runner is worthless.
+          #
+          # Unset, the gate is false on all 24 jobs and silently skips User B's
+          # storage state, encryption-key creation, display-name backfill, the
+          # PRIMARY↔TERTIARY/SECONDARY connections and the seeded conversation.
+          # The parity run showed that as 52 failures with skipped drifting
+          # 194 → 215. The "User B env vars missing" log is a red herring —
+          # execution never reaches that branch, so the message never printed and
+          # the env vars were fine all along.
+          #
+          # AND THE REASON THE GATE EXISTS DOES NOT APPLY HERE. auth.setup.ts:144
+          # says it plainly: "Skip in per-shard runs to avoid 6 concurrent
+          # cleanups." That is a SHARED-BACKEND hazard — concurrent cleanups on one
+          # cloud project delete each other's fixtures mid-run, which is the #85
+          # class that cost nine rounds of flake patching. Here each job owns its
+          # own database, so 24 concurrent cleanups touch 24 separate datasets and
+          # cannot race. Setting this on e2e.yml's matrix would still be wrong.
+          #
+          # Same architectural consequence as needing chromium on every shard:
+          # per-runner stacks mean per-job setup.
+          AUTH_SETUP_JOB: 'true'
 
       - name: This shard must have actually executed something
         if: always()
