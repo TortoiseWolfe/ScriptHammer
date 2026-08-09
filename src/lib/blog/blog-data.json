@@ -1,13 +1,98 @@
 {
   "posts": [
     {
-      "id": "post_85b3feff",
+      "id": "post_b4033fa4",
+      "slug": "ride-the-open-source-city",
+      "title": "Why Build One Game When You Can Build All the Games?",
+      "content": "\n# 🕹️ Why Build One Game When You Can Build All the Games?\n\nYou have a notebook — or a Notes app, or a Discord full of half-finished pitches — with ten game ideas in it. You have shipped zero. Not because the ideas are bad, but because every single one starts in the same place: collision, a camera that doesn't make people seasick, materials that aren't flat gray, footstep sounds, a sky. You burn three weekends re-solving the boring 20% and never reach the part that was actually your idea.\n\nSo here is the bet I am making out loud: **don't build one game. Build the engine that builds all of them.** Solve the boring 20% once, in the open, and every idea after that gets cheaper.\n\nIt is real, it is open source ([React Three Fiber](https://r3f.docs.pmnd.rs/) on [Three.js](https://threejs.org/)), and you can [clone it today](https://github.com/TortoiseWolfe/ScriptHammer). And because a game engine with no game is just a README, I built a whole playable 3D city on it as proof. You can **[walk it right now](https://scripthammer.com/chatt/?diorama&walk)** — first person, in a browser tab, nothing to install.\n\n![Open-source Three.js game engine running a tilt-shift 3D city built from real open data](/blog-images/ride-the-open-source-city/diorama.png)\n\n_The city is the demo, not the point. The point is the engine underneath it — the same one that runs [a bare test level](https://scripthammer.com/game/cod-skeleton) with no city at all._\n\n## 🎮 The engine is the actual point\n\nThe thing that makes any of this move is a small, honestly-scoped game toolkit called **CoD**. It is **asset-free and procedural**: the materials, sky, and sound are generated on your graphics card and CPU at load time, so it ships **zero** texture, model, or audio files. That is why a whole playable city fits on a static site with no server behind it, and why cloning it doesn't mean downloading a gigabyte of assets.\n\nHere is what it actually gives you today, and it is more than a tech demo:\n\n- 🧱 **Physics and collision** — a fast static-world spatial index plus swept-capsule collide-and-slide, so you don't fall through walls or tunnel through corners.\n- 🚶 **A first-person controller** — walk, sprint, crouch, go prone under a low overhang, and hop on a **bike**. Real ground contact and step-ups.\n- 🎨 **A procedural material forge** — physically-based textures (color, normal, roughness) generated on the fly, no image files.\n- 🌤️ **An atmospheric sky with image-based lighting**, procedural **footstep and ambient audio**, **graphics-card particles** (dust, weather), and **camera feel** (head-bob, landing punch) — the small stuff that makes a scene feel alive.\n- ⚙️ **An event bus and four quality tiers** (`?q=low` … `ultra`) so it scales from a laptop to a desktop.\n\nIt is **[Massachusetts Institute of Technology (MIT) licensed](https://opensource.org/license/mit)** and vendored from Matt Shumer's [Claude-of-Duty](https://github.com/mshumer/Claude-of-Duty) — full credit to him for the original. In your own code it is one import: `@/lib/cod`.\n\nNow the honest part, because overpromising is exactly the thing I want to teach you to spot: **this is not a finished general-purpose engine, and I am not going to pretend it is.** Today it is a strong _first-person, 3D, walking-and-riding_ foundation. It has **no** entity system, **no** save format, **no** multiplayer, **no** 2D, and **no** model or animation loaders yet. \"All the games\" is the _ambition_, not a shipped fact. That gap is not a disclaimer — **it is the invitation.** Come build the missing layers with people who will review your work.\n\n## 🏙️ Proof it's reusable, not a one-off\n\nA toolkit that only runs the thing its author built is a lie you tell yourself. So here is the check: the exact same engine drives **two completely different scenes**.\n\nOne is a bare [test level](https://scripthammer.com/game/cod-skeleton) — a floor, a step, a wall, a crate, and a low bar you have to crouch under. No city, no data, just the engine proving it walks, collides, and crouches.\n\nThe other is [Chattanooga](https://scripthammer.com/chatt/?diorama&walk): roughly **8,000 buildings** at real rooftop heights, pulled from [OpenStreetMap](https://www.openstreetmap.org/) footprints, lidar heights, and [United States Geological Survey](https://www.usgs.gov/3d-elevation-program) elevation. Same physics, same controller, same sky and audio, pointed at a real city instead of a box. If it can carry 8,000 real buildings and a bike, it can carry your idea.\n\n## 🧪 It's a beta — here's the first bug\n\nShipping something rough and asking people to break it is itself a best practice, so let me practice it. Right now, first-person Walk mode has a real bug: sometimes it spawns you **below the city** and you just fall — the whole thing hangs above you like a floating island while you drop through the sky. I hit it myself:\n\n![First-person Walk mode: the bicycle drops through the sky while the Chattanooga diorama floats above it, because the spawn point is placed below the city](/blog-images/ride-the-open-source-city/walk-fall-bug.png)\n\n_You press B to ride the bike, and the bike rides off through the sky. Spawned below the city, falling — at a smooth 60 fps, so the frame rate is fine and the spawn is just wrong. This is the reason to play a beta, not the reason to skip it._\n\nSo I did the exact thing I am about to ask you to do. I filed it as a bug report: **[issue #651](https://github.com/TortoiseWolfe/ScriptHammer/issues/651)**. Open it and look at the _shape_ of it, because that shape is the whole ask:\n\n- **Where** you were — the URL (`/chatt?diorama&walk`).\n- **What you did** — opened it, clicked to look, pressed WASD.\n- **What you expected** vs **what actually happened** — \"spawn on the street\" vs \"fell through the sky.\"\n- **Your setup** — browser and graphics card. It matters more than you'd think; the same scene runs very differently on different hardware.\n- **A screenshot**, if you can grab one.\n\nThat's it. A boring, specific report like that is worth more than a hundred \"it's broken\" messages.\n\nHere's the ask, concretely:\n\n1. 🎯 **[Play it](https://scripthammer.com/chatt/?diorama&walk)** — and yes, you might fall through the world first. Try anyway: press **B** for the bike, **V** to watch yourself go.\n2. 🐛 **File what broke** on the [issues page](https://github.com/TortoiseWolfe/ScriptHammer/issues), in the shape above. Finding a new one is genuinely helpful.\n3. 💬 **Not sure it's worth a full report?** File it anyway — a rough note beats staying quiet.\n\n## 🧠 The skill isn't prompting. It's telling slop from craft.\n\nHonest meta-layer, since this is a teaching project: AI helped build a lot of this, including drafts of this post. Left unchecked, AI produces **slop** — output that reads right and is confidently wrong. This post tried it. An early draft cheerfully told you to \"ride a bike through downtown.\" You just saw the screenshot: the bike drops you through the sky. The sentence was fluent. It was also false.\n\nFluent versus true is the whole game, and it's the actual skill I want to teach — not \"how do I prompt the robot,\" but \"how do I know if what came out is real?\"\n\n- **Slop** says \"it works.\" **Craft** writes a test that fails when it doesn't.\n- **Slop** makes a confident claim. **Craft** checks it against the source and links it.\n- **Slop** hides the rough edge. **Craft** files the bug with steps to reproduce, like [#651](https://github.com/TortoiseWolfe/ScriptHammer/issues/651).\n- **Slop** invents specifics. **Craft** says \"I don't know yet,\" then finds out.\n\nNone of that is advanced. It is verifying before you ship, reading the code you paste, and being willing to write \"this is broken\" in public. A real game engine is a great place to learn it, because the game either runs or it doesn't — the feedback is honest whether you like it or not.\n\n## 🚀 You don't need money to get in\n\nBack to you and your notebook of ideas. Here's the part I care about most: **the price of admission isn't cash.** Learning is free, and the most valuable thing you can bring to an open-source engine isn't a credit card — it's another set of eyes and another game idea stress-testing it.\n\nThe cheapest way in is also the best one. [Clone ScriptHammer](https://github.com/TortoiseWolfe/ScriptHammer), read the source, and [watch me build it live on Twitch](https://twitch.tv/TurtleWolfe). It is MIT — take it, ship it, keep it. No dollars required, ever.\n\nShort on cash? **Trade instead.** Playtest this and file a good bug. Fork it and prototype your idea. Build one of those missing layers — a save system, a third-person camera, an enemy. Every playtester is another set of eyes, every fork is street cred you earn in public, and more people in the project make the engine better for everyone.\n\nIf you'd rather have hands-on help on _your_ game, there's a paid lane too: live **Office Hours** (bring a goal, leave with something running, the recording is yours to keep), and [Field Study](https://scripthammer.com/pricing) for a bigger build done with you. Prices are on the [pricing page](https://scripthammer.com/pricing), and if cash is tight, see two paragraphs up — trade instead. The paid tiers exist to fund the free ones, not to gate them.\n\n## 💬 Come build it\n\n- 🎮 **[Try the engine demo](https://scripthammer.com/game/cod-skeleton)** — the bare test level, no city.\n- 🚲 **[Play the city](https://scripthammer.com/chatt/?diorama&walk)** — first person, press **B** for the bike.\n- 📦 **[Clone the engine](https://github.com/TortoiseWolfe/ScriptHammer)** — MIT, asset-free, `@/lib/cod`.\n- 📺 **[Watch me build it](https://twitch.tv/TurtleWolfe)** — live on Twitch.\n- 💳 **[See what help costs](https://scripthammer.com/pricing)** — free to Office Hours to done-for-you.\n- 🗺️ **[Read the brainstorm that started this](https://scripthammer.com/blog/playable-city-chattanooga)**.\n\nThen tell me in the comments: what's the one game in your notebook you'd build first if the boring 20% were already done?\n",
+      "excerpt": "You have a notebook full of game ideas and zero shipped, because each one means re-solving physics, camera, materials, and sound. Build the engine once and get all the games. Here is an open-source Three.js game engine, a playable city built on it, and an open invitation to help build the rest.",
+      "publishedAt": "2026-08-09T00:00:00.000Z",
+      "updatedAt": "2026-08-09T20:11:52.906Z",
+      "status": "published",
+      "author": {
+        "id": "default",
+        "name": "TortoiseWolfe"
+      },
+      "metadata": {
+        "tags": [
+          "three-js",
+          "game-engine",
+          "open-source",
+          "react-three-fiber",
+          "game-dev",
+          "indie"
+        ],
+        "categories": [
+          "features"
+        ],
+        "readingTime": 8,
+        "wordCount": 1598,
+        "showToc": true,
+        "showAuthor": true,
+        "showShareButtons": true,
+        "featured": false,
+        "featuredImage": "/blog-images/ride-the-open-source-city/featured-og.png",
+        "featuredImageAlt": "Open-source Three.js game engine: a tilt-shift 3D city built with React Three Fiber, under the headline Build all the games"
+      },
+      "seo": {
+        "title": "Why Build 1 Game? Build an Open-Source Three.js Game Engine",
+        "description": "Learn to build browser games on an open-source Three.js game engine. Explore a playable 3D city, then help build the engine that makes all the games.",
+        "keywords": [
+          "three.js game engine",
+          "open source game engine",
+          "react three fiber",
+          "javascript game engine",
+          "learn game development",
+          "indie game dev"
+        ],
+        "ogTitle": "Build All the Games: An Open-Source Three.js Game Engine",
+        "ogDescription": "A free, MIT, asset-free Three.js + React Three Fiber game engine, with a playable 3D city as the demo. Learn best practices and help build it.",
+        "ogImage": "/blog-images/ride-the-open-source-city/featured-og.png",
+        "twitterCard": "summary_large_image"
+      },
+      "frontMatter": {
+        "title": "Why Build One Game When You Can Build All the Games?",
+        "author": "TortoiseWolfe",
+        "date": "2026-08-09T00:00:00.000Z",
+        "slug": "ride-the-open-source-city",
+        "seoTitle": "Why Build 1 Game? Build an Open-Source Three.js Game Engine",
+        "seoDescription": "Learn to build browser games on an open-source Three.js game engine. Explore a playable 3D city, then help build the engine that makes all the games.",
+        "keywords": [
+          "three.js game engine",
+          "open source game engine",
+          "react three fiber",
+          "javascript game engine",
+          "learn game development",
+          "indie game dev"
+        ],
+        "tags": [
+          "three-js",
+          "game-engine",
+          "open-source",
+          "react-three-fiber",
+          "game-dev",
+          "indie"
+        ],
+        "categories": [
+          "features"
+        ],
+        "excerpt": "You have a notebook full of game ideas and zero shipped, because each one means re-solving physics, camera, materials, and sound. Build the engine once and get all the games. Here is an open-source Three.js game engine, a playable city built on it, and an open invitation to help build the rest.",
+        "featuredImage": "/blog-images/ride-the-open-source-city/featured-og.png",
+        "featuredImageAlt": "Open-source Three.js game engine: a tilt-shift 3D city built with React Three Fiber, under the headline Build all the games",
+        "ogImage": "/blog-images/ride-the-open-source-city/featured-og.png",
+        "ogTitle": "Build All the Games: An Open-Source Three.js Game Engine",
+        "ogDescription": "A free, MIT, asset-free Three.js + React Three Fiber game engine, with a playable 3D city as the demo. Learn best practices and help build it.",
+        "twitterCard": "summary_large_image"
+      }
+    },
+    {
+      "id": "post_b14d4ee3",
       "slug": "storefront-that-cannot-take-money",
       "title": "The Storefront That Could Not Take Money",
       "content": "\nOur pricing page shipped eight buy buttons. Five of them worked. Three of them said\n\"Coming soon.\"\n\nThe five were the problem.\n\n## 🔍 How it surfaced\n\nIt surfaced sideways, which is the only way this class of bug ever does. Somebody\nclicked a Care Plan and got a dead end:\n\n```text\nThat package is not available\n```\n\nThree of the eight links did that, and all three were the subscription products. The\ncause was mundane. The pricing page is a hand-maintained array of products, while the\ncheckout route resolves the SKU (Stock Keeping Unit — the product's stable id) against\nthe database and refuses anything marked inactive. Nothing connected the two, so a\nproduct could be deactivated in the database and go on being advertised with a\nworking-looking button indefinitely.\n\nThe obvious fix is to activate them. The database refused:\n\n```sql\n-- A recurring product must have somewhere to bill, or it cannot go active\nproducts_recurring_provider_check\nCHECK (\n  type = 'one_time'\n  OR NOT active\n  OR stripe_price_id IS NOT NULL\n  OR paypal_plan_id IS NOT NULL\n)\n```\n\nAll three carried neither identifier, so the update was rejected outright. That\nconstraint turned out to be the only thing on the entire page telling the truth.\n\n## 💳 The actual finding\n\nChasing those missing identifiers meant looking at the [Stripe](https://stripe.com/)\ncredentials. They started with `sk_test_`.\n\nThat could have been a local-only artifact, so the next question is the only one that\nmatters: what does **production** ship? Not what a configuration file says, not what a\ndeploy workflow claims to set — what is in the JavaScript a customer's browser\ndownloads.\n\n```bash\n# Read the deployed bundle itself, not the config that was supposed to produce it\nhtml=$(curl -fsS 'https://example.com/checkout/?sku=svc-site')\nfor c in $(printf '%s' \"$html\" | grep -oE '/_next/static/chunks/[^\"]+\\.js' | sort -u); do\n  curl -fsS \"https://example.com$c\" | grep -oE 'pk_(test|live)_[A-Za-z0-9]{6}'\ndone\n```\n\nThe answer came back `pk_test_`.\n\nStripe will not pair a test publishable key with a live secret key, so one test key in\nthe bundle means the entire flow is test mode end to end. Every purchasable product was\naffected — a 3,500 dollar build, a 1,200 dollar landing page, a 2,500 dollar workshop.\n\nA buyer could complete the intake form, enter a card, and reach a success screen. No\nmoney moved.\n\n## ⚠️ Why nothing caught it\n\nThis is the part worth internalising, because the failure is not \"somebody used the\nwrong key\". The failure is that **every available signal said it was working**:\n\n- ✅ The checkout page rendered correctly.\n- ✅ The order row was written to the database.\n- ✅ A payment intent record was created.\n- ✅ The webhook fired and marked the order paid.\n- ✅ The success screen appeared.\n- ✅ The test suite was green.\n\nTest mode is not an error state. It is a fully functional parallel universe that Stripe\nprovides precisely so everything behaves normally. Every internal signal reported \"sold\"\nbecause, within test mode, the sale genuinely succeeded. The only place the difference\nbecomes observable is a bank account, and software does not check bank accounts.\n\nThere is a name for this shape: a gate that verifies the thing where it passes rather\nthan where it fails. We had checks that the payment flow completes. We had no check that\nthe payment flow completes **against a live account**.\n\n## 💡 The irony\n\nThe three \"Coming soon\" cards were the honest ones, and they were honest by accident.\n\nNobody wrote a rule saying \"do not advertise a product you cannot charge for\". A\ndatabase CHECK constraint written for a much narrower reason — a recurring product needs\nsomewhere to bill — happened to also encode the broader truth. The one-time products had\nno equivalent guard, so they advertised themselves as sellable.\n\nThat is worth noticing about constraints generally. A rule that makes an invalid state\nunrepresentable keeps paying out in situations its author never considered. A rule\nenforced by convention pays out until the first person who does not know the convention.\n\n## 🧪 The same bug four hours later, wearing a different hat\n\nThe same day, the identical shape turned up somewhere entirely unrelated.\n\nWe were moving the E2E (End-to-End) test suite off a shared cloud database onto a\nthrowaway one created per CI (Continuous Integration) runner. The new configuration ran\nthe full matrix: three browsers, twenty-four parallel jobs.\n\nAll twenty-four went green.\n\nThey had also been set up to compare **counts** against a known-good baseline from the\nold suite, rather than merely checking that everything passed. That comparison failed:\n\n```text\npassed    589  vs baseline 1807\nskipped  1402  vs baseline  194\n```\n\nFirefox and WebKit had executed **zero tests** — 667 skipped each, no reason recorded.\nTwo of three browsers ran nothing at all, and every job reported success.\n\nThe cause was one line. Each job installed only its own browser, but the authentication\nsetup step runs in Chromium regardless of which browser is under test. Without Chromium\npresent, setup could not launch — and [Playwright](https://playwright.dev/) **skips**\ntests whose dependency failed rather than failing them. A skipped test is not a failure,\nso the job exits zero, so the tick is green.\n\nNothing about \"twenty-four jobs passed\" was false. It simply did not mean what a person\nreading it would assume.\n\nHad that comparison been \"did all the jobs pass?\" instead of \"do the numbers match?\",\nthe new suite would have been declared equivalent to the old one and switched over, and\ntwo thirds of the browser coverage would have quietly evaporated.\n\nA count is falsifiable. \"It passed\" is not.\n\n## 🔧 How to check your own\n\nThree steps, none of which need access to anything but the public site.\n\n**1. Find out what key production actually serves.**\n\nRead the deployed bundle, not the configuration. The configuration is what you intended;\nthe bundle is what shipped. Those differ more often than anyone expects, and the gap is\ninvisible precisely because both look correct in isolation.\n\n```bash\ncurl -fsS https://your-site.com/checkout/ \\\n  | grep -oE '/_next/static/chunks/[^\"]+\\.js' | sort -u \\\n  | while read -r chunk; do\n      curl -fsS \"https://your-site.com$chunk\" | grep -oE 'pk_(test|live)_[A-Za-z0-9]{6}'\n    done\n```\n\n**2. Check whether the payment account is even activated.**\n\nIf the Stripe dashboard says \"Sandbox\" or shows a \"Verify your business\" button, live\nkeys do not exist yet. They are not hidden behind a toggle — Stripe will not issue them\nuntil business verification completes: legal entity, bank account, tax details.\n\n⚠️ **Worth checking first.** We spent time hunting for credentials that had never been\ncreated.\n\n**3. Make something assert the answer.**\n\nAlmost certainly nothing does. Adding it is a few lines in whatever job already runs\nagainst production after a deploy:\n\n```bash\nfound=$(curl -fsS \"$SITE/checkout/\" \\\n  | grep -oE '/_next/static/chunks/[^\"]+\\.js' | sort -u \\\n  | xargs -I{} curl -fsS \"$SITE{}\" \\\n  | grep -oE 'pk_(test|live)_' | sort -u)\n\ncase \"$found\" in\n  *pk_live_*) echo \"live key confirmed\" ;;\n  *) echo \"::error::production is serving $found\"; exit 1 ;;   # ⚠️ fail the deploy\nesac\n```\n\nThen do the step most people skip: **make it fail on purpose.** Point it at a test-mode\nvalue and confirm it goes red.\n\n💡 A guard you have never seen fail is not a guard, it is a line in a log. Four probes\nwritten during this same investigation could not report failure at all — one parsed a\ncolour format that never appears in the output it read, one printed its success line\nunconditionally, one was piped through `tail` and silently lost the rows that mattered.\nEach was caught by a number that looked impossible, never by the tool announcing a\nproblem.\n\n## 🎯 The general rule\n\nVerify against the condition that fails, not the one that is convenient.\n\nChecking that the backend answers proves the backend answers. It says nothing about\nwhich backend the deployed bundle is calling. Checking that checkout completes proves\ncheckout completes. It says nothing about whether money moved.\n\nThe convenient check is almost always the one you already have infrastructure for. The\none that matters is usually a layer further out, closer to what a customer actually\nexperiences, and almost always more annoying to write.\n\nWrite it anyway. A store that looks like it sells and does not is worse than a store\nthat says \"Coming soon.\"\n",
       "excerpt": "Our pricing page had five working buy buttons and three that said \"Coming soon\". The five were the problem. A test-mode Stripe key had been live in production the whole time, and every internal signal said sold.",
       "publishedAt": "2026-08-07T00:00:00.000Z",
-      "updatedAt": "2026-08-07T15:11:17.812Z",
+      "updatedAt": "2026-08-09T20:11:52.666Z",
       "status": "published",
       "author": {
         "id": "default",
@@ -43,6 +128,7 @@
         ],
         "ogTitle": "The Storefront That Could Not Take Money",
         "ogDescription": "Our pricing page had five working buy buttons and three that said \"Coming soon\". The five were the problem. A test-mode Stripe key had been live in production the whole time, and every internal signal said sold.",
+        "ogImage": "/blog-images/storefront-that-cannot-take-money/featured-og.png",
         "twitterCard": "summary"
       },
       "frontMatter": {
@@ -60,6 +146,7 @@
         "categories": [
           "engineering"
         ],
+        "ogImage": "/blog-images/storefront-that-cannot-take-money/featured-og.png",
         "excerpt": "Our pricing page had five working buy buttons and three that said \"Coming soon\". The five were the problem. A test-mode Stripe key had been live in production the whole time, and every internal signal said sold."
       }
     },
@@ -1038,9 +1125,15 @@
       }
     }
   ],
-  "generated": "2026-08-07T15:11:31.428Z",
-  "count": 14,
+  "generated": "2026-08-09T20:12:05.536Z",
+  "count": 15,
   "tags": [
+    "three-js",
+    "game-engine",
+    "open-source",
+    "react-three-fiber",
+    "game-dev",
+    "indie",
     "stripe",
     "payments",
     "testing",
@@ -1104,13 +1197,13 @@
     "docker"
   ],
   "categories": [
+    "features",
     "engineering",
     "tutorial",
     "ideas",
     "tutorials",
     "workflow",
     "security",
-    "features",
     "monetization",
     "business",
     "DevOps",

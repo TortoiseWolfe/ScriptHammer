@@ -1,0 +1,61 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="The Storefront That Could Not Take Money — a test-mode Stripe key live in production, while every internal signal said sold">
+  <defs>
+    <linearGradient id="sf-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#27272a"/>
+    </linearGradient>
+    <linearGradient id="sf-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f87171"/>
+      <stop offset="100%" stop-color="#b91c1c"/>
+    </linearGradient>
+    <linearGradient id="sf-accent2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#sf-bg)"/>
+
+  <!-- subtle grid texture -->
+  <g opacity="0.06" stroke="#f87171" stroke-width="1">
+    <path d="M0 158 H1200 M0 316 H1200 M0 474 H1200"/>
+    <path d="M240 0 V630 M480 0 V630 M720 0 V630 M960 0 V630"/>
+  </g>
+
+  <!-- accent bar -->
+  <rect x="90" y="120" width="72" height="8" rx="4" fill="url(#sf-accent)"/>
+
+  <!-- Card motif, top-right: a green tick that is really a test-mode stamp -->
+  <g transform="translate(866 158)" opacity="0.95">
+    <!-- the card -->
+    <rect x="0" y="40" width="270" height="168" rx="18" fill="#3f3f46" stroke="url(#sf-accent)" stroke-width="5"/>
+    <rect x="0" y="76" width="270" height="30" fill="#27272a"/>
+    <rect x="26" y="140" width="112" height="14" rx="7" fill="#71717a"/>
+    <rect x="26" y="166" width="66" height="12" rx="6" fill="#52525b"/>
+    <!-- TEST stamp, deliberately the loudest thing on the card -->
+    <g transform="rotate(-12 176 170)">
+      <rect x="146" y="128" width="108" height="42" rx="7" fill="none" stroke="url(#sf-accent)" stroke-width="5"/>
+      <text x="200" y="159" text-anchor="middle" font-family="'Segoe UI', system-ui, sans-serif" font-size="26" font-weight="800" fill="#f87171">TEST</text>
+    </g>
+    <!-- the success tick that lied -->
+    <g transform="translate(232 8)">
+      <circle cx="26" cy="26" r="26" fill="url(#sf-accent2)"/>
+      <path d="M14 27 l8 8 l16 -18" fill="none" stroke="#0b1220" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </g>
+
+  <!-- Title -->
+  <text x="90" y="250" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="86" font-weight="800" fill="#fafafa">The Storefront That</text>
+  <text x="90" y="348" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="86" font-weight="800" fill="url(#sf-accent)">Could Not Take Money</text>
+
+  <!-- Subtitle -->
+  <text x="94" y="418" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="34" font-weight="500" fill="#d4d4d8">A <tspan font-style="italic" fill="#f87171">test-mode</tspan> key live in production, and every</text>
+  <text x="94" y="462" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="34" font-weight="500" fill="#d4d4d8">internal signal reporting a sale</text>
+
+  <!-- Footer brand + tags -->
+  <g font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
+    <text x="90" y="560" font-size="28" font-weight="700" fill="#f87171">ScriptHammer</text>
+    <text x="368" y="560" font-size="24" font-weight="400" fill="#71717a">stripe · postmortem · green checks that mean nothing</text>
+  </g>
+</svg>
