@@ -114,9 +114,16 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
       timeout: 5000,
     });
 
-    // Payment History heading should be visible
+    // ANCHOR ON "Step 4" — a bare /Payment History/i matches TWO headings and is a
+    // latent strict-mode violation, not a flake. `payment-demo/page.tsx:299` renders
+    // `<h2>Step 4: Payment History</h2>`, and `PaymentHistory.tsx:315` renders its own
+    // `<h2>Payment History</h2>` once the fetch resolves. Slow fetch => one match and
+    // green; fast fetch => two and a failure. It surfaced against local Supabase
+    // (#575 parity) purely because it is quicker, and would have started failing on
+    // cloud too. `PaymentHubContent.tsx:148` documents the same collision biting once
+    // before. Same anchor as `security/payment-isolation.spec.ts:102`.
     await expect(
-      page.getByRole('heading', { name: /Payment History/i })
+      page.getByRole('heading', { name: /Step 4.*Payment History/i })
     ).toBeVisible();
   });
 
