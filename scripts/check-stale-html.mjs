@@ -109,7 +109,11 @@ async function makeBuild(from, to, tag) {
     // A deterministic but different hash, so B cannot accidentally serve A's
     // filenames — which is precisely what GitHub Pages does on deploy.
     const next = f.replace(/^[a-f0-9]+/, (h) =>
-      h.split('').reverse().join('').replace(/[a-f]/g, (c) => (c === 'f' ? 'a' : 'f'))
+      h
+        .split('')
+        .reverse()
+        .join('')
+        .replace(/[a-f]/g, (c) => (c === 'f' ? 'a' : 'f'))
     );
     if (next === f) throw new Error(`rename produced the same name for ${f}`);
     await rename(join(cssDir, f), join(cssDir, next));
@@ -150,7 +154,8 @@ async function makeBuild(from, to, tag) {
       /const CACHE_VERSION = '([^']+)'/,
       (_m, v) => `const CACHE_VERSION = '${v}-${tag}'`
     );
-    if (bumped === sw) throw new Error(`could not bump CACHE_VERSION in ${tag}`);
+    if (bumped === sw)
+      throw new Error(`could not bump CACHE_VERSION in ${tag}`);
     await writeFile(swPath, bumped);
   }
 
@@ -221,7 +226,10 @@ console.log(`build basePath: ${BASE_PATH || '(root)'}`);
 const server = createServer(async (req, res) => {
   const url = decodeURIComponent((req.url ?? '/').split('?')[0]);
   // Strip the basePath, since the build's own links include it.
-  const rel = BASE_PATH && url.startsWith(BASE_PATH) ? url.slice(BASE_PATH.length) || '/' : url;
+  const rel =
+    BASE_PATH && url.startsWith(BASE_PATH)
+      ? url.slice(BASE_PATH.length) || '/'
+      : url;
   const isDoc = url.endsWith('/') || rel === '/';
   // Documents come from the STALE build when the flag is set; everything else
   // always comes from the live root, which is the asymmetry that breaks pages.
@@ -284,7 +292,9 @@ async function launch() {
   try {
     return await chromium.launch();
   } catch (err) {
-    console.log(`bundled chromium unavailable (${String(err).slice(0, 80)}) — trying system chrome`);
+    console.log(
+      `bundled chromium unavailable (${String(err).slice(0, 80)}) — trying system chrome`
+    );
     return chromium.launch({ channel: 'chrome' });
   }
 }
@@ -301,14 +311,22 @@ await page.goto(`${base}${BASE_PATH}/`, { waitUntil: 'load' });
 await page.waitForTimeout(1500);
 // Give the worker a chance to install and take control.
 await page
-  .waitForFunction(() => !!navigator.serviceWorker?.controller, { timeout: 8000 })
+  .waitForFunction(() => !!navigator.serviceWorker?.controller, {
+    timeout: 8000,
+  })
   .catch(() => {});
 const a = await styled(page);
-console.log(`    rules=${a.rules} headerH=${a.headerH} bg=${a.bodyBg} swControlled=${a.sw}`);
+console.log(
+  `    rules=${a.rules} headerH=${a.headerH} bg=${a.bodyBg} swControlled=${a.sw}`
+);
 if (a.rules < 100)
-  failures.push(`build A was not styled to begin with (${a.rules} rules) — the harness is wrong, not the app`);
+  failures.push(
+    `build A was not styled to begin with (${a.rules} rules) — the harness is wrong, not the app`
+  );
 
-console.log('\n--- DEPLOY: document root swaps to build B, A\'s stylesheets are gone');
+console.log(
+  "\n--- DEPLOY: document root swaps to build B, A's stylesheets are gone"
+);
 ROOT = DIR_B;
 missing.length = 0;
 
@@ -329,9 +347,13 @@ console.log('--- returning visitor: build A HTML against build B assets');
 await page.goto(`${base}${BASE_PATH}/`, { waitUntil: 'load' });
 await page.waitForTimeout(2500);
 const b = await styled(page);
-console.log(`    rules=${b.rules} headerH=${b.headerH} bg=${b.bodyBg} swControlled=${b.sw}`);
+console.log(
+  `    rules=${b.rules} headerH=${b.headerH} bg=${b.bodyBg} swControlled=${b.sw}`
+);
 if (missing.length)
-  console.log(`    404s for build A assets: ${[...new Set(missing)].join(', ')}`);
+  console.log(
+    `    404s for build A assets: ${[...new Set(missing)].join(', ')}`
+  );
 
 if (b.rules < 100)
   failures.push(
@@ -346,14 +368,18 @@ if (b.rules < 100)
 // HTML restored from a session while the CSS entry had already expired. Then the
 // stylesheet request reaches the server, the deploy has deleted that hash, and
 // the page paints with nothing.
-console.log('\n--- stale HTML, COLD asset cache (a route the visitor had not loaded)');
+console.log(
+  '\n--- stale HTML, COLD asset cache (a route the visitor had not loaded)'
+);
 const cold = await browser.newContext();
 const coldPage = await cold.newPage();
 missing.length = 0;
 await coldPage.goto(`${base}${BASE_PATH}/`, { waitUntil: 'load' });
 await coldPage.waitForTimeout(2500);
 const c = await styled(coldPage);
-console.log(`    rules=${c.rules} headerH=${c.headerH} bg=${c.bodyBg} swControlled=${c.sw}`);
+console.log(
+  `    rules=${c.rules} headerH=${c.headerH} bg=${c.bodyBg} swControlled=${c.sw}`
+);
 if (missing.length)
   console.log(`    404s: ${[...new Set(missing)].slice(0, 4).join(', ')}`);
 await cold.close();
@@ -369,7 +395,10 @@ if (brokeWithoutRetention)
 // same stale HTML must now render, because its own stylesheets still exist.
 console.log('\n--- same stale HTML, but the deploy RETAINED the old assets');
 for (const [from] of renames) {
-  await cpFile(join(DIR_A, '_next/static/css', from), join(DIR_B, '_next/static/css', from));
+  await cpFile(
+    join(DIR_A, '_next/static/css', from),
+    join(DIR_B, '_next/static/css', from)
+  );
 }
 const kept = await browser.newContext();
 const keptPage = await kept.newPage();
@@ -377,15 +406,19 @@ missing.length = 0;
 await keptPage.goto(`${base}${BASE_PATH}/`, { waitUntil: 'load' });
 await keptPage.waitForTimeout(2500);
 const k = await styled(keptPage);
-console.log(`    rules=${k.rules} headerH=${k.headerH} bg=${k.bodyBg} swControlled=${k.sw}`);
-if (missing.length) console.log(`    404s: ${[...new Set(missing)].slice(0, 3).join(', ')}`);
+console.log(
+  `    rules=${k.rules} headerH=${k.headerH} bg=${k.bodyBg} swControlled=${k.sw}`
+);
+if (missing.length)
+  console.log(`    404s: ${[...new Set(missing)].slice(0, 3).join(', ')}`);
 await kept.close();
 
 if (k.rules < 100)
   failures.push(
     `RETENTION DID NOT HELP: still ${k.rules} CSS rules with the old assets present`
   );
-if (k.headerH > 200) failures.push(`still unstyled with retention: header ${k.headerH}px`);
+if (k.headerH > 200)
+  failures.push(`still unstyled with retention: header ${k.headerH}px`);
 if (!brokeWithoutRetention)
   failures.push(
     'the cold-cache case did NOT break without retention — this check can no longer ' +
@@ -417,14 +450,18 @@ if (missing.length)
 //
 // Both are modelled below from the same snapshot, so this cannot pass by
 // accident in either direction.
-console.log('\n=== SECOND DEPLOY (#548): does a visitor still holding build A survive it? ===');
+console.log(
+  '\n=== SECOND DEPLOY (#548): does a visitor still holding build A survive it? ==='
+);
 
 await makeBuild(DIR_B_PRISTINE, DIR_C, 'build C');
 
 // (1) One-generation retention — today's behaviour. C retains from B AS EMITTED,
 //     which never contained A's stylesheets.
 const oneGen = await retainInto(DIR_B_PRISTINE, DIR_C);
-console.log(`\n--- one-generation retention: C kept ${oneGen} file(s) from B-as-emitted`);
+console.log(
+  `\n--- one-generation retention: C kept ${oneGen} file(s) from B-as-emitted`
+);
 ROOT = DIR_C;
 const burstCold = await browser.newContext();
 const burstPage = await burstCold.newPage();
@@ -445,7 +482,9 @@ if (burstBroke)
 
 // (2) Chained retention — the fix. C retains from B AS PUBLISHED, which by then
 //     already held A's stylesheets, so they survive a second generation.
-console.log('\n--- chained retention: C keeps what B PUBLISHED (its own files + what B retained)');
+console.log(
+  '\n--- chained retention: C keeps what B PUBLISHED (its own files + what B retained)'
+);
 const chained = await retainInto(DIR_B, DIR_C);
 console.log(`    copied ${chained} additional file(s) into C`);
 const burstKept = await browser.newContext();
@@ -455,7 +494,8 @@ await burstKeptPage.goto(`${base}${BASE_PATH}/`, { waitUntil: 'load' });
 await burstKeptPage.waitForTimeout(2500);
 const g2 = await styled(burstKeptPage);
 console.log(`    rules=${g2.rules} headerH=${g2.headerH} bg=${g2.bodyBg}`);
-if (missing.length) console.log(`    404s: ${[...new Set(missing)].slice(0, 3).join(', ')}`);
+if (missing.length)
+  console.log(`    404s: ${[...new Set(missing)].slice(0, 3).join(', ')}`);
 await burstKept.close();
 
 if (g2.rules < 100)
@@ -480,6 +520,107 @@ if (!burstBroke)
     'the two-deploy case did NOT break under one-generation retention — the burst ' +
       'is no longer being simulated, so treat this check as broken rather than passing'
   );
+
+// ── PAST THE RETENTION CAP, THE CLIENT MUST RECOVER ITSELF (#650) ───────────
+//
+// Everything above proves retention survives a burst. It cannot survive
+// FOREVER — RETAIN_GENERATIONS bounds it, and the bound is counted in DEPLOYS
+// while the exposure is how long a visitor's tab has been open. Those are
+// unrelated, which is how production rendered unstyled a sixth time on
+// 2026-08-09 with retention working exactly as designed.
+//
+// So src/components/StylesheetGuard.tsx recovers the page when every same-origin
+// stylesheet came back empty. This asserts that guard fires on the real
+// condition and stays inert otherwise. It reads the SHIPPED string out of the
+// component so the test cannot drift away from what is deployed.
+//
+// Two earlier detectors passed the healthy case and could never fire on the
+// broken one — a CSS custom property that does not exist in the bundle, then a
+// link-vs-styleSheets comparison (a 404'd sheet IS listed, with its href, and
+// zero rules). The negative control below is the only reason either was caught.
+const guardSrc = await readFile(
+  'src/components/subatomic/StylesheetGuard/StylesheetGuard.tsx',
+  'utf8'
+);
+const guardMatch = guardSrc.match(/const stylesheetGuard = `([\s\S]*?)`;/);
+if (!guardMatch) {
+  failures.push(
+    'could not extract the guard from StylesheetGuard.tsx - the template literal ' +
+      'was renamed or reshaped, so this check is no longer testing what ships'
+  );
+} else {
+  const guard = guardMatch[1];
+  console.log(
+    '\n=== STYLESHEET GUARD (#650): past the retention cap, does the client recover? ==='
+  );
+  const guardPage = (statuses) => {
+    const links = statuses
+      .map((_, i) => `<link rel="stylesheet" href="/g${i}.css">`)
+      .join('');
+    return `<!doctype html><html><head>${links}<script>${guard}</script></head><body><h1>x</h1></body></html>`;
+  };
+
+  const runGuard = async (statuses) => {
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    statuses.forEach((st, i) =>
+      page.route(`**/g${i}.css`, (r) =>
+        st === 200
+          ? r.fulfill({
+              status: 200,
+              contentType: 'text/css',
+              body: `.g${i}{color:red}`,
+            })
+          : r.fulfill({ status: 404, body: '' })
+      )
+    );
+    await page.route('**/guard.html*', (r) =>
+      r.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: guardPage(statuses),
+      })
+    );
+    await page.goto('http://guard.test/guard.html', { waitUntil: 'load' });
+    await page.waitForTimeout(1200);
+    const recovered = /_r=/.test(page.url());
+    await ctx.close();
+    return recovered;
+  };
+
+  // THE NEGATIVE CONTROL FIRST. A guard that cannot stay quiet would reload every
+  // healthy page, which is far worse than the bug.
+  const healthy = await runGuard([200, 200, 200]);
+  console.log(
+    `  healthy page          -> ${healthy ? 'RELOADED (wrong)' : 'inert (correct)'}`
+  );
+  if (healthy)
+    failures.push(
+      'the stylesheet guard reloaded a HEALTHY page — it must be inert'
+    );
+
+  // The reported failure: every sheet dead.
+  const allDead = await runGuard([404, 404, 404]);
+  console.log(
+    `  every stylesheet 404  -> ${allDead ? 'recovered (correct)' : 'NOT recovered (wrong)'}`
+  );
+  if (!allDead)
+    failures.push(
+      'the stylesheet guard did NOT recover a page whose stylesheets all 404d — ' +
+        'this is the exact production symptom, so treat the guard as broken'
+    );
+
+  // Deliberately conservative: one dead sheet is not a full outage, and a reload
+  // is not obviously the fix. Documented in the component.
+  const mixed = await runGuard([200, 404, 200]);
+  console.log(
+    `  one dead of three     -> ${mixed ? 'RELOADED (too eager)' : 'inert (correct)'}`
+  );
+  if (mixed)
+    failures.push(
+      'the stylesheet guard reloaded on a single dead sheet — too eager'
+    );
+}
 
 await browser.close();
 server.close();

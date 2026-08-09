@@ -294,3 +294,43 @@ describe('retain-previous-assets: chaining across a burst (#548)', () => {
     );
   });
 });
+
+/**
+ * THE WINDOW IS A DURATION, NOT A BURST COUNT (#650).
+ *
+ * `RETAIN_GENERATIONS` was 5, chosen against "deploys per 10 minutes" — the HTML
+ * cache-control window. But what it protects is how long a visitor's tab has been
+ * open, which is unrelated. On 2026-08-09 production rendered unstyled for the
+ * SIXTH time: five deploys across 22 hours, well-paced by the 10-minute rule, and
+ * someone returning the next day asked for CSS that had just aged out.
+ *
+ * This pins the number so it cannot quietly drift back to a burst-sized one. The
+ * client-side recovery in src/components/StylesheetGuard.tsx is what makes the
+ * failure survivable regardless; this keeps it rare.
+ */
+describe('RETAIN_GENERATIONS is sized for a returning visitor', () => {
+  const deployYml = fs.readFileSync(
+    path.join(__dirname, '..', '..', '.github', 'workflows', 'deploy.yml'),
+    'utf8'
+  );
+
+  it('is set in deploy.yml at all', () => {
+    assert.match(
+      deployYml,
+      /RETAIN_GENERATIONS:\s*'?\d+'?/,
+      'deploy.yml no longer sets RETAIN_GENERATIONS — retention would fall back to ' +
+        'the script default and nothing would say so'
+    );
+  });
+
+  it('covers a working week of deploys, not a single burst', () => {
+    const m = deployYml.match(/RETAIN_GENERATIONS:\s*'?(\d+)'?/);
+    const n = Number(m[1]);
+    assert.ok(
+      n >= 30,
+      `RETAIN_GENERATIONS is ${n}. Below 30 a visitor returning after a normal ` +
+        `working week loses their stylesheets — that is #650, reported from ` +
+        `production six times. Raise it back, or make the case in the issue first.`
+    );
+  });
+});
