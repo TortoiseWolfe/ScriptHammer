@@ -195,14 +195,14 @@ export function generateManifest() {
     ],
     screenshots: [
       {
-        src: `${basePath}/screenshot-wide.png`,
-        sizes: '1280x720',
+        src: `${basePath}/screenshots/desktop.png`,
+        sizes: '1920x1080',
         type: 'image/png',
         form_factor: 'wide',
       },
       {
-        src: `${basePath}/screenshot-narrow.png`,
-        sizes: '720x1280',
+        src: `${basePath}/screenshots/mobile.png`,
+        sizes: '750x1334',
         type: 'image/png',
         form_factor: 'narrow',
       },

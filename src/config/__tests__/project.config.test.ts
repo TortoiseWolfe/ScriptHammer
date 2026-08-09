@@ -322,6 +322,18 @@ describe('Project Configuration', () => {
       expect(maskableIcon).toBeDefined();
     });
 
+    /**
+     * #659: this used to assert `1280x720` and `720x1280` for
+     * `/screenshot-wide.png` and `/screenshot-narrow.png` — two files that have
+     * never existed in this repo and returned 404 on production. The test
+     * passed the whole time, because it only ever compared the config to
+     * itself; nothing checked that the files were real or that the dimensions
+     * described them.
+     *
+     * Now it pins the actual shipped screenshots at their measured sizes. The
+     * files-exist-and-match half is enforced by
+     * `scripts/__tests__/manifest-assets.test.js`, which reads the PNG headers.
+     */
     it('should include screenshots for wide and narrow formats', () => {
       const manifest = generateManifest();
 
@@ -335,10 +347,12 @@ describe('Project Configuration', () => {
       );
 
       expect(wideScreenshot).toBeDefined();
-      expect(wideScreenshot?.sizes).toBe('1280x720');
+      expect(wideScreenshot?.src).toContain('/screenshots/desktop.png');
+      expect(wideScreenshot?.sizes).toBe('1920x1080');
 
       expect(narrowScreenshot).toBeDefined();
-      expect(narrowScreenshot?.sizes).toBe('720x1280');
+      expect(narrowScreenshot?.src).toContain('/screenshots/mobile.png');
+      expect(narrowScreenshot?.sizes).toBe('750x1334');
     });
 
     it('should include application shortcuts', () => {
