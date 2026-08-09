@@ -3,6 +3,7 @@ import { Archivo, Archivo_Black, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import ThemeScript from '@/components/ThemeScript';
 import AccessibilityScript from '@/components/AccessibilityScript';
+import StylesheetGuard from '@/components/subatomic/StylesheetGuard';
 import { GlobalNav } from '@/components/GlobalNav';
 import { Footer } from '@/components/Footer';
 import { AccessibilityProvider } from '@/contexts/AccessibilityContext';
@@ -175,6 +176,11 @@ export default function RootLayout({
       >
         <ThemeScript />
         <AccessibilityScript />
+        {/* Recovers a visitor holding cached HTML whose stylesheets were deleted
+            by a later deploy (#650) — the white-page-with-a-giant-logo failure
+            reported from production six times. Waits for `load`, so it costs
+            nothing on a healthy page. */}
+        <StylesheetGuard />
         <JsonLdScript data={generateJsonLd()} />
         <ColorblindFilters />
         <ConsentProvider>
