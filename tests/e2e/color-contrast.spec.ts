@@ -56,6 +56,7 @@ interface AxeRuleResult {
 interface AxeResults {
   violations: AxeRuleResult[];
   incomplete: AxeRuleResult[];
+  passes: AxeRuleResult[];
 }
 
 // Both custom themes covered — Pa11y's headless Chromium defaults to
@@ -299,7 +300,18 @@ test.describe('WCAG AAA color-contrast-enhanced (violations only)', () => {
           };
           w.__shAxeRun ??= w.axe.run(document, {
             runOnly: { type: 'rule', values: ['color-contrast-enhanced'] },
-            resultTypes: ['violations', 'incomplete'],
+            // 'passes' IS LOAD-BEARING, NOT COMPLETENESS (#459). axe returns a
+            // PASS for elements whose ratio it could not compute, with
+            // `contrastRatio: null` — 120 of 608 across eight routes, one in
+            // five. Those are unmeasured, not verified.
+            //
+            // And `resultTypes` does not merely filter the report: any group
+            // NOT listed is TRUNCATED TO ONE NODE. Measured on /pricing —
+            // without 'passes' axe returns 1 pass node, with it 96, of which 8
+            // have a null ratio. So an audit of `passes` that forgets to ask
+            // for them inspects a single element and calls the page clean,
+            // which is #459 reproduced inside the fix for #459.
+            resultTypes: ['violations', 'incomplete', 'passes'],
           });
           return w.__shAxeRun;
         });
@@ -326,6 +338,33 @@ test.describe('WCAG AAA color-contrast-enhanced (violations only)', () => {
           (n, v) => n + v.nodes.length,
           0
         );
+
+        // UNMEASURED ELEMENTS AXE REPORTED AS PASSING (#459). A null ratio means
+        // axe could not compute one — most often a background it cannot resolve
+        // (an image, a gradient, a transparent stack). It is not a pass; it is a
+        // question that was never answered, and it was being counted as covered.
+        const unmeasured = (results.passes ?? []).flatMap((rule) =>
+          rule.nodes
+            .filter((n) => (n.any?.[0]?.data?.contrastRatio ?? null) === null)
+            .map((n) => n.target?.[0])
+        );
+        const passCount = (results.passes ?? []).reduce(
+          (n, v) => n + v.nodes.length,
+          0
+        );
+        if (unmeasured.length) {
+          // Reported, not thrown. These are pre-existing and repo-wide; failing
+          // on them today would block every merge on a backlog this PR does not
+          // fix. The number is printed on every run so it cannot quietly grow,
+          // which is the same posture `check-first-load-budget.mjs` takes toward
+          // first-party 3D code.
+          console.log(
+            `::warning::${path} [${theme}]: ${unmeasured.length} of ${passCount} ` +
+              `"passing" elements were never measured (contrastRatio: null) — ` +
+              `axe could not resolve a background. See #459. ` +
+              `e.g. ${unmeasured.slice(0, 3).join(', ')}`
+          );
+        }
 
         // Tear the throwaway admin down BEFORE the assertion, so a violation
         // does not leave a live admin account behind. `auth.setup.ts` sweeps

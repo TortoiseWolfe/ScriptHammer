@@ -16,6 +16,7 @@ import {
   signOutViaDropdown,
   performSignIn,
 } from '../utils/test-user-factory';
+import { skipIfBackendCaptchaProtected } from '../utils/captcha-guard';
 
 // Use pre-existing test user (must exist in Supabase)
 const testEmail = process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com';
@@ -81,7 +82,18 @@ test.describe('Session Persistence E2E', () => {
       expect(daysDiff).toBeGreaterThanOrEqual(25); // Allow some variance
     }
 
-    // Verify localStorage has refresh token for persistence
+    // Verify localStorage has refresh token for persistence.
+    //
+    // This assertion is only meaningful when the REAL form was submitted. Under
+    // the captcha-protected path `performSignIn` injects a session and writes a
+    // `refresh_token` into localStorage itself (test-user-factory.ts:1756), so
+    // it would pass no matter what Remember Me did — the same cannot-fail shape
+    // #587 removed from the sibling test below. The guard keeps it honest and
+    // lets it run for real wherever captcha is off.
+    await skipIfBackendCaptchaProtected(
+      'Remember Me putting a refresh token in localStorage (#375)'
+    );
+
     const localStorage = await page.evaluate(() =>
       JSON.stringify(window.localStorage)
     );
@@ -89,6 +101,13 @@ test.describe('Session Persistence E2E', () => {
   });
 
   test('should use short session without Remember Me', async ({ page }) => {
+    // Before signing in, not after: against a captcha-protected backend this
+    // test cannot measure anything (see the note below), so there is no reason
+    // to spend a sign-in discovering that.
+    await skipIfBackendCaptchaProtected(
+      'Where the auth token is stored after a real form sign-in (#375)'
+    );
+
     // Sign in WITHOUT Remember Me (already on sign-in page from beforeEach)
     const result = await performSignIn(page, testEmail, testPassword, {
       rememberMe: false,
@@ -109,6 +128,17 @@ test.describe('Session Persistence E2E', () => {
     //                    "sh-auth-persistence":"session"}
     // i.e. the app records its choice in `sh-auth-persistence` and keeps the
     // token OUT of localStorage. Assert exactly that — it is what #375 fixed.
+    //
+    // That observation holds ONLY where the real form is submitted. Against a
+    // captcha-protected backend `performSignIn` injects a server-minted session
+    // instead (test-user-factory.ts:1756 writes `sb-<host>-auth-token` straight
+    // into localStorage) and the component that records the preference never
+    // runs — so BOTH assertions below are false, and measured false on CI:
+    //   {"cookie-consent":…,"sb-ozbdyopxmeqmwnfsmglp-auth-token":…,
+    //    "playwright_e2e":"true"}
+    // `client.ts` already said as much in prose; the guard above makes it true
+    // in code. It probes, so this resumes automatically wherever captcha is off
+    // — which is the local-Supabase run where real-form coverage belongs.
     const localStorageDump = await page.evaluate(() =>
       JSON.stringify(window.localStorage)
     );
@@ -211,10 +241,23 @@ test.describe('Session Persistence E2E', () => {
     // out". The `before` check is scaffolding, so it now asserts the thing that
     // is actually true and actually load-bearing: a session marker exists to be
     // cleared.
+    //
+    // WHICH marker depends on how the sign-in happened, and this test must not
+    // care. A real form submission records `sh-auth-persistence`; a captcha
+    // -protected backend makes `performSignIn` inject a session written as
+    // `sb-<host>-auth-token` instead. Naming only the first meant this could
+    // never pass on the cloud run — it simply never got there, because the
+    // group is `mode: 'serial'` and the earlier failure skipped it. Matching
+    // either keeps the scaffolding load-bearing (nothing stored at all still
+    // fails) without pinning it to one sign-in path.
     const beforeSignOut = await page.evaluate(() =>
       JSON.stringify(window.localStorage)
     );
-    expect(beforeSignOut).toContain('sh-auth-persistence');
+    expect(
+      beforeSignOut,
+      'No auth marker in localStorage before sign-out, so this test would be ' +
+        'asserting that signing out clears something that was never there.'
+    ).toMatch(/sh-auth-persistence|sb-.*-auth-token/);
 
     // Sign out via dropdown menu
     await signOutViaDropdown(page);

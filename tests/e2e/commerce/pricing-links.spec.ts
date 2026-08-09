@@ -94,6 +94,30 @@ test.describe('pricing → checkout links', () => {
     ).toEqual([]);
   });
 
+  /**
+   * /pricing is a two-lane page and BOTH lanes are always in the DOM — only the
+   * one whose radio is checked is displayed. `pricing.module.css` says so
+   * outright: "Both lanes are always in the DOM; only one is displayed", with
+   * `.laneDevelopers { display: none }` as the default.
+   *
+   * So a blanket `toBeVisible()` over every badge can never pass. `prd-foundry`
+   * is a developers-lane package, and the developers lane is hidden until its
+   * radio is checked. That is what this test used to do, and it failed on `main`
+   * for two consecutive runs — not as a flake, as an assertion that contradicted
+   * the page's design.
+   *
+   * Visibility is therefore checked PER LANE, with the lane selected first, and
+   * the totals reconciled: every badge must be shown in exactly one lane. That
+   * reconciliation is what keeps this from becoming the vacuous version — if the
+   * grid stops rendering, or a badge ends up in neither lane, `shown` no longer
+   * equals `total` and this fails.
+   *
+   * The no-clickable-affordance check runs over every badge in both lanes,
+   * because that property does not depend on which lane is showing and is the
+   * actual subject of the test.
+   */
+  const LANES = ['For your business', 'For developers'] as const;
+
   test('a package that cannot be bought offers no way to try', async ({
     page,
   }) => {
@@ -101,15 +125,15 @@ test.describe('pricing → checkout links', () => {
     await page.waitForLoadState('networkidle');
 
     const soon = page.locator('[data-testid="coming-soon"]');
-    const count = await soon.count();
+    const total = await soon.count();
 
     // Not asserted to be > 0: when the subscriptions finally have provider plans
     // this legitimately drops to zero, and this spec should keep passing rather
     // than demand that something stay broken.
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < total; i++) {
       const el = soon.nth(i);
-      await expect(el).toBeVisible();
-      // The whole point: no anchor, no button, nothing clickable.
+      // The whole point: no anchor, no button, nothing clickable. True in either
+      // lane, so this needs no lane selected.
       expect(
         await el.evaluate((n) => n.closest('a') !== null || n.tagName === 'A')
       ).toBe(false);
@@ -117,5 +141,31 @@ test.describe('pricing → checkout links', () => {
         await el.evaluate((n) => n.querySelector('a,button') !== null)
       ).toBe(false);
     }
+
+    let shown = 0;
+    for (const lane of LANES) {
+      await page.getByRole('radio', { name: lane }).check();
+      // Wait on the lane's own heading rather than a timeout: the switch is
+      // pure CSS `:has()`, but `count()` below does not auto-retry, so without
+      // a settled signal this races the style recalculation.
+      await expect(
+        page.getByRole('heading', { name: lane, level: 2 })
+      ).toBeVisible();
+
+      // Counted, not asserted element-by-element: a `:visible` locator selects
+      // on visibility, so asserting `toBeVisible()` over what it returned could
+      // not fail. The reconciliation below is what actually carries this.
+      shown += await page
+        .locator('[data-testid="coming-soon"]:visible')
+        .count();
+    }
+
+    expect(
+      shown,
+      `${total} coming-soon badges exist in the DOM but ${shown} were visible ` +
+        `across both lanes. Every badge must be shown in exactly one lane — a ` +
+        `badge visible in neither means its lane stopped rendering, and this ` +
+        `spec would otherwise pass vacuously.`
+    ).toBe(total);
   });
 });
