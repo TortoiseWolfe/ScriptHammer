@@ -49,9 +49,11 @@ jobs:
 
           fail=0
           summary=""
+          processed_refs=0
 
           for ref in $(printf '%s' "$REFS" | tr ',' ' '); do
             [ -z "$ref" ] && continue
+            processed_refs=$((processed_refs + 1))
             ok=0
             for tok in "${TOKEN_A:-}" "${TOKEN_B:-}"; do
               [ -z "$tok" ] && continue
@@ -77,6 +79,14 @@ jobs:
               fail=1
             fi
           done
+
+          # `REFS=", ,"` is not shell-empty, but produces no loop iterations.
+          # A keepalive that reports success after pinging nothing is worse than a
+          # red scheduled run: it lets every project pause while looking healthy.
+          if [ "$processed_refs" -eq 0 ]; then
+            echo "::error::vars.SUPABASE_KEEPALIVE_REFS contains no usable project refs — nothing is being kept alive"
+            fail=1
+          fi
 
           {
             echo "### Supabase keep-alive"
