@@ -49,7 +49,7 @@ const REFERENCE: readonly { when: string; docs: readonly Doc[] }[] = [
     { label: 'Auto-configuration', hint: 'project detection · defaults',        href: '/blog/auto-configuration-system', internal: true },
   ]},
   { when: 'Contributing back', docs: [
-    { label: 'Contributing',  hint: 'PR workflow · code style',           href: gh('docs/project/CONTRIBUTING.md') },
+    { label: 'Contributing',  hint: 'PR workflow · code style',           href: gh('CONTRIBUTING.md') },
     { label: 'PRP / SpecKit', hint: 'spec → plan → tasks → implement',    href: gh('docs/prp-docs/SPECKIT-PRP-GUIDE.md') },
     { label: 'Changelog',     hint: 'release history',                    href: gh('docs/project/CHANGELOG.md') },
   ]},

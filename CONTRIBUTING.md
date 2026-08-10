@@ -28,7 +28,15 @@ Be respectful, inclusive, and constructive. We welcome contributors of all exper
 - **Git** - Version control
 - **Code editor** - VS Code recommended with Docker extension
 
-**Important**: Local Node.js/pnpm installation is NOT required. All tooling runs inside Docker.
+**Important**: Local Node.js/pnpm installation is NOT required for development — every
+build, test and lint runs inside Docker.
+
+One caveat, because two versions of this guide used to contradict each other on it: the
+git hooks in `.husky/` execute on the **host**, not in the container. They shell back into
+Docker to do the actual work (`.husky/pre-push` runs `docker compose exec … pnpm run
+gitleaks`), so a host Node install is still not required — but the hooks do need a POSIX
+shell and a working `docker` on your PATH. If you commit from inside the container, as
+this repo recommends, that is already true.
 
 ---
 
@@ -44,14 +52,26 @@ git clone https://github.com/YOUR_USERNAME/ScriptHammer.git
 cd ScriptHammer
 
 # 3. Add upstream remote
-git remote add upstream https://github.com/ORIGINAL_OWNER/ScriptHammer.git
+git remote add upstream https://github.com/TortoiseWolfe/ScriptHammer.git
 
-# 4. Start the development environment
+# 4. Create your .env — REQUIRED, the container will not start correctly without it
+cp .env.example .env
+
+# 5. Start the development environment
 docker compose up -d
 
-# 5. Verify containers are running
+# 6. Verify containers are running
 docker compose ps
 ```
+
+**Step 4 is not optional.** `docker-compose.yml` reads `UID` and `GID` from `.env` so the
+container writes files as you rather than as root; without it you get a `node_modules` and
+a `.next` you cannot delete from the host. `.env.example` ships `UID=1000` / `GID=1000`,
+which is right for most single-user Linux and WSL installs — check with `id -u` and
+`id -g` and edit only if yours differ.
+
+Copy the file rather than `echo`ing into it. `.env.example` also carries the Supabase keys,
+feature flags and port pins you will want; a redirect (`>`) silently destroys all of them.
 
 ### Running Commands
 
@@ -68,6 +88,26 @@ docker compose exec scripthammer pnpm run lint
 ```
 
 **Never run `npm install` or `pnpm install` on your host machine.** This violates the Docker-first principle and may cause inconsistencies.
+
+### Available Scripts
+
+| Command                                               | Description                      |
+| ----------------------------------------------------- | -------------------------------- |
+| `docker compose exec scripthammer pnpm dev`           | Start the Next.js dev server     |
+| `docker compose run --rm builder pnpm build`          | Production build — **see note**  |
+| `docker compose exec scripthammer pnpm test`          | Run the Vitest suite             |
+| `docker compose exec scripthammer pnpm test:coverage` | Generate a coverage report       |
+| `docker compose exec scripthammer pnpm lint`          | Run ESLint                       |
+| `docker compose exec scripthammer pnpm format`        | Format with Prettier             |
+| `docker compose exec scripthammer pnpm format:check`  | Check formatting, change nothing |
+| `docker compose exec scripthammer pnpm type-check`    | Run TypeScript type checking     |
+| `docker compose exec scripthammer pnpm storybook`     | Start Storybook                  |
+
+**The build row is `run --rm builder`, not `exec scripthammer`, and that is load-bearing
+(#293).** `next dev` and `next build` both own `/app/.next`. Building inside the dev
+container wipes the directory the dev server is serving from, and every route 500s until
+it recompiles. The `builder` service is the same image with its own `.next` volume, which
+is why it exists.
 
 ### Wireframe Viewer
 
@@ -237,11 +277,16 @@ Write tests BEFORE implementation (RED-GREEN-REFACTOR):
 
 ### Minimum Coverage
 
-| Type          | Minimum        | Tool       |
-| ------------- | -------------- | ---------- |
-| Unit tests    | 25%            | Vitest     |
-| E2E tests     | Critical paths | Playwright |
-| Accessibility | All components | Pa11y      |
+| Type          | Minimum                                        | Tool       |
+| ------------- | ---------------------------------------------- | ---------- |
+| Unit tests    | **60%** statements, branches, functions, lines | Vitest     |
+| E2E tests     | Critical paths                                 | Playwright |
+| Accessibility | All components                                 | Pa11y      |
+
+The single source of truth is `vitest.config.ts:154-157`; check there before trusting this
+table. It said 25% here and 0.5% in a second copy of this guide, against a real threshold
+of 60 — neither number was ever true, and both survived because nothing compared the prose
+to the config.
 
 ### Running Tests
 
@@ -305,13 +350,36 @@ describe('Button Accessibility', () => {
 
 ## Submitting Changes
 
+### What the git hooks actually do
+
+Knowing this matters, because it tells you what is **not** checked for you.
+
+**`pre-commit`** — two things, in order:
+
+1. `gitleaks protect --staged` — secret scan of staged content. A hit blocks the commit.
+2. `lint-staged` — `prettier --write` then `eslint --fix` on `*.{js,jsx,ts,tsx}`, and
+   `prettier --write` on `*.{css,md,json}`.
+
+**`pre-push`** — `gitleaks detect` over the full history, then the CI gate (including a
+production build). This is why a push takes minutes.
+
+**It does NOT run your tests or type-check on commit.** An older version of this guide
+claimed pre-commit ran "related tests" and "TypeScript types"; it never did. Run
+`pnpm test` and `pnpm type-check` yourself before pushing, or the push gate is where you
+will find out.
+
+**Never `--no-verify`.** These hooks have caught real secrets in this repo. If one fails,
+the output names the file and line — fix it and re-stage.
+
 ### Pre-Submission Checklist
 
 - [ ] Code follows [Style Guide](#style-guide)
-- [ ] All tests pass (`pnpm run test`)
-- [ ] Linting passes (`pnpm run lint`)
-- [ ] Build succeeds (`pnpm run build`)
+- [ ] All tests pass (`docker compose exec scripthammer pnpm run test`)
+- [ ] Type check passes (`docker compose exec scripthammer pnpm run type-check`)
+- [ ] Linting passes (`docker compose exec scripthammer pnpm run lint`)
+- [ ] Build succeeds (`docker compose run --rm builder pnpm build` — the builder, #293)
 - [ ] Components follow 5-file pattern
+- [ ] Storybook stories updated for UI changes (`.stories.tsx` is one of the five files)
 - [ ] New features have wireframes reviewed
 - [ ] Documentation updated if needed
 
@@ -506,9 +574,21 @@ See [docs/FORKING.md](./docs/FORKING.md) for the fork-side view.
 
 ## Getting Help
 
-- **Questions**: Open a [Discussion](https://github.com/OWNER/ScriptHammer/discussions)
-- **Bugs**: Open an [Issue](https://github.com/OWNER/ScriptHammer/issues)
-- **Security**: Email security@example.com (do not open public issues)
+- **Questions**: Open a [Discussion](https://github.com/TortoiseWolfe/ScriptHammer/discussions)
+- **Bugs**: Open an [Issue](https://github.com/TortoiseWolfe/ScriptHammer/issues)
+- **Security**: See [SECURITY.md](./docs/project/SECURITY.md) for the reporting process — do not open a public issue
+
+### Before opening an issue
+
+1. Search existing issues, **including closed ones** — a surprising number of things here
+   were fixed and closed rather than never reported.
+2. Reproduce in a clean environment (`docker compose down && docker compose up`).
+
+Include: a descriptive title, steps to reproduce, expected vs actual behaviour, any error
+output, and your environment (OS, browser, Docker version).
+
+Two issue templates exist — `.github/ISSUE_TEMPLATE/accessibility.md` and
+`optimization.md`. Anything else is a blank issue; that is fine.
 
 ---
 
