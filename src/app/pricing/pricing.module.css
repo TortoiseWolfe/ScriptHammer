@@ -37,12 +37,41 @@
   --text: var(--color-base-content, #ece4d9);
   --danger: var(--color-error, #e08c78);
 
-  /* Subordinate text. color-mix toward the background keeps these visually quieter
-     than body copy without dropping to a fixed grey that fails in light themes.
-     70%/60% were chosen by measuring the worst theme, not by eye — see the
-     contrast note in the PR. */
-  --muted: color-mix(in oklab, var(--text) 70%, var(--bg));
-  --sku: color-mix(in oklab, var(--text) 60%, var(--bg));
+  /* Subordinate text. Mixing toward the background keeps these quieter than body
+     copy without a fixed grey that fails in light themes.
+     
+     THE OLD 70%/60% CLAIMED TO BE MEASURED AND WERE NOT (#656). They failed the
+     AAA gate on /pricing in both themes, and the sku pair failed even AA:
+     
+       muted light  #585f69 on #f5f0eb  5.69  (needs 7:1)
+       muted dark   #9fa4b1 on #1a1a2e  6.83  (needs 7:1)
+       sku   light  #6d727a on #ebe5dd  3.86  (needs 4.5:1)
+     
+     Re-measured 2026-08-09 by sweeping the mix against the LIVE theme, walking each
+     element up to its first non-transparent ancestor to find the surface it really
+     renders on, and reading colours back through an oklab->sRGB conversion. The
+     sweep reproduces CI's 5.69 as 5.70, which is why it is trusted here.
+     
+     Measured against the surface each one actually sits on:
+     
+       .laneNote  on base-100  rgb(245,240,235)   70% -> 5.70   85% -> 8.85
+       .sku       on the card  rgb(235,229,221)   60% -> 3.87   85% -> 8.01
+     
+     BOTH ARE 85%, AND .sku IS DELIBERATELY STRICTER THAN IT HAS TO BE. axe scores
+     .sku against 4.5:1 rather than 7:1 only because it computes to 24px, which WCAG
+     calls large text — 75% would have cleared that at 6.01. But that exemption
+     depends on a font size this repo is known to move: `--font-scale-factor` jumps
+     1 -> 1.5 post-hydration (#388). A contrast pass that survives only while a
+     scale factor holds is a pass with a trapdoor under it, so both variables clear
+     the stricter 7:1 outright and the hierarchy is carried by size and
+     letter-spacing instead, which is where it was already doing most of the work.
+     
+     Do not lower these to restore the old look without re-running that sweep. A
+     canvas `fillStyle` probe CANNOT do it — it silently fails to parse oklab() and
+     returns the previous colour, which reads as an identical ratio at every value.
+     That happened here, and only a constant-looking sweep gave it away. */
+  --muted: color-mix(in oklab, var(--text) 85%, var(--bg));
+  --sku: color-mix(in oklab, var(--text) 85%, var(--bg));
 
   --radius: 4px;
 

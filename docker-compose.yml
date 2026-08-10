@@ -341,9 +341,28 @@ services:
     profiles: [supabase]
     image: supabase/realtime:v2.34.47
     restart: unless-stopped
+    # THE HOSTNAME IS THE TENANT (#575). Realtime is multi-tenant and resolves the
+    # tenant from the FIRST LABEL of the request Host header. Kong used to proxy to
+    # `http://supabase-realtime:4000`, a single-label host with no tenant in it, so
+    # every socket join failed to resolve `realtime-dev` no matter what was seeded.
+    # Upstream's own compose names the container this way for exactly this reason;
+    # kong.yml points at the same name.
+    #
+    # NOTE `container_name` is GLOBAL, not namespaced by COMPOSE_PROJECT_NAME — two
+    # checkouts running the `supabase` profile at once will collide on it. That is
+    # upstream's design, and this profile is only up during local-Supabase work.
+    container_name: realtime-dev.supabase-realtime
     depends_on:
       supabase-db:
         condition: service_healthy
+    # NOTHING RAN THE MIGRATIONS. The image's default entrypoint starts the server
+    # only; without this, `_realtime.tenants` is never created and the `realtime-dev`
+    # tenant `SEED_SELF_HOST` promises is never inserted — so the healthcheck below
+    # 404s and ~18 realtime specs fail with a connection that never joins.
+    command: >-
+      sh -c "/app/bin/migrate &&
+             /app/bin/realtime eval 'Realtime.Release.seeds(Realtime.Repo)' &&
+             /app/bin/server"
     environment:
       PORT: 4000
       DB_HOST: supabase-db
@@ -361,6 +380,13 @@ services:
       APP_NAME: realtime
       SEED_SELF_HOST: 'true'
       RUN_JANITOR: 'true'
+    # THE ANON KEY HERE MUST BE SIGNED WITH *THIS* REPO'S JWT SECRET (#575). Two
+    # different demo keys were pasted into this file: the one below matches
+    # `super-secret-jwt-token-…`, which is what all seven services default to; the
+    # one that used to be here was upstream Supabase's, signed with
+    # `your-super-secret-jwt-token-…`. It never validated, so this healthcheck
+    # returned 403 forever and the container stayed `unhealthy` even with the tenant
+    # correctly seeded. Verified by recomputing both HMACs.
     healthcheck:
       test:
         [
@@ -372,7 +398,7 @@ services:
           '/dev/null',
           'http://localhost:4000/api/tenants/realtime-dev/health',
           '-H',
-          'Authorization: Bearer ${SUPABASE_LOCAL_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE}',
+          'Authorization: Bearer ${SUPABASE_LOCAL_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlLWRlbW8iLCJpYXQiOjE2NDE3NjkyMDAsImV4cCI6MTc5OTUzNTYwMH0.F_rDxRTPE8OU83L_CNgEGXfmirMXmMMugT29Cvc8ygQ}',
         ]
       interval: 5s
       timeout: 5s
@@ -496,7 +522,7 @@ services:
       DEFAULT_PROJECT_NAME: Local
       SUPABASE_URL: http://supabase-kong:8000
       SUPABASE_PUBLIC_URL: http://localhost:${SH_SUPABASE_API_PORT:-54321}
-      SUPABASE_ANON_KEY: ${SUPABASE_LOCAL_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJhbm9uIiwKICAgICJpc3MiOiAic3VwYWJhc2UtZGVtbyIsCiAgICAiaWF0IjogMTY0MTc2OTIwMCwKICAgICJleHAiOiAxNzk5NTM1NjAwCn0.dc_X5iR_VP_qT0zsiyj_I_OZ2T9FtRU2BBNWN8Bu4GE}
+      SUPABASE_ANON_KEY: ${SUPABASE_LOCAL_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlLWRlbW8iLCJpYXQiOjE2NDE3NjkyMDAsImV4cCI6MTc5OTUzNTYwMH0.F_rDxRTPE8OU83L_CNgEGXfmirMXmMMugT29Cvc8ygQ}
       SUPABASE_SERVICE_KEY: ${SUPABASE_LOCAL_SERVICE_ROLE_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyAgCiAgICAicm9sZSI6ICJzZXJ2aWNlX3JvbGUiLAogICAgImlzcyI6ICJzdXBhYmFzZS1kZW1vIiwKICAgICJpYXQiOiAxNjQxNzY5MjAwLAogICAgImV4cCI6IDE3OTk1MzU2MDAKfQ.DaYlNEoUrrEn2Ig7tqibS-PHK5vgusbcbo7X36XVt4Q}
       NEXT_PUBLIC_ENABLE_LOGS: 'false'
       NEXT_ANALYTICS_BACKEND_PROVIDER: postgres

@@ -67,7 +67,140 @@ const nextConfig: NextConfig = {
     // URLs (auth redirects) sees '' in production (issue #154).
     NEXT_PUBLIC_BASE_PATH: basePath,
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, dev }) => {
+    // Emit which MODULES ended up in which chunk, so the first-load gate can ask
+    // the build a question instead of grepping minified output for a class name.
+    //
+    // WHY (#636, a #291 follow-up). check-first-load-budget.mjs matched
+    // /WebGLRenderer|BufferGeometry/ against emitted JS. On 2026-08-06 an app module
+    // gained the log line "no WebGLRenderer available yet", landed in `common`, and
+    // the gate reported "three.js ships in 125 non-3D routes". Deploys were blocked
+    // for hours over a console.warn. Measured: `common` had 0 BufferGeometry and 1
+    // WebGLRenderer; the real three chunk had 42 and 37 and was async-only.
+    //
+    // A string match cannot tell a library from a log message, and cannot see
+    // first-party code at all — so it also MISSED the genuine regression, which is
+    // that src/lib/cod (3D-only glue) is now in an always-initial chunk.
+    //
+    // Module resources are exact: immune to minification, to log strings, and to a
+    // three upgrade renaming a class.
+    //
+    // WHERE IT LANDS, and why not in distDir. The gate runs via
+    // `docker compose exec scripthammer` (validate-ci.sh:54) — the DEV container —
+    // while the build runs in `builder`, which has its OWN .next volume (#293).
+    // A map written to distDir therefore never reaches the process that reads it;
+    // the reader would see the dev server's .next instead, where three has never
+    // been compiled (dev builds routes on demand). Only the repo root and out/
+    // cross that boundary, which is why the old gate read out/ exclusively.
+    //
+    // PRODUCTION ONLY. If `next dev` also wrote here it would clobber the real
+    // build's map with a partial one, and a partial map that looks complete is the
+    // failure mode this whole change exists to remove.
+    const MAP_FILE = '.chunk-modules.json';
+    if (!isServer && !dev) {
+      const { writeFileSync } = require('fs');
+      const path = require('path');
+
+      config.plugins.push({
+        apply(compiler: {
+          hooks: {
+            afterEmit: {
+              tap: (name: string, fn: (compilation: unknown) => void) => void;
+            };
+          };
+        }) {
+          compiler.hooks.afterEmit.tap('emit-chunk-modules', (compilation) => {
+            type Mod = {
+              resource?: string;
+              // ConcatenatedModule (scope hoisting) — see collect() below.
+              modules?: Iterable<Mod>;
+              rootModule?: Mod;
+            };
+            const c = compilation as {
+              chunks: Iterable<{ files: Set<string>; name?: string }>;
+              chunkGraph: {
+                getChunkModulesIterable: (chunk: unknown) => Iterable<Mod>;
+              };
+              getAssets: () => Array<{ name: string }>;
+            };
+            /** node_modules/... -> the package name; src/... -> repo-relative path. */
+            const label = (resource: string): string | null => {
+              const norm = resource.split(path.sep).join('/');
+              const nm = norm.lastIndexOf('/node_modules/');
+              if (nm !== -1) {
+                let rest = norm.slice(nm + '/node_modules/'.length);
+                // pnpm stores as .pnpm/<pkg>@<ver>/node_modules/<pkg>/...
+                if (rest.startsWith('.pnpm/')) {
+                  const inner = rest.indexOf('/node_modules/');
+                  if (inner === -1) return null;
+                  rest = rest.slice(inner + '/node_modules/'.length);
+                }
+                const parts = rest.split('/');
+                return parts[0].startsWith('@')
+                  ? `${parts[0]}/${parts[1]}`
+                  : parts[0];
+              }
+              const i = norm.indexOf('/src/');
+              return i === -1 ? null : norm.slice(i + 1);
+            };
+
+            /**
+             * Walk a module, INCLUDING INTO ConcatenatedModule.
+             *
+             * Production enables `concatenateModules` (scope hoisting), which
+             * merges a module group into one synthetic ConcatenatedModule with no
+             * `.resource` of its own — the real files hang off `.modules`. Reading
+             * only `.resource` therefore sees nothing for most of a prod bundle:
+             * measured here, 62 of 89 chunks came back empty, `main-app` among
+             * them. Empty is indistinguishable from clean, so that was a hole big
+             * enough to hide the very leak this gate exists to catch.
+             */
+            const collect = (m: Mod, into: Set<string>, depth = 0): void => {
+              if (depth > 12) return; // paranoia; the graph is a DAG in practice
+              if (m.resource) {
+                const l = label(m.resource);
+                if (l) into.add(l);
+              }
+              if (m.rootModule) collect(m.rootModule, into, depth + 1);
+              if (m.modules) {
+                for (const inner of m.modules) collect(inner, into, depth + 1);
+              }
+            };
+
+            const out: Record<string, string[]> = {};
+            for (const chunk of c.chunks) {
+              const labels = new Set<string>();
+              for (const m of c.chunkGraph.getChunkModulesIterable(chunk)) {
+                collect(m, labels);
+              }
+              for (const file of chunk.files) {
+                if (file.endsWith('.js')) out[file] = [...labels].sort();
+              }
+            }
+
+            // Assets that are not the output of any chunk — Next ships
+            // `polyfills-*.js` this way, listed in build-manifest.polyfillFiles
+            // and copied in rather than compiled. It carries no webpack modules,
+            // so an empty list is the honest answer. Recording it explicitly is
+            // what lets the gate treat "absent from this map" as a hard error
+            // instead of shrugging at every file it does not recognise.
+            for (const { name } of c.getAssets()) {
+              if (name.endsWith('.js') && !(name in out)) out[name] = [];
+            }
+            try {
+              writeFileSync(
+                path.join(process.cwd(), MAP_FILE),
+                JSON.stringify(out)
+              );
+            } catch {
+              // Never fail a build over the audit file. The gate refuses to pass
+              // blind when it is missing, which is the correct place to notice.
+            }
+          });
+        },
+      });
+    }
+
     // Optimize code splitting for better performance
     if (!isServer) {
       config.optimization = {

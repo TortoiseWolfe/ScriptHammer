@@ -134,7 +134,7 @@ with:
   <div className="flex flex-col gap-2 sm:flex-row sm:items-center
        sm:gap-x-6">
 
-Then verify: docker compose exec app pnpm run type-check && lint
+Then verify: docker compose exec scripthammer pnpm run type-check && lint
 ```
 
 Pull those targets with `git show origin/<branch>:<path>` so they match the author's tree down to the whitespace.

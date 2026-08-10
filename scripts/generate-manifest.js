@@ -133,7 +133,10 @@ const manifest = {
     },
     {
       src: `${projectConfig.basePath}/screenshots/mobile.png`,
-      sizes: '390x844',
+      // 750x1334, measured. It said 390x844 — a CSS viewport, not the pixel
+      // dimensions of the file. Chrome drops a screenshot whose declared size
+      // does not match the image (#659).
+      sizes: '750x1334',
       type: 'image/png',
       form_factor: 'narrow',
       label: 'Mobile view',

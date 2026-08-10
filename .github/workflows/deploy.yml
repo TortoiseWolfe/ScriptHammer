@@ -202,11 +202,25 @@ jobs:
         env:
           SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
           # How many generations back an asset is carried. Bounds _next/static so
-          # chaining cannot grow it forever: 5 is comfortably wider than any
-          # plausible burst and costs roughly five builds of static output. Do not
-          # lower it to reclaim space without checking it still exceeds the
-          # deploys-per-10-minutes this repo actually does (#548).
-          RETAIN_GENERATIONS: '5'
+          # chaining cannot grow forever.
+          #
+          # WAS 5, AND THE REASONING WAS WRONG. It was sized against "deploys per 10
+          # minutes" — the HTML cache-control window. But the thing being protected
+          # is not a 10-minute window, it is HOW LONG SOMEONE'S TAB HAS BEEN OPEN,
+          # and those are unrelated quantities. On 2026-08-09 production rendered
+          # unstyled for the SIXTH time (#438, #467, #476, #548): five deploys landed
+          # across 22 hours — well-paced by the 10-minute rule — and a visitor
+          # returning the next day asked for CSS that had just aged out. Retention
+          # worked exactly as designed; the design measured the wrong thing.
+          #
+          # 30 covers a normal working week even at an unusually high merge rate.
+          # Measured cost: 3-5 hashed files per generation (17 files bought the old
+          # 5), so ~100 small files against a 131-page export.
+          #
+          # This is a MITIGATION. The recovery that does not depend on any number is
+          # the self-heal in src/app/layout.tsx; the actual fix is #635 — a CDN
+          # serving HTML `no-cache`, which GitHub Pages cannot be configured to do.
+          RETAIN_GENERATIONS: '30'
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

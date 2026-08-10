@@ -45,6 +45,7 @@ const SECTIONS = [
   // already shipped, and admin-dashboard.spec.ts:156 matches a heading against
   // /payment/i. Renaming it here would have been a silent copy change.
   { href: '/admin/payments', label: 'Payments', title: 'Payment Activity' },
+  { href: '/admin/orders', label: 'Orders', title: 'Orders' },
   { href: '/admin/audit', label: 'Audit Trail', title: 'Audit Trail' },
   { href: '/admin/users', label: 'Users', title: 'User Management' },
   { href: '/admin/messaging', label: 'Messaging', title: 'Messaging Overview' },

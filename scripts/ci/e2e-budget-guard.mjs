@@ -30,6 +30,7 @@
  *   E2E_BUDGET_OVERRIDE  a non-empty REASON to bypass; logged as a warning
  *   E2E_BUDGET_DAY       override the daily cap (testing)
  *   E2E_BUDGET_MONTH     override the monthly cap (testing)
+ *   GITHUB_RUN_ID        set by Actions; the run excludes ITSELF from the count
  */
 
 import { pathToFileURL } from 'node:url';
@@ -52,6 +53,19 @@ export const DEFAULT_LIMITS = { day: 10, month: 30 };
 export const WORKFLOW_FILE = 'e2e.yml';
 
 /**
+ * When the Supabase project currently being metered came into service.
+ *
+ * The #567 migration deleted the old project and created `ozbdyopxmeqmwnfsmglp`
+ * around 2026-08-07T06:00Z. Runs before this point were billed to a project that
+ * no longer exists, so counting them tells you nothing about today's quota — see
+ * budgetWindowStart() for the measurement.
+ *
+ * Override with E2E_BUDGET_BACKEND_EPOCH (ISO 8601), or set it empty to fall back
+ * to a pure billing-cycle window.
+ */
+export const BACKEND_EPOCH = '2026-08-07T06:00:00Z';
+
+/**
  * The Supabase billing cycle runs 2nd → 2nd (confirmed from the invoice history:
  * Apr 02, May 02, Jun 02, Jul 02, Aug 02, all $0.00, one per cycle reset).
  *
@@ -72,6 +86,39 @@ export function cycleStart(now) {
   // Before the 2nd we are still inside the cycle that opened last month.
   const start = now.getTime() >= thisMonth ? thisMonth : Date.UTC(y, m - 1, 2);
   return new Date(start).toISOString();
+}
+
+/**
+ * Where the monthly count should actually start: the later of the billing
+ * boundary and the epoch of the backend being metered.
+ *
+ * A quota is a property of a BACKEND, not of a calendar. When the Supabase
+ * project is replaced, runs made against the old one are not evidence about the
+ * new one — the resource they consumed no longer exists.
+ *
+ * Measured 2026-08-08: of 88 counted runs in the 2026-08-02 cycle, **61 predated
+ * the #567 migration** and had been billed to a project deleted on 2026-08-07.
+ * The live project answered HTTP 200 on `/rest/v1` and `/auth/v1/health` and was
+ * not quota-restricted at all — the breaker was refusing on behalf of a backend
+ * that no longer existed, and would have gone on refusing until Sept 2.
+ *
+ * Kept SEPARATE from cycleStart() on purpose: that function means "when did the
+ * billing cycle open", which is still true and still tested. This one means
+ * "how far back is the evidence still about the thing we are metering".
+ *
+ * A future epoch is ignored rather than trusted — it would otherwise start the
+ * window after `now` and count nothing at all, which is a silent open gate.
+ *
+ * @param {Date} now
+ * @param {string|null|undefined} backendEpochIso ISO 8601; empty/invalid disables
+ * @returns {string} ISO timestamp to count from (UTC)
+ */
+export function budgetWindowStart(now, backendEpochIso = BACKEND_EPOCH) {
+  const start = Date.parse(cycleStart(now));
+  const epoch = Date.parse(backendEpochIso ?? '');
+  const usable =
+    Number.isFinite(epoch) && epoch > start && epoch <= now.getTime();
+  return new Date(usable ? epoch : start).toISOString();
 }
 
 /**
@@ -141,28 +188,110 @@ export function evaluate({
   };
 }
 
-/** Count workflow runs created at or after `sinceIso`. Throws on any API problem. */
-export async function countRuns(fetchImpl, { repo, token, sinceIso }) {
-  const url =
-    `https://api.github.com/repos/${repo}/actions/workflows/${WORKFLOW_FILE}/runs` +
-    `?created=%3E%3D${encodeURIComponent(sinceIso)}&per_page=100`;
-  const res = await fetchImpl(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-    },
-  });
-  if (!res.ok) {
-    throw new Error(`GitHub API ${res.status}: ${await res.text()}`);
+const GH_HEADERS = (token) => ({
+  Authorization: `Bearer ${token}`,
+  Accept: 'application/vnd.github+json',
+  'X-GitHub-Api-Version': '2022-11-28',
+});
+
+/** Pages this workflow's runs created at or after `sinceIso`. Throws on any API problem. */
+async function listRuns(fetchImpl, { repo, token, sinceIso, maxPages = 6 }) {
+  const runs = [];
+  for (let page = 1; page <= maxPages; page++) {
+    const url =
+      `https://api.github.com/repos/${repo}/actions/workflows/${WORKFLOW_FILE}/runs` +
+      `?created=%3E%3D${encodeURIComponent(sinceIso)}&per_page=100&page=${page}`;
+    const res = await fetchImpl(url, { headers: GH_HEADERS(token) });
+    if (!res.ok) {
+      throw new Error(`GitHub API ${res.status}: ${await res.text()}`);
+    }
+    const body = await res.json();
+    if (typeof body.total_count !== 'number') {
+      throw new Error('GitHub API response missing total_count');
+    }
+    const batch = Array.isArray(body.workflow_runs) ? body.workflow_runs : [];
+    runs.push(...batch);
+    if (runs.length >= body.total_count || batch.length === 0) break;
   }
-  const body = await res.json();
-  if (typeof body.total_count !== 'number') {
-    throw new Error('GitHub API response missing total_count');
+  return runs;
+}
+
+/**
+ * Did this run actually execute E2E — i.e. did it SPEND Supabase quota?
+ *
+ * A blocked run is `completed`/`failure` with every downstream job `skipped`, because
+ * `build` has `needs: budget`. That is indistinguishable from a genuine test failure by
+ * conclusion alone, so the ambiguous case is the only one that costs an extra API call:
+ *
+ *   success / in-progress / queued  -> it ran (or is running). Count it, no call.
+ *   cancelled                       -> may have run partially. Count it, no call.
+ *   failure                         -> ambiguous. Ask the jobs endpoint.
+ *
+ * Counted conservatively on any doubt, including a jobs-endpoint error: over-counting
+ * costs a delayed run, under-counting costs the quota this guard exists to protect.
+ */
+export async function runConsumedQuota(fetchImpl, { repo, token, run }) {
+  if (run.status !== 'completed') return true;
+  if (run.conclusion !== 'failure') return true;
+
+  try {
+    const res = await fetchImpl(
+      `https://api.github.com/repos/${repo}/actions/runs/${run.id}/jobs?per_page=100`,
+      { headers: GH_HEADERS(token) }
+    );
+    if (!res.ok) return true;
+    const body = await res.json();
+    const jobs = Array.isArray(body.jobs) ? body.jobs : [];
+    // The matrix jobs are named `E2E (<project> <shard>)`. If none of them got past
+    // `skipped`, no browser started and no Supabase request was made.
+    return jobs.some(
+      (j) => /^E2E \(/.test(j.name ?? '') && j.conclusion !== 'skipped'
+    );
+  } catch {
+    return true;
   }
-  // total_count reflects the full filtered set, not just this page, so a busy
-  // window past 100 runs is still counted correctly.
-  return body.total_count;
+}
+
+/**
+ * Count runs since `sinceIso` that actually consumed quota.
+ *
+ * WHY NOT `total_count` (#635-adjacent, found 2026-08-07). The original counted every
+ * workflow-run RECORD in the window, filtered only by creation time. A run this guard
+ * itself blocked at step 0 — zero browsers, zero Supabase requests — was counted exactly
+ * like a full 24-job run.
+ *
+ * That made the guard self-reinforcing: once tripped, every push created another
+ * blocked-but-counted run, so the count climbed on activity that consumed nothing and
+ * could never fall back under the limit while anyone was working. Observed at 49/10 in
+ * 24h against a one-day-old project whose data API was answering 200, not 402 — the
+ * guard was protecting a quota nobody had touched.
+ *
+ * The unit of measure has to be quota spent, not runs recorded.
+ */
+export async function countRuns(
+  fetchImpl,
+  { repo, token, sinceIso, excludeRunId = null }
+) {
+  const runs = await listRuns(fetchImpl, { repo, token, sinceIso });
+  let n = 0;
+  for (const run of runs) {
+    // THE GUARD MUST NOT COUNT ITSELF. Its own run is `in_progress` while the
+    // budget job executes, and runConsumedQuota treats any non-completed run as
+    // having spent quota (correct in general — an in-flight run really might be
+    // testing right now). Applied to itself that is an off-by-one which makes the
+    // effective limit `day - 1`: the guard can never permit a run when the count
+    // sits at limit-1, because adding itself reaches the limit exactly.
+    //
+    // Measured 2026-08-08: a manual read at 15:59Z said 9/10 OK; the budget job on
+    // the run created at 16:00Z reported 10/10 DAY_EXCEEDED and blocked. Nothing
+    // else had run in between. After that run finished with every shard skipped,
+    // the reading returned to 9/10. #644 merged with no E2E behind it because of
+    // this, which is exactly what the merge ordering was meant to avoid.
+    if (excludeRunId != null && String(run.id) === String(excludeRunId))
+      continue;
+    if (await runConsumedQuota(fetchImpl, { repo, token, run })) n++;
+  }
+  return n;
 }
 
 function limitsFromEnv(env) {
@@ -178,11 +307,30 @@ function limitsFromEnv(env) {
 
 async function main() {
   const argv = process.argv.slice(2);
-  const dryRun = argv.includes('--dry-run');
+  // Modes (env E2E_BUDGET_MODE, default "block"):
+  //   block    — over budget is a build failure. The default, because this guard
+  //              exists after CI took production down (#567).
+  //   annotate — surface it loudly (::warning:: + summary) but exit 0.
+  //
+  // Mirrors FLAKY_GATE_MODE in scripts/check-flaky-count.mjs:13-18, deliberately.
+  // The point is de-escalation WITHOUT a code edit: `.github/**` is not in
+  // `paths-ignore`, so editing this file to relax the guard triggers another run of
+  // the very workflow it is blocking. A repo variable can be flipped from a phone.
+  const mode = (process.env.E2E_BUDGET_MODE || 'block').trim().toLowerCase();
+  const dryRun = argv.includes('--dry-run') || mode === 'annotate';
   const env = process.env;
   const repo = env.GITHUB_REPOSITORY;
   const token = env.GITHUB_TOKEN;
   const limits = limitsFromEnv(env);
+  // Empty string is a deliberate opt-out (pure billing-cycle window), so only
+  // an ABSENT variable falls back to the constant.
+  // GitHub sets GITHUB_RUN_ID for the run this job belongs to. Absent locally,
+  // where there is no self to exclude.
+  const selfRunId = env.GITHUB_RUN_ID || null;
+  const backendEpoch =
+    env.E2E_BUDGET_BACKEND_EPOCH === undefined
+      ? BACKEND_EPOCH
+      : env.E2E_BUDGET_BACKEND_EPOCH;
 
   if (!repo || !token) {
     console.error(
@@ -202,11 +350,13 @@ async function main() {
       repo,
       token,
       sinceIso: iso(24 * 60 * 60 * 1000),
+      excludeRunId: selfRunId,
     });
     monthCount = await countRuns(fetch, {
       repo,
       token,
-      sinceIso: cycleStart(new Date(now)),
+      sinceIso: budgetWindowStart(new Date(now), backendEpoch),
+      excludeRunId: selfRunId,
     });
   } catch (err) {
     apiFailed = true;
@@ -227,8 +377,9 @@ async function main() {
   );
   console.log(
     `  this cycle ..... ${apiFailed ? '?' : monthCount} / ${limits.month}` +
-      `   (since ${cycleStart(new Date(now)).slice(0, 10)})`
+      `   (since ${budgetWindowStart(new Date(now), backendEpoch).slice(0, 10)})`
   );
+  console.log(`  mode ........... ${mode}`);
   console.log(`  verdict ........ ${verdict.code}`);
   console.log(`  ${verdict.message}`);
 
@@ -243,7 +394,11 @@ async function main() {
       `::error::E2E blocked by the cloud-quota circuit breaker — ${verdict.message}`
     );
     if (dryRun) {
-      console.log('(--dry-run: would have blocked, exiting 0)');
+      console.log(
+        mode === 'annotate'
+          ? '::warning::E2E_BUDGET_MODE=annotate — over budget, running anyway.'
+          : '(--dry-run: would have blocked, exiting 0)'
+      );
       process.exit(0);
     }
     process.exit(1);

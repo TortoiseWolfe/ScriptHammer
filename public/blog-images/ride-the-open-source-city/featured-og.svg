@@ -1,0 +1,62 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Build All the Games — an open-source Three.js game engine, with a playable 3D city as the demo">
+  <defs>
+    <linearGradient id="rosc-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#27272a"/>
+    </linearGradient>
+    <linearGradient id="rosc-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#b87333"/>
+    </linearGradient>
+    <linearGradient id="rosc-accent2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#rosc-bg)"/>
+
+  <!-- subtle grid texture -->
+  <g opacity="0.06" stroke="#fbbf24" stroke-width="1">
+    <path d="M0 158 H1200 M0 316 H1200 M0 474 H1200"/>
+    <path d="M240 0 V630 M480 0 V630 M720 0 V630 M960 0 V630"/>
+  </g>
+
+  <!-- accent bar -->
+  <rect x="90" y="120" width="72" height="8" rx="4" fill="url(#rosc-accent)"/>
+
+  <!-- Isometric city motif, top-right: massing blocks like the diorama itself.
+       Nudged up and right and scaled to 0.82 because at translate(858 148) the
+       tower collided with the final "s" of "Games" on the second title line. -->
+  <g transform="translate(922 44) scale(0.82)" opacity="0.95">
+    <!-- ground plate -->
+    <path d="M150 232 L272 302 L150 372 L28 302 Z" fill="#3f3f46" opacity="0.55"/>
+    <!-- tall tower -->
+    <path d="M118 150 L170 180 L170 268 L118 238 Z" fill="url(#rosc-accent)"/>
+    <path d="M170 180 L222 150 L222 238 L170 268 Z" fill="#8a5522"/>
+    <path d="M118 150 L170 120 L222 150 L170 180 Z" fill="#fcd34d"/>
+    <!-- mid block -->
+    <path d="M50 214 L96 240 L96 300 L50 274 Z" fill="url(#rosc-accent2)"/>
+    <path d="M96 240 L142 214 L142 274 L96 300 Z" fill="#075985"/>
+    <path d="M50 214 L96 188 L142 214 L96 240 Z" fill="#7dd3fc"/>
+    <!-- low block -->
+    <path d="M186 250 L226 274 L226 318 L186 294 Z" fill="#a1a1aa"/>
+    <path d="M226 274 L266 250 L266 294 L226 318 Z" fill="#52525b"/>
+    <path d="M186 250 L226 226 L266 250 L226 274 Z" fill="#d4d4d8"/>
+  </g>
+
+  <!-- Title -->
+  <text x="90" y="250" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="86" font-weight="800" fill="#fafafa">Why Build One Game</text>
+  <text x="90" y="348" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="86" font-weight="800" fill="url(#rosc-accent)">Build All the Games</text>
+
+  <!-- Subtitle -->
+  <text x="94" y="418" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="34" font-weight="500" fill="#d4d4d8">An open-source <tspan font-style="italic" fill="#fbbf24">Three.js</tspan> game engine — and a</text>
+  <text x="94" y="462" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="34" font-weight="500" fill="#d4d4d8">playable 3D city you can walk right now</text>
+
+  <!-- Footer brand + tags -->
+  <g font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
+    <text x="90" y="560" font-size="28" font-weight="700" fill="#fbbf24">ScriptHammer</text>
+    <text x="368" y="560" font-size="24" font-weight="400" fill="#71717a">React Three Fiber · MIT · asset-free · procedural</text>
+  </g>
+</svg>

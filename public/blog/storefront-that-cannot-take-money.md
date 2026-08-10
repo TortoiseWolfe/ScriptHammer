@@ -11,6 +11,7 @@ tags:
   - postmortem
 categories:
   - engineering
+ogImage: /blog-images/storefront-that-cannot-take-money/featured-og.png
 excerpt: Our pricing page had five working buy buttons and three that said "Coming soon". The five were the problem. A test-mode Stripe key had been live in production the whole time, and every internal signal said sold.
 ---
 

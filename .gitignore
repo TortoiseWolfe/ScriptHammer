@@ -245,3 +245,8 @@ graphify-out/
 /*.webp
 /*.html
 /*.svg
+
+# Emitted by next.config.ts for scripts/check-first-load-budget.mjs (#636).
+# Production builds only; lives at the repo root because that is what crosses
+# the builder/dev container boundary (#293).
+.chunk-modules.json

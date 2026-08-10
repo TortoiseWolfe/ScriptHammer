@@ -182,20 +182,120 @@ test('countRuns throws when total_count is missing', async () => {
   );
 });
 
-test('countRuns returns total_count, not the page length', async () => {
-  // total_count covers the whole filtered set; per_page caps at 100. A busy cycle
-  // past 100 runs must still count correctly.
+/**
+ * THE BUG THIS REPLACES (2026-08-07). countRuns used to return `total_count` — every
+ * workflow-run RECORD in the window. A run this guard itself blocked at step 0 consumed
+ * zero Supabase quota and was counted exactly like a full 24-job run.
+ *
+ * That made the guard self-reinforcing: once tripped, every push added another
+ * blocked-but-counted run, so the count climbed on activity that spent nothing and could
+ * never fall back under the limit while anyone worked. Observed at 49/10 in 24h against
+ * a one-day-old project whose data API answered 200, not 402.
+ *
+ * These tests exist so the unit of measure cannot silently revert to "runs recorded".
+ */
+const runsPage = (runs) => ({
+  ok: true,
+  json: async () => ({ total_count: runs.length, workflow_runs: runs }),
+});
+const jobsPage = (jobs) => ({ ok: true, json: async () => ({ jobs }) });
+
+const BLOCKED = { id: 1, status: 'completed', conclusion: 'failure' };
+const REAL_FAIL = { id: 2, status: 'completed', conclusion: 'failure' };
+const PASSED = { id: 3, status: 'completed', conclusion: 'success' };
+
+/** Routes run-list vs jobs calls; jobs answer per run id. */
+const fetchFor = (runs, jobsById) => async (url) => {
+  if (url.includes('/jobs')) {
+    const id = Number(url.match(/runs\/(\d+)\/jobs/)[1]);
+    return jobsPage(jobsById[id] ?? []);
+  }
+  return runsPage(url.includes('page=1') ? runs : []);
+};
+
+test('a run this guard blocked does NOT count — it spent no quota', async () => {
   const { countRuns } = await import(MOD);
-  const fakeFetch = async () => ({
-    ok: true,
-    json: async () => ({ total_count: 382, workflow_runs: [{}, {}] }),
-  });
-  const n = await countRuns(fakeFetch, {
+  const n = await countRuns(
+    fetchFor([BLOCKED], {
+      // every matrix job skipped: build needs budget, so nothing downstream ran
+      1: [
+        { name: 'E2E (chromium-gen 1/6)', conclusion: 'skipped' },
+        { name: 'E2E (webkit-msg 1/1)', conclusion: 'skipped' },
+      ],
+    }),
+    { repo: 'o/r', token: 't', sinceIso: '2026-08-02' }
+  );
+  assert.strictEqual(n, 0);
+});
+
+test('a run that genuinely failed tests DOES count — it spent quota', async () => {
+  const { countRuns } = await import(MOD);
+  const n = await countRuns(
+    fetchFor([REAL_FAIL], {
+      2: [
+        { name: 'E2E (chromium-gen 1/6)', conclusion: 'failure' },
+        { name: 'E2E (webkit-msg 1/1)', conclusion: 'success' },
+      ],
+    }),
+    { repo: 'o/r', token: 't', sinceIso: '2026-08-02' }
+  );
+  assert.strictEqual(n, 1);
+});
+
+test('blocked and real runs in one window are told apart', async () => {
+  const { countRuns } = await import(MOD);
+  const n = await countRuns(
+    fetchFor([BLOCKED, REAL_FAIL, PASSED], {
+      1: [{ name: 'E2E (chromium-gen 1/6)', conclusion: 'skipped' }],
+      2: [{ name: 'E2E (chromium-gen 1/6)', conclusion: 'failure' }],
+    }),
+    { repo: 'o/r', token: 't', sinceIso: '2026-08-02' }
+  );
+  // BLOCKED excluded; REAL_FAIL and PASSED counted. Not 3.
+  assert.strictEqual(n, 2);
+});
+
+test('a success needs no jobs lookup and still counts', async () => {
+  const { countRuns } = await import(MOD);
+  let jobCalls = 0;
+  const fetchImpl = async (url) => {
+    if (url.includes('/jobs')) {
+      jobCalls++;
+      return jobsPage([]);
+    }
+    return runsPage(url.includes('page=1') ? [PASSED] : []);
+  };
+  const n = await countRuns(fetchImpl, {
     repo: 'o/r',
     token: 't',
     sinceIso: '2026-08-02',
   });
-  assert.strictEqual(n, 382);
+  assert.strictEqual(n, 1);
+  assert.strictEqual(jobCalls, 0, 'unambiguous runs must not cost an API call');
+});
+
+test('counts conservatively when the jobs endpoint fails', async () => {
+  // Under-counting spends the quota this guard protects; over-counting costs a re-run.
+  const { countRuns } = await import(MOD);
+  const fetchImpl = async (url) => {
+    if (url.includes('/jobs')) throw new Error('boom');
+    return runsPage(url.includes('page=1') ? [BLOCKED] : []);
+  };
+  const n = await countRuns(fetchImpl, {
+    repo: 'o/r',
+    token: 't',
+    sinceIso: '2026-08-02',
+  });
+  assert.strictEqual(n, 1);
+});
+
+test('an in-progress run counts without a jobs lookup', async () => {
+  const { countRuns } = await import(MOD);
+  const n = await countRuns(
+    fetchFor([{ id: 9, status: 'in_progress', conclusion: null }], {}),
+    { repo: 'o/r', token: 't', sinceIso: '2026-08-02' }
+  );
+  assert.strictEqual(n, 1);
 });
 
 test('the limits are the measured ones, not round numbers someone liked', async () => {
@@ -205,4 +305,188 @@ test('the limits are the measured ones, not round numbers someone liked', async 
   assert.strictEqual(DEFAULT_LIMITS.month, 30);
   // 2026-08-05 saw 30 runs in one day; 10 stops that at a third.
   assert.strictEqual(DEFAULT_LIMITS.day, 10);
+});
+
+// ── budgetWindowStart — a quota belongs to a BACKEND, not to a calendar (#640).
+//
+// The #567 migration deleted the old Supabase project on 2026-08-07. Of the 88
+// runs counted in the 2026-08-02 cycle, 61 had been billed to that dead project,
+// and the breaker went on refusing on its behalf. Counting evidence about a
+// resource that no longer exists is the bug these cases pin.
+
+test('budgetWindowStart: an epoch inside the cycle wins over the billing boundary', async () => {
+  const { budgetWindowStart } = await import(MOD);
+  assert.strictEqual(
+    budgetWindowStart(new Date('2026-08-08T12:00:00Z'), '2026-08-07T06:00:00Z'),
+    '2026-08-07T06:00:00.000Z'
+  );
+});
+
+test('budgetWindowStart: an epoch BEFORE the cycle does not widen the window', async () => {
+  // The backend predates this cycle, so the billing boundary is the real limit.
+  const { budgetWindowStart } = await import(MOD);
+  assert.strictEqual(
+    budgetWindowStart(new Date('2026-08-08T12:00:00Z'), '2026-06-01T00:00:00Z'),
+    '2026-08-02T00:00:00.000Z'
+  );
+});
+
+test('budgetWindowStart: a FUTURE epoch is ignored, not trusted', async () => {
+  // Otherwise the window starts after `now`, nothing is counted, and the guard
+  // silently opens — the failure mode this whole file exists to prevent.
+  const { budgetWindowStart } = await import(MOD);
+  assert.strictEqual(
+    budgetWindowStart(new Date('2026-08-08T12:00:00Z'), '2027-01-01T00:00:00Z'),
+    '2026-08-02T00:00:00.000Z'
+  );
+});
+
+test('budgetWindowStart: empty or invalid epoch falls back to the billing cycle', async () => {
+  // `null` and empty/garbage strings mean "disable the epoch". `undefined` does
+  // NOT appear here on purpose — it triggers the default parameter, i.e. "use the
+  // shipped epoch", which is the same distinction main() draws when reading
+  // E2E_BUDGET_BACKEND_EPOCH: an ABSENT variable keeps the default, an empty one
+  // opts out. Asserting otherwise here is what caught the ambiguity.
+  const { budgetWindowStart } = await import(MOD);
+  for (const bad of ['', '   ', 'not-a-date', null]) {
+    assert.strictEqual(
+      budgetWindowStart(new Date('2026-08-08T12:00:00Z'), bad),
+      '2026-08-02T00:00:00.000Z',
+      `epoch ${JSON.stringify(bad)} should disable the epoch, not the guard`
+    );
+  }
+});
+
+test('budgetWindowStart: an ABSENT epoch keeps the default, an EMPTY one opts out', async () => {
+  // The pair that makes the distinction above executable rather than a comment.
+  const { budgetWindowStart } = await import(MOD);
+  const now = new Date('2026-08-08T12:00:00Z');
+  assert.strictEqual(budgetWindowStart(now), '2026-08-07T06:00:00.000Z');
+  assert.strictEqual(budgetWindowStart(now, ''), '2026-08-02T00:00:00.000Z');
+});
+
+test('budgetWindowStart: the shipped default reflects the live backend', async () => {
+  const { budgetWindowStart, BACKEND_EPOCH } = await import(MOD);
+  assert.strictEqual(BACKEND_EPOCH, '2026-08-07T06:00:00Z');
+  assert.strictEqual(
+    budgetWindowStart(new Date('2026-08-08T12:00:00Z')),
+    '2026-08-07T06:00:00.000Z'
+  );
+});
+
+test('budgetWindowStart: never returns a window start in the future', async () => {
+  // Property check across the whole cycle rather than one date.
+  const { budgetWindowStart } = await import(MOD);
+  for (let d = 2; d <= 28; d++) {
+    const now = new Date(Date.UTC(2026, 7, d, 9, 0, 0));
+    const got = Date.parse(budgetWindowStart(now));
+    assert.ok(
+      got <= now.getTime(),
+      `window start ${new Date(got).toISOString()} is after now ${now.toISOString()}`
+    );
+  }
+});
+
+// ── the guard must not count ITSELF (#647).
+//
+// Its own run is `in_progress` while the budget job executes, and runConsumedQuota
+// treats any non-completed run as having spent quota — correct in general, an
+// off-by-one when applied to itself. It makes the effective limit `day - 1`: at
+// limit-1 the guard adds itself, reaches the limit exactly, and refuses.
+//
+// Measured 2026-08-08: a manual read at 15:59Z said 9/10 OK; the budget job on the
+// run created at 16:00Z reported 10/10 DAY_EXCEEDED with nothing else in between,
+// and the reading fell back to 9/10 once that run finished with every shard
+// skipped. #644 merged with no E2E behind it because of it.
+
+// Shape must satisfy listRuns(): `ok`, and a body carrying BOTH `total_count` and
+// `workflow_runs`, or it throws before the exclusion is ever reached.
+// `in_progress` is the state that matters here — runConsumedQuota counts any
+// non-completed run as spent, which is precisely why self-counting was an
+// off-by-one rather than a rounding detail.
+const RUNS_FIXTURE = (ids) => ({
+  ok: true,
+  json: async () => ({
+    total_count: ids.length,
+    workflow_runs: ids.map((id) => ({
+      id,
+      status: 'in_progress',
+      conclusion: null,
+    })),
+  }),
+});
+
+test('countRuns EXCLUDES the current run', async () => {
+  const { countRuns } = await import(MOD);
+  const fetchImpl = async () => RUNS_FIXTURE([111, 222, 333]);
+  const n = await countRuns(fetchImpl, {
+    repo: 'o/r',
+    token: 't',
+    sinceIso: '2026-08-07T00:00:00Z',
+    excludeRunId: '222',
+  });
+  assert.strictEqual(n, 2, 'the run doing the asking must not count itself');
+});
+
+test('countRuns counts everything when there is no self to exclude', async () => {
+  // Local/dry-run invocation: GITHUB_RUN_ID is absent, so nothing is excluded.
+  const { countRuns } = await import(MOD);
+  const fetchImpl = async () => RUNS_FIXTURE([111, 222, 333]);
+  for (const exclude of [null, undefined]) {
+    const n = await countRuns(fetchImpl, {
+      repo: 'o/r',
+      token: 't',
+      sinceIso: '2026-08-07T00:00:00Z',
+      excludeRunId: exclude,
+    });
+    assert.strictEqual(n, 3, `excludeRunId=${exclude} should exclude nothing`);
+  }
+});
+
+test('countRuns matches the run id across string/number types', async () => {
+  // GITHUB_RUN_ID arrives as a string; the API returns a number. A strict ===
+  // between them silently excludes nothing and restores the off-by-one.
+  const { countRuns } = await import(MOD);
+  const fetchImpl = async () => RUNS_FIXTURE([111, 222, 333]);
+  const n = await countRuns(fetchImpl, {
+    repo: 'o/r',
+    token: 't',
+    sinceIso: '2026-08-07T00:00:00Z',
+    excludeRunId: 222, // number, while run.id is also a number — and vice versa
+  });
+  assert.strictEqual(n, 2);
+});
+
+test('the off-by-one it fixes: at limit-1, self-counting would refuse', async () => {
+  // The whole defect, end to end. 9 other runs + itself = 10 = the limit.
+  const { countRuns, evaluate, DEFAULT_LIMITS } = await import(MOD);
+  const ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 999];
+  const fetchImpl = async () => RUNS_FIXTURE(ids);
+
+  const counted = await countRuns(fetchImpl, {
+    repo: 'o/r',
+    token: 't',
+    sinceIso: '2026-08-07T00:00:00Z',
+    excludeRunId: '999',
+  });
+  assert.strictEqual(counted, 9);
+  assert.strictEqual(
+    evaluate({ dayCount: counted, monthCount: 0, limits: DEFAULT_LIMITS })
+      .allowed,
+    true,
+    '9 others under a limit of 10 must be allowed'
+  );
+
+  const selfCounted = await countRuns(fetchImpl, {
+    repo: 'o/r',
+    token: 't',
+    sinceIso: '2026-08-07T00:00:00Z',
+  });
+  assert.strictEqual(selfCounted, 10);
+  assert.strictEqual(
+    evaluate({ dayCount: selfCounted, monthCount: 0, limits: DEFAULT_LIMITS })
+      .allowed,
+    false,
+    'counting itself is what produced the observed 10/10 DAY_EXCEEDED'
+  );
 });

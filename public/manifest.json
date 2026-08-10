@@ -87,7 +87,7 @@
     },
     {
       "src": "/ScriptHammer/screenshots/mobile.png",
-      "sizes": "390x844",
+      "sizes": "750x1334",
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Mobile view"

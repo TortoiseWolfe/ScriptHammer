@@ -24,7 +24,7 @@ import {
 } from 'three';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { GroundBlob } from './blobShadow';
-import { getInternalUrl } from '@/config/project.config';
+import { getAssetUrl } from '@/config/project.config';
 import type { EmbodiedController } from '@/lib/cod';
 import type { BikeView } from '@/stage/embodiedWalk';
 
@@ -43,7 +43,13 @@ export default function PlayerCharacter({
   const root = useRef<Group>(null); // placed + yawed at the player
   const inner = useRef<Group>(null); // posed for stance; the model lives inside
   const blobRef = useRef<Mesh>(null); // fake ground shadow, both views
-  const url = getInternalUrl('/models/CesiumMan.glb');
+  // getAssetUrl, NOT getInternalUrl. The latter routes through normalizePagePath,
+  // which appends a trailing slash to anything without a query or hash — correct
+  // for a route under `trailingSlash: true`, fatal for a binary asset. It produced
+  // `/models/CesiumMan.glb/`, which 404s while the slashless form serves 200, and
+  // useGLTF throws that during render straight into the page's error boundary.
+  // `/chatt/?diorama` was a "Page Error" card in production for a day and a half.
+  const url = getAssetUrl('/models/CesiumMan.glb');
   const { scene, animations } = useGLTF(url);
 
   // Clone the skinned scene (drei caches + shares it), enable shadows, then

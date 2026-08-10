@@ -88,6 +88,23 @@ jobs:
       - name: Run script tests (node:test)
         run: pnpm test:scripts
 
+      # #539: `tests/rebrand/test-rebrand.sh` existed and NO workflow ran it, so
+      # the one script every fork depends on had zero CI coverage. It is a
+      # dry-run harness against a temp copy — no network, no writes to the tree,
+      # ~2s. It belongs in the required `Test (20.x)` check because a broken
+      # rebrand is discovered by a stranger, on their repo, after forking.
+      - name: Run rebrand harness
+        run: ./tests/rebrand/test-rebrand.sh
+
+      # #659: the icons are committed output generated from public/favicon.svg.
+      # This fails if any is missing or was hand-edited away from the mark —
+      # which is how CRUDkit's monogram survived in 13 files long enough to
+      # install onto a client's phone. Presence-only for the PNGs: sharp/libvips
+      # do not produce byte-identical output across versions, and a check that
+      # breaks on an unrelated dependency bump is one everybody learns to ignore.
+      - name: Check brand icons match the mark
+        run: pnpm check:icons
+
       - name: Check test coverage
         run: pnpm test:coverage
 
