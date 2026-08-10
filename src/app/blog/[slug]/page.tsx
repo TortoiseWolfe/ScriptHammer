@@ -4,6 +4,7 @@ import { markdownProcessor } from '@/lib/blog/markdown-processor';
 import { tocGenerator } from '@/lib/blog/toc-generator';
 import { seoAnalyzer } from '@/lib/blog/seo-analyzer';
 import { detectedConfig } from '@/config/project-detected';
+import { getProjectConfig } from '@/config/project.config';
 import type { BlogPost } from '@/types/blog';
 import type { Author } from '@/types/author';
 import fs from 'fs/promises';
@@ -11,6 +12,35 @@ import path from 'path';
 import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('app:blog:slug:page');
+
+/**
+ * The canonical origin for this deployment (#665).
+ *
+ * Every other producer — sitemap, robots.txt, the root-layout JSON-LD —
+ * resolves its origin through `getProjectConfig().deployUrl`, which reads
+ * `NEXT_PUBLIC_DEPLOY_URL` first and lowercases the github.io fallback. This
+ * route used to run its own ladder against `NEXT_PUBLIC_BASE_URL`, a variable
+ * nothing else consults and which was never created as a repo variable. The
+ * `||` fallback therefore won on every production build and all 16 posts
+ * stamped canonical/og:url/og:image/JSON-LD on the retired github.io project
+ * URL while the rest of the site was correct — two origins in one document.
+ *
+ * `NEXT_PUBLIC_BASE_URL` stays supported as an explicit per-fork override.
+ */
+function resolveBaseUrl(): string {
+  const override = process.env.NEXT_PUBLIC_BASE_URL?.trim();
+  return (override || getProjectConfig().deployUrl).replace(/\/+$/, '');
+}
+
+/**
+ * Canonical URL for a post, with the trailing slash `next.config.ts` enforces
+ * via `trailingSlash: true`. Emitting the slash-less form made canonical and
+ * og:url 301 to the page that was already serving them, so every scraper
+ * followed a redirect to arrive where it started (#665).
+ */
+function postCanonicalUrl(slug: string): string {
+  return `${resolveBaseUrl()}/blog/${slug}/`;
+}
 
 async function getPost(slug: string): Promise<BlogPost | null> {
   try {
@@ -152,15 +182,17 @@ export default async function BlogPostPage({
   const shareOptions = {
     title: post.title,
     text: post.excerpt || post.title,
-    url: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/blog/${post.slug}`,
+    // Deliberately WITHOUT the trailing slash, unlike postCanonicalUrl(). This
+    // string is also handed to DisqusComments, whose own fallback at
+    // DisqusComments.tsx:70-72 is `https://scripthammer.com/blog/${slug}`.
+    // Matching it byte for byte keeps `page.url` identical for every existing
+    // thread. (Threads key on `page.identifier = slug`, so they would survive
+    // either way — but there is no reason to move the URL.) See #667.
+    url: `${resolveBaseUrl()}/blog/${post.slug}`,
   };
 
   // Generate base URL for JSON-LD
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    (detectedConfig.isGitHub
-      ? `https://${detectedConfig.projectOwner}.github.io/${detectedConfig.projectName}`
-      : detectedConfig.projectUrl);
+  const baseUrl = resolveBaseUrl();
 
   // Generate image URL for JSON-LD
   let ogImagePath = post.metadata?.ogImage || post.seo?.ogImage;
@@ -260,8 +292,14 @@ function generateArticleJsonLd(
       },
     },
     mainEntityOfPage: {
+      // Must equal <link rel="canonical"> exactly — schema.org treats this as
+      // the page's identity, and it is the field that carried the mixed-case
+      // `TortoiseWolfe.github.io` fingerprint in #665. Meta tags came out
+      // lowercased because Next's Metadata resolver normalizes through
+      // `new URL()`; JSON-LD is JSON.stringify'd raw, so it preserved the
+      // original casing and exposed which code path produced it.
       '@type': 'WebPage',
-      '@id': `${baseUrl}/blog/${post.slug}`,
+      '@id': postCanonicalUrl(post.slug),
     },
     keywords: post.metadata?.tags?.join(', '),
     articleSection: post.metadata?.categories?.[0] || 'Technology',
@@ -280,12 +318,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const post = await getPost(slug);
 
-  // Use detected config for dynamic base URL
-  const baseUrl =
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    (detectedConfig.isGitHub
-      ? `https://${detectedConfig.projectOwner}.github.io/${detectedConfig.projectName}`
-      : detectedConfig.projectUrl);
+  const baseUrl = resolveBaseUrl();
 
   if (!post) {
     return {
@@ -335,7 +368,7 @@ export async function generateMetadata({
     creator: post.author.name,
     publisher: detectedConfig.projectName,
     alternates: {
-      canonical: `${baseUrl}/blog/${post.slug}`,
+      canonical: postCanonicalUrl(post.slug),
     },
     other: {
       author: post.author.name,
@@ -356,7 +389,7 @@ export async function generateMetadata({
       authors: [post.author.name],
       tags: post.metadata?.tags,
       section: post.metadata?.categories?.[0] || 'Technology',
-      url: `${baseUrl}/blog/${post.slug}`,
+      url: postCanonicalUrl(post.slug),
       siteName: detectedConfig.projectName,
       locale: 'en_US',
       ...(imageUrl && {
