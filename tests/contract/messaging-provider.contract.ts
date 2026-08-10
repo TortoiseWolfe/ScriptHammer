@@ -123,7 +123,7 @@ export interface ConformanceConfig {
   teardown(h: ConformanceHarness): Promise<void>;
 
   /**
-   * Optional per-backend assertion on HOW a write was refused.
+   * Per-backend assertion on HOW a write was refused.
    *
    * The shared cases below assert the provider-agnostic security property — no
    * row was created. That property holds even if a backend blocks by accident,
@@ -134,13 +134,13 @@ export interface ConformanceConfig {
    * Verified by mutation test: stubbing `HasAcceptedConnection` to `true` left
    * all 25 cases passing.
    *
-   * That masking defeats the premise of the migration — a .NET backend must
-   * re-express each rule EXPLICITLY, because the next backend may have no RLS
-   * underneath. So a backend may additionally assert the SHAPE of its refusal
-   * (.NET: a 4xx from its own check, never a 5xx from an RLS exception).
-   * Supabase omits this: there, RLS IS the enforcement mechanism.
+   * Every runner must classify its refusal. A missing callback silently turns
+   * an unmeasured failure into a pass — exactly the masking this contract is
+   * meant to catch. .NET pins its explicit 4xx check; Supabase pins its
+   * deterministic domain errors from the client-side preflight before RLS can
+   * obscure their cause.
    */
-  assertRefusal?(error: unknown, kind: RefusalKind): void;
+  assertRefusal(error: unknown, kind: RefusalKind): void;
 }
 
 /**
@@ -606,7 +606,8 @@ export function runMessagingProviderContract(config: ConformanceConfig): void {
       let refusal: unknown;
       const created = await h.providerA
         .getOrCreateConversation(h.ctxA, h.pendingUserId)
-        // provider may or may not throw; the row check is authoritative
+        // The row check proves the provider did not create a conversation; the
+        // required callback below also proves it surfaced the expected refusal.
         .catch((e) => {
           refusal = e;
           return null;
@@ -615,7 +616,7 @@ export function runMessagingProviderContract(config: ConformanceConfig): void {
       expect(
         await h.readConversationBetween(h.userAId, h.pendingUserId)
       ).toBeNull();
-      config.assertRefusal?.(refusal, 'pending-connection');
+      config.assertRefusal(refusal, 'pending-connection');
     });
 
     it('C3: with NO connection at all, creating a conversation is refused', async () => {
@@ -631,7 +632,7 @@ export function runMessagingProviderContract(config: ConformanceConfig): void {
       expect(
         await h.readConversationBetween(h.userAId, h.outsiderId)
       ).toBeNull();
-      config.assertRefusal?.(refusal, 'not-connected');
+      config.assertRefusal(refusal, 'not-connected');
     });
 
     it('C3: a self-conversation is refused (no_self_conversation)', async () => {
@@ -644,7 +645,7 @@ export function runMessagingProviderContract(config: ConformanceConfig): void {
         });
       expect(created).toBeNull();
       expect(await h.readConversationBetween(h.userAId, h.userAId)).toBeNull();
-      config.assertRefusal?.(refusal, 'self');
+      config.assertRefusal(refusal, 'self');
     });
   });
 }

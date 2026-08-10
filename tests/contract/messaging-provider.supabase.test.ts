@@ -13,9 +13,11 @@
  * @module tests/contract/messaging-provider.supabase.test
  */
 
+import { expect } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { SupabaseMessagingProvider } from '@/services/messaging/providers/supabase-provider';
+import { ConnectionError, ValidationError } from '@/types/messaging';
 import type {
   AuthContext,
   MessagingDataProvider,
@@ -68,6 +70,9 @@ if (!hasRlsTestEnvironment()) {
     providerName: 'supabase (skipped — no live Supabase)',
     setup: () => Promise.reject(new Error('unreachable')),
     teardown: () => Promise.resolve(),
+    assertRefusal: () => {
+      throw new Error('unreachable: Supabase conformance suite is skipped');
+    },
   });
 } else {
   runMessagingProviderContract({
@@ -110,6 +115,27 @@ if (!hasRlsTestEnvironment()) {
     async teardown(h: ConformanceHarness): Promise<void> {
       const { svc } = h as SupabaseHarness;
       await teardownConformanceFixtures(svc, h);
+    },
+
+    /**
+     * RLS remains the security boundary, but the provider must refuse C3
+     * requests before an INSERT reaches it so the UI gets a stable, actionable
+     * domain error. The focused provider test also pins that preflight call
+     * order; this live assertion verifies the public error contract.
+     */
+    assertRefusal(error: unknown, kind): void {
+      if (kind === 'self') {
+        expect(error).toBeInstanceOf(ValidationError);
+        expect((error as Error).message).toBe(
+          'You cannot start a conversation with yourself'
+        );
+        return;
+      }
+
+      expect(error).toBeInstanceOf(ConnectionError);
+      expect((error as Error).message).toBe(
+        'You must be connected with this user to start a conversation'
+      );
     },
   });
 }
