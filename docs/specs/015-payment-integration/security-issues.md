@@ -40,8 +40,11 @@ export async function getPaymentHistory(userId: string, limit = 20);
 **Files**:
 
 - `getPaymentStatus()` (line 101-111)
-- `cancelPaymentIntent()` (line 117-131)
 - `getPaymentIntent()` (line 207-217)
+
+**Resolved separately**: `cancelPaymentIntent()` was removed in #565. Its
+client-side delete was denied by RLS and could falsely report success; a future
+cancellation flow needs a server-side state transition.
 
 **Issue**: No verification that user owns the payment before operations
 
