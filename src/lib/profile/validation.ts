@@ -15,7 +15,7 @@ export interface ValidationResult {
 
 /**
  * Validates username format
- * Rules: 3-30 chars, alphanumeric + underscore only, no spaces
+ * Rules: 3-30 chars, alphanumeric, underscores, and hyphens; no spaces
  */
 export function validateUsername(username: string): ValidationResult {
   if (!username || username.trim() === '') {
@@ -24,14 +24,7 @@ export function validateUsername(username: string): ValidationResult {
 
   const trimmed = username.trim();
 
-  if (trimmed.length < 3) {
-    return {
-      valid: false,
-      error: 'Username must be between 3 and 30 characters',
-    };
-  }
-
-  if (trimmed.length > 30) {
+  if (trimmed.length < 3 || trimmed.length > 30) {
     return {
       valid: false,
       error: 'Username must be between 3 and 30 characters',
@@ -45,10 +38,11 @@ export function validateUsername(username: string): ValidationResult {
     };
   }
 
-  if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
+  if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) {
     return {
       valid: false,
-      error: 'Username can only contain letters, numbers, and underscores',
+      error:
+        'Username can only contain letters, numbers, underscores, and hyphens',
     };
   }
 
