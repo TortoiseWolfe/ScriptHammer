@@ -1,9 +1,22 @@
 'use client';
 
 import React, { useId } from 'react';
+import { RING_WORDMARK_GLYPHS, RING_WORDMARK_DIAMONDS } from './ringWordmark';
 
 export interface LayeredScriptHammerLogoProps {
   className?: string;
+  /**
+   * Cut "SCRIPTHAMMER.COM" out of the gear ring, as panel 8e does.
+   *
+   * Off by default and it should stay off below ~256px: the ring text is 38u
+   * in a 400u viewBox, so at the 30px nav size it is roughly 3px tall and
+   * reads as noise on the teeth. Switch it on for the hero and anywhere else
+   * the mark is rendered large.
+   *
+   * Safe to use anywhere despite the source export needing Oswald — the glyphs
+   * here are baked to paths, so there is no font dependency.
+   */
+  wordmark?: boolean;
   /**
    * Run the strike animation. Defaults to true — the mark animates everywhere
    * it appears, including the 30px nav instance.
@@ -44,16 +57,30 @@ export interface LayeredScriptHammerLogoProps {
  * will not change what this renders. The geometry below and those files both
  * derive from the same export.
  *
- * ## The wordmark is deliberately absent
+ * ## The wordmark is opt-in, by size
  *
- * 8e carries `mask="url(#cut-word)"`, which cuts "SCRIPTHAMMER.COM" out of the
- * gear ring using live Oswald text. Dropped here for the same reason as in
- * public/favicon.svg: it renders at 30px in the nav, where ring text is
- * illegible, and a shipped mark must never depend on a font being present.
+ * 8e cuts "SCRIPTHAMMER.COM" out of the gear ring via `mask="url(#cut-word)"`,
+ * using live Oswald text. Two separate problems came with that, and only one
+ * of them still applies:
+ *
+ *   - The font dependency is GONE. `./ringWordmark` holds the same glyphs baked
+ *     to paths, so `wordmark` is safe to use anywhere without Oswald present.
+ *   - Legibility is not. The ring text is 38u in a 400u viewBox, so the 30px
+ *     nav instance renders it about 3px tall, where it reads as noise on the
+ *     teeth rather than as a word.
+ *
+ * So it is a prop rather than a default: on for the hero, off for the nav and
+ * sign-in. Turn it on wherever the mark is drawn at roughly 256px or more.
  */
 export const LayeredScriptHammerLogo: React.FC<
   LayeredScriptHammerLogoProps
-> = ({ className = '', animated = true, pauseOnHover = true, ariaLabel }) => {
+> = ({
+  className = '',
+  animated = true,
+  pauseOnHover = true,
+  wordmark = false,
+  ariaLabel,
+}) => {
   // Unique per instance. The home page renders this twice (nav + hero), and
   // duplicate ids would make every <use href="#…"> and mask resolve to
   // whichever instance mounted first.
@@ -111,6 +138,22 @@ export const LayeredScriptHammerLogo: React.FC<
             <path fill="#9C7844" d="M252,64 L294,64 L280,154 L247,154 Z" />
           </g>
         </g>
+        {/* The ring wordmark, as a cut-out. Black removes the gear beneath, so
+            the letters read as negative space — which is why they must be a
+            mask and not ink. Only built when asked for. */}
+        {wordmark ? (
+          <mask id={id('word')}>
+            <rect width="400" height="400" fill="#fff" />
+            <g fill="#000">
+              {RING_WORDMARK_GLYPHS.map(([transform, d], i) => (
+                <path key={i} transform={transform} d={d} />
+              ))}
+              {RING_WORDMARK_DIAMONDS.map((d, i) => (
+                <path key={`d${i}`} d={d} />
+              ))}
+            </g>
+          </mask>
+        ) : null}
         {/* Clear-space halo: keeps the mallet readable against the gear teeth
             down to ~18px. Pure stroked paths — no text. */}
         <mask id={id('cut')}>
@@ -142,7 +185,13 @@ export const LayeredScriptHammerLogo: React.FC<
               transform="translate(6,7)"
               fill="#2E353B"
             />
-            <use href={`#${id('gear')}`} fill="#B6BEC6" />
+            {/* Only the steel face is cut — the offset shadow gear above stays
+                solid, so the letters show dark against it. */}
+            <use
+              href={`#${id('gear')}`}
+              fill="#B6BEC6"
+              mask={wordmark ? `url(#${id('word')})` : undefined}
+            />
           </g>
           <g className={anim('sh-mark-anvil')}>
             <g transform="translate(200 200) scale(.52) translate(-200 -200)">
