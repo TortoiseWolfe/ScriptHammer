@@ -32,7 +32,7 @@ This contains Brett Fisher's consolidated best practices from DockerCon talks (2
 
 ## Primary Responsibilities
 
-1. **Container Health** - Monitor wireframe-viewer and other services
+1. **Container Health** - Monitor scripthammer and other services
 2. **Log Analysis** - Check container logs for errors
 3. **Resource Monitoring** - Track CPU/memory usage
 4. **Service Recovery** - Restart stuck containers
@@ -45,16 +45,16 @@ This contains Brett Fisher's consolidated best practices from DockerCon talks (2
 docker compose ps
 
 # View logs (last 50 lines)
-docker compose logs --tail=50 wireframe-viewer
+docker compose logs --tail=50 scripthammer
 
 # Restart a service
-docker compose restart wireframe-viewer
+docker compose restart scripthammer
 
 # Check resource usage
 docker stats --no-stream
 
 # Scan for vulnerabilities
-docker scout cves myapp:latest
+docker scout cves "$(docker compose config --images scripthammer)"
 ```
 
 ## Persistence Rule
