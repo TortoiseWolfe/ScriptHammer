@@ -8,6 +8,7 @@ vi.mock('@/hooks/useUserProfile', () => ({
   useUserProfile: () => ({
     profile: {
       id: 'test-user-id',
+      username: 'testuser',
       display_name: 'Test User',
       bio: 'Test bio',
       avatar_url: null,
@@ -82,6 +83,7 @@ describe('AccountSettings Accessibility', () => {
     expect(forms.length).toBeGreaterThanOrEqual(2); // Profile and Password forms
 
     // Verify labeled inputs
+    const usernameInput = container.querySelector('#username-input');
     const displayNameInput = container.querySelector('#displayname-input');
     const bioTextarea = container.querySelector('#bio-textarea');
     const passwordInput = container.querySelector('#new-password-input');
@@ -89,6 +91,11 @@ describe('AccountSettings Accessibility', () => {
       '#confirm-password-input'
     );
 
+    expect(usernameInput).toBeInTheDocument();
+    expect(usernameInput).toHaveAttribute(
+      'aria-describedby',
+      'username-description'
+    );
     expect(displayNameInput).toBeInTheDocument();
     expect(bioTextarea).toBeInTheDocument();
     expect(passwordInput).toBeInTheDocument();
