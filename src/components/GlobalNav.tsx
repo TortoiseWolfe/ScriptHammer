@@ -411,7 +411,7 @@ export function GlobalNav() {
                   image (#379). */}
               <span className="bg-base-100 sh-groove flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
                 <span className="h-[30px] w-[30px]">
-                  <LayeredScriptHammerLogo size={30} speed="slow" />
+                  <LayeredScriptHammerLogo />
                 </span>
               </span>
               <span className="hidden sm:block">

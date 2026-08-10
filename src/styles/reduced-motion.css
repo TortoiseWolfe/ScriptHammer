@@ -35,3 +35,47 @@
 [data-reduce-motion='true'] .animate-ping {
   animation: none !important;
 }
+
+/**
+ * The brand mark (panel 8e). Its five groups carry `sh-mark-*` utilities whose
+ * OS-level fallback lives with the keyframes in globals.css; these rules are
+ * the other half — the in-app accessibility toggle.
+ *
+ * This matters more than the list above: the mark renders in the global nav on
+ * EVERY page, so it is the one animation a user cannot navigate away from.
+ * Before this, the logo honoured NEITHER trigger — SpinningLogo set
+ * `style.animation` inline, which no rule without `!important` can override,
+ * and its keyframes were absent from this file entirely.
+ *
+ * The sparks are hidden rather than merely stopped: frozen mid-flight they
+ * read as stray marks floating beside the mallet.
+ */
+[data-reduce-motion='true'] .sh-mark-jolt,
+[data-reduce-motion='true'] .sh-mark-spin,
+[data-reduce-motion='true'] .sh-mark-anvil,
+[data-reduce-motion='true'] .sh-mark-swing,
+[data-reduce-motion='true'] .sh-mark-spark {
+  animation: none !important;
+}
+
+[data-reduce-motion='true'] .sh-mark-spark {
+  opacity: 0 !important;
+}
+
+/**
+ * SpinningLogo's global keyframes, which were never listed here. It applies
+ * them through an inline `style.animation`, so `animation-name: none` alone
+ * loses to the inline declaration — the shorthand reset plus !important is
+ * what actually stops it.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .sh-spin-clockwise,
+  .sh-spin-counter-clockwise {
+    animation: none !important;
+  }
+}
+
+[data-reduce-motion='true'] .sh-spin-clockwise,
+[data-reduce-motion='true'] .sh-spin-counter-clockwise {
+  animation: none !important;
+}

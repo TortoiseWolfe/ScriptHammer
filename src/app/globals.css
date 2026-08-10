@@ -1047,6 +1047,186 @@ p:not([class*='text-']) {
   animation-play-state: paused !important;
 }
 
+/* ---------------------------------------------------------------------------
+   Brand mark motion — ported verbatim from the Claude Design "ScriptHammer
+   Logo v3" export, panel 8e ("Motion — gear turns, mallet strikes the
+   brackets"). Timings and keyframe stops are the designer's; do not retune
+   them here without going back to docs/design/brand-marks/.
+
+   The strike is one 1.55s beat shared by the mallet, the brackets, the sparks
+   and the whole-mark recoil; only the gear runs on its own 14s rotation.
+
+   Every group sets `transform-box: view-box` AND an explicit
+   `transform-origin`. Without both, Firefox and Safari resolve the origin
+   against the element's own bounding box rather than the SVG viewBox and
+   rotate about the wrong point — it still animates, it just animates wrongly,
+   which no assertion catches.
+
+   Reduced motion is handled twice, deliberately: the media query below covers
+   the OS setting, and src/styles/reduced-motion.css covers the in-app
+   accessibility toggle (`[data-reduce-motion='true']`). This mark renders in
+   the global nav on EVERY page, so a fallback that only honours one trigger
+   would leave the other half of users with perpetual motion they asked to
+   stop.
+   --------------------------------------------------------------------------- */
+
+@keyframes sh-mark-jolt {
+  0%,
+  36% {
+    transform: translate(0, 0);
+  }
+  39% {
+    transform: translate(-1.6px, 1.6px);
+  }
+  44% {
+    transform: translate(0.6px, -0.6px);
+  }
+  50%,
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes sh-mark-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes sh-mark-anvil {
+  0%,
+  34% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  39% {
+    filter: brightness(1.85);
+    transform: scale(1.035);
+  }
+  47% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+  52% {
+    filter: brightness(1.4);
+    transform: scale(1.018);
+  }
+  60%,
+  100% {
+    filter: brightness(1);
+    transform: scale(1);
+  }
+}
+
+@keyframes sh-mark-spark {
+  0%,
+  36% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50%,
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+@keyframes sh-mark-swing {
+  0% {
+    transform: rotate(0deg);
+  }
+  26% {
+    transform: rotate(26deg);
+  }
+  38% {
+    transform: rotate(-13deg);
+  }
+  45% {
+    transform: rotate(-6deg);
+  }
+  52% {
+    transform: rotate(-11deg);
+  }
+  70% {
+    transform: rotate(-2deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@utility sh-mark-jolt {
+  transform-box: view-box;
+  transform-origin: 200px 200px;
+  animation: sh-mark-jolt 1.55s cubic-bezier(0.3, 0, 0.2, 1) infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility sh-mark-spin {
+  transform-box: view-box;
+  transform-origin: 200px 200px;
+  animation: sh-mark-spin 14s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility sh-mark-anvil {
+  transform-box: view-box;
+  transform-origin: 200px 200px;
+  animation: sh-mark-anvil 1.55s cubic-bezier(0.3, 0, 0.2, 1) infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@utility sh-mark-spark {
+  transform-box: view-box;
+  transform-origin: 158px 244px;
+  animation: sh-mark-spark 1.55s cubic-bezier(0.3, 0, 0.2, 1) infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    /* The sparks exist only as part of the strike. Frozen mid-flight they read
+       as stray marks, so they are hidden outright rather than paused. */
+    opacity: 0;
+  }
+}
+
+@utility sh-mark-swing {
+  transform-box: view-box;
+  transform-origin: 175.3px 227.5px;
+  animation: sh-mark-swing 1.55s cubic-bezier(0.3, 0, 0.2, 1) infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+/* Pausing the mark needs a descendant selector: the five animated groups are
+   nested inside the SVG, and `:hover` only matches the elements actually under
+   the pointer. The existing `.pause-on-hover` rule pauses the hovered element
+   itself, which is not the same thing here. */
+.sh-mark-pause:hover
+  :is(
+    .sh-mark-jolt,
+    .sh-mark-spin,
+    .sh-mark-anvil,
+    .sh-mark-spark,
+    .sh-mark-swing
+  ) {
+  animation-play-state: paused;
+}
+
 /* Leaflet Map Styles */
 /* Note: Leaflet CSS is imported in map components that use it */
 

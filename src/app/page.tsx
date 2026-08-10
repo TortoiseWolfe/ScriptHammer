@@ -195,7 +195,7 @@ export default function Home() {
           }}
         >
           <div className="h-[88%] w-[88%]">
-            <LayeredScriptHammerLogo speed="slow" pauseOnHover />
+            <LayeredScriptHammerLogo pauseOnHover />
           </div>
         </div>
 
