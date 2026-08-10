@@ -238,7 +238,10 @@ const nextConfig: NextConfig = {
             },
             // Common chunks used across multiple pages
             common: {
-              name: 'common',
+              // Do not give this first-party group a fixed name. A fixed name
+              // merges every module used by two chunks into one entry-reachable
+              // chunk, including code that is only shared by dynamic 3D routes.
+              // Let webpack name common chunks by their entrypoint graph instead.
               minChunks: 2,
               type: /javascript/, // same reason as `vendor` (#625)
               priority: 5,
