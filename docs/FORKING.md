@@ -14,6 +14,8 @@ cd YourProjectName
 
 # 3. Create environment file
 cp .env.example .env
+# macOS/Linux: .env will hold service and payment credentials; make it owner-only now.
+chmod 600 .env
 # Edit .env - set UID and GID (run: id -u && id -g)
 
 # 4. Start Docker
@@ -236,6 +238,7 @@ After forking, verify everything works:
 - [ ] No "ScriptHammer" references in `package.json`
 - [ ] `git remote -v` shows your repository URL
 - [ ] `.env` has `COMPOSE_PROJECT_NAME=<yourproject>` (not `scripthammer`)
+- [ ] `.env` is owner-only (`chmod 600 .env`) before it contains credentials
 - [ ] `public/CNAME` contains your domain (or is absent if no custom domain)
 - [ ] `docker compose ps` shows your project name in container names
 - [ ] GitHub Pages deployment succeeds (if enabled)
