@@ -212,29 +212,49 @@ describe('parseTasksFile', () => {
     }
   });
 
-  it.fails(
-    'counts a task ONCE even when its id is mentioned more than once (#546)',
-    async () => {
-      // `content.match(/T\d{3}/g)` counts MENTIONS, not tasks, and the completed
-      // loop then re-scans the whole document per mention. A tasks.md that names
-      // T001 in both a summary line and its checklist row inflates totalTasks and
-      // completedTasks together — the percentage still looks plausible, which is
-      // why nobody noticed.
-      //
-      // it.fails asserts the defect is STILL THERE. Fixing #546 turns this red
-      // and forces the entry out, which `skip` would not.
-      vi.stubGlobal(
-        'fetch',
-        mockFetch({
-          '/specs/016-sprint-3-5/tasks.md': {
-            ok: true,
-            body: 'Tasks: Sprint 3.5\nSummary: T001 covers the parser.\n- [x] T001 done\n',
-          },
-        })
-      );
-      const result = await parseTasksFile();
-      const s = result.sprints?.find((x) => x.name.startsWith('Sprint 3.5'));
-      expect(s!.totalTasks).toBe(1);
-    }
-  );
+  it('counts a task ONCE even when its id is mentioned more than once (#546)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      mockFetch({
+        '/specs/016-sprint-3-5/tasks.md': {
+          ok: true,
+          body: 'Tasks: Sprint 3.5\nSummary: T001 covers the parser.\n- [x] T001 done\n',
+        },
+      })
+    );
+    const result = await parseTasksFile();
+    const s = result.sprints?.find((x) => x.name.startsWith('Sprint 3.5'));
+    expect(s!.totalTasks).toBe(1);
+    expect(s!.completedTasks).toBe(1);
+    expect(s!.percentage).toBe(100);
+  });
+
+  it('ignores quoted checkbox examples when calculating completion', async () => {
+    vi.stubGlobal(
+      'fetch',
+      mockFetch({
+        '/specs/016-sprint-3-5/tasks.md': {
+          ok: true,
+          body: [
+            'Tasks: Sprint 3.5',
+            'Summary: T001 and T002 are pending.',
+            '> - [x] T001 quoted example, not a completed task.',
+            '- [ ] T001 actual task',
+            '- [ ] T002 another actual task',
+          ].join('\n'),
+        },
+      })
+    );
+
+    const result = await parseTasksFile();
+    const sprint35 = result.sprints?.find((s) =>
+      s.name.startsWith('Sprint 3.5')
+    );
+    expect(sprint35).toMatchObject({
+      totalTasks: 2,
+      completedTasks: 0,
+      percentage: 0,
+      status: 'not-started',
+    });
+  });
 });

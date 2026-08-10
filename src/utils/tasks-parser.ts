@@ -112,19 +112,15 @@ export async function parseTasksFile(): Promise<TaskProgress> {
       /Sprint 3\.5[^:]*:|Tasks: Sprint 3\.5/
     );
     if (sprint35HeaderMatch) {
-      // Count T tasks (T001, T002, etc.)
-      const taskMatches = content.match(/T\d{3}/g) || [];
-      const totalTasks = taskMatches.length;
-
-      // Count completed tasks (look for [x] pattern)
-      let completedTasks = 0;
-      for (const taskId of taskMatches) {
-        // Pattern: - [x] T001 (completed checkbox pattern)
-        const taskPattern = new RegExp(`\\[x\\]\\s*${taskId}`, 'i');
-        if (taskPattern.test(content)) {
-          completedTasks++;
-        }
-      }
+      // Count checklist rows, rather than every mention of an ID. Task IDs also
+      // appear in summaries and dependency notes, neither of which is a task.
+      const taskRows = [
+        ...content.matchAll(/^\s*[-*+]\s+\[([ xX])\]\s+(T\d{3})\b/gm),
+      ];
+      const totalTasks = taskRows.length;
+      const completedTasks = taskRows.filter(
+        ([, checkbox]) => checkbox.toLowerCase() === 'x'
+      ).length;
 
       const percentage =
         totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
