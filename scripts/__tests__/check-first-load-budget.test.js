@@ -80,13 +80,13 @@ test('FAILS when the three library is in a non-3D route initial chunk', () => {
   assert.match(r.out, /\/blog/);
 });
 
-test('PASSES when app code merely mentions a three class name', () => {
-  // The 2026-08-07 false failure, expressed. The module is first-party and does
-  // not pull the library; only its log string ever said "WebGLRenderer".
+test('PASSES when non-3D app code merely mentions a three class name', () => {
+  // The 2026-08-07 false failure, expressed. The gate sees module identity,
+  // not minified strings, so a normal app module's log text cannot mimic three.
   const r = run({
     chunkModules: {
       ...THREE_CHUNK,
-      'static/chunks/common-x.js': ['react', 'src/lib/cod/materials/index.js'],
+      'static/chunks/common-x.js': ['react', 'src/components/StatusCard.tsx'],
     },
     routes: { '/blog': ['chunks/common-x.js'] },
   });
@@ -94,7 +94,7 @@ test('PASSES when app code merely mentions a three class name', () => {
   assert.doesNotMatch(r.out, /❌/);
 });
 
-test('warns (does not fail) on first-party 3D code in an initial chunk', () => {
+test('FAILS on first-party 3D code in a non-3D initial chunk', () => {
   const r = run({
     chunkModules: {
       ...THREE_CHUNK,
@@ -102,9 +102,24 @@ test('warns (does not fail) on first-party 3D code in an initial chunk', () => {
     },
     routes: { '/blog': ['chunks/common-x.js'] },
   });
-  assert.strictEqual(r.code, 0);
-  assert.match(r.out, /::warning::/);
+  assert.strictEqual(r.code, 1);
+  assert.match(r.out, /first-party 3D code ships in the initial payload/);
   assert.match(r.out, /src\/lib\/cod/);
+});
+
+test('allows the pure renderer URL parser that GlobalNav loads on every route', () => {
+  // This one `src/twin/` module has no renderer imports. GlobalNav uses it to
+  // select the right map link state, so classifying it by directory would turn
+  // every non-3D page into a false failure. The exception is intentionally exact.
+  const r = run({
+    chunkModules: {
+      ...THREE_CHUNK,
+      'static/chunks/app/layout-x.js': ['src/twin/renderer-select.ts'],
+    },
+    routes: { '/blog': ['chunks/app/layout-x.js'] },
+  });
+  assert.strictEqual(r.code, 0);
+  assert.doesNotMatch(r.out, /❌ first-party 3D code ships/);
 });
 
 test('allows three on genuinely 3D routes', () => {
