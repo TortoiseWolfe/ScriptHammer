@@ -3,6 +3,23 @@
 import React, { useId } from 'react';
 import { RING_WORDMARK_GLYPHS, RING_WORDMARK_DIAMONDS } from './ringWordmark';
 
+/**
+ * Comic-ink keyline. The brand fills are fixed and do not follow the theme, so
+ * on the ten pure-white themes the beech reads 1.57:1 and the steel 1.88:1 —
+ * the mark dissolves. A dark keyline gives it definition that does not depend
+ * on fill-versus-ground at all: 12.44:1 on white, and inert on dark themes
+ * where the fills already carry ~9:1 and need no help.
+ *
+ * The INTERNAL lines are the part that works on all 35 themes, because they
+ * separate shape from shape rather than shape from ground.
+ *
+ * This is a legibility decision, not a compliance one — WCAG exempts logotypes
+ * and nothing in this repo gates the mark. See docs/design/brand-marks/PROVENANCE.md.
+ */
+const INK = '#2E353B';
+const KEYLINE = 5;
+const SILHOUETTE = 7;
+
 export interface LayeredScriptHammerLogoProps {
   className?: string;
   /**
@@ -108,9 +125,19 @@ export const LayeredScriptHammerLogo: React.FC<
         <path
           id={id('gear')}
           fillRule="evenodd"
-          d="M170.4,47.8 L172.7,5.9 L227.3,5.9 L229.6,47.8 A155,155 0 0 1 250.5,53.4L250.5,53.4 L273.4,18.3 L320.7,45.5 L301.7,83 A155,155 0 0 1 317,98.3L317,98.3 L354.5,79.3 L381.7,126.6 L346.6,149.5 A155,155 0 0 1 352.2,170.4L352.2,170.4 L394.1,172.7 L394.1,227.3 L352.2,229.6 A155,155 0 0 1 346.6,250.5L346.6,250.5 L381.7,273.4 L354.5,320.7 L317,301.7 A155,155 0 0 1 301.7,317L301.7,317 L320.7,354.5 L273.4,381.7 L250.5,346.6 A155,155 0 0 1 229.6,352.2L229.6,352.2 L227.3,394.1 L172.7,394.1 L170.4,352.2 A155,155 0 0 1 149.5,346.6L149.5,346.6 L126.6,381.7 L79.3,354.5 L98.3,317 A155,155 0 0 1 83,301.7L83,301.7 L45.5,320.7 L18.3,273.4 L53.4,250.5 A155,155 0 0 1 47.8,229.6L47.8,229.6 L5.9,227.3 L5.9,172.7 L47.8,170.4 A155,155 0 0 1 53.4,149.5L53.4,149.5 L18.3,126.6 L45.5,79.3 L83,98.3 A155,155 0 0 1 98.3,83L98.3,83 L79.3,45.5 L126.6,18.3 L149.5,53.4 A155,155 0 0 1 170.4,47.8 Z M200,104 A96,96 0 1 1 200,296 A96,96 0 1 1 200,104 Z"
+          d="M170.4,35.6 L172.7,14 L227.3,14 L229.6,35.6 A167,167 0 0 1 256.6,42.9 L269.4,25.3 L316.6,52.5 L307.8,72.4 A167,167 0 0 1 327.6,92.2 L347.5,83.4 L374.7,130.6 L357.1,143.4 A167,167 0 0 1 364.4,170.4 L386,172.7 L386,227.3 L364.4,229.6 A167,167 0 0 1 357.1,256.6 L374.7,269.4 L347.5,316.6 L327.6,307.8 A167,167 0 0 1 307.8,327.6 L316.6,347.5 L269.4,374.7 L256.6,357.1 A167,167 0 0 1 229.6,364.4 L227.3,386 L172.7,386 L170.4,364.4 A167,167 0 0 1 143.4,357.1 L130.6,374.7 L83.4,347.5 L92.2,327.6 A167,167 0 0 1 72.4,307.8 L52.5,316.6 L25.3,269.4 L42.9,256.6 A167,167 0 0 1 35.6,229.6 L14,227.3 L14,172.7 L35.6,170.4 A167,167 0 0 1 42.9,143.4 L25.3,130.6 L52.5,83.4 L72.4,92.2 A167,167 0 0 1 92.2,72.4 L83.4,52.5 L130.6,25.3 L143.4,42.9 A167,167 0 0 1 170.4,35.6 Z M200,78 A122,122 0 1 1 200,322 A122,122 0 1 1 200,78 Z"
         />
-        <g id={id('tags')}>
+        {/* Keyline weights are pre-divided by the scale of the group each
+            symbol is instanced into, because stroke-width scales with the
+            transform. `tags` renders at .68 and `mallet` at .46, so a nominal
+            7.35 and 10.87 both land at KEYLINE (5u) on the canvas. Quoting the
+            same number in all three places would give three different lines. */}
+        <g
+          id={id('tags')}
+          stroke={INK}
+          strokeWidth={KEYLINE / 0.68}
+          strokeLinejoin="round"
+        >
           <path
             fill="#EBB042"
             d="M143.8,64.3 L45.3,200 L94.7,200 L193.3,64.3 Z"
@@ -129,7 +156,12 @@ export const LayeredScriptHammerLogo: React.FC<
           />
         </g>
         <g id={id('mallet')}>
-          <g transform="rotate(42 200 200)">
+          <g
+            transform="rotate(42 200 200)"
+            stroke={INK}
+            strokeWidth={KEYLINE / 0.46}
+            strokeLinejoin="round"
+          >
             <path fill="#B08F5E" d="M178,154 L222,154 L215,332 L185,332 Z" />
             <path fill="#7E6038" d="M208,154 L222,154 L215,332 L206,332 Z" />
             <path fill="#E6CB99" d="M106,64 L132,36 L268,36 L294,64 Z" />
@@ -154,31 +186,10 @@ export const LayeredScriptHammerLogo: React.FC<
             </g>
           </mask>
         ) : null}
-        {/* Clear-space halo: keeps the mallet readable against the gear teeth
-            down to ~18px. Pure stroked paths — no text. */}
-        <mask id={id('cut')}>
-          <rect width="400" height="400" fill="#fff" />
-          <g
-            transform="translate(200 200) scale(.28) translate(-200 -200)"
-            stroke="#000"
-            strokeWidth="46"
-            strokeLinejoin="round"
-            fill="#000"
-          >
-            <path
-              transform="rotate(42 200 200)"
-              d="M178,154 L222,154 L215,332 L185,332 Z"
-            />
-            <path
-              transform="rotate(42 200 200)"
-              d="M106,36 L294,36 L280,154 L120,154 Z"
-            />
-          </g>
-        </mask>
       </defs>
 
       <g className={anim('sh-mark-jolt')}>
-        <g mask={`url(#${id('cut')})`}>
+        <g>
           <g className={anim('sh-mark-spin')}>
             <use
               href={`#${id('gear')}`}
@@ -190,11 +201,14 @@ export const LayeredScriptHammerLogo: React.FC<
             <use
               href={`#${id('gear')}`}
               fill="#B6BEC6"
+              stroke={INK}
+              strokeWidth={SILHOUETTE}
+              strokeLinejoin="round"
               mask={wordmark ? `url(#${id('word')})` : undefined}
             />
           </g>
           <g className={anim('sh-mark-anvil')}>
-            <g transform="translate(200 200) scale(.52) translate(-200 -200)">
+            <g transform="translate(200 200) scale(.68) translate(-200 -200)">
               <use href={`#${id('tags')}`} />
             </g>
           </g>
@@ -203,21 +217,27 @@ export const LayeredScriptHammerLogo: React.FC<
         {/* Sparks at the point of contact. Hidden entirely under reduced
             motion — frozen mid-flight they read as stray marks. */}
         <g className={anim('sh-mark-spark')} opacity={animated ? undefined : 0}>
+          <g stroke={INK} strokeWidth="9.5" strokeLinecap="round" fill="none">
+            <path d="M264.75,163.25 L252.75,151.25" />
+            <path d="M272.75,158.25 L270.75,142.25" />
+            <path d="M281.75,167.25 L295.75,160.25" />
+            <path d="M264.75,179.25 L250.75,186.25" />
+          </g>
           <g
             stroke="#FFE9A8"
-            strokeWidth="4.5"
+            strokeWidth="5.5"
             strokeLinecap="round"
             fill="none"
           >
-            <path d="M150,236 L138,224" />
-            <path d="M158,231 L156,215" />
-            <path d="M167,240 L181,233" />
-            <path d="M150,252 L136,259" />
+            <path d="M264.75,163.25 L252.75,151.25" />
+            <path d="M272.75,158.25 L270.75,142.25" />
+            <path d="M281.75,167.25 L295.75,160.25" />
+            <path d="M264.75,179.25 L250.75,186.25" />
           </g>
         </g>
 
         <g className={anim('sh-mark-swing')}>
-          <g transform="translate(200 200) scale(.28) translate(-200 -200)">
+          <g transform="translate(200 200) scale(.46) translate(-200 -200)">
             <use href={`#${id('mallet')}`} />
           </g>
         </g>

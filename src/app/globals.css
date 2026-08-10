@@ -1140,19 +1140,19 @@ p:not([class*='text-']) {
     transform: rotate(0deg);
   }
   26% {
-    transform: rotate(26deg);
+    transform: rotate(-26deg);
   }
   38% {
-    transform: rotate(-13deg);
+    transform: rotate(13deg);
   }
   45% {
-    transform: rotate(-6deg);
+    transform: rotate(6deg);
   }
   52% {
-    transform: rotate(-11deg);
+    transform: rotate(11deg);
   }
   70% {
-    transform: rotate(-2deg);
+    transform: rotate(2deg);
   }
   100% {
     transform: rotate(0deg);
@@ -1191,7 +1191,7 @@ p:not([class*='text-']) {
 
 @utility sh-mark-spark {
   transform-box: view-box;
-  transform-origin: 158px 244px;
+  transform-origin: 271px 167px;
   animation: sh-mark-spark 1.55s cubic-bezier(0.3, 0, 0.2, 1) infinite;
 
   @media (prefers-reduced-motion: reduce) {
@@ -1204,7 +1204,7 @@ p:not([class*='text-']) {
 
 @utility sh-mark-swing {
   transform-box: view-box;
-  transform-origin: 175.3px 227.5px;
+  transform-origin: 159.37px 245.12px;
   animation: sh-mark-swing 1.55s cubic-bezier(0.3, 0, 0.2, 1) infinite;
 
   @media (prefers-reduced-motion: reduce) {

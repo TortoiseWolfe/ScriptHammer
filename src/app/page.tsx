@@ -180,11 +180,17 @@ export default function Home() {
         aria-labelledby="hero-heading"
         className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-10 px-4 pt-12 pb-10 sm:px-6 lg:grid-cols-[352px_1fr] lg:gap-13 lg:px-8 lg:pt-16"
       >
-        {/* The logo medallion: a circular WELL with an accent glow, holding
-            the three layered SVGs. The design specifies all of this —
-            scripthammer-logo.svg at 308px over script-tags.svg at 192px over
-            printing-mallet.svg at 128px — which is exactly what
-            LayeredScriptHammerLogo already renders. */}
+        {/* The logo medallion: a circular WELL with an accent glow, holding the
+            brand mark at ~310px — the one placement large enough for the ring
+            wordmark, so it is the only call site passing `wordmark`.
+
+            This comment used to claim the component rendered the comp's ratios
+            "exactly". It did not: docs/design/2a specifies brackets at 0.505 and
+            mallet at 0.368 of the gear, and the component shipped 0.42 and
+            0.249. The 2026-08 rebalance to .68/.46 is what finally made the two
+            agree — see docs/design/brand-marks/PROVENANCE.md. It is also no
+            longer three layered SVGs; the mark is one inline SVG so its parts
+            can animate independently. */}
         <div
           className="relative mx-auto flex aspect-square w-full max-w-[352px] items-center justify-center rounded-full lg:mx-0"
           style={{
