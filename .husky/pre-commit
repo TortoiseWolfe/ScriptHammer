@@ -14,8 +14,9 @@ run_gitleaks_staged() {
     node_modules/.bin/gitleaks protect --staged --config .gitleaks.toml --verbose
     return $?
   else
-    echo "⚠️  gitleaks not found, skipping secret scan"
-    return 0
+    echo "❌ gitleaks is required but was not found on PATH or in node_modules/.bin."
+    echo "Install project dependencies or make gitleaks available before committing."
+    return 1
   fi
 }
 

@@ -64,7 +64,7 @@
     "sprint:tasks": "node scripts/sprint-planning.js tasks",
     "sprint:archive": "node scripts/sprint-planning.js archive",
     "sprint:status": "node scripts/sprint-planning.js status",
-    "prepare": "husky",
+    "prepare": "node scripts/configure-git-hooks.js",
     "lint:staged": "lint-staged",
     "type-check": "tsc --noEmit",
     "ci:validate": "./scripts/validate-ci.sh",
