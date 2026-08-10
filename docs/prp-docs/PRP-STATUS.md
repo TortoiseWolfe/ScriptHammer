@@ -13,6 +13,33 @@
 
 ---
 
+## 2026-08-10 — Federating Community Platform — candidacy spec landed (authored 2026-07-18)
+
+- **`docs/prp-docs/fediverse-community-platform-prd.md`** — 189 lines. Should the
+  Chattanooga co-op's community need be met by **building** a forum + fediverse
+  engine on ScriptHammer, or by **adopting** mature software (Discourse /
+  Friendica) and spending the build budget on the one non-commodity asset, the
+  place-anchored digital twin?
+- **Status: Draft v0.1, decision tool — NOT a mandate, and it argues against its
+  own subject.** The finding is that ScriptHammer's real data plane (group
+  messaging, the dual-implemented RLS authorization contract, admin/audit shell,
+  .NET backend, shipped 3D twin) shrinks the _first third_ of a forum build and
+  does approximately nothing for the schedule-dominant two thirds — the
+  self-governance triad, email deliverability, and an open-ended trust-and-safety
+  product. Build ≈ **32-44 person-months**; Discourse + Friendica self-hosted on
+  infrastructure already running is live in **weeks**, with CVE, interop and
+  trust-safety risk borne upstream.
+- **Recommendation: decouple and adopt.** The twin — the actual differentiator —
+  embeds against Discourse just as well as against a bespoke engine, so it does
+  not justify the build on its own.
+- **No feature number, no SpecKit chain, deliberately.** This is a decision
+  document, not a spec. It earns a number only if the decision goes the other way.
+- Landed 2026-08-10 from an unmerged branch found during a branch sweep; it was
+  the only one of 75 holding unshipped work. Indexed here so it is not an orphan
+  in a directory instead of an orphan on a branch.
+
+---
+
 ## 2026-08-06 — Commerce Catalog & Storefront (feature 050) — PRD landed + corrected
 
 - **`docs/prp-docs/commerce-catalog-prd.md`** — server-authoritative product
