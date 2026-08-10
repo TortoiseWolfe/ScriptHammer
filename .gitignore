@@ -45,8 +45,9 @@ yarn-error.log*
 # NOTE: .env.local-supabase is intentionally TRACKED — it holds only safe demo
 # local values (no secrets) and is the source for `pnpm run use:local`.
 
-# Filled-in Edge Function secrets for `pnpm supabase:secrets` (real Vault values).
-# The .example.json placeholder IS tracked; the filled copy must NEVER be committed.
+# Legacy JSON input for `pnpm supabase:secrets --config` (the default input is .env).
+# The .example.json placeholder IS tracked; a filled copy must stay owner-only and
+# must NEVER be committed.
 scripts/supabase/edge-function-secrets.json
 
 # vercel

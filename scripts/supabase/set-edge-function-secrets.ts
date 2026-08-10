@@ -8,16 +8,16 @@
  * scripts/supabase/set-auth-config.ts: the SUPABASE_ACCESS_TOKEN + project ref
  * already in .env.
  *
- * Reads a desired-state JSON (default: scripts/supabase/edge-function-secrets.json,
- * which is gitignored — copy edge-function-secrets.example.json and fill it),
- * fetches the current secret NAMES from the Management API, prints a name-level
- * diff (NEW / UPDATE / unchanged — values are never printed), and optionally
- * writes them with --apply.
+ * Reads a desired-state config (default: `.env`, using an allow-list of Edge
+ * Function keys; a legacy JSON sidecar remains supported with --config), fetches
+ * the current secret NAMES from the Management API, prints a name-level diff
+ * (NEW / UPDATE / unchanged — values are never printed), and optionally writes
+ * them with --apply.
  *
  * Usage:
  *   pnpm supabase:secrets                      # dry-run (default) — name-level diff
  *   pnpm supabase:secrets --apply              # POST the secrets and verify
- *   pnpm supabase:secrets --config path.json   # override config path
+ *   pnpm supabase:secrets --config path        # optional .env or JSON sidecar
  *
  * Env:
  *   SUPABASE_ACCESS_TOKEN              — Management API token (dashboard → account/tokens)
@@ -25,7 +25,8 @@
  *
  * SECURITY: the GET endpoint returns plaintext secret values. This script NEVER
  * prints a value — only names and a masked last-4 fingerprint of the desired
- * value, so it is safe to run in a shared terminal or paste its output.
+ * value, so it is safe to run in a shared terminal or paste its output. On POSIX,
+ * it also refuses config files with group or other permissions; use `chmod 600`.
  *
  * Note: the Management API rejects any secret name starting with `SUPABASE_`
  * (those — SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY — are
@@ -33,7 +34,7 @@
  * up-front and refuses with a clear message rather than a confusing 400.
  */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
@@ -80,6 +81,45 @@ function parseArgs(argv: string[]): CliArgs {
 
 type DesiredSecrets = Record<string, string>;
 type RemoteSecret = { name: string; value: string; updated_at?: string };
+
+/**
+ * Refuse to inspect a config whose POSIX permissions expose it beyond its owner.
+ *
+ * A gitignored file can still be read by other local accounts, backups, or sync
+ * processes. Check metadata before reading its contents or consulting credentials,
+ * so an unsafe file cannot cause a request to the Management API.
+ */
+function assertPrivateConfigFile(configPath: string): void {
+  // Windows ACLs are not represented by POSIX mode bits. The caller's platform
+  // security model must enforce access there rather than treating a synthetic mode
+  // as meaningful.
+  if (process.platform === 'win32') return;
+
+  let mode: number;
+  try {
+    mode = statSync(configPath).mode & 0o777;
+  } catch (err) {
+    console.error(
+      `✗ Could not inspect permissions for ${configPath}: ${(err as Error).message}`
+    );
+    console.error(
+      '  Create the config first, then restrict it with: chmod 600 <path>'
+    );
+    process.exit(1);
+  }
+
+  if ((mode & 0o077) === 0) return;
+
+  console.error(
+    `✗ Refusing to read ${configPath}: mode 0${mode.toString(8).padStart(3, '0')} permits group or other access.`
+  );
+  console.error(
+    '  This config may contain payment and service credentials. Make it owner-only:'
+  );
+  console.error(`  chmod 600 ${JSON.stringify(configPath)}`);
+  console.error('  No config was read and no Management API request was made.');
+  process.exit(1);
+}
 
 /** Last-4 fingerprint that never reveals the secret. */
 function fingerprint(value: string): string {
@@ -181,7 +221,7 @@ const EDGE_SECRET_KEYS = [
 ] as const;
 
 /**
- * Read the desired secrets from `.env`.
+ * Read the desired secrets from `.env` by default.
  *
  * WAS a separate `edge-function-secrets.json`. That file had to be kept in sync with
  * `.env` by hand, sat at mode 644 (#614), and split the answer to "where are this
@@ -189,7 +229,9 @@ const EDGE_SECRET_KEYS = [
  * could not be scripted, and why the OAuth and Turnstile secrets were nowhere at all
  * when the Supabase project was deleted (#567).
  *
- * A `.json` path still works, so an operator with an existing sidecar is not broken.
+ * A `.json` path still works when explicitly supplied with --config, so an operator
+ * with an existing sidecar is not broken. Every config is checked before it is read:
+ * on POSIX it must have no group or other permissions (for example, `chmod 600`).
  */
 function readDesiredSecrets(configPath: string): DesiredSecrets {
   const raw = readFileSync(configPath, 'utf8');
@@ -233,6 +275,10 @@ function readDesiredSecrets(configPath: string): DesiredSecrets {
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
+
+  // This must stay before credential validation and readDesiredSecrets(): otherwise
+  // an unsafe config can be read or a request can begin before we refuse it.
+  assertPrivateConfigFile(args.configPath);
 
   const token = process.env.SUPABASE_ACCESS_TOKEN;
   // Mirror set-auth-config.ts: accept either ref var name.
