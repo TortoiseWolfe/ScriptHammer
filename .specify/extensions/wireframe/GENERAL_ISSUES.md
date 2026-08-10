@@ -60,17 +60,17 @@ record legitimately touches the operator story.
 `consent`. The last three matter for commerce and privacy screens — write "permission card"
 or "privacy choice" instead of "consent", and describe an overlay by what it does.
 
-## `sync-wireframes.sh` does NOT create `includes/`
+## `includes/` must be copied once per feature
 
-`wireframe-config.yml` says it copies shared chrome into each feature's `wireframes/includes/`
-automatically. **It does not.** The script only mirrors an _already-existing_ per-feature
-`includes/` out to `public/`, guarded by `if [ -d "$wf_dir/includes" ]` with a `|| true`.
+`scripts/sync-wireframes.sh` only mirrors an _already-existing_ per-feature `includes/`
+out to `public/`, guarded by `if [ -d "$wf_dir/includes" ]` with a `|| true`. It never
+creates source files under `features/`.
 
 If the directory is missing the guard silently skips, `public/wireframes/<slug>/includes/` is
 never created, and every `<use href="includes/…">` 404s in the viewer with nothing reporting
 it. **Copy `includes/` manually** from
 `features/foundation/003-user-authentication/wireframes/includes/` when starting a feature's
-first wireframe.
+first wireframe. `wireframe-config.yml` records the same setup requirement.
 
 Unnoticed for a long time because every existing feature dir already carried a byte-identical
 copy; feature 050 was the first to hit the empty case.
