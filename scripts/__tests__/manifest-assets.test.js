@@ -170,6 +170,68 @@ describe('manifest assets', () => {
     );
   });
 
+  test('the component and public/favicon.svg draw the same mark', () => {
+    // Two independent render paths, no shared source. The inline component is
+    // what the site shows; public/favicon.svg is what scripts/generate-icons.js
+    // turns into all 19 icons. Nothing made them agree, so inking one and not
+    // the other would ship a different logo in the browser tab than on the page
+    // — the #659 shape, one emitter lying about the brand.
+    const svg = fs.readFileSync(path.join(PUBLIC, 'favicon.svg'), 'utf8');
+    const tsx = fs.readFileSync(
+      path.join(
+        ROOT,
+        'src/components/atomic/SpinningLogo/LayeredScriptHammerLogo.tsx'
+      ),
+      'utf8'
+    );
+
+    const drift = [];
+    const gearSvg = svg.match(/id="gear-body"[^>]*d="([^"]+)"/)?.[1];
+    const gearTsx = tsx.match(/id=\{id\('gear'\)\}[\s\S]*?d="([^"]+)"/)?.[1];
+    if (!gearSvg || !gearTsx)
+      drift.push('gear path not found in one of the two files');
+    else if (gearSvg !== gearTsx) drift.push('gear path differs');
+
+    // Composition scales, quoted differently in each file but must resolve equal.
+    for (const [what, re1, re2] of [
+      [
+        'brackets scale',
+        /scale\(\.(\d+)\)[^>]*><use href="#tags"/,
+        /scale\(\.(\d+)\) translate\(-200 -200\)">\s*<use href=\{`#\$\{id\('tags'\)\}`\}/,
+      ],
+      [
+        'mallet scale',
+        /scale\(\.(\d+)\)[^>]*><use href="#mallet"/,
+        /scale\(\.(\d+)\) translate\(-200 -200\)">\s*<use href=\{`#\$\{id\('mallet'\)\}`\}/,
+      ],
+    ]) {
+      const a = svg.match(re1)?.[1];
+      const b = tsx.match(re2)?.[1];
+      if (a !== b) drift.push(`${what}: favicon .${a} vs component .${b}`);
+    }
+
+    // Both must carry the comic keyline, or one ships uninked.
+    const inkSvg = (svg.match(/#2E353B/g) || []).length;
+    const inkTsx = /const INK = '#2E353B'/.test(tsx);
+    if (inkSvg < 3)
+      drift.push(`favicon.svg has ${inkSvg} ink references, expected >= 3`);
+    if (!inkTsx) drift.push('component has no INK constant');
+
+    // Neither may keep the clear-space halo; the keyline replaced it.
+    if (svg.includes('cut-lockup'))
+      drift.push('favicon.svg still has the cut-lockup halo');
+    if (tsx.includes("id('cut')"))
+      drift.push('component still has the cut-lockup halo');
+
+    assert.deepStrictEqual(
+      drift,
+      [],
+      `The inline component and public/favicon.svg have drifted. Regenerate via ` +
+        `docs/design/brand-marks/tools/rebalance.py and re-derive both:\n  ` +
+        drift.join('\n  ')
+    );
+  });
+
   test('no shipped brand SVG carries live text', () => {
     // Two failures, one check.
     //

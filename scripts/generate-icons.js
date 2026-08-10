@@ -151,12 +151,17 @@ function parseSource(svg) {
 /**
  * Shrink the source viewBox to the mark's actual ink.
  *
- * WHY THIS IS NOT OPTIONAL. A hand-drawn mark usually floats in whitespace —
- * `public/favicon.svg` fills just 45.6% x 46.7% of its own 512 viewBox. Nesting
- * it verbatim multiplies that margin by the tile inset, and the first render of
- * this script produced a maskable icon whose mallet was a speck in the middle
- * of a navy square. Trimming first means the inset percentages below mean what
- * they say, for this mark and for whatever a fork points `--source` at.
+ * WHY THIS IS NOT OPTIONAL. A hand-drawn mark usually floats in whitespace, and
+ * nesting it verbatim multiplies that margin by the tile inset — the first
+ * render of this script produced a maskable icon whose mallet was a speck in
+ * the middle of a navy square. Trimming first means the inset percentages below
+ * mean what they say, for this mark and for whatever a fork points `--source`
+ * at.
+ *
+ * (This used to cite "45.6% x 46.7% of its own 512 viewBox" as the motivating
+ * number. Both figures were fossils of the pre-v3 CRUDkit art — today's source
+ * is a 400 viewBox filled to 98.54%. No code ever read them, but a stale number
+ * in a docblock is read by people, which is worse.)
  *
  * Measured by rasterising and trimming transparent edges, because computing a
  * true bounding box from arbitrary SVG paths (with transforms, strokes and

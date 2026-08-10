@@ -63,15 +63,23 @@ for run in layout:
         total += 1
     groups.append('      <g fill="#000">\n        ' + "\n        ".join(parts) + "\n      </g>")
 
+src = open("source.svg", encoding="utf-8").read()
+
+# The diamond separators are READ FROM THE SOURCE, never hardcoded here. They
+# used to be literals, which meant that moving the ring (as the 2026-08 rebalance
+# did, r125 -> r144.5) silently re-emitted the OLD diamonds into the new mark —
+# a wrong output with no error. Anything positional in this file must come from
+# the source it is deriving.
+src_mask = re.search(r'<mask id="cut-word">(.*?)</mask>', src, re.S).group(1)
+diamonds = re.findall(r'<path fill="#000" d="[^"]+"\s*/?>(?:</path>)?', src_mask)
+assert len(diamonds) == 2, f"expected 2 diamond separators in the source mask, found {len(diamonds)}"
+
 mask_body = (
     '      <rect width="400" height="400" fill="#fff"/>\n'
     + "\n".join(groups)
     + "\n"
-    '      <path fill="#000" d="M325,191 L334,200 L325,209 L316,200 Z"/>\n'
-    '      <path fill="#000" d="M75,191 L84,200 L75,209 L66,200 Z"/>'
+    + "\n".join("      " + d for d in diamonds)
 )
-
-src = open("source.svg", encoding="utf-8").read()
 out = re.sub(
     r'(<mask id="cut-word">).*?(</mask>)',
     lambda m: m.group(1) + "\n" + mask_body + "\n    " + m.group(2),
