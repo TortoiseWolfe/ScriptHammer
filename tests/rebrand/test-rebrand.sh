@@ -308,6 +308,38 @@ test_attribution_preserved() {
     cd "$REPO_ROOT"
 }
 
+##
+# #659: a rebrand that silently keeps the upstream icons is how CRUDkit's `CK`
+# monogram installed onto phones from a live client site, through two rebrands.
+# The script cannot draw a logo, so the contract is: WARN when no mark is given,
+# and regenerate from the mark when one is. Both halves are asserted, because a
+# warning that stops printing is the same silent failure wearing a fix.
+##
+test_brand_icons() {
+    run_test "test_brand_icons"
+    setup_temp_dir
+
+    local out
+    out=$("$TEMP_DIR/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --force 2>&1 || true)
+
+    if echo "$out" | grep -q "YOUR APP ICONS ARE STILL"; then
+        log_pass "Warns when no --icon is given"
+    else
+        log_fail "Missing-icon warning" "a warning that the icons are unchanged" "$out"
+    fi
+
+    # And with a mark: --icon must reject a non-SVG rather than copy it into
+    # place, since the assets are generated at eight sizes.
+    out=$("$TEMP_DIR/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --force --icon "$TEMP_DIR/README.md" 2>&1 || true)
+    if echo "$out" | grep -q -- "--icon must be an SVG"; then
+        log_pass "Rejects a non-SVG mark"
+    else
+        log_fail "Non-SVG --icon" "an error naming the SVG requirement" "$out"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
 test_rerebrand_detection() {
     run_test "test_rerebrand_detection"
 
@@ -370,6 +402,7 @@ run_all_tests() {
     test_dry_run_no_changes
     test_rerebrand_detection
     test_attribution_preserved
+    test_brand_icons
 
     echo ""
     echo "========================================"
@@ -404,6 +437,7 @@ if [ $# -eq 1 ]; then
             ;;
         test_attribution_preserved)
             test_attribution_preserved
+    test_brand_icons
             ;;
         *)
             echo "Unknown test: $1"

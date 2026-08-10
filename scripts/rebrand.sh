@@ -18,6 +18,11 @@
 #   --keep-cname          Do not update public/CNAME file (keep existing domain)
 #   --preserve-ssh        Keep SSH format for git remote (if currently SSH)
 #   --preserve-attribution No-op; attribution is always kept (rebrand:keep)
+#   --icon <mark.svg>     Replace public/favicon.svg with your mark and rebuild
+#                         every PWA/favicon asset from it. WITHOUT THIS, YOUR
+#                         FORK KEEPS THE TEMPLATE'S ICONS (#659) — a rebrand
+#                         cannot draw a logo, and CRUDkit's monogram reached a
+#                         live site because nothing here said so.
 #   --help                Show this help message
 #
 # Exit Codes:
@@ -473,6 +478,54 @@ update_git_remote() {
 }
 
 # Update .env.example with new project name
+##
+# Regenerate every PWA/favicon asset from the fork's own brand mark (#659).
+#
+# A rebrand is string substitution, and a logo is not a string — so before this
+# existed, the icons were simply never touched and every fork installed onto
+# phones wearing the upstream monogram. CRUDkit's `CK` reached a live client
+# site that way, through two rebrands, because nothing here looked at an image
+# and nothing said so.
+#
+# With --icon, the mark is copied over `public/favicon.svg` (the single source
+# `generate-icons.js` reads) and the whole set is rebuilt. Without it, this is a
+# no-op on purpose — inventing a logo is not this script's job — and the summary
+# prints a warning instead of leaving the gap silent.
+##
+update_brand_icons() {
+    if [ -z "${BRAND_ICON:-}" ]; then
+        log_verbose "No --icon given; PWA icons left as-is (warned in summary)"
+        return 0
+    fi
+
+    if [ ! -f "$BRAND_ICON" ]; then
+        log_error "--icon file not found: $BRAND_ICON"
+        exit 1
+    fi
+    case "$BRAND_ICON" in
+        *.svg) ;;
+        *)
+            log_error "--icon must be an SVG (got: $BRAND_ICON). Icons are generated at eight sizes, so the mark has to be vector."
+            exit 1
+            ;;
+    esac
+
+    if [ "$DRY_RUN" = true ]; then
+        log_verbose "[DRY-RUN] Would copy $BRAND_ICON to public/favicon.svg and regenerate all icons"
+        return 0
+    fi
+
+    cp "$BRAND_ICON" "$REPO_ROOT/public/favicon.svg"
+    # Run through node directly rather than a package manager: this may run
+    # before dependencies are installed, and the only runtime need is sharp,
+    # which the script itself reports on if missing.
+    if ! (cd "$REPO_ROOT" && node scripts/generate-icons.js); then
+        log_error "Icon generation failed. public/favicon.svg was replaced; run 'pnpm run generate:icons' once dependencies are installed."
+        exit 1
+    fi
+    FILES_MODIFIED=$((FILES_MODIFIED + 17))
+}
+
 update_env_example() {
     local env_file="$REPO_ROOT/.env.example"
 
@@ -527,6 +580,18 @@ main() {
             --preserve-attribution)
                 PRESERVE_ATTRIBUTION=true
                 shift
+                ;;
+            --icon)
+                # #659: this script had NO icon handling whatsoever — zero
+                # matches for `icon`, `.svg` or `logo` — so every fork kept the
+                # upstream brand mark on its home screen. That is how CRUDkit's
+                # monogram reached a live client site through two rebrands.
+                BRAND_ICON="${2:-}"
+                if [ -z "$BRAND_ICON" ]; then
+                    log_error "--icon requires a path to an SVG mark"
+                    exit 1
+                fi
+                shift 2
                 ;;
             -*)
                 log_error "Unknown option: $1"
@@ -637,6 +702,10 @@ main() {
     echo "Updating .env.example..."
     update_env_example
 
+    echo ""
+    echo "Updating brand icons..."
+    update_brand_icons
+
     # Summary
     END_TIME=$(date +%s)
     ELAPSED=$((END_TIME - START_TIME))
@@ -656,6 +725,23 @@ main() {
     else
         echo -e "${GREEN}REBRAND COMPLETE${NC}"
         echo ""
+        # #659: the loudest thing this script can say, because it is the one
+        # thing a rebrand CANNOT do for you. A logo is not a string substitution,
+        # so silence here means the fork ships the upstream mark — which is
+        # exactly what happened: CRUDkit's monogram survived two rebrands and
+        # installed onto phones from a live client site. Say it or repeat it.
+        if [ -n "${BRAND_ICON:-}" ]; then
+            echo -e "${GREEN}  Brand mark:${NC} regenerated all PWA icons from ${BRAND_ICON}"
+        else
+            echo -e "${YELLOW}  ⚠  YOUR APP ICONS ARE STILL ${ORIGINAL_NAME}'S.${NC}"
+            echo "     A rebrand cannot draw a logo. Until you replace it, every"
+            echo "     home-screen install and browser tab shows the template's mark."
+            echo ""
+            echo "     Fix it with either:"
+            echo "       ./scripts/rebrand.sh … --icon path/to/your-mark.svg"
+            echo "       cp your-mark.svg public/favicon.svg && pnpm run generate:icons"
+            echo ""
+        fi
         echo "Next steps:"
         echo "  1. Run 'docker compose up --build' to rebuild with new configuration"
         # NOT 'exec ${SANITIZED_NAME}' — a build in the dev container fights the

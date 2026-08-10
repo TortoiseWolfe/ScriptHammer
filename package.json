@@ -76,6 +76,8 @@
     "validate:structure": "node scripts/validate-structure.js",
     "generate:component": "plop component",
     "generate:blog": "node scripts/generate-blog-data.js",
+    "generate:icons": "node scripts/generate-icons.js",
+    "check:icons": "node scripts/generate-icons.js --check",
     "test:e2e": "playwright test",
     "test:visual": "playwright test --config playwright.visual.config.ts",
     "test:a11y": "pa11y-ci --config config/pa11yci.json",
