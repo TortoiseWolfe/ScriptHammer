@@ -490,6 +490,21 @@ Apply this any time test code sets `scrollTop` and expects a scroll-event-driven
 - **Never leave unmerged branches or open PRs sitting around** between work items. Merge or close one before starting the next.
 - **Avoid stacked PRs** unless dependency is unavoidable. When a parent PR merges with `delete_branch_on_merge=true`, GitHub auto-closes any child PR using that parent as its base (known footgun — happened to PR #87 yesterday). Re-target the child to `main` and reopen.
 
+### Environment guards have a direction
+
+Before adding a `NODE_ENV`, hostname, or `localhost` guard, state which direction it
+has:
+
+- A **dev-only convenience**—for example verbose logging, an overlay, or extra error
+  detail—may be limited to development.
+- A **protection**—for example keeping a service worker out of framework router traffic—must
+  protect production too. Never narrow it to development or `localhost`; that makes the
+  user-facing environment the exceptional unprotected case.
+
+#450 was this exact service-worker failure: the router bypass applied only on localhost, so
+production was the only host where a failed worker fetch could break navigation. If a second
+protection-shaped environment guard appears, re-audit the pattern and consider a lint rule.
+
 ### CI logs API ≠ UI
 
 - **Authoritative state**: `gh run view <id> --json status,conclusion,jobs` or REST API
