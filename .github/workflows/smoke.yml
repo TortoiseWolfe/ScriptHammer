@@ -63,6 +63,30 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # THE UNSTYLED-PRODUCTION DETECTOR. First, because it is the failure this site
+      # has actually shipped most often and the only one a visitor cannot work around.
+      #
+      # Production has gone unstyled SEVEN times — #438, #467, #476, #548, #650 and
+      # twice since. Every single time the detector was the owner opening a browser
+      # and seeing a white page with a giant logo. That is not monitoring; that is a
+      # person doing a check's job, and being asked to screenshot it as proof.
+      #
+      # Nothing already in place can see it:
+      #   - the rest of this @smoke suite fetches CURRENT html, whose CSS is fresh by
+      #     construction, so the failure is structurally invisible to it;
+      #   - `check-stale-html.mjs` proves retention works, but against a SIMULATED
+      #     deploy in CI — it never touches the real site;
+      #   - `retain-previous-assets.mjs` PRINTS "retained 40 asset(s)" and is believed.
+      #     Nothing has ever verified those 40 are reachable afterwards.
+      #
+      # This reads the ledger the deploy just published and asserts every promised
+      # file is actually served. A 404 there means someone holding that HTML is
+      # looking at an unstyled page right now.
+      - name: Retained assets are still served (unstyled-production detector)
+        env:
+          SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
+        run: node scripts/ci/check-retained-assets.mjs "${SITE:-https://scripthammer.com}"
+
       # Runs BEFORE the browser suite: it is cheap, and if production is pointed at
       # the wrong backend every test below is meaningless.
       #
