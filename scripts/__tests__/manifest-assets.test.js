@@ -170,24 +170,66 @@ describe('manifest assets', () => {
     );
   });
 
-  test('no shipped icon carries a text monogram', () => {
-    // The #659 failure itself: `CK` (CRUDkit) and `C` were drawn as <text> in 13
-    // committed SVGs, and `000` in two placeholders. A brand mark is artwork;
-    // a letter rendered by the icon generator is a monogram inherited from
-    // whoever the template was forked from.
+  test('no shipped brand SVG carries live text', () => {
+    // Two failures, one check.
+    //
+    // #659: `CK` (CRUDkit) and `C` were drawn as <text> in 13 committed SVGs,
+    // and `000` in two placeholders. A brand mark is artwork; a letter left in
+    // by the icon generator is a monogram inherited from whoever the template
+    // was forked from.
+    //
+    // The v3 import: the gear and lockup exports cut "SCRIPTHAMMER.COM" out of
+    // the ring with live <textPath> in Oswald 700. That renders correctly only
+    // where Oswald is loaded — inside an <img>, a favicon, or a vector editor
+    // the renderer substitutes a default sans and squeezes it to
+    // textLength="300". Measured, that is 5.5% of pixels wrong versus a correct
+    // render. public/scripthammer-wordmark.svg carries the same wordmark baked
+    // to paths and must stay that way.
+    //
+    // This used to sweep only `icon*.svg`, which left favicon.svg — the SOURCE
+    // of the whole icon matrix — unguarded, along with apple-touch-icon.svg and
+    // both logo assets.
+    const BRAND_SVG = (name) =>
+      name.endsWith('.svg') &&
+      (name.startsWith('icon') ||
+        name.startsWith('favicon') ||
+        name.startsWith('apple-touch-icon') ||
+        name.startsWith('scripthammer-') ||
+        name === 'printing-mallet.svg' ||
+        name === 'script-tags.svg');
+
+    const checked = [];
     const offenders = [];
     for (const name of fs.readdirSync(PUBLIC)) {
-      if (!name.startsWith('icon') || !name.endsWith('.svg')) continue;
-      const svg = fs.readFileSync(path.join(PUBLIC, name), 'utf8');
+      if (!BRAND_SVG(name)) continue;
+      checked.push(name);
+      // Strip comments first: the files document this very rule, and a naive
+      // grep would flag the documentation instead of a defect.
+      const svg = fs
+        .readFileSync(path.join(PUBLIC, name), 'utf8')
+        .replace(/<!--[\s\S]*?-->/g, '');
       const text = svg.match(/<text[\s\S]*?<\/text>/);
       if (text) offenders.push(`${name}: ${text[0].slice(0, 60)}…`);
     }
 
+    // COVERAGE FLOOR. Everything above is conditional on finding files, so a
+    // renamed asset or a changed prefix would make this pass by checking
+    // nothing — the #396 shape. 20 is MEASURED, not chosen. Raise it
+    // deliberately; never lower it to make a run pass.
+    assert.ok(
+      checked.length >= 20,
+      `Only ${checked.length} brand SVGs were checked, down from 20. Either an ` +
+        `asset was renamed out of the filter or this probe stopped looking. ` +
+        `Do not lower the floor.\nChecked: ${checked.join(', ')}`
+    );
+
     assert.deepStrictEqual(
       offenders,
       [],
-      `These icons draw text. Generate them from the brand mark instead ` +
-        `(\`pnpm run generate:icons\`):\n  ` +
+      `These brand SVGs contain live text, which renders wrong wherever the ` +
+        `font is absent. Bake it to paths (see ` +
+        `docs/design/brand-marks/tools/outline-ring-text.py) or regenerate from ` +
+        `the mark (\`pnpm run generate:icons\`):\n  ` +
         offenders.join('\n  ')
     );
   });
