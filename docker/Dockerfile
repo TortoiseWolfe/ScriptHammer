@@ -16,6 +16,10 @@ WORKDIR /app
 
 # Copy package files
 COPY package.json pnpm-lock.yaml* package-lock.json* ./
+# The prepare lifecycle configures hooks when Git metadata is available. Copy
+# its source before installing so Docker's manifest-only dependency stage can
+# execute it and safely no-op without a checkout.
+COPY scripts/configure-git-hooks.js ./scripts/configure-git-hooks.js
 # Use pnpm if lockfile exists, otherwise npm
 RUN if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile; \
     elif [ -f package-lock.json ]; then npm ci; \
