@@ -180,6 +180,7 @@ describe('e2e.yml paths-ignore', () => {
       'scripts/audit-components.js',
       'scripts/validate-structure.js',
       'scripts/rebrand.sh',
+      'scripts/supabase/set-edge-function-secrets.ts',
       'scripts/__tests__/foo.test.js',
       'tests/rebrand/test-rebrand.sh',
     ]) {
