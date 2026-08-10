@@ -251,4 +251,4 @@ if (require.main === module) {
   generateBlogData();
 }
 
-module.exports = { generateBlogData };
+module.exports = { generateBlogData, generateSlug, extractExcerpt };
