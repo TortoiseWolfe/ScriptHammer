@@ -233,30 +233,6 @@ export async function getPaymentStatus(
 }
 
 /**
- * Cancel a pending payment intent
- * REQ-SEC-001: Requires authentication, RLS ensures user owns the intent
- */
-export async function cancelPaymentIntent(intentId: string): Promise<void> {
-  // Require authentication (REQ-SEC-001)
-  await getAuthenticatedUserId();
-
-  // Check if payment already processed
-  const status = await getPaymentStatus(intentId);
-  if (status) {
-    throw new Error('Cannot cancel - payment already processed');
-  }
-
-  // Delete the intent (before expiration)
-  // RLS policy ensures user can only delete their own intents
-  const { error } = await supabase
-    .from('payment_intents')
-    .delete()
-    .eq('id', intentId);
-
-  if (error) throw error;
-}
-
-/**
  * Get payment history for authenticated user
  * REQ-SEC-001: Uses authenticated user ID, protected by RLS
  */

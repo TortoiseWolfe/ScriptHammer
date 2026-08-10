@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
+import * as paymentService from '@/lib/payments/payment-service';
 import {
   createPaymentIntent,
   formatPaymentAmount,
@@ -63,6 +64,14 @@ vi.mock('@/lib/supabase/client', () => ({
 }));
 
 describe('Payment Service', () => {
+  it('does not expose client-side payment-intent cancellation', () => {
+    // payment_intents are immutable and their DELETE RLS policy always denies
+    // client deletion. Keeping a public cancel helper here would report success
+    // after a zero-row delete, so cancellation needs a real server-side state
+    // transition before it can be offered again (#565).
+    expect(paymentService).not.toHaveProperty('cancelPaymentIntent');
+  });
+
   describe('createPaymentIntent', () => {
     it('should create a payment intent with correct parameters', async () => {
       const intent = await createPaymentIntent(

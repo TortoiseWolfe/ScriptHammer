@@ -242,16 +242,18 @@ price.
 - [ ] **T055** [P] Pa11y + axe on all new routes; storefront ≥ 95 (SC-006).
 - [ ] **T056** [P] Confirm all ten new components pass 5-file structure
       validation (SC-007).
-- [ ] **T057** Fix the type/schema drift found while writing this spec:
+- [x] **T057** Fix the type/schema drift found while writing this spec:
       `src/lib/supabase/types.ts` declares **two tables the migration never
-      creates** (the source of the PRD's incorrect "19 tables"). Independent of
+      creates** (the source of the PRD's incorrect "19 tables"). Removed the
+      stale `audit_logs` and `profiles` declarations in #565; independent of
       this feature but discovered by it.
 - [ ] **T058** [P] Remove the dead `UPDATE` from the `payment_intents` GRANT —
       `"Payment intents are immutable"` is `FOR UPDATE USING (false)`, so nothing
       can ever use it.
-- [ ] **T059** [P] Fix or remove `cancelPaymentIntent`
-      (`payment-service.ts:252-253`), which issues a `.delete()` against a
-      `FOR DELETE USING (false)` policy and no-ops without erroring.
+- [x] **T059** [P] Remove `cancelPaymentIntent`, whose former implementation
+      issued a `.delete()` against a `FOR DELETE USING (false)` policy and
+      no-oped without erroring. Removed in #565; cancellation requires a real
+      server-side state transition.
 
 ---
 
