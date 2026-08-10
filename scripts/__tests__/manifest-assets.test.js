@@ -170,24 +170,128 @@ describe('manifest assets', () => {
     );
   });
 
-  test('no shipped icon carries a text monogram', () => {
-    // The #659 failure itself: `CK` (CRUDkit) and `C` were drawn as <text> in 13
-    // committed SVGs, and `000` in two placeholders. A brand mark is artwork;
-    // a letter rendered by the icon generator is a monogram inherited from
-    // whoever the template was forked from.
+  test('the component and public/favicon.svg draw the same mark', () => {
+    // Two independent render paths, no shared source. The inline component is
+    // what the site shows; public/favicon.svg is what scripts/generate-icons.js
+    // turns into all 19 icons. Nothing made them agree, so inking one and not
+    // the other would ship a different logo in the browser tab than on the page
+    // — the #659 shape, one emitter lying about the brand.
+    const svg = fs.readFileSync(path.join(PUBLIC, 'favicon.svg'), 'utf8');
+    const tsx = fs.readFileSync(
+      path.join(
+        ROOT,
+        'src/components/atomic/SpinningLogo/LayeredScriptHammerLogo.tsx'
+      ),
+      'utf8'
+    );
+
+    const drift = [];
+    const gearSvg = svg.match(/id="gear-body"[^>]*d="([^"]+)"/)?.[1];
+    const gearTsx = tsx.match(/id=\{id\('gear'\)\}[\s\S]*?d="([^"]+)"/)?.[1];
+    if (!gearSvg || !gearTsx)
+      drift.push('gear path not found in one of the two files');
+    else if (gearSvg !== gearTsx) drift.push('gear path differs');
+
+    // Composition scales, quoted differently in each file but must resolve equal.
+    for (const [what, re1, re2] of [
+      [
+        'brackets scale',
+        /scale\(\.(\d+)\)[^>]*><use href="#tags"/,
+        /scale\(\.(\d+)\) translate\(-200 -200\)">\s*<use href=\{`#\$\{id\('tags'\)\}`\}/,
+      ],
+      [
+        'mallet scale',
+        /scale\(\.(\d+)\)[^>]*><use href="#mallet"/,
+        /scale\(\.(\d+)\) translate\(-200 -200\)">\s*<use href=\{`#\$\{id\('mallet'\)\}`\}/,
+      ],
+    ]) {
+      const a = svg.match(re1)?.[1];
+      const b = tsx.match(re2)?.[1];
+      if (a !== b) drift.push(`${what}: favicon .${a} vs component .${b}`);
+    }
+
+    // Both must carry the comic keyline, or one ships uninked.
+    const inkSvg = (svg.match(/#2E353B/g) || []).length;
+    const inkTsx = /const INK = '#2E353B'/.test(tsx);
+    if (inkSvg < 3)
+      drift.push(`favicon.svg has ${inkSvg} ink references, expected >= 3`);
+    if (!inkTsx) drift.push('component has no INK constant');
+
+    // Neither may keep the clear-space halo; the keyline replaced it.
+    if (svg.includes('cut-lockup'))
+      drift.push('favicon.svg still has the cut-lockup halo');
+    if (tsx.includes("id('cut')"))
+      drift.push('component still has the cut-lockup halo');
+
+    assert.deepStrictEqual(
+      drift,
+      [],
+      `The inline component and public/favicon.svg have drifted. Regenerate via ` +
+        `docs/design/brand-marks/tools/rebalance.py and re-derive both:\n  ` +
+        drift.join('\n  ')
+    );
+  });
+
+  test('no shipped brand SVG carries live text', () => {
+    // Two failures, one check.
+    //
+    // #659: `CK` (CRUDkit) and `C` were drawn as <text> in 13 committed SVGs,
+    // and `000` in two placeholders. A brand mark is artwork; a letter left in
+    // by the icon generator is a monogram inherited from whoever the template
+    // was forked from.
+    //
+    // The v3 import: the gear and lockup exports cut "SCRIPTHAMMER.COM" out of
+    // the ring with live <textPath> in Oswald 700. That renders correctly only
+    // where Oswald is loaded — inside an <img>, a favicon, or a vector editor
+    // the renderer substitutes a default sans and squeezes it to
+    // textLength="300". Measured, that is 5.5% of pixels wrong versus a correct
+    // render. public/scripthammer-wordmark.svg carries the same wordmark baked
+    // to paths and must stay that way.
+    //
+    // This used to sweep only `icon*.svg`, which left favicon.svg — the SOURCE
+    // of the whole icon matrix — unguarded, along with apple-touch-icon.svg and
+    // both logo assets.
+    const BRAND_SVG = (name) =>
+      name.endsWith('.svg') &&
+      (name.startsWith('icon') ||
+        name.startsWith('favicon') ||
+        name.startsWith('apple-touch-icon') ||
+        name.startsWith('scripthammer-') ||
+        name === 'printing-mallet.svg' ||
+        name === 'script-tags.svg');
+
+    const checked = [];
     const offenders = [];
     for (const name of fs.readdirSync(PUBLIC)) {
-      if (!name.startsWith('icon') || !name.endsWith('.svg')) continue;
-      const svg = fs.readFileSync(path.join(PUBLIC, name), 'utf8');
+      if (!BRAND_SVG(name)) continue;
+      checked.push(name);
+      // Strip comments first: the files document this very rule, and a naive
+      // grep would flag the documentation instead of a defect.
+      const svg = fs
+        .readFileSync(path.join(PUBLIC, name), 'utf8')
+        .replace(/<!--[\s\S]*?-->/g, '');
       const text = svg.match(/<text[\s\S]*?<\/text>/);
       if (text) offenders.push(`${name}: ${text[0].slice(0, 60)}…`);
     }
 
+    // COVERAGE FLOOR. Everything above is conditional on finding files, so a
+    // renamed asset or a changed prefix would make this pass by checking
+    // nothing — the #396 shape. 20 is MEASURED, not chosen. Raise it
+    // deliberately; never lower it to make a run pass.
+    assert.ok(
+      checked.length >= 20,
+      `Only ${checked.length} brand SVGs were checked, down from 20. Either an ` +
+        `asset was renamed out of the filter or this probe stopped looking. ` +
+        `Do not lower the floor.\nChecked: ${checked.join(', ')}`
+    );
+
     assert.deepStrictEqual(
       offenders,
       [],
-      `These icons draw text. Generate them from the brand mark instead ` +
-        `(\`pnpm run generate:icons\`):\n  ` +
+      `These brand SVGs contain live text, which renders wrong wherever the ` +
+        `font is absent. Bake it to paths (see ` +
+        `docs/design/brand-marks/tools/outline-ring-text.py) or regenerate from ` +
+        `the mark (\`pnpm run generate:icons\`):\n  ` +
         offenders.join('\n  ')
     );
   });
