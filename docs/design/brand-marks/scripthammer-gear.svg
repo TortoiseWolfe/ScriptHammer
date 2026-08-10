@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="ScriptHammer gear">
+  <title>ScriptHammer gear</title>
+  <defs>
+    
+    <path id="ring-top" fill="none" d="M92.6,188.7 A108,108 0 0 1 307.4,188.7"></path>
+    <path id="ring-bot" fill="none" d="M307.4,211.3 A108,108 0 0 1 92.6,211.3"></path>
+    <mask id="cut-word">
+      <rect width="400" height="400" fill="#fff"></rect>
+      <text font-family="Oswald, sans-serif" font-weight="700" font-size="38" fill="#000"><textPath href="#ring-top" startOffset="50%" text-anchor="middle" textLength="300" lengthAdjust="spacingAndGlyphs">SCRIPTHAMMER.COM</textPath></text>
+      <text font-family="Oswald, sans-serif" font-weight="700" font-size="38" fill="#000"><textPath href="#ring-bot" startOffset="50%" text-anchor="middle" textLength="300" lengthAdjust="spacingAndGlyphs">SCRIPTHAMMER.COM</textPath></text>
+      <path fill="#000" d="M325,191 L334,200 L325,209 L316,200 Z"></path>
+      <path fill="#000" d="M75,191 L84,200 L75,209 L66,200 Z"></path>
+    </mask>
+    <path id="gear-body" fill-rule="evenodd" d="M170.4,47.8 L172.7,5.9 L227.3,5.9 L229.6,47.8 A155,155 0 0 1 250.5,53.4L250.5,53.4 L273.4,18.3 L320.7,45.5 L301.7,83 A155,155 0 0 1 317,98.3L317,98.3 L354.5,79.3 L381.7,126.6 L346.6,149.5 A155,155 0 0 1 352.2,170.4L352.2,170.4 L394.1,172.7 L394.1,227.3 L352.2,229.6 A155,155 0 0 1 346.6,250.5L346.6,250.5 L381.7,273.4 L354.5,320.7 L317,301.7 A155,155 0 0 1 301.7,317L301.7,317 L320.7,354.5 L273.4,381.7 L250.5,346.6 A155,155 0 0 1 229.6,352.2L229.6,352.2 L227.3,394.1 L172.7,394.1 L170.4,352.2 A155,155 0 0 1 149.5,346.6L149.5,346.6 L126.6,381.7 L79.3,354.5 L98.3,317 A155,155 0 0 1 83,301.7L83,301.7 L45.5,320.7 L18.3,273.4 L53.4,250.5 A155,155 0 0 1 47.8,229.6L47.8,229.6 L5.9,227.3 L5.9,172.7 L47.8,170.4 A155,155 0 0 1 53.4,149.5L53.4,149.5 L18.3,126.6 L45.5,79.3 L83,98.3 A155,155 0 0 1 98.3,83L98.3,83 L79.3,45.5 L126.6,18.3 L149.5,53.4 A155,155 0 0 1 170.4,47.8 Z M200,104 A96,96 0 1 1 200,296 A96,96 0 1 1 200,104 Z"></path>
+  </defs>
+  <use href="#gear-body" transform="translate(6,7)" fill="#2E353B"></use>
+  <use href="#gear-body" mask="url(#cut-word)" fill="#B6BEC6"></use>
+</svg>

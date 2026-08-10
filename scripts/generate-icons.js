@@ -106,9 +106,22 @@ const TARGETS = [
   // iOS "Add to Home Screen" (layout.tsx `icons.apple`). Never maskable — iOS
   // applies its own corner radius and does not crop.
   { file: 'apple-touch-icon.png', size: 180, kind: 'png', inset: ANY_INSET },
+  // The SVG twin of the above. `src/config/project.config.ts:63` exports
+  // `appleTouchIconPath` pointing here, so a fork can reference it even though
+  // layout.tsx currently hardcodes the .png. It was NOT generated before, so it
+  // kept the previous brand while every other asset moved — the #659 shape
+  // exactly: the one file the generator does not own is the one that lies.
+  { file: 'apple-touch-icon.svg', size: 180, kind: 'svg', inset: ANY_INSET },
   // The tab icon (layout.tsx `icons.icon`). Was the `000` placeholder.
   { file: 'icon.svg', size: 32, kind: 'svg', inset: ANY_INSET },
+  // Browsers still request /favicon.ico by convention, with no <link> needed.
+  // This shipped as an 11-byte file containing the literal text "placeholder",
+  // so every one of those requests got garbage.
+  { file: 'favicon.ico', size: 48, kind: 'ico', inset: ANY_INSET },
 ];
+
+/** Sizes packed into favicon.ico. 16 and 32 are what browsers actually pick. */
+const ICO_SIZES = [16, 32, 48];
 
 /**
  * Split a source SVG into its viewBox and its drawable body.
@@ -197,10 +210,55 @@ ${body}
 `;
 }
 
+/**
+ * Pack PNGs into an .ico container.
+ *
+ * Written here rather than pulled in as a dependency: the format is an 6-byte
+ * ICONDIR, one 16-byte ICONDIRENTRY per image, then the image payloads. Modern
+ * Windows and every browser accept PNG-compressed entries, so the payloads are
+ * just the PNG bytes sharp already produces.
+ */
+function packIco(pngs) {
+  const HEADER = 6;
+  const ENTRY = 16;
+  const dir = Buffer.alloc(HEADER);
+  dir.writeUInt16LE(0, 0); // reserved
+  dir.writeUInt16LE(1, 2); // type 1 = icon
+  dir.writeUInt16LE(pngs.length, 4);
+
+  let offset = HEADER + ENTRY * pngs.length;
+  const entries = pngs.map(({ size, data }) => {
+    const e = Buffer.alloc(ENTRY);
+    e.writeUInt8(size >= 256 ? 0 : size, 0); // 0 means 256
+    e.writeUInt8(size >= 256 ? 0 : size, 1);
+    e.writeUInt8(0, 2); // palette size
+    e.writeUInt8(0, 3); // reserved
+    e.writeUInt16LE(1, 4); // colour planes
+    e.writeUInt16LE(32, 6); // bits per pixel
+    e.writeUInt32LE(data.length, 8);
+    e.writeUInt32LE(offset, 12);
+    offset += data.length;
+    return e;
+  });
+
+  return Buffer.concat([dir, ...entries, ...pngs.map((p) => p.data)]);
+}
+
 async function render(target, parsed, bg) {
+  const sharp = require('sharp');
+  if (target.kind === 'ico') {
+    const pngs = [];
+    for (const size of ICO_SIZES) {
+      const svg = composeSvg(parsed, size, bg, target.inset);
+      pngs.push({
+        size,
+        data: await sharp(Buffer.from(svg, 'utf8')).png().toBuffer(),
+      });
+    }
+    return packIco(pngs);
+  }
   const svg = composeSvg(parsed, target.size, bg, target.inset);
   if (target.kind === 'svg') return Buffer.from(svg, 'utf8');
-  const sharp = require('sharp');
   return sharp(Buffer.from(svg, 'utf8')).png().toBuffer();
 }
 
