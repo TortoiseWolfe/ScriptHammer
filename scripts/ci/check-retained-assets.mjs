@@ -34,21 +34,40 @@
  * Exits 1 if any retained asset is gone.
  */
 
-const BASE = (process.argv[2] || process.env.BASE || 'https://scripthammer.com').replace(/\/$/, '');
+const BASE = (
+  process.argv[2] ||
+  process.env.BASE ||
+  'https://scripthammer.com'
+).replace(/\/$/, '');
 const MANIFEST = `${BASE}/_next/static/ASSET_MANIFEST.txt`;
 const CONCURRENCY = 12;
 
-/** HEAD, falling back to a ranged GET — some CDNs answer HEAD differently. */
+/**
+ * HEAD, falling back to a ranged GET whenever HEAD cannot prove the asset is
+ * served. Some CDNs reject HEAD while serving GET, and a valid ranged response
+ * is commonly 206 rather than 200.
+ */
 async function status(url) {
+  let head;
   try {
-    const r = await fetch(url, { method: 'HEAD', redirect: 'follow' });
-    if (r.status === 405 || r.status === 501) {
-      const g = await fetch(url, { headers: { range: 'bytes=0-0' }, redirect: 'follow' });
-      return g.status;
-    }
-    return r.status;
+    head = await fetch(url, { method: 'HEAD', redirect: 'follow' });
+    if (head.ok) return { ok: true, code: head.status };
+  } catch {
+    // Try GET below: a CDN can reject or close a HEAD request while serving the
+    // exact same asset normally.
+  }
+
+  try {
+    const get = await fetch(url, {
+      headers: { range: 'bytes=0-0' },
+      redirect: 'follow',
+    });
+    return { ok: get.ok, code: get.status };
   } catch (err) {
-    return `ERR ${err.message}`;
+    return {
+      ok: false,
+      code: head ? head.status : `ERR ${err.message}`,
+    };
   }
 }
 
@@ -97,18 +116,20 @@ const results = await pool(
   entries,
   async (rel) => {
     const url = `${BASE}/${rel.replace(/^\/+/, '')}`;
-    return { rel, url, code: await status(url) };
+    return { rel, url, ...(await status(url)) };
   },
   CONCURRENCY
 );
 
-const missing = results.filter((r) => r.code !== 200);
+const missing = results.filter((r) => !r.ok);
 const missingCss = missing.filter((r) => r.rel.endsWith('.css'));
 
 console.log(`  base      ${BASE}`);
 console.log(`  manifest  ${entries.length} entries`);
 console.log(`  reachable ${results.length - missing.length}`);
-console.log(`  MISSING   ${missing.length}  (of which CSS: ${missingCss.length})`);
+console.log(
+  `  MISSING   ${missing.length}  (of which CSS: ${missingCss.length})`
+);
 
 if (missing.length) {
   console.log('');
@@ -124,4 +145,6 @@ if (missing.length) {
   process.exit(1);
 }
 
-console.log('\n  OK — every asset the deploy promised to retain is still served.');
+console.log(
+  '\n  OK — every asset the deploy promised to retain is still served.'
+);
