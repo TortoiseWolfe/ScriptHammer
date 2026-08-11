@@ -234,8 +234,40 @@ export default function BlogPostViewer({
 
   return (
     <article className={`blog-post-viewer${className ? ` ${className}` : ''}`}>
-      {/* Floating controls - mobile-first positioning (PRP-017 T038) */}
-      <div className="fixed top-20 right-2 z-50 space-y-3 sm:right-4">
+      {/* Header - Mobile-first spacing (PRP-017 T038) */}
+      <header className="mb-6 sm:mb-8 md:mb-10">
+        {/* Title */}
+        <h1 className="mb-4 text-3xl leading-tight font-bold sm:mb-6 sm:text-4xl md:text-5xl lg:text-6xl">
+          {post.title}
+        </h1>
+
+        <div className="text-base-content/85 flex flex-wrap gap-2 text-xs sm:gap-3 sm:text-sm md:gap-4 md:text-base">
+          {publishedDate && (
+            <time dateTime={post.publishedAt}>{publishedDate}</time>
+          )}
+          {post.metadata?.readingTime && (
+            <span>{post.metadata.readingTime} min read</span>
+          )}
+          {post.metadata?.wordCount && (
+            <span>{post.metadata.wordCount.toLocaleString()} words</span>
+          )}
+        </div>
+
+        {post.metadata?.tags && post.metadata.tags.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {post.metadata.tags.map((tag) => (
+              <TagBadge key={tag} tag={tag} size="sm" variant="default" />
+            ))}
+          </div>
+        )}
+      </header>
+
+      {/* In document flow below the header on phones so controls cannot cover
+          a multi-line title. At md+ they return to the fixed desktop affordance. */}
+      <div
+        data-testid="blog-post-controls"
+        className="mb-6 flex justify-end gap-3 md:fixed md:top-20 md:right-4 md:z-50 md:mb-0 md:block md:space-y-3"
+      >
         {/* SEO Score Badge */}
         {seoScore !== undefined && (
           <button
@@ -266,7 +298,7 @@ export default function BlogPostViewer({
           </button>
         )}
 
-        {/* TOC directly under SEO badge */}
+        {/* Beside the badge on phones; below it at md and above. */}
         {showToc && toc.length > 0 && (
           <div className="relative">
             <details className="block">
@@ -295,34 +327,6 @@ export default function BlogPostViewer({
           </div>
         )}
       </div>
-
-      {/* Header - Mobile-first spacing (PRP-017 T038) */}
-      <header className="mb-6 sm:mb-8 md:mb-10">
-        {/* Title */}
-        <h1 className="mb-4 text-3xl leading-tight font-bold sm:mb-6 sm:text-4xl md:text-5xl lg:text-6xl">
-          {post.title}
-        </h1>
-
-        <div className="text-base-content/85 flex flex-wrap gap-2 text-xs sm:gap-3 sm:text-sm md:gap-4 md:text-base">
-          {publishedDate && (
-            <time dateTime={post.publishedAt}>{publishedDate}</time>
-          )}
-          {post.metadata?.readingTime && (
-            <span>{post.metadata.readingTime} min read</span>
-          )}
-          {post.metadata?.wordCount && (
-            <span>{post.metadata.wordCount.toLocaleString()} words</span>
-          )}
-        </div>
-
-        {post.metadata?.tags && post.metadata.tags.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
-            {post.metadata.tags.map((tag) => (
-              <TagBadge key={tag} tag={tag} size="sm" variant="default" />
-            ))}
-          </div>
-        )}
-      </header>
 
       {/* Featured Image - Mobile-first sizing (PRP-017 T038) */}
       {featuredImageSrc && (

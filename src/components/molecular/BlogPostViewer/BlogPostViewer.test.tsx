@@ -46,4 +46,18 @@ describe('BlogPostViewer', () => {
     );
     expect(container.firstChild).toHaveClass('custom-class');
   });
+
+  it('keeps mobile controls after the header and only fixes them at md and above', () => {
+    const { container, getByTestId } = render(
+      <BlogPostViewer post={mockPost} seoScore={94} />
+    );
+
+    const header = container.querySelector('header');
+    const controls = getByTestId('blog-post-controls');
+
+    expect(header?.compareDocumentPosition(controls)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+    expect(controls).toHaveClass('md:fixed');
+  });
 });
