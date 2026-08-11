@@ -318,10 +318,16 @@ describe('MarkdownProcessor raw-HTML XSS hardening', () => {
     // syntax-highlighted code sample (protected by the code-block placeholder)
     // — never as executable HTML. Prism wraps the escaped `&lt;` in token
     // spans, so assert the invariants that matter: no live <script> leaked,
-    // and the opening bracket was HTML-escaped.
+    // and the opening bracket was HTML-escaped. HTML serializers may choose a
+    // named or numeric character reference; decoding must reproduce the exact
+    // inert sample either way.
     expect(html).not.toContain('<script>console.log');
-    expect(html).toContain('&lt;');
     expect(html).toContain('language-html');
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    expect(container.querySelector('code')).toHaveTextContent(
+      '<script>console.log(1)</script>'
+    );
   });
 });
 
@@ -480,9 +486,10 @@ describe('MarkdownProcessor HTML rendering', () => {
   it('falls back to escaped HTML for unsupported languages', () => {
     const { html } = process('```brainfuck\n<>&\n```');
     expect(html).toContain('class="language-brainfuck"');
-    expect(html).toContain('&lt;');
-    expect(html).toContain('&gt;');
-    expect(html).toContain('&amp;');
+    expect(html).not.toContain('<code class="language-brainfuck"><>');
+    const container = document.createElement('div');
+    container.innerHTML = html;
+    expect(container.querySelector('code')).toHaveTextContent('<>&');
   });
 
   it('renders images with sanitized URLs', () => {

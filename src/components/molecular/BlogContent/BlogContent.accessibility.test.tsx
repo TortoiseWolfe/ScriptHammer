@@ -54,6 +54,39 @@ describe('BlogContent Accessibility', () => {
     expect(results).toHaveNoViolations();
   });
 
+  it('keeps scrollable tables keyboard reachable and quotes semantic', async () => {
+    const htmlContent = `
+      <div class="blog-table-scroll" data-blog-table-scroll="true" tabindex="0">
+        <table class="blog-data-table">
+          <caption>Release comparison</caption>
+          <thead>
+            <tr><th scope="col">Release</th><th scope="col">Support window</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Stable</td><td>Long term support</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <blockquote><p>Prefer the stable release.</p></blockquote>
+    `;
+
+    const { container } = render(<BlogContent htmlContent={htmlContent} />);
+    const tableScroll = container.querySelector(
+      '[data-blog-table-scroll="true"]'
+    ) as HTMLElement;
+
+    expect(tableScroll).toHaveAttribute('tabindex', '0');
+    tableScroll.focus();
+    expect(tableScroll).toHaveFocus();
+    expect(
+      screen.getByRole('table', { name: 'Release comparison' })
+    ).toBeInTheDocument();
+    expect(container.querySelector('blockquote')).toBeInTheDocument();
+
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
   it('should have proper semantic structure with headings', () => {
     const htmlContent = `
       <h1>Main Title</h1>

@@ -76,6 +76,87 @@ describe('BlogContent', () => {
     expect(contentDiv).toHaveClass('lg:[&>p]:text-lg'); // Desktop size
   });
 
+  it('presents wide tables safely without changing table or quote semantics', () => {
+    const htmlContent = `
+      <div class="blog-table-scroll" data-blog-table-scroll="true" tabindex="0">
+        <table class="blog-data-table">
+          <caption>Release comparison</caption>
+          <thead>
+            <tr><th scope="col">Release</th><th scope="col">Support window</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Stable</td><td>Long term support</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <blockquote><p>Prefer the stable release.</p></blockquote>
+    `;
+
+    const { container } = render(<BlogContent htmlContent={htmlContent} />);
+    const contentDiv = container.firstChild as HTMLElement;
+    const tableScroll = container.querySelector(
+      '[data-blog-table-scroll="true"]'
+    ) as HTMLElement;
+
+    expect(contentDiv).toHaveClass(
+      '[&_.blog-table-scroll]:max-w-full',
+      '[&_.blog-table-scroll]:overflow-x-auto',
+      '[&_.blog-table-scroll]:overscroll-x-contain',
+      '[&_.blog-table-scroll]:focus-visible:ring-2',
+      '[&_.blog-data-table]:m-0',
+      '[&_.blog-data-table]:table',
+      '[&_.blog-data-table]:min-w-full',
+      '[&_.blog-data-table]:overflow-visible',
+      '[&_.blog-data-table_th]:whitespace-nowrap',
+      '[&_.blog-data-table_th]:bg-base-200',
+      '[&_.blog-data-table_td]:break-words',
+      '[&_blockquote]:border-l-4',
+      '[&_blockquote]:bg-base-200',
+      '[&_blockquote>p]:m-0'
+    );
+
+    expect(tableScroll).toHaveAttribute('tabindex', '0');
+    Object.defineProperties(tableScroll, {
+      clientWidth: { configurable: true, value: 300 },
+      scrollWidth: { configurable: true, value: 800 },
+    });
+    tableScroll.focus();
+    expect(tableScroll).toHaveFocus();
+    fireEvent.keyDown(tableScroll, { key: 'ArrowRight' });
+    expect(tableScroll.scrollLeft).toBeGreaterThan(0);
+    fireEvent.keyDown(tableScroll, { key: 'End' });
+    expect(tableScroll.scrollLeft).toBe(500);
+    fireEvent.keyDown(tableScroll, { key: 'Home' });
+    expect(tableScroll.scrollLeft).toBe(0);
+    expect(
+      screen.getByRole('table', { name: 'Release comparison' })
+    ).toBeInTheDocument();
+    expect(screen.getAllByRole('columnheader')).toHaveLength(2);
+    expect(screen.getAllByRole('cell')).toHaveLength(2);
+    expect(container.querySelector('blockquote')).toHaveTextContent(
+      'Prefer the stable release.'
+    );
+  });
+
+  it('preserves authored details state across unchanged parent renders', () => {
+    const htmlContent = `
+      <details>
+        <summary>More information</summary>
+        <p>Authored detail body</p>
+      </details>
+    `;
+    const { container, rerender } = render(
+      <BlogContent htmlContent={htmlContent} />
+    );
+    const details = container.querySelector('details') as HTMLDetailsElement;
+
+    details.open = true;
+    rerender(<BlogContent htmlContent={htmlContent} />);
+
+    expect(container.querySelector('details')).toBe(details);
+    expect(details.open).toBe(true);
+  });
+
   it('processes code blocks and adds copy buttons', () => {
     const htmlContent = `
       <pre><code class="language-javascript">console.log('Hello, World!');</code></pre>
