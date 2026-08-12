@@ -98,17 +98,30 @@ export default function Buildings({
 }) {
   const meshRef = useRef<Mesh>(null);
   const { geometry } = useMemo(() => {
+    // Fake contact ambient-occlusion: darken each building's vertices from
+    // AO_FLOOR at its base up to full colour by AO_HEIGHT metres — cheap
+    // seated-on-the-ground depth now that the real-time cast shadows are gone.
+    // The vertex colour IS the wall albedo (no map), so scaling it darkens the
+    // base directly; zero shader work, zero per-frame cost.
+    const AO_HEIGHT = 4;
+    const AO_FLOOR = 0.5;
     const minE = minElevation(grid);
     const nonHero = buildings.filter((b) => !b.swap);
     const geos = nonHero.map((b) => {
       const g = extrude(b, grid, manifest, minE);
       const c = new Color(palette.bricks[b.id % palette.bricks.length]);
-      const count = g.attributes.position.count;
+      const pos = g.attributes.position;
+      const count = pos.count;
+      g.computeBoundingBox();
+      const baseY = g.boundingBox!.min.y; // extrude seats the base here
       const colors = new Float32Array(count * 3);
       for (let i = 0; i < count; i++) {
-        colors[i * 3] = c.r;
-        colors[i * 3 + 1] = c.g;
-        colors[i * 3 + 2] = c.b;
+        const k =
+          AO_FLOOR +
+          (1 - AO_FLOOR) * Math.min(1, (pos.getY(i) - baseY) / AO_HEIGHT);
+        colors[i * 3] = c.r * k;
+        colors[i * 3 + 1] = c.g * k;
+        colors[i * 3 + 2] = c.b * k;
       }
       g.setAttribute('color', new BufferAttribute(colors, 3));
       return g;

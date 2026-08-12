@@ -14,8 +14,16 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGLTF, useAnimations } from '@react-three/drei';
-import { Box3, Vector3, Group, Object3D, type AnimationAction } from 'three';
+import {
+  Box3,
+  Vector3,
+  Group,
+  Mesh,
+  Object3D,
+  type AnimationAction,
+} from 'three';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { GroundBlob } from './blobShadow';
 import { getAssetUrl } from '@/config/project.config';
 import type { EmbodiedController } from '@/lib/cod';
 import type { BikeView } from '@/stage/embodiedWalk';
@@ -34,6 +42,7 @@ export default function PlayerCharacter({
 }) {
   const root = useRef<Group>(null); // placed + yawed at the player
   const inner = useRef<Group>(null); // posed for stance; the model lives inside
+  const blobRef = useRef<Mesh>(null); // fake ground shadow, both views
   // getAssetUrl, NOT getInternalUrl. The latter routes through normalizePagePath,
   // which appends a trailing slash to anything without a query or hash — correct
   // for a route under `trailingSlash: true`, fatal for a binary asset. It produced
@@ -79,10 +88,20 @@ export default function PlayerCharacter({
   }, [actions]);
 
   useFrame((_s, dt) => {
+    const ctrl = ctrlRef.current;
+    if (!ctrl) return;
+
+    // Blob shadow tracks the feet in BOTH views (you see your own shadow in
+    // first-person too); ctrl.position.y is already ground-contact.
+    const blob = blobRef.current;
+    if (blob) {
+      const fp = ctrl.position;
+      blob.position.set(fp.x, fp.y + 0.03, fp.z);
+    }
+
     const g = root.current;
     const fig = inner.current;
-    const ctrl = ctrlRef.current;
-    if (!g || !fig || !ctrl) return;
+    if (!g || !fig) return;
 
     // First-person = camera inside the body → hide it. Third-person shows it.
     g.visible = viewRef.current === 'third';
@@ -123,10 +142,15 @@ export default function PlayerCharacter({
   });
 
   return (
-    <group ref={root} visible={false}>
-      <group ref={inner}>
-        <primitive object={model} />
+    <>
+      {/* Fake ground shadow (real-time shadow map retired) — a soft disc under
+          the feet, shown in first- AND third-person so you always read grounded. */}
+      <GroundBlob ref={blobRef} size={1.3} opacity={0.5} />
+      <group ref={root} visible={false}>
+        <group ref={inner}>
+          <primitive object={model} />
+        </group>
       </group>
-    </group>
+    </>
   );
 }
