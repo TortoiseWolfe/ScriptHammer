@@ -1,0 +1,10 @@
+[
+  {
+    "slug": "warehouse-row",
+    "source": "warehouse-row.glb",
+    "steps": 5,
+    "riser": 0.16,
+    "rise": 0.64,
+    "triangles": 602
+  }
+]

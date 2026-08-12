@@ -160,7 +160,10 @@ const DEFAULT_BIKE: BikeCfg = {
   mountRadius: 3, // a touch more forgiving to walk up and mount
   turnRate: 2.2, // steering-rate CAP (rad/s), reached only while rolling
   turnGain: 0.5, // steering authority ramps with speed; 0 at a standstill
-  hop: 3.8, // ~0.33 m of air against the 7 m/s on-foot jump (#705)
+  // Hop height is v²/2g. At g = 22 m/s², 5.15 m/s buys 5.15²/44 = 0.60 m — measured at
+  // 0.37 m with the previous 3.8, which fired correctly and was simply too small to read
+  // as a hop from a 1.5 m saddle while moving. Still well under the 7 m/s on-foot jump.
+  hop: 5.15,
 };
 
 /**

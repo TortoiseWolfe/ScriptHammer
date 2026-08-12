@@ -338,9 +338,19 @@ describe('trajectory physics (#705)', () => {
       ctrl.step(dt);
       apex = Math.max(apex, ctrl.position.y);
     }
-    expect(apex - y0, 'pressing jump while riding did nothing').toBeGreaterThan(
-      0.25
-    );
+    // Pin the HEIGHT, not merely "it moved". The first version of this test cleared its
+    // own bar at 0.37 m — the mechanism fired correctly and was still invisible from a
+    // 1.5 m saddle while moving, which is indistinguishable from broken to the person
+    // riding it. A hop you cannot see is not a hop, so the number IS the requirement.
+    const rise = apex - y0;
+    expect(
+      rise,
+      `hop reached ${rise.toFixed(2)} m; target ~0.6 m (v²/2g at 5.15 m/s, g = 22)`
+    ).toBeGreaterThan(0.5);
+    expect(
+      rise,
+      'the hop has grown into a jump — this is a bicycle'
+    ).toBeLessThan(0.8);
     ctrl.dispose();
   });
 
