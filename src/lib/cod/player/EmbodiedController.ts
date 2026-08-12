@@ -14,7 +14,7 @@
 
 import { StaticWorld } from '../bvh';
 import { CharacterController } from '../character';
-import { MASK } from '../surfaces';
+import { LAYER, MASK } from '../surfaces';
 import { makeHitRecord } from '../math';
 import type { Mesh, Object3D } from 'three';
 
@@ -432,7 +432,15 @@ export class EmbodiedController {
     root.traverse((o) => {
       const m = o as Mesh;
       if (!m.isMesh || !m.geometry) return;
-      const id = this.world.addMesh(m, surface);
+      // Marked single-sided (#713): these imported models have inconsistent winding, so
+      // faces the FrontSide renderer culls were still solid. The terrain and massing boxes
+      // go through `fromMeshes` and keep double-sided collision, so no ground triangle can
+      // ever become a hole.
+      const id = this.world.addMesh(
+        m,
+        surface,
+        LAYER.STATIC | LAYER.SINGLE_SIDED
+      );
       if (id >= 0) ids.push(id);
     });
     return ids;

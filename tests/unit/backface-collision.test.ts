@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   BoxGeometry,
+  Group,
   BufferAttribute,
   BufferGeometry,
   Mesh,
@@ -71,13 +72,19 @@ function walkEastInto(order: 'abc' | 'acb', cullBackfaces: boolean): number {
   const floor = new Mesh(new BoxGeometry(200, 1, 200), new MeshBasicMaterial());
   floor.position.set(0, -0.5, 0);
   floor.updateMatrixWorld(true);
+  // The floor goes through `fromMeshes` and stays DOUBLE-sided, exactly as the twin's
+  // terrain does; the wall goes through `addCollider`, which marks it SINGLE_SIDED, as the
+  // landmark GLBs are. That scoping is the safety property: no ground triangle can ever be
+  // culled into a hole, however it happens to be wound.
   const ctrl = EmbodiedController.fromMeshes(
-    [
-      { mesh: floor, surface: 'dirt' },
-      { mesh: wallMesh(order).mesh, surface: 'concrete' },
-    ],
+    [{ mesh: floor, surface: 'dirt' }],
     { spawn: { x: 0, y: 0.2, z: 0 }, cullBackfaces }
   );
+  const wall = new Group();
+  wall.add(wallMesh(order).mesh);
+  wall.updateMatrixWorld(true);
+  ctrl.addCollider(wall, 'concrete');
+  ctrl.commitColliders();
   try {
     for (let i = 0; i < 40; i++) {
       ctrl.setInput({ ...STILL, yaw: EAST });
@@ -126,5 +133,36 @@ describe('single-sided collision (#713)', () => {
     const ctrl = EmbodiedController.fromMeshes([]);
     expect(ctrl.world.cullBackfaces).toBe(false);
     ctrl.dispose();
+  });
+
+  it('geometry that is NOT marked single-sided is never culled', () => {
+    // The safety property, asserted rather than trusted: a floor registered through
+    // `fromMeshes` keeps double-sided collision even with the flag on, so no winding
+    // mistake in the terrain can open a hole in the world.
+    const floor = new Mesh(
+      new BoxGeometry(200, 1, 200),
+      new MeshBasicMaterial()
+    );
+    floor.position.set(0, -0.5, 0);
+    floor.updateMatrixWorld(true);
+    const ctrl = EmbodiedController.fromMeshes(
+      [{ mesh: floor, surface: 'dirt' }],
+      {
+        spawn: { x: 0, y: 0.2, z: 0 },
+        cullBackfaces: true,
+      }
+    );
+    try {
+      for (let i = 0; i < 120; i++) {
+        ctrl.setInput({ ...STILL, yaw: EAST });
+        ctrl.step(1 / 60);
+      }
+      expect(ctrl.grounded, 'the body fell through an unmarked floor').toBe(
+        true
+      );
+      expect(Math.abs(ctrl.position.y)).toBeLessThan(0.5);
+    } finally {
+      ctrl.dispose();
+    }
   });
 });

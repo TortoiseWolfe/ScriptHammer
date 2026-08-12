@@ -495,6 +495,7 @@ export class StaticWorld {
             // Single-sided: the ray is leaving through the face's back (#713).
             if (
               this.cullBackfaces &&
+              (this.mask[tri] & LAYER.SINGLE_SIDED) !== 0 &&
               dx * this.nrm[tri * 3] + dy * this.nrm[tri * 3 + 1] + dz * this.nrm[tri * 3 + 2] > 0
             ) continue;
             const p = tri * 9;
@@ -698,7 +699,11 @@ export class StaticWorld {
       const tnx = nrm[tri * 3], tny = nrm[tri * 3 + 1], tnz = nrm[tri * 3 + 2];
       // Single-sided: moving the same way the face points means we meet its back (#713).
       // Placed before conservative advancement, so culled faces cost nothing.
-      if (this.cullBackfaces && dx * tnx + dy * tny + dz * tnz > 0) continue;
+      if (
+        this.cullBackfaces &&
+        (this.mask[tri] & LAYER.SINGLE_SIDED) !== 0 &&
+        dx * tnx + dy * tny + dz * tnz > 0
+      ) continue;
       const sdA = (p0x - ax) * tnx + (p0y - ay) * tny + (p0z - az) * tnz;
       const sdB = (p1x - ax) * tnx + (p1y - ay) * tny + (p1z - az) * tnz;
       const vd = (dx * tnx + dy * tny + dz * tnz) * best;
@@ -802,7 +807,7 @@ export class StaticWorld {
       // behind the plane". A one-sided face pushes you out only on the side it faces;
       // without this the sweep would let you through and depenetration would shove you
       // straight back, which is indistinguishable from never having culled at all (#713).
-      if (this.cullBackfaces) {
+      if (this.cullBackfaces && (this.mask[tri] & LAYER.SINGLE_SIDED) !== 0) {
         const mx = (p0x + p1x) * 0.5 - pos[tri * 9];
         const my = (p0y + p1y) * 0.5 - pos[tri * 9 + 1];
         const mz = (p0z + p1z) * 0.5 - pos[tri * 9 + 2];

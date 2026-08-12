@@ -637,7 +637,13 @@ function SceneInner({
         { mesh: terrain, surface: 'dirt' },
         { mesh: buildings, surface: 'concrete' },
       ],
-      { onStanceChange: (s) => bus.emit('player:stance', { stance: s }) }
+      {
+        onStanceChange: (s) => bus.emit('player:stance', { stance: s }),
+        // Landmark GLBs are registered SINGLE_SIDED by `addCollider`, so a face the
+        // FrontSide renderer culls stops being an invisible wall (#713). Terrain and the
+        // merged massing boxes are added here WITHOUT that bit and stay double-sided.
+        cullBackfaces: true,
+      }
     );
     // Spawn among the RIVERFRONT LANDMARKS, not the embedded twin. The twin
     // (east-main-street) reprojects ~5 km from the downtown landmark cluster, so
