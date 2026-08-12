@@ -1,5 +1,7 @@
 import type { TOCItem } from '@/types/metadata';
 
+import { generateBlogHeadingId } from './render';
+
 export class TOCGenerator {
   private maxDepth: number;
   private minHeadingLevel: number;
@@ -56,7 +58,7 @@ export class TOCGenerator {
       }
 
       const text = match[2].trim();
-      const id = this.generateId(text);
+      const id = generateBlogHeadingId(text);
 
       headings.push({ level, text, id });
     }
@@ -84,7 +86,8 @@ export class TOCGenerator {
       }
 
       const text = this.stripHtml(match[2]).trim();
-      const id = this.extractIdFromHTML(match[0]) || this.generateId(text);
+      const id =
+        this.extractIdFromHTML(match[0]) || generateBlogHeadingId(text);
 
       headings.push({ level, text, id });
     }
@@ -144,19 +147,6 @@ export class TOCGenerator {
     }
 
     return toc;
-  }
-
-  /**
-   * Generate ID from text
-   */
-  private generateId(text: string): string {
-    return text
-      .toLowerCase()
-      .replace(/[^\w\s-]/g, '') // Remove special characters
-      .replace(/\s+/g, '-') // Replace spaces with hyphens
-      .replace(/-+/g, '-') // Replace multiple hyphens with single
-      .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
-      .trim();
   }
 
   /**
