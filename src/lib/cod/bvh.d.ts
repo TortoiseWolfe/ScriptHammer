@@ -51,6 +51,13 @@ export class StaticWorld {
   removeObject(id: number): boolean;
   findByMesh(mesh: THREE.Object3D): number;
 
+  /**
+   * Single-sided triangle collision (#713): a hit on a triangle's BACK passes through.
+   * Off by default. Matches PhysX (back faces culled unless `eDOUBLE_SIDED`) and Godot
+   * (`ConcavePolygonShape3D.backface_collision = false`).
+   */
+  cullBackfaces: boolean;
+
   /** Rebuild the BVH after adding/removing meshes. */
   build(): void;
 

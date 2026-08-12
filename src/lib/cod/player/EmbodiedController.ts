@@ -107,6 +107,12 @@ export interface EmbodiedConfig {
   /** Bike locomotion profile; omit to use the defaults. */
   bike?: BikeCfg;
   spawn?: { x: number; y: number; z: number };
+  /**
+   * Single-sided triangle collision (#713) — a hit on a triangle's BACK passes through.
+   * PhysX and Godot both default to this; here it is opt-in, because it is only correct
+   * for worlds whose walls are consistently wound, and the twin's landmarks are not.
+   */
+  cullBackfaces?: boolean;
   /** Fired when the player state label changes — a foot stance
    *  (`stand`/`crouch`/`prone`) or `bike`. A raise blocked by a ceiling does NOT
    *  fire. Wire a HUD / event bus here. */
@@ -319,6 +325,7 @@ export class EmbodiedController {
     config: EmbodiedConfig = {}
   ): EmbodiedController {
     const world = new StaticWorld();
+    world.cullBackfaces = config.cullBackfaces === true;
     for (const s of specs) if (s.mesh) world.addMesh(s.mesh, s.surface);
     world.build();
     return new EmbodiedController(world, config);

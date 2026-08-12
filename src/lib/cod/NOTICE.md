@@ -24,3 +24,12 @@ Kept deliberately minimal — anything beyond a genuine upstream bug belongs in 
   too large and far outside the city. `bakeMesh` now denormalizes (`denormScale`) and honours
   `InterleavedBufferAttribute` (`data.array` / `data.stride` / `offset`).
   Covered by `tests/unit/walk-model-colliders.test.ts`.
+
+- **`bvh.js` — optional single-sided triangle collision (#713).** New `cullBackfaces` flag,
+  **off by default**, consulted in `raycast`, `sweepCapsule` and `overlapCapsule`: when on, a
+  query that meets a triangle's back face passes through it. This is the default behaviour of
+  PhysX (back faces culled unless `PxMeshGeometryFlag::eDOUBLE_SIDED`) and of Godot's
+  `ConcavePolygonShape3D` (`backface_collision = false`); upstream simply had no such option.
+  Needed because the digital-twin landmarks have inconsistent winding, so faces the
+  `FrontSide` renderer culls were still solid. Covered by
+  `tests/unit/backface-collision.test.ts`.

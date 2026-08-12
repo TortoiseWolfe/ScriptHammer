@@ -61,6 +61,24 @@ export class StaticWorld {
     this.dirty = false;
     this.buildMs = 0;
     this.version = 0;
+    /**
+     * Single-sided triangle collision (#713). OFF by default, so nothing that already
+     * works changes.
+     *
+     * When on, a query that hits the BACK of a triangle passes through it. This is what
+     * PhysX and Godot both do by default — PhysX culls hits "where the triangle's
+     * outward-facing normal has a positive dot product with the ray direction" unless
+     * eDOUBLE_SIDED is set, and Godot's ConcavePolygonShape3D ships
+     * backface_collision = false.
+     *
+     * It exists here because the twin's landmark GLBs have INVERTED winding: 43% of one
+     * model's faces point inward, are culled by the FrontSide renderer, and were still
+     * solid — an invisible wall you could see through and not walk through.
+     *
+     * NOTE THE ASYMMETRY on inverted geometry: you pass through such a wall from outside
+     * (you meet its back) and are stopped from inside (you meet its front).
+     */
+    this.cullBackfaces = false;
 
     // scratch
     this._cent = new Float32Array(0);
@@ -474,6 +492,11 @@ export class StaticWorld {
             const tri = idx[i];
             if ((this.mask[tri] & mask) === 0) continue;
             if (ignoreObject >= 0 && this.object[tri] === ignoreObject) continue;
+            // Single-sided: the ray is leaving through the face's back (#713).
+            if (
+              this.cullBackfaces &&
+              dx * this.nrm[tri * 3] + dy * this.nrm[tri * 3 + 1] + dz * this.nrm[tri * 3 + 2] > 0
+            ) continue;
             const p = tri * 9;
             const t = rayTriangle(
               ox, oy, oz, dx, dy, dz,
@@ -673,6 +696,9 @@ export class StaticWorld {
       // Cheap plane-slab prefilter. The min signed distance over the capsule
       // axis is linear in t, so the whole sweep can be rejected with two dots.
       const tnx = nrm[tri * 3], tny = nrm[tri * 3 + 1], tnz = nrm[tri * 3 + 2];
+      // Single-sided: moving the same way the face points means we meet its back (#713).
+      // Placed before conservative advancement, so culled faces cost nothing.
+      if (this.cullBackfaces && dx * tnx + dy * tny + dz * tnz > 0) continue;
       const sdA = (p0x - ax) * tnx + (p0y - ay) * tny + (p0z - az) * tnz;
       const sdB = (p1x - ax) * tnx + (p1y - ay) * tny + (p1z - az) * tnz;
       const vd = (dx * tnx + dy * tny + dz * tnz) * best;
@@ -772,6 +798,16 @@ export class StaticWorld {
     for (let c = 0; c < n && k < cts.capacity; c++) {
       const tri = cand[c];
       const p = tri * 9;
+      // Depenetration has no direction of travel, so "back face" means "the capsule is
+      // behind the plane". A one-sided face pushes you out only on the side it faces;
+      // without this the sweep would let you through and depenetration would shove you
+      // straight back, which is indistinguishable from never having culled at all (#713).
+      if (this.cullBackfaces) {
+        const mx = (p0x + p1x) * 0.5 - pos[tri * 9];
+        const my = (p0y + p1y) * 0.5 - pos[tri * 9 + 1];
+        const mz = (p0z + p1z) * 0.5 - pos[tri * 9 + 2];
+        if (mx * nrm[tri * 3] + my * nrm[tri * 3 + 1] + mz * nrm[tri * 3 + 2] < 0) continue;
+      }
       const d2 = segTriangleClosest(
         p0x, p0y, p0z, p1x, p1y, p1z,
         pos[p], pos[p + 1], pos[p + 2],
