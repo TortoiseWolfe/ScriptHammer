@@ -16,7 +16,7 @@ import { StaticWorld } from '../bvh';
 import { CharacterController } from '../character';
 import { MASK } from '../surfaces';
 import { makeHitRecord } from '../math';
-import type { Mesh } from 'three';
+import type { Mesh, Object3D } from 'three';
 
 export type Stance = 'stand' | 'crouch' | 'prone';
 
@@ -112,14 +112,40 @@ export interface EmbodiedConfig {
 
 /** Human-scale defaults for the real-metre digital twin. */
 const DEFAULT_STANCE: Record<Stance, StanceCfg> = {
-  stand: { height: 1.85, eye: 1.7, speedRatio: 1, gait: 'walk', bobScale: 1, dustScale: 1 },
-  crouch: { height: 1.0, eye: 1.0, speedRatio: 0.5, gait: 'crouch', bobScale: 0.5, dustScale: 0.4 },
-  prone: { height: 0.5, eye: 0.45, speedRatio: 0.28, gait: 'crouch', bobScale: 0.2, dustScale: 0.25 },
+  stand: {
+    height: 1.85,
+    eye: 1.7,
+    speedRatio: 1,
+    gait: 'walk',
+    bobScale: 1,
+    dustScale: 1,
+  },
+  crouch: {
+    height: 1.0,
+    eye: 1.0,
+    speedRatio: 0.5,
+    gait: 'crouch',
+    bobScale: 0.5,
+    dustScale: 0.4,
+  },
+  prone: {
+    height: 0.5,
+    eye: 0.45,
+    speedRatio: 0.28,
+    gait: 'crouch',
+    bobScale: 0.2,
+    dustScale: 0.25,
+  },
 };
 // base 3.3 × 2.2 ≈ 7.3 m/s sprint (games run ~2–4× real pace: a flat monitor's
 // narrow FOV kills the optic-flow that conveys speed, so real 1.4 m/s reads as a
 // crawl — CoD-ish jog-default is the fix).
-const DEFAULT_SPRINT: SprintCfg = { speedRatio: 2.2, gait: 'sprint', bobScale: 1.4, dustScale: 1.6 };
+const DEFAULT_SPRINT: SprintCfg = {
+  speedRatio: 2.2,
+  gait: 'sprint',
+  bobScale: 1.4,
+  dustScale: 1.6,
+};
 // Bike: cruise ~14 m/s, pedal-hard ~22; ~1 s to reach speed, ~2.5 s coast; mount
 // within 2.5 m of where it's parked.
 const DEFAULT_BIKE: BikeCfg = {
@@ -229,7 +255,10 @@ export class EmbodiedController {
   /** Build from prebuilt THREE meshes (world-space; `bakeMesh` reads matrixWorld).
    *  Each spec's `surface` tags footing/footstep audio. */
   static fromMeshes(
-    specs: ReadonlyArray<{ mesh: Mesh | null | undefined; surface: string | number }>,
+    specs: ReadonlyArray<{
+      mesh: Mesh | null | undefined;
+      surface: string | number;
+    }>,
     config: EmbodiedConfig = {}
   ): EmbodiedController {
     const world = new StaticWorld();
@@ -289,6 +318,71 @@ export class EmbodiedController {
     this.bikeYaw_ = yaw;
     this.bikeArmed_ = false; // becomes solid only after you step clear of it
   }
+  /**
+   * Add a mesh hierarchy to the LIVE collision world (#702).
+   *
+   * WHY THIS EXISTS RATHER THAN A REBUILD. The landmark and bridge GLBs load
+   * asynchronously, long after terrain and buildings. Two ways to give them
+   * collision were possible and one is a trap:
+   *
+   *   - Rebuild the controller when a GLB arrives. That re-seeds the player and
+   *     the bike to the spawn point — #703, the "my bike moved on its own" bug.
+   *     Never do this.
+   *   - Grow the existing world. `StaticWorld.addMesh()` appends and sets
+   *     `dirty`, and `build()` re-derives the BVH from every live object, so the
+   *     world can take new geometry without the controller — and therefore the
+   *     player's and bike's poses — being touched at all.
+   *
+   * `bakeMesh` needs real geometry, so a GLB root (a Group) is traversed and each
+   * child Mesh added individually; passing the Group alone silently adds nothing.
+   *
+   * DOES NOT BUILD THE BVH — call `commitColliders()` once when a batch is in.
+   *
+   * That split is not fussiness. `chatt` places 129 models, and building per
+   * model means 129 BVH rebuilds over an ever-larger triangle set (measured:
+   * ~261k triangles across all nodes, ~87k for LOD0 alone). Rebuilding is the
+   * expensive part; adding is cheap. One build for the batch, not one per model.
+   *
+   * @param root  a Mesh or any Object3D to traverse (typically a GLB LOD group)
+   * @param surface  footing/footstep tag, e.g. 'concrete'
+   * @returns the collision-object ids added — pass them to `removeColliders`
+   *          later. Empty means nothing collidable was found, which is worth
+   *          surfacing rather than assuming success.
+   */
+  addCollider(
+    root: Object3D | null | undefined,
+    surface: string | number
+  ): number[] {
+    if (!root) return [];
+    const ids: number[] = [];
+    root.updateWorldMatrix(true, true);
+    root.traverse((o) => {
+      const m = o as Mesh;
+      if (!m.isMesh || !m.geometry) return;
+      const id = this.world.addMesh(m, surface);
+      if (id >= 0) ids.push(id);
+    });
+    return ids;
+  }
+
+  /** Rebuild the BVH after a batch of `addCollider` / `removeColliders` (#702). */
+  commitColliders(): void {
+    this.world.build();
+  }
+
+  /**
+   * Drop previously added colliders (#702) — the ids from `addCollider`.
+   *
+   * Needed because a model can unmount: without this, walking through where a
+   * landmark USED to be would hit an invisible wall, which is a worse bug than
+   * the one collision fixes.
+   */
+  removeColliders(ids: readonly number[]): void {
+    if (!ids.length) return;
+    for (const id of ids) this.world.removeObject(id);
+    this.commitColliders();
+  }
+
   get triCount(): number {
     return this.world.triCount;
   }
@@ -363,7 +457,9 @@ export class EmbodiedController {
       this.bobScale = 0.25;
       this.dustScale = 0.6;
     } else {
-      speed = this.walkSpeed * (sprinting ? this.sprintCfg.speedRatio : cfg.speedRatio);
+      speed =
+        this.walkSpeed *
+        (sprinting ? this.sprintCfg.speedRatio : cfg.speedRatio);
       eyeTarget = cfg.eye;
       this.gait = sprinting ? this.sprintCfg.gait : cfg.gait;
       this.bobScale = sprinting ? this.sprintCfg.bobScale : cfg.bobScale;
@@ -381,7 +477,9 @@ export class EmbodiedController {
     const moving = this.riding_ ? fwd !== 0 : fwd !== 0 || str !== 0;
     const bikeK =
       1 -
-      Math.exp(-this.fixedStep / (moving ? this.bike.accelTau : this.bike.brakeTau));
+      Math.exp(
+        -this.fixedStep / (moving ? this.bike.accelTau : this.bike.brakeTau)
+      );
 
     // Fixed-step accumulator → framerate-independent feel. Clamp dt so a
     // backgrounded tab can't explode the tick count.
@@ -400,7 +498,10 @@ export class EmbodiedController {
         // heading turns screen-LEFT — D (right = +1) must turn RIGHT, so it
         // DECREASES the heading, hence the minus.
         const rollSpeed = Math.hypot(cc.velocity.x, cc.velocity.z);
-        const turn = Math.min(this.bike.turnRate, this.bike.turnGain * rollSpeed);
+        const turn = Math.min(
+          this.bike.turnRate,
+          this.bike.turnGain * rollSpeed
+        );
         this.bikeHeading_ -= turn * str * this.fixedStep;
         const tx = -Math.sin(this.bikeHeading_) * speed * fwd;
         const tz = -Math.cos(this.bikeHeading_) * speed * fwd;

@@ -17,7 +17,7 @@ import HouseModel from './HouseModel';
 import Water from './Water';
 import Roads from './Roads';
 import CityProps from './CityProps';
-import WarehouseModels from './WarehouseModels';
+import WarehouseModels, { type ModelColliderRegistry } from './WarehouseModels';
 import { elevationAt, minElevation } from './terrainSample';
 
 /** buildings-wide.json entry — raw WGS84 footprints (src/twin/cesium/overpass.ts
@@ -58,6 +58,7 @@ export default function WideCity({
   onError,
   onTwinPlaced,
   onGroundReady,
+  registerCollider,
   onBuildingsMesh,
   onTerrainMesh,
 }: {
@@ -76,6 +77,7 @@ export default function WideCity({
    *  the hills. The narrow TwinWorld path wires this too; the wide path did not
    *  until #226. */
   onGroundReady?: (groundAt: (x: number, z: number) => number) => void;
+  registerCollider?: ModelColliderRegistry;
   /** Hands over the merged buildings mesh for Walk-mode BVH collision (#226). */
   onBuildingsMesh?: (mesh: Mesh) => void;
   /** Hands over the ground mesh for the Walk-mode physics floor (#226). */
@@ -279,6 +281,7 @@ export default function WideCity({
             info={wideModels}
             grid={data.grid}
             manifest={data.wideManifest}
+            registerCollider={registerCollider}
           />
         </Suspense>
       ) : null}

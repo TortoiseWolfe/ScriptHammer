@@ -12,6 +12,7 @@ import {
   LinearSRGBColorSpace,
   type Group,
   type Mesh,
+  type Object3D,
   type Vector3,
 } from 'three';
 import {
@@ -45,7 +46,10 @@ import PlacementEditor from './PlacementEditor';
 import SelectedBuildingCard from './SelectedBuildingCard';
 import WarehouseGizmo from './WarehouseGizmo';
 import { useWarehouseEditor } from './useWarehouseEditor';
-import type { ModelGroupRegistry } from '@/world/WarehouseModels';
+import type {
+  ModelGroupRegistry,
+  ModelColliderRegistry,
+} from '@/world/WarehouseModels';
 import { computeDay } from '@/stage/lightRig';
 import { PALETTES, applyProfile } from '@/packs/themes';
 import {
@@ -367,6 +371,68 @@ function SceneInner({
     (_slug, group) => setGizmoTarget(group),
     []
   );
+
+  /**
+   * Bake a landmark/bridge GLB into the collision world (#702).
+   *
+   * Landmarks and bridges rendered but were not solid — you walked and rode
+   * straight through them — because the collision world was built from exactly
+   * two meshes (terrain + buildings) and these were never handed to it.
+   *
+   * ADDS TO THE LIVE WORLD; DOES NOT REBUILD THE CONTROLLER. Rebuilding would
+   * re-seed the player and bike to spawn, which is #703. `addCollider` grows the
+   * existing `StaticWorld` and re-derives its BVH, leaving every pose untouched.
+   *
+   * Models arrive whenever their GLB finishes loading, which may be before or
+   * after walk mode exists, so both orders are handled: bake now if the
+   * controller is up, otherwise stash and drain after it is built. Keyed by slug
+   * so a remount replaces rather than double-bakes.
+   */
+  /**
+   * ONE BVH build per burst of registrations, not one per model (#702).
+   *
+   * `chatt` places 129 GLBs and they resolve in a burst as each finishes loading.
+   * Adding a mesh is cheap; rebuilding the BVH is not, and it gets more expensive
+   * with every model already in it (measured: ~261k triangles across all nodes of
+   * the 129 models, ~87k for LOD0 alone). Building per registration is therefore
+   * 129 rebuilds over an ever-larger set, landing at exactly the moment the city
+   * pops in. Coalescing onto the next frame makes it one.
+   */
+  const colliderCommitRef = useRef<number | null>(null);
+  const scheduleColliderCommit = useCallback(() => {
+    if (colliderCommitRef.current !== null) return; // already queued this frame
+    colliderCommitRef.current = requestAnimationFrame(() => {
+      colliderCommitRef.current = null;
+      walkCtrlRef.current?.commitColliders();
+    });
+  }, []);
+  useEffect(
+    () => () => {
+      if (colliderCommitRef.current !== null)
+        cancelAnimationFrame(colliderCommitRef.current);
+    },
+    []
+  );
+
+  const registerCollider = useCallback<ModelColliderRegistry>(
+    (slug, group) => {
+      const ctrl = walkCtrlRef.current;
+      if (!group) {
+        // Unmounted: drop the geometry too. Leaving it would be an invisible wall
+        // where a landmark used to be — worse than no collision at all.
+        pendingCollidersRef.current.delete(slug);
+        const ids = colliderIdsRef.current.get(slug);
+        if (ids && ctrl) ctrl.removeColliders(ids);
+        colliderIdsRef.current.delete(slug);
+        return;
+      }
+      pendingCollidersRef.current.set(slug, group);
+      if (!ctrl) return; // walk mode not up yet — drained when it builds
+      colliderIdsRef.current.set(slug, ctrl.addCollider(group, 'concrete'));
+      scheduleColliderCommit();
+    },
+    [scheduleColliderCommit]
+  );
   const gizmoBase = useMemo(() => {
     if (!selectedModel || !warehouseModels) return null;
     const m = warehouseModels.models.find((e) => e.slug === selectedModel);
@@ -438,6 +504,20 @@ function SceneInner({
   // here would be a use-before-declaration and would also rebuild this callback
   // on every manifest change, re-firing the child effect that calls it.
   const tryBuildWalkRef = useRef<(() => void) | null>(null);
+  /** The exact inputs the live controller was built from — see the guard in
+   *  tryBuildWalk (#703). Identity comparison, so a real mesh swap still rebuilds. */
+  const builtFromRef = useRef<{
+    terrain: Mesh;
+    buildings: Mesh;
+    groundAt: (x: number, z: number) => number;
+  } | null>(null);
+  /** Landmark/bridge GLB roots awaiting collision bake (#702). Keyed by slug so a
+   *  remount replaces rather than duplicates. Populated whether or not walk mode
+   *  exists yet; drained into the controller once it does. */
+  const pendingCollidersRef = useRef<Map<string, Object3D>>(new Map());
+  /** Collision-object ids per slug, so an unmounted model's geometry can be
+   *  removed again. Cleared whenever the world is rebuilt from scratch. */
+  const colliderIdsRef = useRef<Map<string, number[]>>(new Map());
   const handleGroundReady = useCallback(
     (fn: (x: number, z: number) => number) => {
       groundAtRef.current = fn;
@@ -500,6 +580,28 @@ function SceneInner({
     const terrain = terrainMeshRef.current;
     const groundAt = groundAtRef.current;
     if (!buildings || !terrain || !groundAt) return;
+
+    // IDEMPOTENT (#703). Three callbacks call this — terrain mesh, buildings
+    // mesh, ground sampler — and any of them can fire more than once. Without
+    // this guard every extra call disposed the live controller and built a new
+    // one, which re-ran `parkBike(spawn)` and teleported the player. Reported as
+    // "sometimes my bike just randomly gets pulled somewhere else": it was being
+    // re-parked at the spawn point from wherever you had left it.
+    //
+    // Identity, not a boolean: a genuinely NEW terrain or buildings mesh (a
+    // different site, a remount) still has to rebuild the collision world. Only a
+    // repeat call with the same three inputs is skipped.
+    const built = builtFromRef.current;
+    if (
+      built &&
+      built.terrain === terrain &&
+      built.buildings === buildings &&
+      built.groundAt === groundAt
+    ) {
+      return;
+    }
+    builtFromRef.current = { terrain, buildings, groundAt };
+
     walkCtrlRef.current?.dispose();
     const ctrl = EmbodiedController.fromMeshes(
       [
@@ -536,6 +638,15 @@ function SceneInner({
     const sy = groundAt(sx, sz);
     ctrl.teleport(sx, sy, sz);
     ctrl.parkBike(sx, sy, sz); // the bike starts parked at your feet
+    // Bake any landmark/bridge GLBs that finished loading before walk mode
+    // existed (#702). The world was just rebuilt, so previous ids are void.
+    colliderIdsRef.current.clear();
+    for (const [slug, group] of pendingCollidersRef.current) {
+      colliderIdsRef.current.set(slug, ctrl.addCollider(group, 'concrete'));
+    }
+    // One build for the whole drain, not one per model — see scheduleColliderCommit.
+    if (pendingCollidersRef.current.size > 0) ctrl.commitColliders();
+
     walkCtrlRef.current = ctrl;
     setWalkCtrl(ctrl);
   }, [framing, manifest]);
@@ -722,6 +833,7 @@ function SceneInner({
         selectedModel={selectedModel}
         onSelectModel={onSelectModel}
         registerModelGroup={patchOverride ? registerModelGroup : undefined}
+        registerCollider={registerCollider}
         onHouseGround={onHouseGround}
         onGroundReady={handleGroundReady}
         onError={onWorldError}
