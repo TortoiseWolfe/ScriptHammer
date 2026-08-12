@@ -150,7 +150,9 @@ export function parseHourParam(search: string): number {
 
 /** `?weather=rain` turns on ambient rain in Walk mode; anything else → none. */
 export function parseWeatherParam(search: string): WeatherKind {
-  return new URLSearchParams(search).get('weather') === 'rain' ? 'rain' : 'none';
+  return new URLSearchParams(search).get('weather') === 'rain'
+    ? 'rain'
+    : 'none';
 }
 
 function SceneInner({
@@ -378,7 +380,6 @@ function SceneInner({
     [rig]
   );
 
-
   // Honest perf sampling (#259). renderer.info auto-resets after EVERY
   // gl.render — with the EffectComposer chain the last post pass would report
   // 1 call / 2 triangles. So: autoReset off; this priority-0 frame runs BEFORE
@@ -427,9 +428,20 @@ function SceneInner({
   // ground instead of at sea level.
   const trolleyTarget = useRef({ position: { x: 0, y: 0, z: 0 }, heading: 0 });
   const groundAtRef = useRef<((x: number, z: number) => number) | null>(null);
+  // Stored in a ref AND used to retry the walk build, because it is now one of
+  // the three things tryBuildWalk waits on. Whichever of the three arrives last
+  // has to be the one that triggers the spawn; before #651's second fix only the
+  // two meshes retried, so a sampler that arrived last was simply never noticed.
+  //
+  // `tryBuildWalkRef` rather than `tryBuildWalk` directly: tryBuildWalk is
+  // declared below this point and depends on `manifest`/`framing`, so naming it
+  // here would be a use-before-declaration and would also rebuild this callback
+  // on every manifest change, re-firing the child effect that calls it.
+  const tryBuildWalkRef = useRef<(() => void) | null>(null);
   const handleGroundReady = useCallback(
     (fn: (x: number, z: number) => number) => {
       groundAtRef.current = fn;
+      tryBuildWalkRef.current?.();
     },
     []
   );
@@ -462,12 +474,32 @@ function SceneInner({
   const [walkCtrl, setWalkCtrl] = useState<EmbodiedController | null>(null);
   const viewRef = useRef<BikeView>('first'); // first/third-person while on the bike
 
-  // Build the embodied controller once BOTH the terrain (floor) and buildings
-  // (walls) meshes have arrived. The terrain is the floor gravity needs.
+  // Build the embodied controller once THREE things have arrived: the terrain
+  // (floor), the buildings (walls), and the ground SAMPLER.
+  //
+  // THE SAMPLER IS A GATE, NOT AN OPTIONAL EXTRA (#651, second fix).
+  //
+  // This used to wait on the two meshes only, while `groundAtRef` was published
+  // from a separate effect in WideCity/TwinWorld that waits on the elevation grid
+  // (`if (!data || !onGroundReady) return`). Two independent lifecycles, no
+  // ordering between them — so `tryBuildWalk` could and did win the race, and the
+  // spawn height fell through to `?? 0`.
+  //
+  // Zero is not sea level here. The sampler is `elevationAt(...) - minElevation`,
+  // normalised so the LOWEST point of the terrain is 0. Spawning at 0 anywhere
+  // that is not that lowest point puts you underneath the ground — and
+  // `parkBike()` was handed the same `sy`, which is why the reported symptom was
+  // the player *and the bike* below the terrain, falling.
+  //
+  // The first #651 fix corrected WHERE horizontally (reprojecting the authored
+  // riverfront focus into the wide frame) and that part works. It did nothing
+  // about the vertical, because the fallback failed silently and a clean build
+  // said nothing.
   const tryBuildWalk = useCallback(() => {
     const buildings = buildingsMeshRef.current;
     const terrain = terrainMeshRef.current;
-    if (!buildings || !terrain) return;
+    const groundAt = groundAtRef.current;
+    if (!buildings || !terrain || !groundAt) return;
     walkCtrlRef.current?.dispose();
     const ctrl = EmbodiedController.fromMeshes(
       [
@@ -497,12 +529,20 @@ function SceneInner({
       sx = spawnRef.current?.x ?? framing.homeFocus[0];
       sz = spawnRef.current?.z ?? framing.homeFocus[2];
     }
-    const sy = groundAtRef.current?.(sx, sz) ?? 0;
+    // No `?? 0` here. `groundAt` is a gate above, so it exists by this line — and
+    // defaulting the SPAWN HEIGHT to a magic number is precisely the silent
+    // failure that shipped underground twice. If the sampler is ever absent we
+    // want no walk mode rather than a walk mode under the map.
+    const sy = groundAt(sx, sz);
     ctrl.teleport(sx, sy, sz);
     ctrl.parkBike(sx, sy, sz); // the bike starts parked at your feet
     walkCtrlRef.current = ctrl;
     setWalkCtrl(ctrl);
   }, [framing, manifest]);
+
+  // Keep the ref pointing at the current closure so handleGroundReady — declared
+  // above, and deliberately dependency-free — always calls the live version.
+  tryBuildWalkRef.current = tryBuildWalk;
 
   const handleBuildingsMesh = useCallback(
     (mesh: Mesh) => {
