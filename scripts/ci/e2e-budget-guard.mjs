@@ -221,18 +221,38 @@ async function listRuns(fetchImpl, { repo, token, sinceIso, maxPages = 6 }) {
  *
  * A blocked run is `completed`/`failure` with every downstream job `skipped`, because
  * `build` has `needs: budget`. That is indistinguishable from a genuine test failure by
- * conclusion alone, so the ambiguous case is the only one that costs an extra API call:
+ * conclusion alone, so the ambiguous conclusions are the ones that cost an API call:
  *
- *   success / in-progress / queued  -> it ran (or is running). Count it, no call.
- *   cancelled                       -> may have run partially. Count it, no call.
- *   failure                         -> ambiguous. Ask the jobs endpoint.
+ *   in-progress / queued  -> it may be testing right now. Count it, no call.
+ *   success               -> its shards ran by definition. Count it, no call.
+ *   anything else         -> ambiguous. Ask the jobs endpoint; shards decide.
  *
- * Counted conservatively on any doubt, including a jobs-endpoint error: over-counting
- * costs a delayed run, under-counting costs the quota this guard exists to protect.
+ * CANCELLED USED TO SHORT-CIRCUIT HERE, and it was the same defect #640 fixed one branch
+ * over. The docblock said "cancelled -> may have run partially. Count it, no call." That
+ * `may` was carrying the whole argument, and it is false in practice: measured against
+ * the live window on 2026-08-12, **11 of 11 cancelled runs had executed ZERO shards.**
+ *
+ * They are cancelled precisely because they never started. The repo-wide `concurrency`
+ * mutex holds one pending run per group and a newer push SUPERSEDES it — so a cancelled
+ * run is almost always one that was still queued. Billing it at the price of a full
+ * 8-shard run made the meter climb on activity that spent nothing, which is exactly the
+ * self-reinforcing loop the comment on countRuns() below warns about. Measured effect:
+ * the guard reported 31/30 and blocked everything while real consumption was 20/30.
+ *
+ * A cancelled run that HAD started shards still counts — the jobs check sees them, so
+ * partial spend is charged honestly rather than assumed in either direction.
+ *
+ * Still counted conservatively on genuine doubt: a non-completed run, or a jobs-endpoint
+ * error. Over-counting costs a delayed run; under-counting costs the quota this guard
+ * exists to protect. What changed is that "cancelled" is no longer treated as doubt when
+ * the answer is one API call away.
  */
 export async function runConsumedQuota(fetchImpl, { repo, token, run }) {
   if (run.status !== 'completed') return true;
-  if (run.conclusion !== 'failure') return true;
+  // Only `success` is unambiguous — it cannot succeed without its shards running.
+  // Everything else (failure, cancelled, timed_out, startup_failure…) is settled by
+  // the jobs endpoint rather than assumed.
+  if (run.conclusion === 'success') return true;
 
   try {
     const res = await fetchImpl(
