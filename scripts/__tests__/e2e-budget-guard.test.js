@@ -490,3 +490,90 @@ test('the off-by-one it fixes: at limit-1, self-counting would refuse', async ()
     'counting itself is what produced the observed 10/10 DAY_EXCEEDED'
   );
 });
+
+// ── a CANCELLED run that never started shards spent nothing (#640, one branch over).
+//
+// runConsumedQuota used to short-circuit on `conclusion !== 'failure'`, so every
+// cancelled run was billed at the price of a full 8-shard run without ever asking
+// the jobs endpoint. The docblock justified it with "cancelled -> may have run
+// partially", and that `may` was the whole argument.
+//
+// Measured against the live window on 2026-08-12: 11 of 11 cancelled runs had
+// executed ZERO shards. They are cancelled *because* they never started — the
+// repo-wide concurrency mutex holds one pending run per group and a newer push
+// supersedes it. The guard reported 31/30 and blocked everything; real consumption
+// was 20/30.
+//
+// Both directions are pinned, because a cancelled run that DID start shards must
+// still be charged.
+const JOBS = (names) => ({
+  ok: true,
+  json: async () => ({
+    jobs: names.map(([name, conclusion]) => ({ name, conclusion })),
+  }),
+});
+
+test('a cancelled run whose shards never started does NOT count', async () => {
+  const { runConsumedQuota } = await import(MOD);
+  const spent = await runConsumedQuota(
+    async () =>
+      JOBS([
+        ['E2E (chromium-gen 1/6)', 'skipped'],
+        ['Build', 'skipped'],
+      ]),
+    {
+      repo: 'o/r',
+      token: 't',
+      run: { id: 1, status: 'completed', conclusion: 'cancelled' },
+    }
+  );
+  assert.strictEqual(
+    spent,
+    false,
+    'cancelled + every shard skipped = zero Supabase requests; billing it is what produced 31/30'
+  );
+});
+
+test('a cancelled run that DID start shards still counts', async () => {
+  const { runConsumedQuota } = await import(MOD);
+  const spent = await runConsumedQuota(
+    async () =>
+      JOBS([
+        ['E2E (chromium-gen 1/6)', 'cancelled'],
+        ['Build', 'success'],
+      ]),
+    {
+      repo: 'o/r',
+      token: 't',
+      run: { id: 2, status: 'completed', conclusion: 'cancelled' },
+    }
+  );
+  assert.strictEqual(spent, true, 'partial spend is still spend');
+});
+
+test('a SUCCESSFUL run counts — shards ran by definition', async () => {
+  const { runConsumedQuota } = await import(MOD);
+  const spent = await runConsumedQuota(
+    async () => JOBS([['E2E (chromium-gen 1/6)', 'success']]),
+    {
+      repo: 'o/r',
+      token: 't',
+      run: { id: 3, status: 'completed', conclusion: 'success' },
+    }
+  );
+  assert.strictEqual(spent, true);
+});
+
+test('still fails CONSERVATIVE: jobs endpoint error counts as spent', async () => {
+  const { runConsumedQuota } = await import(MOD);
+  const spent = await runConsumedQuota(async () => ({ ok: false }), {
+    repo: 'o/r',
+    token: 't',
+    run: { id: 4, status: 'completed', conclusion: 'cancelled' },
+  });
+  assert.strictEqual(
+    spent,
+    true,
+    'under-counting costs the quota this guard exists to protect'
+  );
+});
