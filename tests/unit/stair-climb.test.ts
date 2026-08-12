@@ -40,6 +40,8 @@ interface Fixture {
   slug: string;
   source: string;
   stair: {
+    kind?: 'stairs' | 'ramp';
+    deg?: number;
     steps: number;
     riser: number;
     rise: number;
@@ -157,6 +159,89 @@ function climb(
   }
 }
 
+/**
+ * Centre of the ramp's own largest sloped face.
+ *
+ * The fixture's `base` is the lowest VERTEX of that triangle — a corner. Starting there
+ * puts the body at the very edge of a ~1 m wide slope, where missing it entirely is easy;
+ * the first version of this test did exactly that and reported 0.00 m, which reads as
+ * "cannot climb a 35 degree slope" and was really "stood next to it".
+ */
+function rampCentre(fx: Fixture): { x: number; y: number; z: number } {
+  let best = { area: 0, x: 0, y: 0, z: 0 };
+  const p = fx.positions;
+  for (let i = 0; i < p.length; i += 9) {
+    const e1x = p[i + 3] - p[i],
+      e1y = p[i + 4] - p[i + 1],
+      e1z = p[i + 5] - p[i + 2];
+    const e2x = p[i + 6] - p[i],
+      e2y = p[i + 7] - p[i + 1],
+      e2z = p[i + 8] - p[i + 2];
+    const nx = e1y * e2z - e1z * e2y;
+    const ny = e1z * e2x - e1x * e2z;
+    const nz = e1x * e2y - e1y * e2x;
+    const L = Math.hypot(nx, ny, nz);
+    if (L < 1e-9) continue;
+    const up = ny / L;
+    if (up < 0.2 || up > 0.98) continue; // sloped, not flat, not a wall
+    const area = L / 2;
+    if (area <= best.area) continue;
+    best = {
+      area,
+      x: (p[i] + p[i + 3] + p[i + 6]) / 3,
+      y: (p[i + 1] + p[i + 4] + p[i + 7]) / 3,
+      z: (p[i + 2] + p[i + 5] + p[i + 8]) / 3,
+    };
+  }
+  return { x: best.x, y: best.y, z: best.z };
+}
+
+/** Drive from an explicit start point — used to begin ON a ramp rather than approach it. */
+function climbFrom(
+  fx: Fixture,
+  start: { x: number; y: number; z: number }
+): number {
+  const geo = new BufferGeometry();
+  geo.setAttribute(
+    'position',
+    new BufferAttribute(new Float32Array(fx.positions), 3)
+  );
+  const mesh = new Mesh(geo, new MeshBasicMaterial());
+  mesh.updateMatrixWorld(true);
+  // A floor well below, so "fell off the slope" is distinguishable from "never moved":
+  // without it a miss falls forever and reports exactly 0.00 m, same as being blocked.
+  const floor = new Mesh(new BoxGeometry(200, 2, 200), new MeshBasicMaterial());
+  floor.position.set(start.x, fx.stair.baseY - 6, start.z);
+  floor.updateMatrixWorld(true);
+  const ctrl = EmbodiedController.fromMeshes(
+    [
+      { mesh, surface: 'concrete' },
+      { mesh: floor, surface: 'dirt' },
+    ],
+    { spawn: start }
+  );
+  try {
+    const [dx, dz] = fx.stair.ascend;
+    const yaw = Math.atan2(-dx, -dz);
+    const dt = 1 / 60;
+    for (let i = 0; i < 30; i++) {
+      ctrl.setInput({ ...STILL, yaw });
+      ctrl.step(dt);
+    }
+    const y0 = ctrl.position.y;
+    let peak = y0;
+    for (let i = 0; i < 300; i++) {
+      ctrl.setInput({ ...STILL, forward: 1, yaw });
+      ctrl.step(dt);
+      peak = Math.max(peak, ctrl.position.y);
+    }
+    return peak - y0;
+  } finally {
+    ctrl.dispose();
+    geo.dispose();
+  }
+}
+
 describe('climbing the staircases the game actually ships (#705)', () => {
   it('the fixtures exist and contain real geometry', () => {
     // Without this, every assertion below could pass against an empty world. The
@@ -170,12 +255,24 @@ describe('climbing the staircases the game actually ships (#705)', () => {
         50
       );
       expect(fx.positions.length).toBe(fx.triangleCount * 9);
-      expect(fx.stair.riser).toBeGreaterThan(0.05);
-      expect(
-        fx.stair.riser,
-        `${fx.slug} riser ${fx.stair.riser} exceeds the 0.4 m step height — it is not a ` +
-          `staircase and the fixture is mis-detected`
-      ).toBeLessThan(0.4);
+      if (fx.stair.kind === 'ramp') {
+        // Most "stairs" in this city are ramps: the abstraction pass flattens flights into
+        // a single sloped face, which is why the level-scan finds only two real staircases
+        // across 129 landmarks.
+        expect(fx.stair.deg).toBeGreaterThan(5);
+        expect(
+          fx.stair.deg,
+          `${fx.slug} is ${fx.stair.deg} deg — past the 50 deg walk limit, so being ` +
+            `unable to climb it would be correct behaviour, not a bug`
+        ).toBeLessThan(50);
+      } else {
+        expect(fx.stair.riser).toBeGreaterThan(0.05);
+        expect(
+          fx.stair.riser,
+          `${fx.slug} riser ${fx.stair.riser} exceeds the 0.4 m step height — it is not a ` +
+            `staircase and the fixture is mis-detected`
+        ).toBeLessThan(0.4);
+      }
     }
   });
 
@@ -188,7 +285,48 @@ describe('climbing the staircases the game actually ships (#705)', () => {
     expect(b.gain).toBe(a.gain);
   });
 
-  for (const fx of fixtures) {
+  // The ramp the owner actually reported, captured by name (#706): "I can't even approach
+  // them, it's like an invisible glass wall."
+  //
+  // TWO SEPARATE QUESTIONS, and conflating them is how this stayed unexplained. (1) Can the
+  // body walk a 35 deg slope at all? (2) Can it REACH that slope? Measured from outside,
+  // the body climbs 0.00-0.42 m of a 3.10 m ramp — but a ray fired along the approach stops
+  // 0.15 m short of the ramp foot against a front-facing wall roughly 1.2 m tall, which is
+  // three times the 0.4 m step height. If the wall is real then being stopped is CORRECT
+  // and only its invisibility is the bug, so this must not assert "the ramp must be
+  // climbable from outside" — that would encode an expectation I have not established.
+  const ramp = fixtures.find((f) => f.stair.kind === 'ramp');
+  if (ramp) {
+    it(`${ramp.slug} — the ${ramp.stair.deg} deg ramp is walkable once you are ON it`, () => {
+      // Start the body ON the slope, past whatever guards the foot. This isolates the
+      // physics question from the geometry question: if this passes, slope handling is
+      // fine and the problem is purely that the ramp cannot be reached.
+      const c = rampCentre(ramp);
+      const gain = climbFrom(ramp, { x: c.x, y: c.y + 0.6, z: c.z });
+      expect(
+        gain,
+        `standing on a ${ramp.stair.deg} deg slope (limit is 50 deg) the body climbed ` +
+          `${gain.toFixed(2)} m of ${ramp.stair.rise.toFixed(2)} m`
+      ).toBeGreaterThan(ramp.stair.rise * 0.5);
+    });
+
+    it(`${ramp.slug} — approaching from outside is blocked (the reported symptom)`, () => {
+      // A characterisation test, not a wish: it records the measured fact so a change in
+      // either the geometry or the physics shows up here instead of silently.
+      const trials = [-15, 0, 15].map((d) =>
+        climb(ramp, { riding: false, offsetDeg: d })
+      );
+      const best = Math.max(...trials.map((t) => t.gain));
+      expect(
+        best,
+        `the approach now reaches ${best.toFixed(2)} m of the ${ramp.stair.rise.toFixed(2)} m ` +
+          `ramp. If this went UP, the blocker moved or was removed — re-read the finding in ` +
+          `#713 before changing this number`
+      ).toBeLessThan(ramp.stair.rise * 0.5);
+    });
+  }
+
+  for (const fx of fixtures.filter((f) => f.stair.kind !== 'ramp')) {
     const target = fx.stair.rise * 0.7;
     it(`${fx.slug} — ${fx.stair.steps} steps, ${fx.stair.riser.toFixed(3)} m risers, on foot`, () => {
       const trials = [-12, 0, 12].map((d) =>
