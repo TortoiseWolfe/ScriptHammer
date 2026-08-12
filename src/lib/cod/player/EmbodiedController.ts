@@ -454,6 +454,34 @@ export class EmbodiedController {
     return this.world.triCount;
   }
 
+  /**
+   * What am I looking at? Returns the collision-object id under the crosshair, or -1 (#706).
+   *
+   * Deliberately a ray into the COLLISION world rather than a scene-graph pick: what you
+   * can inspect is then exactly what you can bump into, so a building that turns out not to
+   * be selectable is itself the report that it is not solid. It also means the caller needs
+   * no access to the BVH internals — it maps the id back through whatever registry it used
+   * to add the collider.
+   */
+  lookAt(dx: number, dy: number, dz: number, maxDist = 150): number {
+    const l = Math.hypot(dx, dy, dz);
+    if (l < 1e-6) return -1;
+    const eye = this.eyePosition({ x: 0, y: 0, z: 0 });
+    const hit = this.camHit_;
+    const ok = this.world.raycast(
+      eye.x,
+      eye.y,
+      eye.z,
+      dx / l,
+      dy / l,
+      dz / l,
+      maxDist,
+      MASK.CHARACTER,
+      hit
+    );
+    return ok ? hit.object : -1;
+  }
+
   setInput(input: EmbodiedInput): void {
     this.input = input;
   }

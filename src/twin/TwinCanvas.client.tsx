@@ -35,7 +35,11 @@ import {
   type WeatherKind,
   bus,
 } from '@/lib/cod';
-import { makeWalkMove, type BikeView } from '@/stage/embodiedWalk';
+import {
+  makeWalkMove,
+  chaseBackDir,
+  type BikeView,
+} from '@/stage/embodiedWalk';
 import TwinWorld from '@/world/TwinWorld';
 import Trolley from '@/agents/trolley';
 import Bike from '@/agents/bike';
@@ -44,6 +48,7 @@ import ProceduralSky from '@/components/game/ProceduralSky';
 import Hud, { HudCaption, HudLink, HudOption, HudSlider } from '@/stage/Hud';
 import PlacementEditor from './PlacementEditor';
 import SelectedBuildingCard from './SelectedBuildingCard';
+import LocationHud from './LocationHud';
 import WarehouseGizmo from './WarehouseGizmo';
 import { useWarehouseEditor } from './useWarehouseEditor';
 import type {
@@ -69,6 +74,12 @@ import type {
 } from '@/lib/manifest';
 import { hasWideExtent } from '@/lib/manifest';
 import { createProjection } from '@/lib/enu';
+import {
+  markerBlock,
+  nearestLandmark,
+  osmUrl,
+  parseAtParam,
+} from '@/lib/twin-location';
 import {
   createCommitScheduler,
   type CommitScheduler,
@@ -163,6 +174,16 @@ export function parseWeatherParam(search: string): WeatherKind {
     : 'none';
 }
 
+/** Player position in every frame of reference the readout and the harness need (#706). */
+export interface TwinLocus {
+  lat: number;
+  lon: number;
+  /** ENU metres — what the stair harness is driven with. */
+  x: number;
+  z: number;
+  near: string | null;
+}
+
 function SceneInner({
   slug,
   manifest,
@@ -185,6 +206,8 @@ function SceneInner({
   onFps,
   onNearBike,
   onWalkReady,
+  onLocus,
+  pickRef,
   warehouseModels,
   modelOverrides,
   selectedModel,
@@ -223,6 +246,10 @@ function SceneInner({
   onNearBike?: (near: boolean) => void;
   /** Fires once the embodied walk controller is built (deep-link gating). */
   onWalkReady?: () => void;
+  /** Publishes the player's position ~4x/s for the location readout (#706). */
+  onLocus?: (locus: TwinLocus | null) => void;
+  /** The scene assigns its crosshair-pick here; the key handler lives a level up. */
+  pickRef?: { current: (() => void) | null };
   warehouseModels?: WarehouseModelsInfo | null;
   modelOverrides?: Record<string, TwinPlacementOverride>;
   selectedModel?: string | null;
@@ -624,7 +651,20 @@ function SceneInner({
     const authored = manifest.site.framing?.homeFocus;
     let sx: number;
     let sz: number;
-    if (authored && manifest.atlasBox) {
+    // `?at=lat,lon` wins: it is how you return to a spot you marked (#706). Malformed
+    // values parse to null and fall through to the normal spawn rather than becoming a
+    // NaN position — see `parseAtParam`.
+    const at =
+      typeof window !== 'undefined'
+        ? parseAtParam(window.location.search)
+        : null;
+    if (at) {
+      const proj = createProjection(
+        manifest.atlasBox ?? manifest.box,
+        manifest.vectorOffsetM
+      );
+      [sx, sz] = proj.lonLatToEnu(at.lon, at.lat);
+    } else if (authored && manifest.atlasBox) {
       const nProj = createProjection(manifest.box, manifest.vectorOffsetM);
       const wProj = createProjection(manifest.atlasBox, manifest.vectorOffsetM);
       const [lon, lat] = nProj.enuToLonLat(authored[0], authored[2]);
@@ -777,6 +817,87 @@ function SceneInner({
       rig.unboard();
     }
   }, [rig, mode, site.trolley]);
+
+  /* ---- Where am I (#706): the half that needs the controller ---------------- */
+
+  // models.json anchors are in the NARROW frame; the wide city reprojects them the same
+  // offset-exact way (narrow enu -> lon/lat -> wide enu). The readout must match, or the
+  // "near" line names a building 5 km from where you stand.
+  const hudLandmarks = useMemo(() => {
+    const models = warehouseModels?.models ?? [];
+    if (!models.length) return [];
+    if (!manifest.atlasBox) {
+      return models.map((e) => ({
+        slug: e.slug,
+        title: e.title,
+        x: e.x,
+        z: e.z,
+      }));
+    }
+    const nProj = createProjection(manifest.box, manifest.vectorOffsetM);
+    const wProj = createProjection(manifest.atlasBox, manifest.vectorOffsetM);
+    return models.map((e) => {
+      const [lon, lat] = nProj.enuToLonLat(e.x, e.z);
+      const [x, z] = wProj.lonLatToEnu(lon, lat);
+      return { slug: e.slug, title: e.title, x, z };
+    });
+  }, [warehouseModels, manifest]);
+
+  // Polled, not per-frame: the readout is for reading, and re-rendering React 60 times a
+  // second to move a text label would cost more than the feature is worth.
+  useEffect(() => {
+    if (!onLocus) return;
+    if (!walkCtrl || mode !== 'walk') {
+      onLocus(null);
+      return;
+    }
+    const proj = createProjection(
+      manifest.atlasBox ?? manifest.box,
+      manifest.vectorOffsetM
+    );
+    const sample = () => {
+      const p = walkCtrl.position;
+      const [lon, lat] = proj.enuToLonLat(p.x, p.z);
+      const n = nearestLandmark(hudLandmarks, p.x, p.z);
+      onLocus({ lat, lon, x: p.x, z: p.z, near: n ? n.entry.title : null });
+    };
+    sample();
+    const id = window.setInterval(sample, 250);
+    return () => window.clearInterval(id);
+  }, [onLocus, walkCtrl, mode, manifest, hudLandmarks]);
+
+  /**
+   * Inspect whatever is under the crosshair (#706).
+   *
+   * A click would be the obvious gesture and is unavailable — in walk mode a click is
+   * pointer-lock — so it is a key. The ray goes into the COLLISION world and the hit's
+   * object id maps back to a landmark through the same registry that baked it in (#702),
+   * so there is no second picking system to drift out of sync with the first. It also
+   * means a building you cannot select is a building that is not solid, which is itself
+   * the diagnostic.
+   */
+  useEffect(() => {
+    if (!pickRef) return;
+    pickRef.current = () => {
+      const ctrl = walkCtrlRef.current;
+      if (!ctrl || !onSelectModel) return;
+      // Negating the chase cam's backward vector reuses the camera's own sign convention
+      // instead of re-deriving pitch here and getting it upside down.
+      const back = chaseBackDir(rig.yaw, rig.pitch);
+      const id = ctrl.lookAt(-back.x, -back.y, -back.z);
+      if (id < 0) return;
+      for (const [slug, ids] of colliderIdsRef.current) {
+        if (ids.includes(id)) {
+          onSelectModel(slug);
+          return;
+        }
+      }
+    };
+    const ref = pickRef;
+    return () => {
+      ref.current = null;
+    };
+  }, [pickRef, rig, onSelectModel]);
 
   return (
     <StageCore
@@ -1166,11 +1287,49 @@ function TwinCanvasInner({
   }, []);
 
   // Shell keys only — the editor's nudge keys live in useWarehouseEditor.
+  /* ---- Where am I (#706) --------------------------------------------------
+   * A coordinate the player can copy is what turns "the stairs on that building don't
+   * work" into something a harness can be pointed at. The SCENE samples the position
+   * (it owns the controller); this half owns the readout, the keys and the clipboard. */
+  const [locus, setLocus] = useState<TwinLocus | null>(null);
+  const locusRef = useRef<TwinLocus | null>(null);
+  locusRef.current = locus;
+  /** Assigned by the scene, so `E` can raycast from where the camera actually is. */
+  const pickRef = useRef<(() => void) | null>(null);
+
+  const [copied, setCopied] = useState(false);
+  const copySpot = useCallback(() => {
+    const l = locusRef.current;
+    if (!l) return;
+    // Derive the prefix from the live URL rather than build config — this has to be right
+    // on the project site (/ScriptHammer/...) and on the root domain alike.
+    const basePath = window.location.pathname.replace(/\/[^/]*\/?$/, '');
+    const text = markerBlock({ ...l, basePath, slug });
+    const done = () => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    };
+    navigator.clipboard?.writeText(text).then(done, () => {
+      // Clipboard can be denied (insecure context, permissions). A prompt keeps the
+      // coordinate reachable instead of the key silently doing nothing.
+      window.prompt('Copy this spot:', text);
+    });
+  }, [slug]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
       if (e.code === 'Backquote') setShowFps((v) => !v);
+      // M marks where you stand; E inspects what you are looking at (#706).
+      if (e.code === 'KeyM') {
+        copySpot();
+        return;
+      }
+      if (e.code === 'KeyE') {
+        pickRef.current?.();
+        return;
+      }
       // Escape clears the selected-building card in normal view. In edit mode
       // the editor hook owns Escape (deselect there), so this defers.
       if (e.code === 'Escape' && !editMode && selectedModel) {
@@ -1189,7 +1348,7 @@ function TwinCanvasInner({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [modes, editMode, selectedModel, setSelectedModel]);
+  }, [modes, editMode, selectedModel, setSelectedModel, copySpot]);
 
   // Route-scoped chrome (`twin-fullscreen` / `twin-diorama`) is set by
   // TwinCanvasHost, not here (#301). It lived in this file until the atlas
@@ -1270,6 +1429,8 @@ function TwinCanvasInner({
           onFps={showFps ? setFps : undefined}
           onNearBike={setNearBike}
           onWalkReady={() => setWalkReady(true)}
+          onLocus={setLocus}
+          pickRef={pickRef}
           warehouseModels={warehouseModels}
           modelOverrides={modelOverrides}
           selectedModel={selectedModel}
@@ -1438,6 +1599,18 @@ function TwinCanvasInner({
         <SelectedBuildingCard
           entry={selectedEntry}
           onDismiss={() => setSelectedModel(null)}
+        />
+      ) : null}
+      {locus ? (
+        <LocationHud
+          lat={locus.lat}
+          lon={locus.lon}
+          x={locus.x}
+          z={locus.z}
+          near={locus.near}
+          osmHref={osmUrl(locus.lat, locus.lon)}
+          onCopy={copySpot}
+          copied={copied}
         />
       ) : null}
       {editMode ? (

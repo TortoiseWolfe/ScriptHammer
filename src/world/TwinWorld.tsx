@@ -167,6 +167,8 @@ export default function TwinWorld({
         onBuildingsMesh={onBuildingsMesh}
         onTerrainMesh={onTerrainMesh}
         registerCollider={registerCollider}
+        selectedModel={selectedModel}
+        onSelectModel={onSelectModel}
       />
     );
   }
