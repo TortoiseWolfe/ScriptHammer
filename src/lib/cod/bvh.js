@@ -833,6 +833,24 @@ function surfaceArea(minx, miny, minz, maxx, maxy, maxz) {
 /* ------------------------------------------------------------------ */
 
 /**
+ * THREE's denormalize factor for a normalized attribute's backing array.
+ *
+ * Mirrors `THREE.BufferAttribute` denormalization, minus its `Math.max(v, -1)` clamp on
+ * signed types: that clamp only bites on the sentinel minimum (-32768 for Int16), where it
+ * changes the value by 3e-5 of a unit. Irrelevant at collision scale, and worth avoiding a
+ * branch in the per-vertex loop.
+ */
+function denormScale(arr) {
+  if (arr instanceof Int8Array) return 1 / 127;
+  if (arr instanceof Uint8Array || arr instanceof Uint8ClampedArray) return 1 / 255;
+  if (arr instanceof Int16Array) return 1 / 32767;
+  if (arr instanceof Uint16Array) return 1 / 65535;
+  if (arr instanceof Int32Array) return 1 / 2147483647;
+  if (arr instanceof Uint32Array) return 1 / 4294967295;
+  return 1;
+}
+
+/**
  * Flatten a Mesh / InstancedMesh into world-space triangles.
  * Handles indexed and non-indexed geometry, multi-material groups (each group
  * can carry its own surface, inferred from the material name), and instancing.
@@ -870,8 +888,25 @@ export function bakeMesh(mesh, surfaceOverride, opts = {}) {
       })
     : null;
 
-  const pos = posAttr.array;
-  const stride = posAttr.itemSize;
+  // Read positions the way THREE does, not the way the raw buffer happens to be laid out.
+  // The plain `array` + `itemSize` pair gets two things wrong for the quantized,
+  // meshopt-compressed GLBs this project ships (KHR_mesh_quantization):
+  //
+  //   normalized — POSITION is Int16 with `normalized: true`, so the real value is
+  //     raw / 32767 and the glTF node scale is calibrated for that -1..1 range. Reading raw
+  //     baked every landmark's collision shell 32767x too large and far outside the city:
+  //     no collision where the building actually is, while the full triangle cost was still
+  //     paid. That is exactly the "glitch at no gain" the first #702 attempt shipped.
+  //
+  //   interleaved — meshopt decoding produces InterleavedBufferAttribute, whose `array` is
+  //     the WHOLE interleaved buffer, whose element step is `data.stride` (not `itemSize`),
+  //     and which starts at `offset`. Reading it as tightly packed yields triangles woven
+  //     out of neighbouring attributes.
+  const interleaved = posAttr.isInterleavedBufferAttribute === true;
+  const pos = interleaved ? posAttr.data.array : posAttr.array;
+  const stride = interleaved ? posAttr.data.stride : posAttr.itemSize;
+  const posOffset = interleaved ? posAttr.offset : 0;
+  const dq = posAttr.normalized === true ? denormScale(pos) : 1;
   const idxArr = index ? index.array : null;
 
   for (let inst = 0; inst < instances; inst++) {
@@ -887,9 +922,10 @@ export function bakeMesh(mesh, surfaceOverride, opts = {}) {
       const o = (base + t) * 9;
       for (let v = 0; v < 3; v++) {
         const vi = idxArr ? idxArr[t * 3 + v] : t * 3 + v;
-        const px = pos[vi * stride];
-        const py = pos[vi * stride + 1];
-        const pz = pos[vi * stride + 2];
+        const vp = posOffset + vi * stride;
+        const px = pos[vp] * dq;
+        const py = pos[vp + 1] * dq;
+        const pz = pos[vp + 2] * dq;
         out[o + v * 3] = e[0] * px + e[4] * py + e[8] * pz + e[12];
         out[o + v * 3 + 1] = e[1] * px + e[5] * py + e[9] * pz + e[13];
         out[o + v * 3 + 2] = e[2] * px + e[6] * py + e[10] * pz + e[14];

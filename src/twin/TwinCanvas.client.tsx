@@ -69,6 +69,10 @@ import type {
 } from '@/lib/manifest';
 import { hasWideExtent } from '@/lib/manifest';
 import { createProjection } from '@/lib/enu';
+import {
+  createCommitScheduler,
+  type CommitScheduler,
+} from '@/lib/collider-commit';
 import { deriveFraming, type Framing, type OrthoFrame } from '@/lib/framing';
 import { getInternalUrl } from '@/config/project.config';
 
@@ -391,28 +395,23 @@ function SceneInner({
   /**
    * ONE BVH build per burst of registrations, not one per model (#702).
    *
-   * `chatt` places 129 GLBs and they resolve in a burst as each finishes loading.
-   * Adding a mesh is cheap; rebuilding the BVH is not, and it gets more expensive
-   * with every model already in it (measured: ~261k triangles across all nodes of
-   * the 129 models, ~87k for LOD0 alone). Building per registration is therefore
-   * 129 rebuilds over an ever-larger set, landing at exactly the moment the city
-   * pops in. Coalescing onto the next frame makes it one.
+   * A `requestAnimationFrame` coalesce was NOT enough and is the frame drag the owner
+   * reported. `WarehouseModels` gives every model its own `<Suspense>` so the city
+   * streams in progressively — the 129 GLBs mount on ~129 different frames, so a
+   * per-frame coalesce merges nothing. See `createCommitScheduler` for the reasoning;
+   * the quiet window matches how the models actually arrive.
    */
-  const colliderCommitRef = useRef<number | null>(null);
-  const scheduleColliderCommit = useCallback(() => {
-    if (colliderCommitRef.current !== null) return; // already queued this frame
-    colliderCommitRef.current = requestAnimationFrame(() => {
-      colliderCommitRef.current = null;
-      walkCtrlRef.current?.commitColliders();
-    });
-  }, []);
-  useEffect(
-    () => () => {
-      if (colliderCommitRef.current !== null)
-        cancelAnimationFrame(colliderCommitRef.current);
-    },
+  const colliderCommitRef = useRef<CommitScheduler | null>(null);
+  if (colliderCommitRef.current === null) {
+    colliderCommitRef.current = createCommitScheduler(() =>
+      walkCtrlRef.current?.commitColliders()
+    );
+  }
+  const scheduleColliderCommit = useCallback(
+    () => colliderCommitRef.current?.schedule(),
     []
   );
+  useEffect(() => () => colliderCommitRef.current?.cancel(), []);
 
   const registerCollider = useCallback<ModelColliderRegistry>(
     (slug, group) => {
@@ -422,7 +421,10 @@ function SceneInner({
         // where a landmark used to be — worse than no collision at all.
         pendingCollidersRef.current.delete(slug);
         const ids = colliderIdsRef.current.get(slug);
-        if (ids && ctrl) ctrl.removeColliders(ids);
+        if (ids && ctrl) {
+          ctrl.removeColliders(ids);
+          scheduleColliderCommit(); // batched like additions — a mass unmount storms too
+        }
         colliderIdsRef.current.delete(slug);
         return;
       }

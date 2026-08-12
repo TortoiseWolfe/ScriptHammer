@@ -380,7 +380,8 @@ export class EmbodiedController {
   removeColliders(ids: readonly number[]): void {
     if (!ids.length) return;
     for (const id of ids) this.world.removeObject(id);
-    this.commitColliders();
+    // Same batching contract as `addCollider`: the caller commits. A mass unmount is
+    // as capable of triggering a rebuild storm as a mass mount.
   }
 
   get triCount(): number {

@@ -1,30 +1,51 @@
 import { describe, it, expect } from 'vitest';
-import { BoxGeometry, Group, Mesh, MeshBasicMaterial } from 'three';
+import {
+  Box3,
+  BoxGeometry,
+  BufferAttribute,
+  BufferGeometry,
+  Group,
+  InterleavedBuffer,
+  InterleavedBufferAttribute,
+  Mesh,
+  MeshBasicMaterial,
+} from 'three';
+import { StaticWorld } from '@/lib/cod/bvh';
 import { EmbodiedController } from '@/lib/cod/player/EmbodiedController';
 import type { EmbodiedInput } from '@/lib/cod/player/EmbodiedController';
 
 /**
  * Landmark GLBs and bridges must be solid in Walk mode (#702).
  *
- * WHAT WAS WRONG. `EmbodiedController.fromMeshes` was handed exactly two meshes —
- * the merged terrain and the merged massing boxes. Every `models.json` landmark and
- * every bridge is a separate GLB rendered by `WarehouseModels`, and none of them
- * was ever baked into the static world. They drew, so they looked solid; nothing
- * ever tested them, so you walked straight through.
+ * WHAT WAS WRONG, TWICE.
  *
- * WHY THE TEST IS PHYSICAL. Asserting "addMesh was called 129 times" would pass with
- * the geometry in the wrong frame, the wrong scale, or never built into the BVH.
- * The only claim worth pinning is the one the owner reported: walk at a wall and
- * stop. So this drives the real controller into a real box and reads the position.
+ * (1) `EmbodiedController.fromMeshes` was handed exactly two meshes — the merged terrain
+ *     and the merged massing boxes. Every `models.json` landmark and every bridge is a
+ *     separate GLB rendered by `WarehouseModels`, and none was ever baked into the static
+ *     world. They drew, so they looked solid; nothing tested them, so you walked through.
  *
- * IT ALSO PINS THE BATCHING. `addCollider` deliberately does NOT build the BVH —
- * `chatt` registers 129 models in a burst, and building per model is 129 rebuilds
- * over a growing triangle set (~261k triangles across all nodes) at exactly the
- * moment the city pops in. The "not solid until committed" case below is what keeps
- * that split honest: if someone re-adds a build to `addCollider` for convenience,
- * that test goes green-in-the-wrong-way and the pair of them reads as contradictory
- * — which is the point. Delete neither.
+ * (2) The first fix for (1) baked them at the WRONG SCALE, which is worse than not baking
+ *     them at all. The shipped GLBs are `KHR_mesh_quantization` + `EXT_meshopt_compression`:
+ *     POSITION is Int16 with `normalized: true`, so the true value is `raw / 32767` and the
+ *     glTF node scale is calibrated for that -1..1 range. `bakeMesh` read the raw array, so
+ *     every collision shell landed 32767x too large and far outside the city — no collision
+ *     where the buildings are, and the full triangle cost paid anyway.
+ *
+ * WHY THE FIRST VERSION OF THIS TEST MISSED (2). It built its wall from `BoxGeometry`:
+ * Float32, un-normalized, tightly packed — the one geometry format that cannot reproduce
+ * the bug. It was mutation-checked and still proved nothing about the real assets. So the
+ * wall fixtures below now come in all three flavours the app can hand the baker, and the
+ * quantized one mirrors the shipped accessors exactly.
+ *
+ * WHY THE TESTS ARE PHYSICAL. Asserting "addMesh was called 129 times" would pass with the
+ * geometry in the wrong frame, the wrong scale, or never built into the BVH — which is
+ * precisely how (2) shipped. These drive the real controller into a real wall and read the
+ * position back.
  */
+
+const WALL_X = 6;
+/** Wall centre 6, 1 m thick -> face at 5.5. Capsule radius 0.4 keeps you short of it. */
+const WALL_FACE = 5.5;
 
 /** A big flat slab at y≈0 so the controller has a floor to stand on. */
 function ground(): Mesh {
@@ -34,15 +55,79 @@ function ground(): Mesh {
   return m;
 }
 
-/** A GLB stand-in: a Group wrapping a wall mesh, exactly how WarehouseModels
- *  hands its loaded model over (a Group, never a bare Mesh). */
-function wallGroup(x: number): Group {
+function wrap(wall: Mesh): Group {
+  // A Group, exactly how WarehouseModels hands its loaded model over (never a bare Mesh).
   const g = new Group();
-  const wall = new Mesh(new BoxGeometry(1, 8, 40), new MeshBasicMaterial());
-  wall.position.set(x, 4, 0);
   g.add(wall);
   g.updateMatrixWorld(true);
   return g;
+}
+
+/** Plain Float32, tightly packed — a hand-made or unquantized GLB. */
+function floatWall(): Group {
+  const wall = new Mesh(new BoxGeometry(1, 8, 40), new MeshBasicMaterial());
+  wall.position.set(WALL_X, 4, 0);
+  return wrap(wall);
+}
+
+/**
+ * The shape the app actually ships: Int16 positions with `normalized: true`, and the
+ * dequantization scale folded into the node transform — exactly what gltfpack emits and
+ * what the sampled `chatt` landmarks carry (measured: `componentType: short`,
+ * `normalized: true`, `min/max` at ±32767, node scale 134.109…).
+ */
+function quantizedWall(): Group {
+  const src = new BoxGeometry(1, 8, 40);
+  const p = src.getAttribute('position').array as Float32Array;
+  let m = 0;
+  for (const v of p) m = Math.max(m, Math.abs(v));
+
+  const raw = new Int16Array(p.length);
+  for (let i = 0; i < p.length; i++) raw[i] = Math.round((p[i] / m) * 32767);
+
+  const geo = new BufferGeometry();
+  geo.setAttribute('position', new BufferAttribute(raw, 3, true)); // normalized
+  if (src.index) geo.setIndex(src.index);
+
+  const wall = new Mesh(geo, new MeshBasicMaterial());
+  wall.position.set(WALL_X, 4, 0);
+  wall.scale.setScalar(m); // the node scale that undoes the quantization
+  return wrap(wall);
+}
+
+/** Meshopt decoding produces interleaved buffers; `itemSize` is not the stride there. */
+function interleavedWall(): Group {
+  const src = new BoxGeometry(1, 8, 40);
+  const p = src.getAttribute('position').array as Float32Array;
+  let m = 0;
+  for (const v of p) m = Math.max(m, Math.abs(v));
+
+  const count = p.length / 3;
+  const STRIDE = 4; // xyz + one padding element, as a packed vertex layout would have
+  const inter = new Int16Array(count * STRIDE);
+  for (let i = 0; i < count; i++) {
+    inter[i * STRIDE] = Math.round((p[i * 3] / m) * 32767);
+    inter[i * STRIDE + 1] = Math.round((p[i * 3 + 1] / m) * 32767);
+    inter[i * STRIDE + 2] = Math.round((p[i * 3 + 2] / m) * 32767);
+    inter[i * STRIDE + 3] = 0;
+  }
+
+  const geo = new BufferGeometry();
+  geo.setAttribute(
+    'position',
+    new InterleavedBufferAttribute(
+      new InterleavedBuffer(inter, STRIDE),
+      3,
+      0,
+      true
+    )
+  );
+  if (src.index) geo.setIndex(src.index);
+
+  const wall = new Mesh(geo, new MeshBasicMaterial());
+  wall.position.set(WALL_X, 4, 0);
+  wall.scale.setScalar(m);
+  return wrap(wall);
 }
 
 const STILL: EmbodiedInput = {
@@ -58,8 +143,8 @@ const STILL: EmbodiedInput = {
 
 /** Walk due +X for `seconds`, then report where we ended up. */
 function walkEast(ctrl: EmbodiedController, seconds: number): number {
-  // yaw = -PI/2 faces +X in this basis; drive forward, not strafe, so the run
-  // uses the same path the player does.
+  // yaw = -PI/2 faces +X in this basis; drive forward, not strafe, so the run uses the
+  // same path the player does.
   ctrl.setInput({ ...STILL, forward: 1, yaw: -Math.PI / 2 });
   const dt = 1 / 60;
   for (let t = 0; t < seconds; t += dt) ctrl.step(dt);
@@ -88,51 +173,110 @@ describe('landmark/bridge GLB collision (#702)', () => {
     ctrl.dispose();
   });
 
-  it('a committed GLB group stops you — the reported bug', () => {
-    const ctrl = fresh();
-    const ids = ctrl.addCollider(wallGroup(6), 'concrete');
-    expect(ids.length, 'no mesh was found inside the Group').toBe(1);
-    ctrl.commitColliders();
+  // Every geometry format the baker can be handed. The quantized and interleaved rows are
+  // the ones that matter: they are what `chatt` actually ships, and the Float32 row alone
+  // is what let the scale bug through review.
+  for (const [label, make] of [
+    ['float32', floatWall],
+    ['quantized Int16 (the shipped format)', quantizedWall],
+    ['interleaved quantized (meshopt output)', interleavedWall],
+  ] as const) {
+    it(`a committed ${label} GLB group stops you`, () => {
+      const ctrl = fresh();
+      const ids = ctrl.addCollider(make(), 'concrete');
+      expect(ids.length, 'no mesh was found inside the Group').toBe(1);
+      ctrl.commitColliders();
 
-    const x = walkEast(ctrl, 4);
-    // Wall face is at x=5.5 (centre 6, 1m thick); the capsule radius is 0.4, so
-    // stopping means "did not reach the wall", not "did not reach x=6".
-    expect(
-      x,
-      `walked to x=${x.toFixed(2)} — the wall at x=5.5 was not solid, which is ` +
-        `exactly the reported "I can walk through the bridges"`
-    ).toBeLessThan(5.5);
-    ctrl.dispose();
-  });
+      const x = walkEast(ctrl, 4);
+      expect(
+        x,
+        `walked to x=${x.toFixed(2)} — the wall at x=${WALL_FACE} was not solid, which is ` +
+          `exactly the reported "I can ride straight through the buildings"`
+      ).toBeLessThan(WALL_FACE);
+      ctrl.dispose();
+    });
+
+    it(`a ${label} collider is baked where THREE draws it`, () => {
+      // The scale bug did not make collision ABSENT, it made it land somewhere else — so
+      // "did the world grow?" proves nothing. Bake the wall into a world of its own (no
+      // floor to widen the bounds) and compare against the box THREE computes for the
+      // same object. A scale error of any magnitude fails here, in either direction.
+      const world = new StaticWorld();
+      const group = make();
+      group.traverse((o) => {
+        const m = o as Mesh;
+        if (m.isMesh) world.addMesh(m, 'concrete');
+      });
+      world.build();
+
+      const expected = new Box3().setFromObject(group);
+      const a = world.aabb;
+      for (const [axis, got, want] of [
+        ['x', a.minx, expected.min.x],
+        ['y', a.miny, expected.min.y],
+        ['z', a.minz, expected.min.z],
+        ['x', a.maxx, expected.max.x],
+        ['y', a.maxy, expected.max.y],
+        ['z', a.maxz, expected.max.z],
+      ] as const) {
+        expect(
+          got,
+          `collision bounds ${axis}=${got.toFixed(2)} m but THREE draws the wall at ` +
+            `${axis}=${want.toFixed(2)} m — the collider is baked at the wrong scale ` +
+            `(ratio ${(got / (want || 1)).toFixed(1)}x)`
+        ).toBeCloseTo(want, 1);
+      }
+      world.dispose();
+    });
+  }
 
   it('addCollider alone does NOT build — the batching contract', () => {
-    // 129 models registering in a burst must cost ONE BVH build, not 129. The
-    // split is only safe because every caller commits; this pins the split so a
-    // "helpful" build inside addCollider cannot creep back in unnoticed.
+    // 129 models registering in a burst must cost ONE BVH build, not 129. The split is
+    // only safe because every caller commits; this pins the split so a "helpful" build
+    // inside addCollider cannot creep back in unnoticed.
     const ctrl = fresh();
-    ctrl.addCollider(wallGroup(6), 'concrete'); // deliberately NOT committed
+    ctrl.addCollider(quantizedWall(), 'concrete'); // deliberately NOT committed
     const x = walkEast(ctrl, 4);
     expect(
       x,
       'uncommitted geometry already collides — addCollider is building internally, ' +
         'which reintroduces the 129-rebuild stall'
-    ).toBeGreaterThan(5.5);
+    ).toBeGreaterThan(WALL_FACE);
+    ctrl.dispose();
+  });
+
+  it('N registrations cost exactly ONE build', () => {
+    // The frame-drag regression in one assertion. `StaticWorld.version` increments once
+    // per build(), so this counts rebuilds directly rather than trusting the schedule.
+    const ctrl = fresh();
+    const before = ctrl.world.version;
+    for (let i = 0; i < 20; i++) ctrl.addCollider(quantizedWall(), 'concrete');
+    expect(
+      ctrl.world.version - before,
+      '20 registrations triggered rebuilds before any commit'
+    ).toBe(0);
+    ctrl.commitColliders();
+    expect(
+      ctrl.world.version - before,
+      'the batch cost more than one build'
+    ).toBe(1);
     ctrl.dispose();
   });
 
   it('removing a collider makes the space walkable again', () => {
     // An unmounted model must not leave an invisible wall behind.
     const ctrl = fresh();
-    const ids = ctrl.addCollider(wallGroup(6), 'concrete');
+    const ids = ctrl.addCollider(quantizedWall(), 'concrete');
     ctrl.commitColliders();
-    expect(walkEast(ctrl, 4)).toBeLessThan(5.5);
+    expect(walkEast(ctrl, 4)).toBeLessThan(WALL_FACE);
 
     ctrl.teleport(0, 1, 0);
     ctrl.removeColliders(ids);
+    ctrl.commitColliders(); // removal batches like addition; the caller commits
     expect(
       walkEast(ctrl, 4),
       'the model was removed but its collision stayed — an invisible wall'
-    ).toBeGreaterThan(5.5);
+    ).toBeGreaterThan(WALL_FACE);
     ctrl.dispose();
   });
 });

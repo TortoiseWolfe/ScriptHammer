@@ -111,4 +111,17 @@ export class StaticWorld {
   dispose(): void;
 
   readonly triCount: number;
+  /** World-space bounds of every baked triangle. Valid after `build()`. */
+  readonly aabb: {
+    minx: number;
+    miny: number;
+    minz: number;
+    maxx: number;
+    maxy: number;
+    maxz: number;
+  };
+  /** Increments once per `build()` — a direct rebuild counter (#702). */
+  readonly version: number;
+  /** Wall-clock cost of the last `build()`, ms. */
+  readonly buildMs: number;
 }
