@@ -2,14 +2,19 @@
 
 const fs = require('fs');
 const path = require('path');
-const matter = require('gray-matter');
+const { resolveSiteUrl, assertValidSiteUrl } = require('./site-url');
 
-const BLOG_DIR = path.join(process.cwd(), 'blog');
-const PUBLIC_DIR = path.join(process.cwd(), 'public');
-const SITE_URL = 'https://tortoisewolfe.github.io/ScriptHammer';
+const DEFAULT_BLOG_DATA_PATH = path.join(
+  process.cwd(),
+  'src',
+  'lib',
+  'blog',
+  'blog-data.json'
+);
+const DEFAULT_PUBLIC_DIR = path.join(process.cwd(), 'public');
 
-function escapeXml(unsafe) {
-  return unsafe
+function escapeXml(value) {
+  return String(value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -17,98 +22,164 @@ function escapeXml(unsafe) {
     .replace(/'/g, '&apos;');
 }
 
-function generateRSSFeed() {
-  console.log('📰 Generating RSS feed...');
+function escapeCdata(value) {
+  return String(value ?? '').replace(/]]>/g, ']]]]><![CDATA[>');
+}
 
-  // Get all published blog posts
-  const blogPosts = [];
-
-  if (fs.existsSync(BLOG_DIR)) {
-    const files = fs.readdirSync(BLOG_DIR);
-
-    files
-      .filter((file) => file.endsWith('.md'))
-      .forEach((file) => {
-        const fullPath = path.join(BLOG_DIR, file);
-        const fileContents = fs.readFileSync(fullPath, 'utf8');
-        const { data, content } = matter(fileContents);
-
-        if (data.status === 'published') {
-          blogPosts.push({
-            title: data.title,
-            description: data.excerpt,
-            url: `/blog/${data.slug || file.replace('.md', '')}`,
-            author: data.author || 'ScriptHammer Team',
-            pubDate: new Date(data.publishDate || new Date()).toUTCString(),
-            categories: data.categories || [],
-            content: content.substring(0, 500) + '...', // First 500 chars
-          });
-        }
-      });
+/**
+ * The site, sitemap, and feed all consume this committed generated index.
+ * Reading raw Markdown here made RSS use different publication semantics and
+ * silently emit no items when it looked in a directory that does not exist.
+ */
+function readPublishedBlogPosts(blogDataPath) {
+  let blogData;
+  try {
+    blogData = JSON.parse(fs.readFileSync(blogDataPath, 'utf8'));
+  } catch (error) {
+    throw new Error(
+      `Unable to read blog data at ${blogDataPath}: ${error.message}`
+    );
   }
 
-  // Sort by date (newest first)
-  blogPosts.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+  if (!Array.isArray(blogData.posts)) {
+    throw new Error(`Blog data at ${blogDataPath} has no posts array`);
+  }
 
-  // Create RSS XML
-  const rss = `<?xml version="1.0" encoding="UTF-8"?>
+  const posts = blogData.posts
+    .filter((post) => post.status === 'published')
+    .map((post) => {
+      if (!post.slug) {
+        throw new Error(`Published blog post has no slug in ${blogDataPath}`);
+      }
+
+      const publishedAt = new Date(post.publishedAt);
+      if (Number.isNaN(publishedAt.getTime())) {
+        throw new Error(
+          `Published blog post ${post.slug} has an invalid publishedAt value`
+        );
+      }
+
+      return {
+        title: post.title || post.slug,
+        description: post.excerpt || '',
+        url: `/blog/${encodeURIComponent(post.slug)}/`,
+        author: post.author?.name || 'ScriptHammer Team',
+        pubDate: publishedAt,
+        categories: Array.isArray(post.metadata?.categories)
+          ? post.metadata.categories
+          : [],
+        tags: Array.isArray(post.metadata?.tags) ? post.metadata.tags : [],
+        content: String(post.content ?? ''),
+      };
+    })
+    .sort((a, b) => b.pubDate.getTime() - a.pubDate.getTime());
+
+  if (posts.length === 0) {
+    throw new Error(`No published blog posts found in ${blogDataPath}`);
+  }
+
+  return posts;
+}
+
+function renderRss({ blogPosts, siteUrl, buildDate }) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>ScriptHammer Blog</title>
     <description>The engineering blog of ScriptHammer, a production Next.js and Supabase platform</description>
-    <link>${SITE_URL}/blog</link>
+    <link>${siteUrl}/blog</link>
     <language>en-US</language>
-    <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-    <atom:link href="${SITE_URL}/rss.xml" rel="self" type="application/rss+xml"/>
+    <lastBuildDate>${buildDate.toUTCString()}</lastBuildDate>
+    <atom:link href="${siteUrl}/rss.xml" rel="self" type="application/rss+xml"/>
 
 ${blogPosts
   .map(
     (post) => `    <item>
       <title>${escapeXml(post.title)}</title>
       <description>${escapeXml(post.description)}</description>
-      <link>${SITE_URL}${post.url}</link>
-      <guid isPermaLink="true">${SITE_URL}${post.url}</guid>
-      <pubDate>${post.pubDate}</pubDate>
+      <link>${siteUrl}${post.url}</link>
+      <guid isPermaLink="true">${siteUrl}${post.url}</guid>
+      <pubDate>${post.pubDate.toUTCString()}</pubDate>
       <author>${escapeXml(post.author)}</author>
-${post.categories.map((cat) => `      <category>${escapeXml(cat)}</category>`).join('\n')}
-      <content:encoded><![CDATA[${post.content}]]></content:encoded>
+${post.categories
+  .map((category) => `      <category>${escapeXml(category)}</category>`)
+  .join('\n')}
+      <content:encoded><![CDATA[${escapeCdata(post.content.substring(0, 500))}...]]></content:encoded>
     </item>`
   )
   .join('\n')}
   </channel>
 </rss>`;
+}
 
-  // Write RSS feed to public directory
-  const rssPath = path.join(PUBLIC_DIR, 'rss.xml');
-  fs.writeFileSync(rssPath, rss, 'utf8');
+function generateRSSFeed({
+  blogDataPath = DEFAULT_BLOG_DATA_PATH,
+  publicDir = DEFAULT_PUBLIC_DIR,
+  env = process.env,
+  now = new Date(),
+} = {}) {
+  const resolved = resolveSiteUrl(env);
+  assertValidSiteUrl(resolved.url);
 
-  console.log(`✅ RSS feed generated with ${blogPosts.length} posts`);
-  console.log(`   📁 Saved to: ${rssPath}`);
+  const buildDate = new Date(now);
+  if (Number.isNaN(buildDate.getTime())) {
+    throw new Error(`RSS build date is invalid: ${now}`);
+  }
 
-  // Also generate a simple JSON feed for modern readers
+  const blogPosts = readPublishedBlogPosts(blogDataPath);
+  const rss = renderRss({
+    blogPosts,
+    siteUrl: resolved.url,
+    buildDate,
+  });
   const jsonFeed = {
     version: 'https://jsonfeed.org/version/1.1',
     title: 'ScriptHammer Blog',
-    home_page_url: `${SITE_URL}/blog`,
-    feed_url: `${SITE_URL}/feed.json`,
-    description: 'The engineering blog of ScriptHammer, a production Next.js and Supabase platform',
+    home_page_url: `${resolved.url}/blog`,
+    feed_url: `${resolved.url}/feed.json`,
+    description:
+      'The engineering blog of ScriptHammer, a production Next.js and Supabase platform',
     items: blogPosts.map((post) => ({
-      id: `${SITE_URL}${post.url}`,
-      url: `${SITE_URL}${post.url}`,
+      id: `${resolved.url}${post.url}`,
+      url: `${resolved.url}${post.url}`,
       title: post.title,
       content_text: post.description,
-      date_published: new Date(post.pubDate).toISOString(),
-      author: {
-        name: post.author,
-      },
-      tags: post.categories,
+      date_published: post.pubDate.toISOString(),
+      author: { name: post.author },
+      tags: post.tags,
     })),
   };
 
-  const jsonPath = path.join(PUBLIC_DIR, 'feed.json');
+  fs.mkdirSync(publicDir, { recursive: true });
+  const rssPath = path.join(publicDir, 'rss.xml');
+  const jsonPath = path.join(publicDir, 'feed.json');
+  fs.writeFileSync(rssPath, rss, 'utf8');
   fs.writeFileSync(jsonPath, JSON.stringify(jsonFeed, null, 2), 'utf8');
-  console.log(`   📁 JSON feed saved to: ${jsonPath}`);
+
+  return {
+    blogPosts,
+    siteUrl: resolved.url,
+    rssPath,
+    jsonPath,
+  };
 }
 
-// Run generator
-generateRSSFeed();
+if (require.main === module) {
+  try {
+    const result = generateRSSFeed();
+    console.log('📰 Generated RSS and JSON feeds');
+    console.log(`   🌐 Site URL: ${result.siteUrl}`);
+    console.log(`   📚 Published posts: ${result.blogPosts.length}`);
+    console.log(`   📁 Saved to: ${result.rssPath}`);
+    console.log(`   📁 Saved to: ${result.jsonPath}`);
+  } catch (error) {
+    console.error(`❌ Failed to generate RSS feed: ${error.message}`);
+    process.exitCode = 1;
+  }
+}
+
+module.exports = {
+  generateRSSFeed,
+  readPublishedBlogPosts,
+  renderRss,
+};

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="ScriptHammer gear">
+  <title>ScriptHammer gear</title>
+  <defs>
+    
+    <path id="ring-top" fill="none" d="M71.58,186.50 A129.129,129.129 0 0 1 328.42,186.50"></path>
+    <path id="ring-bot" fill="none" d="M328.42,213.50 A129.129,129.129 0 0 1 71.58,213.50"></path>
+    <mask id="cut-word">
+      <rect width="400" height="400" fill="#fff"></rect>
+      <text font-family="Oswald, sans-serif" font-weight="700" font-size="38" fill="#000"><textPath href="#ring-top" startOffset="50%" text-anchor="middle" textLength="300" lengthAdjust="spacingAndGlyphs">SCRIPTHAMMER.COM</textPath></text>
+      <text font-family="Oswald, sans-serif" font-weight="700" font-size="38" fill="#000"><textPath href="#ring-bot" startOffset="50%" text-anchor="middle" textLength="300" lengthAdjust="spacingAndGlyphs">SCRIPTHAMMER.COM</textPath></text>
+      <path fill="#000" d="M344.5,191 L353.5,200 L344.5,209 L335.5,200 Z"></path>
+      <path fill="#000" d="M55.5,191 L64.5,200 L55.5,209 L46.5,200 Z"></path>
+    </mask>
+    <path id="gear-body" fill-rule="evenodd" d="M170.4,35.6 L172.7,14 L227.3,14 L229.6,35.6 A167,167 0 0 1 256.6,42.9 L269.4,25.3 L316.6,52.5 L307.8,72.4 A167,167 0 0 1 327.6,92.2 L347.5,83.4 L374.7,130.6 L357.1,143.4 A167,167 0 0 1 364.4,170.4 L386,172.7 L386,227.3 L364.4,229.6 A167,167 0 0 1 357.1,256.6 L374.7,269.4 L347.5,316.6 L327.6,307.8 A167,167 0 0 1 307.8,327.6 L316.6,347.5 L269.4,374.7 L256.6,357.1 A167,167 0 0 1 229.6,364.4 L227.3,386 L172.7,386 L170.4,364.4 A167,167 0 0 1 143.4,357.1 L130.6,374.7 L83.4,347.5 L92.2,327.6 A167,167 0 0 1 72.4,307.8 L52.5,316.6 L25.3,269.4 L42.9,256.6 A167,167 0 0 1 35.6,229.6 L14,227.3 L14,172.7 L35.6,170.4 A167,167 0 0 1 42.9,143.4 L25.3,130.6 L52.5,83.4 L72.4,92.2 A167,167 0 0 1 92.2,72.4 L83.4,52.5 L130.6,25.3 L143.4,42.9 A167,167 0 0 1 170.4,35.6 Z M200,78 A122,122 0 1 1 200,322 A122,122 0 1 1 200,78 Z"></path>
+  </defs>
+  <use href="#gear-body" transform="translate(6,7)" fill="#2E353B"></use>
+  <use href="#gear-body" mask="url(#cut-word)" fill="#B6BEC6" stroke="#2E353B" stroke-width="7.0" stroke-linejoin="round"></use>
+</svg>

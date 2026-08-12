@@ -29,10 +29,10 @@ So: run this, not an ad-hoc `json_agg` loop, and read
 
 WHAT THIS CANNOT DO. The Management API returns secret NAMES for Edge Functions,
 never their values, and it masks some auth secrets. Those must be held outside the
-project — in `scripts/supabase/edge-function-secrets.json` (gitignored) or a
-password manager. This script prints a loud warning listing exactly which values it
-could NOT capture, so the gap is visible before it becomes irreversible rather than
-after.
+project — in the owner-only `.env` used by `pnpm supabase:secrets`, an explicit
+owner-only JSON sidecar, or a password manager. This script prints a loud warning
+listing exactly which values it could NOT capture, so the gap is visible before it
+becomes irreversible rather than after.
 
 Pairs with `restore-from-backup.py`.
 """

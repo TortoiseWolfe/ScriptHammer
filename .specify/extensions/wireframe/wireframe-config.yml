@@ -22,11 +22,10 @@
 #        Account:  x=260  y=3 w=80 h=44   (add 400 to x for absolute: 660)
 #
 # The `includes/` directory is maintained per-feature. `scripts/sync-wireframes.sh`
-# automatically copies shared chrome into each feature's `wireframes/includes/`
-# when it syncs for the viewer — so forkers get working <use href> refs without
-# any manual setup. When authoring a NEW feature's first wireframe, copy the
-# reference implementation's `includes/` to your feature's `wireframes/` dir
-# once; subsequent SVGs in the same feature reuse it.
+# mirrors an existing feature's `wireframes/includes/` directory to `public/` for
+# the viewer; it never creates source files under `features/`. When authoring a NEW
+# feature's first wireframe, copy the reference implementation's `includes/` to
+# your feature's `wireframes/` dir once; subsequent SVGs in the same feature reuse it.
 # ────────────────────────────────────────────────────────────────────────────
 
 # Output paths

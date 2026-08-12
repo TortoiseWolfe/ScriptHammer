@@ -107,19 +107,20 @@ configured".
 
 This template deploys to GitHub Pages (static export). **There is no Next.js server runtime that can read non-NEXT*PUBLIC* vars at request time.** Server-side logic runs in Supabase Edge Functions, which read secrets via `Deno.env.get(...)` after they're set in Supabase Vault.
 
-**Recommended — CLI-free, via the Management API** (this repo forbids installing the Supabase CLI locally; see the root `CLAUDE.md`):
+**Recommended — CLI-free, via the Management API** (this repo forbids installing the Supabase CLI locally; see the root `CLAUDE.md`). The setter reads its allow-listed Edge Function values from `.env` by default:
 
 ```bash
-# 1. Copy the placeholder (the filled copy is gitignored) and fill in real values:
-cp scripts/supabase/edge-function-secrets.example.json \
-   scripts/supabase/edge-function-secrets.json
+# 1. Fill the payment-provider values in .env. On macOS/Linux, make the
+# secret-bearing file owner-only. Gitignore prevents commits; chmod prevents other
+# local accounts from reading it. The setter refuses an unsafe mode.
+chmod 600 .env
 
 # 2. Dry-run (name-level diff; values never printed), then apply:
 docker compose exec scripthammer pnpm supabase:secrets
 docker compose exec scripthammer pnpm supabase:secrets --apply
 ```
 
-This uses the `SUPABASE_ACCESS_TOKEN` + project ref already in `.env` to call `POST /v1/projects/{ref}/secrets`. It sets the provider secrets plus the function-side site URL:
+This uses the `SUPABASE_ACCESS_TOKEN` + project ref already in `.env` to call `POST /v1/projects/{ref}/secrets`. It sends only the allow-listed provider secrets plus the function-side site URL:
 
 ```
 STRIPE_SECRET_KEY        sk_test_…
@@ -137,6 +138,15 @@ NEXT_PUBLIC_SITE_URL     https://yourdomain.com
 > compares origins only, so the path is safe.
 
 > **Do NOT set `SUPABASE_SERVICE_ROLE_KEY` (or any `SUPABASE_*` var) as an Edge Function secret.** The platform auto-injects them, and the Management API rejects any secret name starting with `SUPABASE_`. The functions read the service-role key from the injected env.
+
+An existing JSON sidecar remains supported, but it is not the default. Pass it
+explicitly and make it owner-only before use:
+
+```bash
+chmod 600 scripts/supabase/edge-function-secrets.json
+docker compose exec scripthammer pnpm supabase:secrets --config \
+  scripts/supabase/edge-function-secrets.json
+```
 
 **Alternatives:** `supabase secrets set NAME=value` (CLI) or the Supabase dashboard → Project Settings → Edge Functions → Secrets.
 

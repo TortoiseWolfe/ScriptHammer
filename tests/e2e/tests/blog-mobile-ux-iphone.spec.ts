@@ -46,48 +46,81 @@ test.describe('Blog Post Mobile UX - iPhone 12', () => {
     });
   });
 
-  test('should display SEO badge in top-right corner', async ({ page }) => {
-    const seoBadge = page.locator('button[title="Click to view SEO details"]');
+  test('should keep controls clear of long and short blog titles', async ({
+    page,
+  }) => {
+    const posts = [
+      '/blog/countdown-timer-tutorial',
+      '/blog/authentication-supabase-oauth',
+    ];
 
-    // Verify badge exists and is visible
-    await expect(seoBadge).toBeVisible();
+    for (const width of [390, 500]) {
+      await page.setViewportSize({ width, height: 900 });
 
-    // Verify position is in top-right area
-    const box = await seoBadge.boundingBox();
-    expect(box).toBeTruthy();
-    if (box) {
-      // Should be on right side of 390px viewport (within 100px of right edge)
-      expect(box.x).toBeGreaterThan(290);
-      // Should be near top (within 200px of top)
-      expect(box.y).toBeLessThan(200);
+      for (const post of posts) {
+        await page.goto(post);
+        await page.waitForLoadState('networkidle');
+
+        const controls = page.getByTestId('blog-post-controls');
+        const title = page.locator('article.blog-post-viewer h1');
+        const seoBadge = page.locator(
+          'button[title="Click to view SEO details"]'
+        );
+
+        await expect(controls).toBeVisible();
+        await expect(title).toBeVisible();
+        await expect(seoBadge).toBeVisible();
+
+        const [controlsBox, titleBox] = await Promise.all([
+          controls.boundingBox(),
+          title.boundingBox(),
+        ]);
+        expect(controlsBox).toBeTruthy();
+        expect(titleBox).toBeTruthy();
+
+        if (controlsBox && titleBox) {
+          const intersects =
+            controlsBox.x < titleBox.x + titleBox.width &&
+            controlsBox.x + controlsBox.width > titleBox.x &&
+            controlsBox.y < titleBox.y + titleBox.height &&
+            controlsBox.y + controlsBox.height > titleBox.y;
+
+          expect(intersects).toBe(false);
+          expect(controlsBox.y).toBeGreaterThanOrEqual(
+            titleBox.y + titleBox.height
+          );
+        }
+
+        await seoBadge.focus();
+        await expect(seoBadge).toBeFocused();
+
+        const tocButton = controls
+          .locator('details summary')
+          .filter({ hasText: 'TOC' });
+        await expect(tocButton).toBeVisible();
+        await page.keyboard.press('Tab');
+        await expect(tocButton).toBeFocused();
+      }
     }
-
-    // Take screenshot
-    await page.screenshot({
-      path: 'test-results/mobile-seo-badge.png',
-      fullPage: false,
-    });
   });
 
-  test('should display TOC button in top-right corner', async ({ page }) => {
+  test('should display a reachable TOC button in the control cluster', async ({
+    page,
+  }) => {
     // Some posts may not have TOC, so this is conditional
-    const tocButton = page
+    const controls = page.getByTestId('blog-post-controls');
+    const tocButton = controls
       .locator('details summary')
       .filter({ hasText: 'TOC' });
 
-    const isVisible = await tocButton.isVisible().catch(() => false);
+    await expect(tocButton).toBeVisible();
 
-    if (isVisible) {
-      await expect(tocButton).toBeVisible();
-
-      // Verify position is in top-right area
-      const box = await tocButton.boundingBox();
-      expect(box).toBeTruthy();
-      if (box) {
-        expect(box.x).toBeGreaterThan(290);
-        expect(box.y).toBeLessThan(250);
-      }
-    }
+    const seoBadge = controls.locator(
+      'button[title="Click to view SEO details"]'
+    );
+    await seoBadge.focus();
+    await page.keyboard.press('Tab');
+    await expect(tocButton).toBeFocused();
   });
 
   test('should not have horizontal scroll on page', async ({ page }) => {
@@ -240,7 +273,7 @@ test.describe('Blog Post Mobile UX - iPhone 12', () => {
     await page.evaluate(() => window.scrollBy(0, 500));
     await page.waitForTimeout(300);
 
-    // SEO badge should still be visible (fixed position)
+    // SEO badge stays in the document flow on mobile.
     await expect(seoBadge).toBeVisible();
 
     const scrolledBox = await seoBadge.boundingBox();
@@ -250,8 +283,8 @@ test.describe('Blog Post Mobile UX - iPhone 12', () => {
     expect(initialBox).toBeTruthy();
 
     if (scrolledBox && initialBox) {
-      // Y position should be roughly the same (within 5px tolerance)
-      expect(Math.abs(scrolledBox.y - initialBox.y)).toBeLessThan(5);
+      // It should scroll with the article instead of floating back over the title.
+      expect(scrolledBox.y).toBeLessThan(initialBox.y - 50);
     }
 
     await page.screenshot({

@@ -227,9 +227,10 @@ tickets:
 - **The `UPDATE` in that GRANT is already dead.** `"Payment intents are
 immutable"` is `FOR UPDATE USING (false)`, so nothing can ever use it. It reads
   as a live capability and is not one.
-- **`cancelPaymentIntent` silently does nothing.** `payment-service.ts:252-253`
-  issues a `.delete()` against a `FOR DELETE USING (false)` policy. It no-ops
-  without erroring — a function that reports success while doing nothing.
+- **Resolved in #565: `cancelPaymentIntent` was removed.** It had issued a
+  `.delete()` against a `FOR DELETE USING (false)` policy, which no-oped without
+  erroring. A future cancellation flow needs a real server-side state
+  transition rather than a client delete.
 - **`create-stripe-subscription`'s own header comment is untrue.** Lines 32-39
   state "the `price_id` is operator-configured in Stripe Dashboard", but `:80`
   reads it straight from the request body. The comment describes the intended

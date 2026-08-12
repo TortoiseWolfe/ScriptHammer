@@ -36,7 +36,7 @@ Container management and infrastructure monitoring.
 
 **Quick reference:**
 
-- Monitor wireframe-viewer health
+- Monitor scripthammer health
 - Check container logs for errors
 - Run CVE scans with `docker scout`
 - Restart stuck services

@@ -32,6 +32,9 @@ on:
       - 'scripts/audit-components.js'
       - 'scripts/validate-structure.js'
       - 'scripts/rebrand.sh'
+      # This is a manually invoked Management API uploader. Changing the CLI
+      # cannot change the static browser build or deployed Edge Function code.
+      - 'scripts/supabase/set-edge-function-secrets.ts'
       - 'scripts/__tests__/**'
       - 'tests/rebrand/**'
   pull_request:
@@ -50,6 +53,7 @@ on:
       - 'scripts/audit-components.js'
       - 'scripts/validate-structure.js'
       - 'scripts/rebrand.sh'
+      - 'scripts/supabase/set-edge-function-secrets.ts'
       - 'scripts/__tests__/**'
       - 'tests/rebrand/**'
   schedule:

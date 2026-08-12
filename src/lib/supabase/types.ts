@@ -39,36 +39,6 @@ export type Database = {
   };
   public: {
     Tables: {
-      audit_logs: {
-        Row: {
-          created_at: string;
-          details: Json | null;
-          event_type: string;
-          id: string;
-          ip_address: unknown;
-          user_agent: string | null;
-          user_id: string | null;
-        };
-        Insert: {
-          created_at?: string;
-          details?: Json | null;
-          event_type: string;
-          id?: string;
-          ip_address?: unknown;
-          user_agent?: string | null;
-          user_id?: string | null;
-        };
-        Update: {
-          created_at?: string;
-          details?: Json | null;
-          event_type?: string;
-          id?: string;
-          ip_address?: unknown;
-          user_agent?: string | null;
-          user_id?: string | null;
-        };
-        Relationships: [];
-      };
       auth_audit_logs: {
         Row: {
           created_at: string;
@@ -685,33 +655,6 @@ export type Database = {
             referencedColumns: ['id'];
           },
         ];
-      };
-      profiles: {
-        Row: {
-          avatar_url: string | null;
-          bio: string | null;
-          created_at: string;
-          display_name: string | null;
-          id: string;
-          updated_at: string;
-        };
-        Insert: {
-          avatar_url?: string | null;
-          bio?: string | null;
-          created_at?: string;
-          display_name?: string | null;
-          id: string;
-          updated_at?: string;
-        };
-        Update: {
-          avatar_url?: string | null;
-          bio?: string | null;
-          created_at?: string;
-          display_name?: string | null;
-          id?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
       };
       rate_limit_attempts: {
         Row: {

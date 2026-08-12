@@ -2194,6 +2194,10 @@ def main():
         else:
             print(f"ERROR: File not found: {args[0]} (tried absolute, cwd-relative, and {wireframes_dir}-relative)")
             sys.exit(1)
+        if not svg_path.is_file():
+            path_kind = "directory" if svg_path.is_dir() else "non-file path"
+            print(f"ERROR: Expected an SVG file, got {path_kind}: {svg_path}")
+            sys.exit(1)
         svg_files = [svg_path]
 
     total_errors = 0

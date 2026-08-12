@@ -435,6 +435,39 @@ outside what anything protects.
 
 **If a hook fails**: investigate. Hook output names the file + line. Fix the underlying issue, re-stage, commit. Never `git commit --no-verify` as an escape hatch.
 
+### Concurrent checkout safety
+
+The checkout, Docker Compose project, generated artifacts, and Git `HEAD` are shared
+state. Two agents can edit completely different files and still destroy each other's work
+by switching branches or running a production build.
+
+#### Prefer a sibling worktree for parallel implementation
+
+- Create one worktree per task and branch. Do not switch the primary checkout while another
+  agent may be using it.
+- **Never copy `.env` verbatim into a worktree.** Use a separately provisioned local
+  configuration with a unique `COMPOSE_PROJECT_NAME` (and a non-conflicting `SH_PORT`)
+  before running Docker. The project name namespaces the ordinary Compose volumes.
+- Compose isolation does **not** make concurrent local Supabase profiles safe: that profile
+  has fixed default host ports and a global container name. Run it only with explicit
+  coordination.
+- Docker-first still applies to dependencies, tests, and builds. A worktree's `.git` is a
+  pointer outside Compose's bind mount, however, so Git cannot commit from inside the
+  container. Commit from the host in that case. Until #672 fixes worktree hooks, Husky will
+  not run there; explicitly run and report the equivalent focused test, staged formatting or
+  lint, and gitleaks check before committing. Never use `--no-verify` to hide a failure.
+
+#### If a shared checkout is unavoidable
+
+- Announce that you are taking the tree, and announce when you release it. Before
+  `checkout`, `switch`, or `rebase`, require a clean `git status` and confirmation that
+  no peer is holding `HEAD` or unpushed edits.
+- Run only one production build or pre-push validation at a time. Builds write generated
+  files into the bind-mounted tree even when their `.next` volume is isolated.
+- Before moving `HEAD` after a peer finishes, verify their branch reached the remote:
+  compare its local ref with `git ls-remote origin refs/heads/<branch>`.
+- Keep the existing production deploy pacing: wait at least 10 minutes between merges.
+
 ### Programmatic `el.scrollTop = N` does NOT fire scroll events reliably in WebKit
 
 **Why this matters**: Chromium and Firefox auto-fire the `scroll` event when JavaScript assigns to `scrollTop`. WebKit (Playwright's Linux build) does not always do this. Yesterday's `messaging-scroll.spec.ts:261` test ("T007-T008: Jump button appears when scrolled") failed all 3 retries on webkit-msg because the React `handleScroll` listener at `src/components/molecular/MessageThread/MessageThread.tsx:194` never ran.
@@ -456,6 +489,21 @@ Apply this any time test code sets `scrollTop` and expects a scroll-event-driven
 - **After merging**, always `git fetch --prune origin` to drop the dead remote-tracking ref locally.
 - **Never leave unmerged branches or open PRs sitting around** between work items. Merge or close one before starting the next.
 - **Avoid stacked PRs** unless dependency is unavoidable. When a parent PR merges with `delete_branch_on_merge=true`, GitHub auto-closes any child PR using that parent as its base (known footgun — happened to PR #87 yesterday). Re-target the child to `main` and reopen.
+
+### Environment guards have a direction
+
+Before adding a `NODE_ENV`, hostname, or `localhost` guard, state which direction it
+has:
+
+- A **dev-only convenience**—for example verbose logging, an overlay, or extra error
+  detail—may be limited to development.
+- A **protection**—for example keeping a service worker out of framework router traffic—must
+  protect production too. Never narrow it to development or `localhost`; that makes the
+  user-facing environment the exceptional unprotected case.
+
+#450 was this exact service-worker failure: the router bypass applied only on localhost, so
+production was the only host where a failed worker fetch could break navigation. If a second
+protection-shaped environment guard appears, re-audit the pattern and consider a lint rule.
 
 ### CI logs API ≠ UI
 
@@ -576,12 +624,16 @@ See `.claude/roles/` for role-specific context:
 | `release.md`        | DevOps, DockerCaptain, ReleaseManager                                 |
 | `stw-liaison.md`    | StW-Liaison (client operator for SpokeToWork)                         |
 
-### Terminal Git Rules
+### Terminal Git Rules (delegated tmux workflows)
 
-When operating as a terminal in the multi-terminal workflow:
+When an Operator has explicitly assigned a terminal-only tmux workflow:
 
-- **COMMIT ONLY, NEVER PUSH** — Only the Operator has SSH access to push
+- **COMMIT ONLY, NEVER PUSH** — the assigned Operator owns pushing
 - Stay in your lane: commit your work and move on
+
+This is a delegated-workflow exception, not the normal repository rule. In ordinary
+individual or worktree work, the branch author pushes from the host after the required
+checks and follows **Concurrent checkout safety** above.
 
 ### Feature Specs & Wireframes
 

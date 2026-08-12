@@ -14,6 +14,9 @@ WORKDIR /app
 # Copy manifests first so the pnpm activation below can read `packageManager`,
 # and so dependency installs stay cached when only source changes.
 COPY package.json pnpm-lock.yaml ./
+# The prepare lifecycle configures hooks when Git metadata is available. Copy
+# its source before installing so this manifest-only stage can safely no-op.
+COPY scripts/configure-git-hooks.js ./scripts/configure-git-hooks.js
 
 # Activate the pnpm version pinned by package.json's `packageManager` field
 # rather than hard-coding one. This previously pinned pnpm@8 against a lockfile

@@ -11,7 +11,12 @@ import { removeAvatar } from '@/lib/avatar/upload';
 import DataExportButton from '@/components/atomic/DataExportButton';
 import AccountDeletionModal from '@/components/molecular/AccountDeletionModal';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { validateDisplayName, validateBio } from '@/lib/profile/validation';
+import {
+  checkUsernameAvailable,
+  validateBio,
+  validateDisplayName,
+  validateUsername,
+} from '@/lib/profile/validation';
 import { createLogger } from '@/lib/logger/logger';
 
 const logger = createLogger('components:auth:AccountSettings');
@@ -39,6 +44,7 @@ export default function AccountSettings({
   } = useUserProfile();
 
   // Profile form state - initialize empty, populate from profile via useEffect
+  const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -46,6 +52,7 @@ export default function AccountSettings({
   // Load initial values from user_profiles table
   useEffect(() => {
     if (profile) {
+      setUsername(profile.username || '');
       setDisplayName(profile.display_name || '');
       setBio(profile.bio || '');
       setAvatarUrl(profile.avatar_url || null);
@@ -70,6 +77,18 @@ export default function AccountSettings({
     setProfileError(null);
     setProfileSuccess(false);
 
+    // Usernames are optional. The profile contract allows 3-30 character
+    // handles with letters, numbers, underscores, and hyphens.
+    const usernameValidation = validateUsername(username);
+    if (!usernameValidation.valid) {
+      setProfileError(usernameValidation.error || 'Invalid username');
+      return;
+    }
+    // The app writes canonical lower-case handles. The database's unique
+    // constraint is case-sensitive, so database-level case-insensitive
+    // uniqueness needs a separate migration and collision audit.
+    const normalizedUsername = username.trim().toLowerCase();
+
     // Validate display name
     const displayNameValidation = validateDisplayName(displayName);
     if (!displayNameValidation.valid) {
@@ -84,15 +103,27 @@ export default function AccountSettings({
       return;
     }
 
-    setLoading(true);
-    setIsUpdatingProfile(true);
-
     // Ensure user is authenticated before update
     if (!user?.id) {
       setProfileError('You must be signed in to update your profile');
-      setLoading(false);
-      setIsUpdatingProfile(false);
       return;
+    }
+
+    setLoading(true);
+    setIsUpdatingProfile(true);
+
+    if (normalizedUsername) {
+      const isAvailable = await checkUsernameAvailable(
+        supabase,
+        normalizedUsername,
+        user.id
+      );
+      if (!isAvailable) {
+        setProfileError('This username is already taken');
+        setLoading(false);
+        setIsUpdatingProfile(false);
+        return;
+      }
     }
 
     // Feature 035: Use .upsert() instead of .update() to handle missing rows
@@ -103,6 +134,7 @@ export default function AccountSettings({
       .upsert(
         {
           id: user.id,
+          username: normalizedUsername || null,
           display_name: displayName?.trim() || null,
           bio: bio?.trim() || null,
         },
@@ -117,7 +149,11 @@ export default function AccountSettings({
     // Feature 035: Check returned data exists, not just !error (FR-003)
     if (updateError) {
       logger.error('Error updating profile', { error: updateError });
-      setProfileError('Failed to update profile. Please try again.');
+      setProfileError(
+        updateError.code === '23505'
+          ? 'This username is already taken'
+          : 'Failed to update profile. Please try again.'
+      );
     } else if (!data) {
       // FR-006: Show error if update failed silently (data is null)
       setProfileError('Profile update failed - please try again.');
@@ -246,6 +282,35 @@ export default function AccountSettings({
       <form onSubmit={handleUpdateProfile} className="card bg-base-200">
         <div className="card-body">
           <h3 className="card-title">Profile Settings</h3>
+
+          {/* Username Field */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6">
+            <label
+              htmlFor="username-input"
+              className="label sm:w-36 sm:shrink-0 sm:text-right"
+            >
+              <span className="label-text">Username</span>
+            </label>
+            <div className="min-w-0 flex-1">
+              <input
+                id="username-input"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="input input-bordered min-h-11 w-full"
+                placeholder="e.g., john_doe"
+                autoCapitalize="none"
+                spellCheck={false}
+                aria-describedby="username-description"
+                disabled={loading || isUpdatingProfile}
+              />
+              <p id="username-description" className="mt-2 text-sm">
+                <span className="text-sm">
+                  3–30 characters: letters, numbers, underscores, and hyphens
+                </span>
+              </p>
+            </div>
+          </div>
 
           {/* Display Name Field */}
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6">

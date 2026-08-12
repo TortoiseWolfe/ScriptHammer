@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
 import { assertValidOAuthClientId } from '../utils/oauth-validity';
 
 /**
@@ -81,7 +83,7 @@ test.describe('@smoke production deploy (#288)', () => {
     ).toEqual([]);
   });
 
-  test('canonical origin serves the app + github.io redirects to it', async ({
+  test('the origin resolves: github.io redirects to the custom domain and it serves the app', async ({
     request,
   }) => {
     // GitHub Pages guarantee: the project github.io URL 301s to the custom domain.
@@ -101,6 +103,117 @@ test.describe('@smoke production deploy (#288)', () => {
     // The canonical origin (BASE_URL) serves the real app (follow redirects).
     const home = await request.get('/sign-in');
     expect(home.ok(), `BASE_URL/sign-in → ${home.status()}`).toBeTruthy();
+  });
+
+  /**
+   * The canonical/OG TAGS carry the canonical ORIGIN (#665).
+   *
+   * The test above was previously named "canonical origin serves the app" and
+   * was the only thing anyone would look for when asking "is our canonical
+   * covered?". It asserts a redirect and a 200 — it never reads a <link
+   * rel="canonical"> or a single og: tag. Underneath that green check, every
+   * blog post shipped 274 URLs pointing at the retired github.io project URL,
+   * telling Google to credit the wrong domain and making every unfurled card
+   * resolve to the wrong site.
+   *
+   * #479 fixed the same class of bug for sitemap.xml three months earlier and
+   * concluded, in its own commit message, that "the canonical tags were never
+   * wrong — measured on live prod, the home page emits scripthammer.com". The
+   * home page reads NEXT_PUBLIC_DEPLOY_URL; the blog route read a different
+   * variable. It was verified where it could not fail.
+   *
+   * So: enumerate posts from blog-data.json — the same source
+   * `generateStaticParams` builds from — and assert every origin-bearing tag on
+   * every post. Never a hand-written route list; that is #411.
+   */
+  test('every blog post stamps canonical/og/JSON-LD on the canonical origin', async ({
+    request,
+    baseURL,
+  }) => {
+    const origin = new URL(baseURL!).origin;
+
+    // Enumerate from the SAME source `generateStaticParams` builds from, not
+    // from a URL shape. A `/blog/<slug>/` regex looks authoritative and is not:
+    // `/blog/seo/` matches it but is a separate route (src/app/blog/seo/) with
+    // no Article JSON-LD, and `/blog/tags/` is a listing page. Asserting
+    // Article metadata on either produces a permanent red for the wrong reason.
+    const blogData = JSON.parse(
+      await readFile(
+        join(process.cwd(), 'src/lib/blog/blog-data.json'),
+        'utf-8'
+      )
+    ) as { posts?: Array<{ slug: string }> };
+
+    const postUrls = (blogData.posts ?? []).map(
+      (p) => `${origin}/blog/${p.slug}/`
+    );
+
+    // Coverage floor. A selector or route change that silently stops matching
+    // must fail loudly rather than pass by measuring nothing (#396). Never
+    // lower this to make a run go green.
+    const FLOOR = 10;
+    console.log(`[canonical] checking ${postUrls.length} blog posts`);
+    expect(
+      postUrls.length,
+      `only ${postUrls.length} posts found in blog-data.json — below the floor of ${FLOOR}. ` +
+        `Either the data file changed shape or this probe stopped looking. Do not lower the floor.`
+    ).toBeGreaterThanOrEqual(FLOOR);
+
+    const failures: string[] = [];
+
+    for (const postUrl of postUrls) {
+      const res = await request.get(postUrl);
+      if (!res.ok()) {
+        failures.push(`${postUrl} → HTTP ${res.status()}`);
+        continue;
+      }
+      const html = await res.text();
+
+      const pick = (re: RegExp) => html.match(re)?.[1];
+      const canonical = pick(/<link[^>]+rel="canonical"[^>]+href="([^"]+)"/i);
+      const ogUrl = pick(/<meta[^>]+property="og:url"[^>]+content="([^"]+)"/i);
+      const ogImage = pick(
+        /<meta[^>]+property="og:image"[^>]+content="([^"]+)"/i
+      );
+      // The Article block's @id — the field that carried the mixed-case
+      // github.io fingerprint, because JSON-LD is not URL-normalized.
+      const jsonLdId = pick(/"@id"\s*:\s*"([^"]*\/blog\/[^"]*)"/);
+
+      const tags: Array<[string, string | undefined]> = [
+        ['canonical', canonical],
+        ['og:url', ogUrl],
+        ['og:image', ogImage],
+        ['JSON-LD @id', jsonLdId],
+      ];
+
+      for (const [name, value] of tags) {
+        if (!value) {
+          failures.push(`${postUrl} — ${name} is MISSING`);
+          continue;
+        }
+        // Case-insensitive: hosts are case-insensitive, and we want a
+        // mixed-case github.io to fail on the ORIGIN check, not slip past.
+        if (!value.toLowerCase().startsWith(origin.toLowerCase())) {
+          failures.push(
+            `${postUrl} — ${name} = ${value} (expected ${origin}…)`
+          );
+        }
+      }
+
+      // og:url must be the URL that actually serves this page, byte for byte.
+      // `trailingSlash: true` means the slash-less form 301s, so a mismatch
+      // here is a scraper following a redirect to where it already was.
+      if (ogUrl && ogUrl !== postUrl) {
+        failures.push(
+          `${postUrl} — og:url is "${ogUrl}", which is not the URL serving it`
+        );
+      }
+    }
+
+    expect(
+      failures,
+      `wrong-origin or mismatched metadata on ${failures.length} check(s):\n${failures.join('\n')}`
+    ).toEqual([]);
   });
 
   /**

@@ -165,19 +165,43 @@ jobs:
           # And the functions route, when this commit HAS an edge runtime. A
           # missing one does not stop /auth/v1/health answering, so the wait above
           # passes while every Edge Function call 5xxs — the exact way this stayed
-          # invisible. 404 is a PASS: Kong reached the runtime and it said "no such
-          # function". A 5xx means the upstream is not there at all.
+          # invisible.
+          #
+          # PROBE A FUNCTION THAT ACTUALLY EXISTS.
+          #
+          # This used to request `__readiness_probe__` — a name that appears
+          # nowhere else in the repo, because the function was never created. The
+          # comment here asserted that a missing function returns 404, so 4xx was
+          # read as "runtime is up". supabase/edge-runtime returns **500**:
+          #
+          #   {"error":"Function '__readiness_probe__' could not be started",
+          #    "detail":"worker boot error: failed to read path: (os error 2)",
+          #    "hint":"Expected supabase/functions/__readiness_probe__/index.ts to exist"}
+          #
+          # So the probe declared the runtime dead on every run while the runtime
+          # was healthy — reproduced locally, `create-order` answers 401 on the very
+          # same stack. It failed all 25 jobs at the gate and #575's parity matrix
+          # never executed a single test.
+          #
+          # Probing a REAL function also makes this a stronger check than before:
+          # 401 proves Kong routed, the worker booted, and the function ran far
+          # enough to reject an unauthenticated call.
           if [ "${EDGE_RUNTIME_PRESENT:-0}" = "1" ]; then
+            PROBE_FN=create-order
+            if [ ! -f "supabase/functions/${PROBE_FN}/index.ts" ]; then
+              echo "::error::probe target supabase/functions/${PROBE_FN}/index.ts does not exist. Point PROBE_FN at a function that does — probing a name that is not there is what broke this probe in the first place."
+              exit 1
+            fi
             for i in $(seq 1 30); do
               fc=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
                 -H "apikey: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}" \
-                http://localhost:54321/functions/v1/__readiness_probe__)
-              case "$fc" in 2*|4*) echo "edge runtime reachable after ${i} attempt(s) (HTTP $fc)"; break;; esac
+                "http://localhost:54321/functions/v1/${PROBE_FN}")
+              case "$fc" in 2*|4*) echo "edge runtime reachable after ${i} attempt(s) — ${PROBE_FN} answered HTTP $fc"; break;; esac
               sleep 3
             done
             case "$fc" in
               2*|4*) ;;
-              *) echo "::error::edge runtime never became reachable through Kong (last=$fc) — Edge Function specs would fail as product errors"; exit 1 ;;
+              *) echo "::error::edge runtime never became reachable through Kong (${PROBE_FN} last=$fc) — Edge Function specs would fail as product errors"; exit 1 ;;
             esac
           else
             echo "edge runtime absent at this commit — skipping its readiness probe"

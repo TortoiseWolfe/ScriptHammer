@@ -3,20 +3,44 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import AccountSettings from './AccountSettings';
 
 // Create mock functions we can spy on
-const mockRefetch = vi.fn();
-const mockRefreshSession = vi.fn();
+const {
+  mockRefetch,
+  mockRefreshSession,
+  mockFrom,
+  mockUpsert,
+  mockUpsertSelect,
+  mockUpsertSingle,
+  mockProfileSelect,
+  mockUsernameEq,
+  mockUsernameNeq,
+  mockUsernameLimit,
+  mockProfile,
+} = vi.hoisted(() => ({
+  mockRefetch: vi.fn(),
+  mockRefreshSession: vi.fn(),
+  mockFrom: vi.fn(),
+  mockUpsert: vi.fn(),
+  mockUpsertSelect: vi.fn(),
+  mockUpsertSingle: vi.fn(),
+  mockProfileSelect: vi.fn(),
+  mockUsernameEq: vi.fn(),
+  mockUsernameNeq: vi.fn(),
+  mockUsernameLimit: vi.fn(),
+  mockProfile: {
+    id: 'test-user-id',
+    username: 'testuser-b',
+    display_name: 'Test User',
+    bio: 'Test bio',
+    avatar_url: null,
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-01-01T00:00:00Z',
+  },
+}));
 
 // Mock the useUserProfile hook to return a loaded state
 vi.mock('@/hooks/useUserProfile', () => ({
   useUserProfile: () => ({
-    profile: {
-      id: 'test-user-id',
-      display_name: 'Test User',
-      bio: 'Test bio',
-      avatar_url: null,
-      created_at: '2024-01-01T00:00:00Z',
-      updated_at: '2024-01-01T00:00:00Z',
-    },
+    profile: mockProfile,
     loading: false,
     error: null,
     refetch: mockRefetch,
@@ -37,36 +61,42 @@ vi.mock('@/lib/supabase/client', () => ({
     auth: {
       updateUser: vi.fn().mockResolvedValue({ error: null }),
     },
-    from: () => ({
-      // Changed from .update() to .upsert() for profile updates (Feature 035)
-      upsert: () => ({
-        select: () => ({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              id: 'test-user-id',
-              display_name: 'Test User',
-              bio: 'Test bio',
-            },
-            error: null,
-          }),
-        }),
-      }),
-      select: () => ({
-        eq: () => ({
-          single: vi.fn().mockResolvedValue({ data: null, error: null }),
-        }),
-        neq: () => ({
-          limit: vi.fn().mockResolvedValue({ data: [], error: null }),
-        }),
-      }),
-    }),
+    from: mockFrom,
   }),
 }));
 
 describe('AccountSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockProfile.username = 'testuser-b';
+
+    mockUsernameLimit.mockResolvedValue({ data: [], error: null });
+    mockUsernameNeq.mockReturnValue({ limit: mockUsernameLimit });
+    mockUsernameEq.mockReturnValue({ neq: mockUsernameNeq });
+    mockProfileSelect.mockReturnValue({ eq: mockUsernameEq });
+
+    mockUpsertSingle.mockResolvedValue({
+      data: {
+        id: 'test-user-id',
+        username: 'existing_user',
+        display_name: 'Test User',
+        bio: 'Test bio',
+      },
+      error: null,
+    });
+    mockUpsertSelect.mockReturnValue({ single: mockUpsertSingle });
+    mockUpsert.mockReturnValue({ select: mockUpsertSelect });
+    mockFrom.mockReturnValue({
+      upsert: mockUpsert,
+      select: mockProfileSelect,
+    });
   });
+
+  async function getHydratedUsernameInput() {
+    const username = screen.getByLabelText('Username');
+    await waitFor(() => expect(username).toHaveValue('testuser-b'));
+    return username;
+  }
 
   it('renders without crashing', () => {
     render(<AccountSettings />);
@@ -96,6 +126,131 @@ describe('AccountSettings', () => {
     });
     expect(updateProfileBtn).toBeInTheDocument();
     expect(changePasswordBtn).toBeInTheDocument();
+  });
+
+  it('keeps an existing hyphenated username eligible for profile updates', async () => {
+    render(<AccountSettings />);
+
+    await getHydratedUsernameInput();
+    fireEvent.click(screen.getByRole('button', { name: /update profile/i }));
+
+    await waitFor(() => {
+      expect(mockUsernameEq).toHaveBeenCalledWith('username', 'testuser-b');
+      expect(mockUsernameNeq).toHaveBeenCalledWith('id', 'test-user-id');
+      expect(mockUpsert).toHaveBeenCalledWith(
+        {
+          id: 'test-user-id',
+          username: 'testuser-b',
+          display_name: 'Test User',
+          bio: 'Test bio',
+        },
+        { onConflict: 'id' }
+      );
+    });
+  });
+
+  it('hydrates and saves a normalized username', async () => {
+    render(<AccountSettings />);
+
+    const username = await getHydratedUsernameInput();
+
+    fireEvent.change(username, { target: { value: '  New-User  ' } });
+    fireEvent.click(screen.getByRole('button', { name: /update profile/i }));
+
+    await waitFor(() => {
+      expect(mockUsernameEq).toHaveBeenCalledWith('username', 'new-user');
+      expect(mockUpsert).toHaveBeenCalledWith(
+        {
+          id: 'test-user-id',
+          username: 'new-user',
+          display_name: 'Test User',
+          bio: 'Test bio',
+        },
+        { onConflict: 'id' }
+      );
+    });
+  });
+
+  it('blocks an invalid username before writing a profile', async () => {
+    render(<AccountSettings />);
+    const username = await getHydratedUsernameInput();
+
+    fireEvent.change(username, { target: { value: 'notallowed!' } });
+    fireEvent.click(screen.getByRole('button', { name: /update profile/i }));
+
+    expect(
+      await screen.findByText(
+        'Username can only contain letters, numbers, underscores, and hyphens'
+      )
+    ).toBeInTheDocument();
+    expect(mockUpsert).not.toHaveBeenCalled();
+  });
+
+  it('blocks an unavailable username before writing a profile', async () => {
+    mockUsernameLimit.mockResolvedValue({
+      data: [{ id: 'other-user-id' }],
+      error: null,
+    });
+    render(<AccountSettings />);
+    fireEvent.change(await getHydratedUsernameInput(), {
+      target: { value: 'taken-name' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /update profile/i }));
+
+    expect(
+      await screen.findByText('This username is already taken')
+    ).toBeInTheDocument();
+    expect(mockUpsert).not.toHaveBeenCalled();
+  });
+
+  it('saves a blank username as null without checking availability', async () => {
+    render(<AccountSettings />);
+
+    fireEvent.change(await getHydratedUsernameInput(), {
+      target: { value: '   ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /update profile/i }));
+
+    await waitFor(() => {
+      expect(mockUpsert).toHaveBeenCalledWith(
+        {
+          id: 'test-user-id',
+          username: null,
+          display_name: 'Test User',
+          bio: 'Test bio',
+        },
+        { onConflict: 'id' }
+      );
+    });
+    expect(mockUsernameEq).not.toHaveBeenCalled();
+  });
+
+  it('handles a duplicate-username write race', async () => {
+    mockUpsertSingle.mockResolvedValue({
+      data: null,
+      error: { code: '23505', message: 'duplicate key value' },
+    });
+    render(<AccountSettings />);
+
+    fireEvent.change(await getHydratedUsernameInput(), {
+      target: { value: 'available-name' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /update profile/i }));
+
+    await waitFor(() => {
+      expect(mockUpsert).toHaveBeenCalledWith(
+        {
+          id: 'test-user-id',
+          username: 'available-name',
+          display_name: 'Test User',
+          bio: 'Test bio',
+        },
+        { onConflict: 'id' }
+      );
+    });
+    expect(
+      await screen.findByText('This username is already taken')
+    ).toBeInTheDocument();
   });
 
   // Feature 038: Tests for inline alerts (FR-004, FR-005)

@@ -80,12 +80,9 @@ const THREE_PKGS = [
 /**
  * First-party 3D code. Not a library, so the old grep could never have seen it.
  *
- * ANNOTATE, NOT BLOCK, for now. src/lib/cod is in `common` today because that
- * cacheGroup has a fixed name and no `test` (next.config.ts), so any module used
- * by two chunks becomes initial everywhere — the same pathology the file
- * documents for `vendor`. Fixing it changes bundle layout on every route, and
- * blocking here would hold production hostage to that refactor. Flip to block in
- * the same change that fixes the chunking.
+ * This is a hard failure. #638 removed the fixed `common` cacheGroup name that
+ * had made these modules initial on every route; letting one back into a
+ * non-3D route would reintroduce that regression silently.
  */
 const FIRST_PARTY_3D = [
   'src/lib/cod/',
@@ -93,6 +90,18 @@ const FIRST_PARTY_3D = [
   'src/stage/',
   'src/twin/',
 ];
+
+/**
+ * `GlobalNav` uses this tiny, pure URL parser on every route to keep the map
+ * link's selected state correct. It lives under `src/twin/` for its two canvas
+ * callers too, but imports neither a renderer nor a 3D library — its path
+ * alone must not make the gate lie. Keep this exception to the exact module;
+ * every other module under the prefixes above remains protected.
+ */
+const FIRST_PARTY_NON_3D = new Set(['src/twin/renderer-select.ts']);
+const isFirstParty3D = (module) =>
+  !FIRST_PARTY_NON_3D.has(module) &&
+  FIRST_PARTY_3D.some((prefix) => module.startsWith(prefix));
 
 /** Routes allowed to load three, matched against the exported route path. */
 const THREE_OK = [
@@ -191,7 +200,7 @@ if (chunksWithThree.length === 0) {
 }
 
 const violations = [];
-const warnings = [];
+const firstPartyViolations = [];
 let checked = 0;
 
 const unknownChunks = new Set();
@@ -223,11 +232,12 @@ for (const html of htmlFiles) {
     }
     for (const m of mods) {
       if (THREE_PKGS.includes(m)) libs.add(`${m} (${ref})`);
-      else if (FIRST_PARTY_3D.some((p) => m.startsWith(p))) firstParty.add(m);
+      else if (isFirstParty3D(m)) firstParty.add(m);
     }
   }
   if (libs.size) violations.push({ route, hits: [...libs] });
-  if (firstParty.size) warnings.push({ route, hits: [...firstParty] });
+  if (firstParty.size)
+    firstPartyViolations.push({ route, hits: [...firstParty] });
 }
 
 if (unknownChunks.size) {
@@ -243,35 +253,42 @@ if (unknownChunks.size) {
   process.exit(1);
 }
 
-if (warnings.length) {
-  const all = [...new Set(warnings.flatMap((w) => w.hits))];
-  console.log(
-    `::warning::First-party 3D code is in the initial payload of ${warnings.length} non-3D route(s): ` +
-      `${all.slice(0, 4).join(', ')}${all.length > 4 ? `, +${all.length - 4} more` : ''}. ` +
-      `The three LIBRARY is correctly async; this is app code pulled in by the fixed-name ` +
-      `\`common\` cacheGroup. Annotate-only until the chunking is fixed.`
-  );
-}
-
-if (violations.length) {
-  console.error(
-    `\n❌ three.js ships in the initial payload of ${violations.length} non-3D route(s) (#291):`
-  );
-  for (const v of violations) {
-    console.error(`   ${v.route}`);
-    for (const h of v.hits) console.error(`     → ${h}`);
+if (violations.length || firstPartyViolations.length) {
+  if (violations.length) {
+    console.error(
+      `\n❌ three.js ships in the initial payload of ${violations.length} non-3D route(s) (#291):`
+    );
+    for (const v of violations) {
+      console.error(`   ${v.route}`);
+      for (const h of v.hits) console.error(`     → ${h}`);
+    }
   }
-  console.error(
-    '\nAdd/extend the `three` cacheGroup in next.config.ts, or remove the static ' +
-      '`three` import that a non-3D route reaches. See scripts/check-first-load-budget.mjs.'
-  );
+  if (firstPartyViolations.length) {
+    console.error(
+      `\n❌ first-party 3D code ships in the initial payload of ${firstPartyViolations.length} non-3D route(s) (#638):`
+    );
+    for (const v of firstPartyViolations) {
+      console.error(`   ${v.route}`);
+      for (const h of v.hits) console.error(`     → ${h}`);
+    }
+  }
+
+  if (violations.length) {
+    console.error(
+      '\nAdd/extend the `three` cacheGroup in next.config.ts, or remove the static ' +
+        '`three` import that a non-3D route reaches. See scripts/check-first-load-budget.mjs.'
+    );
+  }
+  if (firstPartyViolations.length) {
+    console.error(
+      '\nKeep first-party 3D modules behind their 3D route boundaries. In particular, ' +
+        'do not restore a fixed name to the `common` cacheGroup in next.config.ts.'
+    );
+  }
   process.exit(1);
 }
 
 console.log(
-  `✅ first-load budget: three (${chunksWithThree.length} chunk(s)) is absent from ` +
-    `all ${checked} non-3D route(s)` +
-    (warnings.length
-      ? ` — ${warnings.length} carrying first-party 3D code, warned above`
-      : '')
+  `✅ first-load budget: three (${chunksWithThree.length} chunk(s)) and first-party 3D code are absent from ` +
+    `all ${checked} non-3D route(s)`
 );
