@@ -84,6 +84,9 @@ export interface BikeCfg {
    *  front wheel does NOT rotate the bike — it needs forward motion to bite
    *  (a bicycle is non-holonomic; you can't pivot in place). */
   turnGain: number;
+  /** Hop take-off speed, m/s (#705). Deliberately below the on-foot jump — enough to
+   *  clear a kerb or pop off a stair edge, not to launch. Ramps do the real launching. */
+  hop: number;
 }
 
 export interface EmbodiedConfig {
@@ -157,7 +160,49 @@ const DEFAULT_BIKE: BikeCfg = {
   mountRadius: 3, // a touch more forgiving to walk up and mount
   turnRate: 2.2, // steering-rate CAP (rad/s), reached only while rolling
   turnGain: 0.5, // steering authority ramps with speed; 0 at a standstill
+  hop: 3.8, // ~0.33 m of air against the 7 m/s on-foot jump (#705)
 };
+
+/**
+ * Terminal velocity, m/s (#705).
+ *
+ * A body falling at more than this is not simulating anything — it is carrying stored
+ * integration error. The runaway this clamps was measured at **-220 m/s after 10 s on
+ * flat ground**, which is what made leaving a ledge read as an instantaneous snap to the
+ * surface below rather than a fall.
+ */
+const TERMINAL_VELOCITY = -60;
+
+/**
+ * How much authority the input has over horizontal velocity while airborne (#705).
+ *
+ * Momentum-preserving, by choice: the speed you leave a ramp with is the speed you carry
+ * through the arc. Steering nudges the direction; it cannot accelerate or brake. Zero
+ * would be pure ballistic and unrecoverable; 1 would let you swim through the air and
+ * would reintroduce the bug where releasing the throttle BRAKES the bike in mid-flight.
+ */
+const AIR_CONTROL = 0.12;
+
+/**
+ * How fast the remembered climb rate fades, m/s² (#705).
+ *
+ * The climb that becomes take-off velocity is measured from the body's own vertical
+ * progress rather than projected from the ground normal, because a staircase tread has
+ * ny = 1 — normal projection yields exactly zero launch off stairs, which is the case the
+ * owner asked for by name ("jump the bike off of them like a ramp"). Measuring what the
+ * body actually climbed covers smooth ramps and stepped geometry with one mechanism.
+ *
+ * It is held as a decaying PEAK rather than an average because the ground-snap keeps the
+ * body nominally grounded for ~0.5 m past a lip while it is already descending; an
+ * average is dragged negative by exactly the frames before take-off. At 12 m/s² a climb
+ * is forgotten in ~0.2 s — long enough to survive that overshoot, short enough that
+ * riding downhill and off a ledge produces no phantom pop.
+ */
+const CLIMB_DECAY = 12;
+/** Climb rate below which take-off is just walking off an edge, m/s. */
+const LAUNCH_MIN = 0.5;
+/** Cap on take-off speed derived from the climb rate, m/s. */
+const MAX_LAUNCH = 9;
 
 /** Collision radius of the parked bike as a walk-through obstacle, m (a bike is
  *  ~0.5 m wide). It only blocks the inner core, well inside `mountRadius`, so B
@@ -206,6 +251,13 @@ export class EmbodiedController {
    *  it — so spawning/dismounting on top of it never punts you. Re-armed (false)
    *  every time it's (re)parked. */
   private bikeArmed_ = false;
+  /** Smoothed rate of climb while grounded, m/s — becomes take-off velocity (#705). */
+  private climbRate_ = 0;
+  /** Feet height at the end of the previous fixed step, for the climb estimate. */
+  private prevY_ = 0;
+  /** The controller's configured ground-snap distance, so it can be suspended while
+   *  rising and restored afterwards (#705). */
+  private readonly snapDistance_: number;
   /** Reused hit record for the chase-cam raycast (no per-frame allocation). */
   private readonly camHit_ = makeHitRecord();
   /** Capsule radius (matches the CharacterController); the bike-collision push
@@ -244,7 +296,9 @@ export class EmbodiedController {
       position: config.spawn ?? { x: 0, y: 0, z: 0 },
     });
     this.radius_ = config.radius ?? 0.4;
+    this.snapDistance_ = this.cc.snapDistance;
     this.eye = stand.eye;
+    this.prevY_ = this.cc.position.y;
     // Bike starts parked at the spawn point (mountable from frame 0).
     const sp = config.spawn ?? { x: 0, y: 0, z: 0 };
     this.bikePos_.x = sp.x;
@@ -273,6 +327,15 @@ export class EmbodiedController {
   }
   get grounded(): boolean {
     return this.cc.grounded;
+  }
+  /** Live velocity, m/s. The controller owns integration — treat as read-only. */
+  get velocity(): Vec3Like {
+    return this.cc.velocity;
+  }
+  /** Vertical velocity, m/s; positive is rising. Exposed because a trajectory can only
+   *  be tested by reading it (#705). */
+  get verticalVelocity(): number {
+    return this.cc.velocity.y;
   }
   /** Downward impact speed on the frame of landing (m/s) — for camera-feel. */
   get landingSpeed(): number {
@@ -486,9 +549,24 @@ export class EmbodiedController {
     // backgrounded tab can't explode the tick count.
     this.accum += Math.min(dt, 0.1);
     let moved = 0;
+    let wasGrounded = cc.grounded;
     while (this.accum >= this.fixedStep) {
       this.accum -= this.fixedStep;
+      // Standing on the floor must not bank downward velocity (#705). Nothing clipped it
+      // on the grounded path — `_slide` there is horizontal-only, so no contact plane is
+      // ever hit and `_clipVelocity` never runs. Measured: -220 m/s after 10 s of walking
+      // on FLAT ground, all of it discharged in a single step the moment you cleared a
+      // ledge. That is what read as "the bike snaps to nearest surface level".
+      if (cc.grounded && cc.velocity.y < 0) cc.velocity.y = 0;
       cc.velocity.y += this.gravity * this.fixedStep;
+      if (cc.velocity.y < TERMINAL_VELOCITY) cc.velocity.y = TERMINAL_VELOCITY;
+      // AIRBORNE = MOMENTUM (#705). Ground locomotion assumes traction; running it in
+      // mid-flight is what made arcs collapse — releasing the throttle set the bike's
+      // target speed to 0 and it BRAKED against thin air. Off the ground the speed you
+      // took off with is the speed you carry, and input only nudges the direction.
+      const airborne = !cc.grounded;
+      const authority = airborne ? AIR_CONTROL : 1;
+
       if (this.riding_) {
         // Bicycle: A/D steers the heading, W/S throttles ALONG it — no strafe,
         // reverse allowed — with momentum. NON-HOLONOMIC: the heading only turns
@@ -504,10 +582,19 @@ export class EmbodiedController {
           this.bike.turnGain * rollSpeed
         );
         this.bikeHeading_ -= turn * str * this.fixedStep;
-        const tx = -Math.sin(this.bikeHeading_) * speed * fwd;
-        const tz = -Math.cos(this.bikeHeading_) * speed * fwd;
-        cc.velocity.x += (tx - cc.velocity.x) * bikeK;
-        cc.velocity.z += (tz - cc.velocity.z) * bikeK;
+        if (airborne) {
+          // Hold the launch speed and steer the momentum, rather than re-targeting it
+          // from the throttle. Without this the arc dies the moment you stop pedalling.
+          const tx = -Math.sin(this.bikeHeading_) * rollSpeed;
+          const tz = -Math.cos(this.bikeHeading_) * rollSpeed;
+          cc.velocity.x += (tx - cc.velocity.x) * AIR_CONTROL;
+          cc.velocity.z += (tz - cc.velocity.z) * AIR_CONTROL;
+        } else {
+          const tx = -Math.sin(this.bikeHeading_) * speed * fwd;
+          const tz = -Math.cos(this.bikeHeading_) * speed * fwd;
+          cc.velocity.x += (tx - cc.velocity.x) * bikeK;
+          cc.velocity.z += (tz - cc.velocity.z) * bikeK;
+        }
       } else {
         // On foot: camera-relative omnidirectional WASD, snapped (crisp).
         // forward = (−sy, 0, −cy), right = (cy, 0, −sy)
@@ -521,19 +608,71 @@ export class EmbodiedController {
           wx = 0;
           wz = 0;
         }
-        cc.velocity.x = wx;
-        cc.velocity.z = wz;
+        if (airborne) {
+          // Lerp, don't snap — a jump keeps its horizontal momentum. Standing still in
+          // mid-air used to stop you dead above the ground.
+          cc.velocity.x += (wx - cc.velocity.x) * authority;
+          cc.velocity.z += (wz - cc.velocity.z) * authority;
+        } else {
+          cc.velocity.x = wx;
+          cc.velocity.z = wz;
+        }
       }
-      // Jump only on foot, standing.
-      if (inp.jump && cc.grounded && !this.riding_ && this.stance === 'stand') {
-        cc.velocity.y = this.jumpSpeed;
+      // Jump on foot (standing) or a smaller hop on the bike (#705) — a bike that
+      // cannot leave the ground cannot pop off a stair edge.
+      if (inp.jump && cc.grounded) {
+        if (this.riding_) {
+          cc.velocity.y = this.bike.hop;
+        } else if (this.stance === 'stand') {
+          cc.velocity.y = this.jumpSpeed;
+        }
       }
+      // Don't cling to a lip you are leaving (#705). The stair-DESCENT snap exists to
+      // keep you glued to the ground going downhill; applied to a body that is rising, or
+      // that has just been climbing, it is exactly the "snaps to nearest surface level"
+      // the owner reported — measured dragging the bike 0.5 m past the lip, descending
+      // the whole way, before it was finally allowed to be airborne.
+      cc.snapDistance =
+        cc.velocity.y > 0.1 || this.climbRate_ > LAUNCH_MIN
+          ? 0
+          : this.snapDistance_;
+
+      const yBefore = cc.position.y;
       moved += cc.move(
         cc.velocity.x * this.fixedStep,
         cc.velocity.y * this.fixedStep,
         cc.velocity.z * this.fixedStep
       );
+
+      if (cc.grounded) {
+        // How fast the body is ACTUALLY gaining height — not the ground normal, because
+        // a staircase tread's normal points straight up and would yield no launch at all.
+        //
+        // A DECAYING PEAK, not a running average. Measured: leaving a ramp, the descent
+        // snap keeps the body "grounded" for ~0.5 m past the lip while it drops, and an
+        // average is dragged negative by those frames — the climb is forgotten a few
+        // milliseconds before it is needed. The peak survives the overshoot and fades in
+        // ~0.2 s, so riding DOWN a slope and off a ledge still gives no phantom pop.
+        const rate = (cc.position.y - yBefore) / this.fixedStep;
+        this.climbRate_ = Math.max(
+          this.climbRate_ - CLIMB_DECAY * this.fixedStep,
+          rate
+        );
+      } else if (
+        wasGrounded &&
+        this.climbRate_ > LAUNCH_MIN &&
+        cc.velocity.y <= 0
+      ) {
+        // Just left a surface while climbing: convert that climb into real upward
+        // velocity, so the body follows a ballistic arc instead of walking off an edge.
+        cc.velocity.y = Math.min(this.climbRate_, MAX_LAUNCH);
+        this.climbRate_ = 0;
+      }
+      if (!cc.grounded && cc.velocity.y <= 0) this.climbRate_ = 0;
+      wasGrounded = cc.grounded;
+      this.prevY_ = cc.position.y;
     }
+    cc.snapDistance = this.snapDistance_;
     this.movedThisFrame = moved;
 
     // Parked-bike collision: on foot the bike is a solid object you can't walk
