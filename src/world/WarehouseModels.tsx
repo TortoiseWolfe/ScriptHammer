@@ -44,6 +44,20 @@ const HIGHLIGHT = new Color(0x66aaff);
 /** Ref handle the editor's gizmo attaches to (the placed group). */
 export type ModelGroupRegistry = (slug: string, group: Group | null) => void;
 
+/**
+ * Hands the placed group to whoever bakes collision (#702).
+ *
+ * SEPARATE FROM `ModelGroupRegistry` ON PURPOSE. That one is the editor gizmo's
+ * attach point and only the SELECTED model reports through it — exactly one at a
+ * time, usually none. Collision needs EVERY model, so reusing it would have given
+ * the landmarks collision only while they were selected in the editor.
+ *
+ * The group, not the LOD mesh: the group carries the placement transform
+ * (position/rotation/scale), and `bakeMesh` reads `matrixWorld`. Passing the raw
+ * LOD would bake every landmark at the origin.
+ */
+export type ModelColliderRegistry = (slug: string, group: Group | null) => void;
+
 function SampledBuilding({
   slug,
   entry,
@@ -52,6 +66,7 @@ function SampledBuilding({
   selected,
   onSelect,
   registerGroup,
+  registerCollider,
 }: {
   slug: string;
   entry: WarehouseModelEntry;
@@ -60,6 +75,7 @@ function SampledBuilding({
   selected: boolean;
   onSelect?: (slug: string) => void;
   registerGroup?: ModelGroupRegistry;
+  registerCollider?: ModelColliderRegistry;
 }) {
   const gltf = useGLTF(siteAssetUrl(slug, `models/${entry.file}`), false, true);
 
@@ -152,6 +168,17 @@ function SampledBuilding({
     return () => registerGroup(entry.slug, null);
   }, [registerGroup, entry.slug, selected]);
 
+  // Collision (#702). NOT gated on `selected` — every landmark and bridge needs to
+  // be solid, not just whichever one the editor has picked. Depends on `groundY`
+  // so the collider is registered with the model's FINAL placement: the group is
+  // grounded onto the terrain, and baking before that would put the collision
+  // shell at the wrong height.
+  useEffect(() => {
+    if (!registerCollider) return;
+    registerCollider(entry.slug, groupRef.current);
+    return () => registerCollider(entry.slug, null);
+  }, [registerCollider, entry.slug, groundY]);
+
   const scale = entry.scale ?? 1;
   const position: [number, number, number] = [
     entry.x,
@@ -206,6 +233,7 @@ export default function WarehouseModels({
   selected,
   onSelect,
   registerGroup,
+  registerCollider,
 }: {
   slug: string;
   info: WarehouseModelsInfo;
@@ -218,6 +246,7 @@ export default function WarehouseModels({
   onSelect?: (slug: string) => void;
   /** Lets the editor's gizmo find the selected building's group. */
   registerGroup?: ModelGroupRegistry;
+  registerCollider?: ModelColliderRegistry;
 }) {
   const placed = useMemo(
     () =>
@@ -241,6 +270,7 @@ export default function WarehouseModels({
             selected={selected === entry.slug}
             onSelect={onSelect}
             registerGroup={registerGroup}
+            registerCollider={registerCollider}
           />
         </Suspense>
       ))}

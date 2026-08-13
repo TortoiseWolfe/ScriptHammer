@@ -1,0 +1,18 @@
+[
+  {
+    "slug": "hair-of-the-dog-pub",
+    "source": "hair-of-the-dog-pub.glb",
+    "steps": 1,
+    "riser": 0,
+    "rise": 3.0972,
+    "triangles": 301
+  },
+  {
+    "slug": "warehouse-row",
+    "source": "warehouse-row.glb",
+    "steps": 5,
+    "riser": 0.16,
+    "rise": 0.64,
+    "triangles": 602
+  }
+]

@@ -51,6 +51,13 @@ export class StaticWorld {
   removeObject(id: number): boolean;
   findByMesh(mesh: THREE.Object3D): number;
 
+  /**
+   * Single-sided triangle collision (#713): a hit on a triangle's BACK passes through.
+   * Off by default. Matches PhysX (back faces culled unless `eDOUBLE_SIDED`) and Godot
+   * (`ConcavePolygonShape3D.backface_collision = false`).
+   */
+  cullBackfaces: boolean;
+
   /** Rebuild the BVH after adding/removing meshes. */
   build(): void;
 
@@ -111,4 +118,17 @@ export class StaticWorld {
   dispose(): void;
 
   readonly triCount: number;
+  /** World-space bounds of every baked triangle. Valid after `build()`. */
+  readonly aabb: {
+    minx: number;
+    miny: number;
+    minz: number;
+    maxx: number;
+    maxy: number;
+    maxz: number;
+  };
+  /** Increments once per `build()` — a direct rebuild counter (#702). */
+  readonly version: number;
+  /** Wall-clock cost of the last `build()`, ms. */
+  readonly buildMs: number;
 }

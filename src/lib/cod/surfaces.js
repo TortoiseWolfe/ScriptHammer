@@ -122,6 +122,17 @@ export const LAYER = {
   /** Blocks bullets but not movement (grates, railings modelled thin). */ SHOOT_ONLY: 1 << 9,
   /** Non-colliding trigger volume. */ TRIGGER: 1 << 10,
   /** Foliage — no collision, deflects bullets barely, blocks nothing. */ FOLIAGE: 1 << 11,
+  /**
+   * Marks geometry as SINGLE-SIDED for collision (#713): queries that meet one of these
+   * triangles from behind pass through it.
+   *
+   * A property bit rather than a layer — it never appears in a query mask, it rides
+   * alongside STATIC on the object that wants it. Scoped per triangle on purpose: the
+   * twin's imported landmarks have inconsistent winding and need this, while the terrain
+   * and the merged massing boxes emphatically do not. A world-wide switch would risk
+   * turning one downward-wound ground triangle into a hole you fall through forever.
+   */
+  SINGLE_SIDED: 1 << 12,
 };
 
 export const MASK = {

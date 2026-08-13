@@ -15,7 +15,10 @@ import type {
 } from '@/lib/manifest';
 import Buildings from './Buildings';
 import HouseModel from './HouseModel';
-import WarehouseModels, { type ModelGroupRegistry } from './WarehouseModels';
+import WarehouseModels, {
+  type ModelGroupRegistry,
+  type ModelColliderRegistry,
+} from './WarehouseModels';
 import Terrain from './Terrain';
 import WideCity from './WideCity';
 import Streets from './Streets';
@@ -43,6 +46,7 @@ export default function TwinWorld({
   selectedModel,
   onSelectModel,
   registerModelGroup,
+  registerCollider,
   onHouseGround,
   onGroundReady,
   onError,
@@ -68,6 +72,7 @@ export default function TwinWorld({
   onSelectModel?: (slug: string) => void;
   /** Surfaces the selected building's group for the editor's gizmo. */
   registerModelGroup?: ModelGroupRegistry;
+  registerCollider?: ModelColliderRegistry;
   /** Reports the terrain height (runtime Y) under the house anchor once the
    *  grid loads — lets the composition root aim the camera at the parcel. */
   onHouseGround?: (y: number) => void;
@@ -161,6 +166,9 @@ export default function TwinWorld({
         onGroundReady={onGroundReady}
         onBuildingsMesh={onBuildingsMesh}
         onTerrainMesh={onTerrainMesh}
+        registerCollider={registerCollider}
+        selectedModel={selectedModel}
+        onSelectModel={onSelectModel}
       />
     );
   }

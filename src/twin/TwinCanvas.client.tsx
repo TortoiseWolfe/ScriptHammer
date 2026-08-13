@@ -12,6 +12,7 @@ import {
   LinearSRGBColorSpace,
   type Group,
   type Mesh,
+  type Object3D,
   type Vector3,
 } from 'three';
 import {
@@ -34,7 +35,11 @@ import {
   type WeatherKind,
   bus,
 } from '@/lib/cod';
-import { makeWalkMove, type BikeView } from '@/stage/embodiedWalk';
+import {
+  makeWalkMove,
+  chaseBackDir,
+  type BikeView,
+} from '@/stage/embodiedWalk';
 import TwinWorld from '@/world/TwinWorld';
 import Trolley from '@/agents/trolley';
 import Bike from '@/agents/bike';
@@ -43,9 +48,13 @@ import ProceduralSky from '@/components/game/ProceduralSky';
 import Hud, { HudCaption, HudLink, HudOption, HudSlider } from '@/stage/Hud';
 import PlacementEditor from './PlacementEditor';
 import SelectedBuildingCard from './SelectedBuildingCard';
+import LocationHud from './LocationHud';
 import WarehouseGizmo from './WarehouseGizmo';
 import { useWarehouseEditor } from './useWarehouseEditor';
-import type { ModelGroupRegistry } from '@/world/WarehouseModels';
+import type {
+  ModelGroupRegistry,
+  ModelColliderRegistry,
+} from '@/world/WarehouseModels';
 import { computeDay } from '@/stage/lightRig';
 import { PALETTES, applyProfile } from '@/packs/themes';
 import {
@@ -65,6 +74,16 @@ import type {
 } from '@/lib/manifest';
 import { hasWideExtent } from '@/lib/manifest';
 import { createProjection } from '@/lib/enu';
+import {
+  markerBlock,
+  nearestLandmark,
+  osmUrl,
+  parseAtParam,
+} from '@/lib/twin-location';
+import {
+  createCommitScheduler,
+  type CommitScheduler,
+} from '@/lib/collider-commit';
 import { deriveFraming, type Framing, type OrthoFrame } from '@/lib/framing';
 import { getInternalUrl } from '@/config/project.config';
 
@@ -150,7 +169,19 @@ export function parseHourParam(search: string): number {
 
 /** `?weather=rain` turns on ambient rain in Walk mode; anything else → none. */
 export function parseWeatherParam(search: string): WeatherKind {
-  return new URLSearchParams(search).get('weather') === 'rain' ? 'rain' : 'none';
+  return new URLSearchParams(search).get('weather') === 'rain'
+    ? 'rain'
+    : 'none';
+}
+
+/** Player position in every frame of reference the readout and the harness need (#706). */
+export interface TwinLocus {
+  lat: number;
+  lon: number;
+  /** ENU metres — what the stair harness is driven with. */
+  x: number;
+  z: number;
+  near: string | null;
 }
 
 function SceneInner({
@@ -175,6 +206,8 @@ function SceneInner({
   onFps,
   onNearBike,
   onWalkReady,
+  onLocus,
+  pickRef,
   warehouseModels,
   modelOverrides,
   selectedModel,
@@ -213,6 +246,10 @@ function SceneInner({
   onNearBike?: (near: boolean) => void;
   /** Fires once the embodied walk controller is built (deep-link gating). */
   onWalkReady?: () => void;
+  /** Publishes the player's position ~4x/s for the location readout (#706). */
+  onLocus?: (locus: TwinLocus | null) => void;
+  /** The scene assigns its crosshair-pick here; the key handler lives a level up. */
+  pickRef?: { current: (() => void) | null };
   warehouseModels?: WarehouseModelsInfo | null;
   modelOverrides?: Record<string, TwinPlacementOverride>;
   selectedModel?: string | null;
@@ -365,6 +402,66 @@ function SceneInner({
     (_slug, group) => setGizmoTarget(group),
     []
   );
+
+  /**
+   * Bake a landmark/bridge GLB into the collision world (#702).
+   *
+   * Landmarks and bridges rendered but were not solid — you walked and rode
+   * straight through them — because the collision world was built from exactly
+   * two meshes (terrain + buildings) and these were never handed to it.
+   *
+   * ADDS TO THE LIVE WORLD; DOES NOT REBUILD THE CONTROLLER. Rebuilding would
+   * re-seed the player and bike to spawn, which is #703. `addCollider` grows the
+   * existing `StaticWorld` and re-derives its BVH, leaving every pose untouched.
+   *
+   * Models arrive whenever their GLB finishes loading, which may be before or
+   * after walk mode exists, so both orders are handled: bake now if the
+   * controller is up, otherwise stash and drain after it is built. Keyed by slug
+   * so a remount replaces rather than double-bakes.
+   */
+  /**
+   * ONE BVH build per burst of registrations, not one per model (#702).
+   *
+   * A `requestAnimationFrame` coalesce was NOT enough and is the frame drag the owner
+   * reported. `WarehouseModels` gives every model its own `<Suspense>` so the city
+   * streams in progressively — the 129 GLBs mount on ~129 different frames, so a
+   * per-frame coalesce merges nothing. See `createCommitScheduler` for the reasoning;
+   * the quiet window matches how the models actually arrive.
+   */
+  const colliderCommitRef = useRef<CommitScheduler | null>(null);
+  if (colliderCommitRef.current === null) {
+    colliderCommitRef.current = createCommitScheduler(() =>
+      walkCtrlRef.current?.commitColliders()
+    );
+  }
+  const scheduleColliderCommit = useCallback(
+    () => colliderCommitRef.current?.schedule(),
+    []
+  );
+  useEffect(() => () => colliderCommitRef.current?.cancel(), []);
+
+  const registerCollider = useCallback<ModelColliderRegistry>(
+    (slug, group) => {
+      const ctrl = walkCtrlRef.current;
+      if (!group) {
+        // Unmounted: drop the geometry too. Leaving it would be an invisible wall
+        // where a landmark used to be — worse than no collision at all.
+        pendingCollidersRef.current.delete(slug);
+        const ids = colliderIdsRef.current.get(slug);
+        if (ids && ctrl) {
+          ctrl.removeColliders(ids);
+          scheduleColliderCommit(); // batched like additions — a mass unmount storms too
+        }
+        colliderIdsRef.current.delete(slug);
+        return;
+      }
+      pendingCollidersRef.current.set(slug, group);
+      if (!ctrl) return; // walk mode not up yet — drained when it builds
+      colliderIdsRef.current.set(slug, ctrl.addCollider(group, 'concrete'));
+      scheduleColliderCommit();
+    },
+    [scheduleColliderCommit]
+  );
   const gizmoBase = useMemo(() => {
     if (!selectedModel || !warehouseModels) return null;
     const m = warehouseModels.models.find((e) => e.slug === selectedModel);
@@ -377,7 +474,6 @@ function SceneInner({
     },
     [rig]
   );
-
 
   // Honest perf sampling (#259). renderer.info auto-resets after EVERY
   // gl.render — with the EffectComposer chain the last post pass would report
@@ -427,9 +523,34 @@ function SceneInner({
   // ground instead of at sea level.
   const trolleyTarget = useRef({ position: { x: 0, y: 0, z: 0 }, heading: 0 });
   const groundAtRef = useRef<((x: number, z: number) => number) | null>(null);
+  // Stored in a ref AND used to retry the walk build, because it is now one of
+  // the three things tryBuildWalk waits on. Whichever of the three arrives last
+  // has to be the one that triggers the spawn; before #651's second fix only the
+  // two meshes retried, so a sampler that arrived last was simply never noticed.
+  //
+  // `tryBuildWalkRef` rather than `tryBuildWalk` directly: tryBuildWalk is
+  // declared below this point and depends on `manifest`/`framing`, so naming it
+  // here would be a use-before-declaration and would also rebuild this callback
+  // on every manifest change, re-firing the child effect that calls it.
+  const tryBuildWalkRef = useRef<(() => void) | null>(null);
+  /** The exact inputs the live controller was built from — see the guard in
+   *  tryBuildWalk (#703). Identity comparison, so a real mesh swap still rebuilds. */
+  const builtFromRef = useRef<{
+    terrain: Mesh;
+    buildings: Mesh;
+    groundAt: (x: number, z: number) => number;
+  } | null>(null);
+  /** Landmark/bridge GLB roots awaiting collision bake (#702). Keyed by slug so a
+   *  remount replaces rather than duplicates. Populated whether or not walk mode
+   *  exists yet; drained into the controller once it does. */
+  const pendingCollidersRef = useRef<Map<string, Object3D>>(new Map());
+  /** Collision-object ids per slug, so an unmounted model's geometry can be
+   *  removed again. Cleared whenever the world is rebuilt from scratch. */
+  const colliderIdsRef = useRef<Map<string, number[]>>(new Map());
   const handleGroundReady = useCallback(
     (fn: (x: number, z: number) => number) => {
       groundAtRef.current = fn;
+      tryBuildWalkRef.current?.();
     },
     []
   );
@@ -462,19 +583,67 @@ function SceneInner({
   const [walkCtrl, setWalkCtrl] = useState<EmbodiedController | null>(null);
   const viewRef = useRef<BikeView>('first'); // first/third-person while on the bike
 
-  // Build the embodied controller once BOTH the terrain (floor) and buildings
-  // (walls) meshes have arrived. The terrain is the floor gravity needs.
+  // Build the embodied controller once THREE things have arrived: the terrain
+  // (floor), the buildings (walls), and the ground SAMPLER.
+  //
+  // THE SAMPLER IS A GATE, NOT AN OPTIONAL EXTRA (#651, second fix).
+  //
+  // This used to wait on the two meshes only, while `groundAtRef` was published
+  // from a separate effect in WideCity/TwinWorld that waits on the elevation grid
+  // (`if (!data || !onGroundReady) return`). Two independent lifecycles, no
+  // ordering between them — so `tryBuildWalk` could and did win the race, and the
+  // spawn height fell through to `?? 0`.
+  //
+  // Zero is not sea level here. The sampler is `elevationAt(...) - minElevation`,
+  // normalised so the LOWEST point of the terrain is 0. Spawning at 0 anywhere
+  // that is not that lowest point puts you underneath the ground — and
+  // `parkBike()` was handed the same `sy`, which is why the reported symptom was
+  // the player *and the bike* below the terrain, falling.
+  //
+  // The first #651 fix corrected WHERE horizontally (reprojecting the authored
+  // riverfront focus into the wide frame) and that part works. It did nothing
+  // about the vertical, because the fallback failed silently and a clean build
+  // said nothing.
   const tryBuildWalk = useCallback(() => {
     const buildings = buildingsMeshRef.current;
     const terrain = terrainMeshRef.current;
-    if (!buildings || !terrain) return;
+    const groundAt = groundAtRef.current;
+    if (!buildings || !terrain || !groundAt) return;
+
+    // IDEMPOTENT (#703). Three callbacks call this — terrain mesh, buildings
+    // mesh, ground sampler — and any of them can fire more than once. Without
+    // this guard every extra call disposed the live controller and built a new
+    // one, which re-ran `parkBike(spawn)` and teleported the player. Reported as
+    // "sometimes my bike just randomly gets pulled somewhere else": it was being
+    // re-parked at the spawn point from wherever you had left it.
+    //
+    // Identity, not a boolean: a genuinely NEW terrain or buildings mesh (a
+    // different site, a remount) still has to rebuild the collision world. Only a
+    // repeat call with the same three inputs is skipped.
+    const built = builtFromRef.current;
+    if (
+      built &&
+      built.terrain === terrain &&
+      built.buildings === buildings &&
+      built.groundAt === groundAt
+    ) {
+      return;
+    }
+    builtFromRef.current = { terrain, buildings, groundAt };
+
     walkCtrlRef.current?.dispose();
     const ctrl = EmbodiedController.fromMeshes(
       [
         { mesh: terrain, surface: 'dirt' },
         { mesh: buildings, surface: 'concrete' },
       ],
-      { onStanceChange: (s) => bus.emit('player:stance', { stance: s }) }
+      {
+        onStanceChange: (s) => bus.emit('player:stance', { stance: s }),
+        // Landmark GLBs are registered SINGLE_SIDED by `addCollider`, so a face the
+        // FrontSide renderer culls stops being an invisible wall (#713). Terrain and the
+        // merged massing boxes are added here WITHOUT that bit and stay double-sided.
+        cullBackfaces: true,
+      }
     );
     // Spawn among the RIVERFRONT LANDMARKS, not the embedded twin. The twin
     // (east-main-street) reprojects ~5 km from the downtown landmark cluster, so
@@ -488,7 +657,20 @@ function SceneInner({
     const authored = manifest.site.framing?.homeFocus;
     let sx: number;
     let sz: number;
-    if (authored && manifest.atlasBox) {
+    // `?at=lat,lon` wins: it is how you return to a spot you marked (#706). Malformed
+    // values parse to null and fall through to the normal spawn rather than becoming a
+    // NaN position — see `parseAtParam`.
+    const at =
+      typeof window !== 'undefined'
+        ? parseAtParam(window.location.search)
+        : null;
+    if (at) {
+      const proj = createProjection(
+        manifest.atlasBox ?? manifest.box,
+        manifest.vectorOffsetM
+      );
+      [sx, sz] = proj.lonLatToEnu(at.lon, at.lat);
+    } else if (authored && manifest.atlasBox) {
       const nProj = createProjection(manifest.box, manifest.vectorOffsetM);
       const wProj = createProjection(manifest.atlasBox, manifest.vectorOffsetM);
       const [lon, lat] = nProj.enuToLonLat(authored[0], authored[2]);
@@ -497,12 +679,29 @@ function SceneInner({
       sx = spawnRef.current?.x ?? framing.homeFocus[0];
       sz = spawnRef.current?.z ?? framing.homeFocus[2];
     }
-    const sy = groundAtRef.current?.(sx, sz) ?? 0;
+    // No `?? 0` here. `groundAt` is a gate above, so it exists by this line — and
+    // defaulting the SPAWN HEIGHT to a magic number is precisely the silent
+    // failure that shipped underground twice. If the sampler is ever absent we
+    // want no walk mode rather than a walk mode under the map.
+    const sy = groundAt(sx, sz);
     ctrl.teleport(sx, sy, sz);
     ctrl.parkBike(sx, sy, sz); // the bike starts parked at your feet
+    // Bake any landmark/bridge GLBs that finished loading before walk mode
+    // existed (#702). The world was just rebuilt, so previous ids are void.
+    colliderIdsRef.current.clear();
+    for (const [slug, group] of pendingCollidersRef.current) {
+      colliderIdsRef.current.set(slug, ctrl.addCollider(group, 'concrete'));
+    }
+    // One build for the whole drain, not one per model — see scheduleColliderCommit.
+    if (pendingCollidersRef.current.size > 0) ctrl.commitColliders();
+
     walkCtrlRef.current = ctrl;
     setWalkCtrl(ctrl);
   }, [framing, manifest]);
+
+  // Keep the ref pointing at the current closure so handleGroundReady — declared
+  // above, and deliberately dependency-free — always calls the live version.
+  tryBuildWalkRef.current = tryBuildWalk;
 
   const handleBuildingsMesh = useCallback(
     (mesh: Mesh) => {
@@ -625,6 +824,87 @@ function SceneInner({
     }
   }, [rig, mode, site.trolley]);
 
+  /* ---- Where am I (#706): the half that needs the controller ---------------- */
+
+  // models.json anchors are in the NARROW frame; the wide city reprojects them the same
+  // offset-exact way (narrow enu -> lon/lat -> wide enu). The readout must match, or the
+  // "near" line names a building 5 km from where you stand.
+  const hudLandmarks = useMemo(() => {
+    const models = warehouseModels?.models ?? [];
+    if (!models.length) return [];
+    if (!manifest.atlasBox) {
+      return models.map((e) => ({
+        slug: e.slug,
+        title: e.title,
+        x: e.x,
+        z: e.z,
+      }));
+    }
+    const nProj = createProjection(manifest.box, manifest.vectorOffsetM);
+    const wProj = createProjection(manifest.atlasBox, manifest.vectorOffsetM);
+    return models.map((e) => {
+      const [lon, lat] = nProj.enuToLonLat(e.x, e.z);
+      const [x, z] = wProj.lonLatToEnu(lon, lat);
+      return { slug: e.slug, title: e.title, x, z };
+    });
+  }, [warehouseModels, manifest]);
+
+  // Polled, not per-frame: the readout is for reading, and re-rendering React 60 times a
+  // second to move a text label would cost more than the feature is worth.
+  useEffect(() => {
+    if (!onLocus) return;
+    if (!walkCtrl || mode !== 'walk') {
+      onLocus(null);
+      return;
+    }
+    const proj = createProjection(
+      manifest.atlasBox ?? manifest.box,
+      manifest.vectorOffsetM
+    );
+    const sample = () => {
+      const p = walkCtrl.position;
+      const [lon, lat] = proj.enuToLonLat(p.x, p.z);
+      const n = nearestLandmark(hudLandmarks, p.x, p.z);
+      onLocus({ lat, lon, x: p.x, z: p.z, near: n ? n.entry.title : null });
+    };
+    sample();
+    const id = window.setInterval(sample, 250);
+    return () => window.clearInterval(id);
+  }, [onLocus, walkCtrl, mode, manifest, hudLandmarks]);
+
+  /**
+   * Inspect whatever is under the crosshair (#706).
+   *
+   * A click would be the obvious gesture and is unavailable — in walk mode a click is
+   * pointer-lock — so it is a key. The ray goes into the COLLISION world and the hit's
+   * object id maps back to a landmark through the same registry that baked it in (#702),
+   * so there is no second picking system to drift out of sync with the first. It also
+   * means a building you cannot select is a building that is not solid, which is itself
+   * the diagnostic.
+   */
+  useEffect(() => {
+    if (!pickRef) return;
+    pickRef.current = () => {
+      const ctrl = walkCtrlRef.current;
+      if (!ctrl || !onSelectModel) return;
+      // Negating the chase cam's backward vector reuses the camera's own sign convention
+      // instead of re-deriving pitch here and getting it upside down.
+      const back = chaseBackDir(rig.yaw, rig.pitch);
+      const id = ctrl.lookAt(-back.x, -back.y, -back.z);
+      if (id < 0) return;
+      for (const [slug, ids] of colliderIdsRef.current) {
+        if (ids.includes(id)) {
+          onSelectModel(slug);
+          return;
+        }
+      }
+    };
+    const ref = pickRef;
+    return () => {
+      ref.current = null;
+    };
+  }, [pickRef, rig, onSelectModel]);
+
   return (
     <StageCore
       lens={lens}
@@ -682,6 +962,7 @@ function SceneInner({
         selectedModel={selectedModel}
         onSelectModel={onSelectModel}
         registerModelGroup={patchOverride ? registerModelGroup : undefined}
+        registerCollider={registerCollider}
         onHouseGround={onHouseGround}
         onGroundReady={handleGroundReady}
         onError={onWorldError}
@@ -1012,11 +1293,49 @@ function TwinCanvasInner({
   }, []);
 
   // Shell keys only — the editor's nudge keys live in useWarehouseEditor.
+  /* ---- Where am I (#706) --------------------------------------------------
+   * A coordinate the player can copy is what turns "the stairs on that building don't
+   * work" into something a harness can be pointed at. The SCENE samples the position
+   * (it owns the controller); this half owns the readout, the keys and the clipboard. */
+  const [locus, setLocus] = useState<TwinLocus | null>(null);
+  const locusRef = useRef<TwinLocus | null>(null);
+  locusRef.current = locus;
+  /** Assigned by the scene, so `E` can raycast from where the camera actually is. */
+  const pickRef = useRef<(() => void) | null>(null);
+
+  const [copied, setCopied] = useState(false);
+  const copySpot = useCallback(() => {
+    const l = locusRef.current;
+    if (!l) return;
+    // Derive the prefix from the live URL rather than build config — this has to be right
+    // on the project site (/ScriptHammer/...) and on the root domain alike.
+    const basePath = window.location.pathname.replace(/\/[^/]*\/?$/, '');
+    const text = markerBlock({ ...l, basePath, slug });
+    const done = () => {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1600);
+    };
+    navigator.clipboard?.writeText(text).then(done, () => {
+      // Clipboard can be denied (insecure context, permissions). A prompt keeps the
+      // coordinate reachable instead of the key silently doing nothing.
+      window.prompt('Copy this spot:', text);
+    });
+  }, [slug]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
       if (e.code === 'Backquote') setShowFps((v) => !v);
+      // M marks where you stand; E inspects what you are looking at (#706).
+      if (e.code === 'KeyM') {
+        copySpot();
+        return;
+      }
+      if (e.code === 'KeyE') {
+        pickRef.current?.();
+        return;
+      }
       // Escape clears the selected-building card in normal view. In edit mode
       // the editor hook owns Escape (deselect there), so this defers.
       if (e.code === 'Escape' && !editMode && selectedModel) {
@@ -1035,7 +1354,7 @@ function TwinCanvasInner({
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [modes, editMode, selectedModel, setSelectedModel]);
+  }, [modes, editMode, selectedModel, setSelectedModel, copySpot]);
 
   // Route-scoped chrome (`twin-fullscreen` / `twin-diorama`) is set by
   // TwinCanvasHost, not here (#301). It lived in this file until the atlas
@@ -1116,6 +1435,8 @@ function TwinCanvasInner({
           onFps={showFps ? setFps : undefined}
           onNearBike={setNearBike}
           onWalkReady={() => setWalkReady(true)}
+          onLocus={setLocus}
+          pickRef={pickRef}
           warehouseModels={warehouseModels}
           modelOverrides={modelOverrides}
           selectedModel={selectedModel}
@@ -1284,6 +1605,18 @@ function TwinCanvasInner({
         <SelectedBuildingCard
           entry={selectedEntry}
           onDismiss={() => setSelectedModel(null)}
+        />
+      ) : null}
+      {locus ? (
+        <LocationHud
+          lat={locus.lat}
+          lon={locus.lon}
+          x={locus.x}
+          z={locus.z}
+          near={locus.near}
+          osmHref={osmUrl(locus.lat, locus.lon)}
+          onCopy={copySpot}
+          copied={copied}
         />
       ) : null}
       {editMode ? (

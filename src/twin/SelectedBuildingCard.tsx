@@ -7,6 +7,7 @@
 // same glass card as the property-page house-details card — same family, one
 // new differentiator (a status accent when a model may look rough).
 
+import Link from 'next/link';
 import { buildingQuality } from './buildingQuality';
 import type { WarehouseModelEntry } from '@/lib/manifest';
 
@@ -86,6 +87,27 @@ export default function SelectedBuildingCard({
       {entry.creator ? (
         <div style={{ fontSize: 12, opacity: 0.65, marginTop: 2 }}>
           {entry.creator}
+        </div>
+      ) : null}
+      {/* Credit in place, not just on a credits page nobody opens (#714). The 3D Warehouse
+          licence requires no attribution — this is courtesy, and it costs one link. */}
+      {entry.url ? (
+        <div style={{ fontSize: 11.5, marginTop: 6 }}>
+          <a
+            href={entry.url}
+            target="_blank"
+            rel="noreferrer noopener"
+            style={{ color: '#9ec5fe', textDecoration: 'none' }}
+          >
+            View on 3D Warehouse ↗
+          </a>
+          <span style={{ opacity: 0.5 }}> · </span>
+          <Link
+            href="/credits"
+            style={{ color: '#9ec5fe', textDecoration: 'none' }}
+          >
+            credits &amp; licence
+          </Link>
         </div>
       ) : null}
 

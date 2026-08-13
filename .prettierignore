@@ -59,3 +59,10 @@ public/blog-manifest.json
 scripts/__tests__/fixtures/
 # graphify — generated; never reformat (prettier re-expands what graphify writes compact)
 graphify-out/
+
+# Vendored from Claude-of-Duty (MIT) — see src/lib/cod/NOTICE.md, which states these are
+# verbatim. Reformatting them makes that untrue and buries our few intentional changes:
+# staging bvh.js for one ~20-line fix produced a 669-line prettier diff. Keep them byte-
+# comparable with upstream so the next port is a readable diff. The hand-written .d.ts
+# files and NOTICE.md are ours and stay formatted.
+src/lib/cod/*.js
