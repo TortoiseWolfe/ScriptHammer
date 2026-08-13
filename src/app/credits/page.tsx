@@ -97,7 +97,10 @@ export default function CreditsPage() {
             <div key={creator} className="mb-6">
               <h3>
                 {creator}{' '}
-                <span className="text-base-content/70 text-sm font-normal">
+                {/* Solid `text-base-content`, not `/70`: the alpha variants measure
+                    4.98:1 against a 7:1 AAA gate, which the route-enumerating contrast
+                    spec caught the moment this page existed (#411). */}
+                <span className="text-base-content text-sm font-normal">
                   ({entries.length} {entries.length === 1 ? 'model' : 'models'})
                 </span>
               </h3>
