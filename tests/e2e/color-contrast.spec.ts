@@ -100,6 +100,19 @@ const EXCLUDED: Record<string, string> = {
   // question that actually matters here.
   '/chatt':
     'Cesium error panel is vendor markup; headless Firefox has no WebGL',
+  // #715/#719. This route runs a continuous WebGL render loop, and on a runner with no GPU
+  // Chromium composites the canvas through a SYNCHRONOUS GPU readback — a CDP category
+  // trace of the sibling twin route measured `GLES2::ReadPixels` at 10.7 s inside a 13 s
+  // window. The sweep's readiness wait never settles, so this fails by 30 s TIMEOUT and
+  // reports no contrast violations at all. It failed identically on all three retries
+  // across eight-plus consecutive `main` runs — deterministic, not flaky.
+  //
+  // NOTE WHAT THIS COSTS: the page's contrast is now genuinely unmeasured. That is a real
+  // gap, tracked in #715, and the fix is a component-level contrast test that does not need
+  // the live canvas — not a re-enable of this sweep, which cannot settle here at any timeout.
+  '/game/cod-skeleton':
+    'continuous WebGL render loop; the readiness wait cannot settle under software ' +
+    'rendering (synchronous GPU readback, #719) — contrast coverage owed via #715',
 };
 
 /** Dynamic segments need a real instance — the template alone proves nothing. */
