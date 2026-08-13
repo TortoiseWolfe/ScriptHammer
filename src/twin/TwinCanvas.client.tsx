@@ -543,6 +543,8 @@ function SceneInner({
   /** Landmark/bridge GLB roots awaiting collision bake (#702). Keyed by slug so a
    *  remount replaces rather than duplicates. Populated whether or not walk mode
    *  exists yet; drained into the controller once it does. */
+  /** Does the CURRENT camera mode need collision at all? Only walk does (#718). */
+  const wantsWalkWorldRef = useRef(false);
   const pendingCollidersRef = useRef<Map<string, Object3D>>(new Map());
   /** Collision-object ids per slug, so an unmounted model's geometry can be
    *  removed again. Cleared whenever the world is rebuilt from scratch. */
@@ -605,6 +607,17 @@ function SceneInner({
   // about the vertical, because the fallback failed silently and a clean build
   // said nothing.
   const tryBuildWalk = useCallback(() => {
+    // WALK ONLY (#718). Building the collision BVH costs ~780 ms of synchronous main-thread
+    // work — measured by CPU profile as `_buildNodes` 556 ms, `_nodeBoundsFromRange` 147 ms
+    // and `StaticWorld.build` 74 ms — and NOTHING outside walk can use it: `?ortho` maps to
+    // rig mode `orbit`, and `Rig.collide` is only ever called inside `Rig._walk()`. Paying
+    // it on load froze `?ortho` hard enough that Playwright could not land a click on the
+    // HUD, which is #717 and eight straight red E2E runs.
+    //
+    // A ref rather than a dependency: adding `mode` to the deps below would give this
+    // callback a new identity on every camera change, re-running the mesh callbacks that
+    // depend on it. The effect further down calls this on entry to walk.
+    if (!wantsWalkWorldRef.current) return;
     const buildings = buildingsMeshRef.current;
     const terrain = terrainMeshRef.current;
     const groundAt = groundAtRef.current;
@@ -702,6 +715,20 @@ function SceneInner({
   // Keep the ref pointing at the current closure so handleGroundReady — declared
   // above, and deliberately dependency-free — always calls the live version.
   tryBuildWalkRef.current = tryBuildWalk;
+
+  // Build the collision world on ENTRY to walk, not on page load (#718). The data
+  // callbacks (terrain mesh, buildings mesh, ground sampler) still call `tryBuildWalk`
+  // whenever they fire — they simply return early until walk is the live mode, and this
+  // effect performs the build the moment it becomes so.
+  //
+  // Deferring is safe because the pieces were already built for earlier fixes in this arc:
+  // `builtFromRef` (#703) makes a later call idempotent, and `pendingCollidersRef` (#702)
+  // stashes landmark colliders that arrive before the controller exists and drains them
+  // when it is created — so nothing is lost by arriving late.
+  useEffect(() => {
+    wantsWalkWorldRef.current = mode === 'walk';
+    if (mode === 'walk') tryBuildWalkRef.current?.();
+  }, [mode]);
 
   const handleBuildingsMesh = useCallback(
     (mesh: Mesh) => {
