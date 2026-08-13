@@ -50,6 +50,82 @@ async function webglAvailable(page: Page): Promise<boolean> {
   });
 }
 
+/**
+ * Is WebGL backed by real hardware, or by a software rasteriser? (#716/#719)
+ *
+ * "WebGL exists" and "WebGL is fast enough to assert an interaction against" are different
+ * claims, and conflating them is what kept this spec red for eight consecutive runs on
+ * `main`. GitHub-hosted runners have no GPU, so Chromium falls back to SwiftShader, and a
+ * CDP category trace of `/twins/chatt/?ortho` shows where the time goes:
+ *
+ *   GLES2::ReadPixels                        10,702 ms
+ *   CommandBufferHelper::Finish              10,909 ms
+ *   CommandBufferProxyImpl::WaitForGetOffset 10,906 ms
+ *
+ * Compositing a WebGL canvas without a GPU goes through a synchronous GPU->CPU readback, so
+ * the main thread stalls for seconds and a click cannot be processed. Nothing in `src/`
+ * calls `readPixels`; three application-level fixes were tried against it and moved nothing
+ * (see #719). The UI is fine — verified by hand on hardware: the overflow opens, aria flips,
+ * Top-down appears.
+ *
+ * So the timing-sensitive half of this spec is skipped on software renderers, LOUDLY, while
+ * everything measurable there still runs. Raising `actionTimeout` instead was rejected: it
+ * would blind every other test in the suite to make one route pass.
+ */
+async function hardwareAccelerated(page: Page): Promise<boolean> {
+  return page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    const gl = (canvas.getContext('webgl2') ||
+      canvas.getContext('webgl')) as WebGLRenderingContext | null;
+    if (!gl) return false;
+    const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+    if (!dbg) return true; // cannot tell; assume real and let the test run
+    const renderer = String(
+      gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) ?? ''
+    ).toLowerCase();
+    return !/swiftshader|llvmpipe|softpipe|software|microsoft basic render/.test(
+      renderer
+    );
+  });
+}
+
+/** Report the renderer once, so a skip is never silent. */
+async function announceRenderer(page: Page): Promise<string> {
+  const name = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    const gl = (canvas.getContext('webgl2') ||
+      canvas.getContext('webgl')) as WebGLRenderingContext | null;
+    if (!gl) return 'none';
+    const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+    return dbg
+      ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL))
+      : 'unknown (WEBGL_debug_renderer_info unavailable)';
+  });
+  console.log(`[twins] WebGL renderer: ${name}`);
+  return name;
+}
+
+/**
+ * Console noise this suite has always tolerated, hoisted out of the two inline copies so a
+ * third caller cannot drift from them. Optional twin payloads (`house.json`, `links.local`)
+ * are gitignored and absent in a fresh checkout by design (#392).
+ */
+function isBenignConsoleError(e: string): boolean {
+  const lower = e.toLowerCase();
+  return (
+    lower.includes('favicon') ||
+    lower.includes('analytics') ||
+    lower.includes('chrome-extension') ||
+    lower.includes('cf_bm') ||
+    lower.includes('cloudflare') ||
+    lower.includes('webgl') ||
+    lower.includes('links.local.json') ||
+    lower.includes('house/house.json') ||
+    lower.includes('models/models.json') ||
+    lower.includes('127.0.0.1:3099')
+  );
+}
+
 test.describe('/twins/[slug]?diorama — the R3F exhibit (opt-in since #292)', () => {
   test('/twins/chatt/?diorama loads the baked manifest and shows the camera dock', async ({
     page,
@@ -95,6 +171,33 @@ test.describe('/twins/[slug]?diorama — the R3F exhibit (opt-in since #292)', (
     await expect(page.locator('canvas')).toBeAttached({ timeout: 10000 });
   });
 
+  test('?ortho renders and mounts its canvas — runs on software renderers too (#716)', async ({
+    page,
+  }) => {
+    // The coverage that survives when the interaction test above is skipped. Everything
+    // here is true regardless of how fast the GPU is: the route resolves, the HUD renders,
+    // a canvas is created, and nothing throws. Skipping the timing-sensitive half must not
+    // mean `?ortho` goes completely unwatched in CI — that would trade one blind spot for
+    // another.
+    test.slow();
+    const errors: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error')
+        errors.push(`${msg.text()} [${msg.location()?.url ?? ''}]`);
+    });
+    await page.goto('/twins/chatt/?ortho');
+    test.skip(
+      !(await webglAvailable(page)),
+      'WebGL unavailable in this browser/runner; the twin route has no fallback panel'
+    );
+    await expect(
+      page.getByRole('button', { name: DIORAMA_SIGNAL })
+    ).toBeVisible({ timeout: 30000 });
+    await expect(page.locator('canvas')).toBeAttached({ timeout: 30000 });
+    const real = errors.filter((e) => !isBenignConsoleError(e));
+    expect(real, `console errors on ?ortho:\n${real.join('\n')}`).toEqual([]);
+  });
+
   test('Top-down compare mode (#233): dock button + ?ortho render without errors', async ({
     page,
   }) => {
@@ -116,6 +219,23 @@ test.describe('/twins/[slug]?diorama — the R3F exhibit (opt-in since #292)', (
     // ?ortho already implies the diorama (renderer-select.ts DIORAMA_ONLY) and
     // opens straight into the orthographic compare view — no ?diorama needed.
     await page.goto('/twins/chatt/?ortho');
+
+    // GUARD FIRST, THEN EXERCISE (#716). These two checks used to sit ~15 lines BELOW,
+    // after the assertions and the click they are meant to guard — so on a runner that
+    // could not satisfy them the test failed instead of skipping. A precondition checked
+    // after the fact is not a precondition.
+    await announceRenderer(page);
+    test.skip(
+      !(await webglAvailable(page)),
+      'WebGL unavailable in this browser/runner; the twin route has no fallback panel'
+    );
+    test.skip(
+      !(await hardwareAccelerated(page)),
+      'Software-rendered WebGL (SwiftShader/llvmpipe): compositing this canvas goes through ' +
+        'a synchronous GPU readback — traced at 10.7s of ReadPixels — so the main thread ' +
+        'cannot service a click. The UI is verified working on hardware; see #719.'
+    );
+
     await expect(
       page.getByRole('button', { name: DIORAMA_SIGNAL })
     ).toBeVisible({
@@ -134,10 +254,6 @@ test.describe('/twins/[slug]?diorama — the R3F exhibit (opt-in since #292)', (
     };
     await openOverflow();
     await expect(page.getByRole('button', { name: 'Top-down' })).toBeVisible();
-    test.skip(
-      !(await webglAvailable(page)),
-      'WebGL unavailable in this browser/runner; the twin route has no fallback panel'
-    );
     await expect(page.locator('canvas')).toBeAttached({ timeout: 10000 });
     // Round-trip through the dock: leave and re-enter Top-down. This drives
     // the ortho render branch (frustum, colorspace flip, fog restore) and the
