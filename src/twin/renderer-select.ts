@@ -20,6 +20,13 @@ const DIORAMA_ONLY = [
   'edit',
   'select',
   'nofx',
+  // Walk is a diorama mode — Cesium has no first-person camera. Without these two, a bare
+  // `/chatt?walk` opens the ATLAS and TwinCanvas never mounts, so the deep link dies before
+  // it can even reach the walk gate. `?at` is its companion: `markerBlock` emits
+  // `?diorama&walk&at=`, but a hand-shared or hand-edited `?at=` must not silently land on
+  // the renderer that cannot use a spawn coordinate.
+  'walk',
+  'at',
 ] as const;
 
 export function selectRenderer(params: URLSearchParams): Renderer {
