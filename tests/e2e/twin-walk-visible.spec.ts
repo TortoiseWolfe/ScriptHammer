@@ -57,6 +57,32 @@ test.describe('walk scene is visible (not a dark void / empty frame)', () => {
    */
   test('walk mode engages from the ?walk deep link', async ({ page }) => {
     await openWalk(page);
+
+    // GATED ON WEBGL EXISTING — NOT on it being hardware. The distinction is the whole
+    // point of splitting this test out, and getting it wrong in either direction costs
+    // something:
+    //
+    //   no WebGL at all  -> SKIP. Reaching walk needs the world to hand over its terrain
+    //                       and buildings meshes, which needs a canvas that draws. Headless
+    //                       firefox has no WebGL (documented at twins.spec.ts:344), so the
+    //                       meshes never arrive and the failure would be about the runner,
+    //                       not the product. Found the honest way: this test went red on
+    //                       firefox-gen 6/6 on its first fail-capable run, while chromium
+    //                       and webkit passed.
+    //   software WebGL   -> RUN. SwiftShader draws the scene fine — measured reaching walk
+    //                       in ~15 s locally and passing on CI chromium. Skipping here is
+    //                       what left this URL with no coverage on any runner CI has, which
+    //                       is exactly the hole #723 fell through.
+    const hasWebGL = await page.evaluate(() => {
+      const c = document.createElement('canvas');
+      return !!(c.getContext('webgl2') || c.getContext('webgl'));
+    });
+    test.skip(
+      !hasWebGL,
+      'no WebGL in this browser (see #288) — the scene cannot produce the meshes walk ' +
+        'mode is built from, so this would measure the runner rather than the app'
+    );
+
     await expect(
       page.locator('[data-stance]').first(),
       'the ?walk deep link never reached walk mode — the stance badge only renders ' +
