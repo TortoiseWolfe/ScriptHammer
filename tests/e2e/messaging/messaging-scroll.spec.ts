@@ -392,26 +392,44 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
 
     const jumpButton = page.locator('[data-testid="jump-to-bottom"]');
 
-    if (await jumpButton.isVisible()) {
-      await jumpButton.click();
+    // NOT `if (await jumpButton.isVisible())`. The whole body used to sit inside that
+    // condition, so a thread where the button never appeared passed having asserted
+    // nothing — and "the jump button stopped rendering" is precisely what this test is
+    // named for. T007/T008 above already establish it appears when scrolled up, so here
+    // it is a requirement, not a precondition.
+    await expect(jumpButton).toBeVisible();
 
-      // Wait for smooth scroll animation to complete
-      await waitForUIStability(page);
+    await jumpButton.click();
 
-      // Check we're at the bottom
-      const scrollInfo = await messageThread.evaluate((el) => ({
-        scrollTop: el.scrollTop,
-        scrollHeight: el.scrollHeight,
-        clientHeight: el.clientHeight,
-      }));
+    // POLL FOR THE OUTCOME — DO NOT WAIT A FIXED TIME (#300).
+    //
+    // This is what made T009 flaky, and it is not a browser quirk: the button calls
+    // `scrollToBottom(true)`, i.e. `behavior: 'smooth'` (MessageThread.tsx:239-243), while
+    // `waitForUIStability` waits three animation frames — about 50 ms. A smooth scroll from
+    // the top of a 30-message thread takes several hundred. So the assertion measured a
+    // scroll that had barely started, and failed with **2393px** remaining rather than
+    // marginally over the 100px threshold.
+    //
+    // That is why it hard-failed on chromium AND firefox after retries, which #300's
+    // existing T007-T008 row cannot explain — that row attributes the family to webkit not
+    // firing `scroll` on programmatic `scrollTop`. Racing an animation loses on any engine
+    // under load.
+    await expect
+      .poll(
+        async () =>
+          messageThread.evaluate(
+            (el) => el.scrollHeight - (el.scrollTop + el.clientHeight)
+          ),
+        {
+          message:
+            'smooth scroll never reached the bottom — the jump button did not do its job',
+          timeout: 10_000,
+          intervals: [50, 100, 200, 500],
+        }
+      )
+      .toBeLessThan(100);
 
-      const distanceFromBottom =
-        scrollInfo.scrollHeight -
-        (scrollInfo.scrollTop + scrollInfo.clientHeight);
-      expect(distanceFromBottom).toBeLessThan(100);
-
-      // Button should be hidden after reaching bottom
-      await expect(jumpButton).not.toBeVisible();
-    }
+    // Auto-retrying, so it tolerates the state flush after the scroll settles.
+    await expect(jumpButton).not.toBeVisible();
   });
 });
