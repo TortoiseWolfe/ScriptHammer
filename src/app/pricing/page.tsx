@@ -1,30 +1,17 @@
 import React from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { Special_Elite, IBM_Plex_Sans, IBM_Plex_Mono } from 'next/font/google';
 import styles from './pricing.module.css';
 
-// next/font self-hosts these at build time, so there is no request to
-// fonts.googleapis.com at runtime — which matters for a static export behind a
-// CSP, and means the page cannot render in a fallback face if Google is slow.
-const display = Special_Elite({
-  weight: '400',
-  subsets: ['latin'],
-  variable: '--font-display',
-  display: 'swap',
-});
-const body = IBM_Plex_Sans({
-  weight: ['400', '500', '600'],
-  subsets: ['latin'],
-  variable: '--font-body',
-  display: 'swap',
-});
-const mono = IBM_Plex_Mono({
-  weight: ['400', '500', '600'],
-  subsets: ['latin'],
-  variable: '--font-mono-plex',
-  display: 'swap',
-});
+// FONT FACES ARE VENDORED (#730). These were fetched from Google at BUILD time, which
+// killed the production deploy of an unrelated hotfix. The @font-face rules now live in
+// src/app/fonts.generated.css — copied verbatim from the generated output, so the
+// unicode-range splits and size-adjust fallback metrics are unchanged.
+//
+// Shaped as `{ className }` so all 19 call sites below are untouched.
+const display = { className: 'sh-font-special-elite' };
+const body = { className: 'sh-font-plex-sans' };
+const mono = { className: 'sh-font-plex-mono' };
 
 export const metadata: Metadata = {
   title: 'Pricing - ScriptHammer',

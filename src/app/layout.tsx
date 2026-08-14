@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from 'next';
-import { Archivo, Archivo_Black, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import ThemeScript from '@/components/ThemeScript';
 import AccessibilityScript from '@/components/AccessibilityScript';
@@ -40,57 +39,10 @@ import A11yDevOverlay from '@/components/organisms/A11yDevOverlay';
  * `@/config/accessibility-tokens`. Change one without the others and the font
  * silently does not apply.
  */
-const archivo = Archivo({
-  variable: '--font-archivo',
-  subsets: ['latin'],
-  weight: ['400', '600', '700'],
-  display: 'swap',
-  preload: true,
-  fallback: [
-    'system-ui',
-    '-apple-system',
-    'BlinkMacSystemFont',
-    '"Segoe UI"',
-    'Roboto',
-    '"Helvetica Neue"',
-    'Arial',
-    'sans-serif',
-  ],
-});
-
-/** Display face: headings only. Single weight — Archivo Black ships only 400. */
-const archivoBlack = Archivo_Black({
-  variable: '--font-archivo-black',
-  subsets: ['latin'],
-  weight: '400',
-  display: 'swap',
-  preload: true,
-  fallback: [
-    'system-ui',
-    '-apple-system',
-    'BlinkMacSystemFont',
-    '"Segoe UI"',
-    'Arial',
-    'sans-serif',
-  ],
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: '--font-jetbrains',
-  subsets: ['latin'],
-  weight: ['400', '500', '700'],
-  display: 'swap',
-  preload: true,
-  fallback: [
-    '"SF Mono"',
-    'Monaco',
-    '"Inconsolata"',
-    '"Fira Mono"',
-    '"Droid Sans Mono"',
-    '"Source Code Pro"',
-    'monospace',
-  ],
-});
+// FONT FACES ARE VENDORED (#730). The @font-face declarations live in
+// src/app/fonts.generated.css and the --font-* variables in globals.css :root, so the
+// build no longer fetches from fonts.gstatic.com. Regenerate with
+// `node scripts/fonts/vendor-google-fonts.mjs` after changing a family, weight or subset.
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -165,11 +117,7 @@ export default function RootLayout({
     // are <html>. With the classes on <body>, `--font-archivo` was defined one
     // level too deep for either to see, so both silently fell through to their
     // ui-sans-serif fallback while the font downloaded perfectly.
-    <html
-      lang="en"
-      className={`${archivo.variable} ${archivoBlack.variable} ${jetbrainsMono.variable}`}
-      suppressHydrationWarning
-    >
+    <html lang="en" suppressHydrationWarning>
       <body
         className="flex min-h-screen flex-col antialiased"
         suppressHydrationWarning
