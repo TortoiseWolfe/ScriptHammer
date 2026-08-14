@@ -469,6 +469,11 @@ VALUES
    '["All vertical packs","New packs as they ship","Private channel","Priority issue triage"]'::jsonb,
    '{}'::jsonb, 30, false),
 
+  ('prd-office-hours', 'product', 'Office Hours', 'Bring a goal. Leave with something running.',
+   9900, 'fixed', NULL, NULL, 'one_time', NULL,
+   '["90-minute live 1:1 session","Bring a goal, leave with something running","Screen-share, real code, your questions","Recording is yours to keep"]'::jsonb,
+   '{}'::jsonb, 35, true),
+
   ('prd-field-study', 'product', 'Field Study', 'Your first client site, built with you, on stream.',
    250000, 'fixed', NULL, NULL, 'one_time', NULL,
    '["Two weeks, done-with-you","Real client, real deployment","Recorded and yours to keep","Pricing and scoping coaching included"]'::jsonb,
