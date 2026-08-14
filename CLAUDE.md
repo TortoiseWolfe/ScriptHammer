@@ -391,6 +391,28 @@ ADD COLUMN IF NOT EXISTS encryption_salt TEXT;
 
 The E2E suite ran against a single shared Supabase project for months and accumulated **9 rounds of "flake mitigation"** that all attacked symptoms. Round 10 (PR #89, commit `996211e`) finally identified the underlying root cause and fixed it structurally. These rules exist so future contributors don't re-derive the same painful path.
 
+### THERE ARE NOW TWO E2E LANES (#575, 2026-08-14)
+
+Most of the pain below traces to one fact — every job shared one cloud Supabase project. That is no longer where PRs run.
+
+|                 | `e2e-local.yml`                              | `e2e.yml`                                      |
+| --------------- | -------------------------------------------- | ---------------------------------------------- |
+| backend         | a Supabase per runner, brought up in the job | the shared hosted project                      |
+| runs on         | **every PR and every push to main**          | push/PR, currently blocked by the budget guard |
+| secrets         | **none** — uses the tracked public demo keys | 32 `secrets.*` references                      |
+| mutex           | none needed; nothing is shared               | repo-wide, `max-parallel: 2`                   |
+| `@hosted` tests | excluded via `--grep-invert`                 | runs everything                                |
+
+**A PR gets its E2E coverage from the local lane.** Consequences worth knowing before you debug anything:
+
+- **The local lane cannot exhaust production quota**, cannot leak a service-role key, and two runs cannot race each other's cleanup. The #85 class is unreachable there rather than mitigated.
+- **`e2e-local.yml` has NO `paths` filter, deliberately.** Filtering happens in its `changes` job, because a required check that never reports is **pending forever, not skipped** — the same reason `Build` and `Validate Component Structure` are absent from the required set. Never add a trigger path filter to it; `scripts/__tests__/e2e-local-triggers.test.js` fails if you do.
+- **Its ignore list is derived from `e2e.yml`**, not duplicated (`scripts/ci/e2e-local-changes.mjs`). Two lists would drift silently, in the worst direction.
+- **Six `oauth-csrf` tests are tagged `@hosted`** and skipped locally — they wait for a redirect to a real OAuth provider, which a local stack never performs. The #287 detector they carried is now covered on every PR by `auth-config-drift.yml` plus `tests/unit/auth-config-validity.test.ts` instead.
+- **The lane is still ADVISORY, not required.** Making it required waits on #739: `waitForUIStability` is duplicated in five messaging specs and waits three animation frames rather than for anything, so flakes surviving retries would block merges.
+
+The rules below still describe `e2e.yml` and remain correct for it.
+
 ### NEVER merge a PR while another PR's CI is running against the same backend
 
 **Why**: this is what caused issue #85 to compound. Two concurrent E2E runs against the same Supabase project race each other's `cleanupOldMessages` `beforeAll` hooks across 11+ messaging specs. Each run wipes data the other run is polling for. One run hits the 60-min GitHub Actions job cap and gets cancelled.
@@ -585,7 +607,7 @@ To lift it: `gh api -X DELETE repos/TortoiseWolfe/ScriptHammer/branches/main/pro
 
 - Never create components manually - use the generator
 - All PRs must pass component structure validation
-- **E2E tests DO run in CI** (chromium + firefox + webkit across 28 shards) — was previously local-only but is now part of the GitHub Actions pipeline; see "CI & E2E Stability" above
+- **E2E runs in CI on TWO lanes** — `e2e-local.yml` (a Supabase per runner, every PR, no secrets) and `e2e.yml` (the shared hosted project). 24 jobs each. See "THERE ARE NOW TWO E2E LANES" above before debugging either
 - Docker-first development is mandatory
 - Use `min-h-11 min-w-11` for 44px touch targets (mobile-first)
 
