@@ -333,7 +333,7 @@ jobs:
           # per-runner stacks mean per-job setup.
           AUTH_SETUP_JOB: 'true'
 
-      - name: This shard must have actually executed something
+      - name: This shard must have executed something, and it must have passed
         if: always()
         run: |
           # `|| true` above is deliberate — a failing shard still has to upload its
@@ -345,28 +345,51 @@ jobs:
           # launch, so every dependent test was skipped rather than failed). Only
           # the aggregate parity check noticed. A green tick per shard is read far
           # more often than a count at the end, so make the shard itself say so.
+          #
+          # AND IT MUST FAIL ON FAILURES (#732). This step used to check only
+          # `ran == 0`, which meant `|| true` swallowed the exit code and NOTHING
+          # downstream on a normal PR restored it: run 31447148386 logged
+          # `passed 1863 · failed 21` and every job, and the run, concluded success.
+          # The old counter also called a FAILED test "ran", so 21 failures read as
+          # 21 successful executions. Counting the exit code instead would be the
+          # obvious fix and is strictly worse: it cannot tell a crash from a failure,
+          # and it reports a number instead of a name.
           python3 - <<'EOF'
-          import json, os, sys
+          import json, sys
           try:
               d = json.load(open("results.json"))
           except Exception as e:
               print(f"::error::no readable results.json ({e}) — this shard reported nothing")
               sys.exit(1)
-          ran = skipped = 0
+          ran = skipped = failed = 0
+          names = []
           def walk(s):
-              global ran, skipped
+              global ran, skipped, failed
               for spec in s.get("specs", []):
                   for t in spec.get("tests", []):
-                      if t.get("status") == "skipped": skipped += 1
-                      else: ran += 1
+                      st = t.get("status")   # expected|skipped|flaky|unexpected
+                      if st == "skipped":
+                          skipped += 1
+                          continue
+                      ran += 1
+                      # `flaky` passed on retry. It is tracked in the aggregate but is
+                      # not a shard failure — that policy lives in the flaky gate.
+                      if st not in ("expected", "flaky"):
+                          failed += 1
+                          names.append(spec.get("title", "?"))
               for c in s.get("suites", []): walk(c)
           for s_ in d.get("suites", []): walk(s_)
-          print(f"executed {ran}, skipped {skipped}")
+          print(f"executed {ran}, skipped {skipped}, failed {failed}")
           if ran == 0:
               print(f"::error::this shard executed 0 tests ({skipped} skipped) — "
                     "a green tick here would be meaningless. Usual cause: the `setup` "
                     "dependency could not launch, so Playwright skipped everything "
                     "downstream instead of failing.")
+              sys.exit(1)
+          if failed:
+              for n in names[:10]:
+                  print(f"::error::failed: {n}")
+              print(f"::error::this shard had {failed} failing test(s) — see above")
               sys.exit(1)
           EOF
 
@@ -404,11 +427,25 @@ jobs:
   # because the run's artifacts expire 2026-08-12T22:13Z — after which a mismatch
   # cannot be diffed against anything until the quota refills on 2026-09-02.
   #
-  # THIS JOB ONLY MEANS ANYTHING WHEN RUN ON de0f7f0. On any other SHA the test
-  # set has moved and a mismatch says nothing, so it reports the counts and stops
-  # rather than failing a PR for a difference it cannot interpret.
+  # TWO TIERS, BECAUSE THEY ANSWER DIFFERENT QUESTIONS (#732).
+  #
+  #   Tier 1 — "did the suite run and pass?"  True on any commit. 24/24 shards,
+  #            zero failures, above a floor. This is the gate.
+  #   Tier 2 — "does it match the cloud exactly?"  Only interpretable on de0f7f0,
+  #            because on any other SHA the test set has moved.
+  #
+  # They used to be one check, with tier 2's SHA guard placed FIRST — so on every
+  # commit that was not the baseline the job exited 0 before asking whether
+  # anything had failed. Combined with `|| true` on the Playwright call, that made
+  # the entire workflow incapable of failing: run 31447148386 logged
+  # `passed 1863 · failed 21` and concluded success.
   parity:
-    name: Parity vs cloud baseline (1807/194/0)
+    # STABLE, AND DELIBERATELY NOT A PARITY NAME. This is the aggregate for the
+    # whole local lane, and the plan makes it the required context once the lane
+    # runs on every PR. Required contexts cannot be renamed without orphaning
+    # themselves, and shard names carry the shard count (`chromium 3/6`), so any
+    # re-shard would orphan those. Rename it now, while it is free.
+    name: E2E (local) result
     needs: e2e-local
     if: always()
     runs-on: ubuntu-latest
@@ -436,6 +473,10 @@ jobs:
 
           BASE = {"passed": 1807, "skipped": 194, "flaky": 0}
           BASE_SHA = "de0f7f080c8d75949e4e6c89fdf66ab7d3da8029"
+          # Deliberately well under both the cloud baseline (1807) and the last local
+          # run (1863): this is a "did the suite actually run" floor, not a parity
+          # number. Parity is tier 2 below.
+          FLOOR = 1700
 
           files = sorted(pathlib.Path("shards").rglob("results.json"))
           if not files:
@@ -480,21 +521,47 @@ jobs:
                       fh.write(f"| {k} | {tot[k]} | {BASE[k]} | {mark} |\n")
                   fh.write(f"| failed | {tot['failed']} | 0 | |\n")
 
+          # ── TIER 1: the always-on gate (#732) ────────────────────────────────
+          #
+          # True on ANY commit. This used to sit BELOW the baseline-SHA check, so
+          # every run on any other SHA hit `sys.exit(0)` and the whole workflow
+          # could not fail: run 31447148386 reported `failed 21` and concluded
+          # success. The escape hatch was right about ONE thing only — that COUNT
+          # parity is uninterpretable off the baseline — and wrong to take
+          # "did anything fail" down with it. Those are separate questions, so
+          # they are now separate tiers.
+          problems = []
+          if len(files) != 24:
+              problems.append(f"only {len(files)} of 24 shards reported")
+          if tot["failed"]:
+              problems.append(f"{tot['failed']} test(s) failed")
+          # A floor, not an equality: the test set legitimately grows. It catches
+          # the shape an equality cannot — a run that goes green by silently
+          # executing almost nothing. Per CLAUDE.md's #396 rule this is NEVER
+          # lowered to make a run pass; if the suite really shrinks, say why here.
+          if tot["passed"] < FLOOR:
+              problems.append(
+                  f"only {tot['passed']} passed, floor is {FLOOR} — the suite did not "
+                  "really run; do not lower the floor to make this green"
+              )
+          if problems:
+              for p in problems:
+                  print(f"::error::{p}")
+              sys.exit(1)
+
+          # ── TIER 2: count parity, only interpretable on the baseline SHA ──────
           on_baseline = os.environ.get("TESTED_SHA", "") == BASE_SHA
           if not on_baseline:
               print("")
-              print("NOT the baseline SHA — reporting only. The cloud numbers describe")
+              print("Gate passed: 24/24 shards, 0 failures, above the floor.")
+              print("COUNT PARITY not evaluated — the cloud numbers describe")
               print(f"{BASE_SHA[:8]}; on any other commit the test set has moved and a")
-              print("difference is uninterpretable. Re-run this workflow on that SHA to")
-              print("decide parity (workflow_dispatch, before 2026-08-12).")
+              print("difference is uninterpretable. Re-run on that SHA to decide parity.")
               sys.exit(0)
 
-          if len(files) != 24:
-              print(f"::error::only {len(files)} of 24 shards reported")
-              sys.exit(1)
           bad = [k for k in BASE if tot[k] != BASE[k]]
-          if bad or tot["failed"]:
-              print(f"::error::parity MISMATCH on {bad or ['failed']} — do not switch e2e.yml")
+          if bad:
+              print(f"::error::parity MISMATCH on {bad} — do not switch e2e.yml")
               sys.exit(1)
           print("PARITY: local matches the cloud baseline exactly.")
           EOF

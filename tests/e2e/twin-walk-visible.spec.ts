@@ -39,6 +39,19 @@ async function openWalk(page: import('@playwright/test').Page) {
     .waitFor({ state: 'attached', timeout: 30_000 });
 }
 
+// THE WHOLE FILE NEEDS A BIGGER BUDGET THAN THE 30s DEFAULT, and the first version of the
+// reachability test did not get one. It asked for a 45s `expect` inside a 30s test, which is
+// silently unreachable — the test dies at 30s and the expect timeout never applies. It passed
+// on one CI run and failed the next with `Test timeout of 30000ms exceeded`, which reads like
+// a product regression and is not one.
+//
+// The real cost is genuine, not padding: the scene downloads the baked city, builds its
+// meshes and bakes the collision BVH before walk can engage — ~15s in the dev container, and
+// slower on a CI runner that is simultaneously hosting a full local Supabase stack. The pixel
+// test below is budgeted too (a 25s wait plus an 8s settle plus a screenshot already exceeds
+// 30s on its own, so it could only ever have passed by skipping).
+test.describe.configure({ timeout: 150_000 });
+
 test.describe('walk scene is visible (not a dark void / empty frame)', () => {
   /**
    * SPLIT OUT AND UN-SWALLOWED (#725).
@@ -57,11 +70,37 @@ test.describe('walk scene is visible (not a dark void / empty frame)', () => {
    */
   test('walk mode engages from the ?walk deep link', async ({ page }) => {
     await openWalk(page);
+
+    // GATED ON WEBGL EXISTING — NOT on it being hardware. The distinction is the whole
+    // point of splitting this test out, and getting it wrong in either direction costs
+    // something:
+    //
+    //   no WebGL at all  -> SKIP. Reaching walk needs the world to hand over its terrain
+    //                       and buildings meshes, which needs a canvas that draws. Headless
+    //                       firefox has no WebGL (documented at twins.spec.ts:344), so the
+    //                       meshes never arrive and the failure would be about the runner,
+    //                       not the product. Found the honest way: this test went red on
+    //                       firefox-gen 6/6 on its first fail-capable run, while chromium
+    //                       and webkit passed.
+    //   software WebGL   -> RUN. SwiftShader draws the scene fine — measured reaching walk
+    //                       in ~15 s locally and passing on CI chromium. Skipping here is
+    //                       what left this URL with no coverage on any runner CI has, which
+    //                       is exactly the hole #723 fell through.
+    const hasWebGL = await page.evaluate(() => {
+      const c = document.createElement('canvas');
+      return !!(c.getContext('webgl2') || c.getContext('webgl'));
+    });
+    test.skip(
+      !hasWebGL,
+      'no WebGL in this browser (see #288) — the scene cannot produce the meshes walk ' +
+        'mode is built from, so this would measure the runner rather than the app'
+    );
+
     await expect(
       page.locator('[data-stance]').first(),
       'the ?walk deep link never reached walk mode — the stance badge only renders ' +
         'while mode === "walk", so the player is stuck in the orbit shot (#723)'
-    ).toBeVisible({ timeout: 45_000 });
+    ).toBeVisible({ timeout: 120_000 });
   });
 
   test('street level renders lit geometry', async ({ page }) => {
