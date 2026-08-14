@@ -14,10 +14,10 @@ import { join } from 'node:path';
  * `twin-glass-contrast.spec.ts`, whose technique this borrows wholesale.
  *
  * THE ONE QUESTION. The HUD is three chips — the stance badge, the quality `<select>` and
- * the controls hint (`CodSkeleton.tsx` :426, :436, :448) — and all three are the same
- * pairing: `text-base-content` on `bg-base-300/70`, floating over an arbitrary WebGL scene.
- * A translucent surface over an unconstrained backdrop, which is exactly the twin glass-nav
- * problem.
+ * the controls hint — and all three are the same pairing: `text-base-content` on
+ * `bg-base-300/90`, floating over an arbitrary WebGL scene. A translucent surface over an
+ * unconstrained backdrop, which is exactly the twin glass-nav problem. `/70` is what shipped
+ * before this spec measured it: 5.00:1 light, 4.51:1 dark, both under the 7:1 gate.
  *
  * WHY NOT THE OBVIOUS APPROACHES, each of which passes while measuring nothing:
  *
@@ -58,60 +58,73 @@ const COD_SKELETON_SRC = join(
 
 test.describe('cod-skeleton HUD contrast over an arbitrary scene (#715)', () => {
   /**
-   * GUARD 3 of 3 — the source-literal guard.
+   * GUARD 3 of 4 — the source-literal guard.
    *
    * This spec measures a class string it injects itself, so if the HUD is restyled it would
    * happily keep measuring a combination nothing renders, forever green. Anchoring to the
    * component source is what stops that. The alternative — extracting the HUD into its own
-   * component and measuring the real nodes — is better and larger; noted in #715.
+   * component with one exported class constant that both sides import, leaving no string
+   * matching to defeat — is better and larger; noted in #715.
    */
   test('the classes this spec measures are the classes the HUD ships', () => {
     const src = readFileSync(COD_SKELETON_SRC, 'utf8');
-    // `className` lines only. The first version matched any line containing the surface
-    // class and promptly failed on the explanatory COMMENT above the chips, which names
-    // the class without setting it — a guard that fires on prose is a guard that will be
-    // deleted by the next person it annoys.
-    const chips = src
-      .split('\n')
-      .filter((l) => l.includes(HUD_SURFACE) && l.includes('className'));
-    expect(
-      chips.length,
-      `no "${HUD_SURFACE}" found in CodSkeleton.tsx — the HUD was restyled and every ` +
-        `measurement below is now about a class combination nothing renders`
-    ).toBeGreaterThan(0);
-    for (const line of chips) {
-      expect(
-        line,
-        `a HUD chip uses ${HUD_SURFACE} without ${HUD_TEXT}; this spec no longer covers it`
-      ).toContain(HUD_TEXT);
-    }
 
-    // COUNT, not just presence. Mutation-tested: restyling ONE of the three chips left
-    // this test green, because the other two still matched. "At least one chip is still
-    // covered" is not the claim being made — the claim is that every chip is.
+    // TOKENS, NOT SUBSTRINGS, and every string literal rather than `className` lines.
+    //
+    // Both choices are load-bearing and both were wrong in the first version:
+    //   - `line.includes('text-base-content')` is satisfied by `text-base-content/70`,
+    //     which is the exact AAA regression this guard exists to catch (#411 is the same
+    //     family: /60 and /70 text failing the 7:1 gate). A substring test cannot tell a
+    //     class from its own dimmed variant.
+    //   - matching on `className` lines misses a class hoisted into a const, which is an
+    //     ordinary refactor. Scanning literals covers inline and hoisted alike.
+    // COMMENTS STRIPPED FIRST. The chips carry an explanatory comment that names
+    // `bg-base-300/90` in backticks, and scanning raw source counted it as a fourth chip —
+    // caught immediately, because the count assertion below went 3 → 4 on the untouched
+    // tree. The predecessor of this guard hit the same wall and documented it: "a guard
+    // that fires on prose is a guard that will be deleted by the next person it annoys."
+    const code = src
+      .replace(/\/\*[\s\S]*?\*\//g, '') // block + JSX comments
+      .replace(/^\s*\/\/.*$/gm, ''); // whole-line comments (not `https://` inside strings)
+    const literals = [...code.matchAll(/["'`]([^"'`\n]*)["'`]/g)].map(
+      (m) => m[1]
+    );
+    const tokens = (s: string) => s.split(/\s+/).filter(Boolean);
+
+    // GUARD 3a — nothing translucent may exist that this spec is not measuring.
+    //
+    // Inverted on purpose. Counting the ONE class we know about is silent about a FOURTH
+    // chip added on a different surface — an FPS counter on `bg-base-100/60` would fail
+    // AAA over the same unconstrained scene and every assertion here would still pass.
+    // Asserting the SET makes a new surface a hard failure that names itself.
+    const translucent = new Set(
+      literals
+        .flatMap(tokens)
+        .filter((t) => /^bg-[\w-]+\/(\[[^\]]+\]|\d+)$/.test(t))
+    );
+    expect(
+      [...translucent].sort(),
+      `CodSkeleton.tsx has a translucent surface this spec does not measure. Every ` +
+        `bg-*/<alpha> floating over the WebGL scene needs bracketing — add it to ` +
+        `HUD_SURFACE and measure it rather than widening this assertion`
+    ).toEqual([HUD_SURFACE]);
+
+    // GUARD 3b — the chips carry the exact text token, not a dimmed variant of it.
+    const chips = literals.filter((l) => tokens(l).includes(HUD_SURFACE));
     expect(
       chips.length,
       `expected ${HUD_CHIP_COUNT} HUD chips carrying "${HUD_SURFACE}", found ` +
         `${chips.length}. If a chip was added or restyled, measure it here rather than ` +
         `moving this number`
     ).toBe(HUD_CHIP_COUNT);
-
-    // And no chip may quietly drift to a different alpha. `bg-base-300/70` measured
-    // 5.00:1 / 4.51:1 — below the gate — so a single reverted chip is a real regression
-    // that the count alone would miss.
-    const wrongAlpha = src
-      .split('\n')
-      .filter(
-        (l) =>
-          l.includes('className') &&
-          /bg-base-300\/\d+/.test(l) &&
-          !l.includes(HUD_SURFACE)
-      );
-    expect(
-      wrongAlpha,
-      `a HUD chip uses a bg-base-300 alpha other than ${HUD_SURFACE}; /70 measures ` +
-        `5.00:1 (light) and 4.51:1 (dark), both under the 7:1 gate`
-    ).toEqual([]);
+    for (const chip of chips) {
+      expect(
+        tokens(chip),
+        `a HUD chip pairs ${HUD_SURFACE} with something other than exactly ` +
+          `"${HUD_TEXT}" — a dimmed variant like ${HUD_TEXT}/70 drops the measured ` +
+          `ratio well under 7:1 while this spec keeps reporting the undimmed number`
+      ).toContain(HUD_TEXT);
+    }
   });
 
   for (const theme of THEMES) {
@@ -156,7 +169,20 @@ test.describe('cod-skeleton HUD contrast over an arbitrary scene (#715)', () => 
       });
 
       await page.goto('/game/cod-skeleton/');
-      await expect(page.locator('body')).toBeVisible();
+
+      // GUARD 4 — the WebGL denial actually took.
+      //
+      // The monkey-patch above is the only thing keeping this spec clear of #719: if it
+      // stops covering the path R3F uses to acquire a context (an OffscreenCanvas probe, a
+      // different `isWebGLAvailable` implementation), a real WebGLRenderer gets constructed
+      // on a GPU-less runner and this spec inherits the synchronous-readback freeze that got
+      // the route excluded from color-contrast.spec.ts in the first place. Without this
+      // assertion that arrives as an opaque 30s timeout; with it, it says what happened.
+      await expect(
+        page.locator('[data-webgl-ok="false"]'),
+        'WebGL was not actually denied — the component built a real renderer, so this ' +
+          'spec is now exposed to the #719 readback freeze it was written to avoid'
+      ).toBeVisible();
 
       const result = await page.evaluate(
         ({ surface, text }) => {
