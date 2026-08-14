@@ -70,3 +70,29 @@ a small `gained` set is anticipated, not a bug.
 **Regenerating this file invalidates every claim that quotes 1807/194/2001** — including
 `scripts/__tests__/e2e-parity-diff.test.js`, which asserts those three numbers precisely
 so a silent regeneration cannot pass unnoticed.
+
+### 18 entries are now INTENTIONALLY missing on local-lane reports (#725)
+
+Six tests in `tests/e2e/security/oauth-csrf.spec.ts` carry `{ tag: '@hosted' }`, and
+`e2e-local.yml` passes `--grep-invert='@hosted'`. They wait for a redirect to a real OAuth
+provider, which a local Supabase never performs.
+
+`--grep-invert` removes tests from the report **entirely** — unlike `test.skip()`, which
+would record them as `skipped`. So a local-lane report diffed against this baseline yields
+**18 `missing` entries** (6 tests × chromium/firefox/webkit-gen), which `e2e-parity-diff.mjs`
+treats as `COVERAGE LOST` and exits 1 on. That is correct behaviour for the tool and the
+wrong verdict for this situation — the coverage moved rather than vanished.
+
+**So do not wire `e2e-parity-diff.mjs` into the local lane until it grows an allowlist**
+carrying a written reason per excluded identity. The three baseline blocks are at lines
+373-379 (chromium-gen), 1040-1046 (firefox-gen) and 1707-1713 (webkit-gen); the seventh
+entry in each block — `OAuth buttons should be visible and enabled on sign-in page` — is
+deliberately **not** excluded and must keep matching.
+
+The baseline cannot simply be regenerated to absorb this: its source artifacts expired
+2026-08-12 and the cloud quota does not refill until 2026-09-02.
+
+Consequence for the counts, if anyone re-runs the local lane on `de0f7f0` itself: the
+tier-2 comparison in `e2e-local.yml` would see **1789** passed rather than 1807, with
+`skipped` and `flaky` unchanged. Tier 2 only fires on that SHA, so nothing reads this
+today — but the number is wrong the moment someone does.

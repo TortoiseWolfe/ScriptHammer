@@ -73,7 +73,12 @@ jobs:
         include:
           # ===== CHROMIUM =====
           - { project: chromium-msg, browser: chromium, shard: 1/1 }
-          - { project: chromium-msg-iso, browser: chromium, shard: 1/1, workers: 2 }
+          - {
+              project: chromium-msg-iso,
+              browser: chromium,
+              shard: 1/1,
+              workers: 2,
+            }
           - { project: chromium-gen, browser: chromium, shard: 1/6 }
           - { project: chromium-gen, browser: chromium, shard: 2/6 }
           - { project: chromium-gen, browser: chromium, shard: 3/6 }
@@ -82,7 +87,12 @@ jobs:
           - { project: chromium-gen, browser: chromium, shard: 6/6 }
           # ===== FIREFOX =====
           - { project: firefox-msg, browser: firefox, shard: 1/1 }
-          - { project: firefox-msg-iso, browser: firefox, shard: 1/1, workers: 2 }
+          - {
+              project: firefox-msg-iso,
+              browser: firefox,
+              shard: 1/1,
+              workers: 2,
+            }
           - { project: firefox-gen, browser: firefox, shard: 1/6 }
           - { project: firefox-gen, browser: firefox, shard: 2/6 }
           - { project: firefox-gen, browser: firefox, shard: 3/6 }
@@ -294,9 +304,21 @@ jobs:
           if [ -n "$WORKERS" ]; then
             WORKERS_FLAG="--workers=$WORKERS"
           fi
+          # `@hosted` = needs a REAL Supabase project (#725). Six tests in
+          # tests/e2e/security/oauth-csrf.spec.ts wait for a redirect to github.com /
+          # google.com, which a local stack never performs — 18 of the 19 failures this
+          # lane reported once #732 let it report anything. They are excluded here and
+          # still run in e2e.yml, which is unfiltered.
+          #
+          # A CLI FLAG, NOT `playwright.config.ts`. Both lanes load the same config and
+          # name the same projects, so a project-level `grepInvert` would hide these from
+          # the HOSTED lane too — the one place they can actually pass. A top-level config
+          # `grep` is worse: it filters the `setup` project as well, and setup dying is
+          # exactly what once produced 24 green jobs with 0 tests executed.
           pnpm exec playwright test \
             --project=${{ matrix.project }} --shard=${{ matrix.shard }} \
             $WORKERS_FLAG \
+            --grep-invert='@hosted' \
             --reporter=line,json || true
         env:
           CI: 'true'
@@ -471,11 +493,22 @@ jobs:
           python3 - <<'EOF'
           import json, os, pathlib, sys
 
+          # STALE SINCE THE @hosted SPLIT (#725), and only tier 2 reads it. On the cloud
+          # run these numbers describe, all 21 oauth-csrf executions passed; this lane now
+          # excludes 18 of them, so a re-run on de0f7f0 would total 1789 passed, not 1807.
+          # Tier 2 fires only on that SHA, so this is a note rather than a code change —
+          # but anyone who does run that comparison needs the corrected number, and the
+          # baseline itself cannot be regenerated (artifacts expired; quota until 09-02).
           BASE = {"passed": 1807, "skipped": 194, "flaky": 0}
           BASE_SHA = "de0f7f080c8d75949e4e6c89fdf66ab7d3da8029"
           # Deliberately well under both the cloud baseline (1807) and the last local
-          # run (1863): this is a "did the suite actually run" floor, not a parity
+          # run (1894): this is a "did the suite actually run" floor, not a parity
           # number. Parity is tier 2 below.
+          #
+          # UNCHANGED by the @hosted split (#725), and the reason is worth stating because
+          # it is counter-intuitive: the six excluded tests were FAILING locally, so they
+          # were counted in `failed`, never in `passed`. Removing them subtracts nothing
+          # from this total.
           FLOOR = 1700
 
           files = sorted(pathlib.Path("shards").rglob("results.json"))
