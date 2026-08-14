@@ -174,6 +174,17 @@ export function parseWeatherParam(search: string): WeatherKind {
     : 'none';
 }
 
+/** `?walk` — "this is a walk session". The navbar Play link (GlobalNav.tsx) and every
+ *  marker return link (`markerBlock`, src/lib/twin-location.ts) carry it.
+ *
+ *  Parsed in ONE exported place because two components have to agree on it and they use it
+ *  for different decisions: TwinCanvasInner decides WHEN to enter walk, SceneInner decides
+ *  WHETHER to build a collision world at all. When those two disagreed, walk mode became
+ *  unreachable — see the gate below. */
+export function parseWalkParam(search: string): boolean {
+  return new URLSearchParams(search).has('walk');
+}
+
 /** Player position in every frame of reference the readout and the harness need (#706). */
 export interface TwinLocus {
   lat: number;
@@ -206,6 +217,7 @@ function SceneInner({
   onFps,
   onNearBike,
   onWalkReady,
+  walkIntent,
   onLocus,
   pickRef,
   warehouseModels,
@@ -246,6 +258,10 @@ function SceneInner({
   onNearBike?: (near: boolean) => void;
   /** Fires once the embodied walk controller is built (deep-link gating). */
   onWalkReady?: () => void;
+  /** The URL asked for first-person walk at mount (`?walk`). SESSION-CONSTANT — the parent
+   *  parses it once with an empty-dep useMemo. It seeds `wantsWalkWorldRef`, which `mode`
+   *  cannot do on its own because `mode` is downstream of the build that ref gates. */
+  walkIntent: boolean;
   /** Publishes the player's position ~4x/s for the location readout (#706). */
   onLocus?: (locus: TwinLocus | null) => void;
   /** The scene assigns its crosshair-pick here; the key handler lives a level up. */
@@ -543,8 +559,23 @@ function SceneInner({
   /** Landmark/bridge GLB roots awaiting collision bake (#702). Keyed by slug so a
    *  remount replaces rather than duplicates. Populated whether or not walk mode
    *  exists yet; drained into the controller once it does. */
-  /** Does the CURRENT camera mode need collision at all? Only walk does (#718). */
-  const wantsWalkWorldRef = useRef(false);
+  /**
+   * Does this SESSION ever need a collision world? (the #718 gate)
+   *
+   * NOT "is the live camera mode walk". That version asked the gate about its own output:
+   * `mode` only becomes 'walk' once `walkReady` fires, which needs the controller, which
+   * needs this gate to open — so `?walk` deadlocked and the city just orbited forever.
+   *
+   * THE RULE: this predicate may only read things that are NOT downstream of the build.
+   * `walkIntent` is parsed from the URL at mount and never changes, so it is safe. `mode` is
+   * safe only as a LATCH for manual entry (digit 3 / the HUD), never as the whole answer.
+   *
+   * SEEDED DURING RENDER, NOT FROM AN EFFECT. React runs child effects before parent ones,
+   * so TwinWorld's mesh handovers reach `tryBuildWalk` before any effect in SceneInner has
+   * run. A flag set in an effect is still false at that moment, `mode` is still 'orbit', and
+   * nothing retries — the same deadlock, moved one hop.
+   */
+  const wantsWalkWorldRef = useRef(walkIntent);
   const pendingCollidersRef = useRef<Map<string, Object3D>>(new Map());
   /** Collision-object ids per slug, so an unmounted model's geometry can be
    *  removed again. Cleared whenever the world is rebuilt from scratch. */
@@ -725,9 +756,16 @@ function SceneInner({
   // `builtFromRef` (#703) makes a later call idempotent, and `pendingCollidersRef` (#702)
   // stashes landmark colliders that arrive before the controller exists and drains them
   // when it is created — so nothing is lost by arriving late.
+  //
+  // A LATCH, not an assignment. The original `= mode === 'walk'` also TORE THE GATE DOWN on
+  // the way out of walk, so a mesh that arrived while you were back in orbit was discarded
+  // and the world silently never rebuilt. Once anything in this session has asked for a walk
+  // world it keeps wanting one; `builtFromRef` (#703) makes the extra calls free.
   useEffect(() => {
-    wantsWalkWorldRef.current = mode === 'walk';
-    if (mode === 'walk') tryBuildWalkRef.current?.();
+    if (mode === 'walk') wantsWalkWorldRef.current = true;
+    // Keyed on the ref, not on `mode`: this is also the deep-link's retry, for the case where
+    // all three inputs landed during the child-effect pass before this effect first ran.
+    if (wantsWalkWorldRef.current) tryBuildWalkRef.current?.();
   }, [mode]);
 
   const handleBuildingsMesh = useCallback(
@@ -1175,8 +1213,9 @@ function TwinCanvasInner({
   // the ⋯ mode overflow.
   const walkParam = useMemo(
     () =>
-      typeof window !== 'undefined' &&
-      new URLSearchParams(window.location.search).has('walk'),
+      parseWalkParam(
+        typeof window !== 'undefined' ? window.location.search : ''
+      ),
     []
   );
   const [mode, setMode] = useState<CameraMode>(
@@ -1188,6 +1227,9 @@ function TwinCanvasInner({
   // move-speed (~1,200 m/s) with no terrain-follow: "running under the city at
   // high speed". So land in orbit while the city loads, then switch once.
   const [walkReady, setWalkReady] = useState(false);
+  // Stable identity: an inline arrow re-runs SceneInner's [walkCtrl, onWalkReady] effect on
+  // every parent render (same reason registerHandle is a useCallback).
+  const handleWalkReady = useCallback(() => setWalkReady(true), []);
   const didAutoWalk = useRef(false);
   useEffect(() => {
     if (walkParam && walkReady && !didAutoWalk.current) {
@@ -1461,7 +1503,8 @@ function TwinCanvasInner({
           registerRig={registerRig}
           onFps={showFps ? setFps : undefined}
           onNearBike={setNearBike}
-          onWalkReady={() => setWalkReady(true)}
+          onWalkReady={handleWalkReady}
+          walkIntent={walkParam}
           onLocus={setLocus}
           pickRef={pickRef}
           warehouseModels={warehouseModels}

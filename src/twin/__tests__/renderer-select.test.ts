@@ -38,6 +38,17 @@ describe('selectRenderer', () => {
     expect(selectRenderer(q('?nofx'))).toBe('diorama');
   });
 
+  // Same omission, third recurrence. The nav's Play link happens to pass `?diorama&walk`, so
+  // this stayed invisible: a bare `?walk` opened Cesium, which has no first-person camera,
+  // and TwinCanvas — the component that owns walk mode — never mounted at all.
+  it('?walk implies the diorama — Cesium has no first-person mode', () => {
+    expect(selectRenderer(q('?walk'))).toBe('diorama');
+  });
+
+  it('?at implies the diorama — a spawn coordinate is only meaningful in walk', () => {
+    expect(selectRenderer(q('?at=35.045123,-85.309876'))).toBe('diorama');
+  });
+
   it('an explicit ?diorama beats a stray ?atlas', () => {
     expect(selectRenderer(q('?atlas&diorama'))).toBe('diorama');
   });
