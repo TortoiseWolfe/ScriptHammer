@@ -47,12 +47,21 @@ on:
   # old single-shard prototype — so the widened matrix could never reach the
   # baseline code. Checking the ref out as an INPUT instead keeps the two
   # separable: definition from the branch, code under test from `ref`.
+  # EVERY PR AND EVERY PUSH TO MAIN, WITH NO `paths` FILTER OF ANY KIND (#575 Phase 3).
+  #
+  # The filtering happens in the `changes` job below instead, and that placement is the
+  # whole point. This workflow's aggregate becomes a REQUIRED check in Phase 5, and a
+  # required check that never reports is **pending forever**, not skipped — which is
+  # precisely why `Build` and `Validate Component Structure` are deliberately absent from
+  # this repo's required set. A `paths:`/`paths-ignore:` here would make every docs-only PR
+  # permanently unmergeable.
+  #
+  # So: trigger always, decide inside, and let the aggregate report success when there was
+  # nothing to run.
   pull_request:
     branches: [main]
-    paths:
-      # Only self-changes while this is a prototype. Widen deliberately, after
-      # the parity run — not as a drive-by.
-      - '.github/workflows/e2e-local.yml'
+  push:
+    branches: [main]
 
 # DELIBERATELY NO `concurrency:` BLOCK.
 # e2e.yml serializes every run repo-wide because they contend for one cloud
@@ -60,8 +69,54 @@ on:
 # would reintroduce the bottleneck this workflow exists to remove.
 
 jobs:
+  # Does this change need the suite at all? (#575 Phase 3)
+  #
+  # Reads the ignore list OUT OF `e2e.yml` rather than repeating it — two lanes with two
+  # hand-maintained lists drift silently, and in the worst direction: a change that skips E2E
+  # on one lane and runs it on the other. Deriving means they cannot disagree.
+  changes:
+    name: Does this change need E2E?
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Full history: the PR case diffs against the merge base, which a shallow
+          # clone does not contain.
+          fetch-depth: 0
+          ref: ${{ inputs.ref || github.sha }}
+
+      - name: Decide
+        id: decide
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # An explicit dispatch is a deliberate request — never second-guess it.
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "  workflow_dispatch — running unconditionally"
+            exit 0
+          fi
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+          else
+            # push: `before` is all-zeroes on a branch's first push — fall back to the
+            # first parent so the diff is never taken against a nonexistent object.
+            BASE="${{ github.event.before }}"
+            case "$BASE" in
+              0000000*|'') BASE="$(git rev-parse HEAD^1 2>/dev/null || git rev-parse HEAD)" ;;
+            esac
+            HEAD="${{ github.sha }}"
+          fi
+          echo "  base=$BASE head=$HEAD"
+          node scripts/ci/e2e-local-changes.mjs "$BASE" "$HEAD"
+
   e2e-local:
     name: ${{ matrix.project }} ${{ matrix.shard }}
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -468,20 +523,40 @@ jobs:
     # themselves, and shard names carry the shard count (`chromium 3/6`), so any
     # re-shard would orphan those. Rename it now, while it is free.
     name: E2E (local) result
-    needs: e2e-local
+    needs: [changes, e2e-local]
     if: always()
     runs-on: ubuntu-latest
     steps:
+      # MUST REPORT SUCCESS WHEN THERE WAS NOTHING TO RUN (#575 Phase 3).
+      #
+      # Every step below is gated on the same condition. Without this the job would try to
+      # download artifacts that no matrix produced and fail with "no results.json found",
+      # so a docs-only PR would be blocked by a required check for having changed only
+      # documentation — the exact outcome the unfiltered trigger exists to avoid.
+      #
+      # Gating the STEPS, not the job: a skipped job reports as `skipped`, and a required
+      # check that reports `skipped` never satisfies branch protection. This job must
+      # actually run and actually pass.
+      - name: Nothing to run — no code changed
+        if: needs.changes.outputs.run != 'true'
+        run: |
+          echo "The diff touches only paths e2e.yml also ignores (docs, markdown, .claude,"
+          echo ".specify, features, LICENSE, .gitignore, .vscode)."
+          echo "No shards were dispatched, and this check passes on purpose."
+
       - name: Resolve which commit was actually tested
+        if: needs.changes.outputs.run == 'true'
         id: tested
         run: echo "sha=${{ inputs.ref || github.sha }}" >> "$GITHUB_OUTPUT"
 
       - uses: actions/download-artifact@v6
+        if: needs.changes.outputs.run == 'true'
         with:
           pattern: e2e-local-*
           path: shards
 
       - name: Total the shards and compare
+        if: needs.changes.outputs.run == 'true'
         env:
           # The commit the TESTS ran against — not github.sha, which is the branch
           # carrying this workflow file. Comparing the wrong one would either skip
