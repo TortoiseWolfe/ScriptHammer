@@ -110,9 +110,14 @@ const EXCLUDED: Record<string, string> = {
   // NOTE WHAT THIS COSTS: the page's contrast is now genuinely unmeasured. That is a real
   // gap, tracked in #715, and the fix is a component-level contrast test that does not need
   // the live canvas — not a re-enable of this sweep, which cannot settle here at any timeout.
+  // Coverage is NOT lost: tests/e2e/cod-skeleton-hud-contrast.spec.ts measures the HUD
+  // chrome against a bracketed black/white scene without ever constructing a renderer —
+  // the same move /chatt makes toward twin-glass-contrast.spec.ts. It found the chips at
+  // 5.00:1 (light) and 4.51:1 (dark) and drove the fix to bg-base-300/90.
   '/game/cod-skeleton':
     'continuous WebGL render loop; the readiness wait cannot settle under software ' +
-    'rendering (synchronous GPU readback, #719) — contrast coverage owed via #715',
+    'rendering (synchronous GPU readback, #719) — HUD chrome measured instead by ' +
+    'cod-skeleton-hud-contrast.spec.ts',
 };
 
 /** Dynamic segments need a real instance — the template alone proves nothing. */

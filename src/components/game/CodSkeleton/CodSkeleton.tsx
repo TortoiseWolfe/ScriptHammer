@@ -1,6 +1,12 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import FallbackPanel from '@/components/game/FallbackPanel';
@@ -66,10 +72,20 @@ interface BoxSpec {
 const LEVEL: readonly BoxSpec[] = [
   { size: [40, 2, 40], pos: [0, -1, 0], surface: 'dirt' }, // floor, top at y=0
   { size: [8, 0.4, 8], pos: [6, 0.2, -4], surface: 'concrete' }, // step-up, top y=0.40
-  { size: [0.5, 3, 12], pos: [-6, 1.5, 0], surface: 'concrete', material: 'brick' }, // wall
+  {
+    size: [0.5, 3, 12],
+    pos: [-6, 1.5, 0],
+    surface: 'concrete',
+    material: 'brick',
+  }, // wall
   { size: [1.6, 1, 1.6], pos: [3, 0.5, 4], surface: 'wood' }, // crate
   // Low overhang across the forward path: underside at 1.05 m — crouch/prone to pass.
-  { size: [6, 0.3, 0.6], pos: [0, 1.2, 3], surface: 'metal', material: 'steel' },
+  {
+    size: [6, 0.3, 0.6],
+    pos: [0, 1.2, 3],
+    surface: 'metal',
+    material: 'steel',
+  },
 ];
 
 const SURFACE_TINT: Record<string, [number, number, number]> = {
@@ -89,12 +105,38 @@ const PITCH_LIMIT = 1.5; // ~86°
 // the extraction leaves the demo's feel unchanged. `Stance`/`StanceCfg` are the
 // toolkit's types now.
 const STANCE: Record<Stance, StanceCfg> = {
-  stand: { height: 1.75, eye: 1.55, speedRatio: 1, gait: 'walk', bobScale: 1, dustScale: 1 },
-  crouch: { height: 1.0, eye: 0.85, speedRatio: 0.49, gait: 'crouch', bobScale: 0.5, dustScale: 0.4 },
-  prone: { height: 0.5, eye: 0.35, speedRatio: 0.24, gait: 'crouch', bobScale: 0.2, dustScale: 0.25 },
+  stand: {
+    height: 1.75,
+    eye: 1.55,
+    speedRatio: 1,
+    gait: 'walk',
+    bobScale: 1,
+    dustScale: 1,
+  },
+  crouch: {
+    height: 1.0,
+    eye: 0.85,
+    speedRatio: 0.49,
+    gait: 'crouch',
+    bobScale: 0.5,
+    dustScale: 0.4,
+  },
+  prone: {
+    height: 0.5,
+    eye: 0.35,
+    speedRatio: 0.24,
+    gait: 'crouch',
+    bobScale: 0.2,
+    dustScale: 0.25,
+  },
 };
 /** Sprint = a modifier on the standing stance (Shift + moving forward). */
-const SPRINT = { speedRatio: 1.55, gait: 'sprint', bobScale: 1.4, dustScale: 1.6 };
+const SPRINT = {
+  speedRatio: 1.55,
+  gait: 'sprint',
+  bobScale: 1.4,
+  dustScale: 1.6,
+};
 
 /** Zero-asset procedural surface texture: per-surface tint + hash noise + grid. */
 function makeSurfaceTexture(
@@ -141,7 +183,11 @@ function tileRepeat(size: [number, number, number]): [number, number] {
  * Builds the collision world from LEVEL, renders LEVEL as meshes, and runs the
  * fixed-step character controller each frame.
  */
-function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactElement {
+function FirstPersonWorld({
+  speed = 4.5,
+}: {
+  speed?: number;
+}): React.ReactElement {
   const { camera, gl } = useThree();
   const { preset } = useQuality(); // quality tier → anisotropy + particle budget
 
@@ -226,7 +272,10 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
           metalness: 0,
         });
       } catch (err) {
-        console.warn('[cod-skeleton] material forge bake failed; using stand-in', err);
+        console.warn(
+          '[cod-skeleton] material forge bake failed; using stand-in',
+          err
+        );
         return standIn(b);
       }
     });
@@ -281,7 +330,10 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
       if (document.pointerLockElement !== dom) return;
       yaw.current -= e.movementX * LOOK_SENS;
       pitch.current -= e.movementY * LOOK_SENS;
-      pitch.current = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, pitch.current));
+      pitch.current = Math.max(
+        -PITCH_LIMIT,
+        Math.min(PITCH_LIMIT, pitch.current)
+      );
     };
 
     window.addEventListener('keydown', down);
@@ -319,7 +371,14 @@ function FirstPersonWorld({ speed = 4.5 }: { speed?: number }): React.ReactEleme
     camera.position.set(eye.x, eye.y, eye.z);
     camera.rotation.set(pitch.current, yaw.current, 0, 'YXZ');
     // Head-bob (scaled by stance) + landing punch.
-    applyCameraFeel(camera, ctrl, ctrl.movedThisFrame, delta, yaw.current, ctrl.bobScale);
+    applyCameraFeel(
+      camera,
+      ctrl,
+      ctrl.movedThisFrame,
+      delta,
+      yaw.current,
+      ctrl.bobScale
+    );
     // One cadence drives the footstep sound + surface-tinted dust (both stance-scaled).
     const didStep = stepAudio(
       ctrl.movedThisFrame,
@@ -376,7 +435,10 @@ export default function CodSkeleton({
   // The stance HUD is driven by the toolkit event bus: the source of truth lives
   // inside the <Canvas> (FirstPersonWorld), and the bus carries the event across
   // that boundary to this outer HUD — no prop-drill. (bus.on returns unsubscribe.)
-  useEffect(() => bus.on('player:stance', (e) => setStance(e.stance as Stance)), []);
+  useEffect(
+    () => bus.on('player:stance', (e) => setStance(e.stance as Stance)),
+    []
+  );
 
   const onCanvasCreated = useCallback(
     (state: { gl: { domElement: HTMLCanvasElement } }) => {
@@ -420,10 +482,23 @@ export default function CodSkeleton({
         <FirstPersonWorld speed={speed} />
       </Canvas>
 
-      {/* DOM chrome over the canvas: stance badge + crosshair + controls hint. */}
+      {/* DOM chrome over the canvas: stance badge + crosshair + controls hint.
+          Surfaces are `bg-base-300/90`, raised from `/70` (#715). These chips float over an
+          UNCONSTRAINED WebGL scene, so contrast must hold against any backdrop the renderer
+          can produce. Measured through a canvas composite, bracketing the scene between
+          black and white — the worst of the two endpoints:
+
+            /70   light 5.00:1   dark 4.51:1    <- both FAIL the 7:1 AAA gate
+            /85   light 7.24:1   dark 7.43:1    <- passes by 1.03x
+            /90   light 8.14:1   dark 8.78:1    <- shipped
+
+          /85 was rejected for the same reason globals.css:1716 rejected it for the twin
+          nav: a margin that thin is erased by one theme tweak. Pinned by
+          tests/e2e/cod-skeleton-hud-contrast.spec.ts, because this route is excluded from
+          the sweeping contrast spec (it cannot settle on a GPU-less runner, #719). */}
       <div
         data-stance={stance}
-        className="bg-base-300/70 text-base-content absolute top-2 left-2 rounded px-2 py-1 text-xs font-semibold tracking-wider"
+        className="bg-base-300/90 text-base-content absolute top-2 left-2 rounded px-2 py-1 text-xs font-semibold tracking-wider"
       >
         {stance.toUpperCase()}
       </div>
@@ -433,7 +508,7 @@ export default function CodSkeleton({
         value={tier}
         onChange={(e) => setTier(e.target.value as QualityTier)}
         data-quality={tier}
-        className="bg-base-300/70 text-base-content absolute top-2 right-2 rounded px-2 py-1 text-xs capitalize"
+        className="bg-base-300/90 text-base-content absolute top-2 right-2 rounded px-2 py-1 text-xs capitalize"
       >
         {QUALITY_TIERS.map((t) => (
           <option key={t} value={t}>
@@ -445,8 +520,9 @@ export default function CodSkeleton({
         aria-hidden="true"
         className="pointer-events-none absolute top-1/2 left-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/70"
       />
-      <p className="bg-base-300/70 text-base-content absolute bottom-2 left-2 rounded px-2 py-1 text-xs">
-        Click to capture · WASD move · Shift sprint · C crouch · X prone · Space jump
+      <p className="bg-base-300/90 text-base-content absolute bottom-2 left-2 rounded px-2 py-1 text-xs">
+        Click to capture · WASD move · Shift sprint · C crouch · X prone · Space
+        jump
       </p>
     </div>
   );
