@@ -39,6 +39,19 @@ async function openWalk(page: import('@playwright/test').Page) {
     .waitFor({ state: 'attached', timeout: 30_000 });
 }
 
+// THE WHOLE FILE NEEDS A BIGGER BUDGET THAN THE 30s DEFAULT, and the first version of the
+// reachability test did not get one. It asked for a 45s `expect` inside a 30s test, which is
+// silently unreachable — the test dies at 30s and the expect timeout never applies. It passed
+// on one CI run and failed the next with `Test timeout of 30000ms exceeded`, which reads like
+// a product regression and is not one.
+//
+// The real cost is genuine, not padding: the scene downloads the baked city, builds its
+// meshes and bakes the collision BVH before walk can engage — ~15s in the dev container, and
+// slower on a CI runner that is simultaneously hosting a full local Supabase stack. The pixel
+// test below is budgeted too (a 25s wait plus an 8s settle plus a screenshot already exceeds
+// 30s on its own, so it could only ever have passed by skipping).
+test.describe.configure({ timeout: 150_000 });
+
 test.describe('walk scene is visible (not a dark void / empty frame)', () => {
   /**
    * SPLIT OUT AND UN-SWALLOWED (#725).
@@ -87,7 +100,7 @@ test.describe('walk scene is visible (not a dark void / empty frame)', () => {
       page.locator('[data-stance]').first(),
       'the ?walk deep link never reached walk mode — the stance badge only renders ' +
         'while mode === "walk", so the player is stuck in the orbit shot (#723)'
-    ).toBeVisible({ timeout: 45_000 });
+    ).toBeVisible({ timeout: 120_000 });
   });
 
   test('street level renders lit geometry', async ({ page }) => {
