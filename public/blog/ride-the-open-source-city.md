@@ -118,8 +118,11 @@ If you'd rather have hands-on help on _your_ game, there's a paid lane too: live
 - 🎮 **[Try the engine demo](https://scripthammer.com/game/cod-skeleton)** — the bare test level, no city.
 - 🚲 **[Play the city](https://scripthammer.com/chatt/?diorama&walk)** — first person, press **B** for the bike.
 - 📦 **[Clone the engine](https://github.com/TortoiseWolfe/ScriptHammer)** — MIT, asset-free, `@/lib/cod`.
-- 📺 **[Watch me build it](https://twitch.tv/TurtleWolfe)** — live on Twitch.
+- 📺 **[Watch me build it live](https://twitch.tv/TurtleWolfe)** — on Twitch, with the replays on [YouTube](https://youtube.com/@JonathanPohlner).
 - 💳 **[See what help costs](https://scripthammer.com/pricing)** — free to Office Hours to done-for-you.
+- 📅 **[Book 15 minutes](https://calendly.com/turtlewolfe/15min-1)** — bring a screenshot of what you have in mind.
 - 🗺️ **[Read the brainstorm that started this](https://scripthammer.com/blog/playable-city-chattanooga)**.
+
+Find me everywhere: [scripthammer.com](https://scripthammer.com) · [Twitch](https://twitch.tv/TurtleWolfe) · [YouTube](https://youtube.com/@JonathanPohlner) · [X](https://twitter.com/JonPohlner) · [LinkedIn](https://linkedin.com/in/pohlner) · [GitHub](https://github.com/TortoiseWolfe)
 
 Then tell me in the comments: what's the one game in your notebook you'd build first if the boring 20% were already done?

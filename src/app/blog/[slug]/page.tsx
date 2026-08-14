@@ -129,6 +129,13 @@ async function getAuthor(id: string): Promise<Author | null> {
         displayOrder: displayOrder++,
       });
     }
+    if (authorConfig.social.youtube) {
+      socialLinks.push({
+        platform: 'youtube',
+        url: authorConfig.social.youtube,
+        displayOrder: displayOrder++,
+      });
+    }
 
     return {
       id: authorConfig.id,

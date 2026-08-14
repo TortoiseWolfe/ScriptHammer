@@ -66,6 +66,9 @@ const authorConfig = {
     twitch: process.env.NEXT_PUBLIC_AUTHOR_TWITCH
       ? `https://twitch.tv/${process.env.NEXT_PUBLIC_AUTHOR_TWITCH}`
       : '',
+    youtube: process.env.NEXT_PUBLIC_AUTHOR_YOUTUBE
+      ? `https://youtube.com/@${process.env.NEXT_PUBLIC_AUTHOR_YOUTUBE}`
+      : '',
     website: process.env.NEXT_PUBLIC_AUTHOR_WEBSITE || '',
     email: process.env.NEXT_PUBLIC_AUTHOR_EMAIL || '',
   },

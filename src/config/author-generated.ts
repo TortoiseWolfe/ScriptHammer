@@ -16,6 +16,7 @@ export const authorConfig = {
     twitter: 'https://twitter.com/JonPohlner',
     linkedin: 'https://linkedin.com/in/pohlner',
     twitch: 'https://twitch.tv/TurtleWolfe',
+    youtube: 'https://youtube.com/@JonathanPohlner',
     website: '',
     email: '',
   },

@@ -16,6 +16,7 @@ export interface AuthorSocialLinks {
   mastodon?: string;
   bluesky?: string;
   twitch?: string;
+  youtube?: string;
 }
 
 export interface AuthorPreferences {
@@ -136,6 +137,9 @@ const getAuthorSocialFromConfig = (): AuthorSocialLinks => {
   }
   if (authorConfigData.social.twitch) {
     social.twitch = authorConfigData.social.twitch;
+  }
+  if (authorConfigData.social.youtube) {
+    social.youtube = authorConfigData.social.youtube;
   }
 
   return social;
