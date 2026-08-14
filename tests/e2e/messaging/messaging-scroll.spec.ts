@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { settleFrames } from '../utils/settle';
 import {
   dismissCookieBanner,
   handleReAuthModal,
@@ -19,27 +20,6 @@ const PRIMARY_EMAIL = process.env.TEST_USER_PRIMARY_EMAIL;
 // messages — that no cleanup ever touches. See seedScrollFixture().
 const SCROLL_FIXTURE_MESSAGE_COUNT = 30;
 let scrollFixture: ScrollFixture | null = null;
-
-/**
- * Wait for UI to stabilize after navigation or interaction
- */
-async function waitForUIStability(page: Page) {
-  await page.waitForLoadState('domcontentloaded');
-  await page.waitForFunction(
-    () => {
-      return new Promise((resolve) => {
-        let stableFrames = 0;
-        const checkStability = () => {
-          stableFrames++;
-          if (stableFrames >= 3) resolve(true);
-          else requestAnimationFrame(checkStability);
-        };
-        requestAnimationFrame(checkStability);
-      });
-    },
-    { timeout: 15000 }
-  );
-}
 
 /**
  * Messaging Scroll E2E Tests
@@ -117,7 +97,7 @@ async function clickFirstConversation(page: Page): Promise<void> {
 
   // Wait for chat window to load after clicking
   await page.waitForSelector('[data-testid="chat-window"]', { timeout: 10000 });
-  await waitForUIStability(page);
+  await settleFrames(page);
 }
 
 // Helper to check if element is in viewport
@@ -269,7 +249,7 @@ test.describe('Messaging Scroll - User Story 2: Scroll Through Messages', () => 
     });
 
     // Wait for scroll to complete
-    await waitForUIStability(page);
+    await settleFrames(page);
 
     // Get input position after scroll
     const afterScrollInputBox = await messageInput.boundingBox();
@@ -312,7 +292,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
 
     const messageThread = page.locator('[data-testid="message-thread"]');
     await expect(messageThread).toBeVisible({ timeout: 30000 });
-    await waitForUIStability(page);
+    await settleFrames(page);
 
     // Scroll up more than 500px to trigger button
     await messageThread.evaluate((el) => {
@@ -320,7 +300,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
       el.dispatchEvent(new Event('scroll', { bubbles: true }));
     });
 
-    await waitForUIStability(page);
+    await settleFrames(page);
 
     const jumpButton = page.locator('[data-testid="jump-to-bottom"]');
 
@@ -388,7 +368,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
       el.dispatchEvent(new Event('scroll', { bubbles: true }));
     });
 
-    await waitForUIStability(page);
+    await settleFrames(page);
 
     const jumpButton = page.locator('[data-testid="jump-to-bottom"]');
 
@@ -405,7 +385,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
     //
     // This is what made T009 flaky, and it is not a browser quirk: the button calls
     // `scrollToBottom(true)`, i.e. `behavior: 'smooth'` (MessageThread.tsx:239-243), while
-    // `waitForUIStability` waits three animation frames — about 50 ms. A smooth scroll from
+    // `settleFrames` (then named `waitForUIStability`) waits three animation frames — about 50 ms. A smooth scroll from
     // the top of a 30-message thread takes several hundred. So the assertion measured a
     // scroll that had barely started, and failed with **2393px** remaining rather than
     // marginally over the 100px threshold.
