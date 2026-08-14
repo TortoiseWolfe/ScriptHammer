@@ -14,5 +14,11 @@
   "smtp_admin_email": "noreply@scripthammer.com",
   "smtp_sender_name": "ScriptHammer",
   "hook_custom_access_token_enabled": true,
-  "hook_custom_access_token_uri": "pg-functions://postgres/public/custom_access_token_hook"
+  "hook_custom_access_token_uri": "pg-functions://postgres/public/custom_access_token_hook",
+
+  "external_email_enabled": true,
+  "external_github_enabled": true,
+  "external_github_client_id": "Ov23liWcN7CJYepF7dFo",
+  "external_google_enabled": true,
+  "external_google_client_id": "988747852237-pqis9q1dlre6tghg5bnhugfjvk441ica.apps.googleusercontent.com"
 }

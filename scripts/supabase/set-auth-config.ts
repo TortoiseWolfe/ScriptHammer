@@ -124,6 +124,32 @@ const SECRET_RULES: SecretRule[] = [
     fields: ['security_captcha_enabled', 'security_captcha_provider'],
     harm: 'CAPTCHA enabled with no secret REJECTS EVERY SIGNUP',
   },
+  // OAuth providers (#725/#732 follow-on). The desired state carries the CLIENT IDs —
+  // public values that appear in every authorize URL the browser is redirected to, and
+  // exactly what `tests/e2e/utils/oauth-validity.ts` asserts the shape of. The SECRETS are
+  // never committed, so the same withhold rule that protects SMTP and CAPTCHA has to cover
+  // these or the guard has a hole in the shape of its own purpose.
+  //
+  // THIS MATTERS MOST FOR FORKS, which is what ScriptHammer is for. On a project that has
+  // never had the secret, applying `enabled: true` + a client id turns the provider ON with
+  // no secret behind it — every OAuth sign-in then fails at the provider, which is the #287
+  // shape (config looks configured, no human can sign in, tests green).
+  {
+    label: 'GitHub OAuth',
+    secretField: 'external_github_secret',
+    envNames: ['SUPABASE_AUTH_GITHUB_SECRET', 'GITHUB_OAUTH_SECRET'],
+    wanted: (d) => d.external_github_enabled === true,
+    fields: ['external_github_enabled', 'external_github_client_id'],
+    harm: 'GitHub OAuth enabled with no client secret — every "Sign in with GitHub" fails at GitHub',
+  },
+  {
+    label: 'Google OAuth',
+    secretField: 'external_google_secret',
+    envNames: ['SUPABASE_AUTH_GOOGLE_SECRET', 'GOOGLE_OAUTH_SECRET'],
+    wanted: (d) => d.external_google_enabled === true,
+    fields: ['external_google_enabled', 'external_google_client_id'],
+    harm: 'Google OAuth enabled with no client secret — every "Sign in with Google" fails at Google',
+  },
 ];
 
 type CliArgs = {

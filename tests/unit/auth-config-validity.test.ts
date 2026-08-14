@@ -53,4 +53,75 @@ describe('supabase auth-config.json — deployed-config validity (#288)', () => 
       ).toMatch(/^https?:\/\//);
     }
   });
+
+  /**
+   * OAUTH COVERAGE — the reason these keys exist in the desired state at all.
+   *
+   * `oauth-csrf.spec.ts` is the only thing that has ever asserted prod's OAuth client ids
+   * are real rather than placeholders, and it does so from a browser against the HOSTED
+   * project. The CI plan moves it to a weekly `@hosted` lane so PRs can run against a local
+   * Supabase — which would delete that coverage, because `set-auth-config.ts` compares only
+   * `Object.keys(desired)` and this file carried NO `external_*` keys at all.
+   *
+   * So the ids move into the desired state (they are public — every authorize URL carries
+   * them), the daily drift gate starts covering them, and these cases stop a placeholder
+   * being committed here in the first place. The shapes deliberately match
+   * `tests/e2e/utils/oauth-validity.ts`, so the local guard and the browser guard cannot
+   * drift apart in what they consider a real id.
+   */
+  describe('OAuth providers (the #287 class: configured-looking, unusable)', () => {
+    it('the providers the app offers are enabled', () => {
+      // If the app stops offering one, delete its row here AND its client id above —
+      // do not leave an enabled provider with no id, which is the broken middle state.
+      expect(config.external_github_enabled).toBe(true);
+      expect(config.external_google_enabled).toBe(true);
+      expect(config.external_email_enabled).toBe(true);
+    });
+
+    it('every enabled provider carries a client id', () => {
+      for (const p of ['github', 'google'] as const) {
+        if (config[`external_${p}_enabled`] !== true) continue;
+        const id = config[`external_${p}_client_id`];
+        expect(
+          typeof id === 'string' && id.length > 0,
+          `external_${p}_enabled is true but external_${p}_client_id is missing — ` +
+            'the provider would be advertised and fail at the provider'
+        ).toBe(true);
+      }
+    });
+
+    it('no client id is a placeholder (#287 shipped exactly this)', () => {
+      for (const p of ['github', 'google'] as const) {
+        const id = String(config[`external_${p}_client_id`] ?? '');
+        expect(
+          id,
+          `external_${p}_client_id "${id}" looks like an unconfigured placeholder`
+        ).not.toMatch(
+          /^(placeholder|changeme|your[-_]|example|test[-_]?client)/i
+        );
+      }
+    });
+
+    it('client ids are provider-shaped — same patterns oauth-validity.ts enforces', () => {
+      expect(
+        String(config.external_google_client_id),
+        'Google client_id must be a real *.apps.googleusercontent.com id'
+      ).toMatch(/\.apps\.googleusercontent\.com$/);
+      expect(
+        String(config.external_github_client_id),
+        'GitHub client_id must be a real OAuth/App client id'
+      ).toMatch(/^(Iv1\.[0-9a-f]+|Ov23[A-Za-z0-9]+|[0-9a-f]{16,})$/i);
+    });
+
+    it('no client SECRET is committed here — only ids', () => {
+      // The withhold rules in set-auth-config.ts source secrets from env. A secret landing
+      // in this file would be committed to a public repo.
+      for (const k of Object.keys(config)) {
+        expect(
+          k,
+          `"${k}" looks like a secret and must not live in this file`
+        ).not.toMatch(/secret|_pass$/i);
+      }
+    });
+  });
 });
