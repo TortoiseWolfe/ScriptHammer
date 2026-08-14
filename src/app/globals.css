@@ -1,8 +1,49 @@
 @import 'tailwindcss';
+/* Vendored @font-face declarations (#730). GENERATED — see
+ * scripts/fonts/vendor-google-fonts.mjs. These are next/font/google's own output copied
+ * verbatim and repointed at src/fonts/, so the BUILD no longer fetches from
+ * fonts.gstatic.com. That fetch failed twice in twelve hours: once killing a production
+ * deploy, once building an E2E shard with 0 tests. */
+@import './fonts.generated.css';
 @import '../styles/colorblind-patterns.css';
 @import '../styles/prism-vscode-dark.css';
 @import '../styles/mobile-first-utilities.css';
 @import '../styles/reduced-motion.css';
+
+/* The variables next/font used to emit via its `.variable` classes, now declared directly
+ * (#730). VALUES COPIED EXACTLY from the generated CSS — including each "* Fallback"
+ * family, which is not decorative: those faces carry `size-adjust` / `ascent-override`
+ * metrics that hold the layout still while the real face loads. Dropping them would
+ * reintroduce layout shift that nothing in CI measures.
+ *
+ * On :root rather than a class on <html>, because #377 established these must be visible to
+ * both <html> and <body> — when they sat on <body> the type stack silently fell through to
+ * ui-sans-serif while the fonts downloaded perfectly. */
+:root {
+  --font-archivo:
+    'Archivo', 'Archivo Fallback', system-ui, -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-archivo-black:
+    'Archivo Black', 'Archivo Black Fallback', system-ui, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+  --font-jetbrains:
+    'JetBrains Mono', 'JetBrains Mono Fallback', 'SF Mono', Monaco,
+    'Inconsolata', 'Fira Mono', 'Droid Sans Mono', 'Source Code Pro', monospace;
+}
+
+/* /pricing only. next/font generated a `.className` per family and the page applies them to
+ * 19 elements; these replace them one-for-one so no call site changes. Scoped as classes,
+ * not variables, because that is exactly what they replace — in particular `--font-display`
+ * is already Archivo Black globally, and the pricing page must NOT redefine it. */
+.sh-font-special-elite {
+  font-family: 'Special Elite', 'Special Elite Fallback';
+}
+.sh-font-plex-sans {
+  font-family: 'IBM Plex Sans', 'IBM Plex Sans Fallback';
+}
+.sh-font-plex-mono {
+  font-family: 'IBM Plex Mono', 'IBM Plex Mono Fallback';
+}
 
 @theme {
   /* Mobile-first breakpoints (PRP-017) */
