@@ -25,9 +25,25 @@
  * identities and React's real child-before-parent effect ordering.
  *
  * WHY NOT THE E2E THAT ALREADY EXISTS. `tests/e2e/twin-walk-visible.spec.ts` drives this
- * exact URL — and `test.skip`s on software GL (its :58-66). CI runners are software-rendered,
- * so it has never run there, and the whole E2E workflow sits behind a budget gate besides.
- * This file needs no GPU and no backend, so it runs in `Test (20.x)`, which is required.
+ * exact URL — and `test.skip`s on software GL. CI runners are software-rendered, so it has
+ * never run there, and the whole E2E workflow sits behind a budget gate besides. This file
+ * needs no GPU and no backend, so it runs in `Test (20.x)`, which is required.
+ *
+ * WHAT THIS FILE DOES **NOT** COVER — read before trusting a green run.
+ *
+ * It proves walk is reachable GIVEN the three handovers fire. It cannot prove they fire,
+ * because it fires them itself: `@/world/TwinWorld` is mocked, and `arrive()` calls
+ * `onTerrainMesh` / `onBuildingsMesh` / `onGroundReady` directly. The PRODUCER half —
+ * `Buildings.tsx` / `Terrain.tsx` → `onMeshReady` → `WideCity.tsx` → `TwinWorld.tsx` →
+ * `TwinCanvas` — has no coverage here, and none anywhere else in a required check either.
+ * A type-clean regression there kills walk mode with the exact #723 symptom while all eight
+ * cases below stay green.
+ *
+ * That gap is tracked in #725. Closing it is real work rather than another case in this
+ * file: `TwinWorld` and `WideCity` load site JSON and a `TextureLoader` drape, so running
+ * the real producer under jsdom needs a second, larger harness. Do not paper over it by
+ * loosening the mocks here — that would trade a test that proves something narrow and true
+ * for one that proves something broad and shaky.
  */
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
