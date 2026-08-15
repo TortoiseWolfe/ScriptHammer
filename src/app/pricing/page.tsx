@@ -227,6 +227,22 @@ const DEVELOPERS: Product[] = [
     comingSoon: true,
   },
   {
+    sku: 'prd-office-hours',
+    name: 'Office Hours',
+    tagline: 'Bring a goal. Leave with something running.',
+    price: '$99',
+    billing: 'One-time',
+    features: [
+      '90-minute live 1:1 session',
+      'Bring a goal, leave with something running',
+      'Screen-share, real code, your questions',
+      'Recording is yours to keep',
+    ],
+    cta: 'Select',
+    href: '',
+    primary: true,
+  },
+  {
     sku: 'prd-field-study',
     name: 'Field Study',
     tagline: 'Your first client site, built with you, on stream.',

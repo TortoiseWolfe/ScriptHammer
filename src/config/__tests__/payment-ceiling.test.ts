@@ -72,9 +72,9 @@ function seededProducts(): SeededProduct[] {
     })
     .filter((r): r is SeededProduct => r !== null);
 
-  if (rows.length < 10) {
+  if (rows.length < 11) {
     throw new Error(
-      `Parsed only ${rows.length} seeded products; the migration seeds 10. ` +
+      `Parsed only ${rows.length} seeded products; the migration seeds 11. ` +
         'The seed format changed and this parser is no longer reading it — ' +
         'fix the parser rather than the expectation, or these tests verify nothing.'
     );
@@ -117,7 +117,7 @@ describe('payment ceiling', () => {
     // Guards the guard. If the seed format drifts, seededProducts() throws — but
     // only if something calls it, and only if the count check is real.
     const rows = seededProducts();
-    expect(rows).toHaveLength(10);
+    expect(rows).toHaveLength(11);
     expect(rows.map((r) => r.sku)).toContain('svc-site');
     expect(rows.find((r) => r.sku === 'svc-site')?.amount).toBe(350000);
     // The three recurring SKUs ship inactive until they have provider ids.
