@@ -14,6 +14,9 @@ const body = { className: 'sh-font-plex-sans' };
 const mono = { className: 'sh-font-plex-mono' };
 
 export const metadata: Metadata = {
+  // This route claims its own URL (#668).
+  alternates: { canonical: '/pricing/' },
+  openGraph: { url: '/pricing/' },
   title: 'Pricing - ScriptHammer',
   description:
     "We don't sell business portals without running one. Fixed-scope, fixed-price builds for local businesses, and productized packs for developers.",

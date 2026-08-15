@@ -102,6 +102,14 @@ jobs:
       - name: Verify three.js is off non-3D routes (#291)
         run: node scripts/check-first-load-budget.mjs
 
+      # Runs against the EXPORT, not the source (#668). Next inherits
+      # `alternates.canonical` down the route tree, and that inheritance is the
+      # bug — 83 of 100 routes once shipped the homepage's canonical, each asking
+      # to be dropped from the index in its own favour. Only the emitted HTML can
+      # answer what a page actually claims.
+      - name: Verify no route canonicals to a different page (#668)
+        run: node scripts/ci/check-canonicals.mjs out
+
       - name: Build Storybook
         run: pnpm run build-storybook
 

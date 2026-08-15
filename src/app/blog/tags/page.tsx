@@ -5,9 +5,12 @@ import blogData from '@/lib/blog/blog-data.json';
 import { getProjectConfig } from '@/config/project.config';
 
 export const metadata: Metadata = {
+  // This route claims its own URL (#668).
+  alternates: { canonical: '/blog/tags/' },
   title: 'Blog Tags | ScriptHammer',
   description: 'Browse all blog post tags and topics',
   openGraph: {
+    url: '/blog/tags/',
     title: 'Blog Tags',
     description: 'Browse all blog post tags and topics',
     type: 'website',

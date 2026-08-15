@@ -303,6 +303,9 @@ export default async function SEODashboardPage() {
 }
 
 export const metadata = {
+  // An internal dashboard that looks like a post but is not (#668).
+  // Nothing here should rank.
+  robots: { index: false, follow: false },
   title: 'SEO Dashboard - Blog',
   description: 'Analyze and improve SEO performance of your blog posts',
 };

@@ -5,6 +5,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 export const metadata: Metadata = {
+  // This route claims its own URL (#668).
+  alternates: { canonical: '/credits/' },
+  openGraph: { url: '/credits/' },
   title: 'Credits & Model Licensing - ScriptHammer',
   description:
     'Every 3D model in the Chattanooga digital twin, its author, and a link to the original — plus what the 3D Warehouse license does and does not permit.',

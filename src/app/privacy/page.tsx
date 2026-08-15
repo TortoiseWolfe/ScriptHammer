@@ -3,6 +3,9 @@ import { Metadata } from 'next';
 import { PrivacyActions } from '@/components/privacy/PrivacyActions';
 
 export const metadata: Metadata = {
+  // This route claims its own URL (#668).
+  alternates: { canonical: '/privacy/' },
+  openGraph: { url: '/privacy/' },
   title: 'Privacy Policy - ScriptHammer',
   description:
     'Learn how ScriptHammer protects your privacy and handles your personal information.',

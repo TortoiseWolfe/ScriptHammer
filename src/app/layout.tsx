@@ -61,10 +61,20 @@ export const viewport: Viewport = {
 
 // Generate comprehensive metadata using the utility function
 export const metadata: Metadata = {
+  // NO `path` HERE, DELIBERATELY (#668).
+  //
+  // Metadata set on the root layout is inherited by every route that does not
+  // override it, and `alternates.canonical` is no exception. Passing `path: '/'`
+  // here was correct for the root document and catastrophic for everything under
+  // it: 83 of 100 routes shipped `<link rel="canonical" href="https://scripthammer.com/">`,
+  // which asks Google to index the homepage *instead of* that page. `/pricing`,
+  // `/docs`, `/blog` and 80 others were each requesting their own removal.
+  //
+  // The homepage now claims `/` in `src/app/page.tsx`, where it belongs. Routes
+  // that claim nothing emit no canonical, which is the safe default.
   ...generateMetadata({
     title: projectConfig.projectName,
     description: projectConfig.projectDescription,
-    path: '/',
     tags: ['Next.js', 'React', 'TypeScript', 'PWA', 'DaisyUI', 'TailwindCSS'],
   }),
   manifest: projectConfig.manifestPath,

@@ -25,6 +25,9 @@ export async function generateMetadata({
   return {
     title: doc ? `${doc.title} - ScriptHammer` : 'Documentation - ScriptHammer',
     description: doc?.hint,
+    // Each doc claims its own URL (#668).
+    alternates: { canonical: `/docs/${slug}/` },
+    openGraph: { url: `/docs/${slug}/` },
   };
 }
 

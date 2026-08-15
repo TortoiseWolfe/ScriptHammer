@@ -30,12 +30,18 @@ export async function generateMetadata({
       (t) => t.toLowerCase() === decodedTag.toLowerCase()
     ) || decodedTag;
 
+  // The listing claims its own URL (#668). `tag` is already encoded as it appears
+  // in the route, so it is reused rather than re-encoded.
+  const tagPath = `/blog/tags/${tag}/`;
+
   return {
     title: `Posts tagged "${properTag}" | ScriptHammer Blog`,
     description: `Browse all blog posts tagged with ${properTag}`,
+    alternates: { canonical: tagPath },
     openGraph: {
       title: `Posts tagged "${properTag}"`,
       description: `Browse all blog posts tagged with ${properTag}`,
+      url: tagPath,
       type: 'website',
     },
   };
