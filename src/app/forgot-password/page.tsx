@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
+  // Not for the index: account/auth surfaces have nothing to rank and
+  // should not be crawled (#668). No canonical — noindex is the claim.
+  robots: { index: false, follow: false },
   title: 'Reset Password',
   description: 'Reset your password',
 };

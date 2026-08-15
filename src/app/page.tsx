@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LayeredScriptHammerLogo } from '@/components/atomic/SpinningLogo';
 import Icon from '@/components/atomic/Icon';
@@ -6,6 +7,18 @@ import { detectedConfig } from '@/config/project-detected';
 import { CURATED_THEMES, THEME_COUNT } from '@/config/themes';
 import { countWireframes } from '@/config/wireframes';
 import pkg from '../../package.json';
+
+/**
+ * The homepage claims `/` HERE, not in the root layout (#668).
+ *
+ * The root layout used to claim it, and App Router inherited that claim down the
+ * whole tree — so every page declared the homepage as its canonical. Owning the
+ * claim at the route it describes is what makes that impossible.
+ */
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+  openGraph: { url: '/' },
+};
 
 // ── The 2a "Machine Shop" landing page (#379). ──────────────────────────────
 //

@@ -4,6 +4,22 @@ import { projectConfig } from '@/config/project.config';
 export interface MetadataOptions {
   title?: string;
   description?: string;
+  /**
+   * This route's own path, e.g. `/pricing/`. Include the trailing slash —
+   * `next.config.ts` sets `trailingSlash: true`, so the slash-less form 301s.
+   *
+   * OMIT IT AND NO CANONICAL IS EMITTED, WHICH IS THE SAFE DEFAULT (#668).
+   *
+   * It used to default to `'/'`, which silently meant "I am the homepage". Next's
+   * App Router inherits `alternates.canonical` down the whole route tree, so the
+   * root layout's `'/'` became every page's canonical: **83 of 100 routes told
+   * Google to index the front page instead of themselves**, and `og:url` with it,
+   * so sharing /pricing in Slack unfurled as the homepage.
+   *
+   * A missing canonical is harmless — a search engine treats the URL it fetched as
+   * canonical. A canonical pointing somewhere else is an instruction to drop the
+   * page. So absence is the correct default and presence must be deliberate.
+   */
   path?: string;
   image?: string;
   type?: 'website' | 'article' | 'profile';
@@ -22,7 +38,7 @@ export function generateMetadata(options: MetadataOptions = {}): Metadata {
   const {
     title = projectConfig.projectName,
     description = projectConfig.projectDescription,
-    path = '/',
+    path,
     image = '/opengraph-image.png',
     type = 'website',
     publishedTime,
@@ -37,7 +53,9 @@ export function generateMetadata(options: MetadataOptions = {}): Metadata {
       ? `${title} - Modern Web Starter`
       : `${title} | ${projectConfig.projectName}`;
 
-  const canonicalUrl = `${projectConfig.deployUrl}${path}`;
+  // Undefined when the caller did not claim a path — see MetadataOptions.path.
+  const canonicalUrl =
+    path === undefined ? undefined : `${projectConfig.deployUrl}${path}`;
 
   // For Open Graph images, we need absolute URLs
   let imageUrl: string;
@@ -66,13 +84,14 @@ export function generateMetadata(options: MetadataOptions = {}): Metadata {
       telephone: false,
     },
     metadataBase: new URL(projectConfig.deployUrl),
-    alternates: {
-      canonical: canonicalUrl,
-    },
+    // Both keys are omitted entirely when there is no path, rather than set to
+    // undefined: Next serialises a present-but-undefined `alternates` into the
+    // inherited value, which would defeat the whole point.
+    ...(canonicalUrl ? { alternates: { canonical: canonicalUrl } } : {}),
     openGraph: {
       title: fullTitle,
       description,
-      url: canonicalUrl,
+      ...(canonicalUrl ? { url: canonicalUrl } : {}),
       siteName: projectConfig.projectName,
       images: [
         {

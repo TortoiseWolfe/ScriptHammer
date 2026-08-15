@@ -3,6 +3,9 @@ import { Metadata } from 'next';
 import { CookieActions } from '@/components/privacy/CookieActions';
 
 export const metadata: Metadata = {
+  // This route claims its own URL (#668).
+  alternates: { canonical: '/cookies/' },
+  openGraph: { url: '/cookies/' },
   title: 'Cookie Policy - ScriptHammer',
   description:
     'Learn how ScriptHammer uses cookies and how you can manage your cookie preferences.',

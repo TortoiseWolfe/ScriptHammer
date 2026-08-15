@@ -2,11 +2,14 @@ import type { Metadata } from 'next';
 import { ContactForm } from '@/components/forms/ContactForm';
 
 export const metadata: Metadata = {
+  // This route claims its own URL (#668).
+  alternates: { canonical: '/contact/' },
   title: 'Contact Us | ScriptHammer',
   description:
     "Get in touch with the ScriptHammer team. We'd love to hear from you!",
   keywords: ['contact', 'support', 'help', 'feedback', 'ScriptHammer'],
   openGraph: {
+    url: '/contact/',
     title: 'Contact Us | ScriptHammer',
     description: 'Get in touch with the ScriptHammer team',
     type: 'website',

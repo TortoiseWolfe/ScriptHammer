@@ -15,6 +15,9 @@ import { DOCS, SECTIONS } from '@/lib/docs/registry';
 // 13 hardcoded repo URLs → one detectedConfig.projectUrl base.
 
 export const metadata: Metadata = {
+  // This route claims its own URL (#668).
+  alternates: { canonical: '/docs/' },
+  openGraph: { url: '/docs/' },
   title: 'Documentation - ScriptHammer',
   description: 'Documentation index for ScriptHammer — configure, build, ship.',
 };

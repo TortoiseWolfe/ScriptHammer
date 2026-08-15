@@ -220,4 +220,7 @@ export default async function BlogPage() {
 export const metadata = {
   title: 'Blog',
   description: 'Read our latest blog posts and insights',
+  // This route claims its own URL (#668).
+  alternates: { canonical: '/blog/' },
+  openGraph: { url: '/blog/' },
 };
