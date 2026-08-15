@@ -72,7 +72,7 @@ This file provides guidance for the Author terminal working in the docs folder.
 | ----------------------------- | ----------------------------------------------------- |
 | `../features/*/*/wireframes/` | SVG wireframes (per-feature; viewer at `/wireframes`) |
 | `README.md`                   | Project overview (root level)                         |
-| `CHANGELOG.md`                | Version history                                       |
+| `project/CHANGELOG.md`        | Version history (the only one — #569)                 |
 
 ## Skills
 

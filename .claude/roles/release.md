@@ -49,7 +49,7 @@ Version coordination, changelog maintenance, and release notes.
 | Skill | Purpose |
 |-------|---------|
 | `/release-prep` | Pre-release checklist |
-| `/changelog-update` | Update CHANGELOG.md |
+| `/changelog-update` | Update `docs/project/CHANGELOG.md` |
 | `/release-notes` | Generate release notes |
 | `/commit` | Lint + commit changes |
 | `/ship` | Commit, merge, cleanup |
@@ -57,7 +57,7 @@ Version coordination, changelog maintenance, and release notes.
 **Responsibilities:**
 
 1. **Version Coordination** - Semantic versioning decisions
-2. **Changelog Maintenance** - Keep CHANGELOG.md current
+2. **Changelog Maintenance** - Keep `docs/project/CHANGELOG.md` current
 3. **Release Notes** - Summarize changes for users
 4. **Tag Management** - Coordinate git tags with DevOps
 5. **Release Checklist** - Verify all pre-release criteria met
@@ -70,10 +70,24 @@ Development → Release Prep → Changelog → Tag → Deploy
   DevOps      ReleaseManager  Author   DevOps  DockerCaptain
 ```
 
+### Which changelog
+
+**`docs/project/CHANGELOG.md`, and there is only one.** This used to be ambiguous: a second
+`CHANGELOG.md` sat at the repo root with different content and a contradictory history — it
+dated 0.1.0 to 2026-01-13 while the canonical file dated it 2025-09-14 — and every reference
+in this file said "CHANGELOG.md" unqualified. Whichever an agent opened first won, which is a
+coin flip in a release process (#569).
+
+The root file was not a stale copy. It was the **planning-factory / wireframe-pipeline**
+changelog — SpecKit, tmux roles, RFCs, validator rules — a different subsystem with its own
+history, which is why merging it into a semver changelog would have been wrong. It now lives
+at `docs/project/PLANNING-FACTORY-CHANGELOG.md` as an archive of a retired pipeline, and
+`scripts/__tests__/single-changelog.test.js` fails if a root `CHANGELOG.md` reappears.
+
 ### Pre-Release Checklist
 
 - [ ] All tests passing
-- [ ] CHANGELOG.md updated
+- [ ] `docs/project/CHANGELOG.md` updated (the ONLY changelog — see below)
 - [ ] Version bumped appropriately
 - [ ] No uncommitted changes
 - [ ] Docker images built and scanned
