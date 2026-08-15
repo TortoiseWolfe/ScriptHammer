@@ -22,6 +22,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { settleFrames } from '../utils/settle';
 import {
   seedIsolatedConversation,
   deleteIsolatedConversation,
@@ -39,28 +40,6 @@ test.describe.configure({ mode: 'parallel' });
  * load. seedIsolatedConversation bulk-inserts `iso-msg-N` placeholder rows.
  */
 const SEEDED_MESSAGE_COUNT = 150;
-
-/**
- * Wait for UI to stabilize after navigation or interaction.
- * Mirrors the original spec's frame-stability gate.
- */
-async function waitForUIStability(page: import('@playwright/test').Page) {
-  await page.waitForLoadState('domcontentloaded');
-  await page.waitForFunction(
-    () => {
-      return new Promise((resolve) => {
-        let stableFrames = 0;
-        const checkStability = () => {
-          stableFrames++;
-          if (stableFrames >= 3) resolve(true);
-          else requestAnimationFrame(checkStability);
-        };
-        requestAnimationFrame(checkStability);
-      });
-    },
-    { timeout: 15000 }
-  );
-}
 
 /**
  * Assert the isolated conversation is fully loaded: message-thread mounted and
@@ -112,7 +91,7 @@ test.describe('Virtual Scrolling Performance', () => {
       await expectConversationLoaded(viewer);
       // Basic performance check — large-history page should load + stabilize
       // without errors.
-      await waitForUIStability(viewer.page);
+      await settleFrames(viewer.page);
     } finally {
       await viewer.close();
     }
@@ -123,7 +102,7 @@ test.describe('Virtual Scrolling Performance', () => {
     try {
       await expectConversationLoaded(viewer);
       // Wait for initial messages to load and stabilize.
-      await waitForUIStability(viewer.page);
+      await settleFrames(viewer.page);
     } finally {
       await viewer.close();
     }
@@ -142,7 +121,7 @@ test.describe('Virtual Scrolling Performance', () => {
 
       if (jumpVisible) {
         await jumpButton.click();
-        await waitForUIStability(viewer.page);
+        await settleFrames(viewer.page);
       }
     } finally {
       await viewer.close();
@@ -156,7 +135,7 @@ test.describe('Virtual Scrolling Performance', () => {
     try {
       await expectConversationLoaded(viewer);
       // Basic scroll test.
-      await waitForUIStability(viewer.page);
+      await settleFrames(viewer.page);
     } finally {
       await viewer.close();
     }
@@ -169,7 +148,7 @@ test.describe('Virtual Scrolling Performance', () => {
     try {
       await expectConversationLoaded(viewer);
       // Basic performance check.
-      await waitForUIStability(viewer.page);
+      await settleFrames(viewer.page);
     } finally {
       await viewer.close();
     }
@@ -204,7 +183,7 @@ test.describe('Keyboard Navigation', () => {
       await viewer.page.keyboard.press('ArrowDown');
       await viewer.page.keyboard.press('ArrowUp');
 
-      await waitForUIStability(viewer.page);
+      await settleFrames(viewer.page);
     } finally {
       await viewer.close();
     }
@@ -217,7 +196,7 @@ test.describe('Keyboard Navigation', () => {
 
       // Test tab navigation.
       await viewer.page.keyboard.press('Tab');
-      await waitForUIStability(viewer.page);
+      await settleFrames(viewer.page);
     } finally {
       await viewer.close();
     }
@@ -241,7 +220,7 @@ test.describe('Scroll Restoration', () => {
     const viewer = await openAsViewer(browser, fixture!);
     try {
       await expectConversationLoaded(viewer);
-      await waitForUIStability(viewer.page);
+      await settleFrames(viewer.page);
     } finally {
       await viewer.close();
     }
@@ -251,7 +230,7 @@ test.describe('Scroll Restoration', () => {
     const viewer = await openAsViewer(browser, fixture!);
     try {
       await expectConversationLoaded(viewer);
-      await waitForUIStability(viewer.page);
+      await settleFrames(viewer.page);
     } finally {
       await viewer.close();
     }

@@ -18,6 +18,7 @@
  */
 
 import { test, expect, type Page, type Browser } from '@playwright/test';
+import { settleFrames } from '../utils/settle';
 import {
   seedIsolatedConversation,
   deleteIsolatedConversation,
@@ -28,27 +29,6 @@ import {
 // Per-test isolation removes the shared-user data race that forced serial mode,
 // and means a real account deletion only ever destroys this test's throwaway user.
 test.describe.configure({ mode: 'parallel' });
-
-/**
- * Wait for UI to stabilize after navigation or interaction.
- */
-async function waitForUIStability(page: Page) {
-  await page.waitForLoadState('domcontentloaded');
-  await page.waitForFunction(
-    () => {
-      return new Promise((resolve) => {
-        let stableFrames = 0;
-        const checkStability = () => {
-          stableFrames++;
-          if (stableFrames >= 3) resolve(true);
-          else requestAnimationFrame(checkStability);
-        };
-        requestAnimationFrame(checkStability);
-      });
-    },
-    { timeout: 15000 }
-  );
-}
 
 /** A browser context opened on /account authenticated as the isolated viewer. */
 interface OpenedAccount {
@@ -115,7 +95,7 @@ async function openAccountAsViewer(
     state: 'visible',
     timeout: 30000,
   });
-  await waitForUIStability(page);
+  await settleFrames(page);
   await dismissCookieBanner(page);
 
   return { page, close: () => context.close() };
@@ -370,7 +350,7 @@ test.describe('GDPR Account Deletion', () => {
 
       const modal = page.getByRole('dialog');
       await expect(modal).toBeVisible();
-      await waitForUIStability(page);
+      await settleFrames(page);
 
       // Use ID selector for the confirmation input (more reliable than label)
       const confirmInput = page.locator('#confirmation-input');
@@ -439,7 +419,7 @@ test.describe('GDPR Account Deletion', () => {
 
       const modal = page.getByRole('dialog');
       await expect(modal).toBeVisible();
-      await waitForUIStability(page);
+      await settleFrames(page);
 
       const confirmInput = page.locator('#confirmation-input');
       const confirmButton = modal.getByRole('button', {
@@ -478,7 +458,7 @@ test.describe('GDPR Account Deletion', () => {
 
       const modal = page.getByRole('dialog');
       await expect(modal).toBeVisible();
-      await waitForUIStability(page);
+      await settleFrames(page);
 
       const confirmInput = page.locator('#confirmation-input');
       const confirmButton = modal.getByRole('button', {
@@ -527,7 +507,7 @@ test.describe('GDPR Account Deletion', () => {
 
       const modal = page.getByRole('dialog');
       await expect(modal).toBeVisible();
-      await waitForUIStability(page);
+      await settleFrames(page);
 
       // Modal should have an accessible name (via aria-labelledby OR aria-label OR title)
       const hasAriaLabelledBy =

@@ -18,6 +18,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { settleFrames } from '../utils/settle';
 import {
   fillMessageInput,
   scrollThreadToBottom,
@@ -47,27 +48,6 @@ function forwardConsole(page: Page, label = 'browser') {
       console.log(`[${label} console.${msg.type()}] ${text}`);
     }
   });
-}
-
-/**
- * Wait for the UI to stabilize after navigation or interaction (3 stable frames).
- */
-async function waitForUIStability(page: Page) {
-  await page.waitForLoadState('domcontentloaded');
-  await page.waitForFunction(
-    () => {
-      return new Promise((resolve) => {
-        let stableFrames = 0;
-        const checkStability = () => {
-          stableFrames++;
-          if (stableFrames >= 3) resolve(true);
-          else requestAnimationFrame(checkStability);
-        };
-        requestAnimationFrame(checkStability);
-      });
-    },
-    { timeout: 15000 }
-  );
 }
 
 /**
@@ -123,7 +103,7 @@ async function sendMessage(page: Page, message: string) {
   await messageElement.scrollIntoViewIfNeeded();
 
   // Wait for UI to stabilize after sending
-  await waitForUIStability(page);
+  await settleFrames(page);
 
   // Small additional wait for React to fully render Edit/Delete buttons
   // (buttons depend on isOwn and timestamp checks)
@@ -213,7 +193,7 @@ test.describe('Message Editing', () => {
       await expect(editTextarea).not.toBeVisible({ timeout: 15000 });
 
       // Wait for UI to stabilize after save (state update + re-render)
-      await waitForUIStability(viewer.page);
+      await settleFrames(viewer.page);
 
       // Find the message bubble with edited content (updates in place)
       const editedBubble = getMessageBubble(viewer.page, editedMessage);
@@ -372,7 +352,7 @@ test.describe('Message Deletion', () => {
       await expect(modal).not.toBeVisible({ timeout: 10000 });
 
       // Wait for UI to stabilize after deletion
-      await waitForUIStability(viewer.page);
+      await settleFrames(viewer.page);
 
       // Either the message is removed OR replaced with "[Message deleted]"
       const messageGone = viewer.page.getByText(messageToDelete);
@@ -464,7 +444,7 @@ test.describe('Message Deletion', () => {
       await expect(modal).not.toBeVisible({ timeout: 10000 });
 
       // Wait for UI to stabilize after deletion
-      await waitForUIStability(viewer.page);
+      await settleFrames(viewer.page);
 
       // Either the message is removed OR replaced with "[Message deleted]"
       const messageGone = viewer.page.getByText(messageToDelete);
@@ -762,7 +742,7 @@ test.describe('Accessibility', () => {
         name: /Delete Message/i,
       });
       await expect(modal).toBeVisible();
-      await waitForUIStability(viewer.page);
+      await settleFrames(viewer.page);
 
       // Button accessible names are "Cancel deletion" and "Confirm deletion"
       const cancelButton = modal.getByRole('button', {

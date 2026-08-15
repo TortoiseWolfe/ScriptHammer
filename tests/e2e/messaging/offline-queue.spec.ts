@@ -20,6 +20,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { settleFrames } from '../utils/settle';
 import {
   seedIsolatedConversation,
   deleteIsolatedConversation,
@@ -36,27 +37,6 @@ import {
 
 // Per-test isolation removes the shared-user data race that forced serial mode.
 test.describe.configure({ mode: 'parallel' });
-
-/**
- * Wait for UI to stabilize after navigation or interaction.
- */
-async function waitForUIStability(page: Page) {
-  await page.waitForLoadState('domcontentloaded');
-  await page.waitForFunction(
-    () => {
-      return new Promise((resolve) => {
-        let stableFrames = 0;
-        const checkStability = () => {
-          stableFrames++;
-          if (stableFrames >= 3) resolve(true);
-          else requestAnimationFrame(checkStability);
-        };
-        requestAnimationFrame(checkStability);
-      });
-    },
-    { timeout: 15000 }
-  );
-}
 
 /**
  * Wait for conversation data to be cached (required for offline send).
@@ -215,7 +195,7 @@ test.describe('Offline Message Queue', () => {
         await messageInput.fill(msg);
         await sendButton.click();
         // Wait for UI to stabilize between sends
-        await waitForUIStability(viewer.page);
+        await settleFrames(viewer.page);
       }
 
       // ===== STEP 4: Verify all 3 messages are queued =====

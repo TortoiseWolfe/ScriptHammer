@@ -1,4 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
+import { settleFrames } from '../utils/settle';
 import {
   dismissCookieBanner,
   handleReAuthModal,
@@ -19,27 +20,6 @@ const PRIMARY_EMAIL = process.env.TEST_USER_PRIMARY_EMAIL;
 // messages — that no cleanup ever touches. See seedScrollFixture().
 const SCROLL_FIXTURE_MESSAGE_COUNT = 30;
 let scrollFixture: ScrollFixture | null = null;
-
-/**
- * Wait for UI to stabilize after navigation or interaction
- */
-async function waitForUIStability(page: Page) {
-  await page.waitForLoadState('domcontentloaded');
-  await page.waitForFunction(
-    () => {
-      return new Promise((resolve) => {
-        let stableFrames = 0;
-        const checkStability = () => {
-          stableFrames++;
-          if (stableFrames >= 3) resolve(true);
-          else requestAnimationFrame(checkStability);
-        };
-        requestAnimationFrame(checkStability);
-      });
-    },
-    { timeout: 15000 }
-  );
-}
 
 /**
  * Messaging Scroll E2E Tests
@@ -117,7 +97,7 @@ async function clickFirstConversation(page: Page): Promise<void> {
 
   // Wait for chat window to load after clicking
   await page.waitForSelector('[data-testid="chat-window"]', { timeout: 10000 });
-  await waitForUIStability(page);
+  await settleFrames(page);
 }
 
 // Helper to check if element is in viewport
@@ -269,7 +249,7 @@ test.describe('Messaging Scroll - User Story 2: Scroll Through Messages', () => 
     });
 
     // Wait for scroll to complete
-    await waitForUIStability(page);
+    await settleFrames(page);
 
     // Get input position after scroll
     const afterScrollInputBox = await messageInput.boundingBox();
@@ -312,7 +292,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
 
     const messageThread = page.locator('[data-testid="message-thread"]');
     await expect(messageThread).toBeVisible({ timeout: 30000 });
-    await waitForUIStability(page);
+    await settleFrames(page);
 
     // Scroll up more than 500px to trigger button
     await messageThread.evaluate((el) => {
@@ -320,7 +300,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
       el.dispatchEvent(new Event('scroll', { bubbles: true }));
     });
 
-    await waitForUIStability(page);
+    await settleFrames(page);
 
     const jumpButton = page.locator('[data-testid="jump-to-bottom"]');
 
@@ -388,15 +368,51 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
       el.dispatchEvent(new Event('scroll', { bubbles: true }));
     });
 
-    await waitForUIStability(page);
+    await settleFrames(page);
 
     const jumpButton = page.locator('[data-testid="jump-to-bottom"]');
+
+    // WAIT THE WAY T007/T008 DOES, WHICH IS WHY T007/T008 DOES NOT FLAKE.
+    //
+    // Removing the old `if (await jumpButton.isVisible())` wrapper — which made the whole
+    // test vacuous whenever the button was absent — exposed a SECOND failure hiding behind
+    // it: on firefox the button was simply not there yet, and `expect(...).toBeVisible()`
+    // reported `<element(s) not found>` after 5s.
+    //
+    // `settleFrames` advances three animation frames, roughly 50 ms. That is not long
+    // enough for the scroll to propagate through React state to a rendered button on every
+    // engine. T007/T008 solves this by waiting on the component's OWN signal instead of on
+    // time, and this now does the same.
+    //
+    // First: prove the thread really did scroll. A thread that is too short to pass the
+    // 500px threshold SHOULD have no button, and asserting the button in that case would be
+    // blaming the component for a fixture problem.
+    const scrollInfo = await messageThread.evaluate((el) => ({
+      distanceFromBottom: el.scrollHeight - (el.scrollTop + el.clientHeight),
+    }));
+    expect(
+      scrollInfo.distanceFromBottom,
+      'fixture thread is not tall enough to scroll 500px+ from the bottom, so the jump ' +
+        'button is correctly absent — this is a fixture failure, not a UI regression'
+    ).toBeGreaterThan(500);
+
+    // Then: the attribute MessageThread writes synchronously when it decides to show the
+    // button, which sidesteps the React-state-flush vs event-loop race entirely.
+    const wrapper = page.locator('[data-show-scroll-button]').first();
+    await expect
+      .poll(async () => await wrapper.getAttribute('data-show-scroll-button'), {
+        message:
+          'MessageThread never set data-show-scroll-button="true" after scrolling to the ' +
+          'top — the component did not register the scroll',
+        timeout: 5000,
+        intervals: [50, 100, 200, 500],
+      })
+      .toBe('true');
 
     // NOT `if (await jumpButton.isVisible())`. The whole body used to sit inside that
     // condition, so a thread where the button never appeared passed having asserted
     // nothing — and "the jump button stopped rendering" is precisely what this test is
-    // named for. T007/T008 above already establish it appears when scrolled up, so here
-    // it is a requirement, not a precondition.
+    // named for. It is a requirement here, not a precondition.
     await expect(jumpButton).toBeVisible();
 
     await jumpButton.click();
@@ -405,7 +421,7 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
     //
     // This is what made T009 flaky, and it is not a browser quirk: the button calls
     // `scrollToBottom(true)`, i.e. `behavior: 'smooth'` (MessageThread.tsx:239-243), while
-    // `waitForUIStability` waits three animation frames — about 50 ms. A smooth scroll from
+    // `settleFrames` (then named `waitForUIStability`) waits three animation frames — about 50 ms. A smooth scroll from
     // the top of a 30-message thread takes several hundred. So the assertion measured a
     // scroll that had barely started, and failed with **2393px** remaining rather than
     // marginally over the 100px threshold.
