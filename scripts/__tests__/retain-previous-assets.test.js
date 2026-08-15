@@ -51,8 +51,14 @@ function makeGeneration(dir, tag) {
   return dir;
 }
 
-/** Run the real script: retain from `liveDir` (served over HTTP) into `outDir`. */
-async function retain(outDir, liveDir, generations = 5) {
+/**
+ * Run the real script: retain from `liveDir` (served over HTTP) into `outDir`.
+ *
+ * `days` is the retention window (#751). It used to be a generation count; the
+ * default is deliberately wide so the chaining tests below exercise chaining rather
+ * than expiry, which is what they are about.
+ */
+async function retain(outDir, liveDir, days = 14) {
   const server = createServer((req, res) => {
     const rel = decodeURIComponent((req.url ?? '/').split('?')[0]);
     const file = path.join(liveDir, rel === '/' ? 'index.html' : rel);
@@ -87,7 +93,7 @@ async function retain(outDir, liveDir, generations = 5) {
       ],
       {
         encoding: 'utf8',
-        env: { ...process.env, RETAIN_GENERATIONS: String(generations) },
+        env: { ...process.env, RETAIN_DAYS: String(days) },
       }
     );
     return stdout;
@@ -106,6 +112,7 @@ const manifestOf = (dir) =>
     .split('\n')
     .filter(Boolean);
 
+/** Path -> generation count. The generation number is now a diagnostic (#751). */
 const agesOf = (dir) =>
   new Map(
     fs
@@ -113,10 +120,48 @@ const agesOf = (dir) =>
       .split('\n')
       .filter(Boolean)
       .map((l) => {
-        const m = l.match(/^(\d+)\s+(.+)$/);
-        return [m[2], Number(m[1])];
+        const m = l.match(/^(\d+)\s+(\S+T\S+Z)\s+(.+)$/);
+        return [m[3], Number(m[1])];
       })
   );
+
+/** Path -> first-seen epoch ms. This is what retention actually decides on. */
+const bornOf = (dir) =>
+  new Map(
+    fs
+      .readFileSync(path.join(dir, '_next/static/ASSET_AGES.txt'), 'utf8')
+      .split('\n')
+      .filter(Boolean)
+      .map((l) => {
+        const m = l.match(/^(\d+)\s+(\S+T\S+Z)\s+(.+)$/);
+        return [m[3], Date.parse(m[2])];
+      })
+  );
+
+/**
+ * Rewrite one entry's first-seen timestamp in a built directory's ledger.
+ *
+ * Retention is now measured in days, and a test cannot wait days. Backdating the
+ * ledger is the only thing being simulated — the script reads it exactly as it would
+ * read a genuinely old one.
+ */
+function backdate(dir, rel, days) {
+  const p = path.join(dir, '_next/static/ASSET_AGES.txt');
+  const when = new Date(Date.now() - days * 86400000).toISOString();
+  const out = fs
+    .readFileSync(p, 'utf8')
+    .split('\n')
+    .map((l) => {
+      const m = l.match(/^(\d+)\s+(\S+T\S+Z)\s+(.+)$/);
+      return m && m[3] === rel ? `${m[1]} ${when} ${m[3]}` : l;
+    })
+    .join('\n');
+  assert.ok(
+    out.includes(when),
+    `backdate() failed to match ${rel} in the ledger`
+  );
+  fs.writeFileSync(p, out);
+}
 
 describe('retain-previous-assets: chaining across a burst (#548)', () => {
   before(() => {
@@ -273,42 +318,117 @@ describe('retain-previous-assets: chaining across a burst (#548)', () => {
     );
   });
 
-  it('stops carrying an asset past RETAIN_GENERATIONS, so _next/static stays bounded', async () => {
-    // The cap is the only thing bounding chained retention. Without it every
+  it('drops an asset once it is older than RETAIN_DAYS, so _next/static stays bounded', async () => {
+    // The window is the only thing bounding chained retention. Without it every
     // deploy would accumulate forever, which is the obvious failure mode of the
     // fix and therefore worth a test of its own.
     const dirs = ['a4', 'b4', 'c4'].map((n, i) =>
       makeGeneration(path.join(WORK, n), `gen-${'abc'[i]}`)
     );
-    await retain(dirs[1], dirs[0], 1); // cap of 1: A's file is age 1, still kept
+    await retain(dirs[1], dirs[0], 14);
     assert.ok(fs.existsSync(path.join(dirs[1], '_next/static/css/gen-a.css')));
 
-    await retain(dirs[2], dirs[1], 1); // A would become age 2 — past the cap
+    // Age A's stylesheet past the window in B's published ledger, exactly as real
+    // elapsed time would. B's own file stays new.
+    backdate(dirs[1], '_next/static/css/gen-a.css', 40);
+
+    await retain(dirs[2], dirs[1], 14);
     assert.ok(
       !fs.existsSync(path.join(dirs[2], '_next/static/css/gen-a.css')),
-      'an asset past RETAIN_GENERATIONS must not be carried forward'
+      'an asset older than RETAIN_DAYS must not be carried forward'
     );
     assert.ok(
       fs.existsSync(path.join(dirs[2], '_next/static/css/gen-b.css')),
-      'the generation still inside the cap must survive'
+      'an asset still inside the window must survive'
+    );
+  });
+
+  it('keeps an asset across MANY deploys while it is still inside the window', async () => {
+    // The whole point of #751: deploy COUNT must not decide expiry. Under the old
+    // generation cap this asset died on deploy 6; here it survives ten because it
+    // is only a day old.
+    const dirs = Array.from({ length: 11 }, (_, i) =>
+      makeGeneration(path.join(WORK, `burst${i}`), `burst-${i}`)
+    );
+    for (let i = 1; i < dirs.length; i++)
+      await retain(dirs[i], dirs[i - 1], 14);
+
+    const last = dirs[dirs.length - 1];
+    assert.ok(
+      fs.existsSync(path.join(last, '_next/static/css/burst-0.css')),
+      'a one-day-old asset must survive ten deploys — expiring it on a deploy ' +
+        'count is exactly the #751 defect'
+    );
+    assert.strictEqual(
+      agesOf(last).get('_next/static/css/burst-0.css'),
+      10,
+      'the generation counter should still be counting, as a diagnostic'
+    );
+  });
+
+  it('carries the ORIGINAL first-seen date forward, never restamping it', async () => {
+    // If a retained asset were redated on each deploy its age would reset every
+    // time and the window would never expire anything — retention would grow
+    // without bound while looking healthy.
+    const dirs = ['a6', 'b6', 'c6'].map((n, i) =>
+      makeGeneration(path.join(WORK, n), `gen-${'abc'[i]}`)
+    );
+    await retain(dirs[1], dirs[0], 14);
+    backdate(dirs[1], '_next/static/css/gen-a.css', 10);
+    const before = bornOf(dirs[1]).get('_next/static/css/gen-a.css');
+
+    await retain(dirs[2], dirs[1], 14);
+    const after = bornOf(dirs[2]).get('_next/static/css/gen-a.css');
+    assert.strictEqual(
+      after,
+      before,
+      'the first-seen timestamp must survive a deploy unchanged'
+    );
+  });
+
+  it('reads the pre-#751 two-field ledger and stamps those entries now', async () => {
+    // The live ledger on the deploy that ships this has no timestamps. Refusing to
+    // parse it would reset retention to zero on the very deploy meant to fix it.
+    const dirs = ['a7', 'b7'].map((n, i) =>
+      makeGeneration(path.join(WORK, n), `gen-${'ab'[i]}`)
+    );
+    fs.writeFileSync(
+      path.join(dirs[0], '_next/static/ASSET_AGES.txt'),
+      '3 _next/static/css/gen-a.css\n'
+    );
+
+    const out = await retain(dirs[1], dirs[0], 14);
+    assert.match(out, /without a timestamp/, 'the ramp should announce itself');
+    assert.ok(
+      fs.existsSync(path.join(dirs[1], '_next/static/css/gen-a.css')),
+      'an undated legacy entry must be carried, not dropped'
+    );
+    const born = bornOf(dirs[1]).get('_next/static/css/gen-a.css');
+    assert.ok(
+      Date.now() - born < 5 * 60_000,
+      'a legacy entry should be stamped now, giving it a full window'
     );
   });
 });
 
 /**
- * THE WINDOW IS A DURATION, NOT A BURST COUNT (#650).
+ * THE WINDOW IS A DURATION, AND MUST BE EXPRESSED AS ONE (#650, #751).
  *
- * `RETAIN_GENERATIONS` was 5, chosen against "deploys per 10 minutes" — the HTML
- * cache-control window. But what it protects is how long a visitor's tab has been
- * open, which is unrelated. On 2026-08-09 production rendered unstyled for the
- * SIXTH time: five deploys across 22 hours, well-paced by the 10-minute rule, and
- * someone returning the next day asked for CSS that had just aged out.
+ * This was `RETAIN_GENERATIONS` and it was mis-sized twice, both times by stating
+ * the window in deploys while the risk is in days:
  *
- * This pins the number so it cannot quietly drift back to a burst-sized one. The
- * client-side recovery in src/components/StylesheetGuard.tsx is what makes the
- * failure survivable regardless; this keeps it rare.
+ *   5  — sized against "deploys per 10 minutes", the HTML cache-control window.
+ *        #650 identified that as the wrong quantity when production went unstyled a
+ *        sixth time on 2026-08-09.
+ *   30 — its replacement, justified as "a normal working week even at an unusually
+ *        high merge rate". 40 deploys landed in the next 6 days, 19 in one day, so
+ *        it was really ~3.5 days. Production went unstyled an eighth time.
+ *
+ * The unit is the fix. A day is a day no matter how often anyone merges, so these
+ * assertions pin the UNIT as much as the number — a value in generations cannot
+ * satisfy them at all.
  */
-describe('RETAIN_GENERATIONS is sized for a returning visitor', () => {
+describe('RETAIN_DAYS is sized for a returning visitor', () => {
   const deployYml = fs.readFileSync(
     path.join(__dirname, '..', '..', '.github', 'workflows', 'deploy.yml'),
     'utf8'
@@ -317,20 +437,29 @@ describe('RETAIN_GENERATIONS is sized for a returning visitor', () => {
   it('is set in deploy.yml at all', () => {
     assert.match(
       deployYml,
-      /RETAIN_GENERATIONS:\s*'?\d+'?/,
-      'deploy.yml no longer sets RETAIN_GENERATIONS — retention would fall back to ' +
-        'the script default and nothing would say so'
+      /RETAIN_DAYS:\s*'?\d+'?/,
+      'deploy.yml no longer sets RETAIN_DAYS — retention would fall back to the ' +
+        'script default and nothing would say so'
     );
   });
 
-  it('covers a working week of deploys, not a single burst', () => {
-    const m = deployYml.match(/RETAIN_GENERATIONS:\s*'?(\d+)'?/);
+  it('covers a fortnight, so a holiday-length absence is inside the window', () => {
+    const m = deployYml.match(/RETAIN_DAYS:\s*'?(\d+)'?/);
     const n = Number(m[1]);
     assert.ok(
-      n >= 30,
-      `RETAIN_GENERATIONS is ${n}. Below 30 a visitor returning after a normal ` +
-        `working week loses their stylesheets — that is #650, reported from ` +
-        `production six times. Raise it back, or make the case in the issue first.`
+      n >= 14,
+      `RETAIN_DAYS is ${n}. Below 14 a visitor returning from a week or two away ` +
+        `loses their stylesheets — that is #635, reported from production eight ` +
+        `times. Raise it back, or make the case in the issue first.`
+    );
+  });
+
+  it('has not reverted to counting deploys', () => {
+    assert.ok(
+      !/RETAIN_GENERATIONS:/.test(deployYml),
+      'deploy.yml sets RETAIN_GENERATIONS again. That unit is the #751 defect: it ' +
+        'converts to a duration only via a merge rate nobody measures. Express the ' +
+        'window in days.'
     );
   });
 });

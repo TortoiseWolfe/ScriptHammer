@@ -40,7 +40,29 @@ const BASE = (
   'https://scripthammer.com'
 ).replace(/\/$/, '');
 const MANIFEST = `${BASE}/_next/static/ASSET_MANIFEST.txt`;
+const AGES = `${BASE}/_next/static/ASSET_AGES.txt`;
 const CONCURRENCY = 12;
+
+/** Must match `RETAIN_DAYS` in .github/workflows/deploy.yml (#751). */
+const RETAIN_DAYS = Number(process.env.RETAIN_DAYS ?? 14);
+
+/**
+ * When the day-based ledger shipped (#751).
+ *
+ * A freshly-retimed ledger spans zero days and widens by about a day per day, so a
+ * short span means "ramping" for the first RETAIN_DAYS and "collapsed" ever after.
+ * Nothing IN the ledger can tell those apart — both look like recent timestamps —
+ * so the window floor stays dormant until enough wall-clock time has passed for a
+ * healthy ledger to have filled. Failing during the ramp would train people to
+ * ignore this check in the two weeks before it can first mean anything.
+ *
+ * Overridable ONLY so the floor can be exercised before the ramp elapses — a check
+ * nobody has seen go red is not yet a check, and this one is dormant by design for
+ * its first two weeks. Nothing in CI sets it.
+ */
+const RETIMED_AT = Date.parse(
+  process.env.RETENTION_RETIMED_AT ?? '2026-08-15T00:00:00Z'
+);
 
 /**
  * HEAD, falling back to a ranged GET whenever HEAD cannot prove the asset is
@@ -143,6 +165,73 @@ if (missing.length) {
         : '.')
   );
   process.exit(1);
+}
+
+/**
+ * IS THE PROMISE WIDE ENOUGH? (#751)
+ *
+ * Everything above asks whether the retained files are reachable. All 13 stylesheets
+ * were, on the night production went unstyled for the eighth time — the check was
+ * green and correct, and the window it was vouching for had quietly shrunk to about
+ * three and a half days because the cap counted deploys instead of days.
+ *
+ * So this asks the other question, the one nothing asked: does the ledger actually
+ * span the coverage we intend to sell? A window that has collapsed passes every
+ * reachability assertion ever written, which is precisely why it needs its own.
+ *
+ * Ramp: a freshly-retimed ledger legitimately spans zero days, and grows by roughly a
+ * day per day. Failing during that would be crying wolf on a correct deploy, so the
+ * floor only applies once the ledger is old enough to have reached full width.
+ */
+const agesRes = await fetch(AGES, { redirect: 'follow' });
+if (!agesRes.ok) {
+  console.error(
+    `::error::${AGES} returned ${agesRes.status}. Without the age ledger the next ` +
+      `deploy cannot date what it carries, so retention silently restarts.`
+  );
+  process.exit(1);
+}
+
+const dated = [];
+for (const line of (await agesRes.text()).split('\n')) {
+  const m = line.trim().match(/^(\d+)\s+(\S+T\S+Z)\s+(.+)$/);
+  if (m) {
+    const t = Date.parse(m[2]);
+    if (Number.isFinite(t)) dated.push(t);
+  }
+}
+
+if (!dated.length) {
+  console.log(
+    `\n  age ledger carries no timestamps yet — pre-#751 format, still ramping. ` +
+      `Window unverifiable until the next deploy.`
+  );
+} else {
+  const now = Date.now();
+  const spanDays = (now - Math.min(...dated)) / 86_400_000;
+  const rampDaysElapsed = (now - RETIMED_AT) / 86_400_000;
+  console.log(
+    `\n  window    ${spanDays.toFixed(1)} day(s) of coverage, target ${RETAIN_DAYS}`
+  );
+
+  // A day of slack: the oldest asset ages out mid-window, so a healthy ledger
+  // oscillates just under the target rather than sitting exactly on it.
+  if (spanDays + 1 >= RETAIN_DAYS) {
+    console.log(`  window is at full width.`);
+  } else if (rampDaysElapsed < RETAIN_DAYS) {
+    console.log(
+      `  still ramping (day ${rampDaysElapsed.toFixed(1)} of ${RETAIN_DAYS} since ` +
+        `the ledger was retimed) — the floor is not asserted yet.`
+    );
+  } else {
+    console.error(
+      `\n::error::retention covers only ${spanDays.toFixed(1)} day(s), but ` +
+        `RETAIN_DAYS is ${RETAIN_DAYS}. A visitor returning after ` +
+        `${spanDays.toFixed(1)} days gets an unstyled page. This is the failure ` +
+        `mode of #635 and the exact shortfall that shipped it an 8th time.`
+    );
+    process.exit(1);
+  }
 }
 
 console.log(

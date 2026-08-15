@@ -523,11 +523,14 @@ if (!burstBroke)
 
 // ── PAST THE RETENTION CAP, THE CLIENT MUST RECOVER ITSELF (#650) ───────────
 //
-// Everything above proves retention survives a burst. It cannot survive
-// FOREVER — RETAIN_GENERATIONS bounds it, and the bound is counted in DEPLOYS
-// while the exposure is how long a visitor's tab has been open. Those are
-// unrelated, which is how production rendered unstyled a sixth time on
-// 2026-08-09 with retention working exactly as designed.
+// Everything above proves retention survives a burst. It cannot survive FOREVER:
+// `RETAIN_DAYS` bounds it, and a visitor away longer than that is outside it.
+//
+// The bound used to be counted in DEPLOYS, which is a different quantity from the
+// exposure it protects — how long a visitor's tab has been open. That mismatch put
+// production unstyled a sixth time on 2026-08-09 and an eighth on 2026-08-15, both
+// with retention working exactly as designed (#751). Stating the window as a
+// duration removes the conversion, but not the bound.
 //
 // So src/components/StylesheetGuard.tsx recovers the page when every same-origin
 // stylesheet came back empty. This asserts that guard fires on the real
@@ -619,6 +622,85 @@ if (!guardMatch) {
   if (mixed)
     failures.push(
       'the stylesheet guard reloaded on a single dead sheet — too eager'
+    );
+
+  // RE-ARMING (#752). The cases above each use a fresh context, so they say
+  // nothing about the rule that actually decides a SECOND recovery. That rule was
+  // "never" — once per tab, forever — which stranded exactly the visitors this
+  // guard exists for: a tab open long enough for its assets to expire is a tab
+  // likely to have recovered once already.
+  //
+  // Both directions are asserted, because the change is only correct if it moved
+  // one of them and left the other alone. One context, two loads: sessionStorage
+  // is per-tab, so reusing it is the whole point.
+  const runGuardTwice = async ({ ageOutMs }) => {
+    const statuses = [404, 404];
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    statuses.forEach((_, i) =>
+      page.route(`**/g${i}.css`, (r) => r.fulfill({ status: 404, body: '' }))
+    );
+    await page.route('**/guard.html*', (r) =>
+      r.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: guardPage(statuses),
+      })
+    );
+
+    await page.goto('http://guard.test/guard.html', { waitUntil: 'load' });
+    await page.waitForTimeout(1200);
+    const first = /_r=/.test(page.url());
+
+    // Backdate the stored recovery so the next load sees an OLD one. Faking the
+    // clock rather than waiting an hour, and the only thing being faked is the
+    // passage of time.
+    if (ageOutMs) {
+      await page.evaluate((ms) => {
+        sessionStorage.setItem(
+          'sh-stylesheet-recovered',
+          String(Date.now() - ms)
+        );
+      }, ageOutMs);
+    }
+
+    // A URL the guard has not already rewritten, so `_r=` can only appear if it
+    // recovered a second time.
+    await page.goto('http://guard.test/guard.html?second=1', {
+      waitUntil: 'load',
+    });
+    await page.waitForTimeout(1200);
+    const second = /_r=/.test(page.url());
+    await ctx.close();
+    return { first, second };
+  };
+
+  // Positive control: this harness must be able to reach success at all. Without
+  // it, an anti-loop assertion passes just as well when the guard never fires.
+  const reArmed = await runGuardTwice({ ageOutMs: 2 * 3600000 });
+  console.log(
+    `  broke again an hour on -> ${reArmed.second ? 'recovered again (correct)' : 'STILL DISARMED (wrong)'}`
+  );
+  if (!reArmed.first)
+    failures.push(
+      're-arm harness never recovered on its FIRST load, so its second-load result ' +
+        'proves nothing — fix the harness before reading the assertion below'
+    );
+  if (reArmed.first && !reArmed.second)
+    failures.push(
+      'the stylesheet guard did not re-arm after an hour — a tab that recovered ' +
+        'once stays unstyled forever, which is #752'
+    );
+
+  // And the reason the limit exists at all: a genuine loop retries in seconds.
+  const looped = await runGuardTwice({ ageOutMs: 0 });
+  console.log(
+    `  broke again immediately-> ${looped.second ? 'RELOADED AGAIN (loop risk)' : 'blocked (correct)'}`
+  );
+  if (looped.second)
+    failures.push(
+      'the stylesheet guard recovered twice in a row with no delay — that is a ' +
+        'reload loop, which is strictly worse than an unstyled page'
     );
 }
 
