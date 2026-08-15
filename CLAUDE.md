@@ -603,7 +603,23 @@ Before naming a control, grep `tests/e2e` for **substring** collisions, and pref
 
 ### Generated artifacts are build OUTPUTS, never inputs
 
-`prebuild` writes `public/wireframes/`, sitemap, RSS and more, and all of it except `public/manifest.json` is gitignored (#392). Importing one type-checks locally and fails CI on a fresh checkout. Read the committed source instead — for wireframes that's `features/<cat>/<feat>/wireframes/*.svg`, top level only.
+`prebuild` writes `public/wireframes/`, sitemap, RSS and more. Importing one type-checks locally and fails CI on a fresh checkout. Read the committed source instead — for wireframes that's `features/<cat>/<feat>/wireframes/*.svg`, top level only.
+
+**Two of them are tracked ON PURPOSE, and each has a test that makes that safe (#392):**
+
+| artifact               | tracked | why, and what pins it                                                                                                                                                                                        |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `public/manifest.json` | yes     | Reviewable: a `DISABLE_BASE_PATH=true` build rewrites `start_url`, `scope` and every icon path, and committing that breaks PWA install on Pages. `scripts/__tests__/generated-manifest.test.js` fails on it. |
+| `public/robots.txt`    | yes     | Same shape (#504): the generator falls back to a `github.io` origin without `NEXT_PUBLIC_DEPLOY_URL`. `scripts/__tests__/canonical-artifacts.test.js` fails on it.                                           |
+
+Everything else generated is gitignored — including `src/config/author-generated.ts`, which is
+built from **your** `.env` and used to be committed, so every fork shipped one person's name,
+avatar and five social URLs until they ran a build.
+
+**A `.gitignore` rule for an already-tracked file does nothing**, and `git check-ignore` will
+tell you it is "not ignored" because it is index-aware. Only `git check-ignore --no-index`
+reveals the rule exists. `public/manifest.json` sat like that for months — ignored on paper,
+tracked in fact. If you intend to untrack something, `git rm --cached` is the actual change.
 
 ### Read designs from the render, not from stripped text
 
