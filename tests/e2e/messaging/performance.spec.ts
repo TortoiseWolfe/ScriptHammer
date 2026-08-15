@@ -65,6 +65,25 @@ async function expectConversationLoaded(viewer: OpenedParticipant) {
     name: /Message input/i,
   });
   await expect(messageInput).toBeVisible({ timeout: 45000 });
+
+  // AND THE THREAD MUST ACTUALLY HAVE CONTENT.
+  //
+  // "the thread element is visible" was the entire assertion this file used to make, and it
+  // is true long before any message renders: the container mounts, then messages are
+  // fetched, decrypted, and — above 100 — handed to a virtualizer that renders nothing until
+  // it has measured the scroll box.
+  //
+  // The first version of this rewrite counted bubbles after `settleFrames` (three animation
+  // frames) and got ZERO on all three browsers. Every downstream assertion here — how many
+  // nodes virtualization renders, whether scrolling to the top paginates, whether the jump
+  // button appears — is meaningless against an empty thread, so they all failed together.
+  // Waiting on the outcome instead of a frame count is the same lesson as #300 and #739,
+  // and I walked into it while fixing exactly that class of bug.
+  await expect(
+    viewer.page.locator(BUBBLE).first(),
+    'the thread mounted but never rendered a message — every assertion below would be ' +
+      'measuring an empty list'
+  ).toBeVisible({ timeout: 45000 });
 }
 
 /** Scroll metrics straight off the scroll container. */
@@ -115,14 +134,15 @@ test.describe('Large-history message thread', () => {
       // THE POINT OF VIRTUALIZING. With 150 messages the thread must not put 150 bubbles in
       // the DOM. The old version asserted only that the thread was visible, which is equally
       // true with virtualization switched off entirely.
+      // `expectConversationLoaded` has already established at least one bubble exists, so
+      // this is measuring a settled list rather than racing the virtualizer.
       const rendered = await viewer.page.locator(BUBBLE).count();
+      expect(rendered, 'no messages rendered at all').toBeGreaterThan(0);
       expect(
         rendered,
         `expected the virtualizer to render a window, not the whole history — ` +
           `${rendered} bubbles in the DOM for ${SEEDED_MESSAGE_COUNT} messages`
       ).toBeLessThan(VIRTUAL_SCROLL_THRESHOLD);
-      // …and it must render SOMETHING, or the assertion above passes on an empty thread.
-      expect(rendered, 'no messages rendered at all').toBeGreaterThan(0);
     } finally {
       await viewer.close();
     }
