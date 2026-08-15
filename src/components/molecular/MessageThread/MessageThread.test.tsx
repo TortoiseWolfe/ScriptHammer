@@ -4,12 +4,16 @@ import userEvent from '@testing-library/user-event';
 import MessageThread from './MessageThread';
 import type { DecryptedMessage } from '@/types/messaging';
 
-// Mock @tanstack/react-virtual
+// Mock @tanstack/react-virtual. `scrollToIndex` is hoisted into a STABLE spy rather
+// than created per-render, so a test can assert what the component actually asked the
+// virtualizer to do — see the smooth-scroll contract test below.
+const { scrollToIndexSpy } = vi.hoisted(() => ({ scrollToIndexSpy: vi.fn() }));
+
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: vi.fn(() => ({
     getTotalSize: () => 1000,
     getVirtualItems: () => [],
-    scrollToIndex: vi.fn(),
+    scrollToIndex: scrollToIndexSpy,
     measureElement: vi.fn(),
   })),
 }));
@@ -185,6 +189,150 @@ describe('MessageThread', () => {
       await waitFor(() => {
         expect(screen.getByTestId('jump-to-bottom')).toBeInTheDocument();
       });
+    });
+
+    /**
+     * The button must react to the thread RESIZING, not only to scrolling.
+     *
+     * THE BUG THIS PINS. Visibility was computed inside the scroll handler alone. Open a
+     * conversation and scroll up before the messages finish rendering and the decision
+     * was made against an empty list — container 404px, distanceFromBottom 0, so: hidden.
+     * The messages then rendered (3136px, 2798px below the fold) and nothing recomputed,
+     * so the button stayed hidden until the user scrolled again. Measured on firefox at
+     * roughly one run in ten as T009; the instrumented run showed `bubbles: 0` at the
+     * moment the state was decided.
+     *
+     * Driving the observer directly is the point: it is the only way to separate "the
+     * component recomputed because layout changed" from "the component happened to get a
+     * scroll event", and the scroll event is exactly what is missing in the real failure.
+     */
+    it('shows the button when content grows underneath a scrolled-up reader, with no scroll event', async () => {
+      const callbacks: ResizeObserverCallback[] = [];
+      const RealRO = global.ResizeObserver;
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(cb: ResizeObserverCallback) {
+            callbacks.push(cb);
+          }
+          observe() {}
+          unobserve() {}
+          disconnect() {}
+        }
+      );
+
+      try {
+        const messages = Array.from({ length: 50 }, (_, i) =>
+          createMockMessage(`msg-${i}`, `Message ${i}`, i)
+        );
+        render(<MessageThread messages={messages} />);
+        const container = screen.getByTestId('message-thread');
+
+        // Start where the real failure starts: nothing rendered yet, so the reader is
+        // trivially "at the bottom" and the button correctly stays away.
+        Object.defineProperty(container, 'scrollTop', {
+          value: 0,
+          writable: true,
+        });
+        Object.defineProperty(container, 'scrollHeight', {
+          value: 404,
+          writable: true,
+        });
+        Object.defineProperty(container, 'clientHeight', {
+          value: 404,
+          writable: true,
+        });
+        container.dispatchEvent(new Event('scroll'));
+        await waitFor(() => {
+          expect(
+            screen.queryByTestId('jump-to-bottom')
+          ).not.toBeInTheDocument();
+        });
+
+        // Messages arrive. The reader has not touched the scroll, so NO scroll event.
+        Object.defineProperty(container, 'scrollHeight', {
+          value: 3136,
+          writable: true,
+        });
+        Object.defineProperty(container, 'clientHeight', {
+          value: 338,
+          writable: true,
+        });
+
+        // Negative control: without the observer firing, nothing should have changed —
+        // otherwise a stray re-render, not the fix, is what this test measures.
+        expect(screen.queryByTestId('jump-to-bottom')).not.toBeInTheDocument();
+
+        expect(
+          callbacks.length,
+          'MessageThread never constructed a ResizeObserver, so it cannot notice content ' +
+            'arriving without a scroll — this is the defect, not a harness problem'
+        ).toBeGreaterThan(0);
+        callbacks.forEach((cb) =>
+          cb([] as unknown as ResizeObserverEntry[], {} as ResizeObserver)
+        );
+
+        await waitFor(() => {
+          expect(screen.getByTestId('jump-to-bottom')).toBeInTheDocument();
+        });
+      } finally {
+        vi.stubGlobal('ResizeObserver', RealRO);
+      }
+    });
+
+    /**
+     * Under virtualization the jump must NOT ask for a smooth scroll.
+     *
+     * This is a contract with @tanstack/virtual-core, not a style preference. Its
+     * `scrollToIndex` warns "The `smooth` scroll behavior is not fully supported with
+     * dynamic size" and then, because it re-checks the position one animation frame
+     * after starting an animation that takes hundreds, mismatches every time, retries
+     * ten times and gives up: "Failed to scroll to index N after 10 attempts."
+     *
+     * Measured against the real component in Storybook, before the fix — the thread
+     * stopped short and STAYED short through a 15s poll:
+     *
+     *   100 messages   chromium 2814px short    firefox 1126px short
+     *   500 messages   chromium 33156px short   firefox 26391px short
+     *
+     * With `auto` every one of those became 0. The non-virtualized path below 100
+     * messages keeps its smooth animation, where the browser handles it correctly.
+     */
+    it('asks the virtualizer for an instant scroll, never a smooth one', async () => {
+      const user = userEvent.setup();
+      const messages = Array.from({ length: 120 }, (_, i) =>
+        createMockMessage(`msg-${i}`, `Message ${i}`, i)
+      );
+      render(<MessageThread messages={messages} />);
+      const container = screen.getByTestId('message-thread');
+
+      Object.defineProperty(container, 'scrollTop', {
+        value: 0,
+        writable: true,
+      });
+      Object.defineProperty(container, 'scrollHeight', {
+        value: 5000,
+        writable: true,
+      });
+      Object.defineProperty(container, 'clientHeight', {
+        value: 400,
+        writable: true,
+      });
+      container.dispatchEvent(new Event('scroll'));
+
+      const button = await screen.findByTestId('jump-to-bottom');
+      scrollToIndexSpy.mockClear();
+      await user.click(button);
+
+      expect(
+        scrollToIndexSpy,
+        'the jump button did not reach the virtualizer at all, so the behavior ' +
+          'assertion below would be vacuous'
+      ).toHaveBeenCalled();
+      expect(scrollToIndexSpy).toHaveBeenCalledWith(
+        messages.length - 1,
+        expect.objectContaining({ align: 'end', behavior: 'auto' })
+      );
     });
 
     it('hides jump to bottom button when near bottom', async () => {
