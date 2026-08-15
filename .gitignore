@@ -75,9 +75,28 @@ public/wireframes/
 public/cesium/
 
 public/TASKS.md
-public/manifest.json
+
+# public/manifest.json IS TRACKED ON PURPOSE, so it has no rule here (#392).
+#
+# A rule for it sat on this line for months and did nothing: ignore rules do not
+# apply to tracked files, and `git check-ignore` is index-aware, so the tool you
+# would reach for to check reported "not ignored" while the rule was right there.
+# Ignored on paper, tracked in fact — the worst of both.
+#
+# It stays tracked for the reason robots.txt does (#504): the committed copy is
+# reviewable, so a local variant build that rewrites `start_url`, `scope` and every
+# icon path shows up in a diff instead of shipping quietly.
+# `scripts/__tests__/generated-manifest.test.js` is what makes that a guarantee
+# rather than a hope.
+
 /src/config/project-detected.ts
 /src/config/project-detected.json
+
+# Generated from YOUR .env, so committing it ships one person's identity to every
+# fork — name, avatar and five social URLs — until they run a build (#392, #734).
+# Both readers already fall back when it is absent (src/config/authors.ts:108,
+# src/app/blog/[slug]/page.tsx:229), and `prebuild` regenerates it.
+/src/config/author-generated.ts
 /public/rss.xml
 /public/feed.json
 /public/sitemap.xml
