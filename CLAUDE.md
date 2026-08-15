@@ -423,33 +423,47 @@ The rules below still describe `e2e.yml` and remain correct for it.
 
 ### Merging several PRs in quick succession can serve production with no CSS
 
-**Why**: GitHub Pages serves HTML with `cache-control: max-age=600`, and every deploy
-deletes the previous build's content-hashed CSS and JS. So for **ten minutes** after a
-deploy, a visitor can be holding HTML whose stylesheets no longer exist — a white page,
-no nav, the logo at its natural size, with a perfectly correct DOM. Reported from
-production four times (#438, #467, #476, #548).
+**Why**: GitHub Pages serves HTML with `cache-control: max-age=600` and cannot be told
+otherwise, while every deploy deletes the previous build's content-hashed CSS and JS. A
+returning visitor can therefore hold HTML whose stylesheets no longer exist — a white
+page, no nav, the logo at its natural size, with a perfectly correct DOM. Reported from
+production **eight times** (#438, #467, #476, #548, #650, and three more through
+2026-08-15). The open ticket is **#635**; it stays open until the cause is gone.
 
-`scripts/retain-previous-assets.mjs` carries old assets forward so that visitor still
-resolves. It now chains across `RETAIN_GENERATIONS` (5) deploys — but before #548 it
-spanned exactly **one**, which is only enough at one deploy per cache window. Six PRs
-merged in 35 minutes, two of them 57 seconds apart, put real visitors two generations
-back and broke the site for them.
+**The window is measured in DAYS, and getting that unit wrong is the recurring bug.**
+`scripts/retain-previous-assets.mjs` carries old assets forward, bounded by `RETAIN_DAYS`
+(14) in `deploy.yml`. It was previously bounded by a deploy count, and that was mis-sized
+twice — 5 (against the 10-minute cache window) and then 30 (against an assumed merge
+rate, which turned out to be 40 deploys in 6 days, so ~3.5 days). **Never restate this
+window in deploys**: converting requires a merge rate nobody measures, and
+`retain-previous-assets.test.js` now fails if `RETAIN_GENERATIONS` reappears (#751).
 
 **The trap is that docs-only PRs feel free.** `e2e.yml` has `paths-ignore` for
 `**/*.md`, `docs/**` and `.gitignore`, so markdown PRs skip the ~1-hour E2E mutex that
 paces everything else — and nothing else paces them. That is exactly how six merges
 landed in half an hour.
 
-**Now guarded by**: `scripts/check-stale-html.mjs` drives A → B → C and asserts a
-visitor holding A's HTML is still styled after **two** deploys, with a negative control
-that fails if one-generation retention ever stops breaking (i.e. if the harness has quietly
-stopped simulating a deploy). `scripts/__tests__/retain-previous-assets.test.js` asserts
-the chaining and the generation cap. Both run in CI — the first in the required
-`accessibility` check, the second via `pnpm test:scripts`.
+**Guarded by three things, which check different questions:**
 
-**Still worth pacing merges.** The guards make a burst survivable, not free: retention is
-capped at 5 generations, so more than five deploys inside one 10-minute window is still
-outside what anything protects.
+- `scripts/check-stale-html.mjs` (required `accessibility` check) drives A → B → C in a
+  real chromium and asserts a visitor holding A's HTML is still styled after two deploys,
+  with a negative control that fails if the harness stops simulating a deploy. It also
+  proves `StylesheetGuard` fires, stays inert on a healthy page, and re-arms after an hour
+  but not immediately (#752).
+- `scripts/ci/check-retained-assets.mjs` (post-deploy `smoke.yml`) reads the live ledger
+  and asserts both that every promised file is served **and that the window is still as
+  wide as `RETAIN_DAYS`**. The second assertion exists because the first was green on the
+  night production went unstyled for the eighth time.
+- `scripts/__tests__/*` via `pnpm test:scripts` for the chaining, the window and the unit.
+
+**The client-side backstop**: `StylesheetGuard` (in every page) detects a page whose
+same-origin stylesheets all have zero rules and re-fetches at a fresh URL. It is the only
+recovery that does not depend on a number being right — but it ships _inside_ the HTML,
+so a document cached before it existed has no guard at all.
+
+**Still worth pacing merges**, and still worth remembering that none of this is the fix.
+The fix is #635 — a CDN serving HTML `no-cache`, which GitHub Pages cannot be configured
+to do.
 
 ### NEVER bypass commit hooks (no `--no-verify`)
 

@@ -55,7 +55,8 @@ if (!outDir || !liveBase) {
 const BASE = liveBase.replace(/\/$/, '');
 const ASSET_RE = /(?:href|src)="([^"]*\/_next\/static\/[^"]+)"/g;
 /** Chunk paths appear as bare strings inside the runtime, not as attributes. */
-const CHUNK_RE = /["'`]([^"'`]*\/_next\/static\/(?:chunks|css)\/[^"'`]+\.(?:js|css))["'`]/g;
+const CHUNK_RE =
+  /["'`]([^"'`]*\/_next\/static\/(?:chunks|css)\/[^"'`]+\.(?:js|css))["'`]/g;
 
 async function get(url) {
   try {
@@ -152,11 +153,44 @@ const wanted = new Set();
 /** Generations-since-introduced for files this run retained. Filled in below. */
 const ages = new Map();
 
+/** First-seen timestamp (epoch ms) for files this run retained. Filled in below. */
+const firstSeen = new Map();
+
 /**
- * How many generations back an asset is carried. Bounds `_next/static` so
- * chaining cannot grow it forever (#548).
+ * HOW LONG an asset is carried, and the only rule that decides what is dropped (#751).
+ *
+ * THIS USED TO COUNT DEPLOYS AND THAT WAS THE BUG, TWICE. The exposure being
+ * protected is how long a visitor may hold a document — a duration. Deploy count is
+ * a different quantity, and converting between them requires knowing the merge rate,
+ * which nobody measured either time:
+ *
+ *   - 5 was sized against "deploys per 10 minutes", the HTML cache-control window.
+ *     #650 correctly identified that as measuring the wrong thing.
+ *   - 30 replaced it, justified as "a normal working week even at an unusually high
+ *     merge rate" — and then 40 deploys landed in the next 6 days, 19 of them in one
+ *     day. 30 generations was ~3.5 days. Production went unstyled for the 8th time.
+ *
+ * So the cap is now stated in the unit the risk is actually in. Two weeks covers a
+ * holiday-length absence, and no assumption about merge rate can invalidate it.
  */
-const RETAIN_GENERATIONS = Number(process.env.RETAIN_GENERATIONS ?? 5);
+const RETAIN_DAYS = Number(process.env.RETAIN_DAYS ?? 14);
+
+/**
+ * Hard backstop on how many previous-build files are carried, independent of age.
+ *
+ * Time alone does not bound the chain: a burst of deploys inside the window grows
+ * `_next/static` without limit. When more candidates survive the age rule than this,
+ * the NEWEST are kept — the oldest are the ones fewest visitors can still be holding.
+ *
+ * Measured cost for scale: 17 files bought 5 generations, ~100 bought 30. 800 is far
+ * above the ~300-500 expected at 14 days, so it is a runaway guard rather than a
+ * second cap doing routine work. When it engages it says so loudly, because that
+ * means the age window is no longer the thing deciding coverage.
+ */
+const RETAIN_MAX_FILES = Number(process.env.RETAIN_MAX_FILES ?? 800);
+
+const DAY_MS = 86_400_000;
+const NOW = Date.now();
 
 /**
  * Publish `ASSET_MANIFEST.txt` + `ASSET_AGES.txt` describing what is on disk.
@@ -182,7 +216,10 @@ async function publishManifest() {
       const p = join(dir, e.name);
       if (e.isDirectory()) {
         await walk(p);
-      } else if (e.name !== 'ASSET_MANIFEST.txt' && e.name !== 'ASSET_AGES.txt') {
+      } else if (
+        e.name !== 'ASSET_MANIFEST.txt' &&
+        e.name !== 'ASSET_AGES.txt'
+      ) {
         published.push(p.slice(outDir.length + 1));
       }
     }
@@ -195,15 +232,30 @@ async function publishManifest() {
   }
   published.sort();
 
-  await writeFile(join(staticRoot, 'ASSET_MANIFEST.txt'), published.join('\n') + '\n');
+  await writeFile(
+    join(staticRoot, 'ASSET_MANIFEST.txt'),
+    published.join('\n') + '\n'
+  );
   await writeFile(
     join(staticRoot, 'ASSET_AGES.txt'),
-    // Anything not carried in by the retain loop is this build's own output: age 0.
-    published.map((rel) => `${ages.get(rel) ?? 0} ${rel}`).join('\n') + '\n'
+    // `<generations> <first-seen ISO> <path>`. The timestamp is what decides
+    // retention (#751); the generation count is kept as a diagnostic, because it is
+    // what makes a runaway merge rate legible in the logs.
+    //
+    // Anything not carried in by the retain loop is this build's own output: age 0,
+    // first seen now.
+    published
+      .map(
+        (rel) =>
+          `${ages.get(rel) ?? 0} ${new Date(firstSeen.get(rel) ?? NOW).toISOString()} ${rel}`
+      )
+      .join('\n') + '\n'
   );
+  const oldest = [...firstSeen.values()].reduce((a, b) => Math.min(a, b), NOW);
   console.log(
     `manifest lists ${published.length} file(s) — this build's output plus ` +
-      `${ages.size} retained, carried up to ${RETAIN_GENERATIONS} generation(s)`
+      `${ages.size} retained, carried up to ${RETAIN_DAYS} day(s); oldest retained ` +
+      `asset is ${((NOW - oldest) / DAY_MS).toFixed(1)} day(s) old`
   );
 }
 
@@ -230,11 +282,16 @@ if (manifest) {
     .map((l) => l.trim())
     .filter((l) => l.startsWith('_next/static/'));
   for (const l of lines) wanted.add(`/${l}`);
-  console.log(`manifest from the live build: ${wanted.size} file(s) — complete list`);
+  console.log(
+    `manifest from the live build: ${wanted.size} file(s) — complete list`
+  );
 }
 
 const pages = manifest ? [] : await livePages();
-if (!manifest) console.log('no manifest on the live build — falling back to crawling its HTML');
+if (!manifest)
+  console.log(
+    'no manifest on the live build — falling back to crawling its HTML'
+  );
 if (pages === null) {
   // Non-zero so this is visibly a failure. The workflow step uses
   // `continue-on-error`, so the deploy still ships — but the step is marked
@@ -259,7 +316,9 @@ if (!manifest)
     `read ${read}/${pages.length} live page(s); collected ${wanted.size} asset reference(s)`
   );
 if (!manifest && read === 0) {
-  console.log('::error::listed pages but read none of them — retention is a NO-OP');
+  console.log(
+    '::error::listed pages but read none of them — retention is a NO-OP'
+  );
   await publishManifest();
   process.exit(1);
 }
@@ -274,7 +333,9 @@ if (!manifest && read < pages.length) {
 // manifest already gave the complete list.
 const seed = manifest ? [] : [...wanted].filter((u) => u.endsWith('.js'));
 for (const u of seed) {
-  const res = await get(u.startsWith('http') ? u : `${new URL(BASE).origin}${u}`);
+  const res = await get(
+    u.startsWith('http') ? u : `${new URL(BASE).origin}${u}`
+  );
   if (!res) continue;
   const js = await res.text();
   for (const m of js.matchAll(CHUNK_RE)) wanted.add(m[1]);
@@ -282,33 +343,68 @@ for (const u of seed) {
 console.log(`after one transitive pass: ${wanted.size} reference(s)`);
 
 /**
- * GENERATION AGES (#548).
+ * THE AGE LEDGER (#548, retimed in #751).
  *
- * `ASSET_AGES.txt` on the live build maps each published file to how many
- * deploys ago it was introduced. Retaining a file bumps its age by one; past
- * RETAIN_GENERATIONS it is dropped, which is what keeps chained retention from
- * growing `_next/static` forever.
+ * `ASSET_AGES.txt` on the live build records, for each published file, when it was
+ * first seen and how many deploys ago that was. Retaining a file carries its
+ * ORIGINAL timestamp forward unchanged — that is what makes the window a duration
+ * rather than a deploy count, and it is the whole fix. The generation number rides
+ * along as a diagnostic only; nothing is dropped because of it.
  *
- * Absent on the currently-live build (the first deploy after this lands), every
- * retained file simply starts at age 1 — the ramp is one deploy, same as #476's.
+ * Absent on the currently-live build, every retained file starts dated now — the
+ * ramp is one deploy, same as #476's. The same applies per-entry to the old
+ * two-field lines, which is why the parser below still reads them.
  */
 const liveAges = new Map();
+const liveFirstSeen = new Map();
+let undated = 0;
 const agesRes = await get(`${BASE}/_next/static/ASSET_AGES.txt`);
 if (agesRes) {
   for (const line of (await agesRes.text()).split('\n')) {
-    const m = line.trim().match(/^(\d+)\s+(.+)$/);
-    if (m) liveAges.set(m[2], Number(m[1]));
+    // New format `<age> <ISO> <path>`, and the OLD `<age> <path>` it replaces.
+    // Both are parsed for exactly one deploy — the currently-live ledger predates
+    // the timestamp, and refusing to read it would reset retention to zero on the
+    // very deploy that introduces the fix.
+    const dated = line.trim().match(/^(\d+)\s+(\S+T\S+Z)\s+(.+)$/);
+    if (dated) {
+      liveAges.set(dated[3], Number(dated[1]));
+      const t = Date.parse(dated[2]);
+      if (Number.isFinite(t)) liveFirstSeen.set(dated[3], t);
+      continue;
+    }
+    const legacy = line.trim().match(/^(\d+)\s+(.+)$/);
+    if (legacy) {
+      liveAges.set(legacy[2], Number(legacy[1]));
+      undated++;
+    }
   }
-  console.log(`live age table: ${liveAges.size} entry(ies)`);
+  console.log(
+    `live age table: ${liveAges.size} entry(ies)` +
+      (undated
+        ? `, ${undated} without a timestamp — stamped now (one-deploy ramp)`
+        : '')
+  );
 } else {
-  console.log('no age table on the live build — retained files start at age 1');
+  console.log(
+    'no age table on the live build — retained files start at age 1, dated now'
+  );
 }
 
 let retained = 0;
 let alreadyPresent = 0;
 let failed = 0;
 let tooOld = 0;
+let overflowed = 0;
 
+/**
+ * SELECT BEFORE DOWNLOADING (#751).
+ *
+ * The age rule and the file-count backstop both decide what NOT to fetch, so both
+ * have to run before any request — an expired asset should cost nothing. The count
+ * backstop additionally needs to compare candidates against each other, which a
+ * single streaming loop cannot do.
+ */
+const candidates = [];
 for (const ref of wanted) {
   // Strip any basePath so the on-disk location matches the build output.
   const path = ref.startsWith('http') ? new URL(ref).pathname : ref;
@@ -325,15 +421,30 @@ for (const ref of wanted) {
     /* not in the new build — that is exactly what we retain */
   }
 
-  // Age it forward, and stop carrying it once it is beyond the cap. This is the
-  // only thing bounding the chain, so it runs BEFORE the download — an expired
-  // asset should cost no request at all.
-  const age = (liveAges.get(rel) ?? 0) + 1;
-  if (age > RETAIN_GENERATIONS) {
+  // Unknown to the live ledger means first sighting: it is dated now, so it gets a
+  // full window rather than being dropped for having no history.
+  const born = liveFirstSeen.get(rel) ?? NOW;
+  const ageDays = (NOW - born) / DAY_MS;
+  if (ageDays > RETAIN_DAYS) {
     tooOld++;
     continue;
   }
+  candidates.push({ rel, dest, born, age: (liveAges.get(rel) ?? 0) + 1 });
+}
 
+// Newest first, so the backstop drops the assets fewest visitors can still be holding.
+candidates.sort((a, b) => b.born - a.born);
+if (candidates.length > RETAIN_MAX_FILES) {
+  overflowed = candidates.length - RETAIN_MAX_FILES;
+  candidates.length = RETAIN_MAX_FILES;
+  console.log(
+    `::warning::${overflowed} asset(s) dropped by the ${RETAIN_MAX_FILES}-file backstop ` +
+      `rather than by age. Coverage is no longer ${RETAIN_DAYS} days — raise ` +
+      'RETAIN_MAX_FILES or slow the merge rate.'
+  );
+}
+
+for (const { rel, dest, born, age } of candidates) {
   // Fetch against BASE, not the origin. `path` carries whatever prefix the LIVE
   // HTML uses, and `rel` is prefix-free — so joining `rel` to BASE is the only
   // combination correct in both directions. Using the origin plus the live path
@@ -348,12 +459,16 @@ for (const ref of wanted) {
   await mkdir(dirname(dest), { recursive: true });
   await writeFile(dest, buf);
   ages.set(rel, age);
+  firstSeen.set(rel, born);
   retained++;
 }
 
 console.log(
   `\nretained ${retained} previous-build asset(s); ${alreadyPresent} already in the new build; ` +
-    `${failed} unreachable; ${tooOld} past ${RETAIN_GENERATIONS} generation(s)`
+    `${failed} unreachable; ${tooOld} past ${RETAIN_DAYS} day(s)` +
+    (overflowed
+      ? `; ${overflowed} past the ${RETAIN_MAX_FILES}-file backstop`
+      : '')
 );
 if (wanted.size === 0) {
   console.log(
@@ -380,4 +495,3 @@ if (retained === 0) {
 }
 
 await publishManifest();
-

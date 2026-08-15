@@ -5,14 +5,18 @@
  * and cannot be configured otherwise, while every deploy replaces content-hashed
  * CSS. A returning visitor can therefore hold HTML whose stylesheets no longer
  * exist: white page, no nav, the logo at its natural size, DOM perfectly correct.
- * Reported from live production six times — #438, #467, #476, #548, and again on
- * 2026-08-09.
+ * Reported from live production eight times — #438, #467, #476, #548, #650, and
+ * three more through 2026-08-15.
  *
  * `scripts/retain-previous-assets.mjs` carries old assets forward and is why this is
- * rare, but it is bounded by `RETAIN_GENERATIONS` — and that bound is counted in
- * DEPLOYS while the exposure is HOW LONG A TAB HAS BEEN OPEN. Those are unrelated,
- * so no value of it closes the hole. This does: it notices the page is unstyled and
- * fetches the current HTML.
+ * rare. It is now bounded in DAYS rather than deploys (#751), which fixes a real
+ * mis-measurement but still leaves a bound — a visitor gone longer than the window
+ * is outside it. This has no bound: it notices the page is unstyled and fetches the
+ * current HTML, whatever the reason the assets went away.
+ *
+ * ONE RECOVERY PER HOUR, not per tab (#752). The original limit was per tab for the
+ * life of the tab, which disarmed the visitors most exposed to the bug — a tab open
+ * long enough for its assets to expire is one that has probably recovered before.
  *
  * WHY THE DETECTOR COUNTS RULES. Two earlier detectors were written and a browser
  * refuted both before either shipped:
@@ -45,10 +49,21 @@
 const stylesheetGuard = `
 (function () {
   try {
-    // At most ONE recovery per tab. A reload loop is strictly worse than an
-    // unstyled page — a visitor can at least read an unstyled page.
+    // At most one recovery per HOUR per tab (#752). A reload loop is strictly
+    // worse than an unstyled page — a visitor can at least read an unstyled page
+    // — so a second attempt is refused while the first is still recent.
+    //
+    // This used to be once per TAB, forever, which stranded exactly the visitors
+    // the guard exists for: holding a document for days is what makes its assets
+    // expire, and a tab open for days is one that has likely recovered before.
+    // Recovering on Monday must not disarm Friday.
+    //
+    // An hour separates the two cases cleanly. A genuine loop re-fires in
+    // seconds and is still stopped after one attempt; no real deploy-and-return
+    // cycle repeats inside an hour.
     var KEY = 'sh-stylesheet-recovered';
-    if (sessionStorage.getItem(KEY)) return;
+    var last = Number(sessionStorage.getItem(KEY) || 0);
+    if (last && Date.now() - last < 3600000) return;
 
     // On 'load', deliberately: at DOMContentLoaded a stylesheet may still be in
     // flight and would read as missing, turning a slow network into a reload.

@@ -201,26 +201,32 @@ jobs:
             "${SITE_URL:-https://scripthammer.com}"
         env:
           SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
-          # How many generations back an asset is carried. Bounds _next/static so
-          # chaining cannot grow forever.
+          # HOW LONG an asset is carried. Stated in days because the exposure is a
+          # duration: how long a visitor may still be holding a document.
           #
-          # WAS 5, AND THE REASONING WAS WRONG. It was sized against "deploys per 10
-          # minutes" — the HTML cache-control window. But the thing being protected
-          # is not a 10-minute window, it is HOW LONG SOMEONE'S TAB HAS BEEN OPEN,
-          # and those are unrelated quantities. On 2026-08-09 production rendered
-          # unstyled for the SIXTH time (#438, #467, #476, #548): five deploys landed
-          # across 22 hours — well-paced by the 10-minute rule — and a visitor
-          # returning the next day asked for CSS that had just aged out. Retention
-          # worked exactly as designed; the design measured the wrong thing.
+          # IT COUNTED DEPLOYS TWICE, AND WAS WRONG BOTH TIMES (#751). 5 was sized
+          # against "deploys per 10 minutes" — the HTML cache-control window — and
+          # #650 correctly identified that as the wrong quantity when production went
+          # unstyled a SIXTH time. But its fix kept counting deploys: 30, justified as
+          # "a normal working week even at an unusually high merge rate". Then 40
+          # deploys landed in the following 6 days (19 in one day), making 30
+          # generations ~3.5 days, and production went unstyled an EIGHTH time on
+          # 2026-08-15. Retention worked exactly as designed, twice; the design
+          # measured a quantity nobody had measured, twice.
           #
-          # 30 covers a normal working week even at an unusually high merge rate.
-          # Measured cost: 3-5 hashed files per generation (17 files bought the old
-          # 5), so ~100 small files against a 131-page export.
+          # A duration cannot be invalidated by the merge rate. Two weeks covers a
+          # holiday-length absence. Expected cost at the measured ~7 deploys/day:
+          # ~300-500 small files against a 131-page export (17 files bought the old
+          # 5 generations, ~100 bought 30). RETAIN_MAX_FILES backstops a runaway.
+          #
+          # `check-retained-assets.mjs` in smoke.yml FAILS if the live window is
+          # narrower than this. That assertion is the part that was missing — nothing
+          # ever compared the promise against its intended width.
           #
           # This is a MITIGATION. The recovery that does not depend on any number is
           # the self-heal in src/app/layout.tsx; the actual fix is #635 — a CDN
           # serving HTML `no-cache`, which GitHub Pages cannot be configured to do.
-          RETAIN_GENERATIONS: '30'
+          RETAIN_DAYS: '14'
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
