@@ -281,6 +281,162 @@ describe('MessageThread', () => {
     });
 
     /**
+     * The jump is an INTENT, and content is still arriving when it is made (#756).
+     *
+     * Reaching the top is what triggers loading older messages, so "scroll to the top,
+     * then press jump" is the ordinary case, not a corner. The old code resolved the jump
+     * to a coordinate — `scrollTop = scrollHeight` at the instant of the click — and that
+     * number is stale before the scroll finishes. Prepending older messages does not
+     * change the newest message id, so the auto-scroll effect never re-aims either, and
+     * the reader is left short. Measured at 1934px in `performance.spec.ts`, failing 2 of
+     * 3 full-spec runs on firefox.
+     *
+     * Deterministic here, where the E2E is inherently timing-dependent: grow the content
+     * and drive the observer by hand.
+     */
+    it('re-aims at the bottom when content arrives after the jump was requested', async () => {
+      const user = userEvent.setup();
+      const callbacks: ResizeObserverCallback[] = [];
+      const RealRO = global.ResizeObserver;
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(cb: ResizeObserverCallback) {
+            callbacks.push(cb);
+          }
+          observe() {}
+          unobserve() {}
+          disconnect() {}
+        }
+      );
+
+      try {
+        // Below the virtualization threshold, which is the path this defect lives on.
+        const messages = Array.from({ length: 50 }, (_, i) =>
+          createMockMessage(`msg-${i}`, `Message ${i}`, i)
+        );
+        render(<MessageThread messages={messages} />);
+        const container = screen.getByTestId('message-thread');
+
+        const scrollTo = vi.fn();
+        Object.defineProperty(container, 'scrollTo', {
+          value: scrollTo,
+          writable: true,
+        });
+        Object.defineProperty(container, 'scrollTop', {
+          value: 0,
+          writable: true,
+        });
+        Object.defineProperty(container, 'scrollHeight', {
+          value: 5278,
+          writable: true,
+        });
+        Object.defineProperty(container, 'clientHeight', {
+          value: 258,
+          writable: true,
+        });
+        container.dispatchEvent(new Event('scroll'));
+
+        const button = await screen.findByTestId('jump-to-bottom');
+        await user.click(button);
+        expect(
+          scrollTo,
+          'the jump never asked the container to scroll, so nothing below is meaningful'
+        ).toHaveBeenCalledWith(expect.objectContaining({ top: 5278 }));
+
+        // A page of older messages lands: the thread is now much taller, and the target
+        // the click resolved to is no longer the bottom.
+        scrollTo.mockClear();
+        Object.defineProperty(container, 'scrollHeight', {
+          value: 8600,
+          writable: true,
+        });
+        callbacks.forEach((cb) =>
+          cb([] as unknown as ResizeObserverEntry[], {} as ResizeObserver)
+        );
+
+        await waitFor(() => {
+          expect(scrollTo).toHaveBeenCalledWith(
+            expect.objectContaining({ top: 8600 })
+          );
+        });
+      } finally {
+        vi.stubGlobal('ResizeObserver', RealRO);
+      }
+    });
+
+    /**
+     * ...and stops as soon as the reader takes over, or it would fight them.
+     */
+    it('stops re-aiming once the reader scrolls for themselves', async () => {
+      const user = userEvent.setup();
+      const callbacks: ResizeObserverCallback[] = [];
+      const RealRO = global.ResizeObserver;
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(cb: ResizeObserverCallback) {
+            callbacks.push(cb);
+          }
+          observe() {}
+          unobserve() {}
+          disconnect() {}
+        }
+      );
+
+      try {
+        const messages = Array.from({ length: 50 }, (_, i) =>
+          createMockMessage(`msg-${i}`, `Message ${i}`, i)
+        );
+        render(<MessageThread messages={messages} />);
+        const container = screen.getByTestId('message-thread');
+
+        const scrollTo = vi.fn();
+        Object.defineProperty(container, 'scrollTo', {
+          value: scrollTo,
+          writable: true,
+        });
+        Object.defineProperty(container, 'scrollTop', {
+          value: 0,
+          writable: true,
+        });
+        Object.defineProperty(container, 'scrollHeight', {
+          value: 5278,
+          writable: true,
+        });
+        Object.defineProperty(container, 'clientHeight', {
+          value: 258,
+          writable: true,
+        });
+        container.dispatchEvent(new Event('scroll'));
+
+        await user.click(await screen.findByTestId('jump-to-bottom'));
+
+        // The reader grabs the wheel. That cancels the pending jump.
+        container.dispatchEvent(new WheelEvent('wheel', { bubbles: true }));
+
+        scrollTo.mockClear();
+        Object.defineProperty(container, 'scrollHeight', {
+          value: 8600,
+          writable: true,
+        });
+        callbacks.forEach((cb) =>
+          cb([] as unknown as ResizeObserverEntry[], {} as ResizeObserver)
+        );
+
+        await waitFor(() => {
+          expect(callbacks.length).toBeGreaterThan(0);
+        });
+        expect(
+          scrollTo,
+          'the component kept dragging the reader back to the bottom after they scrolled away'
+        ).not.toHaveBeenCalled();
+      } finally {
+        vi.stubGlobal('ResizeObserver', RealRO);
+      }
+    });
+
+    /**
      * Under virtualization the jump must NOT ask for a smooth scroll.
      *
      * This is a contract with @tanstack/virtual-core, not a style preference. Its

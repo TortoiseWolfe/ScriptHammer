@@ -249,23 +249,44 @@ test.describe('Large-history message thread', () => {
         viewer.page.locator('[data-testid="pagination-loader"]')
       ).toBeVisible({ timeout: 15000 });
 
-      // Wait for the new page to be in the list.
+      // THE ACTUAL RESTORATION CLAIM, POLLED — because restoration necessarily happens
+      // AFTER the growth that triggers it, and asserting once in between measures the gap.
+      //
+      // This test asserted the outcome once, immediately after polling `scrollHeight >
+      // before.scrollHeight`, and failed with scrollTop 0 on firefox every run. It looked
+      // exactly like a product defect and was reported as one. It was not. Traced in the
+      // browser at 60ms intervals:
+      //
+      //     0ms  top=0     h=5278  kids=2
+      //    94ms  top=2722  h=8216  kids=8
+      //   155ms  top=2962  h=8600  kids=14   <- stable for the next 1.4s
+      //
+      // Restoration works. The bug was that `before.scrollHeight` was 5216 while the
+      // pre-pagination height had already settled at 5278, so the growth poll was
+      // satisfied by 62px of ordinary layout drift and returned before a single older
+      // message had arrived — then the one-shot read caught scrollTop still at 0.
+      //
+      // So: poll the thing being claimed. This is the same lesson as #300 and #739, in the
+      // file written to remove exactly this pattern, which is worth stating plainly rather
+      // than quietly fixing.
       await expect
-        .poll(async () => (await threadMetrics(viewer.page)).scrollHeight, {
+        .poll(async () => (await threadMetrics(viewer.page)).scrollTop, {
+          message:
+            'after older messages loaded the view stayed pinned at the very top, so the ' +
+            'reader lost their place',
           timeout: 20000,
-          intervals: [200, 500, 1000],
+          intervals: [100, 250, 500],
         })
-        .toBeGreaterThan(before.scrollHeight);
+        .toBeGreaterThan(0);
 
-      // THE ACTUAL RESTORATION CLAIM. Prepending older messages must not leave the reader
-      // pinned at scrollTop 0 staring at the oldest message in the conversation — the
-      // content they were reading should still be below them.
+      // And the page really did grow — otherwise the assertion above could be satisfied by
+      // any stray scroll, with no pagination having happened at all.
       const after = await threadMetrics(viewer.page);
       expect(
-        after.scrollTop,
-        'after older messages loaded the view stayed pinned at the very top, so the ' +
-          'reader lost their place'
-      ).toBeGreaterThan(0);
+        after.scrollHeight,
+        'the thread never grew, so no older page was loaded and the restoration assertion ' +
+          'above proved nothing'
+      ).toBeGreaterThan(before.scrollHeight + 500);
     } finally {
       await viewer.close();
     }

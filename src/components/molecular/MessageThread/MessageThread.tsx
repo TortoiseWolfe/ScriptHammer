@@ -88,6 +88,15 @@ export default function MessageThread({
   const previousScrollHeight = useRef<number>(0);
   const shouldAutoScroll = useRef<boolean>(true);
 
+  /**
+   * An explicit "take me to the newest message" that has not been satisfied yet (#756).
+   *
+   * Separate from `shouldAutoScroll` on purpose: that one is recomputed from position on
+   * every scroll event, including the jump's own animation frames, so it is false for
+   * most of the journey and cannot represent an intent that has to outlive the trip.
+   */
+  const pendingJumpRef = useRef<boolean>(false);
+
   // Determine whether to use virtual scrolling
   const useVirtualScrolling = messages.length >= VIRTUAL_SCROLL_THRESHOLD;
 
@@ -247,15 +256,61 @@ export default function MessageThread({
     const parent = parentRef.current;
     if (!parent || typeof ResizeObserver === 'undefined') return;
 
-    const observer = new ResizeObserver(() => syncJumpButton());
+    const observer = new ResizeObserver(() => {
+      syncJumpButton();
+
+      // HOLD THE BOTTOM WHILE THE CONTENT IS STILL ARRIVING (#756).
+      //
+      // "Jump to the bottom" is an intent, not a coordinate, and the old code treated it
+      // as a coordinate: it scrolled to whatever `scrollHeight` happened to be at the
+      // instant of the click. Click it while a page of older messages is still loading —
+      // which is the normal case, because reaching the top is what STARTED that load —
+      // and the target is stale before the animation ends. Measured: the reader is left
+      // 1934px short, and nothing re-aims, because prepending older messages does not
+      // change the newest message id so the auto-scroll effect never fires.
+      //
+      // Re-aiming here converges: scrolling changes position, not size, so this cannot
+      // feed itself. It stops as soon as the reader takes over, below.
+      if (pendingJumpRef.current) scrollToBottomRef.current?.(false);
+    });
     observer.observe(parent);
     // The container's own box rarely changes; the CONTENT's height is what moves when
-    // messages land, so observe both.
-    const content = parent.firstElementChild;
-    if (content) observer.observe(content);
+    // messages land, so observe the children too.
+    //
+    // ALL of them, not `firstElementChild`: while a page is loading the first child is
+    // the pagination loader, so watching only that one would miss the very growth this
+    // exists to notice. Re-subscribed when the content changes, because the children are
+    // replaced on render.
+    Array.from(parent.children).forEach((child) => observer.observe(child));
 
     return () => observer.disconnect();
-  }, [syncJumpButton]);
+  }, [syncJumpButton, messages.length, loading]);
+
+  /**
+   * The reader taking over cancels the pending jump.
+   *
+   * Deliberately NOT the `scroll` event: the jump's own animation emits those, so using
+   * them would cancel the intent the moment it started acting on it. These three are the
+   * ways a person actually moves a thread themselves.
+   */
+  useEffect(() => {
+    const parent = parentRef.current;
+    if (!parent) return;
+    const release = () => {
+      pendingJumpRef.current = false;
+    };
+    parent.addEventListener('wheel', release, { passive: true });
+    parent.addEventListener('touchstart', release, { passive: true });
+    parent.addEventListener('keydown', release);
+    // Dragging the scrollbar emits neither wheel nor touch.
+    parent.addEventListener('mousedown', release);
+    return () => {
+      parent.removeEventListener('wheel', release);
+      parent.removeEventListener('touchstart', release);
+      parent.removeEventListener('keydown', release);
+      parent.removeEventListener('mousedown', release);
+    };
+  }, []);
 
   // Bind handleScroll as a native DOM event listener instead of via React's
   // `onScroll` JSX prop. Reason: React's synthetic onScroll does not reliably
@@ -435,7 +490,11 @@ export default function MessageThread({
         {showScrollButton && (
           <button
             type="button"
-            onClick={() => scrollToBottom(true)}
+            onClick={() => {
+              // The intent outlives the scroll: content may still be arriving.
+              pendingJumpRef.current = true;
+              scrollToBottom(true);
+            }}
             className="btn btn-circle btn-primary absolute right-4 bottom-4 z-10 min-h-11 min-w-11 shadow-lg"
             aria-label="Jump to bottom"
             data-testid="jump-to-bottom"
