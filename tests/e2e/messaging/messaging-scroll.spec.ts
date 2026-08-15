@@ -372,11 +372,47 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
 
     const jumpButton = page.locator('[data-testid="jump-to-bottom"]');
 
+    // WAIT THE WAY T007/T008 DOES, WHICH IS WHY T007/T008 DOES NOT FLAKE.
+    //
+    // Removing the old `if (await jumpButton.isVisible())` wrapper — which made the whole
+    // test vacuous whenever the button was absent — exposed a SECOND failure hiding behind
+    // it: on firefox the button was simply not there yet, and `expect(...).toBeVisible()`
+    // reported `<element(s) not found>` after 5s.
+    //
+    // `settleFrames` advances three animation frames, roughly 50 ms. That is not long
+    // enough for the scroll to propagate through React state to a rendered button on every
+    // engine. T007/T008 solves this by waiting on the component's OWN signal instead of on
+    // time, and this now does the same.
+    //
+    // First: prove the thread really did scroll. A thread that is too short to pass the
+    // 500px threshold SHOULD have no button, and asserting the button in that case would be
+    // blaming the component for a fixture problem.
+    const scrollInfo = await messageThread.evaluate((el) => ({
+      distanceFromBottom: el.scrollHeight - (el.scrollTop + el.clientHeight),
+    }));
+    expect(
+      scrollInfo.distanceFromBottom,
+      'fixture thread is not tall enough to scroll 500px+ from the bottom, so the jump ' +
+        'button is correctly absent — this is a fixture failure, not a UI regression'
+    ).toBeGreaterThan(500);
+
+    // Then: the attribute MessageThread writes synchronously when it decides to show the
+    // button, which sidesteps the React-state-flush vs event-loop race entirely.
+    const wrapper = page.locator('[data-show-scroll-button]').first();
+    await expect
+      .poll(async () => await wrapper.getAttribute('data-show-scroll-button'), {
+        message:
+          'MessageThread never set data-show-scroll-button="true" after scrolling to the ' +
+          'top — the component did not register the scroll',
+        timeout: 5000,
+        intervals: [50, 100, 200, 500],
+      })
+      .toBe('true');
+
     // NOT `if (await jumpButton.isVisible())`. The whole body used to sit inside that
     // condition, so a thread where the button never appeared passed having asserted
     // nothing — and "the jump button stopped rendering" is precisely what this test is
-    // named for. T007/T008 above already establish it appears when scrolled up, so here
-    // it is a requirement, not a precondition.
+    // named for. It is a requirement here, not a precondition.
     await expect(jumpButton).toBeVisible();
 
     await jumpButton.click();
