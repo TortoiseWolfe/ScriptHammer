@@ -49,7 +49,18 @@ test.beforeAll(async ({ browser }) => {
   });
   const page = await context.newPage();
   try {
-    await page.goto('http://localhost:3000/messages', {
+    // RELATIVE, so it honours the configured baseURL (#300).
+    //
+    // This was `http://localhost:3000/messages`, hardcoded. Every other navigation in this
+    // file is relative, so the suite ran fine on 3000 and nowhere else — and the failure
+    // mode was silent: the goto reached whatever else was on 3000, the conversation button
+    // never appeared, `setupSucceeded` went false, and FIVE tests skipped with the
+    // reassuring message "No conversations for test user in CI". A green run that executed
+    // two of seven tests.
+    //
+    // That is what stopped this file being reproducible off-CI, which is what made T009 so
+    // hard to diagnose: locally it never ran at all.
+    await page.goto('/messages', {
       waitUntil: 'domcontentloaded',
       timeout: 30000,
     });
