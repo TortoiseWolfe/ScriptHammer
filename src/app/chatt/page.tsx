@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     description:
       '8,000 buildings at real lidar heights over live OpenStreetMap and USGS 3DEP terrain, in your browser. Open source — join in at Chattanooga.Digital.',
     path: '/chatt/',
-    image: '/chatt-atlas-og.jpg',
+    image: '/chatt-diorama-og.jpg',
   }),
   // The helper derives BOTH canonical and og:url from `path` (metadata.tsx:40).
   // og:url should be what people share (/chatt/), but canonical must stay the

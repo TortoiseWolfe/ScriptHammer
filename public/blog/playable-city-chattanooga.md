@@ -24,6 +24,8 @@ twitterCard: summary_large_image
 
 A while back I built a 3D digital twin of Chattanooga. It's about eight thousand buildings at real rooftop heights, floating over the actual street grid and terrain, running in a browser tab. You can [walk the atlas yourself](https://scripthammer.com/chatt/); it's the honest version of the city, drawn from open data with no server behind it.
 
+> 🚲 **Update (August 2026):** the twin isn't read-only anymore. You can now [walk and ride a bike through it](https://scripthammer.com/blog/ride-the-open-source-city) in first person. This post is the brainstorm that came first; that one is where it actually started moving.
+
 Then I made the mistake of leaving it open on a second monitor for a week. And a question started nagging at me that I can't shake:
 
 **What if the map weren't just something you _look at_, but something you _play_?**
