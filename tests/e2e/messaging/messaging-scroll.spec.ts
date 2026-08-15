@@ -373,6 +373,21 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
 
     const messageThread = page.locator('[data-testid="message-thread"]');
 
+    // SCROLLING AN EMPTY THREAD MEASURES NOTHING.
+    //
+    // This used to scroll the moment the conversation opened. Roughly one run in ten the
+    // messages had not rendered yet — the thread was 404px tall with 0 bubbles — so
+    // `scrollTop = 0` was already the bottom, the component correctly hid the jump button,
+    // and no later event ever revisited that decision. The test then measured a 2798px
+    // scroll distance and demanded a button whose state had been decided against an empty
+    // list. That intermittence was a real product defect (fixed: MessageThread now
+    // recomputes on resize) but the test should still not be scrolling nothing.
+    await expect(
+      page.locator('[data-testid="message-bubble"]').first()
+    ).toBeVisible({
+      timeout: 30000,
+    });
+
     // Scroll up to trigger button
     await messageThread.evaluate((el) => {
       el.scrollTop = 0;

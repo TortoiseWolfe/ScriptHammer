@@ -190,26 +190,72 @@ export default function MessageThread({
     }
   }, [messages]);
 
+  /**
+   * Whether the jump button belongs on screen, given where the thread sits RIGHT NOW.
+   *
+   * This is a pure function of layout, so it has to run whenever layout changes — not
+   * only when the user scrolls. It used to live inside the scroll handler alone, and
+   * that was a real defect: open a conversation, scroll up before the messages finish
+   * rendering, and the button's visibility was decided against an empty list (a 404px
+   * container, distanceFromBottom 0 → hidden). The messages then rendered, the thread
+   * became 3136px with 2798px below the fold, and nothing revisited the decision. The
+   * button stayed hidden until the user scrolled again — exactly when they had most
+   * reason to want it.
+   *
+   * Measured, not inferred: T009 failed about one run in ten on firefox this way, and
+   * the instrumented run showed `bubbles: 0` at the moment the state was computed.
+   */
+  const syncJumpButton = useCallback(() => {
+    const parent = parentRef.current;
+    if (!parent) return;
+    const { scrollTop, scrollHeight, clientHeight } = parent;
+    const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+    setShowScrollButton(distanceFromBottom > SHOW_JUMP_BUTTON_THRESHOLD);
+  }, []);
+
   // Check if user has scrolled away from bottom
   const handleScroll = useCallback(() => {
     const parent = parentRef.current;
     if (!parent) return;
 
+    syncJumpButton();
+
     const { scrollTop, scrollHeight, clientHeight } = parent;
     const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
 
-    // Show scroll button if more than threshold from bottom
-    const shouldShowButton = distanceFromBottom > SHOW_JUMP_BUTTON_THRESHOLD;
-    setShowScrollButton(shouldShowButton);
-
-    // Update auto-scroll behavior
+    // DELIBERATELY SCROLL-ONLY, unlike the button above. This records user INTENT —
+    // "am I following the live conversation?" — and only the user moving the scroll
+    // expresses that. Content growing underneath someone does not mean they changed
+    // their mind, so recomputing it on resize would silently drop people out of
+    // follow mode whenever a tall message arrived.
     shouldAutoScroll.current = distanceFromBottom < 100;
 
     // Load more when scrolling to top
     if (scrollTop < 100 && hasMore && !loading && onLoadMore) {
       onLoadMore();
     }
-  }, [hasMore, loading, onLoadMore]);
+  }, [syncJumpButton, hasMore, loading, onLoadMore]);
+
+  /**
+   * Recompute the button when the thread RESIZES, not just when it scrolls.
+   *
+   * Covers every way the distance-from-bottom can change without a scroll event:
+   * messages arriving or decrypting, images and fonts loading, the viewport changing,
+   * the virtualizer re-measuring rows.
+   */
+  useEffect(() => {
+    const parent = parentRef.current;
+    if (!parent || typeof ResizeObserver === 'undefined') return;
+
+    const observer = new ResizeObserver(() => syncJumpButton());
+    observer.observe(parent);
+    // The container's own box rarely changes; the CONTENT's height is what moves when
+    // messages land, so observe both.
+    const content = parent.firstElementChild;
+    if (content) observer.observe(content);
+
+    return () => observer.disconnect();
+  }, [syncJumpButton]);
 
   // Bind handleScroll as a native DOM event listener instead of via React's
   // `onScroll` JSX prop. Reason: React's synthetic onScroll does not reliably
@@ -231,7 +277,7 @@ export default function MessageThread({
       if (useVirtualScrolling) {
         virtualizer.scrollToIndex(messages.length - 1, {
           align: 'end',
-          behavior: smooth ? 'smooth' : 'auto',
+          behavior: 'auto',
         });
       } else {
         const parent = parentRef.current;
