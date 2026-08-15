@@ -1,6 +1,18 @@
-# Changelog
+# Planning Factory Changelog (archived)
 
-All notable changes to ScriptHammer are documented here.
+History of the **planning-factory / wireframe pipeline** — SpecKit workflow, the multi-terminal
+tmux roles, RFCs, and the SVG validator rules. That pipeline has since been retired and folded
+into the `/speckit.wireframe.*` skills, so this file is an archive and is not maintained.
+
+**This is not the product changelog.** ScriptHammer's released versions live in
+[`CHANGELOG.md`](./CHANGELOG.md) beside this file, and that is the one a release updates.
+
+It used to sit at the repo root under the name `CHANGELOG.md`, which made it indistinguishable
+from the product changelog: two tracked files, one name, contradictory histories — this one
+dates 0.1.0 to 2026-01-13, the product's dates it to 2025-09-14 — and every unqualified
+"update CHANGELOG.md" instruction was a coin flip between them (#569).
+
+---
 
 ## [Unreleased] - 2026-01-16
 

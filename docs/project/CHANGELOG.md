@@ -1,5 +1,9 @@
 # Changelog
 
+> **The changelog.** A second one used to sit at the repo root with a
+> contradictory history; it was the retired planning-factory pipeline's and now lives at
+> [`PLANNING-FACTORY-CHANGELOG.md`](./PLANNING-FACTORY-CHANGELOG.md) (#569).
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
