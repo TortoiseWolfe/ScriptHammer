@@ -234,7 +234,23 @@ test('security hooks fail when gitleaks is unavailable', () => {
       });
       const output = result.stdout + result.stderr;
       assert.strictEqual(result.status, 1, output);
-      assert.match(output, /gitleaks is required/);
+      // IT MUST SAY IT COULD NOT SCAN — not that it found something (#747).
+      // pre-commit used to report every non-zero exit as "Secrets detected", so a
+      // missing .env in a worktree sent the reader hunting a leak that did not
+      // exist. Each hook words this its own way; what matters is that a scanner
+      // which never ran is never dressed up as a finding.
+      assert.match(
+        output,
+        /gitleaks is required|could NOT RUN|cannot scan/i,
+        'a hook that cannot scan must say so: ' + output
+      );
+      assert.doesNotMatch(
+        output,
+        /Secrets detected/,
+        'gitleaks was unavailable, so reporting detected secrets is a false ' +
+          'report — the #747 defect: ' +
+          output
+      );
       assert.doesNotMatch(output, /skipping secret scan/);
     }
   } finally {

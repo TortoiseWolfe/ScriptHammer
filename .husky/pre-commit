@@ -3,67 +3,112 @@
 # inside the container, where .next is the running dev server's — wiping it here
 # 500s every route on every commit (#293). Nothing below reads .next anyway:
 # gitleaks scans staged blobs, lint-staged runs eslint/prettier on staged files.
+#
+# THE INDEX THIS SCANS MUST BE THE ONE BEING COMMITTED (#747).
+#
+# `docker compose exec` enters the ALREADY-RUNNING container, whose /app is the
+# primary checkout. A git worktree has its own index, so from a worktree that
+# scanned the main tree's staged files instead of the ones being committed — and
+# with a clean main tree, `gitleaks protect --staged` inspected an EMPTY index and
+# exited 0. A green tick having measured nothing, which is worse than no hook.
+#
+# So anything that reads the index now prefers a host-native binary, which always
+# sees the real checkout. Docker is the fallback, and is refused outright from a
+# worktree rather than silently pointed at the wrong tree.
 
-# Function to run gitleaks on staged files
-run_gitleaks_staged() {
-  echo "🔐 Scanning staged files for secrets..."
-  if command -v gitleaks >/dev/null 2>&1; then
-    gitleaks protect --staged --config .gitleaks.toml --verbose
-    return $?
-  elif [ -f "node_modules/.bin/gitleaks" ]; then
-    node_modules/.bin/gitleaks protect --staged --config .gitleaks.toml --verbose
-    return $?
-  else
-    echo "❌ gitleaks is required but was not found on PATH or in node_modules/.bin."
-    echo "Install project dependencies or make gitleaks available before committing."
-    return 1
-  fi
+# `git rev-parse` disagrees with itself in a linked worktree: --git-dir is the
+# worktree's own directory, --git-common-dir the shared one.
+in_worktree() {
+  [ "$(git rev-parse --git-dir 2>/dev/null)" != "$(git rev-parse --git-common-dir 2>/dev/null)" ]
 }
 
-# Detect if we're running inside the Docker container
-if [ -d "/app" ] && [ "$PWD" = "/app" ]; then
-  # We're inside the Docker container
-  echo "📦 Running inside Docker container..."
+# EXIT CODES ARE NOT ENOUGH TO TELL THESE APART, so invocability is checked first.
+# Measured: `gitleaks protect` exits 1 for leaks found AND 1 for a bad config. A
+# bare `if [ $? -ne 0 ]; then echo "Secrets detected"` therefore reported "env file
+# not found" as a leak and sent the next person hunting one that did not exist.
+SCAN_CLEAN=0
+SCAN_LEAKS=1
+SCAN_UNAVAILABLE=2
 
-  # Run gitleaks first
-  run_gitleaks_staged
-  GITLEAKS_EXIT=$?
-  if [ $GITLEAKS_EXIT -ne 0 ]; then
-    echo "❌ Secrets detected! Commit blocked."
-    exit 1
-  fi
-
-  # Run lint-staged
-  echo "🔍 Running lint-staged..."
-  pnpm exec lint-staged --no-stash
-elif command -v docker >/dev/null 2>&1 && docker compose ps 2>/dev/null | grep -q scripthammer; then
-  # We're on the host and Docker is running
-  echo "🐳 Running via Docker..."
-
-  # Run gitleaks via Docker
+run_gitleaks_staged() {
   echo "🔐 Scanning staged files for secrets..."
-  docker compose exec -T scripthammer pnpm run gitleaks:staged
-  GITLEAKS_EXIT=$?
-  if [ $GITLEAKS_EXIT -ne 0 ]; then
-    echo "❌ Secrets detected! Commit blocked."
-    exit 1
+
+  # The config is the one input whose absence would otherwise masquerade as a
+  # leak, so it is checked separately and reported as what it is.
+  if [ ! -f .gitleaks.toml ]; then
+    echo "⚠️  .gitleaks.toml is missing — cannot scan."
+    return $SCAN_UNAVAILABLE
   fi
 
-  # Run lint-staged via Docker
-  echo "🔍 Running lint-staged..."
+  if command -v gitleaks >/dev/null 2>&1; then
+    gitleaks protect --staged --config .gitleaks.toml --verbose
+    [ $? -eq 0 ] && return $SCAN_CLEAN || return $SCAN_LEAKS
+  fi
+
+  if [ -x "node_modules/.bin/gitleaks" ]; then
+    node_modules/.bin/gitleaks protect --staged --config .gitleaks.toml --verbose
+    [ $? -eq 0 ] && return $SCAN_CLEAN || return $SCAN_LEAKS
+  fi
+
+  # Docker last, and never from a worktree — it would scan the primary checkout.
+  if in_worktree; then
+    echo "⚠️  No native gitleaks, and this is a git worktree."
+    echo "   Docker would scan the PRIMARY checkout's index, not this one (#747)."
+    return $SCAN_UNAVAILABLE
+  fi
+
+  if command -v docker >/dev/null 2>&1 && docker compose ps 2>/dev/null | grep -q scripthammer; then
+    docker compose exec -T scripthammer pnpm run gitleaks:staged
+    GL=$?
+    # Distinguishable here: 126/127 mean the command could not be executed at all,
+    # and compose reports a missing env file or absent container the same way.
+    if [ $GL -eq 126 ] || [ $GL -eq 127 ]; then
+      echo "⚠️  Could not execute gitleaks inside the container."
+      return $SCAN_UNAVAILABLE
+    fi
+    [ $GL -eq 0 ] && return $SCAN_CLEAN || return $SCAN_LEAKS
+  fi
+
+  echo "⚠️  gitleaks not found on PATH, in node_modules/.bin, or via Docker."
+  return $SCAN_UNAVAILABLE
+}
+
+run_gitleaks_staged
+GITLEAKS_EXIT=$?
+
+# BOTH OUTCOMES BLOCK. Only the message differs, because "we found a secret" and
+# "we could not look" need different next actions from the person reading it.
+if [ $GITLEAKS_EXIT -eq $SCAN_LEAKS ]; then
+  echo "❌ Secrets detected! Commit blocked."
+  exit 1
+elif [ $GITLEAKS_EXIT -ne $SCAN_CLEAN ]; then
+  echo "❌ Secret scan could NOT RUN — commit blocked. This is not a leak report."
+  echo "   Install gitleaks (https://github.com/gitleaks/gitleaks) or start the"
+  echo "   dev container, then commit again."
+  exit 1
+fi
+
+# ---------------------------------------------------------------------------
+# lint-staged — same wrong-index hazard, same ordering.
+#
+# `docker compose exec ... lint-staged` from a worktree would format the PRIMARY
+# checkout's staged files. The issue only named this for gitleaks; it is the same
+# mechanism, so it gets the same treatment.
+# ---------------------------------------------------------------------------
+echo "🔍 Running lint-staged..."
+
+if [ -d "/app" ] && [ "$PWD" = "/app" ]; then
+  echo "📦 Running inside Docker container..."
+  pnpm exec lint-staged --no-stash
+elif [ -x "node_modules/.bin/lint-staged" ]; then
+  node_modules/.bin/lint-staged --no-stash
+elif in_worktree; then
+  echo "⚠️  No local lint-staged, and this is a git worktree."
+  echo "   Skipping rather than formatting the primary checkout's files (#747)."
+  echo "   Run prettier/eslint by hand on what you staged, per CLAUDE.md."
+elif command -v docker >/dev/null 2>&1 && docker compose ps 2>/dev/null | grep -q scripthammer; then
+  echo "🐳 Running via Docker..."
   docker compose exec -T scripthammer pnpm exec lint-staged --no-stash
 else
-  # We're on the host without Docker or Docker isn't running
-  echo "💻 Running locally..."
-
-  # Run gitleaks locally
-  run_gitleaks_staged
-  GITLEAKS_EXIT=$?
-  if [ $GITLEAKS_EXIT -ne 0 ]; then
-    echo "❌ Secrets detected! Commit blocked."
-    exit 1
-  fi
-
-  # Run lint-staged
-  pnpm lint:staged
+  echo "⚠️  lint-staged unavailable — staged files were NOT formatted or linted."
 fi

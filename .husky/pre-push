@@ -1,41 +1,77 @@
 #!/bin/bash
 
-# Function to run full gitleaks scan
-run_gitleaks_full() {
-  echo "🔐 Running full repository secret scan..."
-  if command -v gitleaks >/dev/null 2>&1; then
-    gitleaks detect --source . --config .gitleaks.toml --verbose
-    return $?
-  elif [ -f "node_modules/.bin/gitleaks" ]; then
-    node_modules/.bin/gitleaks detect --source . --config .gitleaks.toml --verbose
-    return $?
-  else
-    echo "❌ gitleaks is required but was not found on PATH or in node_modules/.bin."
-    echo "Install project dependencies or make gitleaks available before pushing."
-    return 1
-  fi
+# THE SAME TWO DEFECTS AS pre-commit, FIXED THE SAME WAY (#747).
+#
+# 1. `docker compose exec` enters the running container, whose /app is the PRIMARY
+#    checkout. From a git worktree that scanned the wrong repository entirely.
+# 2. Every non-zero exit printed "Secrets detected in repository!", so failing to
+#    RUN the scanner was reported as finding a secret. Caught by the shared hook
+#    test after pre-commit was fixed: this hook printed "gitleaks is required but
+#    was not found" and "Secrets detected" in the same breath.
+#
+# Exit codes cannot separate the two — `gitleaks` returns 1 for leaks found AND for
+# a bad config — so invocability is established before any conclusion is drawn.
+
+SCAN_CLEAN=0
+SCAN_LEAKS=1
+SCAN_UNAVAILABLE=2
+
+in_worktree() {
+  [ "$(git rev-parse --git-dir 2>/dev/null)" != "$(git rev-parse --git-common-dir 2>/dev/null)" ]
 }
 
-# Run gitleaks full scan first
+run_gitleaks_full() {
+  echo "🔐 Running full repository secret scan..."
+
+  if [ ! -f .gitleaks.toml ]; then
+    echo "⚠️  .gitleaks.toml is missing — cannot scan."
+    return $SCAN_UNAVAILABLE
+  fi
+
+  # Native first: it scans THIS checkout, in a worktree and in the primary tree.
+  if command -v gitleaks >/dev/null 2>&1; then
+    gitleaks detect --source . --config .gitleaks.toml --verbose
+    [ $? -eq 0 ] && return $SCAN_CLEAN || return $SCAN_LEAKS
+  fi
+
+  if [ -x "node_modules/.bin/gitleaks" ]; then
+    node_modules/.bin/gitleaks detect --source . --config .gitleaks.toml --verbose
+    [ $? -eq 0 ] && return $SCAN_CLEAN || return $SCAN_LEAKS
+  fi
+
+  if in_worktree; then
+    echo "⚠️  No native gitleaks, and this is a git worktree."
+    echo "   Docker would scan the PRIMARY checkout, not this one (#747)."
+    return $SCAN_UNAVAILABLE
+  fi
+
+  if command -v docker >/dev/null 2>&1 && docker compose ps 2>/dev/null | grep -q scripthammer; then
+    docker compose exec -T scripthammer pnpm run gitleaks
+    GL=$?
+    if [ $GL -eq 126 ] || [ $GL -eq 127 ]; then
+      echo "⚠️  Could not execute gitleaks inside the container."
+      return $SCAN_UNAVAILABLE
+    fi
+    [ $GL -eq 0 ] && return $SCAN_CLEAN || return $SCAN_LEAKS
+  fi
+
+  echo "⚠️  gitleaks not found on PATH, in node_modules/.bin, or via Docker."
+  return $SCAN_UNAVAILABLE
+}
+
 echo "🔒 Pre-push secret scanning..."
+run_gitleaks_full
+GITLEAKS_EXIT=$?
 
-if [ -d "/app" ] && [ "$PWD" = "/app" ]; then
-  # Inside Docker
-  run_gitleaks_full
-  GITLEAKS_EXIT=$?
-elif command -v docker >/dev/null 2>&1 && docker compose ps 2>/dev/null | grep -q scripthammer; then
-  # Host with Docker running
-  docker compose exec -T scripthammer pnpm run gitleaks
-  GITLEAKS_EXIT=$?
-else
-  # Host without Docker
-  run_gitleaks_full
-  GITLEAKS_EXIT=$?
-fi
-
-if [ $GITLEAKS_EXIT -ne 0 ]; then
+# Both block; only the message differs, because they need different next actions.
+if [ $GITLEAKS_EXIT -eq $SCAN_LEAKS ]; then
   echo "❌ Secrets detected in repository! Push blocked."
   echo "Review the findings above and remove any secrets before pushing."
+  exit 1
+elif [ $GITLEAKS_EXIT -ne $SCAN_CLEAN ]; then
+  echo "❌ Secret scan could NOT RUN — push blocked. This is not a leak report."
+  echo "   Install gitleaks (https://github.com/gitleaks/gitleaks) or start the"
+  echo "   dev container, then push again."
   exit 1
 fi
 
