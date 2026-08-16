@@ -297,6 +297,30 @@ const nextConfig: NextConfig = {
         },
       };
     }
+
+    // LET JS IMPORT A .woff2 AND GET ITS FINAL URL (#740).
+    //
+    // Fonts referenced from CSS `url()` are handled by Next's css-loader and are NOT
+    // affected by this: `dependency: { not: ['url'] }` scopes the rule to real ESM
+    // imports, so the 34 faces in fonts.generated.css keep emitting exactly as before.
+    // Verified by diffing the emitted `_next/static/media` file list against a build
+    // without this rule — identical, 34 files, same hashes.
+    //
+    // It exists so `fonts-preload.generated.ts` can import the eight preloadable faces
+    // and hand the bundler's fingerprinted URL to `<link rel="preload">`. A literal URL
+    // cannot work: the bundler adds a SECOND hash (`x-s.p.woff2` ships as
+    // `x-s.p.1a4aa509.woff2`), so anything hardcoded is stale as soon as a font changes.
+    config.module.rules.push({
+      test: /\.woff2$/,
+      dependency: { not: ['url'] },
+      type: 'asset/resource',
+      generator: {
+        // Match the layout Next already uses for fonts, so nothing else has to learn a
+        // second location.
+        filename: 'static/media/[name].[hash:8][ext]',
+      },
+    });
+
     return config;
   },
 };
