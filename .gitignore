@@ -271,3 +271,4 @@ graphify-out/
 # Production builds only; lives at the repo root because that is what crosses
 # the builder/dev container boundary (#293).
 .chunk-modules.json
+.commitmsg.tmp

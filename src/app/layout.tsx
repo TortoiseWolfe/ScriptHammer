@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { PRELOAD_FONTS } from './fonts-preload.generated';
 import ThemeScript from '@/components/ThemeScript';
 import AccessibilityScript from '@/components/AccessibilityScript';
 import StylesheetGuard from '@/components/subatomic/StylesheetGuard';
@@ -128,6 +129,31 @@ export default function RootLayout({
     // level too deep for either to see, so both silently fell through to their
     // ui-sans-serif fallback while the font downloaded perfectly.
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/*
+         * Start the font fetch from the HTML rather than from CSS parsing (#740).
+         *
+         * `next/font` emitted these until the faces were vendored (#730); without them the
+         * browser must parse the stylesheet and reach layout before it discovers a face.
+         * Nothing broke — `swap` and the metric-matched fallbacks mean no layout shift —
+         * but on a cold connection the swap happens later than it needs to.
+         *
+         * `crossOrigin` is REQUIRED even though these are same-origin: fonts are fetched in
+         * CORS mode, and a preload without it is a different cache entry from the one the
+         * CSS later requests, so the file downloads twice and the preload is worse than
+         * nothing.
+         */}
+        {PRELOAD_FONTS.map((href) => (
+          <link
+            key={href}
+            rel="preload"
+            href={href}
+            as="font"
+            type="font/woff2"
+            crossOrigin="anonymous"
+          />
+        ))}
+      </head>
       <body
         className="flex min-h-screen flex-col antialiased"
         suppressHydrationWarning
