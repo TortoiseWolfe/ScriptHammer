@@ -161,10 +161,51 @@ describe('renderBlogMarkdown heading compatibility', () => {
     );
   });
 
-  it('keeps every live TOC anchor resolvable across the authored corpus', () => {
-    const posts = blogData.posts as Array<{ slug: string; content: string }>;
+  /**
+   * ONE TEST PER POST, NOT ONE TEST OVER ALL OF THEM (#728).
+   *
+   * This was a single `it()` that looped the whole authored corpus — rendering every
+   * post through the markdown pipeline and parsing each result with jsdom. It is the
+   * heaviest test in the suite, and it sometimes exceeded vitest's 5000 ms per-test
+   * default when the full suite runs under coverage.
+   *
+   * Measured on an idle machine with no coverage attached: **636 ms warm, 2590 ms
+   * cold**. Half the budget consumed before any load, and a >4x spread run to run.
+   * A test that starts a race that far behind loses it eventually.
+   *
+   * Splitting per post is the fix rather than a bigger number, because picking a
+   * timeout means sizing a value against a load distribution nobody has measured —
+   * the mistake #751 made twice with the retention window. Each post now gets its
+   * own full budget for ~1/15th of the work, and a failure names the offending post
+   * in the TEST TITLE instead of only in an assertion message.
+   *
+   * WHAT THIS SWEEP CAN AND CANNOT CATCH, found by mutating rather than assuming.
+   * It asserts the renderer and the TOC generator AGREE — not that either is right.
+   * Both derive ids from the same `generateBlogHeadingId`, so corrupting that
+   * function shifts both sides identically and all 15 posts still pass. Only a
+   * change that makes the two DISAGREE is visible here (verified: suffixing the id
+   * in toc-generator.ts alone fails every post). The shared function's own
+   * correctness is pinned by the slug-algorithm tests above, which is where that
+   * belongs — worth knowing before trusting this sweep to cover a renderer change.
+   */
+  const corpus = blogData.posts as Array<{ slug: string; content: string }>;
 
-    for (const post of posts) {
+  it('the authored corpus loaded, so the per-post sweep below is not empty', () => {
+    // `it.each([])` REGISTERS NOTHING AND THE FILE STILL PASSES. If blog-data.json
+    // ever fails to load or changes shape, the sweep would cover zero posts while
+    // reporting green — the vacuous-gate shape this repo keeps paying for (#396,
+    // #411). This test cannot be skipped out of existence by a bad import, so it is
+    // what makes the sweep's silence audible.
+    expect(corpus.length).toBeGreaterThanOrEqual(10);
+    expect(
+      corpus.every((post) => post.slug && post.content?.length > 0),
+      'every post needs a slug and content for the sweep to mean anything'
+    ).toBe(true);
+  });
+
+  it.each(corpus.map((post) => [post.slug, post] as const))(
+    'keeps every live TOC anchor resolvable in %s',
+    (_slug, post) => {
       const { root } = renderedDocument(post.content, {
         demoteHeadings: true,
       });
@@ -182,7 +223,7 @@ describe('renderBlogMarkdown heading compatibility', () => {
         ).toBe(true);
       }
     }
-  });
+  );
 });
 
 describe('renderBlogMarkdown links and images', () => {
