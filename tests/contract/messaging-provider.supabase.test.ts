@@ -30,6 +30,7 @@ import {
 } from '../fixtures/test-users';
 import {
   seedConformanceFixtures,
+  setConnection,
   teardownConformanceFixtures,
 } from './conformance-fixtures';
 import {
@@ -108,6 +109,10 @@ if (!hasRlsTestEnvironment()) {
         providerOutsider: out.provider,
         ctxOutsider: out.ctx,
         pendingUserId: pending.id,
+        // C30 (#352): both runners write the connection row through the same
+        // service-client helper, so "blocked" means the same state on both
+        // backends and only the ENFORCEMENT differs.
+        setAbConnection: (opts) => setConnection(svc, opts),
         ...fixtures,
       };
     },
@@ -129,6 +134,21 @@ if (!hasRlsTestEnvironment()) {
         expect((error as Error).message).toBe(
           'You cannot start a conversation with yourself'
         );
+        return;
+      }
+
+      if (kind === 'blocked') {
+        // C30 (#352) is refused at the INSERT by RLS, not by a provider
+        // preflight — there is no client-side connection check on the send path,
+        // and adding one would only be advisory anyway.
+        //
+        // PostgREST maps a policy violation (42501) to HTTP 403, which is the
+        // same status the .NET runner pins, so both backends refuse a block with
+        // an authorization error rather than a 5xx. What must NOT appear is any
+        // hint of WHY (asserted provider-agnostically in the contract).
+        expect(error).toBeInstanceOf(ConnectionError);
+        expect((error as Error).message).toContain('Failed to send message');
+        expect((error as Error).message).toMatch(/row-level security/i);
         return;
       }
 

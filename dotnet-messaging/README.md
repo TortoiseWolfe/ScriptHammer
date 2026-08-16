@@ -11,7 +11,7 @@ Supabase→.NET migration) and the enterprise-readiness epic #280.
 The `DotnetMessagingProvider` (in the Next.js app) calls this server's REST API
 (`/api/messaging/...`). Because a .NET backend has no in-database `auth.uid()`,
 this server **re-expresses the RLS authorization contract explicitly in C#** (the
-13 named clauses catalogued in
+14 named clauses catalogued in
 [`docs/messaging/AUTHORIZATION-CONTRACT.md`](../docs/messaging/AUTHORIZATION-CONTRACT.md)):
 it validates the Supabase JWT, extracts the caller's `sub`, and enforces
 membership scoping, sender-only edit + 15-minute window, recipient-only mark-read,

@@ -3,7 +3,7 @@
  *
  * ONE set of authorization + data-contract assertions, parametrized over a
  * provider factory, so BOTH the Supabase and the .NET providers are measured
- * against the IDENTICAL contract (the 13 named clauses catalogued in
+ * against the IDENTICAL contract (the 14 named clauses catalogued in
  * `docs/messaging/AUTHORIZATION-CONTRACT.md`). This is the
  * anti-drift alarm across the Supabase↔.NET seam: if the .NET server ever drops
  * a rule (e.g. the 15-minute edit window), the same test that passes on Supabase
@@ -109,10 +109,30 @@ export interface ConformanceHarness {
    * ConnectionError), so only the database state is provider-agnostic.
    */
   readConversationBetween(userX: string, userY: string): Promise<string | null>;
+
+  /**
+   * Rewrite the userA↔userB connection to exactly one row in the given direction
+   * and status (service client). C30 uses it to place a block as
+   * (participant_1 → participant_2) and then as (participant_2 → participant_1),
+   * because `unique_connection` is not symmetric and only one of those rows will
+   * exist in real data.
+   *
+   * Every C30 case restores `accepted` in a `finally`, so later clauses still see
+   * the shared fixture graph they were written against.
+   */
+  setAbConnection(opts: {
+    requesterId: string;
+    addresseeId: string;
+    status: 'accepted' | 'blocked';
+  }): Promise<void>;
 }
 
 /** Which authorization rule a refused write was supposed to trip. */
-export type RefusalKind = 'not-connected' | 'pending-connection' | 'self';
+export type RefusalKind =
+  | 'not-connected'
+  | 'pending-connection'
+  | 'self'
+  | 'blocked';
 
 export interface ConformanceConfig {
   /** Human label for the provider under test (e.g. "supabase"). */
@@ -646,6 +666,167 @@ export function runMessagingProviderContract(config: ConformanceConfig): void {
       expect(created).toBeNull();
       expect(await h.readConversationBetween(h.userAId, h.userAId)).toBeNull();
       config.assertRefusal(refusal, 'self');
+    });
+
+    // ── C30 — a block stops future contact in an EXISTING conversation (#352) ──
+    //
+    // C3 gates CREATING a conversation on connection status. Nothing gated SENDING,
+    // which was gated on participation alone — so a user who was blocked after the
+    // conversation already existed kept messaging the person who blocked them. All
+    // nine `messages` policies were connection-blind.
+    //
+    // C30 takes the next genuinely unused number. C4, C6 and C15–C28 are gaps that
+    // never existed; reusing one would imply a history it does not have.
+    describe('C30: blocking stops sending into an existing conversation', () => {
+      const PAYLOAD = {
+        ciphertext: 'YmxvY2tlZC1zZW5k', // base64("blocked-send")
+        iv: 'aXYtYmxrPQ==',
+        keyVersion: 1,
+        clientGeneratedId: null,
+      };
+
+      /** Message count read by a participant — reads stay open (decision 2). */
+      async function messageCount(): Promise<number> {
+        const page = await h.providerA.getMessages(h.ctxA, {
+          conversationId: h.conversationId,
+          cursor: null,
+          limit: 200,
+        });
+        return page.rows.length;
+      }
+
+      /**
+       * Place the block in a SPECIFIC direction, run the case, and always restore
+       * `accepted` — later clauses share this fixture graph.
+       */
+      async function withBlock(
+        requesterId: string,
+        addresseeId: string,
+        fn: () => Promise<void>
+      ): Promise<void> {
+        await h.setAbConnection({
+          requesterId,
+          addresseeId,
+          status: 'blocked',
+        });
+        try {
+          await fn();
+        } finally {
+          await h.setAbConnection({
+            requesterId: h.userAId,
+            addresseeId: h.userBId,
+            status: 'accepted',
+          });
+        }
+      }
+
+      /**
+       * The shared property: the send is refused, no row appears, and the refusal
+       * does not say WHY. Decision 1 — a message naming the block turns any
+       * conversation into an oracle for "did this person block me?".
+       */
+      async function expectSendRefused(
+        provider: MessagingDataProvider,
+        ctx: AuthContext
+      ): Promise<void> {
+        const before = await messageCount();
+
+        let refusal: unknown;
+        const sent = await provider
+          .sendMessage(ctx, { conversationId: h.conversationId, ...PAYLOAD })
+          .catch((e) => {
+            refusal = e;
+            return null;
+          });
+
+        expect(sent).toBeNull();
+        // Row state is the provider-agnostic half: a backend that refuses by
+        // accident still must not have written anything.
+        expect(await messageCount()).toBe(before);
+
+        expect(
+          refusal,
+          'the send resolved without a row — that is a silent drop, not a refusal'
+        ).toBeDefined();
+
+        const text = String((refusal as Error).message ?? '').toLowerCase();
+        expect(
+          text.includes('block'),
+          `refusal names the block ("${(refusal as Error).message}"). Decision 1: ` +
+            'the message must not distinguish "you are blocked" from any other ' +
+            'refusal, or it becomes an oracle.'
+        ).toBe(false);
+
+        config.assertRefusal(refusal, 'blocked');
+      }
+
+      it('C30: the blocked user cannot send — block stored (participant_1 → participant_2)', async () => {
+        // userA is participant_1 by the canonical ordering, so this is "the person
+        // listed first blocked the person listed second".
+        await withBlock(h.userAId, h.userBId, () =>
+          expectSendRefused(h.providerB, h.ctxB)
+        );
+      });
+
+      it('C30: the blocked user cannot send — block stored (participant_2 → participant_1)', async () => {
+        // THIS IS THE CASE THAT CATCHES A ONE-SIDED RULE. `unique_connection` is
+        // UNIQUE (requester_id, addressee_id) and is NOT symmetric: exactly one row
+        // exists and which way round it points depends on who pressed the button,
+        // not on the conversation's participant ordering. A check written against
+        // only (participant_1 = requester) passes the case above and fails here —
+        // enforcing the block for roughly half of real blocks, silently.
+        await withBlock(h.userBId, h.userAId, () =>
+          expectSendRefused(h.providerA, h.ctxA)
+        );
+      });
+
+      it('C30: the blocker cannot send either, so silence is symmetric', async () => {
+        // Not politeness — it closes the oracle. If the blocker could still send
+        // while the blocked user could not, the asymmetry itself reveals the block
+        // to anyone comparing the two directions, which is what decision 1 forbids.
+        await withBlock(h.userAId, h.userBId, () =>
+          expectSendRefused(h.providerA, h.ctxA)
+        );
+      });
+
+      it('C30: existing history stays readable to both sides (decision 2)', async () => {
+        // Blocking severs future contact; it does not retract what was already
+        // said. Deleting or hiding history would also be a louder signal than the
+        // refusal we just made deliberately quiet.
+        await h.seedMessage({
+          senderId: h.userAId,
+          ciphertext: 'aGlzdG9yeQ==',
+        });
+
+        await withBlock(h.userAId, h.userBId, async () => {
+          const asA = await h.providerA.getMessages(h.ctxA, {
+            conversationId: h.conversationId,
+            cursor: null,
+            limit: 200,
+          });
+          const asB = await h.providerB.getMessages(h.ctxB, {
+            conversationId: h.conversationId,
+            cursor: null,
+            limit: 200,
+          });
+          expect(asA.rows.length).toBeGreaterThan(0);
+          expect(asB.rows.length).toBe(asA.rows.length);
+        });
+      });
+
+      it('C30: a group conversation is unaffected by a 1:1 block (decision 5)', async () => {
+        // Explicitly out of scope, and pinned so it cannot drift in by accident.
+        // Dropping a blocked member's messages from a group leaves holes in every
+        // OTHER member's view of the thread — it leaks the block to bystanders.
+        // Group moderation is a separate authority.
+        await withBlock(h.userAId, h.userBId, async () => {
+          const sent = await h.providerB.sendMessage(h.ctxB, {
+            conversationId: h.groupConversationId,
+            ...PAYLOAD,
+          });
+          expect(sent.sender_id).toBe(h.userBId);
+        });
+      });
     });
   });
 }

@@ -17,8 +17,8 @@
  *
  * ## The authorization contract
  * The messaging security model is ~75 Postgres RLS policies + SECURITY DEFINER
- * helpers. The subset both backends must enforce is catalogued as 13 named
- * clauses (C1, C2, C3, C5, C7–C14, C29) in
+ * helpers. The subset both backends must enforce is catalogued as 14 named
+ * clauses (C1, C2, C3, C5, C7–C14, C29, C30) in
  * `docs/messaging/AUTHORIZATION-CONTRACT.md` and exercised by the shared
  * conformance suite (`tests/contract/messaging-provider.contract.ts`). (The old
  * "C1–C29" banner was aspirational — C4, C6 and C15–C28 were never authored; the

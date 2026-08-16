@@ -6,7 +6,7 @@
  * group conversations, written via the Supabase service client into the shared
  * Postgres), then drives the REAL DotnetMessagingProvider —
  * pointed at the live ASP.NET server — through the IDENTICAL contract assertions
- * (the 13 named clauses in `docs/messaging/AUTHORIZATION-CONTRACT.md`).
+ * (the 14 named clauses in `docs/messaging/AUTHORIZATION-CONTRACT.md`).
  * If the .NET backend drops a rule, this suite goes red. That is the whole point:
  * the contract is measured against both backends, not trusted.
  *
@@ -34,6 +34,7 @@ import {
 } from '../fixtures/test-users';
 import {
   seedConformanceFixtures,
+  setConnection,
   teardownConformanceFixtures,
 } from './conformance-fixtures';
 import {
@@ -115,6 +116,10 @@ if (!DOTNET_API_URL || !hasRlsTestEnvironment()) {
         providerOutsider: out.provider,
         ctxOutsider: out.ctx,
         pendingUserId: pending.id,
+        // C30 (#352): the SAME helper the Supabase runner uses. The state under
+        // test must be built identically on both backends, or a divergence in
+        // the fixture would read as a divergence in enforcement.
+        setAbConnection: (opts) => setConnection(svc, opts),
         ...fixtures,
       };
     },
