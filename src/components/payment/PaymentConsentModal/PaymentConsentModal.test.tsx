@@ -63,6 +63,26 @@ describe('PaymentConsentModal', () => {
     expect(screen.getByText(customMessage)).toBeInTheDocument();
   });
 
+  /**
+   * The modal tells the buyer they are agreeing to terms. #773: it said exactly
+   * that while linking only to the Privacy Policy, and no terms page existed —
+   * a representation to the customer that could not be produced if a dispute
+   * asked for it.
+   *
+   * Asserting the LINK, not the wording: the sentence may be reworded, but a
+   * modal that claims agreement must point at the thing being agreed to.
+   */
+  it('links to the Terms of Service it says you are agreeing to (#773)', () => {
+    render(<PaymentConsentModal />);
+
+    const terms = screen.getByRole('link', { name: /terms of service/i });
+    expect(terms).toHaveAttribute('href', '/terms');
+
+    // Privacy must survive alongside it — they answer different questions.
+    const privacy = screen.getByRole('link', { name: /privacy policy/i });
+    expect(privacy).toHaveAttribute('href', '/privacy');
+  });
+
   it('renders accept and decline buttons', () => {
     render(<PaymentConsentModal />);
 

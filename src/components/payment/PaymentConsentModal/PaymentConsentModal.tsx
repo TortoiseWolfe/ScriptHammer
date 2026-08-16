@@ -188,9 +188,23 @@ export const PaymentConsentModal: React.FC<PaymentConsentModalProps> = ({
           </button>
         </div>
 
-        {/* Privacy Notice */}
+        {/*
+          This said "you agree to our payment processing terms" while linking
+          only to the Privacy Policy — asserting agreement to a document that did
+          not exist (#773). Both are linked now, so the sentence is true and the
+          terms a buyer is said to accept can actually be produced if a dispute
+          asks for them.
+        */}
         <p className="text-base-content/80 mt-4 text-center text-xs">
-          By accepting, you agree to our payment processing terms.
+          By accepting, you agree to our{' '}
+          <Link
+            href="/terms"
+            className="link-hover link"
+            aria-label="Read terms of service"
+          >
+            Terms of Service
+          </Link>
+          .
           <br />
           Read our{' '}
           <Link
