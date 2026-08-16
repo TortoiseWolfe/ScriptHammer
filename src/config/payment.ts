@@ -69,9 +69,12 @@ export function validateSupabaseConfig(): void {
 
 export const stripeConfig = {
   publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
-  // Recurring checkout requires an operator-created Price (Stripe Dashboard
-  // or API) — the plan amount + interval live on the Price object, not here.
-  subscriptionPriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID || '',
+  // NO subscriptionPriceId. It used to hold NEXT_PUBLIC_STRIPE_PRICE_ID and was
+  // read for EVERY recurring SKU, so three Care Plan tiers at $49/$99/$249 would
+  // all have billed whatever that one variable pointed at (#772). The price now
+  // comes from `products.stripe_price_id`, resolved server-side in
+  // create-stripe-subscription — the client never names a price, which also
+  // closes #559 T024 (the server used to accept any price the request named).
   secretKey: process.env.STRIPE_SECRET_KEY || '', // Server-side only
   webhookSecret: process.env.STRIPE_WEBHOOK_SECRET || '', // Server-side only
 } as const;
@@ -104,9 +107,15 @@ export function validateStripeConfig(serverSide = false): void {
 export const paypalConfig = {
   clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || '',
   // Recurring billing Plan (operator-created in the PayPal dashboard / API);
-  // the plan amount + interval live on the Plan object, mirroring Stripe's
-  // subscriptionPriceId. Empty → the recurring PayPal path shows a clear
-  // "not configured" error instead of silently creating a one-time order.
+  // the plan amount + interval live on the Plan object. Empty → the recurring
+  // PayPal path shows a clear "not configured" error instead of silently
+  // creating a one-time order.
+  //
+  // ⚠️ THIS IS THE SAME DEFECT #772 FIXED ON THE STRIPE LANE, STILL OPEN HERE.
+  // One global plan id is read for EVERY recurring SKU, so three PayPal tiers
+  // would all bill whatever this points at. `products.paypal_plan_id` already
+  // exists for the per-SKU value; the fix mirrors create-stripe-subscription's
+  // resolver. Not fixed in this PR only to keep it reviewable.
   subscriptionPlanId: process.env.NEXT_PUBLIC_PAYPAL_PLAN_ID || '',
   clientSecret: process.env.PAYPAL_CLIENT_SECRET || '', // Server-side only
   webhookId: process.env.PAYPAL_WEBHOOK_ID || '', // Server-side only

@@ -11,7 +11,9 @@
  * REQUEST
  *   POST /functions/v1/create-stripe-subscription
  *   Authorization: Bearer <user JWT>
- *   Body: { price_id: string, customer_email: string }
+ *   Body: { product_id: string, customer_email: string }
+ *
+ *   `price_id` is NOT accepted and a request carrying one is refused (#559).
  *
  * RESPONSE
  *   200 OK: { sessionId: string, url: string }
@@ -29,32 +31,52 @@
  *     stripe-webhook when `customer.subscription.created` fires. That
  *     event includes the real provider_subscription_id (which we don't
  *     have yet) and the real plan_amount / plan_interval / status.
- *   - The `price_id` is operator-configured in Stripe Dashboard; the
- *     plan amount + interval come from there. We pass it through.
+ *   - THE PRICE IS RESOLVED HERE, FROM THE CATALOG — never from the request.
+ *     The caller names a `product_id`; `products.stripe_price_id` supplies the
+ *     Price. This closes #772 (client sent one global price for every tier) and
+ *     #559 T024 (server accepted any price the request named) together: a client
+ *     that has no price to send cannot send the wrong one, and the catalog is
+ *     the allowlist. An earlier version of this comment claimed the price was
+ *     "operator-configured in Stripe Dashboard" while the code trusted the
+ *     request — per #559, the code was fixed so the comment became true.
  *
  * NOTES
  *   - No payment_intents row is involved. Subscriptions are a separate
  *     code path that bypasses the one-off payment_intents/results
- *     lifecycle. The browser caller (SubscriptionManager) passes the
- *     price_id directly.
+ *     lifecycle.
+ *   - Mirrors `create-order`, which already prices one-time SKUs from the
+ *     catalog (`create-order/index.ts` product lookup + `resolve.ts`).
  *   - Email validation matches the pattern in payment-service.ts.
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAuthenticatedUserId, UnauthorizedError } from '../_shared/auth.ts';
+import { resolveSubscription, type SubscriptionProductRow } from './resolve.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   apiVersion: '2024-06-20',
   httpClient: Stripe.createFetchHttpClient(),
 });
 
+// Same env-name fallback as create-stripe-checkout: Supabase auto-injects the
+// unprefixed names, but this project's config also carries NEXT_PUBLIC_ ones.
+const supabaseUrl =
+  Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
 const siteUrl = Deno.env.get('NEXT_PUBLIC_SITE_URL') || 'http://localhost:3000';
 
 interface RequestBody {
-  price_id?: string;
+  product_id?: string;
   customer_email?: string;
+  /**
+   * Present only so a caller that still sends it is REFUSED rather than having
+   * it silently ignored. Never read as a price. See resolve.ts.
+   */
+  price_id?: unknown;
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -77,10 +99,38 @@ serve(async (req) => {
       return jsonResponse(req, { error: 'Invalid JSON body' }, 400);
     }
 
-    const priceId = body.price_id?.trim();
-    if (!priceId) {
-      return jsonResponse(req, { error: 'price_id is required' }, 400);
+    const productId = body.product_id?.trim();
+    if (!productId) {
+      return jsonResponse(req, { error: 'product_id is required' }, 400);
     }
+
+    // Catalog lookup — the SAME shape create-order uses, service client so the
+    // read is not subject to the caller's RLS.
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: productRow, error: productError } = await supabase
+      .from('products')
+      .select(
+        'id, name, type, interval, active, stripe_price_id, currency, amount'
+      )
+      .eq('id', productId)
+      .maybeSingle();
+    if (productError) {
+      console.error(
+        'create-stripe-subscription: product lookup failed',
+        productError
+      );
+      return jsonResponse(req, { error: 'Internal server error' }, 500);
+    }
+
+    // Every price rule lives in the pure resolver so it is testable without Deno.
+    const decision = resolveSubscription({
+      product: (productRow as SubscriptionProductRow | null) ?? null,
+      sentPriceId: body.price_id,
+    });
+    if (decision.kind === 'refuse') {
+      return jsonResponse(req, { error: decision.error }, decision.status);
+    }
+    const priceId = decision.priceId;
 
     const customerEmail = body.customer_email?.trim().toLowerCase();
     if (!customerEmail || !EMAIL_REGEX.test(customerEmail)) {

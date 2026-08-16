@@ -203,14 +203,30 @@ function PaymentDemoContent() {
                   className="btn-primary"
                 />
 
-                {/* Recurring payment */}
+                {/*
+                  Recurring payment.
+
+                  `amount` is DISPLAY ONLY on this path and always was — the
+                  charge comes from the Stripe Price, so the old "$9.99/month"
+                  label was never what a subscriber would have been billed
+                  (#772). The price now comes from `products.stripe_price_id`
+                  for the SKU named below, so the label and the charge finally
+                  agree.
+
+                  All three recurring SKUs are `active = false` until #772 and
+                  #559 are both closed, so this button surfaces a clear "product
+                  not found" rather than charging. That is the honest state, and
+                  better than the previous version, which silently charged
+                  whatever one global env var pointed at.
+                */}
                 <PaymentButton
-                  amount={999}
+                  amount={9900}
                   currency="usd"
                   type="recurring"
+                  productId="svc-care"
                   customerEmail={user?.email || 'demo@example.com'}
-                  description="Demo Subscription - $9.99/month"
-                  buttonText="Subscribe $9.99/month"
+                  description="Care Plan - $99.00/month"
+                  buttonText="Subscribe to Care Plan"
                   onSuccess={handlePaymentSuccess}
                   onError={handlePaymentError}
                   className="btn-secondary"
