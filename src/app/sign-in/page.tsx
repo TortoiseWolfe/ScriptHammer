@@ -139,7 +139,12 @@ export default function SignInPage() {
             </p>
             <p className="text-base-content text-sm">
               New here?{' '}
-              <Link href={signUpHref} className="link link-secondary">
+              {/* NOT link-secondary (#778). Measured against the hero gradient:
+                  6.07:1 on scripthammer-light, under the 7:1 this text needs.
+                  text-base-content measures 10.1 light / 11.81 dark. `link`
+                  stays, so the UNDERLINE marks it as a link rather than colour
+                  alone — which WCAG prefers regardless. */}
+              <Link href={signUpHref} className="link text-base-content">
                 Create an account
               </Link>
             </p>

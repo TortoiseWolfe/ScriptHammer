@@ -364,10 +364,16 @@ export default function SignInForm({
           <span>Remember Me</span>
         </label>
         {/* Conventionally belongs on this row, not below the submit button.
-            `min-h-11` keeps the 44px touch target the mobile gate requires. */}
+            `min-h-11` keeps the 44px touch target the mobile gate requires.
+
+            NOT link-primary (#778). Measured against the hero gradient: 6.8:1
+            on dark and 6.08:1 on light, both under the 7:1 this text needs.
+            text-base-content measures 11.81 / 10.1. `link` stays so the
+            UNDERLINE carries the affordance rather than colour alone, which
+            WCAG prefers regardless. */}
         <Link
           href="/forgot-password"
-          className="link link-primary min-h-11 content-center text-sm"
+          className="link text-base-content min-h-11 content-center text-sm"
         >
           Forgot password?
         </Link>
