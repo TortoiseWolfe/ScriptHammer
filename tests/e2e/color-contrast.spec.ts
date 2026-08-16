@@ -7,6 +7,7 @@ import {
   type IsolatedAdmin,
 } from './utils/test-user-factory';
 import { dirname, join } from 'node:path';
+import { waitForLoadStateOrGiveUp } from './utils/settle';
 
 // Pa11y's axe runner reports axe `incomplete` results as errors, which
 // produces 14–61 false positives per page on DaisyUI — .btn gradients
@@ -270,7 +271,7 @@ test.describe('WCAG AAA color-contrast-enhanced (violations only)', () => {
         await page.goto(path, { waitUntil: 'domcontentloaded' });
         // Give client-side redirects and hydration a chance to finish, so the
         // execution context is stable before axe is injected.
-        await page.waitForLoadState('load').catch(() => {});
+        await waitForLoadStateOrGiveUp(page, 'load');
         // 3000ms mirrored pa11yci's `wait` when this swept 4 pages; across the
         // full route list that is minutes of pure idling. 1200ms is the settle
         // that replaces the load-state guarantee given up above.

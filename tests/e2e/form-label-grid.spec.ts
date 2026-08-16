@@ -28,6 +28,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { waitForLoadStateOrGiveUp } from './utils/settle';
 
 /** Routes with at least two labelled fields in one form. */
 const ROUTES = [
@@ -72,7 +73,7 @@ test.describe('Form fields follow one grid per form (#436)', () => {
         await page.goto(`${prefix}${route}`, {
           waitUntil: 'domcontentloaded',
         });
-        await page.waitForLoadState('load').catch(() => {});
+        await waitForLoadStateOrGiveUp(page, 'load');
         await page.waitForTimeout(1200);
 
         const forms = await page.evaluate(() => {

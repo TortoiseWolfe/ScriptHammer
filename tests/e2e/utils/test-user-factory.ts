@@ -20,6 +20,7 @@ import { KeyDerivationService } from '@/lib/messaging/key-derivation';
 // transitive messaging Dexie instance constructs without indexedDB.
 import { GroupKeyService } from '@/services/messaging/group-key-service';
 import { isBackendCaptchaProtected } from './captcha-guard';
+import { waitForLoadStateOrGiveUp } from './settle';
 
 /**
  * Key used for PROGRAMMATIC sign-ins in test setup.
@@ -1063,7 +1064,7 @@ export async function waitForAuthenticatedState(
   } catch {
     // All auth indicators timed out - now check if we're definitively unauthenticated
     // Wait a bit for any hydration to complete
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await waitForLoadStateOrGiveUp(page, 'networkidle');
 
     // Check for Sign In link AFTER page has settled
     const signInLink = page.getByRole('link', { name: 'Sign In' });
