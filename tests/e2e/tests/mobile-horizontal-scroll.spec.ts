@@ -97,6 +97,7 @@ import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { CRITICAL_MOBILE_WIDTHS } from '@/config/test-viewports';
 import { dismissCookieBanner } from '../utils/test-user-factory';
+import { waitForLoadStateOrGiveUp } from '../utils/settle';
 
 const APP_DIR = join(process.cwd(), 'src/app');
 
@@ -275,7 +276,7 @@ test.describe('Horizontal Scroll Detection', () => {
         height: 800,
       });
       await page.goto(url, { waitUntil: 'domcontentloaded' });
-      await page.waitForLoadState('load').catch(() => {});
+      await waitForLoadStateOrGiveUp(page, 'load');
       await page.waitForTimeout(1200);
 
       const failures: string[] = [];
@@ -297,7 +298,7 @@ test.describe('Horizontal Scroll Detection', () => {
         } catch (err) {
           if (!/context was destroyed|Execution context/i.test(String(err)))
             throw err;
-          await page.waitForLoadState('load').catch(() => {});
+          await waitForLoadStateOrGiveUp(page, 'load');
           await page.waitForTimeout(800);
           m = await page.evaluate(measureOverflow, width);
         }

@@ -1,4 +1,5 @@
 import { test, expect, devices } from '@playwright/test';
+import { waitForLoadStateOrGiveUp } from '../utils/settle';
 
 /**
  * Mobile UX Tests for Blog Posts - iPhone 12
@@ -175,7 +176,7 @@ test.describe('Blog Post Mobile UX - iPhone 12', () => {
       // this, getComputedStyle(el).overflowX occasionally returns "" (e.g.
       // mid-transition) and the array.toContain check fails with the odd
       // diff "Expected value: ''" vs "Received array: ['auto', 'scroll']".
-      await page.waitForLoadState('networkidle').catch(() => {});
+      await waitForLoadStateOrGiveUp(page, 'networkidle');
 
       // Check that code block has internal scrolling. Poll the computed
       // style a few times in case the initial read returns the empty

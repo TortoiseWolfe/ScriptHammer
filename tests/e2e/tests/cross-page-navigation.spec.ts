@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 import { THEMES, THEME_COUNT } from '@/config/themes';
+import { waitForLoadStateOrGiveUp } from '../utils/settle';
 
 test.describe('Cross-Page Navigation', () => {
   test('navigate through all main pages', async ({ page }) => {
@@ -354,7 +355,7 @@ test.describe('Cross-Page Navigation', () => {
       .getByRole('heading', { level: 1 })
       .first()
       .waitFor({ state: 'visible', timeout: 10000 });
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await waitForLoadStateOrGiveUp(page, 'networkidle');
 
     // Check scroll position is near top (allow offset for fixed headers and
     // browser-specific scroll restoration behavior — WebKit can report up
