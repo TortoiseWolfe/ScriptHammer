@@ -8,6 +8,11 @@ import {
 } from './utils/test-user-factory';
 import { dirname, join } from 'node:path';
 import { waitForLoadStateOrGiveUp } from './utils/settle';
+import {
+  measureNullRatioNodes,
+  UNRESOLVABLE_ALLOWLIST,
+  VENDOR_EXCLUDED,
+} from './utils/contrast-fallback';
 
 // Pa11y's axe runner reports axe `incomplete` results as errors, which
 // produces 14–61 false positives per page on DaisyUI — .btn gradients
@@ -362,26 +367,82 @@ test.describe('WCAG AAA color-contrast-enhanced (violations only)', () => {
         // axe could not compute one — most often a background it cannot resolve
         // (an image, a gradient, a transparent stack). It is not a pass; it is a
         // question that was never answered, and it was being counted as covered.
-        const unmeasured = (results.passes ?? []).flatMap((rule) =>
+        const unmeasured: string[] = (results.passes ?? []).flatMap((rule) =>
           rule.nodes
             .filter((n) => (n.any?.[0]?.data?.contrastRatio ?? null) === null)
             .map((n) => n.target?.[0])
+            // A node axe cannot give a selector for cannot be re-resolved in the
+            // page either, so it would only become a phantom "unresolvable".
+            .filter((t): t is string => typeof t === 'string')
         );
         const passCount = (results.passes ?? []).reduce(
           (n, v) => n + v.nodes.length,
           0
         );
+        // MEASURE THEM OURSELVES (#459). Reporting the count was the previous
+        // behaviour and it closed nothing — a printed number can grow for
+        // months without anyone reading the log. Every one of these is text on
+        // a gradient, which axe declines to compute but which is perfectly
+        // computable from the gradient's stops. See utils/contrast-fallback.ts
+        // for why worst-of-stops is the correct bound and why canvas readback
+        // is the only thing that resolves this codebase's oklch() colours.
+        const fallback = unmeasured.length
+          ? await page.evaluate(measureNullRatioNodes, unmeasured)
+          : [];
+
+        const fallbackFailures = fallback
+          .filter((r) => r.kind === 'measured' && r.ratio! < r.required!)
+          // Vendor chrome we do not style. Named and reasoned in
+          // VENDOR_EXCLUDED, never a bare threshold.
+          .filter(
+            (r) =>
+              !VENDOR_EXCLUDED.some(
+                (v) =>
+                  r.selector.includes(v.selectorFragment) ||
+                  r.signature.includes(v.selectorFragment)
+              )
+          )
+          .map((r) => ({
+            target: r.selector,
+            html: `${r.signature}  "${r.text}"`,
+            fg: r.fg,
+            bg: r.bg,
+            ratio: r.ratio,
+            expected: r.required,
+            note: `axe reported this as a PASS with contrastRatio: null (${r.mode})`,
+          }));
+
+        // Anything still unmeasurable must be a KNOWN category. Asserted as a
+        // set rather than a count: a count stays green while one unresolvable
+        // node appears and another is fixed.
+        const unresolvedUnknown = fallback
+          .filter((r) => r.kind === 'unresolvable')
+          .filter(
+            (r) =>
+              !UNRESOLVABLE_ALLOWLIST.some(
+                (a) => a.signature.test(r.signature) && a.reason === r.reason
+              )
+          )
+          .map(
+            (r) =>
+              `${r.signature} [${r.reason}] "${r.text}"` +
+              (r.baseColorRatio
+                ? ` (base background-color alone would be ${r.baseColorRatio}:1)`
+                : '')
+          );
+
+        const measuredByFallback = fallback.filter(
+          (r) => r.kind === 'measured'
+        ).length;
+        const notVisible = fallback.filter(
+          (r) => r.kind === 'not-visible'
+        ).length;
         if (unmeasured.length) {
-          // Reported, not thrown. These are pre-existing and repo-wide; failing
-          // on them today would block every merge on a backlog this PR does not
-          // fix. The number is printed on every run so it cannot quietly grow,
-          // which is the same posture `check-first-load-budget.mjs` takes toward
-          // first-party 3D code.
           console.log(
-            `::warning::${path} [${theme}]: ${unmeasured.length} of ${passCount} ` +
-              `"passing" elements were never measured (contrastRatio: null) — ` +
-              `axe could not resolve a background. See #459. ` +
-              `e.g. ${unmeasured.slice(0, 3).join(', ')}`
+            `${path} [${theme}]: ${passCount} axe passes, ${unmeasured.length} with a ` +
+              `null ratio -> ${measuredByFallback} measured by fallback, ` +
+              `${notVisible} not visible, ` +
+              `${fallback.length - measuredByFallback - notVisible} unresolvable`
           );
         }
 
@@ -392,11 +453,29 @@ test.describe('WCAG AAA color-contrast-enhanced (violations only)', () => {
         if (openedAdmin) await openedAdmin.close();
         await deleteIsolatedAdmin(adminFixture);
 
+        // A NEW unmeasurable CATEGORY is a failure, because the alternative is
+        // the gate quietly shrinking again. Fix the element, or add an
+        // allowlist entry that says why it cannot be measured.
         expect(
-          details,
+          unresolvedUnknown,
+          `${path} [${theme}]: ${unresolvedUnknown.length} element(s) could not be ` +
+            `measured and are not in UNRESOLVABLE_ALLOWLIST (tests/e2e/utils/` +
+            `contrast-fallback.ts). axe reported them as PASSING with a null ` +
+            `ratio, so leaving them here means they are unverified:\n  ` +
+            unresolvedUnknown.join('\n  ')
+        ).toEqual([]);
+
+        // ONE assertion for both sources. axe's own violations and the ones it
+        // declined to compute are the same defect to a user, so they fail the
+        // same way and carry the same fg/bg/ratio dump.
+        const allFailures = [...details, ...fallbackFailures];
+        expect(
+          allFailures,
           `color-contrast-enhanced (AAA) violations on ${path} [${theme}] ` +
-            `(${incompleteCount} incomplete/needs-review — expected, not a failure):\n` +
-            JSON.stringify(details, null, 2)
+            `(${incompleteCount} incomplete/needs-review — expected, not a failure; ` +
+            `${fallbackFailures.length} of these were measured by the #459 fallback ` +
+            `after axe passed them with a null ratio):\n` +
+            JSON.stringify(allFailures, null, 2)
         ).toHaveLength(0);
       });
     }

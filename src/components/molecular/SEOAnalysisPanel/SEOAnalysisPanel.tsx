@@ -194,12 +194,26 @@ export default function SEOAnalysisPanel({
                 key={i}
                 className={`alert ${alertSeverityClass(suggestion.severity)} px-3 py-2`}
               >
+                {/* THE ALERT OWNS THE TEXT COLOUR HERE (#459).
+                    `.alert-warning` paints a dark amber in the LIGHT theme and
+                    sets a matching content colour. Two children fought it: this
+                    span carried `text-base-content/85`, and `.badge` sets a
+                    `base-content` of its own — both dark, on dark amber,
+                    measuring 1.66:1 against a 7:1 requirement. The sibling <p>
+                    below never overrode anything, which is exactly why it
+                    passed while these did not.
+
+                    `text-current` makes the badge inherit. The /85 opacity is
+                    REMOVED rather than reduced: dimming text on a coloured
+                    surface is the same trap globals.css documents for DaisyUI's
+                    .label, and it is what put this below AAA in the first
+                    place. */}
                 <div className="flex-1">
                   <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-                    <span className="badge badge-xs sm:badge-sm badge-outline">
+                    <span className="badge badge-xs sm:badge-sm badge-outline !text-current">
                       {suggestion.category}
                     </span>
-                    <span className="text-base-content/85 text-xs">
+                    <span className="text-xs">
                       Impact: {suggestion.impact}/10
                     </span>
                   </div>

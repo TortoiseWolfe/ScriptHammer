@@ -146,7 +146,7 @@
   background: linear-gradient(
     180deg,
     var(--copper),
-    color-mix(in oklab, var(--copper) 78%, black)
+    color-mix(in oklab, var(--copper) 96%, black)
   );
   color: var(--on-copper);
   font-weight: 500;
@@ -321,11 +321,34 @@
   border-color: var(--copper);
   color: var(--brass);
 }
+/* THE DARK STOP IS BOUND BY AAA, NOT BY TASTE (#778/#459).
+ *
+ * This was `... 78%, black` and measured 4.21:1 against --on-copper on
+ * scripthammer-dark — below the 7:1 this 11.84px/600 label requires. It passed
+ * every gate for months because axe cannot compute contrast against a gradient:
+ * it returns `contrastRatio: null` and files the node under `passes`.
+ *
+ * Measured, per mix percentage, dark theme (light theme is white-on-dark-copper,
+ * where darkening RAISES contrast — it passes at every value, 8.84–12.74:1):
+ *
+ *     78% → 4.21   84% → 5.02   90% → 6.01   94% → 6.77
+ *     96% → 7.11 ✓ 98% → 7.54   100% → 7.96
+ *
+ * 96% is the first passing value, so the fade is now only a 4% black mix and is
+ * close to imperceptible. That is the honest consequence: with a light --copper
+ * and a dark --on-copper, a VISIBLE downward darkening and AAA cannot both hold.
+ * Left as a gradient rather than flattened so the CTA still matches its siblings.
+ *
+ * The 0.11 margin is thin, and that is acceptable only because the gate now
+ * MEASURES this instead of assuming it — tests/e2e/color-contrast.spec.ts falls
+ * back to canvas readback for every null-ratio node. Change --copper or
+ * --on-copper and it will tell you.
+ */
 .btnPrimary {
   background: linear-gradient(
     180deg,
     var(--copper),
-    color-mix(in oklab, var(--copper) 78%, black)
+    color-mix(in oklab, var(--copper) 96%, black)
   );
   border-color: var(--copper);
   color: var(--on-copper);
