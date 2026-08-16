@@ -164,6 +164,30 @@ public class ConversationsController : ControllerBase
         if (!await MessagingQueries.CanAccessConversation(_db, id, caller.UserId))
             return Forbid();
 
+        // C30 (#352): a block stops future contact, even though the conversation
+        // already exists. Participation used to be the WHOLE rule for sending, so
+        // a user blocked after the thread was created kept messaging the person
+        // who blocked them.
+        //
+        // Asked against the conversation's two participants rather than the
+        // caller, so it refuses whichever of them is sending. That symmetry is
+        // load-bearing: if only the blocked side were refused, comparing the two
+        // directions would reveal the block, which is what the generic 403 below
+        // exists to prevent.
+        //
+        // 1:1 ONLY (decision 5). Filtering a blocked member's messages inside a
+        // group would leave holes in every other member's view of the thread and
+        // leak the block to bystanders; group moderation is its own authority.
+        var conv = await _db.Conversations.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == id);
+        if (conv is { IsGroup: false, Participant1Id: Guid p1, Participant2Id: Guid p2 }
+            && await MessagingQueries.IsBlockedBetween(_db, p1, p2))
+        {
+            // Forbid() and nothing else — no body, no reason. The response must
+            // not distinguish "you are blocked" from any other refusal.
+            return Forbid();
+        }
+
         var newId = Guid.NewGuid();
 
         // Insert with sequence_number = 0 (the assign_sequence_number BEFORE

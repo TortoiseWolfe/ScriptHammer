@@ -590,7 +590,8 @@ services:
   #   (points at supabase-db). Flip NEXT_PUBLIC_BACKEND_PROVIDER=dotnet +
   #   NEXT_PUBLIC_DOTNET_API_URL=http://localhost:5099 to route messaging
   #   through it. Validates the Supabase JWT (HS256, SUPABASE_JWT_SECRET) and
-  #   enforces the C1–C29 authorization contract in C# (no in-DB auth.uid()).
+  #   enforces the 14-clause authorization contract in C# (no in-DB auth.uid()).
+  #   "C1–C29" was always a banner, not a list — see AUTHORIZATION-CONTRACT.md.
   #   Run: docker compose --profile supabase --profile dotnet up
   # ──────────────────────────────────────────────────────────────────────
   dotnet-messaging:
@@ -630,7 +631,13 @@ services:
     volumes:
       - ./dotnet-messaging:/app
     healthcheck:
-      test: ['CMD', 'sh', '-c', 'wget -q -O- http://localhost:8080/health || exit 1']
+      test:
+        [
+          'CMD',
+          'sh',
+          '-c',
+          'wget -q -O- http://localhost:8080/health || exit 1',
+        ]
       interval: 10s
       timeout: 5s
       retries: 10

@@ -59,6 +59,52 @@ export function canonicalPair(x: string, y: string): [string, string] {
 }
 
 /**
+ * Replace whatever connection row exists between two users with exactly one row
+ * in the GIVEN direction and status. Service client, so it can build states a
+ * normal user could not.
+ *
+ * THE DIRECTION IS THE POINT (C30/#352). `unique_connection` is
+ * `UNIQUE (requester_id, addressee_id)` and is NOT symmetric, so a single block
+ * between two people may be stored either way round depending on who pressed the
+ * button. A rule that checks one ordering enforces the block only half the time,
+ * and the half that fails is silent. Deleting both directions first is what lets
+ * a test pin the row to the ordering it wants to exercise.
+ */
+export async function setConnection(
+  svc: SupabaseClient<Database>,
+  opts: {
+    requesterId: string;
+    addresseeId: string;
+    status: 'accepted' | 'pending' | 'blocked' | 'declined';
+  }
+): Promise<void> {
+  const { requesterId, addresseeId, status } = opts;
+
+  await svc
+    .from('user_connections')
+    .delete()
+    .eq('requester_id', requesterId)
+    .eq('addressee_id', addresseeId);
+  await svc
+    .from('user_connections')
+    .delete()
+    .eq('requester_id', addresseeId)
+    .eq('addressee_id', requesterId);
+
+  const { error } = await svc.from('user_connections').insert({
+    requester_id: requesterId,
+    addressee_id: addresseeId,
+    status,
+  });
+  if (error) {
+    throw new Error(
+      `setConnection(${status}) failed — the fixture could not build the state ` +
+        `the test needs, so a pass below would prove nothing: ${error.message}`
+    );
+  }
+}
+
+/**
  * Seed the shared conformance graph via the SERVICE client (bypassing RLS, so
  * setup can build states a normal user could not — e.g. a pending connection).
  */

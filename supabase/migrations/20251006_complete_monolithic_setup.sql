@@ -3231,9 +3231,44 @@ CREATE POLICY "Users can send messages to own conversations" ON messages
         WHERE c.id = conversation_id
           AND c.is_group = false
           AND (c.participant_1_id = auth.uid() OR c.participant_2_id = auth.uid())
+          -- C30 (#352): a block stops future contact, in BOTH directions.
+          --
+          -- Sending was gated on PARTICIPANT, never on connection status, so once a
+          -- 1-to-1 conversation existed a blocked user kept messaging the person who
+          -- blocked them. All nine `messages` policies were connection-blind — the
+          -- word 'blocked' appeared only in the status CHECK constraint and an admin
+          -- count.
+          --
+          -- BOTH ORDERINGS ARE TESTED ON PURPOSE. `unique_connection` is
+          -- (requester_id, addressee_id) and is NOT symmetric, so exactly one row
+          -- exists and it may name the pair either way round. Checking one ordering
+          -- would enforce the block only when the blocker happened to be the
+          -- requester — half a fix, and the half that fails is invisible.
+          --
+          -- It is written against the CONVERSATION's participants rather than
+          -- auth.uid() so it holds whichever of the two is sending, which is what
+          -- makes it symmetric in effect as well as in lookup.
+          --
+          -- No SECURITY DEFINER needed: user_connections SELECT is
+          -- `auth.uid() = requester_id OR auth.uid() = addressee_id`, and the sender
+          -- is always one of the two, so the row is visible to the query that must
+          -- see it. If that policy ever narrows, this silently stops enforcing —
+          -- tests/rls/blocked-cannot-send.test.ts is what would catch it.
+          AND NOT EXISTS (
+            SELECT 1 FROM user_connections uc
+            WHERE uc.status = 'blocked'
+              AND (
+                (uc.requester_id = c.participant_1_id AND uc.addressee_id = c.participant_2_id)
+                OR
+                (uc.requester_id = c.participant_2_id AND uc.addressee_id = c.participant_1_id)
+              )
+          )
       )
       OR
-      -- Group: check active membership via SECURITY DEFINER function
+      -- Group: check active membership via SECURITY DEFINER function.
+      -- Deliberately NOT block-aware (#352 decision 5): filtering a blocked member's
+      -- messages inside a group leaks the block to everyone else, whose view of the
+      -- thread then has holes in it. Group moderation is its own authority.
       is_conversation_member(conversation_id)
     )
   );
