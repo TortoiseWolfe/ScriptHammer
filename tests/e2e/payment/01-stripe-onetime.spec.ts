@@ -78,14 +78,23 @@ test.describe('Stripe One-Time Payment Flow', () => {
   });
 
   // Subscription leg (#105): usePaymentButton routes type="recurring" through
-  // createSubscriptionCheckout → create-stripe-subscription (mode=subscription)
-  // on the operator-created Price. Same local-run / CI-skip pattern as above.
+  // createSubscriptionCheckout → create-stripe-subscription (mode=subscription).
+  //
+  // GATE CHANGED (#772). The price is no longer a global
+  // NEXT_PUBLIC_STRIPE_PRICE_ID — the server resolves it from
+  // `products.stripe_price_id` for the SKU the button names. So this needs an
+  // ACTIVE recurring SKU, and all three are deliberately `active = false` until
+  // #772 and #559 are both closed, at which point the server correctly answers
+  // "product not found".
+  //
+  // Skipped on the PRECONDITION, not on an assertion: the feature is not
+  // shippable yet by design, so there is no failure being hidden here.
   test('should redirect to subscription-mode Stripe Checkout', async ({
     page,
   }) => {
     test.skip(
-      !isStripeConfigured || !process.env.NEXT_PUBLIC_STRIPE_PRICE_ID,
-      'Stripe key / NEXT_PUBLIC_STRIPE_PRICE_ID not configured - run locally for the subscription flow test'
+      !isStripeConfigured || !process.env.SUBSCRIPTION_SKU_ACTIVE,
+      'No recurring SKU is active yet (#772/#559) — set SUBSCRIPTION_SKU_ACTIVE=1 once one is'
     );
 
     // Grant consent
@@ -96,8 +105,10 @@ test.describe('Stripe One-Time Payment Flow', () => {
 
     // Scope to the Subscribe PaymentButton instance — three instances render
     // their own Stripe tabs (see the strict-mode note in the one-time test).
+    // Name follows the demo page's button, which now says which SKU it buys
+    // rather than an amount the recurring path never charged (#772).
     const subscribeButton = page.getByRole('button', {
-      name: 'Subscribe $9.99/month',
+      name: 'Subscribe to Care Plan',
     });
     const container = page
       .locator('div.flex.flex-col.gap-4')

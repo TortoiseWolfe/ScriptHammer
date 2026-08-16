@@ -40,9 +40,10 @@ vi.mock('@/lib/payments/offline-queue', () => ({
 
 // Mutable so individual tests can unset the price/plan ids (vi.mock factories
 // are hoisted, so the shared objects must be hoisted too).
-const mockStripeConfig = vi.hoisted(() => ({
-  subscriptionPriceId: 'price_test_123',
-}));
+// stripeConfig no longer carries a subscription price — the price is resolved
+// server-side from products.stripe_price_id (#772). Kept as an empty object so
+// the module mock still supplies the export the hook's module graph expects.
+const mockStripeConfig = vi.hoisted(() => ({}));
 const mockPaypalConfig = vi.hoisted(() => ({
   subscriptionPlanId: 'P-test-plan-123',
 }));
@@ -63,11 +64,12 @@ describe('usePaymentButton', () => {
     ...defaultOptions,
     amount: 999,
     type: 'recurring' as const,
+    // The catalog SKU. The server resolves its price; the client never names one.
+    productId: 'svc-care',
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockStripeConfig.subscriptionPriceId = 'price_test_123';
     mockPaypalConfig.subscriptionPlanId = 'P-test-plan-123';
   });
 
@@ -130,8 +132,10 @@ describe('usePaymentButton', () => {
       await result.current.initiatePayment();
     });
 
+    // The SKU, not a price. #772: this used to assert a price id that came from
+    // one global env var and was therefore identical for every tier.
     expect(createSubscriptionCheckout).toHaveBeenCalledWith(
-      'price_test_123',
+      'svc-care',
       'test@example.com'
     );
     expect(createPaymentIntent).not.toHaveBeenCalled();
@@ -139,11 +143,35 @@ describe('usePaymentButton', () => {
     expect(result.current.error).toBeNull();
   });
 
-  it('errors clearly when recurring is used without a configured price ID', async () => {
-    mockStripeConfig.subscriptionPriceId = '';
+  it('THE #772 REGRESSION: two tiers send two different SKUs', async () => {
+    // The original bug returned a valid price id every time — just the SAME one,
+    // from one global env var. So "a price id was sent" passes on the bug and
+    // proves nothing. Only comparing two tiers catches it.
+    for (const sku of ['svc-care', 'svc-care-pro']) {
+      const { result } = renderHook(() =>
+        usePaymentButton({ ...recurringOptions, productId: sku })
+      );
+      act(() => {
+        result.current.selectProvider('stripe');
+      });
+      await act(async () => {
+        await result.current.initiatePayment();
+      });
+    }
+
+    const sent = (
+      createSubscriptionCheckout as unknown as {
+        mock: { calls: unknown[][] };
+      }
+    ).mock.calls.map((c) => c[0]);
+    expect(sent).toEqual(['svc-care', 'svc-care-pro']);
+    expect(new Set(sent).size).toBe(2);
+  });
+
+  it('errors clearly when a recurring payment names no product', async () => {
     const onError = vi.fn();
     const { result } = renderHook(() =>
-      usePaymentButton({ ...recurringOptions, onError })
+      usePaymentButton({ ...recurringOptions, productId: undefined, onError })
     );
 
     act(() => {
@@ -154,9 +182,7 @@ describe('usePaymentButton', () => {
     });
 
     expect(createSubscriptionCheckout).not.toHaveBeenCalled();
-    expect(result.current.error?.message).toMatch(
-      /NEXT_PUBLIC_STRIPE_PRICE_ID/
-    );
+    expect(result.current.error?.message).toMatch(/productId/);
     expect(onError).toHaveBeenCalled();
   });
 

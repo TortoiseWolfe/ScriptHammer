@@ -12,7 +12,10 @@ import {
   createCheckoutSession as createStripeCheckout,
   createSubscriptionCheckout,
 } from '@/lib/payments/stripe';
-import { stripeConfig, paypalConfig } from '@/config/payment';
+// stripeConfig is no longer imported: the only field this hook read from it was
+// subscriptionPriceId, and that is gone (#772). paypalConfig.subscriptionPlanId
+// is still a global and still carries the same defect — tracked separately.
+import { paypalConfig } from '@/config/payment';
 import {
   createPayPalOrder,
   approvePayPalOrder,
@@ -27,6 +30,14 @@ export interface UsePaymentButtonOptions {
   currency: Currency;
   type: PaymentType;
   customerEmail: string;
+  /**
+   * Catalog SKU (`products.id`, e.g. `svc-care-pro`).
+   *
+   * REQUIRED when `type === 'recurring'` — the server resolves the Stripe Price
+   * from this row, so the browser never names a price (#772/#559). Optional for
+   * one-time payments, which price through `create-order` instead.
+   */
+  productId?: string;
   description?: string;
   metadata?: Record<string, unknown>;
   /**
@@ -165,18 +176,26 @@ export function usePaymentButton(
 
     try {
       if (options.type === 'recurring') {
-        // Subscription checkout: the plan amount/interval live on an
-        // operator-created Stripe Price, and the webhook owns the
-        // subscriptions row — so no payment_intent is created here and
-        // navigation to hosted Checkout IS the success signal.
-        const priceId = stripeConfig.subscriptionPriceId;
-        if (!priceId) {
+        // Subscription checkout: the plan amount/interval live on the Stripe
+        // Price the SERVER resolves from `products.stripe_price_id`, and the
+        // webhook owns the subscriptions row — so no payment_intent is created
+        // here and navigation to hosted Checkout IS the success signal.
+        //
+        // #772: this used to read one global NEXT_PUBLIC_STRIPE_PRICE_ID for
+        // EVERY tier, so all three Care Plans would have billed whatever that
+        // single variable pointed at. We now send the SKU the customer actually
+        // chose and never name a price at all — the server resolves it (see
+        // supabase/functions/create-stripe-subscription/resolve.ts).
+        if (!options.productId) {
           throw new Error(
-            'Subscription price not configured. Set NEXT_PUBLIC_STRIPE_PRICE_ID ' +
-              'to a recurring Stripe Price ID (see docs/PAYMENT-DEPLOYMENT.md).'
+            'A recurring payment requires productId — the catalog SKU whose ' +
+              'stripe_price_id the server resolves (#772).'
           );
         }
-        await createSubscriptionCheckout(priceId, options.customerEmail);
+        await createSubscriptionCheckout(
+          options.productId,
+          options.customerEmail
+        );
         return;
       }
       const intent = await newIntent();

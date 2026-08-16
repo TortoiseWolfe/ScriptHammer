@@ -158,10 +158,15 @@ export async function handleStripeRedirect(
 }
 
 /**
- * Create Stripe subscription checkout
+ * Create Stripe subscription checkout.
+ *
+ * Takes a catalog `productId`, NOT a Stripe price id (#772/#559). The price is
+ * resolved server-side from `products.stripe_price_id`, so the browser never
+ * names an amount — it cannot send the wrong tier's price, and it cannot name
+ * an arbitrary Price in the account.
  */
 export async function createSubscriptionCheckout(
-  priceId: string,
+  productId: string,
   customerEmail: string
 ): Promise<void> {
   // Consent gate (no Stripe.js load needed — see redirect note below)
@@ -176,7 +181,7 @@ export async function createSubscriptionCheckout(
         ...(await getAuthHeader()),
       },
       body: JSON.stringify({
-        price_id: priceId,
+        product_id: productId,
         customer_email: customerEmail,
       }),
     }
