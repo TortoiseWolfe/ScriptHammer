@@ -423,12 +423,38 @@ The rules below still describe `e2e.yml` and remain correct for it.
 
 ### Merging several PRs in quick succession can serve production with no CSS
 
-**Why**: GitHub Pages serves HTML with `cache-control: max-age=600` and cannot be told
-otherwise, while every deploy deletes the previous build's content-hashed CSS and JS. A
-returning visitor can therefore hold HTML whose stylesheets no longer exist — a white
-page, no nav, the logo at its natural size, with a perfectly correct DOM. Reported from
-production **eight times** (#438, #467, #476, #548, #650, and three more through
-2026-08-15). The open ticket is **#635**; it stays open until the cause is gone.
+**FIXED 2026-08-17 (#635). The mitigations below stay — read on for why.** Cloudflare
+now fronts GitHub Pages and rewrites the cache headers at the edge:
+
+```
+document          cache-control: no-cache          (Response Header Transform Rule)
+/_next/static/*   cache-control: max-age=31536000  (Cache Rule)
+```
+
+A visitor can no longer hold HTML pointing at deleted assets — the document revalidates
+on every navigation. Verified live on `/`, `/blog/` and `/terms/`, each carrying `cf-ray`.
+
+**Why it happened**: GitHub Pages serves HTML with `cache-control: max-age=600` and
+cannot be told otherwise, while every deploy deletes the previous build's content-hashed
+CSS and JS. A returning visitor could therefore hold HTML whose stylesheets no longer
+exist — a white page, no nav, the logo at its natural size, with a perfectly correct DOM.
+Reported from production **eight times** (#438, #467, #476, #548, #650, and three more
+through 2026-08-15).
+
+**Do NOT try to do the HTML half with a Cache Rule.** Browser TTL only ever _raises_ the
+value: `override_origin` will not lower it below the origin's own `max-age`, and it
+ignores such values with **no API error** — the rule saves, reads back exactly as
+written, and does nothing. Measured on this zone against the origin's 600: `0`, `1` and
+`300` were silently dropped; `700` and `12345` applied. The header must be set by a
+**Response Header Transform Rule** (`http_response_headers_transform`, action `rewrite`),
+which needs `Zone / Transform Rules / Edit` on the token.
+
+**Cloudflare ruleset edits take ~45 seconds to propagate.** A probe fired straight after
+a `PUT` reads the _previous_ rule and produces confident, wrong conclusions — three of
+them in one session. Wait, then measure, and keep a control you know works.
+
+**HTML cached by browsers BEFORE 2026-08-17 is still out there** and this change cannot
+reach it. That is precisely why every mitigation below stays until it ages out.
 
 **The window is measured in DAYS, and getting that unit wrong is the recurring bug.**
 `scripts/retain-previous-assets.mjs` carries old assets forward, bounded by `RETAIN_DAYS`
@@ -443,7 +469,15 @@ window in deploys**: converting requires a merge rate nobody measures, and
 paces everything else — and nothing else paces them. That is exactly how six merges
 landed in half an hour.
 
-**Guarded by three things, which check different questions:**
+**Guarded by four things, which check different questions:**
+
+- `scripts/ci/check-cache-headers.mjs` (post-deploy `smoke.yml`) asserts against LIVE
+  production that documents revalidate, hashed assets are cached a year, and `cf-ray` is
+  present so the edge answered. **This is the only check that can see the cure**, because
+  the Cloudflare rules live in a dashboard rather than this repo — delete one, rotate the
+  token or move the zone and production silently returns to `max-age=600`. Note
+  `check-stale-html.mjs` canNOT cover that: it serves itself over `127.0.0.1` with a
+  hardcoded `max-age=600` and never touches the live site.
 
 - `scripts/check-stale-html.mjs` (required `accessibility` check) drives A → B → C in a
   real chromium and asserts a visitor holding A's HTML is still styled after two deploys,
@@ -461,9 +495,12 @@ same-origin stylesheets all have zero rules and re-fetches at a fresh URL. It is
 recovery that does not depend on a number being right — but it ships _inside_ the HTML,
 so a document cached before it existed has no guard at all.
 
-**Still worth pacing merges**, and still worth remembering that none of this is the fix.
-The fix is #635 — a CDN serving HTML `no-cache`, which GitHub Pages cannot be configured
-to do.
+**Still worth pacing merges** — but the cause is gone as of #635, not merely mitigated.
+Retiring `RETAIN_DAYS`, `StylesheetGuard`, #751 or #752 is a **separate, later** decision:
+they are the only protection for HTML that entered a browser cache before 2026-08-17, and
+removing them in the same breath as the fix would leave nothing if the edge rules were
+ever lost. Retire them once real deploys have run under the new headers, and only with
+`check-cache-headers.mjs` green in `smoke.yml`.
 
 ### NEVER bypass commit hooks (no `--no-verify`)
 
