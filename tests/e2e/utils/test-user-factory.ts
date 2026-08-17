@@ -2293,11 +2293,76 @@ export async function deleteIsolatedGroup(
 ): Promise<void> {
   if (!fixture) return;
   const admin = getAdminClient();
-  if (admin) {
-    await admin.from('conversations').delete().eq('id', fixture.conversationId);
+
+  // #612: this used to print "✓ Isolated group torn down" UNCONDITIONALLY —
+  // including when `admin` was null, so the conversation delete never ran, and
+  // when the delete returned an error, which supabase-js RETURNS rather than
+  // throws. A teardown that reports success without observing it is how 1,909
+  // orphan conversations reached production while every run looked clean.
+  if (!admin) {
+    console.warn(
+      `⚠ Isolated group ${fixture.conversationId} NOT torn down: no admin client ` +
+        `(SUPABASE_SERVICE_ROLE_KEY absent). The conversation row is leaking.`
+    );
+  } else {
+    const { error } = await admin
+      .from('conversations')
+      .delete()
+      .eq('id', fixture.conversationId);
+    if (error) {
+      console.error(
+        `⚠ Isolated group ${fixture.conversationId} delete FAILED: ${error.message}`
+      );
+    }
   }
+
   for (const p of fixture.participants) await deleteTestUser(p.user.id);
-  console.log('✓ Isolated group torn down');
+}
+
+/**
+ * Delete conversations by `group_name` — for groups created through the UI,
+ * where no fixture object holds the id (#612).
+ *
+ * `tests/e2e/messaging/group-chat-multiuser.spec.ts` creates two groups per run
+ * through the New Group page, which is the flow those tests exist to exercise.
+ * Nothing deleted them, so each CI run left two behind permanently: 687 rows
+ * named `Test Group …` and 698 named `Grp …` on production, against 20 real
+ * users. Names carry `Date.now()`, so they are unique and safe to match on.
+ *
+ * Returns the names still present afterwards — an empty array means the tear-down
+ * actually worked, which is the only version of that claim worth making.
+ */
+export async function deleteConversationsByGroupName(
+  names: string[]
+): Promise<string[]> {
+  if (names.length === 0) return [];
+  const admin = getAdminClient();
+  if (!admin) {
+    console.warn(
+      `⚠ ${names.length} UI-created group(s) NOT torn down: no admin client.`
+    );
+    return names;
+  }
+
+  const { error } = await admin
+    .from('conversations')
+    .delete()
+    .in('group_name', names);
+  if (error) {
+    console.error(`⚠ UI-created group delete FAILED: ${error.message}`);
+  }
+
+  // Verify rather than assume. The delete above can be refused without throwing,
+  // and this function's whole purpose is to make that visible.
+  const { data, error: readError } = await admin
+    .from('conversations')
+    .select('group_name')
+    .in('group_name', names);
+  if (readError) {
+    console.error(`⚠ could not verify group tear-down: ${readError.message}`);
+    return names;
+  }
+  return (data ?? []).map((row) => row.group_name as string);
 }
 
 /** A live subscription status the dup-guard treats as occupying the one slot. */
