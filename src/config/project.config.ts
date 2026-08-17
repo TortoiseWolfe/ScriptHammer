@@ -34,6 +34,16 @@ export function getProjectConfig() {
       process.env.NEXT_PUBLIC_PROJECT_OWNER || defaultConfig.projectOwner,
     projectDescription: defaultConfig.projectDescription,
     basePath: process.env.NEXT_PUBLIC_BASE_PATH ?? defaultConfig.basePath,
+    // A monitored address a visitor can write to when the contact FORM cannot
+    // deliver. The form depends on a third-party key, and production shipped an
+    // EMPTY one, so `/contact/` offered no working channel at all while Stripe
+    // was pointing paying customers straight at it (#784).
+    //
+    // DEFAULTS TO EMPTY ON PURPOSE. This is a forkable template, and a hardcoded
+    // address would put the upstream maintainer's inbox on every fork's contact
+    // page — the #392 failure where one person's identity shipped to everyone.
+    // Unset simply means the mailto is not rendered.
+    supportEmail: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || '',
   };
 
   // Computed values

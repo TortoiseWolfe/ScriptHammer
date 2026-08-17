@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useWeb3Forms } from '@/hooks/useWeb3Forms';
 import { type Web3FormsResponse } from '@/utils/web3forms';
 import { contactSchema, type ContactFormData } from '@/schemas/contact.schema';
+import { projectConfig } from '@/config/project.config';
 import { useEffect } from 'react';
 
 export interface ContactFormProps {
@@ -197,7 +198,28 @@ export const ContactForm: React.FC<ContactFormProps> = ({
                 d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
               />
             </svg>
-            <span>{error}</span>
+            {/* The address belongs HERE, not only further up the page (#784).
+                This branch renders at the exact moment the visitor's message did
+                not get through — telling them "something went wrong" and nothing
+                else is how an enquiry is lost silently. `!text-current` because the
+                alert owns the colour on its own surface; a link colour of its own
+                measured 1.66:1 there (#459). */}
+            <span>
+              {error}
+              {projectConfig.supportEmail && (
+                <>
+                  {' '}
+                  You can email{' '}
+                  <a
+                    href={`mailto:${projectConfig.supportEmail}`}
+                    className="link font-semibold !text-current"
+                  >
+                    {projectConfig.supportEmail}
+                  </a>{' '}
+                  instead.
+                </>
+              )}
+            </span>
           </div>
         )}
 
