@@ -742,6 +742,36 @@ main() {
             echo "       cp your-mark.svg public/favicon.svg && pnpm run generate:icons"
             echo ""
         fi
+        # #734: the same class of omission as the icons above. This script cannot
+        # know your Supabase project, your SMTP sender or your OAuth client ids —
+        # they are registered with third parties, not derived from a project name.
+        # `scripts/supabase/auth-config.json` is the DESIRED STATE a daily gate
+        # compares your live project against, so leaving it unset means the gate
+        # measures your project against ScriptHammer's identity and fails on values
+        # that were never yours. Say so, rather than let them conclude the gate is
+        # broken and stop reading it.
+        echo -e "${YELLOW}  ⚠  YOUR AUTH DESIRED-STATE IS STILL ${ORIGINAL_NAME}'S.${NC}"
+        echo "     scripts/supabase/auth-config.json is what auth-config-drift.yml"
+        echo "     compares your live Supabase project against, daily. Until you set"
+        echo "     these, it checks your project against ${ORIGINAL_NAME}'s values"
+        echo "     and fails — correctly, but for the wrong reason."
+        echo ""
+        echo "     Set these as repo VARIABLES (Settings → Secrets and variables →"
+        echo "     Actions → Variables). None is a secret; client ids appear in every"
+        echo "     authorize URL the browser is redirected to:"
+        echo ""
+        echo "       AUTH_SITE_URL            https://your-domain"
+        echo "       AUTH_URI_ALLOW_LIST      https://your-domain,https://your-domain/**,…"
+        echo "       AUTH_SMTP_HOST           your SMTP host"
+        echo "       AUTH_SMTP_USER           your SMTP user"
+        echo "       AUTH_SMTP_ADMIN_EMAIL    noreply@your-domain"
+        echo "       AUTH_SMTP_SENDER_NAME    ${DISPLAY_NAME}"
+        echo "       AUTH_GITHUB_CLIENT_ID    from your GitHub OAuth app"
+        echo "       AUTH_GOOGLE_CLIENT_ID    from your Google OAuth client"
+        echo ""
+        echo "     Editing the JSON directly also works, but you then carry a"
+        echo "     permanent conflict against every upstream update to that file."
+        echo ""
         echo "Next steps:"
         echo "  1. Run 'docker compose up --build' to rebuild with new configuration"
         # NOT 'exec ${SANITIZED_NAME}' — a build in the dev container fights the

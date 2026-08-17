@@ -16,14 +16,26 @@
  * @module tests/unit/auth-config-validity.test
  */
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { createRequire } from 'node:module';
 
-const config = JSON.parse(
-  readFileSync(
-    resolve(process.cwd(), 'scripts/supabase/auth-config.json'),
-    'utf8'
-  )
+// Through the shared loader, not `JSON.parse(readFileSync(...))`: the file now
+// carries `${VAR:-default}` for the eight values a fork must own (#734), so a raw
+// read sees `"${AUTH_SITE_URL:-https://…}"` and every assertion below would fail on
+// a correctly-configured repo. Three readers share one loader precisely so the
+// pinned file and its consumers cannot disagree about the desired state.
+const require_ = createRequire(import.meta.url);
+const { loadAuthConfig } = require_(
+  resolve(process.cwd(), 'scripts/supabase/auth-config-loader.js')
+);
+
+// Resolved against an EMPTY env, so this asserts the pinned DEFAULTS — what a fork
+// inherits before it configures anything, and what ScriptHammer's own drift gate
+// compares prod against. Reading the ambient environment here would let a stray
+// AUTH_* var in a shell make these tests pass on values nobody committed.
+const config = loadAuthConfig(
+  resolve(process.cwd(), 'scripts/supabase/auth-config.json'),
+  {}
 ) as Record<string, unknown>;
 
 describe('supabase auth-config.json — deployed-config validity (#288)', () => {

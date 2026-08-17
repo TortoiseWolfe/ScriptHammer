@@ -1,6 +1,6 @@
 {
-  "site_url": "https://scripthammer.com",
-  "uri_allow_list": "https://scripthammer.com,https://scripthammer.com/**,https://www.scripthammer.com,https://www.scripthammer.com/**,http://localhost:3000,http://localhost:3000/**,http://127.0.0.1:3002,http://127.0.0.1:3002/**",
+  "site_url": "${AUTH_SITE_URL:-https://scripthammer.com}",
+  "uri_allow_list": "${AUTH_URI_ALLOW_LIST:-https://scripthammer.com,https://scripthammer.com/**,https://www.scripthammer.com,https://www.scripthammer.com/**,http://localhost:3000,http://localhost:3000/**,http://127.0.0.1:3002,http://127.0.0.1:3002/**}",
   "jwt_exp": 7200,
   "rate_limit_verify": 100,
   "rate_limit_email_sent": 30,
@@ -8,17 +8,17 @@
   "mailer_autoconfirm": false,
   "security_captcha_enabled": true,
   "security_captcha_provider": "turnstile",
-  "smtp_host": "smtp.resend.com",
+  "smtp_host": "${AUTH_SMTP_HOST:-smtp.resend.com}",
   "smtp_port": "587",
-  "smtp_user": "resend",
-  "smtp_admin_email": "noreply@scripthammer.com",
-  "smtp_sender_name": "ScriptHammer",
+  "smtp_user": "${AUTH_SMTP_USER:-resend}",
+  "smtp_admin_email": "${AUTH_SMTP_ADMIN_EMAIL:-noreply@scripthammer.com}",
+  "smtp_sender_name": "${AUTH_SMTP_SENDER_NAME:-ScriptHammer}",
   "hook_custom_access_token_enabled": true,
   "hook_custom_access_token_uri": "pg-functions://postgres/public/custom_access_token_hook",
 
   "external_email_enabled": true,
   "external_github_enabled": true,
-  "external_github_client_id": "Ov23liWcN7CJYepF7dFo",
+  "external_github_client_id": "${AUTH_GITHUB_CLIENT_ID:-Ov23liWcN7CJYepF7dFo}",
   "external_google_enabled": true,
-  "external_google_client_id": "988747852237-pqis9q1dlre6tghg5bnhugfjvk441ica.apps.googleusercontent.com"
+  "external_google_client_id": "${AUTH_GOOGLE_CLIENT_ID:-988747852237-pqis9q1dlre6tghg5bnhugfjvk441ica.apps.googleusercontent.com}"
 }
