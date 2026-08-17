@@ -12,10 +12,13 @@
  *   2. A fork's override must actually take effect — otherwise this whole change is
  *      decoration and the fork is back to editing the file by hand.
  *
- * The structural test at the bottom is the one that will still be earning its keep
- * in a year: it asserts the file and the FORK_OVERRIDABLE map cannot drift apart.
- * A key added to one and not the other is exactly the omission that let CRUDkit's
- * monogram reach a live client site (#659).
+ * The two structural tests at the bottom are the ones that will still be earning
+ * their keep in a year. They pin FORK_OVERRIDABLE to the two things that have to
+ * agree with it — the config file that declares the placeholders, and the workflow
+ * that feeds them to the runner. A key added to one and not the others is exactly
+ * the omission that let CRUDkit's monogram reach a live client site (#659), and the
+ * workflow half is where it hides best: everything reads as configurable, and the
+ * runner simply never receives the values.
  */
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -30,6 +33,14 @@ const {
 } = require('../supabase/auth-config-loader.js');
 
 const CONFIG_PATH = path.join(__dirname, '..', 'supabase', 'auth-config.json');
+const WORKFLOW_PATH = path.join(
+  __dirname,
+  '..',
+  '..',
+  '.github',
+  'workflows',
+  'auth-config-drift.yml'
+);
 
 function tmpJson(contents) {
   const file = path.join(
@@ -147,5 +158,42 @@ test('FORK_OVERRIDABLE and the file cannot drift apart', () => {
   for (const [key, varName] of Object.entries(FORK_OVERRIDABLE)) {
     const resolved = loadAuthConfig(CONFIG_PATH, { [varName]: 'SENTINEL' });
     assert.equal(resolved[key], 'SENTINEL', `${key} does not read ${varName}`);
+  }
+});
+
+test('the drift workflow passes every FORK_OVERRIDABLE var to the runner', () => {
+  // The half that makes the other half real. `set-auth-config.ts` resolves the
+  // desired state against `process.env`, and GitHub does NOT put `vars.*` there on
+  // its own — a step sees only what its `env:` block names. Miss this and a fork can
+  // set all eight repository Variables exactly as rebrand.sh instructs and still be
+  // measured against ScriptHammer's defaults, with nothing anywhere reporting why.
+  //
+  // Asserted from the workflow TEXT rather than by running it, because the failure is
+  // a silent omission: there is no run in which a missing env line announces itself.
+  const workflow = fs.readFileSync(WORKFLOW_PATH, 'utf8');
+
+  const passed = new Map(
+    [
+      ...workflow.matchAll(
+        /^\s+(AUTH_[A-Z_]+):\s*\$\{\{\s*vars\.([A-Z_]+)\s*\}\}/gm
+      ),
+    ].map((m) => [m[1], m[2]])
+  );
+
+  assert.deepEqual(
+    [...passed.keys()].sort(),
+    Object.values(FORK_OVERRIDABLE).sort(),
+    'auth-config-drift.yml must pass exactly the FORK_OVERRIDABLE vars — no more, no fewer'
+  );
+
+  // A copy-pasted line pointing at the wrong Variable resolves to '', which
+  // `interpolate` treats as unset, so the field silently falls back to the
+  // ScriptHammer default and the gate reads as passing.
+  for (const [envName, varName] of passed) {
+    assert.equal(
+      varName,
+      envName,
+      `${envName} reads vars.${varName} — the names must match or the override is dropped`
+    );
   }
 });
