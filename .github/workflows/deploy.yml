@@ -81,6 +81,10 @@ jobs:
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
           NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
           NEXT_PUBLIC_SOCIAL_PLATFORMS: ${{ vars.NEXT_PUBLIC_SOCIAL_PLATFORMS }}
+          # A variable, not a secret: it is rendered on the page for anyone to read,
+          # and it needs to be auditable — the whole defect in #784 was a contact
+          # channel that looked configured and was not.
+          NEXT_PUBLIC_SUPPORT_EMAIL: ${{ vars.NEXT_PUBLIC_SUPPORT_EMAIL }}
           # Prefer the VARIABLE, fall back to the secret (#629). A Stripe publishable
           # key is public by design — it ships in the bundle — so storing it write-only
           # bought no security and cost auditability: the live site's payment MODE could

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { ContactForm } from '@/components/forms/ContactForm';
+import { projectConfig } from '@/config/project.config';
 
 export const metadata: Metadata = {
   // This route claims its own URL (#668).
@@ -112,6 +113,32 @@ export default function ContactPage() {
                 Other Ways to Connect
               </h3>
               <div className="space-y-2">
+                {/* EMAIL FIRST, and rendered independently of the form (#784).
+                    The form posts to a third-party provider; production shipped an
+                    empty access key, so every submission threw and this page offered
+                    no way to reach anyone — while Stripe's `support_url` pointed
+                    customers here. An address does not depend on a credential being
+                    present, which is the whole reason it goes first.
+
+                    Hidden when unset so a fork never advertises an inbox it does not
+                    own (#392). */}
+                {projectConfig.supportEmail && (
+                  <a
+                    href={`mailto:${projectConfig.supportEmail}`}
+                    className="link link-primary flex items-center"
+                  >
+                    <svg
+                      className="mr-2 h-5 w-5"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      aria-hidden="true"
+                    >
+                      <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                      <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                    </svg>
+                    {projectConfig.supportEmail}
+                  </a>
+                )}
                 <a
                   href="https://github.com/TortoiseWolfe/ScriptHammer/issues"
                   className="link link-primary flex items-center"

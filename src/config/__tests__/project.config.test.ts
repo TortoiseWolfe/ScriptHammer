@@ -446,4 +446,39 @@ describe('Project Configuration', () => {
       expect(configWithBase.deployUrl).toBe('https://custom-domain.com');
     });
   });
+
+  /**
+   * `supportEmail` drives a `mailto:` on /contact/ and inside the contact form's
+   * error state (#784). The DEFAULT is the load-bearing half: a fork that inherits
+   * an address publishes an inbox it does not own and cannot read — the #392
+   * failure, one person's identity shipped to everyone, reappearing on the page
+   * paying customers are sent to by Stripe receipts.
+   */
+  describe('supportEmail (#784)', () => {
+    beforeEach(() => {
+      delete process.env.NEXT_PUBLIC_SUPPORT_EMAIL;
+    });
+
+    it('defaults to empty so a fork never advertises an inbox it does not own', () => {
+      expect(getProjectConfig().supportEmail).toBe('');
+    });
+
+    it('never falls back to a hardcoded address', () => {
+      // Stated as a property, not a value: ANY future default is the defect,
+      // whichever address someone picks.
+      expect(getProjectConfig().supportEmail).not.toMatch(/@/);
+    });
+
+    it('uses the configured address when set', () => {
+      process.env.NEXT_PUBLIC_SUPPORT_EMAIL = 'help@example.org';
+
+      expect(getProjectConfig().supportEmail).toBe('help@example.org');
+    });
+
+    it('treats an empty value as unset rather than rendering an empty mailto', () => {
+      process.env.NEXT_PUBLIC_SUPPORT_EMAIL = '';
+
+      expect(getProjectConfig().supportEmail).toBe('');
+    });
+  });
 });

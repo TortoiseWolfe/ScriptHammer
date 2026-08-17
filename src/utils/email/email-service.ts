@@ -1,3 +1,4 @@
+import { SupabaseResendProvider } from './providers/supabase-resend';
 import { Web3FormsProvider } from './providers/web3forms';
 import { EmailJSProvider } from './providers/emailjs';
 import {
@@ -35,8 +36,18 @@ export class EmailService {
   constructor(options: EmailServiceOptions = {}) {
     this.config = { ...DEFAULT_CONFIG, ...options.config };
 
-    // Register providers in priority order
+    // Register providers in priority order.
+    //
+    // SupabaseResend is FIRST deliberately (#784). Web3Forms was the only path,
+    // its key shipped empty, and `/contact/` therefore delivered nothing while
+    // Stripe pointed customers at it. The Supabase + Resend path is the one this
+    // project owns end to end — verified domain, DKIM/SPF live, key already an
+    // Edge Function secret — so it needs no third-party credential to work.
+    //
+    // The other two stay registered as genuine failover: a fork with no Supabase,
+    // or one that prefers Web3Forms, still sends. Ordering is the only change.
     this.providers = options.providers || [
+      new SupabaseResendProvider(),
       new Web3FormsProvider(),
       new EmailJSProvider(),
     ];
