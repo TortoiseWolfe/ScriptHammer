@@ -87,6 +87,22 @@ jobs:
           SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
         run: node scripts/ci/check-retained-assets.mjs "${SITE:-https://scripthammer.com}"
 
+      # The step above guards the MITIGATION; this one guards the CURE (#635).
+      #
+      # Cloudflare now fronts GitHub Pages and applies the cache contract a
+      # content-hashed build needs: documents revalidate, hashed assets last a year.
+      # That configuration lives in a dashboard, not in this repository, so nothing
+      # here would notice if a rule were deleted, a token rotated, or the zone moved
+      # — production would silently go back to `max-age=600` and the eighth
+      # occurrence would become the ninth.
+      #
+      # Note `check-stale-html.mjs` canNOT cover this: it serves itself over
+      # 127.0.0.1 with a hardcoded `max-age=600` and never touches the live site.
+      - name: Cache contract is still served (Cloudflare rules still in place)
+        env:
+          SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
+        run: node scripts/ci/check-cache-headers.mjs "${SITE:-https://scripthammer.com}"
+
       # Runs BEFORE the browser suite: it is cheap, and if production is pointed at
       # the wrong backend every test below is meaningless.
       #
