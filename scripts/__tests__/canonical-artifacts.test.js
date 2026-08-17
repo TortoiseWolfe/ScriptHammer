@@ -20,13 +20,20 @@ const AUTH_CONFIG_PATH = path.join(
   'supabase',
   'auth-config.json'
 );
+const { loadAuthConfig } = require(
+  path.join(ROOT, 'scripts', 'supabase', 'auth-config-loader.js')
+);
 
 function normalizeOrigin(origin) {
   return origin.trim().replace(/\/+$/, '');
 }
 
 function configuredCanonicalOrigin() {
-  const authConfig = JSON.parse(fs.readFileSync(AUTH_CONFIG_PATH, 'utf8'));
+  // Through the shared loader (#734): `site_url` is now `${AUTH_SITE_URL:-…}`, so a
+  // raw JSON.parse would hand `new URL()` a literal `${…}` string and fail on a
+  // correct repo. Ambient env is passed deliberately here — a fork that sets
+  // AUTH_SITE_URL should have its canonical artifacts checked against ITS origin.
+  const authConfig = loadAuthConfig(AUTH_CONFIG_PATH, process.env);
   // CI supplies the deployed value. A clean checkout has no .env, so use the
   // versioned non-secret production site URL as the deterministic fallback.
   const origin = process.env.NEXT_PUBLIC_DEPLOY_URL || authConfig.site_url;

@@ -42,9 +42,21 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
+import { createRequire } from 'node:module';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// CommonJS loader shared with the two test suites that read the same file (#734),
+// so the pinned desired state and its readers cannot disagree about what it says.
+const { loadAuthConfig } = createRequire(import.meta.url)(
+  './auth-config-loader.js'
+) as {
+  loadAuthConfig: (
+    path: string,
+    env?: NodeJS.ProcessEnv
+  ) => Record<string, unknown>;
+};
 
 /**
  * Read a var from the environment, falling back to `.env`.
@@ -314,8 +326,12 @@ async function main(): Promise<void> {
 
   let desired: AuthConfig;
   try {
-    const raw = readFileSync(args.configPath, 'utf8');
-    desired = JSON.parse(raw) as AuthConfig;
+    // Through the shared loader so `${VAR:-default}` resolves (#734). The pinned
+    // default is what makes drift detectable at all — if the EXPECTED value came
+    // from the runner's environment alone, both sides could drift together and this
+    // gate could never fire, which is #287 exactly. The interpolation only lets a
+    // FORK declare its own expectation without editing a file it is meant to reuse.
+    desired = loadAuthConfig(args.configPath, process.env) as AuthConfig;
   } catch (err) {
     console.error(
       `✗ Could not read/parse ${args.configPath}: ${(err as Error).message}`

@@ -340,6 +340,53 @@ test_brand_icons() {
     cd "$REPO_ROOT"
 }
 
+##
+# #734: the same shape as the icons above, one layer down. `auth-config.json` is
+# the DESIRED STATE `auth-config-drift.yml` compares a live Supabase project
+# against, daily. A fork that never sets its own values gets its project measured
+# against ScriptHammer's identity, and the gate fails on values that were never
+# theirs — whereupon the rational response is to stop believing the gate.
+#
+# The script cannot know a fork's OAuth client ids or SMTP sender; they are
+# registered with third parties, not derived from a project name. So the contract
+# is the same: SAY SO. This asserts the warning names the file, names the
+# mechanism, and lists the variables — a warning too vague to act on is a warning
+# that gets ignored.
+##
+test_auth_config_desired_state() {
+    run_test "test_auth_config_desired_state"
+    setup_temp_dir
+
+    local out
+    out=$("$TEMP_DIR/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --force 2>&1 || true)
+
+    if echo "$out" | grep -q "YOUR AUTH DESIRED-STATE IS STILL"; then
+        log_pass "Warns that the auth desired-state is unchanged"
+    else
+        log_fail "Missing auth-config warning" "a warning that auth-config.json is unchanged" "$out"
+    fi
+
+    if echo "$out" | grep -q "scripts/supabase/auth-config.json"; then
+        log_pass "Names the file to change"
+    else
+        log_fail "Auth-config warning names no file" "the path scripts/supabase/auth-config.json" "$out"
+    fi
+
+    # The variables are the actionable half. Assert a representative spread rather
+    # than one name, so dropping the list cannot pass on a surviving heading.
+    local missing=""
+    for v in AUTH_SITE_URL AUTH_SMTP_ADMIN_EMAIL AUTH_GITHUB_CLIENT_ID AUTH_GOOGLE_CLIENT_ID; do
+        echo "$out" | grep -q "$v" || missing="$missing $v"
+    done
+    if [ -z "$missing" ]; then
+        log_pass "Lists the override variables"
+    else
+        log_fail "Auth-config warning omits variables" "every AUTH_* name" "missing:$missing"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
 test_rerebrand_detection() {
     run_test "test_rerebrand_detection"
 
@@ -403,6 +450,7 @@ run_all_tests() {
     test_rerebrand_detection
     test_attribution_preserved
     test_brand_icons
+    test_auth_config_desired_state
 
     echo ""
     echo "========================================"
@@ -437,7 +485,16 @@ if [ $# -eq 1 ]; then
             ;;
         test_attribution_preserved)
             test_attribution_preserved
-    test_brand_icons
+            ;;
+        # `test_brand_icons` had no case of its own: it sat inside the branch above,
+        # before its `;;`, so selecting test_attribution_preserved silently ran two
+        # groups and test_brand_icons could not be run alone at all. Fixed while
+        # adding the case below (#734).
+        test_brand_icons)
+            test_brand_icons
+            ;;
+        test_auth_config_desired_state)
+            test_auth_config_desired_state
             ;;
         *)
             echo "Unknown test: $1"
