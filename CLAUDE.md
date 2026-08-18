@@ -409,7 +409,7 @@ Most of the pain below traces to one fact — every job shared one cloud Supabas
 - **`e2e-local.yml` has NO `paths` filter, deliberately.** Filtering happens in its `changes` job, because a required check that never reports is **pending forever, not skipped** — the same reason `Build` and `Validate Component Structure` are absent from the required set. Never add a trigger path filter to it; `scripts/__tests__/e2e-local-triggers.test.js` fails if you do.
 - **Its ignore list is derived from `e2e.yml`**, not duplicated (`scripts/ci/e2e-local-changes.mjs`). Two lists would drift silently, in the worst direction.
 - **Six `oauth-csrf` tests are tagged `@hosted`** and skipped locally — they wait for a redirect to a real OAuth provider, which a local stack never performs. The #287 detector they carried is now covered on every PR by `auth-config-drift.yml` plus `tests/unit/auth-config-validity.test.ts` instead.
-- **The lane is still ADVISORY, not required.** Making it required waits on #739: `waitForUIStability` is duplicated in five messaging specs and waits three animation frames rather than for anything, so flakes surviving retries would block merges.
+- **The lane is REQUIRED.** `E2E (local) result` became a required context once #739 closed (2026-08-15) — the `waitForUIStability` helper that waited three animation frames rather than for anything, duplicated across five messaging specs, was the thing gating it. A PR now cannot merge without this lane green.
 
 The rules below still describe `e2e.yml` and remain correct for it.
 
@@ -666,7 +666,13 @@ tracked in fact. If you intend to untrack something, `git rm --cached` is the ac
 
 Direct pushes are rejected for everyone, admins included (#414). Work on a branch and open a PR — there is no other route in.
 
-Required checks are **`Test (20.x)` and `accessibility` only**, because those are the two workflows with no `paths:` filter. Requiring `Build` or `Validate Component Structure` would make every docs-only PR permanently unmergeable: a required check that never reports is _pending forever_, not skipped. The sharded E2E jobs are excluded too — their names carry the shard count (`E2E (chromium-gen 3/6)`), so changing the matrix would orphan every required context.
+Required checks are **`Test (20.x)`, `accessibility`, and `E2E (local) result`** — three, not two. All three come from workflows with no `paths:` filter, which is what makes them safe to require.
+
+`E2E (local) result` joined them when #739 closed. It is safe to require for the same reason: `e2e-local.yml` has no trigger `paths` filter, filtering happens in its `changes` job, and the aggregate reports green when nothing ran (see the two-lanes section above).
+
+Requiring `Build` or `Validate Component Structure` would still make every docs-only PR permanently unmergeable: a required check that never reports is _pending forever_, not skipped. The sharded E2E jobs stay excluded too — their names carry the shard count (`E2E (chromium-gen 3/6)`), so changing the matrix would orphan every required context.
+
+**`scripts/__tests__/required-checks-documented.test.js` fails when this list and branch protection disagree** (#782). This passage said "two" for two days after the third was added, which made a legitimate merge refusal — "the base branch policy prohibits the merge", while both documented checks were green — read as a broken protection rule.
 
 To lift it: `gh api -X DELETE repos/TortoiseWolfe/ScriptHammer/branches/main/protection`.
 
