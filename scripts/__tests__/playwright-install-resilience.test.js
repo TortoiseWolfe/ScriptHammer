@@ -63,6 +63,13 @@ function workflowFiles() {
  * Anchored on `pnpm exec`, not on the bare string: an earlier version matched
  * `playwright install` anywhere and flagged the `echo "Retry $i: playwright install
  * failed..."` messages as call sites.
+ *
+ * `--dry-run` is excluded, and the distinction is real rather than a convenience.
+ * `playwright install-deps --dry-run` PRINTS the apt command and runs nothing — #801
+ * uses it to hash the dependency set into a cache key. It touches no mirror and holds
+ * no dpkg lock, so requiring apt timeouts above it would be requiring protection
+ * against a call that cannot fail that way. A `install-deps` WITHOUT `--dry-run` does
+ * invoke apt and is still caught.
  */
 function installSites() {
   const sites = [];
@@ -74,6 +81,7 @@ function installSites() {
       const trimmed = text.trim();
       if (
         /pnpm exec playwright install/.test(trimmed) &&
+        !/--dry-run/.test(trimmed) &&
         !trimmed.startsWith('#')
       ) {
         sites.push({ file, line: i + 1, text: trimmed, lines, index: i });
@@ -197,6 +205,35 @@ describe('playwright install survives a bad apt mirror (#762, #798)', () => {
       ),
       true,
       'a call site with apt config above it must be detected as having one'
+    );
+  });
+
+  it('does not mistake `--dry-run` for an install that touches apt', () => {
+    // #801 hashes `playwright install-deps --dry-run` into the cache key. That prints
+    // the apt command and runs nothing, so it needs no apt timeouts above it — but a
+    // real `install-deps` still does, and must stay caught. Both directions asserted,
+    // because an over-broad exclusion here would silently un-guard the real thing.
+    const isSite = (line) =>
+      /pnpm exec playwright install/.test(line.trim()) &&
+      !/--dry-run/.test(line.trim()) &&
+      !line.trim().startsWith('#');
+
+    assert.equal(
+      isSite(
+        'DEPS=$(pnpm exec playwright install-deps --dry-run chromium webkit)'
+      ),
+      false,
+      '`--dry-run` runs no apt, so it is not a call site'
+    );
+    assert.equal(
+      isSite('pnpm exec playwright install-deps chromium'),
+      true,
+      'a REAL install-deps does invoke apt and must still be caught'
+    );
+    assert.equal(
+      isSite('pnpm exec playwright install --with-deps chromium'),
+      true,
+      'the ordinary install must still be caught'
     );
   });
 });
