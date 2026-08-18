@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import ThemeSwitcher from '@/components/theme/ThemeSwitcher';
 import { CURATED_THEMES, THEMES, THEME_COUNT } from '@/config/themes';
+import { THEME_CONTRAST } from '@/config/theme-contrast';
 import {
   applyTheme,
   readStoredTheme,
@@ -16,6 +17,52 @@ import {
 // `CURATED_THEMES` is a literal tuple, so `.includes` narrows its argument to
 // those ten; widen for the membership test.
 const CURATED: readonly string[] = CURATED_THEMES;
+
+/**
+ * The measured contrast verdict for a theme, or null (#422).
+ *
+ * NULL RENDERS NOTHING, deliberately. The 2a comp draws a badge on every plate, and the
+ * badges were held back precisely because a badge nobody measured is the #287 failure —
+ * "the label asserts a guarantee the repo cannot back". A theme with no verdict gets no
+ * badge rather than a reassuring one.
+ */
+const VERDICTS = new Map(THEME_CONTRAST.map((v) => [v.theme, v]));
+
+function ContrastBadge({ theme }: { theme: string }) {
+  const verdict = VERDICTS.get(theme);
+  if (!verdict || verdict.level === 'unknown' || verdict.textRatio === null) {
+    return null;
+  }
+
+  // Solid tokens, no opacity: this sits on `base-300`, which is the surface where
+  // dimmed text fails AAA (#462), and a badge about contrast must clear its own bar.
+  const tone =
+    verdict.level === 'AAA'
+      ? 'bg-success text-success-content'
+      : verdict.level === 'AA'
+        ? 'bg-warning text-warning-content'
+        : 'bg-error text-error-content';
+
+  // The visible text is the level; the full sentence is the accessible name, so the
+  // claim travels with the badge instead of living only in this file.
+  const label =
+    `body text ${verdict.textRatio}:1 (${verdict.textPair}) — ` +
+    (verdict.level === 'AAA'
+      ? 'meets WCAG AAA'
+      : verdict.level === 'AA'
+        ? 'meets WCAG AA, below AAA'
+        : 'below WCAG AA');
+
+  return (
+    <span
+      title={label}
+      aria-label={label}
+      className={`${tone} rounded px-1.5 py-0.5 text-[9px] font-semibold tracking-normal`}
+    >
+      {verdict.level === 'fails' ? '!AA' : verdict.level}
+    </span>
+  );
+}
 const OTHERS = THEMES.filter((t) => !CURATED.includes(t));
 
 /** One theme rendered as its own colours, scoped so it draws itself. */
@@ -63,7 +110,10 @@ function ThemePlate({
       </span>
       <span className="bg-base-300 text-base-content flex min-h-11 items-center justify-between gap-2 px-3 py-2 font-mono text-[10.5px] tracking-[.12em] uppercase">
         {theme}
-        {active && <span aria-hidden="true">✓</span>}
+        <span className="flex items-center gap-1.5">
+          <ContrastBadge theme={theme} />
+          {active && <span aria-hidden="true">✓</span>}
+        </span>
       </span>
     </button>
   );
@@ -147,6 +197,12 @@ export default function ThemesPage() {
                     <span className="bg-accent h-3 w-3 rounded-full" />
                   </span>
                   {theme}
+                  {/* The badge belongs here as much as on a plate, and arguably more:
+                      of the four themes that are not AAA, three are in THIS list rather
+                      than the curated ten — including `valentine`, the only one that
+                      fails AA outright. Badging only the plates would have skipped
+                      exactly the theme a visitor most needs warning about (#422). */}
+                  <ContrastBadge theme={theme} />
                 </button>
               </li>
             ))}
