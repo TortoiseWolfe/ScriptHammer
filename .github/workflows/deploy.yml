@@ -85,16 +85,18 @@ jobs:
           # and it needs to be auditable — the whole defect in #784 was a contact
           # channel that looked configured and was not.
           NEXT_PUBLIC_SUPPORT_EMAIL: ${{ vars.NEXT_PUBLIC_SUPPORT_EMAIL }}
-          # Prefer the VARIABLE, fall back to the secret (#629). A Stripe publishable
-          # key is public by design — it ships in the bundle — so storing it write-only
-          # bought no security and cost auditability: the live site's payment MODE could
-          # only be discovered by downloading a chunk and grepping it. As a variable the
-          # value is readable, diffable, and the go-live flip becomes a one-line change
-          # someone can review instead of a blind secret write.
+          # A VARIABLE, and deliberately with no secret fallback (#629, #787). A Stripe
+          # publishable key is public by design — it ships in the bundle — so storing it
+          # write-only bought no security and cost auditability: the live site's payment
+          # MODE could only be discovered by downloading a chunk and grepping it. As a
+          # variable the value is readable, diffable, and the go-live flip becomes a
+          # one-line change someone can review instead of a blind secret write.
           #
-          # The fallback stays until the secret is deleted, so this cannot strand a fork
-          # or a deploy mid-migration.
-          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+          # The `|| secrets.*` fallback that lived here carried the migration and was
+          # removed with the secret it read (#787). Restoring it would restore the exact
+          # 2026-08-07 failure: two same-named stores, only one of them readable, so an
+          # operator updating the wrong one changes nothing and can see no reason why.
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
           NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY: ${{ secrets.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY }}
           NEXT_PUBLIC_DEPLOY_URL: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
