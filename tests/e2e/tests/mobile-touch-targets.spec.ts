@@ -182,8 +182,16 @@ test.describe('Touch Target Standards', () => {
       if (!box) continue;
       measured++;
       const text = (await item.textContent())?.trim() ?? '';
-      if (box.height < MINIMUM - TOLERANCE) {
-        failures.push(`"${text}": ${box.height.toFixed(0)}px tall (min 44)`);
+      // BOTH AXES, like every other measuring test in this file (#502). This
+      // one checked height only and was the last nav surface that did. The
+      // Display popover below records why that is not enough: "L" measured
+      // 44x42 when only the height had a floor. These menuitems sit in a
+      // `w-52` list, so width is not expected to bind — which is exactly the
+      // case where a missing assertion goes unnoticed until it does bind.
+      if (box.height < MINIMUM - TOLERANCE || box.width < MINIMUM - TOLERANCE) {
+        failures.push(
+          `"${text}": ${box.width.toFixed(0)}x${box.height.toFixed(0)}px (min 44x44)`
+        );
       }
     }
 
