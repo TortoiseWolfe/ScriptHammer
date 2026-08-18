@@ -553,9 +553,15 @@ export function GlobalNav() {
                     </Link>
                   </li>
                   <li>
+                    {/* MENU_ITEM, not a bare flex: this was the only nav row
+                        in the file with no height floor, and DaisyUI renders
+                        `menu li > a` at 26px (#378). Its twin in the mobile
+                        menu already reads the same. No gate caught it because
+                        the touch-target sweep runs signed OUT and this row
+                        only renders signed in (#502). */}
                     <Link
                       href="/messages"
-                      className="flex items-center justify-between"
+                      className={`${MENU_ITEM} justify-between`}
                     >
                       <span>Messages</span>
                       {unreadCount > 0 && (
