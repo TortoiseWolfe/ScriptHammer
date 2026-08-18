@@ -651,7 +651,7 @@ export default function AtlasViewer({ slug }: { slug: string }) {
             --font-scale-factor reaches 2.125. */}
         <div className="bg-base-100/85 rounded-box pointer-events-auto max-w-64 p-3 shadow-lg backdrop-blur">
           <div className="text-sm font-semibold">Atlas — {slug}</div>
-          <div className="text-base-content/60 font-mono text-[11px]">
+          <div className="text-base-content font-mono text-[11px]">
             {error
               ? `error: ${error}`
               : ready
@@ -732,7 +732,7 @@ export default function AtlasViewer({ slug }: { slug: string }) {
                       style={{ background: row.color }}
                     />
                     <span className="font-mono">{row.n}</span>
-                    <span className="text-base-content/60">{row.label}</span>
+                    <span className="text-base-content">{row.label}</span>
                   </li>
                 ))}
               </ul>

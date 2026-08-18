@@ -73,7 +73,7 @@ export interface BuildingCardModel {
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div className="grid grid-cols-[64px_1fr] gap-2 text-[11px]">
-      <span className="text-base-content/50">{k}</span>
+      <span className="text-base-content">{k}</span>
       <span className="font-mono break-words">{v}</span>
     </div>
   );
@@ -110,7 +110,7 @@ export function BuildingCard({ model }: { model: BuildingCardModel }) {
             >
               ⏭
             </button>
-            <span className="text-base-content/50 font-mono text-[10px]">
+            <span className="text-base-content font-mono text-[10px]">
               {tour.index + 1}/{tour.total}
             </span>
           </>
@@ -130,7 +130,7 @@ export function BuildingCard({ model }: { model: BuildingCardModel }) {
       {/* WHY this stop exists — a name alone says where the camera is, not what
           is on screen. Tour-only. */}
       {tour && (
-        <div className="text-base-content/70 mt-1.5 text-[11px] leading-snug">
+        <div className="text-base-content mt-1.5 text-[11px] leading-snug">
           {tour.blurb}
         </div>
       )}
@@ -148,12 +148,12 @@ export function BuildingCard({ model }: { model: BuildingCardModel }) {
                 background: RULE_COLORS[facts.rule] ?? RULE_COLORS.fallback,
               }}
             />
-            <span className="text-base-content/60">
+            <span className="text-base-content">
               {RULE_LABELS[facts.rule] ?? facts.rule}
             </span>
           </span>
           {tour && (
-            <span className="text-base-content/60">
+            <span className="text-base-content">
               <span className="font-mono">{tour.nearby}</span> within 150 m ·{' '}
               <span className="font-mono">{tour.nearbyMeasured}</span> measured
             </span>
@@ -183,7 +183,7 @@ export function BuildingCard({ model }: { model: BuildingCardModel }) {
       )}
 
       {untyped && (
-        <div className="border-warning text-base-content/60 mt-2 border-l-2 pl-2 text-[11px] leading-snug">
+        <div className="border-warning text-base-content mt-2 border-l-2 pl-2 text-[11px] leading-snug">
           Untyped in OpenStreetMap (
           <span className="font-mono">building=yes</span>). 85% of downtown is.
           Tag it and it appears here on the next load.
