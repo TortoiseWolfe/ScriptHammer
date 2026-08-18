@@ -2171,7 +2171,21 @@ GRANT EXECUTE ON FUNCTION admin_overview(TIMESTAMPTZ, TIMESTAMPTZ) TO authentica
 -- ============================================================================
 
 -- Authenticated users
-GRANT SELECT, INSERT, UPDATE ON payment_intents TO authenticated;
+
+-- NO `UPDATE` ON payment_intents, and the REVOKE is deliberate (#565).
+--
+-- The "Payment intents are immutable" policy above is `FOR UPDATE USING (false)`,
+-- so an UPDATE grant here can never be exercised by anyone. It read as a live
+-- capability and was not one — which is the category of thing that misleads the
+-- next reader about what the security posture actually is.
+--
+-- The REVOKE matters as much as dropping it from the GRANT: this file is
+-- re-runnable against an EXISTING database, and simply narrowing the GRANT would
+-- leave the privilege in place on every database that already ran the old line.
+-- Correcting the file without correcting the databases it already provisioned is
+-- the "a migration file is not a migration" trap CLAUDE.md records.
+GRANT SELECT, INSERT ON payment_intents TO authenticated;
+REVOKE UPDATE ON payment_intents FROM authenticated;
 GRANT SELECT ON payment_results TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON subscriptions TO authenticated;
 GRANT SELECT ON payment_provider_config TO authenticated;
