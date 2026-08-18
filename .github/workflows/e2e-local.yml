@@ -506,14 +506,92 @@ jobs:
           # test failure — the exact confusion the loud failure underneath was written
           # to prevent.
           set -o pipefail
+          # BOUND THE SILENCE, NOT THE ELAPSED TIME (#809).
+          #
+          # Measured: on 4 of 9 recent attempts this step produced ZERO output for
+          # ~41 minutes and was ended only by the 45-minute job cap, while healthy
+          # installs finish in 0.7-1.4m. Nothing between the two. apt's own
+          # Acquire timeouts cannot see it because nothing ever reaches a download.
+          #
+          # A wall-clock bound was tried twice and removed (#798): it cannot tell a
+          # SLOW install from a STALLED one. Silence can. A working install prints
+          # continuously; a stalled one prints nothing at all.
+          #
+          # 600s, and the number is derived rather than picked: the longest
+          # legitimate gap between two `Get:` lines measured on the worst mirror was
+          # ~6.5 minutes (13.6 MB of libflite at ~35 kB/s). 10 minutes clears that
+          # with margin and still ends a 41-minute hang at a quarter of the cost.
+          IDLE_LIMIT=600
+          LOG="$RUNNER_TEMP/pw-install.log"
+          PGF="$RUNNER_TEMP/pw-install.pgid"
+
+          install_once() {
+            : > "$LOG"; rm -f "$PGF"
+            # `setsid --wait`, and the child records its OWN process-group id.
+            #
+            # Both halves are load-bearing, and the naive form was verified WRONG
+            # before this shape was chosen. Plain `setsid` forks and exits, so `$!`
+            # is a stale pid and `ps -o pgid= -p $!` reads the wrong group — the
+            # kill then misses, leaving exactly the orphaned root `apt-get` holding
+            # /var/lib/dpkg/lock-frontend that broke #798. `--wait` keeps the
+            # handle valid for the child's lifetime; the child writes `$$` because
+            # setsid gives it a new group the parent cannot derive.
+            setsid --wait bash -c 'echo $$ > "'"$PGF"'"; exec pnpm exec playwright install --with-deps chromium ${{ matrix.browser }}' \
+              > "$LOG" 2>&1 &
+            local pid=$!
+            local pgid=""
+            for _ in $(seq 1 25); do
+              [ -s "$PGF" ] && { pgid=$(cat "$PGF"); break; }
+              sleep 0.2
+            done
+
+            # Mirror the log into the job output, or a working install looks silent
+            # to anyone reading the run.
+            tail -f "$LOG" &
+            local tailpid=$!
+
+            local rc=0 now age
+            while kill -0 "$pid" 2>/dev/null; do
+              sleep 15
+              now=$(date +%s)
+              age=$(( now - $(stat -c %Y "$LOG" 2>/dev/null || echo "$now") ))
+              if [ "$age" -ge "$IDLE_LIMIT" ]; then
+                echo "::warning::install produced no output for ${age}s — killing it (#809)"
+                if [ -n "$pgid" ]; then
+                  kill -TERM "-$pgid" 2>/dev/null || true
+                  sleep 5
+                  kill -KILL "-$pgid" 2>/dev/null || true
+                else
+                  # No pgid means the child never got far enough to record one.
+                  # Say so rather than killing a group we did not identify.
+                  echo "::warning::no pgid recorded; killing only the wrapper (#809)"
+                  kill -KILL "$pid" 2>/dev/null || true
+                fi
+                rc=124
+                break
+              fi
+            done
+            kill "$tailpid" 2>/dev/null || true
+            if [ "$rc" -eq 0 ]; then
+              wait "$pid" || rc=$?
+            fi
+
+            # If we killed it, apt may still be finishing under our feet. Retrying
+            # straight into a held dpkg lock is exactly what #798 got wrong.
+            for _ in $(seq 1 30); do
+              sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || break
+              sleep 2
+            done
+            return $rc
+          }
+
           ok=0
           for i in 1 2 3; do
-            if pnpm exec playwright install --with-deps chromium ${{ matrix.browser }} \
-                 2>&1 | tee "$RUNNER_TEMP/pw-install.log"; then
+            if install_once; then
               ok=1
               break
             fi
-            echo "Retry $i: playwright install failed, retrying in 10s..."
+            echo "Retry $i: playwright install failed or went silent, retrying in 10s..."
             sleep 10
           done
           # Fail loudly rather than falling through. Without this the loop simply
