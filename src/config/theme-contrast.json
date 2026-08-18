@@ -1,0 +1,352 @@
+[
+  {
+    "theme": "scripthammer-dark",
+    "level": "AAA",
+    "textRatio": 11.81,
+    "textPair": "base-content on base-300",
+    "uiRatio": 7.11,
+    "uiPair": "info-content on info",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "scripthammer-light",
+    "level": "AAA",
+    "textRatio": 10.1,
+    "textPair": "base-content on base-300",
+    "uiRatio": 8.77,
+    "uiPair": "accent-content on accent",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "scripthammer-forge",
+    "level": "AAA",
+    "textRatio": 13.37,
+    "textPair": "base-content on base-300",
+    "uiRatio": 7.05,
+    "uiPair": "neutral-content on neutral",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "light",
+    "level": "AAA",
+    "textRatio": 15.27,
+    "textPair": "base-content on base-300",
+    "uiRatio": 3.04,
+    "uiPair": "secondary-content on secondary",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "dark",
+    "level": "AAA",
+    "textRatio": 14.75,
+    "textPair": "base-content on base-100",
+    "uiRatio": 3.04,
+    "uiPair": "secondary-content on secondary",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "cupcake",
+    "level": "AAA",
+    "textRatio": 13.21,
+    "textPair": "base-content on base-300",
+    "uiRatio": 4.12,
+    "uiPair": "error-content on error",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "bumblebee",
+    "level": "AAA",
+    "textRatio": 14.23,
+    "textPair": "base-content on base-300",
+    "uiRatio": 3.53,
+    "uiPair": "error-content on error",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "emerald",
+    "level": "AAA",
+    "textRatio": 7.26,
+    "textPair": "base-content on base-300",
+    "uiRatio": 3.86,
+    "uiPair": "secondary-content on secondary",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "corporate",
+    "level": "AAA",
+    "textRatio": 11.27,
+    "textPair": "base-content on base-300",
+    "uiRatio": 3.29,
+    "uiPair": "success-content on success",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "synthwave",
+    "level": "AAA",
+    "textRatio": 8,
+    "textPair": "base-content on base-300",
+    "uiRatio": 5.34,
+    "uiPair": "primary-content on primary",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "retro",
+    "level": "AA",
+    "textRatio": 5.69,
+    "textPair": "base-content on base-300",
+    "uiRatio": 3.15,
+    "uiPair": "accent-content on accent",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "cyberpunk",
+    "level": "AAA",
+    "textRatio": 13.69,
+    "textPair": "base-content on base-300",
+    "uiRatio": 6.82,
+    "uiPair": "error-content on error",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "valentine",
+    "level": "fails",
+    "textRatio": 4.17,
+    "textPair": "base-content on base-300",
+    "uiRatio": 3.59,
+    "uiPair": "error-content on error",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "halloween",
+    "level": "AAA",
+    "textRatio": 11.11,
+    "textPair": "base-content on base-100",
+    "uiRatio": 3.95,
+    "uiPair": "info-content on info",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "garden",
+    "level": "AAA",
+    "textRatio": 10.21,
+    "textPair": "base-content on base-300",
+    "uiRatio": 3.84,
+    "uiPair": "primary-content on primary",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "forest",
+    "level": "AAA",
+    "textRatio": 10.76,
+    "textPair": "base-content on base-100",
+    "uiRatio": 6.82,
+    "uiPair": "error-content on error",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "aqua",
+    "level": "AAA",
+    "textRatio": 8.12,
+    "textPair": "base-content on base-100",
+    "uiRatio": 3.57,
+    "uiPair": "secondary-content on secondary",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "lofi",
+    "level": "AAA",
+    "textRatio": 17.62,
+    "textPair": "base-content on base-300",
+    "uiRatio": 8.97,
+    "uiPair": "error-content on error",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "pastel",
+    "level": "AAA",
+    "textRatio": 14.48,
+    "textPair": "base-content on base-300",
+    "uiRatio": 3.05,
+    "uiPair": "warning-content on warning",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "fantasy",
+    "level": "AAA",
+    "textRatio": 9.61,
+    "textPair": "base-content on base-300",
+    "uiRatio": 3.71,
+    "uiPair": "secondary-content on secondary",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "wireframe",
+    "level": "AAA",
+    "textRatio": 15.18,
+    "textPair": "base-content on base-300",
+    "uiRatio": 5.68,
+    "uiPair": "warning-content on warning",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "black",
+    "level": "AAA",
+    "textRatio": 11.85,
+    "textPair": "base-content on base-300",
+    "uiRatio": 3.91,
+    "uiPair": "success-content on success",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "luxury",
+    "level": "AAA",
+    "textRatio": 7.62,
+    "textPair": "base-content on base-300",
+    "uiRatio": 7.36,
+    "uiPair": "error-content on error",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "dracula",
+    "level": "AAA",
+    "textRatio": 13.37,
+    "textPair": "base-content on base-100",
+    "uiRatio": 6.4,
+    "uiPair": "error-content on error",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "cmyk",
+    "level": "AAA",
+    "textRatio": 13.45,
+    "textPair": "base-content on base-300",
+    "uiRatio": 5.06,
+    "uiPair": "error-content on error",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "autumn",
+    "level": "AAA",
+    "textRatio": 10.67,
+    "textPair": "base-content on base-300",
+    "uiRatio": 3.85,
+    "uiPair": "neutral-content on neutral",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "business",
+    "level": "AAA",
+    "textRatio": 10.25,
+    "textPair": "base-content on base-100",
+    "uiRatio": 4.46,
+    "uiPair": "error-content on error",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "acid",
+    "level": "AAA",
+    "textRatio": 16.06,
+    "textPair": "base-content on base-300",
+    "uiRatio": 5.04,
+    "uiPair": "error-content on error",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "lemonade",
+    "level": "AAA",
+    "textRatio": 11.46,
+    "textPair": "base-content on base-300",
+    "uiRatio": 5.27,
+    "uiPair": "primary-content on primary",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "night",
+    "level": "AAA",
+    "textRatio": 11,
+    "textPair": "base-content on base-100",
+    "uiRatio": 6.71,
+    "uiPair": "secondary-content on secondary",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "coffee",
+    "level": "AA",
+    "textRatio": 6.72,
+    "textPair": "base-content on base-100",
+    "uiRatio": 5.71,
+    "uiPair": "accent-content on accent",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "winter",
+    "level": "AA",
+    "textRatio": 6.97,
+    "textPair": "base-content on base-300",
+    "uiRatio": 3.62,
+    "uiPair": "primary-content on primary",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "dim",
+    "level": "AAA",
+    "textRatio": 7.88,
+    "textPair": "base-content on base-100",
+    "uiRatio": 7.89,
+    "uiPair": "secondary-content on secondary",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "nord",
+    "level": "AAA",
+    "textRatio": 9.25,
+    "textPair": "base-content on base-300",
+    "uiRatio": 4.97,
+    "uiPair": "error-content on error",
+    "uiMeetsAA": true,
+    "skipped": []
+  },
+  {
+    "theme": "sunset",
+    "level": "AAA",
+    "textRatio": 8.5,
+    "textPair": "base-content on base-100",
+    "uiRatio": 5.78,
+    "uiPair": "neutral-content on neutral",
+    "uiMeetsAA": true,
+    "skipped": []
+  }
+]
