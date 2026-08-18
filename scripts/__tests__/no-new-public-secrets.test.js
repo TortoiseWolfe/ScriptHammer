@@ -44,9 +44,6 @@ const ALLOWED = new Set([
   'NEXT_PUBLIC_PAYPAL_PLAN_ID',
   'NEXT_PUBLIC_SENTRY_DSN',
   'NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY',
-  // Migrating in #785: deploy.yml prefers `vars`, keeping the secret as a fallback
-  // so a fork mid-migration is not stranded. Delete once that fallback is removed.
-  'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY',
 ]);
 
 /** Every `secrets.NEXT_PUBLIC_*` reference across all workflow files. */
