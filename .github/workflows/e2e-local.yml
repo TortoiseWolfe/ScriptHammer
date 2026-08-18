@@ -118,7 +118,23 @@ jobs:
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 45, not 30 (#801) — and this cap BOUNDS DAMAGE, it does not guarantee completion.
+    # Saying otherwise would be the mistake #762 and #798 both made.
+    #
+    # There is no value that guarantees completion, because the quantity is a download
+    # over a mirror of unknown speed: `firefox-gen 4/6` moved 21.1 MB at 36.9 kB/s on
+    # 2026-08-18, and webkit's 114 MB at that rate is **51 minutes**. 45 would not have
+    # saved it either.
+    #
+    # What 45 buys is the ordinary cold-cache miss (a 17.7m install inside a ~25m job),
+    # which 30 was already too tight for. The real fix is the apt cache below, which
+    # removes the download rather than budgeting for it. If WARM runs ever approach this
+    # cap, the cache has stopped working — check the mirror bytes, not the duration.
+    #
+    # A job-level cap is also the one bound that cannot leave a poisoned runner behind,
+    # because the runner is destroyed with it. That is why this is the right place for a
+    # time bound and the install command is not (#798).
+    timeout-minutes: 45
 
     strategy:
       # NO max-parallel. See the header — the caps in e2e.yml protect a shared
@@ -317,7 +333,104 @@ jobs:
           # not apply here. `signup-mailer.yml`, which drives real auth forms
           # against this same local stack, also omits it — follow that precedent.
 
+      # CACHE THE APT ARCHIVES, BECAUSE THE DOWNLOAD IS THE JOB (#801).
+      #
+      # Measured 2026-08-18, run 32123025570, `webkit-msg 1/1` (25-minute job):
+      #
+      #   apt-get update                11s   11.3 MB @ 7407 kB/s   <- never the problem
+      #   apt-get install FETCH      16m09s    114 MB @  118 kB/s   <- this is the job
+      #   dpkg unpack/configure         70s
+      #   browsers from Playwright CDN   8s                          <- never the problem
+      #
+      # IT IS NOT A WEBKIT PROBLEM, and scoping this to webkit later would be wrong.
+      # Every `Fetched` line from that same run:
+      #
+      #   chromium-gen 3/6    21.1 MB in 2s        (8454 kB/s)
+      #   firefox-gen  5/6    21.1 MB in 0s        (86.4 MB/s)
+      #   firefox-gen  4/6    21.1 MB in 9min 32s  (36.9 kB/s)   <- 21 MB. nine minutes.
+      #   webkit-gen   1/6     114 MB in 3s        (43.2 MB/s)
+      #   webkit-msg   1/1     114 MB in 16min 09s (118 kB/s)
+      #
+      # Identical work, 800x spread. Every job holds a lottery ticket; webkit just has a
+      # bigger downside. At firefox's observed 36.9 kB/s, webkit's 114 MB would take 51
+      # minutes — which is why no job timeout can be "sized for the cold path".
+      #
+      # WHY A CACHE AND NOT ANOTHER BOUND. #762 and #798 tried to bound the TIME apt
+      # spends. Time is the mirror's to choose. Bytes are ours. In that same job, at that
+      # same minute, the Actions cache service delivered 318 MB at 95 MB/s while
+      # azure.archive.ubuntu.com delivered 118 kB/s to the same VM.
+      #
+      # A STALE CACHE IS STILL VALUABLE HERE, unlike most caches: apt matches per FILE,
+      # so a near-miss restore means "download only what changed" rather than "download
+      # everything". That is why the restore-keys ladder below is load-bearing rather
+      # than decorative — it turns a runner-image bump from a 114 MB event into a delta.
+      - name: Resolve the apt cache key
+        id: cachekey
+        run: |
+          set -euo pipefail
+
+          # ImageOS/ImageVersion are ambient runner environment variables, NOT a
+          # documented expression context. Read them here rather than via `env.*`: if
+          # they resolved empty the key would silently degenerate to `apt-webkit---`,
+          # HIT FOREVER across image bumps, and re-fetch the delta from the mirror on
+          # every job behind a green "Cache restored" line. Fail instead.
+          : "${ImageOS:?empty — the cache key would silently never rotate}"
+          : "${ImageVersion:?empty — the cache key would silently never rotate}"
+
+          # Hash the dep list PLAYWRIGHT ITSELF would install, not the package.json
+          # range. `^1.55.0` does not change when the lockfile resolves 1.55.2, and the
+          # dep set is what the cache actually holds. This derives the value from
+          # Playwright instead of restating it, so it cannot drift. Verified
+          # deterministic, and distinct per browser (chromium/firefox/webkit each hash
+          # differently).
+          DEPS=$(pnpm exec playwright install-deps --dry-run chromium ${{ matrix.browser }} | sha256sum | cut -c1-16)
+
+          KEY="apt-${{ matrix.browser }}-${ImageOS}-${ImageVersion}-${DEPS}"
+          {
+            echo "key=$KEY"
+            # browser FIRST so both fallbacks are true prefixes of the primary key.
+            # Reversing browser and ImageVersion silently disables the ladder.
+            echo "prefix1=apt-${{ matrix.browser }}-${ImageOS}-${ImageVersion}-"
+            echo "prefix2=apt-${{ matrix.browser }}-${ImageOS}-"
+          } >> "$GITHUB_OUTPUT"
+
+          # Echoed so a degenerate key is VISIBLE rather than inferred later.
+          echo "apt cache key: $KEY"
+
+      # restore/save split rather than `actions/cache@v4`, deliberately: that action
+      # saves with `post-if: success()`, so a shard whose TESTS fail would never
+      # refresh the cache — going stale exactly on a lane that fails often. The save
+      # below is gated on the INSTALL succeeding, which is the thing being cached.
+      - name: Restore cached apt packages
+        id: aptcache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/apt-deb-cache
+          key: ${{ steps.cachekey.outputs.key }}
+          restore-keys: |
+            ${{ steps.cachekey.outputs.prefix1 }}
+            ${{ steps.cachekey.outputs.prefix2 }}
+
+      - name: Seed apt's archive from the cache
+        run: |
+          set -euo pipefail
+          # Staged through a user-owned directory on purpose: actions/cache runs as
+          # `runner`, and /var/cache/apt/archives is root-owned (with partial/ at 0700
+          # root), so caching it directly fails on both save and restore.
+          #
+          # apt matches on exact filename and verifies the hash against its index, so a
+          # stale .deb is ignored and re-downloaded rather than used. There is no
+          # corruption path here, only a slower one.
+          if compgen -G "$HOME/apt-deb-cache/*.deb" > /dev/null; then
+            n=$(ls -1 "$HOME"/apt-deb-cache/*.deb | wc -l)
+            sudo cp -n "$HOME"/apt-deb-cache/*.deb /var/cache/apt/archives/ 2>/dev/null || true
+            echo "seeded $n cached .deb(s)  (restore key: ${{ steps.aptcache.outputs.cache-matched-key }})"
+          else
+            echo "cold cache — apt will fetch from the mirror this run"
+          fi
+
       - name: Install Playwright (chromium + ${{ matrix.browser }})
+        id: pwinstall
         run: |
           # CHROMIUM IS NOT OPTIONAL ON A FIREFOX OR WEBKIT JOB.
           #
@@ -373,16 +486,30 @@ jobs:
           #                                  no orphan, no held lock, and the retry
           #                                  loop below handles it. This is the #762
           #                                  fix, and it is the load-bearing one.
-          #   timeout-minutes: 30         -> the outer backstop. A job-level cap is
-          #                                  the only bound that cannot leave a
-          #                                  poisoned runner behind, because the
-          #                                  runner is destroyed along with it.
-          printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
+          #   the apt-deb cache above     -> removes the download entirely on a warm
+          #                                  cache, which is where the 14m51s went
+          #                                  (#801). Not a bound, but the reason the
+          #                                  bounds below rarely matter.
+          #   timeout-minutes: 45         -> the outer backstop, sized for the COLD
+          #                                  cache path. A job-level cap is the only
+          #                                  bound that cannot leave a poisoned
+          #                                  runner behind — the runner dies with it.
+          # `Keep-Downloaded-Packages "true"` is what makes the cache possible at all:
+          # apt-get keeps its archives today, but only because nothing turned that off.
+          # If a future runner image flips it, the cache would save nothing and no test
+          # would notice — so pin it here rather than inherit it (#801).
+          printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\nAPT::Keep-Downloaded-Packages "true";\n' \
             | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
 
+          # `pipefail` is not optional here. Without it the pipeline returns tee's
+          # status, the check below always passes, and a failed install resurfaces as a
+          # test failure — the exact confusion the loud failure underneath was written
+          # to prevent.
+          set -o pipefail
           ok=0
           for i in 1 2 3; do
-            if pnpm exec playwright install --with-deps chromium ${{ matrix.browser }}; then
+            if pnpm exec playwright install --with-deps chromium ${{ matrix.browser }} \
+                 2>&1 | tee "$RUNNER_TEMP/pw-install.log"; then
               ok=1
               break
             fi
@@ -397,6 +524,110 @@ jobs:
             echo "::error::playwright install did not succeed in 3 attempts (#762, #798)"
             exit 1
           fi
+
+
+      # MEASURE THE BYTES THAT LEFT THE MIRROR (#801).
+      #
+      # The previous version of this change asserted nothing. It carried a comment
+      # saying `Need to get N MB` was "the honest measure" and then never read it —
+      # which is the same shape as #459 (axe-core returning a pass with
+      # contrastRatio: null) and as every probe this repo has been burned by.
+      #
+      # apt prints exactly one of:
+      #     Need to get 114 MB of archives.          <- all of it from the mirror
+      #     Need to get 0 B/114 MB of archives.      <- first number is the mirror's share
+      #
+      # That FIRST number is the only honest signal. Step duration is not: a fast mirror
+      # produces the same duration as a working cache, which is precisely how #757
+      # survived three occurrences.
+      - name: How many bytes actually came from the mirror
+        if: always() && steps.pwinstall.outcome == 'success'
+        env:
+          CACHE_HIT: ${{ steps.aptcache.outputs.cache-hit }}
+          MATCHED_KEY: ${{ steps.aptcache.outputs.cache-matched-key }}
+          BROWSER: ${{ matrix.browser }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, re, pathlib
+
+          log = pathlib.Path(os.environ["RUNNER_TEMP"]) / "pw-install.log"
+          text = log.read_text(errors="replace") if log.exists() else ""
+
+          UNITS = {"B": 1, "kB": 10**3, "MB": 10**6, "GB": 10**9}
+          m = re.search(r"^Need to get ([\d.]+) ?([kMG]?B)(?:/([\d.]+) ?([kMG]?B))?", text, re.M)
+          if m:
+              mirror = float(m.group(1)) * UNITS[m.group(2)]
+              total = float(m.group(3)) * UNITS[m.group(4)] if m.group(3) else mirror
+              line = m.group(0)
+          else:
+              # No line at all means apt had nothing to install — a legitimate outcome,
+              # not a measurement failure. Say which it was rather than defaulting.
+              mirror = total = 0.0
+              line = "(no 'Need to get' line — nothing needed installing)"
+
+          hit = os.environ.get("CACHE_HIT") == "true"
+          metrics = {
+              "browser": os.environ.get("BROWSER"),
+              "cache_hit": hit,
+              "matched_key": os.environ.get("MATCHED_KEY") or None,
+              "mirror_bytes": int(mirror),
+              "total_bytes": int(total),
+          }
+          pathlib.Path("apt-metrics.json").write_text(json.dumps(metrics))
+
+          print(f"apt: {line}")
+          print(f"from the mirror: {mirror/1e6:.1f} MB   cache hit: {hit}")
+
+          summary = os.environ.get("GITHUB_STEP_SUMMARY")
+          if summary:
+              with open(summary, "a") as fh:
+                  fh.write(f"- apt from mirror: **{mirror/1e6:.1f} MB** "
+                           f"(cache hit: {hit}, baseline 2026-08-18: 114 MB webkit / 21 MB other)\n")
+
+          # WHY A WARNING AND NOT A HARD FAILURE, stated so nobody "tightens" it without
+          # reading this. The key hashes the dependency NAMES Playwright asks for, not
+          # their resolved versions, so a security update inside one ImageVersion can
+          # legitimately produce a small delta on an exact key hit. Erroring here would
+          # red the lane for a correct apt. A LARGE fetch on an exact hit is the real
+          # signal — that means the key is degenerate or the archive is not being kept.
+          if hit and mirror > 8e6:
+              print(f"::warning::exact cache hit but {mirror/1e6:.1f} MB still came from "
+                    f"the mirror — the key may be degenerate, or apt is discarding its "
+                    f"archives. See #801.")
+          PY
+
+      - name: Hand the debs back to the cache
+        if: always() && steps.pwinstall.outcome == 'success'
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/apt-deb-cache"
+          # Prune first. `restore-keys` carries the previous generation forward and
+          # `cp -n` never removes anything, so without this the cache accumulates every
+          # version ever seen and eventually evicts the pnpm cache under the repo's LRU.
+          # `autoclean` drops only .debs the current index no longer offers.
+          sudo apt-get -o Dir::Cache::archives="$HOME/apt-deb-cache/" autoclean || true
+          sudo cp -n /var/cache/apt/archives/*.deb "$HOME/apt-deb-cache/" 2>/dev/null || true
+          # MANDATORY: the copies land root-owned and actions/cache runs as `runner`,
+          # which would otherwise fail to tar them.
+          sudo chown -R "$(id -u):$(id -g)" "$HOME/apt-deb-cache"
+          echo "cached $(ls -1 "$HOME"/apt-deb-cache/*.deb 2>/dev/null | wc -l) .deb(s) for next time"
+
+      # Saved explicitly rather than by `actions/cache`'s post step, which is gated on
+      # the whole JOB succeeding — a shard whose tests fail would never refresh the
+      # cache, going stale exactly on a lane that fails often. This is gated on the
+      # INSTALL succeeding, which is what is actually being cached.
+      #
+      # `continue-on-error` covers the concurrent-save race: eight jobs share each key,
+      # the first to reserve wins, and the rest get a 409 the action reports as info.
+      # Making that explicit rather than inherited.
+      - name: Save the apt cache
+        if: always() && steps.pwinstall.outcome == 'success' && steps.aptcache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ~/apt-deb-cache
+          key: ${{ steps.cachekey.outputs.key }}
 
       - name: Run ${{ matrix.project }} ${{ matrix.shard }}
         run: |
@@ -544,6 +775,7 @@ jobs:
           path: |
             playwright-report/
             results.json
+            apt-metrics.json
           retention-days: 3
 
   # ==========================================================================
