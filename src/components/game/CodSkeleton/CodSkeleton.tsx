@@ -428,6 +428,7 @@ export default function CodSkeleton({
   speed = 4.5,
 }: CodSkeletonProps = {}): React.ReactElement {
   const [webglOk, setWebglOk] = useState<boolean>(() => isWebGLAvailable());
+  const [started, setStarted] = useState<boolean>(false);
   const [stance, setStance] = useState<Stance>('stand');
   const { tier, preset, setTier } = useQuality();
   const handleRetry = useCallback(() => setWebglOk(isWebGLAvailable()), []);
@@ -462,8 +463,58 @@ export default function CodSkeleton({
     );
   }
 
+  // THE SCENE DOES NOT MOUNT UNTIL THE VISITOR ASKS FOR IT (#757).
+  //
+  // Mounting <Canvas> during page load builds a MaterialSystem and bakes its 1K
+  // texture sets synchronously before the page is usable. On a GPU-less runner that
+  // measured 22.6-30.2s on chromium and 12.7-41.7s on webkit, against the 30s
+  // per-test budget — so `mobile-horizontal-scroll` timed out on this route three
+  // times and blocked two merges. Firefox, which has no WebGL and never mounts the
+  // canvas, finished the identical layout measurement in 2.8-3.3s: the whole gap is
+  // this mount.
+  //
+  // That is a property of the PAGE, not of the test. A software rasteriser stands in
+  // for a low-end visitor, and they pay the same cost on a route that has not yet
+  // been asked to do anything. Games gate their scene behind a start for exactly this
+  // reason, and this one already tells you to click.
+  //
+  // The placeholder lives inside the SAME wrapper, so `aspect-video w-full` gives it
+  // the identical box and the layout sweep measures the geometry it always measured.
+  // `CodSkeleton.test.tsx` asserts that; do not move the sizing onto either branch.
+  if (!started) {
+    return (
+      <div
+        className={wrapperClass}
+        data-webgl-ok="true"
+        data-scene-started="false"
+      >
+        <div className="bg-base-200 border-base-300 absolute inset-0 flex flex-col items-center justify-center gap-3 rounded border p-4 text-center">
+          <p className="text-base-content max-w-md text-sm">
+            The 3D scene is not running yet. Starting it compiles shaders and
+            bakes textures, so it waits until you ask.
+          </p>
+          <button
+            type="button"
+            onClick={() => setStarted(true)}
+            className="btn btn-primary min-h-11 min-w-11"
+          >
+            Start the scene
+          </button>
+          <p className="text-base-content/85 text-xs">
+            Then: click to capture · WASD move · Shift sprint · C crouch · X
+            prone · Space jump
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className={wrapperClass} data-webgl-ok="true">
+    <div
+      className={wrapperClass}
+      data-webgl-ok="true"
+      data-scene-started="true"
+    >
       <Canvas
         dpr={Math.max(
           0.5,
