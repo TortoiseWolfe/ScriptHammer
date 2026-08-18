@@ -333,32 +333,60 @@ jobs:
           # as an artifact. That cannot work here: every runner has its own
           # Supabase with its own users, so a state minted on another runner is
           # worthless. Each job runs its own setup, so each job needs chromium.
-          # BOUND THE COMMAND: THE FAILURE MODE IS A HANG, NOT AN ERROR (#762).
+          # MAKE APT GIVE UP, RATHER THAN KILLING IT FROM OUTSIDE (#798, after #762).
           #
-          # `--with-deps` shells out to `apt-get` as root. When a mirror is
-          # unreachable apt does not exit — it waits. `&& break` retries on a
-          # non-zero EXIT, so a hang meant `i` never reached 2 and these three
-          # attempts, written to survive a bad install, could never run. It is the
-          # #765 shape exactly: the job died on the line meant to save it.
+          # The failure mode is a HANG, not an error: `--with-deps` shells out to
+          # `apt-get` as root, and an unreachable mirror makes apt WAIT. `&& break`
+          # retries on a non-zero EXIT, so a hang meant `i` never reached 2 and the
+          # three attempts written to survive a bad install could never run. Eight
+          # jobs sat here ~26 minutes on run 32088862298 and were killed by the cap
+          # having run zero tests (#762).
           #
-          # Measured 2026-08-18 on run 32088862298: apt logged 18-26 `Ign:` lines
-          # against azure.archive.ubuntu.com, went silent, and EIGHT jobs sat here
-          # for ~26 minutes until the 30-minute cap killed them, having run ZERO
-          # tests. `E2E (local) result` — a required check — went red with no test
-          # failure anywhere, twice, blocking a merge both times.
+          # #762 was fixed with `timeout 300` around the command. THAT WAS THE WRONG
+          # SHAPE and it broke the next PR through the lane (#798, run 32107363501):
           #
-          # `timeout` converts the hang into the exit code the loop already handles.
-          # 300s is ~6x the ~50s a healthy install takes here, so it cannot fire on a
-          # merely slow runner. Do NOT "fix" this by raising `timeout-minutes`: the
-          # cap is the only thing that ends the hang today, and a bigger cap just
-          # makes the same outage cost longer.
+          #   * It cannot tell STALLED from SLOW. apt was downloading fonts the whole
+          #     time — 3.5 MB, 5.6 MB, 3.0 MB, each `Get:` line real progress — and
+          #     was killed mid-download at 300s. #762's actual hang was 26 minutes of
+          #     total SILENCE. A wall-clock bound sees those as identical.
+          #   * It ORPHANS apt. `timeout` signals the `pnpm exec` wrapper; the
+          #     `apt-get` beneath runs as ROOT and survives, still holding
+          #     /var/lib/dpkg/lock-frontend. Attempts 2 and 3 then died in ~1 second
+          #     each on "Could not get lock ... held by process 8901". The timeout
+          #     poisoned the very retries it was added to make work.
+          #
+          # RESIZING THE BOUND WAS TRIED TWICE AND FAILED TWICE. 300s broke #797;
+          # 480s plus apt timeouts plus a dpkg-lock wait broke #799 the same way
+          # (run 32110561758): the install was STILL DOWNLOADING at 480s, the
+          # orphaned apt was still running when the 60s lock-wait gave up, and both
+          # retries died on its lock. There is no safe number, because the quantity
+          # being bounded is a download over a mirror of unknown speed.
+          #
+          # SO THERE IS NO WALL-CLOCK BOUND HERE, DELIBERATELY. Do not add one back.
+          # It cannot tell slow from stalled, and killing apt mid-download leaves a
+          # root process holding /var/lib/dpkg/lock-frontend that poisons every retry
+          # after it. It has now cost two PRs and fixed nothing.
+          #
+          # What actually bounds this, in layers that CAN observe what they bound:
+          #
+          #   apt's own Acquire timeouts  -> a STALLED mirror exits non-zero in ~60s,
+          #                                  no orphan, no held lock, and the retry
+          #                                  loop below handles it. This is the #762
+          #                                  fix, and it is the load-bearing one.
+          #   timeout-minutes: 30         -> the outer backstop. A job-level cap is
+          #                                  the only bound that cannot leave a
+          #                                  poisoned runner behind, because the
+          #                                  runner is destroyed along with it.
+          printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
+            | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
+
           ok=0
           for i in 1 2 3; do
-            if timeout 300 pnpm exec playwright install --with-deps chromium ${{ matrix.browser }}; then
+            if pnpm exec playwright install --with-deps chromium ${{ matrix.browser }}; then
               ok=1
               break
             fi
-            echo "Retry $i: playwright install failed or exceeded 300s, retrying in 10s..."
+            echo "Retry $i: playwright install failed, retrying in 10s..."
             sleep 10
           done
           # Fail loudly rather than falling through. Without this the loop simply
@@ -366,7 +394,7 @@ jobs:
           # shard fails somewhere else entirely — which is how an install problem
           # gets diagnosed as a test problem.
           if [ "$ok" -ne 1 ]; then
-            echo "::error::playwright install did not succeed in 3 bounded attempts (#762)"
+            echo "::error::playwright install did not succeed in 3 attempts (#762, #798)"
             exit 1
           fi
 
