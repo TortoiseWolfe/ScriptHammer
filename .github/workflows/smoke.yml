@@ -193,8 +193,12 @@ jobs:
 
       - name: Install Playwright (chromium)
         run: |
+          # apt must give up on its own: an external kill orphans it holding
+          # the dpkg lock, which fails every retry after it (#798).
+          printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
+            | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
           for i in 1 2 3; do
-            timeout 300 pnpm exec playwright install --with-deps chromium && break
+            pnpm exec playwright install --with-deps chromium && break
             echo "Retry $i: playwright install failed, retrying in 10s..."
             sleep 10
           done
