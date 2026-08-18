@@ -26,7 +26,11 @@
 //   1  bounce rate over threshold in block mode
 //   2  could not reach Resend / misconfigured
 
-const API = 'https://api.resend.com';
+// Overridable ONLY so the gate itself can be tested: `email-health-gate-can-fail`
+// points this at a local stub and asserts that block mode really does exit 1 on a
+// bad bounce rate. Without a seam the only way to check that is to wait for a real
+// bounce spike, which means the enforcing branch ships unobserved (#572).
+const API = process.env.EMAIL_HEALTH_API || 'https://api.resend.com';
 
 // Resend sits behind Cloudflare, which 403s unrecognised User-Agents. Node's
 // fetch sends a sane one, but set it explicitly so this does not silently start
