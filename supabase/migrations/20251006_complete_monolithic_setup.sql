@@ -585,6 +585,20 @@ CREATE TABLE IF NOT EXISTS rate_limit_attempts (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- #784: the contact form is an ANONYMOUS endpoint that sends mail, so it needs the
+-- same ceiling the auth forms have. Reusing `check_rate_limit` / `record_failed_attempt`
+-- rather than hand-rolling a second limiter means one implementation to get right —
+-- but the CHECK above predates that caller and rejected 'contact_form' with a 23514,
+-- which surfaced only because the live probe was run rather than assumed.
+--
+-- Widening a CHECK permits strictly more values and rewrites no rows. Written as
+-- DROP-then-ADD so re-running this file is idempotent, matching the rest of it.
+ALTER TABLE rate_limit_attempts
+  DROP CONSTRAINT IF EXISTS rate_limit_attempts_attempt_type_check;
+ALTER TABLE rate_limit_attempts
+  ADD CONSTRAINT rate_limit_attempts_attempt_type_check
+  CHECK (attempt_type IN ('sign_in', 'sign_up', 'password_reset', 'contact_form'));
+
 CREATE INDEX IF NOT EXISTS idx_rate_limit_identifier ON rate_limit_attempts(identifier, attempt_type);
 CREATE INDEX IF NOT EXISTS idx_rate_limit_window ON rate_limit_attempts(window_start);
 CREATE INDEX IF NOT EXISTS idx_rate_limit_locked ON rate_limit_attempts(locked_until) WHERE locked_until IS NOT NULL;
