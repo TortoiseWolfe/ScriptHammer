@@ -333,11 +333,42 @@ jobs:
           # as an artifact. That cannot work here: every runner has its own
           # Supabase with its own users, so a state minted on another runner is
           # worthless. Each job runs its own setup, so each job needs chromium.
+          # BOUND THE COMMAND: THE FAILURE MODE IS A HANG, NOT AN ERROR (#762).
+          #
+          # `--with-deps` shells out to `apt-get` as root. When a mirror is
+          # unreachable apt does not exit — it waits. `&& break` retries on a
+          # non-zero EXIT, so a hang meant `i` never reached 2 and these three
+          # attempts, written to survive a bad install, could never run. It is the
+          # #765 shape exactly: the job died on the line meant to save it.
+          #
+          # Measured 2026-08-18 on run 32088862298: apt logged 18-26 `Ign:` lines
+          # against azure.archive.ubuntu.com, went silent, and EIGHT jobs sat here
+          # for ~26 minutes until the 30-minute cap killed them, having run ZERO
+          # tests. `E2E (local) result` — a required check — went red with no test
+          # failure anywhere, twice, blocking a merge both times.
+          #
+          # `timeout` converts the hang into the exit code the loop already handles.
+          # 300s is ~6x the ~50s a healthy install takes here, so it cannot fire on a
+          # merely slow runner. Do NOT "fix" this by raising `timeout-minutes`: the
+          # cap is the only thing that ends the hang today, and a bigger cap just
+          # makes the same outage cost longer.
+          ok=0
           for i in 1 2 3; do
-            pnpm exec playwright install --with-deps chromium ${{ matrix.browser }} && break
-            echo "Retry $i: playwright install failed, retrying in 10s..."
+            if timeout 300 pnpm exec playwright install --with-deps chromium ${{ matrix.browser }}; then
+              ok=1
+              break
+            fi
+            echo "Retry $i: playwright install failed or exceeded 300s, retrying in 10s..."
             sleep 10
           done
+          # Fail loudly rather than falling through. Without this the loop simply
+          # ends, the test step launches browsers that were never installed, and the
+          # shard fails somewhere else entirely — which is how an install problem
+          # gets diagnosed as a test problem.
+          if [ "$ok" -ne 1 ]; then
+            echo "::error::playwright install did not succeed in 3 bounded attempts (#762)"
+            exit 1
+          fi
 
       - name: Run ${{ matrix.project }} ${{ matrix.shard }}
         run: |

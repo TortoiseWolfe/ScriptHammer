@@ -17,6 +17,7 @@ import {
   deleteIsolatedConnection,
   seedIsolatedGroup,
   deleteIsolatedGroup,
+  deleteConversationsByGroupName,
   openAuthedPage,
   openConversationAs,
   handleReAuthModal,
@@ -47,6 +48,26 @@ async function openMessagesAsViewer(
 test.describe('Group Chat E2E', () => {
   let fixture: IsolatedConnection | null = null;
 
+  /**
+   * Groups these tests create THROUGH THE UI (#612).
+   *
+   * Two tests below drive the New Group page, which is the flow they exist to
+   * exercise — so no fixture object holds the resulting conversation id and
+   * `deleteIsolatedGroup` cannot reach them. Nothing deleted them, and each CI
+   * run left two behind permanently: production reached 1,910 conversations for
+   * 20 users, 1,909 of them E2E litter with zero messages. Every row is published
+   * to realtime, which fed the quota ceiling in #567.
+   *
+   * Recorded at fill time rather than derived afterwards, so a test that fails
+   * mid-flow still cleans up what it managed to create.
+   */
+  const uiCreatedGroupNames: string[] = [];
+
+  function recordUiGroup(name: string): string {
+    uiCreatedGroupNames.push(name);
+    return name;
+  }
+
   test.beforeEach(async () => {
     // One accepted connection → the viewer has exactly one selectable member.
     fixture = await seedIsolatedConnection('accepted');
@@ -56,6 +77,23 @@ test.describe('Group Chat E2E', () => {
   test.afterEach(async () => {
     await deleteIsolatedConnection(fixture);
     fixture = null;
+  });
+
+  test.afterAll(async () => {
+    // Delete, then ASSERT the deletion happened. #612's acceptance is explicitly
+    // "assert conversations returns to its starting count" — because the suite
+    // passed every single time while leaking, so a green run proves nothing about
+    // tear-down. `deleteConversationsByGroupName` re-reads and returns whatever
+    // survived; anything non-empty is a leak and fails the run.
+    const survivors = await deleteConversationsByGroupName(uiCreatedGroupNames);
+    uiCreatedGroupNames.length = 0;
+
+    expect(
+      survivors,
+      `UI-created group conversations survived tear-down: ${survivors.join(', ')}. ` +
+        `This is the #612 leak — each surviving row is permanent litter in a ` +
+        `production table, published to realtime, with no upper bound.`
+    ).toEqual([]);
   });
 
   test('should show New Group link in sidebar', async ({ browser }) => {
@@ -131,7 +169,7 @@ test.describe('Group Chat E2E', () => {
         timeout: 10000,
       });
 
-      const testGroupName = `Test Group ${Date.now()}`;
+      const testGroupName = recordUiGroup(`Test Group ${Date.now()}`);
       await viewer.page.locator('#group-name').fill(testGroupName);
 
       // The isolated accepted connection should appear in the picker.
@@ -205,7 +243,9 @@ test.describe('Group Chat E2E', () => {
         timeout: 10000,
       });
 
-      await viewer.page.locator('#group-name').fill(`Grp ${Date.now()}`);
+      await viewer.page
+        .locator('#group-name')
+        .fill(recordUiGroup(`Grp ${Date.now()}`));
       const firstConnection = viewer.page
         .locator('button[role="option"]')
         .first();

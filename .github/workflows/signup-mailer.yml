@@ -124,7 +124,7 @@ jobs:
       - name: Install Playwright (chromium)
         run: |
           for i in 1 2 3; do
-            pnpm exec playwright install --with-deps chromium && break
+            timeout 300 pnpm exec playwright install --with-deps chromium && break
             echo "Retry $i: playwright install failed, retrying in 10s..."
             sleep 10
           done

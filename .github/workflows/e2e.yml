@@ -257,7 +257,7 @@ jobs:
       - name: Install Playwright (chromium only)
         run: |
           for i in 1 2 3; do
-            pnpm exec playwright install --with-deps chromium && break
+            timeout 300 pnpm exec playwright install --with-deps chromium && break
             echo "Retry $i: playwright install failed, retrying in 10s..."
             sleep 10
           done
@@ -366,7 +366,7 @@ jobs:
       - name: Install Playwright (chromium only)
         run: |
           for i in 1 2 3; do
-            pnpm exec playwright install --with-deps chromium && break
+            timeout 300 pnpm exec playwright install --with-deps chromium && break
             echo "Retry $i: playwright install failed, retrying in 10s..."
             sleep 10
           done
@@ -463,7 +463,7 @@ jobs:
       - name: Install Playwright (chromium only)
         run: |
           for i in 1 2 3; do
-            pnpm exec playwright install --with-deps chromium && break
+            timeout 300 pnpm exec playwright install --with-deps chromium && break
             echo "Retry $i: playwright install failed, retrying in 10s..."
             sleep 10
           done
@@ -557,7 +557,7 @@ jobs:
       - name: Install Playwright (chromium only for auth)
         run: |
           for i in 1 2 3; do
-            pnpm exec playwright install --with-deps chromium && break
+            timeout 300 pnpm exec playwright install --with-deps chromium && break
             echo "Retry $i: playwright install failed, retrying in 10s..."
             sleep 10
           done
@@ -705,7 +705,7 @@ jobs:
           BROWSER: ${{ matrix.browser }}
         run: |
           for i in 1 2 3; do
-            pnpm exec playwright install --with-deps "$BROWSER" && break
+            timeout 300 pnpm exec playwright install --with-deps "$BROWSER" && break
             echo "Retry $i: $BROWSER install failed, retrying in 10s..."
             sleep 10
           done
@@ -908,7 +908,7 @@ jobs:
           BROWSER: ${{ matrix.browser }}
         run: |
           for i in 1 2 3; do
-            pnpm exec playwright install --with-deps "$BROWSER" && break
+            timeout 300 pnpm exec playwright install --with-deps "$BROWSER" && break
             echo "Retry $i: $BROWSER install failed, retrying in 10s..."
             sleep 10
           done
@@ -1072,7 +1072,7 @@ jobs:
           BROWSER: ${{ matrix.browser }}
         run: |
           for i in 1 2 3; do
-            pnpm exec playwright install --with-deps "$BROWSER" && break
+            timeout 300 pnpm exec playwright install --with-deps "$BROWSER" && break
             echo "Retry $i: $BROWSER install failed, retrying in 10s..."
             sleep 10
           done
