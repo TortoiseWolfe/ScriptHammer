@@ -100,8 +100,11 @@ export default defineConfig({
     baseURL: process.env.BASE_URL || 'http://localhost:3000',
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
-    /* Take screenshot on every failure */
-    screenshot: 'on',
+    /* Screenshot on failure — and `only-on-failure` is the value that means that.
+     * This read `'on'`, which captures one for EVERY test, while the comment beside
+     * it claimed failures only. Across 24 shards that is thousands of images nobody
+     * looks at, and it is why uploading `test-results/` was not viable before (#766). */
+    screenshot: 'only-on-failure',
     /* Retain video on failure */
     video: 'retain-on-failure',
     /* Maximum time each action can take. 15s accounts for Supabase free tier

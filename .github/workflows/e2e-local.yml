@@ -856,6 +856,28 @@ jobs:
             apt-metrics.json
           retention-days: 3
 
+      # UPLOAD THE DIAGNOSTICS WE ALREADY PAY TO CAPTURE (#766).
+      #
+      # playwright.config.ts collects a trace on first retry, a video on failure and a
+      # screenshot on failure, all into `outputDir: 'test-results/'` — and that
+      # directory was in no upload path. The failure output even prints
+      # `pnpm exec playwright show-trace test-results/…/trace.zip`, naming a file the
+      # run then discards. That cost real time on #757, where three occurrences were
+      # diagnosed from log text because the trace it advertised did not exist.
+      #
+      # ONLY ON FAILURE, deliberately. On a green run this directory is noise, and
+      # uploading it from 24 shards every time would trade one waste for another. The
+      # artifact is worth having exactly when someone is about to go looking for it.
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-local-diagnostics-${{ steps.slug.outputs.id }}
+          path: test-results/
+          retention-days: 3
+          # A green shard in a red run has nothing here; that is not an error.
+          if-no-files-found: ignore
+
   # ==========================================================================
   # PARITY — the only thing that makes this run worth doing (#575 step 2)
   # ==========================================================================
