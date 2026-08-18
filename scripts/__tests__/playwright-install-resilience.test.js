@@ -97,13 +97,22 @@ function hasWallClockTimeout(text) {
 }
 
 /**
- * Does an apt network-timeout config get written above this call site? Textual —
- * js-yaml is not a dependency here — so this proves the write is NEARBY and ABOVE,
- * not that it runs on every path.
+ * Does an apt network-timeout config get written above this call site, IN THE SAME STEP?
+ *
+ * This used to scan a fixed 30-line window, and that number was arbitrary: #809 added a
+ * comment explaining the idle bound, which pushed the config to 33 lines above the call
+ * and would have failed the guard for a reason that has nothing to do with the property.
+ *
+ * The property was never "within N lines" — it is "in the same `run:` block, above the
+ * call". Scanning up to the enclosing step boundary (`- name:`) asserts exactly that, so
+ * it cannot be defeated by a longer comment and cannot be satisfied by a config written
+ * in a DIFFERENT step, which a large window would have allowed.
  */
-function hasAptTimeoutsAbove(lines, index, window = 30) {
-  for (let i = index; i >= Math.max(0, index - window); i--) {
+function hasAptTimeoutsAbove(lines, index) {
+  for (let i = index; i >= 0; i--) {
     if (/Acquire::http::Timeout/.test(lines[i])) return true;
+    // Walked out of this step without finding it.
+    if (/^\s*-\s+name:/.test(lines[i]) && i !== index) return false;
   }
   return false;
 }
@@ -205,6 +214,35 @@ describe('playwright install survives a bad apt mirror (#762, #798)', () => {
       ),
       true,
       'a call site with apt config above it must be detected as having one'
+    );
+    // Distance must NOT matter — only whether it is in the same step. #809's comment
+    // pushed the config 33 lines up and the old fixed window would have failed on it.
+    assert.equal(
+      hasAptTimeoutsAbove(
+        [
+          'Acquire::http::Timeout "20";',
+          ...Array(40).fill('  # comment'),
+          'pnpm exec playwright install',
+        ],
+        41
+      ),
+      true,
+      'a long comment between the config and the call must not fail the guard'
+    );
+    // But a config in a DIFFERENT step must not count, which a large window would
+    // have wrongly accepted.
+    assert.equal(
+      hasAptTimeoutsAbove(
+        [
+          'Acquire::http::Timeout "20";',
+          '      - name: Some other step',
+          '        run: |',
+          'pnpm exec playwright install',
+        ],
+        3
+      ),
+      false,
+      'apt config in a previous step does not protect this call site'
     );
   });
 
