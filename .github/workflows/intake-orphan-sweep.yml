@@ -1,0 +1,103 @@
+# Report (and eventually remove) abandoned intake uploads — #560, T023.
+#
+# A buyer uploads attachments to `intake-uploads` and only afterwards submits the
+# order that references them. Abandon the form and the files stay forever: nothing
+# else removes them, so the bucket grows without bound and holds customer material
+# long past any reason to keep it.
+#
+# WHY THE SCHEDULE LIVES HERE AND NOT IN pg_cron. Both can run this. The difference
+# is where the configuration is visible. This repository has twice been broken by
+# configuration that lived outside version control — the shadow secrets (write-only,
+# so the divergence could not be inspected) and the Cloudflare cache rules (which is
+# precisely why `check-cache-headers.mjs` exists: nothing here would notice if they
+# were deleted). A pg_cron schedule is that same shape, in the database. This one is
+# diffable, reviewable, and shows up in the same Actions list as everything else.
+#
+# IT REPORTS, IT DOES NOT DELETE. `mode=report` is the default and is what the
+# schedule sends: the function lists exactly what it WOULD remove and removes
+# nothing. That is not caution for its own sake — these are files a customer sent
+# and cannot resend, and if the orphan rule is wrong by one join the first live run
+# destroys them with no undo. Read a few of these reports, then flip the schedule to
+# `mode=delete` as a separate, deliberate change.
+#
+# The decision itself is a pure function (`_shared/intake-orphans.ts`), unit tested
+# in `tests/unit/intake-orphans.test.ts` — weighted towards what must SURVIVE, since
+# missing an orphan wastes kilobytes and deleting a live attachment loses customer
+# material.
+
+name: Intake Orphan Sweep
+
+on:
+  schedule:
+    # 04:00 UTC on Mondays. Nothing here is time-critical; weekly keeps the report
+    # infrequent enough to actually be read.
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'report (list only) or delete (actually remove)'
+        required: false
+        default: 'report'
+
+concurrency:
+  group: intake-orphan-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: Report abandoned intake uploads
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Call the sweep function
+        env:
+          # A repo VARIABLE, and specifically the SAME one the deploy and the smoke
+          # suite read. A project ref assembled from some other variable is a second
+          # source of truth that can drift silently — which is exactly how this repo
+          # once deployed against a deleted project (#787). There is no
+          # `NEXT_PUBLIC_SUPABASE_PROJECT_REF`; assuming there was would have made
+          # this job fail every Monday with an empty URL.
+          SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # `github.event.inputs` via env, never interpolated into the shell line:
+          # a ${{ }} expansion inside `run:` is a script-injection surface regardless
+          # of who can reach it.
+          MODE: ${{ github.event.inputs.mode || 'report' }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SERVICE_KEY:-}" ]; then
+            echo "::error::NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing — the sweep cannot run"
+            exit 1
+          fi
+          case "$MODE" in
+            report|delete) ;;
+            *) echo "::error::mode must be 'report' or 'delete', got '$MODE'"; exit 1 ;;
+          esac
+
+          code=$(curl -s -o /tmp/sweep.json -w '%{http_code}' --max-time 120 \
+            "${SUPABASE_URL}/functions/v1/sweep-intake-orphans?mode=${MODE}" \
+            -H "Authorization: Bearer ${SERVICE_KEY}")
+
+          echo "HTTP $code"
+          cat /tmp/sweep.json
+
+          if [ "$code" != "200" ]; then
+            echo "::error::sweep returned HTTP $code"
+            exit 1
+          fi
+
+          # A truncated listing means the sweep did not see the whole bucket, so a
+          # count of zero would be a claim it has not earned. Say so rather than
+          # letting a green tick imply full coverage.
+          if grep -q '"truncated": true' /tmp/sweep.json; then
+            echo "::warning::the bucket listing was truncated — this report is incomplete"
+          fi
+
+          {
+            echo "### Intake orphan sweep (\`$MODE\`)"
+            echo
+            echo '```json'
+            cat /tmp/sweep.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
