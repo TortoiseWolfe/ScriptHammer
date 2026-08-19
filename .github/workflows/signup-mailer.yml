@@ -121,17 +121,7 @@ jobs:
           # NEXT_PUBLIC_SUPABASE_URL / ANON_KEY are inlined at build time — they
           # come from $GITHUB_ENV (local stack + demo anon key) set above.
 
-      - name: Install Playwright (chromium)
-        run: |
-          # apt must give up on its own: an external kill orphans it holding
-          # the dpkg lock, which fails every retry after it (#798).
-          printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
-            | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
-          for i in 1 2 3; do
-            pnpm exec playwright install --with-deps chromium && break
-            echo "Retry $i: playwright install failed, retrying in 10s..."
-            sleep 10
-          done
+      # No install step (#829): the browsers ship in the image.
 
       - name: Serve the static build
         run: |
@@ -150,7 +140,7 @@ jobs:
           # Supabase delivers to Mailpit, so there is no bounce risk (#361).
           TEST_USER_PRIMARY_EMAIL: scripthammer.e2e+local@gmail.com
           TEST_USER_PRIMARY_PASSWORD: LocalStackTestPassword123!
-        run: pnpm test:e2e:signup-mailer
+        run: scripts/ci/playwright-in-container.sh test --config playwright.signup-mailer.config.ts
 
       - name: Dump logs on failure
         if: failure()

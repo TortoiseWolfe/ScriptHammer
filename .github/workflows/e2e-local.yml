@@ -401,32 +401,12 @@ jobs:
           # ./node_modules/.bin/playwright, not `pnpm exec`: pnpm is not in the
           # image, and corepack would download it per shard -- reintroducing a
           # network fetch this change exists to remove.
-          # TWO GROUPS, and the split is the whole point. `^(A|B|PREFIX_)=` binds the
-          # `=` to EVERY branch, so each prefix has to BE the entire variable name —
-          # which forwarded only CI and BASE_URL and silently dropped every Supabase
-          # credential. The container then fell back to the workspace `.env` (which
-          # carries container-side hostnames) and failed 300 lines later as
-          # `getaddrinfo EAI_AGAIN supabase-kong` inside globalSetup.
-          env | grep -E '^(CI|SKIP_WEBSERVER|BASE_URL|WORKERS|AUTH_SETUP_JOB)=|^(PLAYWRIGHT_|NEXT_PUBLIC_|SUPABASE_|TEST_USER_)' > /tmp/pw.env
-
-          # Fail on a missing variable rather than letting dotenv silently substitute
-          # `.env`. The typo above was cheap; the SILENT FALLBACK is what made it cost
-          # a full 26-job run to diagnose.
-          missing=""
-          for k in NEXT_PUBLIC_SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_SUPABASE_ANON_KEY; do
-            grep -q "^$k=" /tmp/pw.env || missing="$missing $k"
-          done
-          if [ -n "$missing" ]; then
-            echo "::error::not forwarding to the test container:$missing — the suite would fall back to .env and fail inside globalSetup with a DNS error"
-            exit 1
-          fi
-          docker run --rm --network=host \
-            --user "$(id -u):$(id -g)" \
-            --env-file /tmp/pw.env \
-            -e HOME=/tmp \
-            -v "$PWD":/work -w /work \
-            mcr.microsoft.com/playwright:v1.55.0-noble \
-            ./node_modules/.bin/playwright test \
+            # One definition, shared by every lane (#829). The docker-run rationale
+            # --network=host, --user, ./node_modules/.bin/playwright, and the
+            # env-file filter whose `=` must not bind to the prefixes -- lives in
+            # the script, because it was needed identically at ten call sites and
+            # the one place it was written by hand is the one place it was wrong.
+            scripts/ci/playwright-in-container.sh test \
               --project=${{ matrix.project }} --shard=${{ matrix.shard }} \
               $WORKERS_FLAG \
               --grep-invert='@hosted' \
@@ -436,6 +416,13 @@ jobs:
           SKIP_WEBSERVER: 'true'
           BASE_URL: http://localhost:3000
           PLAYWRIGHT_JSON_OUTPUT_NAME: results.json
+          # Without these three the suite falls back to the workspace `.env`,
+          # whose hostnames are container-side, and dies 300 lines later as
+          # `getaddrinfo EAI_AGAIN supabase-kong` inside globalSetup (#830).
+          # Naming them here keeps that assertion ARMED for this lane — moving
+          # the check into the shared script without this line would have
+          # silently disarmed the very protection #830 added.
+          PLAYWRIGHT_REQUIRED_ENV: NEXT_PUBLIC_SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_SUPABASE_ANON_KEY
           WORKERS: ${{ matrix.workers }}
           # EVERY JOB MUST DO ITS OWN FULL SETUP (#575).
           #
