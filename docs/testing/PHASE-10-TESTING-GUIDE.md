@@ -352,7 +352,7 @@ docker compose exec scripthammer pnpm exec lighthouse http://localhost:3000/mess
 docker compose run --rm builder pnpm run build
 
 # Analyze bundle
-docker compose exec scripthammer pnpm exec next build --experimental-build-mode=compile
+docker compose run --rm builder pnpm exec next build --experimental-build-mode=compile
 docker compose exec scripthammer ls -lh .next/static/chunks
 ```
 
