@@ -5,6 +5,22 @@
  * fonts.gstatic.com. That fetch failed twice in twelve hours: once killing a production
  * deploy, once building an E2E shard with 0 tests. */
 @import './fonts.generated.css';
+/* OpenDyslexic, self-hosted from @fontsource (SIL OFL-1.1) — #823.
+ *
+ * It CANNOT go through fonts.generated.css: that file is vendored from
+ * next/font/google's build output by scripts/fonts/vendor-google-fonts.mjs, and
+ * OpenDyslexic is not a Google font.
+ *
+ * Declaring @font-face here costs nothing until the font is used — a browser
+ * fetches the woff2 only when text actually needs rendering in it. So the
+ * dyslexia-friendly option is available instantly on selection, with no runtime
+ * CDN fetch and nothing to 404.
+ *
+ * It previously pointed at `/fonts/OpenDyslexic-Regular.woff2`, which does not
+ * exist, so selecting it silently rendered Comic Sans — the fallback in its own
+ * stack. */
+@import '@fontsource/opendyslexic/400.css';
+@import '@fontsource/opendyslexic/700.css';
 @import '../styles/colorblind-patterns.css';
 @import '../styles/prism-vscode-dark.css';
 @import '../styles/mobile-first-utilities.css';

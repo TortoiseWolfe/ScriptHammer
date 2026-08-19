@@ -18,7 +18,6 @@ const loadingFonts = new Map<string, Promise<void>>();
 const FONT_URLS: Record<string, string> = {
   inter:
     'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
-  opendyslexic: 'https://fonts.cdnfonts.com/css/opendyslexic',
   atkinson:
     'https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap',
   jetbrains:
@@ -31,8 +30,20 @@ const FONT_URLS: Record<string, string> = {
  * @returns Promise that resolves when font is loaded
  */
 export async function loadFont(fontConfig: FontConfig): Promise<void> {
-  // Skip if system font or already loaded
-  if (fontConfig.loading === 'system' || loadedFonts.has(fontConfig.id)) {
+  // Nothing to fetch for a system font, nor for a BUNDLED one: 'local' means the
+  // @font-face is already declared in globals.css, so the browser has it without a
+  // network round trip (#823).
+  //
+  // This branch is why the OpenDyslexic bug was invisible. It used to fall through to
+  // the fetch path with a `url` pointing at a missing .woff2 — and the handler below
+  // marks a font "loaded" even on error, deliberately, to prevent retries. So a 404
+  // produced no error, no retry and no signal, just Comic Sans.
+  if (
+    fontConfig.loading === 'system' ||
+    fontConfig.loading === 'local' ||
+    loadedFonts.has(fontConfig.id)
+  ) {
+    loadedFonts.add(fontConfig.id);
     return Promise.resolve();
   }
 

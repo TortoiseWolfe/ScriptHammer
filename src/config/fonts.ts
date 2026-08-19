@@ -38,8 +38,10 @@ export const fonts: FontConfig[] = [
     category: 'sans-serif',
     description: 'Designed to help with dyslexia',
     accessibility: 'dyslexia-friendly',
+    // 'local' means BUNDLED: the @font-face is declared in globals.css from
+    // @fontsource, so there is nothing to fetch at runtime. No `url` — the one
+    // that used to be here pointed at a file that does not exist (#823).
     loading: 'local',
-    url: '/fonts/OpenDyslexic-Regular.woff2',
     weights: [400, 700],
     previewText: 'The quick brown fox jumps over the lazy dog',
   },
