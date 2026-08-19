@@ -108,6 +108,7 @@
   "dependencies": {
     "@calcom/embed-react": "^1.5.3",
     "@emailjs/browser": "^4.4.1",
+    "@fontsource/opendyslexic": "^5.3.0",
     "@hookform/resolvers": "^5.2.2",
     "@marsidev/react-turnstile": "^1.5.3",
     "@noble/curves": "^2.0.1",
