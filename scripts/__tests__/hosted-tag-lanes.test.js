@@ -150,8 +150,13 @@ describe('the @hosted lane split (#725)', () => {
 
   it('the hosted lane stays unfiltered — a filtered shard is a silent empty pass', () => {
     const hostedSrc = fs.readFileSync(HOSTED_WF, 'utf8');
+    // Both spellings of the invocation count. The lane used to call `pnpm exec
+    // playwright test` directly; since #829 it goes through the container runner as
+    // `playwright-in-container.sh test`, which does NOT contain the old substring.
+    // This anchor is the non-vacuity guard for the assertion below, so matching only
+    // the retired spelling would have quietly turned that assertion decorative.
     assert.ok(
-      hostedSrc.includes('playwright test'),
+      /playwright(-in-container\.sh)?\s+test/.test(hostedSrc),
       'e2e.yml no longer invokes playwright — this guard is anchored to a stale shape'
     );
     const greps = readGrepFlags(hostedSrc, 'grep');

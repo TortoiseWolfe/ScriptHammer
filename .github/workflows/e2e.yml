@@ -265,17 +265,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright (chromium only)
-        run: |
-          # apt must give up on its own: an external kill orphans it holding
-          # the dpkg lock, which fails every retry after it (#798).
-          printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
-            | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
-          for i in 1 2 3; do
-            pnpm exec playwright install --with-deps chromium && break
-            echo "Retry $i: playwright install failed, retrying in 10s..."
-            sleep 10
-          done
+      # No install step (#829): the browsers come from the image.
 
       - name: Download build
         uses: actions/download-artifact@v8
@@ -320,7 +310,7 @@ jobs:
 
       - name: Run smoke tests (sign-up only - auth tests run after auth-setup)
         run: |
-          pnpm exec playwright test \
+          scripts/ci/playwright-in-container.sh test \
             tests/e2e/auth/sign-up.spec.ts \
             --project=signup \
             --no-deps \
@@ -378,17 +368,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright (chromium only)
-        run: |
-          # apt must give up on its own: an external kill orphans it holding
-          # the dpkg lock, which fails every retry after it (#798).
-          printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
-            | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
-          for i in 1 2 3; do
-            pnpm exec playwright install --with-deps chromium && break
-            echo "Retry $i: playwright install failed, retrying in 10s..."
-            sleep 10
-          done
+      # No install step (#829): the browsers come from the image.
 
       - name: Build basePath-prefixed export
         run: bash scripts/serve-basepath.sh build
@@ -424,7 +404,7 @@ jobs:
 
       - name: Run basePath project
         run: |
-          pnpm exec playwright test \
+          scripts/ci/playwright-in-container.sh test \
             --project=basepath \
             --no-deps \
             --reporter=list \
@@ -479,17 +459,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright (chromium only)
-        run: |
-          # apt must give up on its own: an external kill orphans it holding
-          # the dpkg lock, which fails every retry after it (#798).
-          printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
-            | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
-          for i in 1 2 3; do
-            pnpm exec playwright install --with-deps chromium && break
-            echo "Retry $i: playwright install failed, retrying in 10s..."
-            sleep 10
-          done
+      # No install step (#829): the browsers come from the image.
 
       - name: Download build
         uses: actions/download-artifact@v8
@@ -533,7 +503,7 @@ jobs:
           echo "serve is responding on http://localhost:3000"
 
       - name: Run rate-limiting tests (ordered)
-        run: pnpm test:e2e --project=rate-limiting --project=brute-force --project=signup --reporter=list --trace=on-first-retry
+        run: scripts/ci/playwright-in-container.sh test --project=rate-limiting --project=brute-force --project=signup --reporter=list --trace=on-first-retry
         env:
           CI: true
           PLAYWRIGHT_BROWSER: chromium
@@ -577,17 +547,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright (chromium only for auth)
-        run: |
-          # apt must give up on its own: an external kill orphans it holding
-          # the dpkg lock, which fails every retry after it (#798).
-          printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
-            | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
-          for i in 1 2 3; do
-            pnpm exec playwright install --with-deps chromium && break
-            echo "Retry $i: playwright install failed, retrying in 10s..."
-            sleep 10
-          done
+      # No install step (#829): the browsers come from the image.
 
       - name: Download build
         uses: actions/download-artifact@v8
@@ -631,7 +591,7 @@ jobs:
           echo "serve is responding on http://localhost:3000"
 
       - name: Run auth setup
-        run: pnpm exec playwright test --project=setup --reporter=list --timeout=180000
+        run: scripts/ci/playwright-in-container.sh test --project=setup --reporter=list --timeout=180000
         env:
           CI: true
           AUTH_SETUP_JOB: true
@@ -727,19 +687,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright browsers
-        env:
-          BROWSER: ${{ matrix.browser }}
-        run: |
-          # apt must give up on its own: an external kill orphans it holding
-          # the dpkg lock, which fails every retry after it (#798).
-          printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
-            | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
-          for i in 1 2 3; do
-            pnpm exec playwright install --with-deps "$BROWSER" && break
-            echo "Retry $i: $BROWSER install failed, retrying in 10s..."
-            sleep 10
-          done
+      # No install step (#829): the browsers come from the image.
 
       - name: Download build
         uses: actions/download-artifact@v8
@@ -849,7 +797,7 @@ jobs:
           if [ -n "$WORKERS" ]; then
             WORKERS_FLAG="--workers=$WORKERS"
           fi
-          pnpm exec playwright test \
+          scripts/ci/playwright-in-container.sh test \
             --project="$PROJECT" \
             --shard="$SHARD" \
             --reporter=blob \
@@ -934,19 +882,8 @@ jobs:
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Install Playwright browsers
-        env:
-          BROWSER: ${{ matrix.browser }}
-        run: |
-          # apt must give up on its own: an external kill orphans it holding
-          # the dpkg lock, which fails every retry after it (#798).
-          printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
-            | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
-          for i in 1 2 3; do
-            pnpm exec playwright install --with-deps "$BROWSER" && break
-            echo "Retry $i: $BROWSER install failed, retrying in 10s..."
-            sleep 10
-          done
+      # No install step (#829): the browsers come from the image.
+
       - name: Download build
         uses: actions/download-artifact@v8
         with:
@@ -1037,7 +974,7 @@ jobs:
           if [ -n "$WORKERS" ]; then
             WORKERS_FLAG="--workers=$WORKERS"
           fi
-          pnpm exec playwright test \
+          scripts/ci/playwright-in-container.sh test \
             --project="$PROJECT" \
             --shard="$SHARD" \
             --reporter=blob \
@@ -1102,19 +1039,8 @@ jobs:
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Install Playwright browsers
-        env:
-          BROWSER: ${{ matrix.browser }}
-        run: |
-          # apt must give up on its own: an external kill orphans it holding
-          # the dpkg lock, which fails every retry after it (#798).
-          printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
-            | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
-          for i in 1 2 3; do
-            pnpm exec playwright install --with-deps "$BROWSER" && break
-            echo "Retry $i: $BROWSER install failed, retrying in 10s..."
-            sleep 10
-          done
+      # No install step (#829): the browsers come from the image.
+
       - name: Download build
         uses: actions/download-artifact@v8
         with:
@@ -1205,7 +1131,7 @@ jobs:
           if [ -n "$WORKERS" ]; then
             WORKERS_FLAG="--workers=$WORKERS"
           fi
-          pnpm exec playwright test \
+          scripts/ci/playwright-in-container.sh test \
             --project="$PROJECT" \
             --shard="$SHARD" \
             --reporter=blob \
