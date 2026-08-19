@@ -18,6 +18,19 @@ name: Supabase Keep-Alive
 # (it answers even when a project is quota-restricted, which the data API does not),
 # and a summary that names every project and its outcome so the log is readable at a
 # glance rather than requiring a dig.
+#
+# WHICH PROJECTS ARE IN THE LIST (2026-08-19, #572)
+# `vars.SUPABASE_KEEPALIVE_REFS` was narrowed from three refs to one. The two that
+# were removed had been failing with `HTTP 544` — a Supabase GATEWAY error, not an
+# auth failure, so the token was fine and the projects themselves were unreachable at
+# query time. They belong to the second account and are not being kept warm on
+# purpose. They had accounted for 9 of the last 20 runs failing.
+#
+# That matters beyond tidiness: a keepalive that is red most months is a keepalive
+# nobody reads, and the one project that genuinely needs the ping was being announced
+# in the same breath as two that were never going to answer. Do not re-add a ref here
+# without first confirming it responds — a ref that cannot be pinged does not get kept
+# alive by being listed, it just hides the one that can.
 
 on:
   schedule:
