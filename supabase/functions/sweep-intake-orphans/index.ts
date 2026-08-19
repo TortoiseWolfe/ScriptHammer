@@ -25,7 +25,20 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { findOrphans, referencedPaths } from '../_shared/intake-orphans.ts';
 
 const BUCKET = 'intake-uploads';
-const GRACE_DAYS = Number(Deno.env.get('INTAKE_ORPHAN_GRACE_DAYS') ?? '7');
+/**
+ * Uploads younger than this are never touched. FLOORED AT ONE DAY, deliberately.
+ *
+ * Now that the schedule actually deletes, this number is the only thing standing
+ * between the sweep and a file a buyer uploaded seconds ago while still filling in
+ * the form. `Number('')`, `Number('abc')` and `Number('0')` all produce a value that
+ * would delete everything unreferenced in the bucket — the first two silently, via
+ * NaN comparisons. A misconfigured or empty secret must degrade to the safe default,
+ * not to zero.
+ */
+const GRACE_DAYS = (() => {
+  const raw = Number(Deno.env.get('INTAKE_ORPHAN_GRACE_DAYS') ?? '7');
+  return Number.isFinite(raw) && raw >= 1 ? raw : 7;
+})();
 /** Storage lists a page at a time; bounded so one run cannot spin forever. */
 const PAGE = 100;
 const MAX_PAGES = 200;

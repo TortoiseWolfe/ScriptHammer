@@ -13,12 +13,25 @@
 # were deleted). A pg_cron schedule is that same shape, in the database. This one is
 # diffable, reviewable, and shows up in the same Actions list as everything else.
 #
-# IT REPORTS, IT DOES NOT DELETE. `mode=report` is the default and is what the
-# schedule sends: the function lists exactly what it WOULD remove and removes
-# nothing. That is not caution for its own sake — these are files a customer sent
-# and cannot resend, and if the orphan rule is wrong by one join the first live run
-# destroys them with no undo. Read a few of these reports, then flip the schedule to
-# `mode=delete` as a separate, deliberate change.
+# THE SCHEDULE DELETES, since 2026-08-19. It shipped in `report` mode (#816) and was
+# flipped only after the protective branch was OBSERVED working against production
+# data, not merely unit tested.
+#
+# That evidence mattered because reading more reports could never have produced it:
+# no order had ever referenced an attachment, so every report said `referenced: 0`
+# and the "don't delete a referenced file" path had never once executed. Waiting
+# would have returned the same empty answer every week.
+#
+# So it was manufactured instead. One of the two files in the bucket was attached to
+# an order and the report re-run:
+#
+#     scanned 2 · referenced 1 · orphans [the OTHER file only]
+#
+# The referenced file was protected; the unreferenced one was still found. The order
+# was then restored byte-identically. Run 32248897998.
+#
+# `workflow_dispatch` still defaults to `report`, so a human running this by hand gets
+# the safe mode and has to ask for deletion explicitly.
 #
 # The decision itself is a pure function (`_shared/intake-orphans.ts`), unit tested
 # in `tests/unit/intake-orphans.test.ts` — weighted towards what must SURVIVE, since
@@ -62,7 +75,7 @@ jobs:
           # `github.event.inputs` via env, never interpolated into the shell line:
           # a ${{ }} expansion inside `run:` is a script-injection surface regardless
           # of who can reach it.
-          MODE: ${{ github.event.inputs.mode || 'report' }}
+          MODE: ${{ github.event.inputs.mode || 'delete' }}
         run: |
           set -euo pipefail
 
