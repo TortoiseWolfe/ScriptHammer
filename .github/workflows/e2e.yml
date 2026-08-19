@@ -133,6 +133,17 @@ jobs:
           #
           # Mirrors FLAKY_GATE_MODE further down this file — same pattern, same reason.
           E2E_BUDGET_MODE: ${{ vars.E2E_BUDGET_MODE || 'block' }}
+          # #726: the guard counts Actions runs, so it cannot see WHICH backend those
+          # runs consumed. Passing the ref lets it warn when the hardcoded backend
+          # epoch belongs to a different project than the one being metered — the
+          # #567 swap was exactly that situation, and nothing detected it.
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          # Read by the guard but NEVER passed until now, so the hardcoded epoch always
+          # won. An unset repo variable arrives as an EMPTY STRING, not as absent —
+          # which is why empty means "use the default" and opting out is spelled
+          # `none`. Wiring this up naively would have widened the counting window by 5
+          # days and counted runs billed to the deleted project.
+          E2E_BUDGET_BACKEND_EPOCH: ${{ vars.E2E_BUDGET_BACKEND_EPOCH }}
         run: node scripts/ci/e2e-budget-guard.mjs
 
   # ============================================
