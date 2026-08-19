@@ -320,7 +320,7 @@ test('passes color contrast audit', async () => {
 
 ```bash
 # Terminal 1: Build production
-docker compose exec scripthammer pnpm run build
+docker compose run --rm builder pnpm run build
 
 # Terminal 2: Serve production build
 docker compose exec scripthammer pnpm exec serve out -p 3000
@@ -349,7 +349,7 @@ docker compose exec scripthammer pnpm exec lighthouse http://localhost:3000/mess
 
 ```bash
 # Build production
-docker compose exec scripthammer pnpm run build
+docker compose run --rm builder pnpm run build
 
 # Analyze bundle
 docker compose exec scripthammer pnpm exec next build --experimental-build-mode=compile
@@ -593,7 +593,7 @@ for (let i = 0; i < 10; i++) {
 **Next Steps**:
 
 1. Fix critical errors above
-2. Re-run build: `docker compose exec scripthammer pnpm run build`
+2. Re-run build: `docker compose run --rm builder pnpm run build`
 3. Verify static export: `ls -la out/`
 
 ---

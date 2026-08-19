@@ -22,7 +22,7 @@ chmod 600 .env
 docker compose up -d
 
 # 5. Verify build
-docker compose exec myproject pnpm run build
+docker compose run --rm builder pnpm run build
 
 # 6. Run tests
 docker compose exec myproject pnpm test
@@ -234,7 +234,7 @@ After forking, verify everything works:
 
 - [ ] `docker compose up` starts without errors
 - [ ] `docker compose exec <project> pnpm test` — all tests pass
-- [ ] `docker compose exec <project> pnpm run build` — build succeeds
+- [ ] `docker compose run --rm builder pnpm run build` — build succeeds
 - [ ] No "ScriptHammer" references in `package.json`
 - [ ] `git remote -v` shows your repository URL
 - [ ] `.env` has `COMPOSE_PROJECT_NAME=<yourproject>` (not `scripthammer`)

@@ -125,7 +125,7 @@ The auto-config system generates configuration at build time:
 1. **TypeScript Config**: `/src/config/project-detected.ts` - Strongly typed for your components
 2. **JSON Config**: `/src/config/project-detected.json` - Raw configuration data
 
-Check these files after running `docker compose exec scripthammer pnpm run build` - they contain YOUR project's information automatically detected from Git.
+Check these files after running `docker compose run --rm builder pnpm run build` - they contain YOUR project's information automatically detected from Git.
 
 ## 💡 How to Use It
 
@@ -180,7 +180,7 @@ With ScriptHammer, the process is dramatically simplified:
 
 ```bash
 # MUST use Docker - local commands won't work
-docker compose exec scripthammer pnpm run build
+docker compose run --rm builder pnpm run build
 docker compose exec scripthammer pnpm run deploy
 # Automatically configured for your repository
 ```
@@ -356,7 +356,7 @@ Currently supported:
 docker compose exec scripthammer pnpm run dev
 
 # Production Build - Creates static files for GitHub Pages deployment
-docker compose exec scripthammer pnpm run build
+docker compose run --rm builder pnpm run build
 docker compose exec scripthammer pnpm run deploy
 ```
 
@@ -443,7 +443,7 @@ While traditional templates require editing 22+ files and configuration points, 
 **Project name not updating:**
 
 - Auto-detection runs at BUILD time, not runtime
-- Run `docker compose exec scripthammer pnpm run build` to regenerate
+- Run `docker compose run --rm builder pnpm run build` to regenerate
 - Check `src/config/project-detected.ts` for detected values
 
 **Hardcoded values still showing "ScriptHammer":**
