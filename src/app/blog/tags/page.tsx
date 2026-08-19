@@ -58,7 +58,7 @@ export default function TagsPage() {
     <main className="container mx-auto px-4 py-6 sm:px-6 sm:py-8 md:py-12 lg:px-8">
       {/* Header */}
       <div className="mb-12 text-center">
-        <h1 className="mb-4 !text-2xl font-bold sm:!text-4xl md:!text-5xl">
+        <h1 className="font-display mb-4 !text-2xl leading-[1.05] tracking-[-0.025em] sm:!text-4xl md:!text-5xl">
           Blog Tags
         </h1>
         <p className="text-base-content/85 text-lg">
@@ -79,20 +79,20 @@ export default function TagsPage() {
       {/* Popular Tags Section */}
       {sortedTags.length > 0 && (
         <div className="mx-auto max-w-4xl">
-          <h2 className="mb-6 text-2xl font-semibold">Popular Tags</h2>
+          <h2 className="font-display mb-6 text-2xl">Popular Tags</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {sortedTags.slice(0, 9).map((tag) => (
               <Link
                 key={tag.name}
                 href={`/blog/tags/${encodeURIComponent(tag.name.toLowerCase())}`}
-                className="card bg-base-200 hover:bg-base-300 transition-colors"
+                className="sh-plate bg-base-100 rounded-box focus-visible:ring-primary flex min-h-11 flex-col gap-1 p-4 transition-transform hover:-translate-y-0.5 focus-visible:ring-2 focus-visible:outline-none"
               >
-                <div className="card-body p-4">
-                  <h3 className="card-title text-base">{tag.name}</h3>
-                  <p className="text-base-content/85 text-sm">
-                    {tag.count} {tag.count === 1 ? 'post' : 'posts'}
-                  </p>
-                </div>
+                <h3 className="text-base-content font-display text-base leading-tight">
+                  {tag.name}
+                </h3>
+                <p className="text-base-content/85 font-mono text-[11px] tracking-[.14em] uppercase">
+                  {tag.count} {tag.count === 1 ? 'post' : 'posts'}
+                </p>
               </Link>
             ))}
           </div>
@@ -101,24 +101,32 @@ export default function TagsPage() {
 
       {/* All Tags List */}
       <div className="mx-auto mt-12 max-w-4xl">
-        <h2 className="mb-6 text-2xl font-semibold">All Tags</h2>
-        <div className="flex flex-wrap gap-2">
+        <h2 className="font-display mb-6 text-2xl">All Tags</h2>
+        {/* Individually grooved chips, NOT `sh-rail`. The rail is a single pill
+            (border-radius 9999px) that holds ONE row of options — /blog uses it with
+            eight tags. Wrapping 67 tags into it renders a giant ellipse with the
+            corner chips outside the shape. Caught by looking at the render; every
+            class assertion passed while it was wrong. */}
+        <nav
+          aria-label="All blog tags"
+          className="flex flex-wrap justify-center gap-2"
+        >
           {sortedTags.map((tag) => (
             <Link
               key={tag.name}
               href={`/blog/tags/${encodeURIComponent(tag.name.toLowerCase())}`}
-              className="badge badge-lg badge-outline hover:badge-primary transition-colors"
+              className="sh-groove bg-base-100 text-base-content hover:bg-base-200 focus-visible:ring-primary inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 font-mono text-[11px] tracking-[.1em] uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none"
             >
               {tag.name}
-              <span className="text-base-content/85 ml-1">({tag.count})</span>
+              <span className="text-base-content/85">({tag.count})</span>
             </Link>
           ))}
-        </div>
+        </nav>
       </div>
 
       {/* Back to Blog Link */}
       <div className="mt-12 text-center">
-        <Link href="/blog" className="btn btn-primary">
+        <Link href="/blog" className="sh-btn sh-btn-primary">
           ← Back to Blog
         </Link>
       </div>

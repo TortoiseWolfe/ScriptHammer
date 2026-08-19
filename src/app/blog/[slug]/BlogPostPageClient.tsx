@@ -84,7 +84,10 @@ export default function BlogPostPageClient({
                   </h3>
                   <button
                     onClick={() => setShowSeoDetails(false)}
-                    className="btn btn-circle btn-xs sm:btn-sm min-h-11 min-w-11"
+                    /* Hand-rolled rather than `sh-btn`: that utility is a wide
+                       pill with 30px of horizontal padding, which is the wrong
+                       shape for an icon. The 44px floor is kept explicitly. */
+                    className="sh-groove bg-base-100 text-base-content hover:bg-base-200 focus-visible:ring-primary inline-flex min-h-11 min-w-11 items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
                     aria-label="Close"
                   >
                     ✕
@@ -95,10 +98,7 @@ export default function BlogPostPageClient({
                 <div className="flex-1 overflow-y-auto p-3 sm:p-6">
                   <SEOAnalysisPanel post={post} expanded={true} />
                   <div className="mt-4 flex gap-2 sm:mt-6">
-                    <Link
-                      href="/blog/seo"
-                      className="btn btn-ghost btn-xs sm:btn-sm min-h-11 min-w-11"
-                    >
+                    <Link href="/blog/seo" className="sh-btn sh-btn-ghost">
                       SEO Dashboard
                     </Link>
                   </div>
