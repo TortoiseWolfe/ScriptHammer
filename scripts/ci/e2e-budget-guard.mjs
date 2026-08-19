@@ -66,6 +66,47 @@ export const WORKFLOW_FILE = 'e2e.yml';
 export const BACKEND_EPOCH = '2026-08-07T06:00:00Z';
 
 /**
+ * The project that epoch belongs to.
+ *
+ * The epoch above is meaningful for ONE Supabase project. If the backend is swapped
+ * again — as #567 swapped it once already — the date silently starts describing a
+ * project that no longer exists, and the guard keeps counting with total confidence
+ * and no way to notice. That is the failure #726 is about: this script has never had
+ * any idea which backend it is metering.
+ *
+ * Compared against `SUPABASE_PROJECT_REF` at runtime. A mismatch does not block — the
+ * count may still be roughly right — but it says so loudly, because the epoch is then
+ * stale by definition.
+ */
+export const BACKEND_EPOCH_PROJECT_REF = 'ozbdyopxmeqmwnfsmglp';
+
+/**
+ * Explicit opt-out value for the epoch override.
+ *
+ * NOT the empty string, and that is the point. GitHub Actions evaluates
+ * `${{ vars.FOO }}` to an EMPTY STRING when the variable is unset, so a workflow
+ * cannot express "absent" through `env:` at all. Treating empty as the opt-out made
+ * the documented default unreachable: wiring the variable up while it is unset would
+ * silently widen the window from the epoch back to the billing-cycle start —
+ * measured at 5 days on 2026-08-19 — and count runs billed to the DELETED project.
+ *
+ * So empty now means "use the default", and opting out is spelled out.
+ */
+export const EPOCH_OPT_OUT = 'none';
+
+/**
+ * Resolve the epoch from the environment, safely for a workflow-supplied value.
+ *
+ * @param {string|undefined} raw
+ * @returns {string} ISO date, or '' meaning "no epoch, use the billing cycle"
+ */
+export function resolveBackendEpoch(raw) {
+  if (raw === undefined || raw === '') return BACKEND_EPOCH;
+  if (raw.trim().toLowerCase() === EPOCH_OPT_OUT) return '';
+  return raw;
+}
+
+/**
  * The Supabase billing cycle runs 2nd → 2nd (confirmed from the invoice history:
  * Apr 02, May 02, Jun 02, Jul 02, Aug 02, all $0.00, one per cycle reset).
  *
@@ -342,15 +383,30 @@ async function main() {
   const repo = env.GITHUB_REPOSITORY;
   const token = env.GITHUB_TOKEN;
   const limits = limitsFromEnv(env);
-  // Empty string is a deliberate opt-out (pure billing-cycle window), so only
-  // an ABSENT variable falls back to the constant.
   // GitHub sets GITHUB_RUN_ID for the run this job belongs to. Absent locally,
   // where there is no self to exclude.
   const selfRunId = env.GITHUB_RUN_ID || null;
-  const backendEpoch =
-    env.E2E_BUDGET_BACKEND_EPOCH === undefined
-      ? BACKEND_EPOCH
-      : env.E2E_BUDGET_BACKEND_EPOCH;
+  // See resolveBackendEpoch: empty means "default", `none` means opt out. An unset
+  // repo variable arrives here as '' and must NOT silently widen the window.
+  const backendEpoch = resolveBackendEpoch(env.E2E_BUDGET_BACKEND_EPOCH);
+
+  // The guard counts GitHub Actions runs, which says nothing about WHICH backend
+  // those runs consumed. This is the one cross-check available without a usage API:
+  // is the project being metered the same one the epoch describes?
+  const projectRef = env.SUPABASE_PROJECT_REF || null;
+  if (projectRef && projectRef !== BACKEND_EPOCH_PROJECT_REF) {
+    console.warn(
+      `::warning::E2E budget guard is metering project ${projectRef}, but its backend ` +
+        `epoch (${BACKEND_EPOCH}) belongs to ${BACKEND_EPOCH_PROJECT_REF}. The count ` +
+        `includes runs billed to a different project. Update BACKEND_EPOCH and ` +
+        `BACKEND_EPOCH_PROJECT_REF, or set E2E_BUDGET_BACKEND_EPOCH (#726).`
+    );
+  } else if (!projectRef) {
+    console.warn(
+      '::warning::SUPABASE_PROJECT_REF is not set, so the budget guard cannot tell ' +
+        'which backend it is metering. Pass it from vars.SUPABASE_PROJECT_REF (#726).'
+    );
+  }
 
   if (!repo || !token) {
     console.error(

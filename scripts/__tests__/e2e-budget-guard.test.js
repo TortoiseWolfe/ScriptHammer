@@ -577,3 +577,110 @@ test('still fails CONSERVATIVE: jobs endpoint error counts as spent', async () =
     'under-counting costs the quota this guard exists to protect'
   );
 });
+
+/**
+ * #726 — the guard had no idea which backend it was metering, and its one escape
+ * hatch could not be reached from a workflow.
+ *
+ * It counts GitHub Actions runs of `e2e.yml`. That is a proxy for Supabase usage and
+ * it cannot see the backend at all: `SUPABASE_PROJECT_REF` was never read, and
+ * `BACKEND_EPOCH` is a hardcoded date belonging to one specific project. The #567
+ * swap already invalidated that date once, silently.
+ *
+ * The subtle half is the epoch override. `E2E_BUDGET_BACKEND_EPOCH` was read but never
+ * passed, and its documented contract — "an ABSENT variable falls back to the
+ * constant, an empty one opts out" — is UNREACHABLE from a workflow: GitHub evaluates
+ * `${{ vars.FOO }}` to an empty string when the variable is unset. So plumbing it in
+ * as the issue asks would have flipped the default to opt-out and widened the window
+ * from the epoch back to the billing-cycle start. Measured: 5 days on 2026-08-19,
+ * counting runs billed to a project that no longer exists.
+ */
+
+test('#726: an unset repo variable keeps the default epoch, it does not opt out', async () => {
+  const { resolveBackendEpoch, BACKEND_EPOCH } = await import(MOD);
+  // The exact value a workflow sends for an unset `${{ vars.X }}`.
+  assert.strictEqual(resolveBackendEpoch(''), BACKEND_EPOCH);
+  assert.strictEqual(resolveBackendEpoch(undefined), BACKEND_EPOCH);
+});
+
+test('#726: opting out is spelled explicitly, and still works', async () => {
+  const { resolveBackendEpoch, EPOCH_OPT_OUT } = await import(MOD);
+  assert.strictEqual(resolveBackendEpoch(EPOCH_OPT_OUT), '');
+  assert.strictEqual(resolveBackendEpoch('None'), '', 'case-insensitive');
+  assert.strictEqual(resolveBackendEpoch('  none  '), '', 'tolerates padding');
+});
+
+test('#726: a real ISO override is still honoured', async () => {
+  const { resolveBackendEpoch } = await import(MOD);
+  assert.strictEqual(
+    resolveBackendEpoch('2026-09-01T00:00:00Z'),
+    '2026-09-01T00:00:00Z'
+  );
+});
+
+test('#726: opting out really does widen the window — the regression this prevents', async () => {
+  // Without this, the two epoch values above could both be wrong and the tests would
+  // still pass. Pin that the choice CHANGES the measured window, so a future refactor
+  // cannot quietly make the override inert.
+  const {
+    budgetWindowStart,
+    resolveBackendEpoch,
+    BACKEND_EPOCH,
+    EPOCH_OPT_OUT,
+  } = await import(MOD);
+  const now = new Date('2026-08-19T12:00:00Z');
+
+  const withDefault = budgetWindowStart(now, resolveBackendEpoch(''));
+  const withOptOut = budgetWindowStart(now, resolveBackendEpoch(EPOCH_OPT_OUT));
+
+  // Compare instants, not strings: budgetWindowStart normalises to milliseconds
+  // ('…:00.000Z') while the constant is written without them.
+  assert.strictEqual(Date.parse(withDefault), Date.parse(BACKEND_EPOCH));
+  assert.notStrictEqual(
+    withDefault,
+    withOptOut,
+    'opting out must widen the window; if these match the override does nothing'
+  );
+  assert.ok(
+    Date.parse(withOptOut) < Date.parse(withDefault),
+    'the opt-out window must start EARLIER — that is what made it dangerous as a default'
+  );
+});
+
+test('#726: the epoch records which project it belongs to', async () => {
+  // The epoch is meaningless without this. A bare date cannot tell anyone that it
+  // stopped describing reality when the backend was swapped.
+  const { BACKEND_EPOCH_PROJECT_REF } = await import(MOD);
+  assert.match(
+    BACKEND_EPOCH_PROJECT_REF,
+    /^[a-z]{20}$/,
+    'BACKEND_EPOCH_PROJECT_REF should be a Supabase project ref'
+  );
+});
+
+test('#726: the workflow passes the ref and the epoch to the guard', async () => {
+  // The guard reading an env var is worthless if nothing sets it — which is exactly
+  // how E2E_BUDGET_BACKEND_EPOCH sat dead. Assert the wiring, not just the reader.
+  // CommonJS file (see the requires at the top) — no import.meta here, or Node
+  // reinterprets the whole file as ESM and every `require` above it breaks.
+  const { readFileSync } = require('node:fs');
+  const wf = readFileSync(
+    path.join(__dirname, '..', '..', '.github', 'workflows', 'e2e.yml'),
+    'utf8'
+  );
+  const step = wf.slice(
+    wf.indexOf('Check recent E2E run rate'),
+    wf.indexOf('e2e-budget-guard.mjs')
+  );
+  assert.match(
+    step,
+    /SUPABASE_PROJECT_REF:\s*\$\{\{\s*vars\.SUPABASE_PROJECT_REF\s*\}\}/,
+    'the budget step no longer passes SUPABASE_PROJECT_REF, so the guard cannot tell ' +
+      'which backend it is metering'
+  );
+  assert.match(
+    step,
+    /E2E_BUDGET_BACKEND_EPOCH:\s*\$\{\{\s*vars\.E2E_BUDGET_BACKEND_EPOCH\s*\}\}/,
+    'the epoch override is unreachable again — it is read by the guard but not passed'
+  );
+});
