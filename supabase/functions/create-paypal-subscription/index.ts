@@ -13,7 +13,7 @@
  * REQUEST
  *   POST /functions/v1/create-paypal-subscription
  *   Authorization: Bearer <user JWT>
- *   Body: { plan_id: string, customer_email: string }
+ *   Body: { product_id: string, customer_email: string }
  *
  * RESPONSE
  *   200 OK: { subscriptionId: string }
@@ -32,13 +32,19 @@
  *     carries the real provider_subscription_id, plan amount/interval, and
  *     status. This mirrors create-stripe-subscription, which likewise leaves
  *     the row to its webhook.
- *   - The `plan_id` is operator-configured in the PayPal Dashboard; the plan
- *     amount + interval come from there. We pass it through.
+ *   - THE PLAN COMES FROM THE CATALOG, never from the request (#774, #559).
+ *     The caller names a `product_id`; `products.paypal_plan_id` supplies the
+ *     plan, and a request that names its own `plan_id` is refused outright.
+ *     The rules live in `./resolve.ts` so they are testable without Deno.
+ *
+ *     This comment used to say the plan was "operator-configured in the PayPal
+ *     Dashboard ... we pass it through". The first half was aspiration and the
+ *     second half was the bug: whatever the browser sent went to PayPal
+ *     unvalidated, so a tampered request could name any plan in the account.
  *
  * NOTES
  *   - No payment_intents row is involved. Subscriptions are a separate code
- *     path that bypasses the one-off payment_intents/results lifecycle. The
- *     browser caller (createPayPalSubscription) passes the plan_id directly.
+ *     path that bypasses the one-off payment_intents/results lifecycle.
  *   - PAYPAL_API_BASE defaults to the sandbox host; override it for live.
  *   - Email validation matches the pattern in payment-service.ts.
  */
@@ -47,13 +53,22 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAuthenticatedUserId, UnauthorizedError } from '../_shared/auth.ts';
+import {
+  resolvePayPalSubscription,
+  type PayPalSubscriptionProductRow,
+} from './resolve.ts';
 
 const PAYPAL_API =
   Deno.env.get('PAYPAL_API_BASE') ?? 'https://api-m.sandbox.paypal.com';
 
 interface RequestBody {
-  plan_id?: string;
+  product_id?: string;
   customer_email?: string;
+  /**
+   * Never honoured. Declared only so a request that still sends it is REFUSED
+   * rather than silently ignored — see the note in `./resolve.ts`.
+   */
+  plan_id?: unknown;
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -107,9 +122,9 @@ serve(async (req) => {
       return jsonResponse(req, { error: 'Invalid JSON body' }, 400);
     }
 
-    const planId = body.plan_id?.trim();
-    if (!planId) {
-      return jsonResponse(req, { error: 'plan_id is required' }, 400);
+    const productId = body.product_id?.trim();
+    if (!productId) {
+      return jsonResponse(req, { error: 'product_id is required' }, 400);
     }
 
     const customerEmail = body.customer_email?.trim().toLowerCase();
@@ -121,14 +136,40 @@ serve(async (req) => {
       );
     }
 
-    // Instantiate the service-role client for parity with the Stripe
-    // template's structure. We deliberately do NOT write the subscriptions
-    // row here — the row is created by `paypal-webhook` on
-    // BILLING.SUBSCRIPTION.ACTIVATED (mirroring create-stripe-subscription).
-    createClient(
+    // Service-role client: the catalog read must not be subject to the caller's
+    // RLS. We deliberately do NOT write the subscriptions row here — that row is
+    // created by `paypal-webhook` on BILLING.SUBSCRIPTION.ACTIVATED (mirroring
+    // create-stripe-subscription).
+    const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
+    // Catalog lookup — the SAME shape create-stripe-subscription uses.
+    const { data: productRow, error: productError } = await supabase
+      .from('products')
+      .select(
+        'id, name, type, interval, active, paypal_plan_id, currency, amount'
+      )
+      .eq('id', productId)
+      .maybeSingle();
+    if (productError) {
+      console.error(
+        'create-paypal-subscription: product lookup failed',
+        productError
+      );
+      return jsonResponse(req, { error: 'Internal server error' }, 500);
+    }
+
+    // Every plan rule lives in the pure resolver so it is testable without Deno.
+    const decision = resolvePayPalSubscription({
+      product: (productRow as PayPalSubscriptionProductRow | null) ?? null,
+      sentPlanId: body.plan_id,
+    });
+    if (decision.kind === 'refuse') {
+      return jsonResponse(req, { error: decision.error }, decision.status);
+    }
+    const planId = decision.planId;
 
     const accessToken = await getPayPalAccessToken();
 

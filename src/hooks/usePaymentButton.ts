@@ -12,10 +12,11 @@ import {
   createCheckoutSession as createStripeCheckout,
   createSubscriptionCheckout,
 } from '@/lib/payments/stripe';
-// stripeConfig is no longer imported: the only field this hook read from it was
-// subscriptionPriceId, and that is gone (#772). paypalConfig.subscriptionPlanId
-// is still a global and still carries the same defect — tracked separately.
-import { paypalConfig } from '@/config/payment';
+// Neither stripeConfig nor paypalConfig is imported any more. The only fields
+// this hook read from them were subscriptionPriceId and subscriptionPlanId —
+// one global id per provider, shared by every recurring SKU. Both are gone
+// (#772 for Stripe, #774 for PayPal); each provider's id now comes from the
+// catalog row on the server.
 import {
   createPayPalOrder,
   approvePayPalOrder,
@@ -225,12 +226,14 @@ export function usePaymentButton(
     // the subscriptions row on BILLING.SUBSCRIPTION.ACTIVATED, mirroring the
     // Stripe subscription path (#104).
     if (options.type === 'recurring') {
-      const planId = paypalConfig.subscriptionPlanId;
-      if (!planId) {
+      // Same rule as the Stripe lane (#772): name the SKU, not the plan. The
+      // server resolves `products.paypal_plan_id` and refuses a request that
+      // names its own plan_id (#774).
+      if (!options.productId) {
         setError(
           new Error(
-            'PayPal subscription plan not configured. Set NEXT_PUBLIC_PAYPAL_PLAN_ID ' +
-              'to a PayPal billing Plan ID (see docs/PAYMENT-DEPLOYMENT.md).'
+            'A recurring payment requires productId — the catalog SKU whose ' +
+              'paypal_plan_id the server resolves (#774).'
           )
         );
         return;
@@ -239,7 +242,10 @@ export function usePaymentButton(
       try {
         await renderPayPalButtons(containerId, {
           createSubscription: async () =>
-            await createPayPalSubscription(planId, options.customerEmail),
+            await createPayPalSubscription(
+              options.productId!,
+              options.customerEmail
+            ),
           onApprove: (data: { subscriptionID?: string }) => {
             // The subscription is created + attributed to the user by the
             // webhook; the SDK hands us the subscription id as the receipt.

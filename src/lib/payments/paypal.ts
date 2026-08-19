@@ -149,10 +149,14 @@ export async function approvePayPalOrder(
 }
 
 /**
- * Create PayPal subscription
+ * Create a PayPal subscription for a catalog SKU.
+ *
+ * Takes a `productId`, NOT a plan id (#774). The server resolves
+ * `products.paypal_plan_id` and refuses any request that names its own plan —
+ * so the browser has no plan to send, and cannot send the wrong one.
  */
 export async function createPayPalSubscription(
-  planId: string,
+  productId: string,
   customerEmail: string
 ): Promise<string> {
   await loadPayPalSDK();
@@ -170,7 +174,7 @@ export async function createPayPalSubscription(
         ...(await getAuthHeader()),
       },
       body: JSON.stringify({
-        plan_id: planId,
+        product_id: productId,
         customer_email: customerEmail,
       }),
     }
