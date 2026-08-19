@@ -271,11 +271,23 @@ jobs:
           # the dpkg lock, which fails every retry after it (#798).
           printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
             | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
+          # ok=0 / exit 1 is the whole point (#795). Without it the loop simply ENDS
+          # after three failures and the job carries on to launch browsers that were
+          # never installed — so an install outage surfaces as an unrelated test
+          # failure somewhere downstream. #762 is the worked example: eight jobs died
+          # in the install step and the visible symptom was a required check going red
+          # with no failing test. e2e-local.yml has had this since #762; these nine
+          # call sites did not.
+          ok=0
           for i in 1 2 3; do
-            pnpm exec playwright install --with-deps chromium && break
+            pnpm exec playwright install --with-deps chromium && { ok=1; break; }
             echo "Retry $i: playwright install failed, retrying in 10s..."
             sleep 10
           done
+          if [ "$ok" -ne 1 ]; then
+            echo "::error::playwright install did not succeed in 3 attempts (#795)"
+            exit 1
+          fi
 
       - name: Download build
         uses: actions/download-artifact@v8
@@ -384,11 +396,23 @@ jobs:
           # the dpkg lock, which fails every retry after it (#798).
           printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
             | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
+          # ok=0 / exit 1 is the whole point (#795). Without it the loop simply ENDS
+          # after three failures and the job carries on to launch browsers that were
+          # never installed — so an install outage surfaces as an unrelated test
+          # failure somewhere downstream. #762 is the worked example: eight jobs died
+          # in the install step and the visible symptom was a required check going red
+          # with no failing test. e2e-local.yml has had this since #762; these nine
+          # call sites did not.
+          ok=0
           for i in 1 2 3; do
-            pnpm exec playwright install --with-deps chromium && break
+            pnpm exec playwright install --with-deps chromium && { ok=1; break; }
             echo "Retry $i: playwright install failed, retrying in 10s..."
             sleep 10
           done
+          if [ "$ok" -ne 1 ]; then
+            echo "::error::playwright install did not succeed in 3 attempts (#795)"
+            exit 1
+          fi
 
       - name: Build basePath-prefixed export
         run: bash scripts/serve-basepath.sh build
@@ -485,11 +509,23 @@ jobs:
           # the dpkg lock, which fails every retry after it (#798).
           printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
             | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
+          # ok=0 / exit 1 is the whole point (#795). Without it the loop simply ENDS
+          # after three failures and the job carries on to launch browsers that were
+          # never installed — so an install outage surfaces as an unrelated test
+          # failure somewhere downstream. #762 is the worked example: eight jobs died
+          # in the install step and the visible symptom was a required check going red
+          # with no failing test. e2e-local.yml has had this since #762; these nine
+          # call sites did not.
+          ok=0
           for i in 1 2 3; do
-            pnpm exec playwright install --with-deps chromium && break
+            pnpm exec playwright install --with-deps chromium && { ok=1; break; }
             echo "Retry $i: playwright install failed, retrying in 10s..."
             sleep 10
           done
+          if [ "$ok" -ne 1 ]; then
+            echo "::error::playwright install did not succeed in 3 attempts (#795)"
+            exit 1
+          fi
 
       - name: Download build
         uses: actions/download-artifact@v8
@@ -583,11 +619,23 @@ jobs:
           # the dpkg lock, which fails every retry after it (#798).
           printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
             | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
+          # ok=0 / exit 1 is the whole point (#795). Without it the loop simply ENDS
+          # after three failures and the job carries on to launch browsers that were
+          # never installed — so an install outage surfaces as an unrelated test
+          # failure somewhere downstream. #762 is the worked example: eight jobs died
+          # in the install step and the visible symptom was a required check going red
+          # with no failing test. e2e-local.yml has had this since #762; these nine
+          # call sites did not.
+          ok=0
           for i in 1 2 3; do
-            pnpm exec playwright install --with-deps chromium && break
+            pnpm exec playwright install --with-deps chromium && { ok=1; break; }
             echo "Retry $i: playwright install failed, retrying in 10s..."
             sleep 10
           done
+          if [ "$ok" -ne 1 ]; then
+            echo "::error::playwright install did not succeed in 3 attempts (#795)"
+            exit 1
+          fi
 
       - name: Download build
         uses: actions/download-artifact@v8
@@ -735,11 +783,23 @@ jobs:
           # the dpkg lock, which fails every retry after it (#798).
           printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
             | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
+          # ok=0 / exit 1 is the whole point (#795). Without it the loop simply ENDS
+          # after three failures and the job carries on to launch browsers that were
+          # never installed — so an install outage surfaces as an unrelated test
+          # failure somewhere downstream. #762 is the worked example: eight jobs died
+          # in the install step and the visible symptom was a required check going red
+          # with no failing test. e2e-local.yml has had this since #762; these nine
+          # call sites did not.
+          ok=0
           for i in 1 2 3; do
-            pnpm exec playwright install --with-deps "$BROWSER" && break
+            pnpm exec playwright install --with-deps "$BROWSER" && { ok=1; break; }
             echo "Retry $i: $BROWSER install failed, retrying in 10s..."
             sleep 10
           done
+          if [ "$ok" -ne 1 ]; then
+            echo "::error::playwright install did not succeed in 3 attempts (#795)"
+            exit 1
+          fi
 
       - name: Download build
         uses: actions/download-artifact@v8
@@ -942,11 +1002,23 @@ jobs:
           # the dpkg lock, which fails every retry after it (#798).
           printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
             | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
+          # ok=0 / exit 1 is the whole point (#795). Without it the loop simply ENDS
+          # after three failures and the job carries on to launch browsers that were
+          # never installed — so an install outage surfaces as an unrelated test
+          # failure somewhere downstream. #762 is the worked example: eight jobs died
+          # in the install step and the visible symptom was a required check going red
+          # with no failing test. e2e-local.yml has had this since #762; these nine
+          # call sites did not.
+          ok=0
           for i in 1 2 3; do
-            pnpm exec playwright install --with-deps "$BROWSER" && break
+            pnpm exec playwright install --with-deps "$BROWSER" && { ok=1; break; }
             echo "Retry $i: $BROWSER install failed, retrying in 10s..."
             sleep 10
           done
+          if [ "$ok" -ne 1 ]; then
+            echo "::error::playwright install did not succeed in 3 attempts (#795)"
+            exit 1
+          fi
       - name: Download build
         uses: actions/download-artifact@v8
         with:
@@ -1110,11 +1182,23 @@ jobs:
           # the dpkg lock, which fails every retry after it (#798).
           printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\n' \
             | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
+          # ok=0 / exit 1 is the whole point (#795). Without it the loop simply ENDS
+          # after three failures and the job carries on to launch browsers that were
+          # never installed — so an install outage surfaces as an unrelated test
+          # failure somewhere downstream. #762 is the worked example: eight jobs died
+          # in the install step and the visible symptom was a required check going red
+          # with no failing test. e2e-local.yml has had this since #762; these nine
+          # call sites did not.
+          ok=0
           for i in 1 2 3; do
-            pnpm exec playwright install --with-deps "$BROWSER" && break
+            pnpm exec playwright install --with-deps "$BROWSER" && { ok=1; break; }
             echo "Retry $i: $BROWSER install failed, retrying in 10s..."
             sleep 10
           done
+          if [ "$ok" -ne 1 ]; then
+            echo "::error::playwright install did not succeed in 3 attempts (#795)"
+            exit 1
+          fi
       - name: Download build
         uses: actions/download-artifact@v8
         with:
