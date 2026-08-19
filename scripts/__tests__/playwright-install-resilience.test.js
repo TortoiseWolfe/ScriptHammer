@@ -117,7 +117,7 @@ function hasAptTimeoutsAbove(lines, index) {
   return false;
 }
 
-describe('playwright install survives a bad apt mirror (#762, #798)', () => {
+describe('playwright install survives a bad apt mirror (#762, #798, #829)', () => {
   it('finds install call sites at all', () => {
     // Without this every assertion below passes vacuously the moment the command is
     // renamed or moved into a composite action — the #396 shape.
@@ -168,21 +168,122 @@ describe('playwright install survives a bad apt mirror (#762, #798)', () => {
     );
   });
 
-  it('the required lane fails loudly instead of falling through', () => {
-    // If all three attempts fail the loop simply ends, and without an explicit
-    // failure the test step launches browsers that were never installed — which is
-    // how an install outage gets diagnosed as a test bug.
+  it('the required lane does not install Playwright at all any more (#829)', () => {
+    // This assertion used to require the OPPOSITE: that e2e-local.yml fail loudly when
+    // all three install attempts failed. That guarded a mitigation. The mitigation is
+    // gone because the install is gone — the lane runs the suite from an image that
+    // already ships the browsers, so there is nothing to download, retry or bound.
+    //
+    // Kept as an assertion rather than deleted, because a future edit re-adding
+    // `playwright install` here would silently re-introduce the entire #809/#819
+    // failure class: two third parties, 24 times per run.
     const yaml = fs.readFileSync(
       path.join(WORKFLOW_DIR, 'e2e-local.yml'),
       'utf8'
     );
 
+    assert.doesNotMatch(
+      yaml,
+      /playwright install/,
+      'e2e-local.yml installs Playwright again. It should run the suite from ' +
+        'mcr.microsoft.com/playwright, which already has the browsers — installing ' +
+        'them on the runner cost a median 11.6 min per shard and failed 17 of 25 ' +
+        'shards on 2026-08-19 (#819, #829).'
+    );
+  });
+
+  it('runs from an image whose tag matches the installed Playwright (#829)', () => {
+    // A drifted tag is the failure mode Dockerfile.e2e already warns about: Playwright
+    // refuses to drive browsers built for a different release, and the error points
+    // nowhere near the cause.
+    //
+    // Compared against the RESOLVED version, never the `^1.55.0` range in package.json.
+    // A range would let a lockfile bump pass this check while the image stayed behind —
+    // the same staleness that made RETAIN_GENERATIONS misleading in #751.
+    const yaml = fs.readFileSync(
+      path.join(WORKFLOW_DIR, 'e2e-local.yml'),
+      'utf8'
+    );
+    const tag = /mcr\.microsoft\.com\/playwright:v([\d.]+)-/.exec(yaml);
+    assert.ok(tag, 'e2e-local.yml no longer pins a Playwright image tag');
+
+    const resolved = require('@playwright/test/package.json').version;
+    assert.strictEqual(
+      tag[1],
+      resolved,
+      `the workflow runs mcr.microsoft.com/playwright:v${tag[1]} but the repo resolves ` +
+        `@playwright/test to ${resolved}. Playwright refuses to drive browsers from a ` +
+        `different release; bump the image tag with the package.`
+    );
+  });
+
+  it('forwards the credentials the suite cannot run without (#829, #830)', () => {
+    // THE BUG THIS EXISTS FOR. The first version of the filter was
+    // `^(CI|…|NEXT_PUBLIC_|SUPABASE_|TEST_USER_)=` — where the `=` binds to EVERY
+    // branch, so each prefix had to BE the whole variable name. It forwarded exactly
+    // `CI` and `BASE_URL`, dropped every Supabase credential, and the container fell
+    // back to the workspace `.env` (container-side hostnames), failing 25 of 26 jobs
+    // with `getaddrinfo EAI_AGAIN supabase-kong` inside globalSetup.
+    //
+    // SO THIS ASSERTS NAMES, NOT SHAPE. A test checking merely that `--env-file` is
+    // used, or that the word NEXT_PUBLIC_ appears in the pattern, passes against the
+    // broken version. Only running the real pattern over real names catches it.
+    const yaml = fs.readFileSync(
+      path.join(WORKFLOW_DIR, 'e2e-local.yml'),
+      'utf8'
+    );
+
+    const m = /env \| grep -E '([^']+)' > \/tmp\/pw\.env/.exec(yaml);
+    assert.ok(m, 'could not find the env-forwarding filter in e2e-local.yml');
+
+    const re = new RegExp(m[1]);
+    const sample = [
+      'CI=true',
+      'BASE_URL=http://localhost:3000',
+      'NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321',
+      'NEXT_PUBLIC_SUPABASE_ANON_KEY=ey.aaa',
+      'SUPABASE_SERVICE_ROLE_KEY=ey.bbb',
+      'TEST_USER_PRIMARY_EMAIL=a@b.c',
+      'PLAYWRIGHT_JSON_OUTPUT_NAME=results.json',
+      'AUTH_SETUP_JOB=true',
+    ];
+    const forwarded = sample.filter((line) => re.test(line));
+    const dropped = sample.filter((line) => !re.test(line));
+
+    assert.deepEqual(
+      dropped,
+      [],
+      `the env filter drops variables the suite needs:\n` +
+        dropped.map((d) => `  - ${d.split('=')[0]}`).join('\n') +
+        `\n\nWithout them the test container falls back to the workspace .env, whose ` +
+        `hostnames are container-side, and fails inside globalSetup with a DNS error ` +
+        `rather than saying a variable was missing.`
+    );
+    assert.ok(forwarded.length >= 8, 'the sample itself became vacuous');
+  });
+
+  it('refuses to start when a required credential is missing (#830)', () => {
+    // Belt to the braces above: even if the filter regresses, the run must say WHICH
+    // variable is missing instead of letting dotenv substitute `.env` silently. The
+    // silent fallback, not the typo, is what cost a full 26-job run to diagnose.
+    const yaml = fs.readFileSync(
+      path.join(WORKFLOW_DIR, 'e2e-local.yml'),
+      'utf8'
+    );
     assert.match(
       yaml,
-      /playwright install did not succeed in 3 attempts/,
-      'e2e-local.yml must fail explicitly when every install attempt fails, rather ' +
-        'than continuing into the test step with no browsers'
+      /not forwarding to the test container/,
+      'e2e-local.yml no longer fails loudly on a missing credential'
     );
+    for (const key of [
+      'NEXT_PUBLIC_SUPABASE_URL',
+      'SUPABASE_SERVICE_ROLE_KEY',
+    ]) {
+      assert.ok(
+        new RegExp(`for k in[^\n]*${key}`).test(yaml),
+        `${key} is not among the variables asserted before the container starts`
+      );
+    }
   });
 
   it('the detectors can actually fail', () => {

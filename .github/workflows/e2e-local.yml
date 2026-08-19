@@ -333,380 +333,25 @@ jobs:
           # not apply here. `signup-mailer.yml`, which drives real auth forms
           # against this same local stack, also omits it — follow that precedent.
 
-      # CACHE THE APT ARCHIVES, BECAUSE THE DOWNLOAD IS THE JOB (#801).
+      # NO PLAYWRIGHT INSTALL STEP, deliberately (#829).
       #
-      # Measured 2026-08-18, run 32123025570, `webkit-msg 1/1` (25-minute job):
+      # This job used to spend a median 11.6 minutes per shard installing Chromium,
+      # Firefox and WebKit onto the runner -- 24 times per run, ~158 runner-minutes,
+      # from Microsoft's CDN and the Ubuntu apt mirror. Everything that used to live
+      # here (a cache-key derivation, an apt archive restore/save, a `setsid` install
+      # bounded on output silence, a three-attempt retry loop and a byte-accounting
+      # step) existed only to make that download survivable.
       #
-      #   apt-get update                11s   11.3 MB @ 7407 kB/s   <- never the problem
-      #   apt-get install FETCH      16m09s    114 MB @  118 kB/s   <- this is the job
-      #   dpkg unpack/configure         70s
-      #   browsers from Playwright CDN   8s                          <- never the problem
+      # It is not survivable, because it depends on two third parties being up 24
+      # times a run: #819 failed 5 shards on 2026-08-18 and 17 of 25 on 2026-08-19,
+      # every one in the install step with zero test failures.
       #
-      # IT IS NOT A WEBKIT PROBLEM, and scoping this to webkit later would be wrong.
-      # Every `Fetched` line from that same run:
+      # The browsers now come from the image, which already has them. The runner
+      # downloads nothing: proven locally with `--network=none`, where the runner
+      # still starts and resolves all three engines from /ms-playwright.
       #
-      #   chromium-gen 3/6    21.1 MB in 2s        (8454 kB/s)
-      #   firefox-gen  5/6    21.1 MB in 0s        (86.4 MB/s)
-      #   firefox-gen  4/6    21.1 MB in 9min 32s  (36.9 kB/s)   <- 21 MB. nine minutes.
-      #   webkit-gen   1/6     114 MB in 3s        (43.2 MB/s)
-      #   webkit-msg   1/1     114 MB in 16min 09s (118 kB/s)
-      #
-      # Identical work, 800x spread. Every job holds a lottery ticket; webkit just has a
-      # bigger downside. At firefox's observed 36.9 kB/s, webkit's 114 MB would take 51
-      # minutes — which is why no job timeout can be "sized for the cold path".
-      #
-      # WHY A CACHE AND NOT ANOTHER BOUND. #762 and #798 tried to bound the TIME apt
-      # spends. Time is the mirror's to choose. Bytes are ours. In that same job, at that
-      # same minute, the Actions cache service delivered 318 MB at 95 MB/s while
-      # azure.archive.ubuntu.com delivered 118 kB/s to the same VM.
-      #
-      # A STALE CACHE IS STILL VALUABLE HERE, unlike most caches: apt matches per FILE,
-      # so a near-miss restore means "download only what changed" rather than "download
-      # everything". That is why the restore-keys ladder below is load-bearing rather
-      # than decorative — it turns a runner-image bump from a 114 MB event into a delta.
-      - name: Resolve the apt cache key
-        id: cachekey
-        run: |
-          set -euo pipefail
-
-          # ImageOS/ImageVersion are ambient runner environment variables, NOT a
-          # documented expression context. Read them here rather than via `env.*`: if
-          # they resolved empty the key would silently degenerate to `apt-webkit---`,
-          # HIT FOREVER across image bumps, and re-fetch the delta from the mirror on
-          # every job behind a green "Cache restored" line. Fail instead.
-          : "${ImageOS:?empty — the cache key would silently never rotate}"
-          : "${ImageVersion:?empty — the cache key would silently never rotate}"
-
-          # Hash the dep list PLAYWRIGHT ITSELF would install, not the package.json
-          # range. `^1.55.0` does not change when the lockfile resolves 1.55.2, and the
-          # dep set is what the cache actually holds. This derives the value from
-          # Playwright instead of restating it, so it cannot drift. Verified
-          # deterministic, and distinct per browser (chromium/firefox/webkit each hash
-          # differently).
-          DEPS=$(pnpm exec playwright install-deps --dry-run chromium ${{ matrix.browser }} | sha256sum | cut -c1-16)
-
-          KEY="apt-${{ matrix.browser }}-${ImageOS}-${ImageVersion}-${DEPS}"
-          {
-            echo "key=$KEY"
-            # browser FIRST so both fallbacks are true prefixes of the primary key.
-            # Reversing browser and ImageVersion silently disables the ladder.
-            echo "prefix1=apt-${{ matrix.browser }}-${ImageOS}-${ImageVersion}-"
-            echo "prefix2=apt-${{ matrix.browser }}-${ImageOS}-"
-          } >> "$GITHUB_OUTPUT"
-
-          # Echoed so a degenerate key is VISIBLE rather than inferred later.
-          echo "apt cache key: $KEY"
-
-      # restore/save split rather than `actions/cache@v4`, deliberately: that action
-      # saves with `post-if: success()`, so a shard whose TESTS fail would never
-      # refresh the cache — going stale exactly on a lane that fails often. The save
-      # below is gated on the INSTALL succeeding, which is the thing being cached.
-      - name: Restore cached apt packages
-        id: aptcache
-        uses: actions/cache/restore@v4
-        with:
-          path: ~/apt-deb-cache
-          key: ${{ steps.cachekey.outputs.key }}
-          restore-keys: |
-            ${{ steps.cachekey.outputs.prefix1 }}
-            ${{ steps.cachekey.outputs.prefix2 }}
-
-      - name: Seed apt's archive from the cache
-        run: |
-          set -euo pipefail
-          # Staged through a user-owned directory on purpose: actions/cache runs as
-          # `runner`, and /var/cache/apt/archives is root-owned (with partial/ at 0700
-          # root), so caching it directly fails on both save and restore.
-          #
-          # apt matches on exact filename and verifies the hash against its index, so a
-          # stale .deb is ignored and re-downloaded rather than used. There is no
-          # corruption path here, only a slower one.
-          if compgen -G "$HOME/apt-deb-cache/*.deb" > /dev/null; then
-            n=$(ls -1 "$HOME"/apt-deb-cache/*.deb | wc -l)
-            sudo cp -n "$HOME"/apt-deb-cache/*.deb /var/cache/apt/archives/ 2>/dev/null || true
-            echo "seeded $n cached .deb(s)  (restore key: ${{ steps.aptcache.outputs.cache-matched-key }})"
-          else
-            echo "cold cache — apt will fetch from the mirror this run"
-          fi
-
-      - name: Install Playwright (chromium + ${{ matrix.browser }})
-        id: pwinstall
-        run: |
-          # CHROMIUM IS NOT OPTIONAL ON A FIREFOX OR WEBKIT JOB.
-          #
-          # Every *-gen / *-msg project declares `dependencies: ['setup']`, and
-          # auth.setup.ts runs in CHROMIUM. Installing only the matrix browser
-          # makes setup fail to launch — and Playwright then SKIPS every dependent
-          # test rather than failing it. The first full-matrix run reported all 24
-          # jobs green with firefox and webkit at passed=0, 667 skipped each, "no
-          # reason recorded". Only the parity count check caught it (#396 shape).
-          #
-          # e2e.yml gets away with `--with-deps "$BROWSER"` because it runs ONE
-          # shared Auth Setup job and passes storage-state-auth.json to the matrix
-          # as an artifact. That cannot work here: every runner has its own
-          # Supabase with its own users, so a state minted on another runner is
-          # worthless. Each job runs its own setup, so each job needs chromium.
-          # MAKE APT GIVE UP, RATHER THAN KILLING IT FROM OUTSIDE (#798, after #762).
-          #
-          # The failure mode is a HANG, not an error: `--with-deps` shells out to
-          # `apt-get` as root, and an unreachable mirror makes apt WAIT. `&& break`
-          # retries on a non-zero EXIT, so a hang meant `i` never reached 2 and the
-          # three attempts written to survive a bad install could never run. Eight
-          # jobs sat here ~26 minutes on run 32088862298 and were killed by the cap
-          # having run zero tests (#762).
-          #
-          # #762 was fixed with `timeout 300` around the command. THAT WAS THE WRONG
-          # SHAPE and it broke the next PR through the lane (#798, run 32107363501):
-          #
-          #   * It cannot tell STALLED from SLOW. apt was downloading fonts the whole
-          #     time — 3.5 MB, 5.6 MB, 3.0 MB, each `Get:` line real progress — and
-          #     was killed mid-download at 300s. #762's actual hang was 26 minutes of
-          #     total SILENCE. A wall-clock bound sees those as identical.
-          #   * It ORPHANS apt. `timeout` signals the `pnpm exec` wrapper; the
-          #     `apt-get` beneath runs as ROOT and survives, still holding
-          #     /var/lib/dpkg/lock-frontend. Attempts 2 and 3 then died in ~1 second
-          #     each on "Could not get lock ... held by process 8901". The timeout
-          #     poisoned the very retries it was added to make work.
-          #
-          # RESIZING THE BOUND WAS TRIED TWICE AND FAILED TWICE. 300s broke #797;
-          # 480s plus apt timeouts plus a dpkg-lock wait broke #799 the same way
-          # (run 32110561758): the install was STILL DOWNLOADING at 480s, the
-          # orphaned apt was still running when the 60s lock-wait gave up, and both
-          # retries died on its lock. There is no safe number, because the quantity
-          # being bounded is a download over a mirror of unknown speed.
-          #
-          # SO THERE IS NO WALL-CLOCK BOUND HERE, DELIBERATELY. Do not add one back.
-          # It cannot tell slow from stalled, and killing apt mid-download leaves a
-          # root process holding /var/lib/dpkg/lock-frontend that poisons every retry
-          # after it. It has now cost two PRs and fixed nothing.
-          #
-          # What actually bounds this, in layers that CAN observe what they bound:
-          #
-          #   apt's own Acquire timeouts  -> a STALLED mirror exits non-zero in ~60s,
-          #                                  no orphan, no held lock, and the retry
-          #                                  loop below handles it. This is the #762
-          #                                  fix, and it is the load-bearing one.
-          #   the apt-deb cache above     -> removes the download entirely on a warm
-          #                                  cache, which is where the 14m51s went
-          #                                  (#801). Not a bound, but the reason the
-          #                                  bounds below rarely matter.
-          #   timeout-minutes: 45         -> the outer backstop, sized for the COLD
-          #                                  cache path. A job-level cap is the only
-          #                                  bound that cannot leave a poisoned
-          #                                  runner behind — the runner dies with it.
-          # `Keep-Downloaded-Packages "true"` is what makes the cache possible at all:
-          # apt-get keeps its archives today, but only because nothing turned that off.
-          # If a future runner image flips it, the cache would save nothing and no test
-          # would notice — so pin it here rather than inherit it (#801).
-          printf 'Acquire::http::Timeout "20";\nAcquire::https::Timeout "20";\nAcquire::Retries "3";\nAPT::Keep-Downloaded-Packages "true";\n' \
-            | sudo tee /etc/apt/apt.conf.d/99-ci-network-timeouts >/dev/null
-
-          # `pipefail` is not optional here. Without it the pipeline returns tee's
-          # status, the check below always passes, and a failed install resurfaces as a
-          # test failure — the exact confusion the loud failure underneath was written
-          # to prevent.
-          set -o pipefail
-          # BOUND THE SILENCE, NOT THE ELAPSED TIME (#809).
-          #
-          # Measured: on 4 of 9 recent attempts this step produced ZERO output for
-          # ~41 minutes and was ended only by the 45-minute job cap, while healthy
-          # installs finish in 0.7-1.4m. Nothing between the two. apt's own
-          # Acquire timeouts cannot see it because nothing ever reaches a download.
-          #
-          # A wall-clock bound was tried twice and removed (#798): it cannot tell a
-          # SLOW install from a STALLED one. Silence can. A working install prints
-          # continuously; a stalled one prints nothing at all.
-          #
-          # 600s, and the number is derived rather than picked: the longest
-          # legitimate gap between two `Get:` lines measured on the worst mirror was
-          # ~6.5 minutes (13.6 MB of libflite at ~35 kB/s). 10 minutes clears that
-          # with margin and still ends a 41-minute hang at a quarter of the cost.
-          IDLE_LIMIT=600
-          LOG="$RUNNER_TEMP/pw-install.log"
-          PGF="$RUNNER_TEMP/pw-install.pgid"
-
-          install_once() {
-            : > "$LOG"; rm -f "$PGF"
-            # `setsid --wait`, and the child records its OWN process-group id.
-            #
-            # Both halves are load-bearing, and the naive form was verified WRONG
-            # before this shape was chosen. Plain `setsid` forks and exits, so `$!`
-            # is a stale pid and `ps -o pgid= -p $!` reads the wrong group — the
-            # kill then misses, leaving exactly the orphaned root `apt-get` holding
-            # /var/lib/dpkg/lock-frontend that broke #798. `--wait` keeps the
-            # handle valid for the child's lifetime; the child writes `$$` because
-            # setsid gives it a new group the parent cannot derive.
-            setsid --wait bash -c 'echo $$ > "'"$PGF"'"; exec pnpm exec playwright install --with-deps chromium ${{ matrix.browser }}' \
-              > "$LOG" 2>&1 &
-            local pid=$!
-            local pgid=""
-            for _ in $(seq 1 25); do
-              [ -s "$PGF" ] && { pgid=$(cat "$PGF"); break; }
-              sleep 0.2
-            done
-
-            # Mirror the log into the job output, or a working install looks silent
-            # to anyone reading the run.
-            tail -f "$LOG" &
-            local tailpid=$!
-
-            local rc=0 now age
-            while kill -0 "$pid" 2>/dev/null; do
-              sleep 15
-              now=$(date +%s)
-              age=$(( now - $(stat -c %Y "$LOG" 2>/dev/null || echo "$now") ))
-              if [ "$age" -ge "$IDLE_LIMIT" ]; then
-                echo "::warning::install produced no output for ${age}s — killing it (#809)"
-                if [ -n "$pgid" ]; then
-                  kill -TERM "-$pgid" 2>/dev/null || true
-                  sleep 5
-                  kill -KILL "-$pgid" 2>/dev/null || true
-                else
-                  # No pgid means the child never got far enough to record one.
-                  # Say so rather than killing a group we did not identify.
-                  echo "::warning::no pgid recorded; killing only the wrapper (#809)"
-                  kill -KILL "$pid" 2>/dev/null || true
-                fi
-                rc=124
-                break
-              fi
-            done
-            kill "$tailpid" 2>/dev/null || true
-            if [ "$rc" -eq 0 ]; then
-              wait "$pid" || rc=$?
-            fi
-
-            # If we killed it, apt may still be finishing under our feet. Retrying
-            # straight into a held dpkg lock is exactly what #798 got wrong.
-            for _ in $(seq 1 30); do
-              sudo fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || break
-              sleep 2
-            done
-            return $rc
-          }
-
-          ok=0
-          for i in 1 2 3; do
-            if install_once; then
-              ok=1
-              break
-            fi
-            echo "Retry $i: playwright install failed or went silent, retrying in 10s..."
-            sleep 10
-          done
-          # Fail loudly rather than falling through. Without this the loop simply
-          # ends, the test step launches browsers that were never installed, and the
-          # shard fails somewhere else entirely — which is how an install problem
-          # gets diagnosed as a test problem.
-          if [ "$ok" -ne 1 ]; then
-            echo "::error::playwright install did not succeed in 3 attempts (#762, #798)"
-            exit 1
-          fi
-
-
-      # MEASURE THE BYTES THAT LEFT THE MIRROR (#801).
-      #
-      # The previous version of this change asserted nothing. It carried a comment
-      # saying `Need to get N MB` was "the honest measure" and then never read it —
-      # which is the same shape as #459 (axe-core returning a pass with
-      # contrastRatio: null) and as every probe this repo has been burned by.
-      #
-      # apt prints exactly one of:
-      #     Need to get 114 MB of archives.          <- all of it from the mirror
-      #     Need to get 0 B/114 MB of archives.      <- first number is the mirror's share
-      #
-      # That FIRST number is the only honest signal. Step duration is not: a fast mirror
-      # produces the same duration as a working cache, which is precisely how #757
-      # survived three occurrences.
-      - name: How many bytes actually came from the mirror
-        if: always() && steps.pwinstall.outcome == 'success'
-        env:
-          CACHE_HIT: ${{ steps.aptcache.outputs.cache-hit }}
-          MATCHED_KEY: ${{ steps.aptcache.outputs.cache-matched-key }}
-          BROWSER: ${{ matrix.browser }}
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import json, os, re, pathlib
-
-          log = pathlib.Path(os.environ["RUNNER_TEMP"]) / "pw-install.log"
-          text = log.read_text(errors="replace") if log.exists() else ""
-
-          UNITS = {"B": 1, "kB": 10**3, "MB": 10**6, "GB": 10**9}
-          m = re.search(r"^Need to get ([\d.]+) ?([kMG]?B)(?:/([\d.]+) ?([kMG]?B))?", text, re.M)
-          if m:
-              mirror = float(m.group(1)) * UNITS[m.group(2)]
-              total = float(m.group(3)) * UNITS[m.group(4)] if m.group(3) else mirror
-              line = m.group(0)
-          else:
-              # No line at all means apt had nothing to install — a legitimate outcome,
-              # not a measurement failure. Say which it was rather than defaulting.
-              mirror = total = 0.0
-              line = "(no 'Need to get' line — nothing needed installing)"
-
-          hit = os.environ.get("CACHE_HIT") == "true"
-          metrics = {
-              "browser": os.environ.get("BROWSER"),
-              "cache_hit": hit,
-              "matched_key": os.environ.get("MATCHED_KEY") or None,
-              "mirror_bytes": int(mirror),
-              "total_bytes": int(total),
-          }
-          pathlib.Path("apt-metrics.json").write_text(json.dumps(metrics))
-
-          print(f"apt: {line}")
-          print(f"from the mirror: {mirror/1e6:.1f} MB   cache hit: {hit}")
-
-          summary = os.environ.get("GITHUB_STEP_SUMMARY")
-          if summary:
-              with open(summary, "a") as fh:
-                  fh.write(f"- apt from mirror: **{mirror/1e6:.1f} MB** "
-                           f"(cache hit: {hit}, baseline 2026-08-18: 114 MB webkit / 21 MB other)\n")
-
-          # WHY A WARNING AND NOT A HARD FAILURE, stated so nobody "tightens" it without
-          # reading this. The key hashes the dependency NAMES Playwright asks for, not
-          # their resolved versions, so a security update inside one ImageVersion can
-          # legitimately produce a small delta on an exact key hit. Erroring here would
-          # red the lane for a correct apt. A LARGE fetch on an exact hit is the real
-          # signal — that means the key is degenerate or the archive is not being kept.
-          if hit and mirror > 8e6:
-              print(f"::warning::exact cache hit but {mirror/1e6:.1f} MB still came from "
-                    f"the mirror — the key may be degenerate, or apt is discarding its "
-                    f"archives. See #801.")
-          PY
-
-      - name: Hand the debs back to the cache
-        if: always() && steps.pwinstall.outcome == 'success'
-        run: |
-          set -euo pipefail
-          mkdir -p "$HOME/apt-deb-cache"
-          # Prune first. `restore-keys` carries the previous generation forward and
-          # `cp -n` never removes anything, so without this the cache accumulates every
-          # version ever seen and eventually evicts the pnpm cache under the repo's LRU.
-          # `autoclean` drops only .debs the current index no longer offers.
-          sudo apt-get -o Dir::Cache::archives="$HOME/apt-deb-cache/" autoclean || true
-          sudo cp -n /var/cache/apt/archives/*.deb "$HOME/apt-deb-cache/" 2>/dev/null || true
-          # MANDATORY: the copies land root-owned and actions/cache runs as `runner`,
-          # which would otherwise fail to tar them.
-          sudo chown -R "$(id -u):$(id -g)" "$HOME/apt-deb-cache"
-          echo "cached $(ls -1 "$HOME"/apt-deb-cache/*.deb 2>/dev/null | wc -l) .deb(s) for next time"
-
-      # Saved explicitly rather than by `actions/cache`'s post step, which is gated on
-      # the whole JOB succeeding — a shard whose tests fail would never refresh the
-      # cache, going stale exactly on a lane that fails often. This is gated on the
-      # INSTALL succeeding, which is what is actually being cached.
-      #
-      # `continue-on-error` covers the concurrent-save race: eight jobs share each key,
-      # the first to reserve wins, and the rest get a 409 the action reports as info.
-      # Making that explicit rather than inherited.
-      - name: Save the apt cache
-        if: always() && steps.pwinstall.outcome == 'success' && steps.aptcache.outputs.cache-hit != 'true'
-        continue-on-error: true
-        uses: actions/cache/save@v4
-        with:
-          path: ~/apt-deb-cache
-          key: ${{ steps.cachekey.outputs.key }}
-
+      # This is also what CLAUDE.md asks for -- 'Docker-first development is
+      # MANDATORY' -- and CI was the one place that ignored it.
       - name: Run ${{ matrix.project }} ${{ matrix.shard }}
         run: |
           npx serve out -l 3000 &
@@ -738,11 +383,54 @@ jobs:
           # the HOSTED lane too — the one place they can actually pass. A top-level config
           # `grep` is worse: it filters the `setup` project as well, and setup dying is
           # exactly what once produced 24 green jobs with 0 tests executed.
-          pnpm exec playwright test \
-            --project=${{ matrix.project }} --shard=${{ matrix.shard }} \
-            $WORKERS_FLAG \
-            --grep-invert='@hosted' \
-            --reporter=line,json || true
+          # RUN FROM THE IMAGE THAT ALREADY HAS THE BROWSERS (#829). No install step
+          # precedes this, by design.
+          #
+          # --network=host is load-bearing, not incidental. The app is served on
+          # localhost:3000 and Supabase's Kong is published on 127.0.0.1:54321 --
+          # AND that URL is compiled into the static bundle at build time (see the
+          # Build step above). A bridge network would make `localhost` mean the
+          # container's own loopback and force rebuilding the bundle against a
+          # service name. The MCP Playwright server uses --network=host for the
+          # same reason.
+          #
+          # --user keeps results.json and playwright-report/ owned by `runner`.
+          # Root-owned outputs break the upload steps below -- the same trap the
+          # apt cache hit when its copies landed root-owned.
+          #
+          # ./node_modules/.bin/playwright, not `pnpm exec`: pnpm is not in the
+          # image, and corepack would download it per shard -- reintroducing a
+          # network fetch this change exists to remove.
+          # TWO GROUPS, and the split is the whole point. `^(A|B|PREFIX_)=` binds the
+          # `=` to EVERY branch, so each prefix has to BE the entire variable name —
+          # which forwarded only CI and BASE_URL and silently dropped every Supabase
+          # credential. The container then fell back to the workspace `.env` (which
+          # carries container-side hostnames) and failed 300 lines later as
+          # `getaddrinfo EAI_AGAIN supabase-kong` inside globalSetup.
+          env | grep -E '^(CI|SKIP_WEBSERVER|BASE_URL|WORKERS|AUTH_SETUP_JOB)=|^(PLAYWRIGHT_|NEXT_PUBLIC_|SUPABASE_|TEST_USER_)' > /tmp/pw.env
+
+          # Fail on a missing variable rather than letting dotenv silently substitute
+          # `.env`. The typo above was cheap; the SILENT FALLBACK is what made it cost
+          # a full 26-job run to diagnose.
+          missing=""
+          for k in NEXT_PUBLIC_SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_SUPABASE_ANON_KEY; do
+            grep -q "^$k=" /tmp/pw.env || missing="$missing $k"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::not forwarding to the test container:$missing — the suite would fall back to .env and fail inside globalSetup with a DNS error"
+            exit 1
+          fi
+          docker run --rm --network=host \
+            --user "$(id -u):$(id -g)" \
+            --env-file /tmp/pw.env \
+            -e HOME=/tmp \
+            -v "$PWD":/work -w /work \
+            mcr.microsoft.com/playwright:v1.55.0-noble \
+            ./node_modules/.bin/playwright test \
+              --project=${{ matrix.project }} --shard=${{ matrix.shard }} \
+              $WORKERS_FLAG \
+              --grep-invert='@hosted' \
+              --reporter=line,json || true
         env:
           CI: 'true'
           SKIP_WEBSERVER: 'true'
