@@ -90,6 +90,7 @@
     "test:e2e:report": "playwright show-report",
     "test:e2e:live": "./scripts/e2e-live-acceptance.sh",
     "test:suite": "./scripts/test-suite.sh",
+    "check:stale-blockers": "node scripts/ci/check-stale-blockers.mjs",
     "test:scripts": "node --test --test-reporter=spec scripts/__tests__/*.test.js scripts/__tests__/contract/*.test.js scripts/__tests__/integration/*.test.js",
     "test:rls": "vitest run --config vitest.rls.config.ts",
     "test:quick": "pnpm run type-check && pnpm run lint && pnpm test -- --run",
