@@ -116,7 +116,6 @@ export const paypalConfig = {
   // would all bill whatever this points at. `products.paypal_plan_id` already
   // exists for the per-SKU value; the fix mirrors create-stripe-subscription's
   // resolver. Not fixed in this PR only to keep it reviewable.
-  subscriptionPlanId: process.env.NEXT_PUBLIC_PAYPAL_PLAN_ID || '',
   clientSecret: process.env.PAYPAL_CLIENT_SECRET || '', // Server-side only
   webhookId: process.env.PAYPAL_WEBHOOK_ID || '', // Server-side only
 } as const;

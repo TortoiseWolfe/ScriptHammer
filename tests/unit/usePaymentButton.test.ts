@@ -44,9 +44,10 @@ vi.mock('@/lib/payments/offline-queue', () => ({
 // server-side from products.stripe_price_id (#772). Kept as an empty object so
 // the module mock still supplies the export the hook's module graph expects.
 const mockStripeConfig = vi.hoisted(() => ({}));
-const mockPaypalConfig = vi.hoisted(() => ({
-  subscriptionPlanId: 'P-test-plan-123',
-}));
+// Empty for the same reason as mockStripeConfig above: the only field the hook
+// read was subscriptionPlanId, and that is gone (#774). The PayPal plan is now
+// resolved server-side from products.paypal_plan_id.
+const mockPaypalConfig = vi.hoisted(() => ({}));
 vi.mock('@/config/payment', () => ({
   stripeConfig: mockStripeConfig,
   paypalConfig: mockPaypalConfig,
@@ -70,7 +71,6 @@ describe('usePaymentButton', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPaypalConfig.subscriptionPlanId = 'P-test-plan-123';
   });
 
   it('should initialize with default state', () => {
@@ -207,23 +207,27 @@ describe('usePaymentButton', () => {
       .calls[0][1];
     expect(call.createOrder).toBeUndefined();
     await call.createSubscription();
+    // The SKU, not a plan id — the server resolves the plan (#774).
     expect(createPayPalSubscription).toHaveBeenCalledWith(
-      'P-test-plan-123',
+      recurringOptions.productId,
       'test@example.com'
     );
     expect(result.current.error).toBeNull();
   });
 
-  it('errors clearly for recurring PayPal without a configured plan id', async () => {
-    mockPaypalConfig.subscriptionPlanId = '';
-    const { result } = renderHook(() => usePaymentButton(recurringOptions));
+  it('errors clearly for recurring PayPal without a productId', async () => {
+    // The failure mode moved: it used to be "the one global plan id is unset",
+    // now it is "you did not name a SKU". Same shape as the Stripe lane (#772).
+    const { result } = renderHook(() =>
+      usePaymentButton({ ...recurringOptions, productId: undefined })
+    );
 
     await act(async () => {
       await result.current.mountPayPalButtons('container-id');
     });
 
     expect(renderPayPalButtons).not.toHaveBeenCalled();
-    expect(result.current.error?.message).toMatch(/NEXT_PUBLIC_PAYPAL_PLAN_ID/);
+    expect(result.current.error?.message).toMatch(/productId/);
   });
 
   it('still mounts PayPal buttons for one_time payments', async () => {
