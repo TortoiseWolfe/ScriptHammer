@@ -500,6 +500,32 @@
   box-shadow: var(--sh-groove);
 }
 
+/* valentine: lift `base-300` so body text clears WCAG AA (#805).
+ *
+ * DaisyUI's stock `valentine` puts `base-content` (#c5005a) on `base-300`
+ * (#f9cbe5) at **4.17:1** — below the 4.5 floor for normal body text. It was the
+ * only enabled theme of the 35 that failed AA, and it failed unnoticed because
+ * neither existing gate looks here: `color-contrast.spec.ts` sweeps AAA but only
+ * the two house themes, and `embed-theme-contrast.spec.ts` covers all 34 but only
+ * the Disqus embed's pairs. #422 is what finally gave every theme a verdict.
+ *
+ * Lifting the surface rather than darkening the text keeps valentine's identity —
+ * the pink IS the theme — and preserves the surface hierarchy, which a naive fix
+ * inverts:
+ *
+ *   base-100  #fcf2f8   5.45:1
+ *   base-200  #f9e4f0   4.94:1
+ *   base-300  #fbd9ec   4.61:1   <- was #f9cbe5 at 4.17
+ *
+ * Still descending, so base-300 remains the deepest surface.
+ *
+ * Re-measure with `node scripts/theme-contrast/generate.mjs` after any change here;
+ * `theme-contrast-is-current.test.js` fails until the committed data is regenerated,
+ * which is the intended behaviour rather than an obstacle. */
+[data-theme='valentine'] {
+  --color-base-300: #fbd9ec;
+}
+
 /* ScriptHammer visual polish — scoped to custom themes only.
  * Stock DaisyUI themes keep their original look untouched.
  *
