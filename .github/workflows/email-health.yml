@@ -13,10 +13,17 @@
 # Same shape as the auth-config drift gate (#350): ask the live provider what is
 # actually true, compare it against what we require, fail when they diverge.
 #
-# MODE: starts at `annotate` (report, don't fail) because the pre-fix bounce
-# backlog is still inside the 7-day window and would red every run. Flip
-# EMAIL_HEALTH_MODE to `block` once the window has rolled past 2026-08-02 —
-# the same annotate-then-block path FLAKY_GATE_MODE took for #300.
+# MODE: `block` since 2026-08-18 (#572). It started at `annotate` because the
+# pre-fix bounce backlog was still inside the 7-day window and would have redded
+# every run; that window rolled past on 2026-08-02 and the flip was simply never
+# made, so for sixteen days the gate reported a bounce problem without failing on
+# one — the annotate-forever ending that #300 is still living.
+#
+# Measured before flipping: the last 20 runs are 19 green / 1 red, and today's
+# reports 0 bounces, so `block` does not hand anyone a permanently red workflow —
+# which is the state that teaches people to stop reading a suite.
+#
+# `workflow_dispatch` can still pass `annotate` for a one-off investigation.
 #
 # Read-only: it only ever GETs /emails. It never deletes suppressions or sends.
 
@@ -42,7 +49,7 @@ on:
       mode:
         description: 'annotate (report only) or block (fail over threshold)'
         required: false
-        default: 'annotate'
+        default: 'block'
       window_days:
         description: 'Days of send history to measure'
         required: false
@@ -87,7 +94,7 @@ jobs:
           # write access, but a ${{ }} expansion inside a shell line is a script
           # injection surface regardless of who can reach it, and env costs
           # nothing. See the GitHub workflow-injection guidance.
-          EMAIL_HEALTH_MODE: ${{ github.event.inputs.mode || 'annotate' }}
+          EMAIL_HEALTH_MODE: ${{ github.event.inputs.mode || 'block' }}
           WINDOW_DAYS: ${{ github.event.inputs.window_days || '7' }}
         run: |
           # No pnpm install: the script uses only built-in fetch, so there is
