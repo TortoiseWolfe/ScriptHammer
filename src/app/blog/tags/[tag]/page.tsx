@@ -131,7 +131,9 @@ export default async function TagPage({ params }: PageProps) {
       {/* Header */}
       <div className="mb-12 text-center">
         <div className="mb-4 flex items-center justify-center gap-2">
-          <h1 className="text-3xl font-bold">Posts tagged</h1>
+          <h1 className="font-display text-3xl leading-[1.05] tracking-[-0.025em]">
+            Posts tagged
+          </h1>
           <TagBadge
             tag={properTag}
             size="lg"
@@ -154,7 +156,7 @@ export default async function TagPage({ params }: PageProps) {
               ))}
             </div>
           ) : (
-            <div className="py-12 text-center">
+            <div className="sh-well bg-base-100 rounded-box px-6 py-12 text-center">
               <p className="text-base-content/85 text-xl">
                 No posts found with this tag.
               </p>
@@ -166,35 +168,31 @@ export default async function TagPage({ params }: PageProps) {
         <aside className="lg:col-span-1">
           {/* Related Tags */}
           {relatedTags.length > 0 && (
-            <div className="card bg-base-200 mb-6">
-              <div className="card-body">
-                <h2 className="card-title text-lg">Related Tags</h2>
-                <div className="flex flex-wrap gap-2">
-                  {relatedTags.map((tag) => (
-                    <TagBadge key={tag} tag={tag} size="sm" />
-                  ))}
-                </div>
+            <div className="sh-plate bg-base-100 rounded-box mb-6 p-5">
+              <h2 className="font-display mb-3 text-lg">Related Tags</h2>
+              <div className="flex flex-wrap gap-2">
+                {relatedTags.map((tag) => (
+                  <TagBadge key={tag} tag={tag} size="sm" />
+                ))}
               </div>
             </div>
           )}
 
           {/* Browse All Tags */}
-          <div className="card bg-base-200 mb-6">
-            <div className="card-body">
-              <h2 className="card-title text-lg">Browse Tags</h2>
-              <Link href="/blog/tags" className="btn btn-sm btn-primary">
-                View All Tags
-              </Link>
-            </div>
+          <div className="sh-plate bg-base-100 rounded-box mb-6 p-5">
+            <h2 className="font-display mb-3 text-lg">Browse Tags</h2>
+            {/* `sh-btn` carries min-height 2.75rem. The `btn-sm` it replaces
+                rendered ~32px, under the 44px floor this repo requires. */}
+            <Link href="/blog/tags" className="sh-btn sh-btn-primary">
+              View All Tags
+            </Link>
           </div>
 
           {/* Back to Blog */}
-          <div className="card bg-base-200">
-            <div className="card-body">
-              <Link href="/blog" className="btn btn-sm btn-outline">
-                ← Back to Blog
-              </Link>
-            </div>
+          <div className="sh-plate bg-base-100 rounded-box p-5">
+            <Link href="/blog" className="sh-btn sh-btn-ghost w-full">
+              ← Back to Blog
+            </Link>
           </div>
         </aside>
       </div>

@@ -62,7 +62,7 @@ export default function SEOAnalysisPanel({
           <div className="flex items-center justify-between gap-2 sm:justify-end">
             <button
               onClick={copyFeedback}
-              className="btn btn-xs sm:btn-sm btn-ghost"
+              className="sh-btn sh-btn-ghost !px-4 !text-[11px]"
               title="Copy SEO feedback"
             >
               {/* Decorative (#385): the word beside it changes too. */}
@@ -229,7 +229,10 @@ export default function SEOAnalysisPanel({
         {/* Toggle Button if provided */}
         {onToggle && (
           <div className="card-actions mt-4 justify-end">
-            <button onClick={onToggle} className="btn btn-sm btn-ghost">
+            <button
+              onClick={onToggle}
+              className="sh-btn sh-btn-ghost !px-4 !text-[11px]"
+            >
               {expanded ? 'Hide Details' : 'Show Details'}
             </button>
           </div>

@@ -195,7 +195,7 @@ export default function BlogPostViewer({
                   setActiveId(item.id);
                 }
               }}
-              className={`block py-1 transition-all duration-200 ${
+              className={`flex min-h-11 items-center py-1 transition-all duration-200 ${
                 isActive ? 'text-primary font-bold' : 'hover:text-primary'
               } ${
                 item.level === 1
@@ -237,7 +237,7 @@ export default function BlogPostViewer({
       {/* Header - Mobile-first spacing (PRP-017 T038) */}
       <header className="mb-6 sm:mb-8 md:mb-10">
         {/* Title */}
-        <h1 className="mb-4 text-3xl leading-tight font-bold sm:mb-6 sm:text-4xl md:text-5xl lg:text-6xl">
+        <h1 className="font-display mb-4 text-3xl leading-[1.05] tracking-[-0.025em] sm:mb-6 sm:text-4xl md:text-5xl lg:text-6xl">
           {post.title}
         </h1>
 
@@ -272,7 +272,7 @@ export default function BlogPostViewer({
         {seoScore !== undefined && (
           <button
             onClick={onSeoClick}
-            className={`inline-flex min-h-8 min-w-8 items-center justify-center gap-1 rounded-lg border-none px-2 py-1 text-xs font-medium shadow-md ${
+            className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-lg border-none px-2 py-1 text-xs font-medium shadow-md ${
               seoScore >= 80
                 ? 'bg-success text-success-content'
                 : seoScore >= 60
@@ -302,7 +302,7 @@ export default function BlogPostViewer({
         {showToc && toc.length > 0 && (
           <div className="relative">
             <details className="block">
-              <summary className="text-base-content/80 hover:text-base-content/80 bg-base-100 inline-flex min-h-8 min-w-8 cursor-pointer items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-medium shadow-md transition-colors">
+              <summary className="text-base-content/80 hover:text-base-content/80 bg-base-100 inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-medium shadow-md transition-colors">
                 <span className="inline-flex items-center gap-1">
                   <svg
                     className="h-4 w-4"
@@ -350,7 +350,12 @@ export default function BlogPostViewer({
       )}
 
       {/* Main Content */}
-      <article className="space-y-3 text-xs leading-relaxed sm:space-y-4 sm:text-sm md:space-y-6 md:text-base lg:space-y-8 lg:text-lg">
+      {/* `sh-doc` (globals.css) is the same treatment `/docs/[slug]` uses (#433):
+          code in recessed panels, a real table grid, and a type scale it owns. It
+          replaces the responsive `text-xs -> lg:text-lg` chain, which set a size
+          for prose that sh-doc now sets per element. Tables became worth styling
+          here only once #421 taught the blog's markdown processor to emit them. */}
+      <article className="sh-doc max-w-none">
         {htmlContent ? (
           <BlogContent htmlContent={htmlContent} />
         ) : (

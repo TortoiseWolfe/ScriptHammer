@@ -108,11 +108,13 @@ export default async function SEODashboardPage() {
 
       {/* Overall Stats */}
       {avgScores && (
-        <div className="card bg-base-200 mb-8">
-          <div className="card-body">
-            <h2 className="card-title mb-4">Overall Blog SEO Performance</h2>
+        <div className="card sh-plate bg-base-100 rounded-box mb-8">
+          <div className="p-6">
+            <h2 className="font-display mb-4 text-xl">
+              Overall Blog SEO Performance
+            </h2>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:grid-cols-7">
-              <div className="stat bg-base-100 rounded">
+              <div className="stat sh-well bg-base-100 rounded-box">
                 <div className="stat-title text-xs">Overall</div>
                 <div
                   className={`stat-value text-lg ${seoAnalyzer.getScoreTextClass(avgScores.overall)}`}
@@ -123,7 +125,7 @@ export default async function SEODashboardPage() {
                   {seoAnalyzer.getScoreLabel(avgScores.overall)}
                 </div>
               </div>
-              <div className="stat bg-base-100 rounded">
+              <div className="stat sh-well bg-base-100 rounded-box">
                 <div className="stat-title text-xs">Titles</div>
                 <div
                   className={`stat-value text-lg ${seoAnalyzer.getScoreTextClass(avgScores.title)}`}
@@ -131,7 +133,7 @@ export default async function SEODashboardPage() {
                   {avgScores.title}%
                 </div>
               </div>
-              <div className="stat bg-base-100 rounded">
+              <div className="stat sh-well bg-base-100 rounded-box">
                 <div className="stat-title text-xs">Descriptions</div>
                 <div
                   className={`stat-value text-lg ${seoAnalyzer.getScoreTextClass(avgScores.description)}`}
@@ -139,7 +141,7 @@ export default async function SEODashboardPage() {
                   {avgScores.description}%
                 </div>
               </div>
-              <div className="stat bg-base-100 rounded">
+              <div className="stat sh-well bg-base-100 rounded-box">
                 <div className="stat-title text-xs">Content</div>
                 <div
                   className={`stat-value text-lg ${seoAnalyzer.getScoreTextClass(avgScores.content)}`}
@@ -147,7 +149,7 @@ export default async function SEODashboardPage() {
                   {avgScores.content}%
                 </div>
               </div>
-              <div className="stat bg-base-100 rounded">
+              <div className="stat sh-well bg-base-100 rounded-box">
                 <div className="stat-title text-xs">Keywords</div>
                 <div
                   className={`stat-value text-lg ${seoAnalyzer.getScoreTextClass(avgScores.keywords)}`}
@@ -155,7 +157,7 @@ export default async function SEODashboardPage() {
                   {avgScores.keywords}%
                 </div>
               </div>
-              <div className="stat bg-base-100 rounded">
+              <div className="stat sh-well bg-base-100 rounded-box">
                 <div className="stat-title text-xs">Readability</div>
                 <div
                   className={`stat-value text-lg ${seoAnalyzer.getScoreTextClass(avgScores.readability)}`}
@@ -163,7 +165,7 @@ export default async function SEODashboardPage() {
                   {avgScores.readability}%
                 </div>
               </div>
-              <div className="stat bg-base-100 rounded">
+              <div className="stat sh-well bg-base-100 rounded-box">
                 <div className="stat-title text-xs">Technical</div>
                 <div
                   className={`stat-value text-lg ${seoAnalyzer.getScoreTextClass(avgScores.technical)}`}
@@ -188,8 +190,11 @@ export default async function SEODashboardPage() {
               // descendant inherited the overrun — 493 elements past a 320px
               // viewport, all of it hidden by the layout frame's clip.
               // Measured: adding min-width:0 to these cards takes that 493 to 4.
-              <div key={post.id} className="card bg-base-100 min-w-0 shadow-lg">
-                <div className="card-body">
+              <div
+                key={post.id}
+                className="card sh-plate bg-base-100 rounded-box min-w-0"
+              >
+                <div className="p-6">
                   {/* The remaining 4 were this row: an unshrinkable text block
                       pushed the badge ~3px past the edge. The text shrinks,
                       the badge does not. */}
@@ -208,7 +213,7 @@ export default async function SEODashboardPage() {
                       </p>
                     </div>
                     <div
-                      className={`badge badge-lg shrink-0 ${seoAnalyzer.getScoreBadgeClass(analysis.score.overall)}`}
+                      className={`badge shrink-0 px-3 py-3 font-mono text-xs tracking-[.1em] ${seoAnalyzer.getScoreBadgeClass(analysis.score.overall)}`}
                     >
                       SEO: {analysis.score.overall}%
                     </div>
@@ -216,10 +221,10 @@ export default async function SEODashboardPage() {
 
                   <SEOAnalysisPanel post={post} expanded={true} />
 
-                  <div className="card-actions mt-4 justify-end">
+                  <div className="mt-4 flex justify-end">
                     <a
                       href={`/blog/${post.slug}`}
-                      className="btn btn-ghost btn-sm"
+                      className="sh-btn sh-btn-ghost"
                     >
                       View Post
                     </a>
@@ -236,9 +241,11 @@ export default async function SEODashboardPage() {
       </div>
 
       {/* SEO Best Practices */}
-      <div className="card bg-base-200 mt-12">
-        <div className="card-body">
-          <h2 className="card-title mb-4">SEO Best Practices Checklist</h2>
+      <div className="card sh-plate bg-base-100 rounded-box mt-12">
+        <div className="p-6">
+          <h2 className="font-display mb-4 text-xl">
+            SEO Best Practices Checklist
+          </h2>
           <div className="grid gap-6 md:grid-cols-2">
             <div>
               <h3 className="text-primary mb-2 font-semibold">
