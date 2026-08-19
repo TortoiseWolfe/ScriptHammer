@@ -117,7 +117,7 @@ function hasAptTimeoutsAbove(lines, index) {
   return false;
 }
 
-describe('playwright install survives a bad apt mirror (#762, #798)', () => {
+describe('playwright install survives a bad apt mirror (#762, #798, #829)', () => {
   it('finds install call sites at all', () => {
     // Without this every assertion below passes vacuously the moment the command is
     // renamed or moved into a composite action — the #396 shape.
@@ -168,20 +168,52 @@ describe('playwright install survives a bad apt mirror (#762, #798)', () => {
     );
   });
 
-  it('the required lane fails loudly instead of falling through', () => {
-    // If all three attempts fail the loop simply ends, and without an explicit
-    // failure the test step launches browsers that were never installed — which is
-    // how an install outage gets diagnosed as a test bug.
+  it('the required lane does not install Playwright at all any more (#829)', () => {
+    // This assertion used to require the OPPOSITE: that e2e-local.yml fail loudly when
+    // all three install attempts failed. That guarded a mitigation. The mitigation is
+    // gone because the install is gone — the lane runs the suite from an image that
+    // already ships the browsers, so there is nothing to download, retry or bound.
+    //
+    // Kept as an assertion rather than deleted, because a future edit re-adding
+    // `playwright install` here would silently re-introduce the entire #809/#819
+    // failure class: two third parties, 24 times per run.
     const yaml = fs.readFileSync(
       path.join(WORKFLOW_DIR, 'e2e-local.yml'),
       'utf8'
     );
 
-    assert.match(
+    assert.doesNotMatch(
       yaml,
-      /playwright install did not succeed in 3 attempts/,
-      'e2e-local.yml must fail explicitly when every install attempt fails, rather ' +
-        'than continuing into the test step with no browsers'
+      /playwright install/,
+      'e2e-local.yml installs Playwright again. It should run the suite from ' +
+        'mcr.microsoft.com/playwright, which already has the browsers — installing ' +
+        'them on the runner cost a median 11.6 min per shard and failed 17 of 25 ' +
+        'shards on 2026-08-19 (#819, #829).'
+    );
+  });
+
+  it('runs from an image whose tag matches the installed Playwright (#829)', () => {
+    // A drifted tag is the failure mode Dockerfile.e2e already warns about: Playwright
+    // refuses to drive browsers built for a different release, and the error points
+    // nowhere near the cause.
+    //
+    // Compared against the RESOLVED version, never the `^1.55.0` range in package.json.
+    // A range would let a lockfile bump pass this check while the image stayed behind —
+    // the same staleness that made RETAIN_GENERATIONS misleading in #751.
+    const yaml = fs.readFileSync(
+      path.join(WORKFLOW_DIR, 'e2e-local.yml'),
+      'utf8'
+    );
+    const tag = /mcr\.microsoft\.com\/playwright:v([\d.]+)-/.exec(yaml);
+    assert.ok(tag, 'e2e-local.yml no longer pins a Playwright image tag');
+
+    const resolved = require('@playwright/test/package.json').version;
+    assert.strictEqual(
+      tag[1],
+      resolved,
+      `the workflow runs mcr.microsoft.com/playwright:v${tag[1]} but the repo resolves ` +
+        `@playwright/test to ${resolved}. Playwright refuses to drive browsers from a ` +
+        `different release; bump the image tag with the package.`
     );
   });
 
