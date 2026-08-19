@@ -153,8 +153,36 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .eq('id', intentIdA)
         .select();
 
-      // USING(false) means zero rows match the UPDATE filter
-      expect(data).toHaveLength(0);
+      // TWO layers can stop this, and asserting the wrong one is how this test
+      // broke. Until #565, `authenticated` HELD the UPDATE grant and the
+      // "Payment intents are immutable" policy (`USING (false)`) matched zero
+      // rows, so PostgREST returned `[]`. #565 revoked the grant, so Postgres now
+      // refuses with 42501 BEFORE RLS is consulted and `data` is null — and
+      // `expect(null).toHaveLength(0)` throws.
+      //
+      // The guarantee did not weaken, it strengthened. So assert the PROPERTY —
+      // the row does not change — and accept either refusal, rather than pinning
+      // the mechanism that happens to be in force today.
+      if (error) {
+        expect(error.code).toBe('42501'); // privilege revoked (#565)
+      } else {
+        expect(data).toHaveLength(0); // privilege held, RLS matched nothing
+      }
+
+      // The assertion that actually matters, and the one neither branch above can
+      // fake: read the row back with the service role and require it untouched.
+      // Checking `!== 9999` would pass on a null row, which is the shape of a test
+      // that cannot fail.
+      const svc = createServiceClient();
+      const { data: after, error: readError } = await svc
+        .from('payment_intents')
+        .select('amount')
+        .eq('id', intentIdA)
+        .single();
+
+      expect(readError).toBeNull();
+      expect(after).not.toBeNull();
+      expect(after!.amount).toBe(1000);
     });
 
     it('payment intents cannot be deleted by users', async () => {
