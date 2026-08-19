@@ -92,26 +92,25 @@ export const metadata: Metadata = {
     'Cache-Control': 'no-cache, no-store, must-revalidate',
     Pragma: 'no-cache',
     Expires: '0',
-    // Content Security Policy via meta tag (for static export compatibility)
-    // Note: HTTP headers are preferred but not available with static export
-    'Content-Security-Policy': [
-      "default-src 'self'",
-      // challenges.cloudflare.com: the Turnstile sign-up CAPTCHA (#353). It
-      // needs all three of script-src (the api.js loader), frame-src (the
-      // challenge runs in an iframe) and connect-src (the widget calls home).
-      // Miss any one and the widget fails SILENTLY in prod — the CSP ships as a
-      // meta tag here because static export has no response headers.
-      "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://*.google-analytics.com https://challenges.cloudflare.com",
-      "style-src 'self' 'unsafe-inline' https://unpkg.com",
-      "img-src 'self' data: https: blob:",
-      "font-src 'self' data:",
-      "connect-src 'self' https://www.googleapis.com https://*.google-analytics.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.supabase.co wss://*.supabase.co https://*.basemaps.cartocdn.com https://api.web3forms.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://challenges.cloudflare.com",
-      "frame-src 'self' https://www.google.com https://challenges.cloudflare.com",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self' https://api.web3forms.com",
-      'upgrade-insecure-requests',
-    ].join('; '),
+    // NO Content-Security-Policy HERE, deliberately (#393).
+    //
+    // It used to live in this object, and `metadata.other` renders
+    // `<meta name="...">`. A CSP delivered as `<meta name>` is INERT — browsers
+    // honour only `<meta http-equiv>` or the HTTP header. So for the whole life
+    // of that entry the policy was authored, reviewed and maintained, and never
+    // once enforced: a control whose presence was asserted and whose effect
+    // never was.
+    //
+    // The policy is now a real response header, set by a Cloudflare Response
+    // Header Transform Rule on the zone — the same mechanism #635 used for
+    // cache-control, and available for the same reason (Cloudflare fronts
+    // GitHub Pages, which cannot set headers itself).
+    //
+    // IT LIVES IN A DASHBOARD, NOT IN THIS TREE, exactly like the cache rules.
+    // Delete the rule, rotate the token or move the zone and the policy silently
+    // disappears with nothing here to notice — which is why
+    // `scripts/ci/check-csp-header.mjs` asserts it against LIVE production in
+    // smoke.yml. That check is the only thing that can see the cure.
   },
 };
 

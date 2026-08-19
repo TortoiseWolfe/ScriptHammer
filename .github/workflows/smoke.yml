@@ -103,6 +103,22 @@ jobs:
           SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
         run: node scripts/ci/check-cache-headers.mjs "${SITE:-https://scripthammer.com}"
 
+      # The third dashboard-resident control, alongside the two above (#393).
+      #
+      # The CSP was authored in layout.tsx under `metadata.other`, which renders
+      # `<meta name="Content-Security-Policy">` — inert, because browsers honour
+      # only `<meta http-equiv>` or the header. Ten directives, maintained for
+      # months, enforced never. It is now a real header set by a Cloudflare
+      # Transform Rule, which means it lives in a dashboard and can vanish exactly
+      # as silently as the cache rules could.
+      #
+      # Nothing else can see it: the CSP is not in the built output any more, so
+      # no unit test or build check can tell whether production has one.
+      - name: CSP is still delivered as a real header (Cloudflare rule still in place)
+        env:
+          SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
+        run: node scripts/ci/check-csp-header.mjs "${SITE:-https://scripthammer.com}"
+
       # Runs BEFORE the browser suite: it is cheap, and if production is pointed at
       # the wrong backend every test below is meaningless.
       #
