@@ -115,7 +115,14 @@ export function readThemes(root = process.cwd()) {
 
     // DaisyUI ships `[data-theme=light]{...}`; globals.css declares the house themes
     // through `@plugin "daisyui/theme" { name: 'scripthammer-light'; --color-…: … }`.
-    for (const m of css.matchAll(/\[data-theme=([\w-]+)\]\s*\{([^}]*)\}/g)) {
+    // Quotes are OPTIONAL: `[data-theme=x]` and `[data-theme='x']` are the same
+    // selector, and PRETTIER REWRITES the bare form into the quoted one. A parser that
+    // accepted only the bare form silently ignored a real override in globals.css — the
+    // CSS was correct, prettier normalised it, and the regenerated data kept reporting
+    // the OLD ratio with no error anywhere (#805).
+    for (const m of css.matchAll(
+      /\[data-theme=['\"]?([\w-]+)['\"]?\]\s*\{([^}]*)\}/g
+    )) {
       addTokens(themes, m[1], m[2]);
     }
     for (const m of css.matchAll(/@plugin\s+"daisyui\/theme"\s*\{([^}]*)\}/g)) {

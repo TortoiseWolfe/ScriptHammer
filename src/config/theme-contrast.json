@@ -121,8 +121,8 @@
   },
   {
     "theme": "valentine",
-    "level": "fails",
-    "textRatio": 4.17,
+    "level": "AA",
+    "textRatio": 4.61,
     "textPair": "base-content on base-300",
     "uiRatio": 3.59,
     "uiPair": "error-content on error",
