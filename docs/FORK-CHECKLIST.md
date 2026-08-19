@@ -84,7 +84,7 @@ The contact form uses Web3Forms as primary with EmailJS as backup:
 
 - Run the [verification checklist in `docs/FORKING.md`](FORKING.md#verification-checklist) (12 items)
 - All E2E tests pass: `docker compose exec scripthammer pnpm exec playwright test`
-- Production build succeeds: `docker compose exec scripthammer pnpm run build`
+- Production build succeeds: `docker compose run --rm builder pnpm run build`
 
 ---
 

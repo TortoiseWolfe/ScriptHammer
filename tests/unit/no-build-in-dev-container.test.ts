@@ -32,10 +32,26 @@
  * instructions. Prose does not fail a build. This does, in `Test (20.x)`, which
  * is a required check.
  *
+ * ## Documentation is scanned too, but only where it INSTRUCTS (#835)
+ *
+ * The scan above deliberately skips `docs/`, because prose describing this
+ * anti-pattern is documentation of it rather than an instance. That reasoning is
+ * right and is kept — but it left a second hole: prose that TELLS a reader to run
+ * the command is an instance, and 13 of them survived across five live documents.
+ * One was **serving in production** (`public/blog/auto-configuration-system.md`,
+ * `featured: true`), so a visitor following our own onboarding post broke their dev
+ * server. `docs/FORKING.md` had it twice using the FORKER's service name
+ * (`exec myproject`), which is why greps for `exec scripthammer` never found it.
+ *
+ * So documents are scanned with the SAME regexes and two extra exclusions: a line
+ * that negates the command is a description, and archived spec directories are
+ * history rather than guidance.
+ *
  * @module tests/unit/no-build-in-dev-container.test
  */
 import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { join, relative } from 'node:path';
 
 const ROOT = process.cwd();
@@ -65,9 +81,18 @@ const EXEC_RE = new RegExp(['docker', '-?\\s*compose\\s+', 'exec'].join(''));
  * `build-storybook`, `build:analyze` and `build-inventory.py` out: Storybook
  * writes to `storybook-static/` and owns no distDir, so running it in the dev
  * container is not this defect.
+ *
+ * THE BACKTICK IS LOAD-BEARING (#835). Markdown inline code closes with one, and
+ * the occurrence that was serving in production read
+ * "…after running `docker compose exec … pnpm run build` - they contain…". Without
+ * a backtick in this set the documentation scan below matches fenced blocks and
+ * silently misses every inline one — which is the class the live blog post was in.
+ * Caught by mutation-testing the scan, not by reading it.
  */
 const BUILD_RE = new RegExp(
-  ['(?:pnpm|npm|yarn)\\s+(?:run\\s+)?', 'build', '(?=[\\s\'"&|;]|$)'].join('') +
+  ['(?:pnpm|npm|yarn)\\s+(?:run\\s+)?', 'build', '(?=[\\s\'"&|;`]|$)'].join(
+    ''
+  ) +
     '|' +
     ['next', '\\s+', 'build'].join('')
 );
@@ -147,8 +172,71 @@ function scan(): { hits: Hit[]; correct: Hit[]; filesRead: number } {
   return { hits, correct, filesRead };
 }
 
+/**
+ * A line that states the rule rather than issuing it.
+ *
+ * `docs/superpowers/plans/2026-07-16-atlas-as-default.md` says "Never `docker compose
+ * exec …`". Flagging that would delete the one place that gets it right — the same
+ * repair this file's own comments warn against.
+ */
+const DESCRIBES_RE =
+  /\b(never|do not|don't|instead of|wrong|forbidden|rather than)\b/i;
+
+/** Historical spec records: what was done then, not what to do now. */
+const DOC_ARCHIVE_RE = /^(docs\/specs|specs|features)\//;
+
+/**
+ * Tracked markdown only. `out/`, `out-basepath/` and `storybook-static/` are build
+ * outputs carrying copies of `public/blog`, and scanning them triples every count.
+ */
+function scanDocs(): { hits: Hit[]; filesRead: number } {
+  let list: string[];
+  try {
+    list = execFileSync('git', ['ls-files', '*.md'], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      maxBuffer: 32e6,
+    })
+      .trim()
+      .split('\n')
+      .filter(Boolean);
+  } catch {
+    return { hits: [], filesRead: 0 };
+  }
+
+  const hits: Hit[] = [];
+  let filesRead = 0;
+  for (const rel of list) {
+    const full = join(ROOT, rel);
+    if (!existsSync(full)) continue;
+    let content: string;
+    try {
+      content = readFileSync(full, 'utf8');
+    } catch {
+      continue;
+    }
+    filesRead++;
+    if (DOC_ARCHIVE_RE.test(rel)) continue;
+    content.split('\n').forEach((line, i) => {
+      if (DESCRIBES_RE.test(line)) return;
+      for (const segment of line.split(/&&|\|\||;/)) {
+        if (EXEC_RE.test(segment) && BUILD_RE.test(segment)) {
+          hits.push({
+            file: rel,
+            line: i + 1,
+            text: segment.trim().slice(0, 140),
+          });
+          break;
+        }
+      }
+    });
+  }
+  return { hits, filesRead };
+}
+
 describe('production builds never run in the dev container (#293, #508)', () => {
   const { hits, correct, filesRead } = scan();
+  const docs = scanDocs();
 
   it('actually reads the scripts it claims to scan', () => {
     // A scan that reads nothing reports zero offences and reads as a pass —
@@ -173,6 +261,54 @@ describe('production builds never run in the dev container (#293, #508)', () => 
         'that `next dev` is serving from and corrupts both (#293, #508).\n' +
         'Use the builder service, which has its own .next volume:\n\n' +
         '    docker compose run --rm builder pnpm build\n'
+    ).toEqual([]);
+  });
+
+  it('actually reads the documents it claims to scan', () => {
+    // Non-vacuity. "No document instructs it" is trivially true of an empty file
+    // list, a broken `git ls-files`, or a glob that matched nothing.
+    expect(
+      docs.filesRead,
+      'the documentation scan read almost nothing, so its zero offences prove nothing'
+    ).toBeGreaterThan(50);
+  });
+
+  it('no document tells a reader to build in the dev container (#835)', () => {
+    expect(
+      docs.hits.map((h) => `${h.file}:${h.line}  ${h.text}`),
+      'These documents INSTRUCT a reader to run the command that clobbers the ' +
+        '.next `next dev` is serving (#293). One of them was serving in ' +
+        'production. Prose that DESCRIBES the anti-pattern is fine — negate it ' +
+        '("never", "instead of") and this scan skips the line.\n\n' +
+        '    docker compose run --rm builder pnpm build\n'
+    ).toEqual([]);
+  });
+
+  it('the SERVED blog data is regenerated, not just its markdown (#835)', () => {
+    // `src/lib/blog/blog-data.json` is TRACKED and is what the blog renders from.
+    // It held all four occurrences from the post above, so fixing the markdown
+    // without running `generate:blog` leaves production serving the command while
+    // the source reads correct.
+    const generated = join(ROOT, 'src', 'lib', 'blog', 'blog-data.json');
+    if (!existsSync(generated)) return;
+    const body = readFileSync(generated, 'utf8');
+
+    expect(
+      body.length,
+      'blog-data.json is too small to contain the posts, so scanning it proves nothing'
+    ).toBeGreaterThan(10_000);
+
+    const offences = body
+      .split(/\\n|","/)
+      .filter(
+        (seg) =>
+          EXEC_RE.test(seg) && BUILD_RE.test(seg) && !DESCRIBES_RE.test(seg)
+      );
+
+    expect(
+      offences.map((o) => o.trim().slice(0, 120)),
+      'the generated blog data still carries the #293 command, so the live site ' +
+        'serves it regardless of the markdown. Run `pnpm run generate:blog`.'
     ).toEqual([]);
   });
 });

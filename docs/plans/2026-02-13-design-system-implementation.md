@@ -405,7 +405,7 @@ Note: Exact DaisyUI v5 CSS custom property names may differ. Verify against docs
 
 **Step 3: Verify the theme renders**
 
-Run: `docker compose exec scripthammer pnpm run build`
+Run: `docker compose run --rm builder pnpm run build`
 Expected: Clean build with no CSS errors
 
 **Step 4: Commit**
@@ -458,7 +458,7 @@ Check that primary, secondary, and accent colors meet 4.5:1 contrast ratio again
 
 **Step 3: Verify build**
 
-Run: `docker compose exec scripthammer pnpm run build`
+Run: `docker compose run --rm builder pnpm run build`
 Expected: Clean build
 
 **Step 4: Commit**
@@ -524,7 +524,7 @@ The existing CSS has selectors like `[data-theme='dark'] .maplibregl-ctrl-group`
 
 **Step 2: Verify build**
 
-Run: `docker compose exec scripthammer pnpm run build`
+Run: `docker compose run --rm builder pnpm run build`
 
 **Step 3: Commit**
 
