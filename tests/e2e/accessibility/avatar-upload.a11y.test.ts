@@ -19,6 +19,82 @@ import { test, expect } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
 // Auth comes from storageState (setup project) - no sign-in needed
+
+/**
+ * Put the account into the state these tests claim to inspect.
+ *
+ * Several tests here asked about avatar-present UI while the test user had no avatar,
+ * so their guards were false on every run and they asserted nothing (#850). Driving a
+ * real upload is what makes them able to fail.
+ *
+ * Note both helpers below deal with native dialogs. `handleRemoveAvatar` uses
+ * `window.confirm`, and Playwright AUTO-DISMISSES a dialog when nothing is listening —
+ * which silently turns "remove the avatar" into "do nothing". That is the same defect
+ * shape as 04-gdpr-consent's decline test.
+ *
+ * These two tests mutate one shared user, so they must not run concurrently. In CI they
+ * cannot: `fullyParallel: !process.env.CI` is false there and the shard runs a file
+ * serially. A local run without CI=1 is the only place they could race.
+ */
+async function startAvatarUpload(page: import('@playwright/test').Page) {
+  const dataUrl = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 400;
+    canvas.height = 400;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#3b82f6';
+    ctx.fillRect(0, 0, 400, 400);
+    return canvas.toDataURL('image/png');
+  });
+
+  const fileChooserPromise = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: /upload avatar/i }).click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles({
+    name: 'test-avatar.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      dataUrl.replace(/^data:image\/png;base64,/, ''),
+      'base64'
+    ),
+  });
+
+  await expect(page.getByRole('dialog', { name: /crop/i })).toBeVisible({
+    timeout: 5000,
+  });
+  await page.getByRole('button', { name: /save cropped avatar/i }).click();
+}
+
+async function uploadTestAvatar(page: import('@playwright/test').Page) {
+  await startAvatarUpload(page);
+
+  // The crop modal closes only on a SUCCESSFUL save (useAvatarUpload keeps it open and
+  // sets `error` otherwise), so this is per-upload evidence. The Remove button alone is
+  // not: it is equally visible for an avatar left behind by an earlier test, which would
+  // let a failed upload read as a successful one.
+  await expect(page.getByRole('dialog', { name: /crop/i })).toBeHidden({
+    timeout: 20000,
+  });
+
+  // The Remove button only exists once `avatarUrl` is set, so its appearance is the
+  // signal that the upload actually completed rather than merely being submitted.
+  await expect(
+    page.getByRole('button', { name: /remove avatar/i })
+  ).toBeVisible({
+    timeout: 20000,
+  });
+}
+
+async function removeTestAvatar(page: import('@playwright/test').Page) {
+  const removeButton = page.getByRole('button', { name: /remove avatar/i });
+  if ((await removeButton.count()) === 0) return;
+
+  // Without this the confirm() is auto-dismissed and the avatar is never removed,
+  // leaking state into every later test that shares this user.
+  page.once('dialog', (dialog) => dialog.accept());
+  await removeButton.click();
+  await expect(removeButton).toHaveCount(0, { timeout: 20000 });
+}
 test.describe('Avatar Upload Accessibility (WCAG 2.1 AA)', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     // Already authenticated via storageState - navigate directly
@@ -321,22 +397,26 @@ test.describe('Avatar Upload Accessibility (WCAG 2.1 AA)', () => {
   test('A11y-011: Remove button has descriptive ARIA label', async ({
     page,
   }) => {
-    // Upload avatar first (or skip if no avatar)
-    const removeButton = page.getByRole('button', { name: /remove avatar/i });
-    const isVisible = await removeButton.isVisible().catch(() => false);
+    // The comment used to say "Upload avatar first (or skip if no avatar)" and then
+    // never uploaded. The button is gated on `avatarUrl` (AccountSettings.tsx), the
+    // test user has none, so the guard was false and all three assertions below had
+    // never run on any shard (#850).
+    await uploadTestAvatar(page);
 
-    if (isVisible) {
+    try {
+      const removeButton = page.getByRole('button', { name: /remove avatar/i });
+
       const ariaLabel = await removeButton.getAttribute('aria-label');
       const textContent = await removeButton.textContent();
-
       expect(ariaLabel || textContent).toMatch(
         /remove.*avatar|delete.*picture/i
       );
 
-      // Verify touch target
       const buttonBox = await removeButton.boundingBox();
       expect(buttonBox?.width).toBeGreaterThanOrEqual(44);
       expect(buttonBox?.height).toBeGreaterThanOrEqual(44);
+    } finally {
+      await removeTestAvatar(page);
     }
   });
 
@@ -392,30 +472,72 @@ test.describe('Avatar Upload Accessibility (WCAG 2.1 AA)', () => {
   });
 
   test('A11y-013: Screen reader announces avatar status', async ({ page }) => {
-    // Check for status region
-    const statusRegion =
-      page.getByRole('status', { name: /avatar/i }) ||
-      page.locator('[aria-live="polite"]');
+    // Two defects were stacked here (#850).
+    //
+    // First, `getByRole(...) || page.locator(...)` is not a fallback. A Locator is an
+    // object and therefore always truthy, so the right-hand side NEVER evaluated.
+    //
+    // Second, no status region exists until an upload is in flight, and the test never
+    // uploaded — so the guard was false regardless of the selector.
+    //
+    // It deliberately asserts the UPLOAD PROGRESS region rather than the success alert.
+    // The success alert cannot be asserted: `handleAvatarUploadComplete` calls
+    // `refetchProfile()`, which flips `profileLoading`, and AccountSettings.tsx:264
+    // returns a spinner for the whole subtree — unmounting AvatarUpload and destroying
+    // its `success` state before anyone could read it. That is a real defect in the
+    // product, filed separately; it is not something a test should paper over.
+    //
+    // Holding the storage request open is what makes the in-flight state observable at
+    // all. Asserting a transient without controlling it is the wall-clock flake this
+    // repo has been bitten by before.
+    let release: () => void = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route('**/storage/v1/object/**', async (route) => {
+      await held;
+      await route.continue();
+    });
 
-    if (await statusRegion.isVisible().catch(() => false)) {
-      await expect(statusRegion).toHaveAttribute('aria-live');
+    try {
+      await startAvatarUpload(page);
 
-      // Verify status contains meaningful text
-      const statusText = await statusRegion.textContent();
-      expect(statusText).toMatch(
-        /avatar|profile.*picture|uploaded|no.*avatar/i
-      );
+      // Scoped to the avatar section on purpose: /account has another `role="status"`
+      // ("Ready to export"), and an unscoped `.first()` would assert against it.
+      const statusRegion = page
+        .locator('[aria-labelledby*="avatar"]')
+        .getByRole('status');
+
+      await expect(statusRegion).toBeVisible({ timeout: 15000 });
+      await expect(statusRegion).toHaveAttribute('aria-live', 'polite');
+      // The announcement has to say something. A live region with no accessible name
+      // announces a bare percentage and tells a screen-reader user nothing.
+      await expect(statusRegion).toHaveAccessibleName(/avatar|upload/i);
+    } finally {
+      release();
+      await page.unroute('**/storage/v1/object/**');
+      await expect(
+        page.getByRole('button', { name: /remove avatar/i })
+      ).toBeVisible({ timeout: 20000 });
+      await removeTestAvatar(page);
     }
   });
 
   test('A11y-014: Component has landmark roles', async ({ page }) => {
-    // Check for proper sectioning
+    // `[aria-labelledby*="avatar"]` matched NOTHING anywhere in the app: the only
+    // aria-labelledby was the crop modal's "crop-title". So the guard was always
+    // false and this test never ran (#850). The gap was real — the avatar controls
+    // were an unlabelled <div> — and AccountSettings now wraps them in a
+    // <section aria-labelledby="avatar-section-title">.
     const avatarSection = page.locator('[aria-labelledby*="avatar"]');
-    if (await avatarSection.isVisible().catch(() => false)) {
-      // Verify section has heading
-      const heading = avatarSection.locator('h2, h3');
-      await expect(heading).toBeVisible();
-      await expect(heading).toHaveText(/avatar|profile.*picture/i);
-    }
+    await expect(avatarSection).toHaveCount(1);
+    await expect(avatarSection).toBeVisible();
+
+    // The label must actually resolve. An aria-labelledby pointing at a missing id
+    // is worse than none: it names the region after nothing at all.
+    const labelledBy = await avatarSection.getAttribute('aria-labelledby');
+    const heading = page.locator(`#${labelledBy}`);
+    await expect(heading).toBeVisible();
+    await expect(heading).toHaveText(/avatar|profile.*picture/i);
   });
 });

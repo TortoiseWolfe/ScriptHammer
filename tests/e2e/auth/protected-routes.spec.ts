@@ -196,29 +196,15 @@ test.describe('Protected Routes E2E', () => {
     await signOutViaDropdown(page);
   });
 
-  test('should show email verification notice for unverified users', async ({
-    page,
-  }) => {
-    // Already authenticated via storageState
-    // Navigate to payment demo
-    await page.goto('/payment-demo', { waitUntil: 'domcontentloaded' });
-
-    // Verify EmailVerificationNotice is visible (only shown if user.email_confirmed_at is null)
-    // Note: Pre-existing test users are typically verified, so this may not show
-    const notice = page.getByText(/verify your email/i);
-    const isNoticeVisible = await notice.isVisible().catch(() => false);
-
-    if (isNoticeVisible) {
-      await expect(notice).toBeVisible();
-      // Verify resend button exists
-      await expect(page.getByRole('button', { name: /resend/i })).toBeVisible();
-    } else {
-      // User is verified - test passes (feature works correctly for verified users)
-      console.log(
-        'Test user is already verified - verification notice not shown'
-      );
-    }
-  });
+  // REMOVED (#850): 'should show email verification notice for unverified users'.
+  // It ran zero assertions on every shard and could never have run any — an
+  // unverified user cannot hold a session. Probed straight against GoTrue:
+  // admin.createUser({ email_confirm: false }) succeeds, and the subsequent
+  // signInWithPassword is rejected with "Email not confirmed". The notice's only
+  // render condition is therefore unreachable through the UI, so its
+  // `if (isNoticeVisible)` guard was false by construction and the else-branch
+  // merely console.logged. The behaviour is now covered where it IS reachable, in
+  // EmailVerificationNotice.test.tsx — both directions, plus the resend outcomes.
 
   test('should preserve session across page navigation', async ({ page }) => {
     // Already authenticated via storageState
@@ -259,10 +245,39 @@ test.describe('Protected Routes E2E', () => {
   test('should verify cascade delete removes related records', async ({
     page,
   }) => {
+    // EXPECTED TO FAIL — this pins a live defect, it does not tolerate one.
+    //
+    // Account deletion deletes NOTHING. `gdprService.deleteUserAccount()` issues
+    // `.from('user_profiles').delete()` from the browser, but user_profiles has RLS
+    // policies for INSERT, SELECT and UPDATE and **no DELETE policy at all**. RLS
+    // filters the statement to zero rows and returns NO error, so the service treats it
+    // as success, signs the user out and redirects to "?message=account_deleted".
+    // The profile, the auth user, the email address and every related record survive.
+    //
+    // The service's own comment claims "auth.users deletion (ON DELETE CASCADE from
+    // user_profiles)", which is backwards: user_profiles_id_fkey has child
+    // user_profiles and parent auth.users, so the cascade runs auth.users -> profile.
+    // Deleting a profile could never have removed the account.
+    //
+    // This test found it only because it was made to assert (#850) — it had run zero
+    // assertions on every shard for as long as the reporter has been looking. Filed
+    // as #859 with the full evidence and the reason a DELETE policy alone is the
+    // wrong fix.
+    //
+    // `test.fail()` rather than a skip: when the fix lands this test PASSES, Playwright
+    // reports "expected to fail but passed", and whoever fixed it is told to delete
+    // this marker. A skip would just go quiet.
+    test.fail();
+
     // This test requires creating a NEW user to delete (can't use pre-existing test users)
     // We'll use the admin API to create a temporary user
-    const { createTestUser, deleteTestUserByEmail, isAdminClientAvailable } =
-      await import('../utils/test-user-factory');
+    const {
+      createTestUser,
+      deleteTestUserByEmail,
+      isAdminClientAvailable,
+      getUserByEmail,
+      getAdminClient,
+    } = await import('../utils/test-user-factory');
 
     if (!isAdminClientAvailable()) {
       test.skip(true, 'SUPABASE_SERVICE_ROLE_KEY not configured');
@@ -302,28 +317,78 @@ test.describe('Protected Routes E2E', () => {
       // Navigate to account settings
       await page.goto('/account', { waitUntil: 'domcontentloaded' });
 
-      // Find and click delete account button
+      // This ran zero assertions in CI (#850). Measured locally the guard is TRUE —
+      // sign-in succeeds, /account renders, and the button is present and visible — so
+      // what failed on the runner was the 5s race, not the feature: /account is a
+      // client-rendered static export and the button appears only after the session and
+      // profile round-trip. The `.catch(() => false)` then turned a slow page into a
+      // silent pass, and the else-branch console.logged a guess about scrolling.
+      //
+      // Asserted unconditionally with a timeout sized for a loaded runner. If the
+      // button is genuinely missing this now fails and says so.
       const deleteButton = page.getByRole('button', {
         name: /delete account/i,
       });
-      if (await deleteButton.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await deleteButton.click();
+      await expect(deleteButton).toBeVisible({ timeout: 20000 });
+      await deleteButton.click();
 
-        // Confirm deletion in modal/dialog
-        const confirmButton = page.getByRole('button', { name: /confirm/i });
-        if (
-          await confirmButton.isVisible({ timeout: 3000 }).catch(() => false)
-        ) {
-          await confirmButton.click();
-        }
+      // The old code looked for a button named /confirm/i. There is none —
+      // AccountDeletionModal requires TYPING "DELETE" into #confirmation-input, and its
+      // action button is labelled "Delete my account permanently" and stays `disabled`
+      // until `confirmationText === 'DELETE'`. So the confirm step was silently skipped,
+      // nothing was deleted, and the redirect never came.
+      const confirmationInput = page.locator('#confirmation-input');
+      await expect(confirmationInput).toBeVisible({ timeout: 10000 });
+      await confirmationInput.fill('DELETE');
 
-        // Verify redirected to sign-in
-        await page.waitForURL(/\/sign-in/, { timeout: 10000 });
-        await expect(page).toHaveURL(/\/sign-in/);
-      } else {
-        // Delete button not visible - test the UI exists at least
-        console.log('Delete account button not visible - may need to scroll');
-      }
+      const confirmButton = page.getByRole('button', {
+        name: /delete my account permanently/i,
+      });
+      // Asserting it became enabled pins the guard itself: a modal that accepted any
+      // text would delete accounts on a typo.
+      await expect(confirmButton).toBeEnabled();
+      await confirmButton.click();
+
+      // This test is named "verify cascade delete removes related records" and used to
+      // assert nothing of the sort — only a URL, and only inside a guard that was false
+      // in CI (#850). The URL is also the weakest available signal: the modal pushes
+      // '/sign-in?message=account_deleted' (AccountDeletionModal.tsx:69) but the browser
+      // lands on '/', because the sign-in page redirects a still-authenticated client to
+      // returnUrl before AuthContext has processed the deletion. That race is filed
+      // separately; asserting it here would pin a bug in place.
+      //
+      // What the test claims to check is the deletion itself, so that is what it checks.
+
+      // 1. The user is booted out of the protected route.
+      await expect
+        .poll(() => page.url(), { timeout: 20000 })
+        .not.toMatch(/\/account/);
+
+      // 2. The profile row — what the client actually deletes — is gone.
+      const admin = getAdminClient();
+      expect(
+        admin,
+        'admin client is required to verify the cascade'
+      ).not.toBeNull();
+      await expect
+        .poll(
+          async () => {
+            const { data } = await admin!
+              .from('user_profiles')
+              .select('id')
+              .eq('id', user.id);
+            return data?.length ?? -1;
+          },
+          { timeout: 20000 }
+        )
+        .toBe(0);
+
+      // 3. And the auth user itself.
+      await expect
+        .poll(async () => (await getUserByEmail(deleteEmail)) === null, {
+          timeout: 20000,
+        })
+        .toBe(true);
     } finally {
       // Clean up via admin API if user still exists
       await deleteTestUserByEmail(deleteEmail);
