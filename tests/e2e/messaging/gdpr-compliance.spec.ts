@@ -469,12 +469,18 @@ test.describe('GDPR Account Deletion', () => {
       await confirmInput.fill('DELETE');
 
       // Mock deletion failure so the viewer is NOT actually deleted — this test
-      // exercises the error path, not real teardown. Pattern must match Supabase
-      // REST API URLs with query params.
-      await page.route('**/rest/v1/user_profiles**', (route) => {
+      // exercises the error path, not real teardown.
+      //
+      // #859 moved deletion off `rest/v1/user_profiles` (which RLS silently filtered
+      // to zero rows) and onto the `delete-account` Edge Function. This route used to
+      // point at the REST table; after the move it matched nothing, so the deletion
+      // SUCCEEDED, the viewer was really deleted, and no error alert ever appeared.
+      // The mock has to follow the call it is mocking.
+      await page.route('**/functions/v1/delete-account**', (route) => {
         route.fulfill({
           status: 500,
-          body: JSON.stringify({ error: { message: 'Deletion failed' } }),
+          contentType: 'application/json',
+          body: JSON.stringify({ error: 'Deletion failed' }),
         });
       });
 
