@@ -1,10 +1,26 @@
 # Quoted deliberately: an unquoted `#` after whitespace starts a YAML comment,
 # which silently truncated this name to "E2E (local Supabase) —".
-name: 'E2E (local Supabase) — #575 prototype'
+name: 'E2E (local Supabase)'
 
-# PROTOTYPE. Runs ALONGSIDE e2e.yml, never instead of it, until a full parity
-# run proves the two produce the same pass/fail set. Do not delete e2e.yml, do
-# not remove its mutex, and do not treat a green run here as coverage yet.
+# THIS LANE IS REQUIRED, AND IT IS WHERE A PR GETS ITS E2E COVERAGE.
+#
+# `E2E (local) result` became a required context on `main` when #739 closed
+# (2026-08-15). CLAUDE.md states it plainly: "A PR gets its E2E coverage from the
+# local lane." A PR cannot merge without this lane green.
+#
+# Until 2026-08-20 this header still described the lane as an experiment running
+# only alongside e2e.yml, and told readers not to count a green run here. Every
+# clause of that had become false, and it sat at the top of a REQUIRED workflow
+# telling readers the opposite of how merges are gated (#575). The hosted lane has
+# meanwhile been budget-blocked for weeks — its `Cloud-quota budget` job fails and
+# every downstream job is skipped — so treating THAT one as the real coverage is
+# what would now be wrong.
+#
+# `scripts/__tests__/required-checks-documented.test.js` fails if this header ever
+# disclaims its own coverage again.
+#
+# Still true, and not to be undone casually: e2e.yml is not deleted, and its
+# repo-wide mutex stays. Six `@hosted` tests can only pass there.
 #
 # NOW THE FULL 24-JOB MATRIX (#575 step 1). It mirrors e2e.yml's three matrices
 # exactly — same projects, same shard counts, same `workers: 2` on the msg-iso
