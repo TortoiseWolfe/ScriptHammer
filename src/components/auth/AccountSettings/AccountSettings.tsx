@@ -400,9 +400,20 @@ export default function AccountSettings({
       </form>
 
       {/* Avatar Settings */}
-      <div className="card bg-base-200">
+      {/* `section` + aria-labelledby, not a bare div: the avatar controls are a
+          named region, and without the association a screen reader announces
+          "Upload avatar" / "Remove avatar" with no indication of what they
+          belong to. `avatar-section-title` is also the hook the a11y E2E uses —
+          before this, `[aria-labelledby*="avatar"]` matched nothing anywhere in
+          the app, so that test could never run (#850). */}
+      <section
+        aria-labelledby="avatar-section-title"
+        className="card bg-base-200"
+      >
         <div className="card-body">
-          <h3 className="card-title">Profile Picture</h3>
+          <h3 id="avatar-section-title" className="card-title">
+            Profile Picture
+          </h3>
 
           {/* Current Avatar Display */}
           <div className="mb-4 flex flex-col items-center gap-4 sm:flex-row">
@@ -439,7 +450,7 @@ export default function AccountSettings({
             </button>
           )}
         </div>
-      </div>
+      </section>
 
       {/* Password Change */}
       <form onSubmit={handleChangePassword} className="card bg-base-200">

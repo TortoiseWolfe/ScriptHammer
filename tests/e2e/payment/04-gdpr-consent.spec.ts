@@ -146,15 +146,34 @@ test.describe('GDPR Payment Consent Flow', () => {
   });
 
   test('should handle consent decline gracefully', async ({ page }) => {
-    // Decline consent
-    await page.getByRole('button', { name: /Decline/i }).click();
-
-    // After decline, an alert should appear explaining consent is required
-    // The page uses window.alert for decline (check the page.tsx)
-    page.on('dialog', async (dialog) => {
-      expect(dialog.message()).toContain('Payment features require consent');
+    // The listener used to be registered AFTER the click. Playwright auto-dismisses
+    // a dialog when no handler is attached, so the alert was already gone by the time
+    // the handler existed — it never fired, and its expect() never ran on any shard
+    // (#850). Arming the wait BEFORE the click is the whole fix.
+    // The dialog must be ACCEPTED FROM INSIDE the handler. `window.alert` blocks, and
+    // registering any dialog listener stops Playwright auto-dismissing — so awaiting a
+    // `waitForEvent('dialog')` promise after the click deadlocks: the click never
+    // resolves because the alert is still open, and the await never runs to close it.
+    // Capturing the message in the handler and asserting afterwards avoids both the
+    // original bug and that trade.
+    let dialogMessage: string | null = null;
+    page.once('dialog', async (dialog) => {
+      dialogMessage = dialog.message();
       await dialog.accept();
     });
+
+    await page.getByRole('button', { name: /Decline/i }).click();
+
+    await expect
+      .poll(() => dialogMessage, { timeout: 10000 })
+      .toContain('Payment features require consent');
+
+    // Declining must not grant consent. Without this the test would pass on a page
+    // that shows the right words and then stores the wrong thing.
+    const consent = await page.evaluate(() =>
+      localStorage.getItem('payment_consent')
+    );
+    expect(consent).not.toBe('granted');
   });
 
   test('should have accessible consent buttons', async ({ page }) => {
