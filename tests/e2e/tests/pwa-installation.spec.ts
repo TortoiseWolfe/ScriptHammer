@@ -241,16 +241,23 @@ test.describe('PWA Installation', () => {
     const response = await page.request.get(manifestUrl);
     const manifest = await response.json();
 
-    // Check for maskable icon (recommended for Android)
-    const hasMaskableIcon = manifest.icons.some(
+    // Check for maskable icon (required for a correct Android install icon)
+    const maskable = manifest.icons.filter(
       (icon: { purpose?: string }) =>
         icon.purpose && icon.purpose.includes('maskable')
     );
 
-    // This is optional but recommended
-    if (!hasMaskableIcon) {
-      console.warn('No maskable icon found - recommended for Android PWA');
-    }
+    // ASSERTED, not warned (#396). This test's NAME makes a claim — "maskable icon
+    // is provided" — while its body only called `console.warn` and returned, so it
+    // could never fail and nobody reads a warning in a 25-shard log. The manifest
+    // does carry two (192x192 and 512x512), so the claim is true; it simply was not
+    // enforced. Without a maskable icon Android crops the icon into a circle and
+    // the install looks broken, which is exactly the kind of thing that regresses
+    // silently when someone regenerates the manifest.
+    expect(
+      maskable.map((i: { sizes?: string }) => i.sizes),
+      'no maskable icon in the manifest — Android will crop the install icon'
+    ).not.toEqual([]);
   });
 
   test('shortcuts are defined in manifest', async ({ page }) => {
