@@ -324,9 +324,21 @@ test.describe('Cross-Page Navigation', () => {
       // Open mobile menu
       await menuButton.click();
 
-      // The menu is a dropdown, so look for menu items
-      const menuItems = page.locator('.dropdown-content a');
-      await expect(menuItems.first()).toBeVisible();
+      // SCOPED to the dropdown this trigger belongs to (#396). A bare
+      // `.dropdown-content a` matches EVERY dropdown on the page, and `.first()`
+      // takes document order — which lands on the account menu (`Profile`), not the
+      // navigation menu just opened. That menu is closed, so the link is hidden and
+      // the assertion fails on an element the test never meant to look at.
+      //
+      // This bug was invisible until the fix above let the body run at all: the
+      // guard was permanently false, so nothing downstream of it had ever executed.
+      const menu = page.locator('.dropdown', { has: menuButton });
+      const menuItems = menu.locator('.dropdown-content a');
+
+      await expect(
+        menuItems.first(),
+        'the navigation dropdown did not open'
+      ).toBeVisible();
 
       // Click Home link
       const homeLink = menuItems.filter({ hasText: 'Home' }).first();
