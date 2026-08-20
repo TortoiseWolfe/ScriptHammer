@@ -303,17 +303,42 @@ test.describe('Cross-Page Navigation', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
-    // Look for mobile menu button (hamburger) - use aria-label pattern
-    const menuButton = page.locator('button[aria-label="Navigation menu"]');
-    const hasMenuButton = (await menuButton.count()) > 0;
+    // `[aria-label=...]`, NOT `button[aria-label=...]` (#396). The hamburger is a
+    // DaisyUI dropdown trigger, which renders as a `<label>` — so the old selector
+    // matched ZERO elements, `hasMenuButton` was always false, and this entire test
+    // body (both assertions) never ran. Measured on production at 375px:
+    //   [aria-label="Navigation menu"]        -> 1  (tagName: label)
+    //   button[aria-label="Navigation menu"]  -> 0
+    //   .dropdown-content a                   -> 15
+    // So the menu was there and testable the whole time; only the locator was wrong.
+    const menuButton = page.locator('[aria-label="Navigation menu"]');
 
-    if (hasMenuButton) {
+    // ASSERTED, not branched on. A guard here makes "the menu is broken" and "the
+    // trigger was renamed" report identically — and the second is what happened.
+    await expect(
+      menuButton,
+      'no element carries aria-label="Navigation menu" — the mobile nav gate cannot run'
+    ).toHaveCount(1);
+
+    {
       // Open mobile menu
       await menuButton.click();
 
-      // The menu is a dropdown, so look for menu items
-      const menuItems = page.locator('.dropdown-content a');
-      await expect(menuItems.first()).toBeVisible();
+      // SCOPED to the dropdown this trigger belongs to (#396). A bare
+      // `.dropdown-content a` matches EVERY dropdown on the page, and `.first()`
+      // takes document order — which lands on the account menu (`Profile`), not the
+      // navigation menu just opened. That menu is closed, so the link is hidden and
+      // the assertion fails on an element the test never meant to look at.
+      //
+      // This bug was invisible until the fix above let the body run at all: the
+      // guard was permanently false, so nothing downstream of it had ever executed.
+      const menu = page.locator('.dropdown', { has: menuButton });
+      const menuItems = menu.locator('.dropdown-content a');
+
+      await expect(
+        menuItems.first(),
+        'the navigation dropdown did not open'
+      ).toBeVisible();
 
       // Click Home link
       const homeLink = menuItems.filter({ hasText: 'Home' }).first();
