@@ -61,27 +61,6 @@ test.describe('Session Persistence E2E', () => {
       throw new Error(`Sign-in failed: ${result.error}`);
     }
 
-    // Check session storage/cookies
-    const cookies = await page.context().cookies();
-    const authCookie = cookies.find(
-      (c) =>
-        c.name.includes('supabase') ||
-        c.name.includes('auth') ||
-        c.name.includes('sb-')
-    );
-
-    if (authCookie) {
-      // Verify cookie has extended expiry (Remember Me sets longer duration)
-      const expiryDate = new Date(authCookie.expires * 1000);
-      const now = new Date();
-      const daysDiff = Math.ceil(
-        (expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
-      );
-
-      // Remember Me should set ~30 day expiry
-      expect(daysDiff).toBeGreaterThanOrEqual(25); // Allow some variance
-    }
-
     // Verify localStorage has refresh token for persistence.
     //
     // This assertion is only meaningful when the REAL form was submitted. Under
@@ -98,6 +77,38 @@ test.describe('Session Persistence E2E', () => {
       JSON.stringify(window.localStorage)
     );
     expect(localStorage).toContain('refresh_token');
+
+    // #845: what stood here was an `if (authCookie)` block asserting a ~30 day cookie
+    // expiry. THIS APP NEVER SETS AN AUTH COOKIE — `client.ts` installs
+    // `storage: createAuthStorage()`, which picks between sessionStorage (:142) and
+    // localStorage (:143); `document.cookie` appears nowhere in the file, and
+    // `flowType: 'implicit'` writes none either. The guard was false on every run, so
+    // the only duration assertion in this test had never executed.
+    //
+    // It was the wrong contract too. Since #375 "Remember me" does not extend an
+    // expiry — it chooses WHICH STORE holds the token. That is what is asserted now,
+    // by key shape rather than by the substring above, so a token written under the
+    // wrong key cannot satisfy it.
+    //
+    // Placement is deliberate: this sits AFTER the captcha guard because under the
+    // captcha-protected path `performSignIn` injects a server-minted session straight
+    // into localStorage (test-user-factory.ts:1756) and the assertion would pass no
+    // matter what Remember Me did.
+    //
+    // NOT asserted here, on purpose:
+    //   - `sh-auth-persistence`. `setSessionPersistence()` early-returns when the
+    //     preference is unchanged (client.ts:169-170) and 'local' is the default, so
+    //     with Remember Me CHECKED the key is never written. The sibling test below can
+    //     assert it because unchecking is a real change; mirroring it here would fail.
+    //   - "the token is absent from sessionStorage". It cannot fail in this flow —
+    //     nothing ever writes sessionStorage on the checked path — and adding an
+    //     assertion that cannot fail is the exact defect this ticket is about. The
+    //     "exactly one home" invariant is covered where it CAN fail, by
+    //     tests/unit/auth-session-persistence.test.ts:79.
+    expect(
+      localStorage,
+      'Remember Me checked: the auth token must persist in localStorage'
+    ).toMatch(/sb-.*-auth-token/);
   });
 
   test('should use short session without Remember Me', async ({ page }) => {
