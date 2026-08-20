@@ -360,11 +360,24 @@ test.describe('Horizontal Scroll Detection', () => {
 
   test('Tables are responsive on mobile', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/blog');
+
+    // A POST, not the blog INDEX (#396). `/blog` lists cards and contains zero
+    // `<table>` elements — measured across every public route, the index included —
+    // so this loop never entered its body and the test reported zero assertions on
+    // every shard. Tables live inside posts, and only since #421 taught the markdown
+    // processor to render them (before that they shipped as literal pipe rows).
+    await page.goto('/blog/cursor-github-identity/');
     await dismissCookieBanner(page);
     await page.waitForTimeout(800);
 
     const tables = await page.locator('table').all();
+
+    // Coverage floor: if this post loses its table, or the renderer regresses to
+    // literal pipes, this must fail rather than pass having measured nothing.
+    expect(
+      tables.length,
+      'no <table> found — this gate cannot measure table responsiveness here'
+    ).toBeGreaterThan(0);
 
     for (const table of tables) {
       if (await table.isVisible()) {

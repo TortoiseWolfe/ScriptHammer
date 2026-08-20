@@ -635,14 +635,29 @@ test.describe('Touch Target Standards', () => {
 
   test('Form inputs meet touch target height standards', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+
+    // `/contact/`, not `/` (#396). The home page has ZERO form inputs — measured
+    // across every public route, only /contact/ has any — so "test form inputs if
+    // present" tested nothing, on every shard. This is the same defect #843 fixed in
+    // the sibling `mobile-form-inputs.spec.ts`; the two specs overlap and BOTH were
+    // pointed at a page without a form.
+    await page.goto('/contact/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await waitForLayoutStability(page);
 
-    // Test form inputs if present
+    // `:not([tabindex="-1"])` excludes the spam honeypot: it is positioned
+    // off-screen with tabIndex -1, and Playwright's isVisible() returns TRUE for
+    // off-screen elements, so filtering on visibility alone does not exclude it.
     const inputs = await page
-      .locator('input[type="text"], input[type="email"], textarea, select')
+      .locator(
+        'input[type="text"]:not([tabindex="-1"]), input[type="email"]:not([tabindex="-1"]), textarea:not([tabindex="-1"]), select:not([tabindex="-1"])'
+      )
       .all();
+
+    expect(
+      inputs.length,
+      'no form inputs found — this gate measured nothing'
+    ).toBeGreaterThan(0);
 
     for (const input of inputs) {
       if (await input.isVisible()) {
