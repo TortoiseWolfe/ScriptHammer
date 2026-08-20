@@ -22,6 +22,18 @@ async function isHoneypotField(input: Locator): Promise<boolean> {
 test.describe('Form Submission', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the contact page which has a form
+    // Nothing in this file may reach the real Web3Forms endpoint. 'form submission
+    // with valid data' below clicks submit with a filled form, and once the lane bakes
+    // an access key that becomes a live outbound request. Fulfil it locally instead;
+    // individual tests can register a narrower route, which takes precedence.
+    await page.route('**/api.web3forms.com/**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, message: 'ok' }),
+      })
+    );
+
     await page.goto('/contact');
     await dismissCookieBanner(page);
   });
@@ -67,34 +79,27 @@ test.describe('Form Submission', () => {
   });
 
   test('error messages display correctly', async ({ page }) => {
-    // Look for any input field
-    const input = page
-      .locator('input[type="text"], input[type="email"]')
-      .first();
-    const inputExists = (await input.count()) > 0;
+    // react-hook-form is configured `mode: 'onSubmit'` (ContactForm.tsx:31) and every
+    // `-error` label renders only under `{errors.X && ...}`. NO error element exists
+    // until a submit has been attempted.
+    //
+    // The previous version filled a field with '' and pressed Tab, so `[id$="-error"]`
+    // was always 0, `if (hasError)` was always false, and neither assertion below had
+    // ever executed on any shard (#850). Submitting an empty form is what produces the
+    // state this test claims to inspect.
+    await page.locator('button[type="submit"]').click();
 
-    if (inputExists) {
-      // Submit form with empty required field to trigger validation
-      await input.fill('');
-      await input.press('Tab'); // Trigger blur event
+    // All four required fields fail validation on an empty submit. Asserting the count
+    // rather than guarding on it means a form that stops reporting errors fails here.
+    const errorMessages = page.locator('[id$="-error"]');
+    await expect(errorMessages).toHaveCount(4);
+    await expect(errorMessages.first()).toBeVisible();
 
-      // Check for error message with proper ARIA
-      const errorMessage = page.locator('[id$="-error"]').first();
-
-      // If form has validation, error should appear
-      const hasError = (await errorMessage.count()) > 0;
-      if (hasError) {
-        await expect(errorMessage).toBeVisible();
-
-        // Check input has aria-invalid
-        const ariaInvalid = await input.getAttribute('aria-invalid');
-        expect(ariaInvalid).toBe('true');
-
-        // Check input has aria-describedby pointing to error
-        const ariaDescribedBy = await input.getAttribute('aria-describedby');
-        expect(ariaDescribedBy).toContain('-error');
-      }
-    }
+    // The field must be marked invalid AND point at its own message — the association
+    // is the part screen readers depend on, and the part most easily broken.
+    const nameInput = page.locator('#name');
+    await expect(nameInput).toHaveAttribute('aria-invalid', 'true');
+    await expect(nameInput).toHaveAttribute('aria-describedby', 'name-error');
   });
 
   test('form submission with valid data', async ({ page }) => {
@@ -219,127 +224,45 @@ test.describe('Form Submission', () => {
     ).toBeFocused();
   });
 
-  test('form data persists on page reload', async ({ page }) => {
-    // Look for text input (skip honeypot fields)
-    const allTextInputs = page.locator('input[type="text"]');
-    const inputCount = await allTextInputs.count();
-    let textInput = null;
-
-    for (let i = 0; i < inputCount; i++) {
-      const input = allTextInputs.nth(i);
-      if (!(await isHoneypotField(input))) {
-        textInput = input;
-        break;
-      }
-    }
-
-    if (textInput) {
-      const testValue = 'Persistence Test Value';
-      await textInput.fill(testValue);
-
-      // Some forms may save to localStorage
-      const inputName = await textInput.getAttribute('name');
-
-      if (inputName) {
-        // Check if value is saved to localStorage
-        const savedValue = await page.evaluate((name) => {
-          return localStorage.getItem(`form_${name}`);
-        }, inputName);
-
-        // If form implements persistence
-        if (savedValue) {
-          // Reload page
-          await page.reload();
-
-          // Check if value is restored
-          const currentValue = await textInput.inputValue();
-          expect(currentValue).toBe(testValue);
-        }
-      }
-    }
-  });
-
-  test('disabled fields cannot be edited', async ({ page }) => {
-    // Look for disabled input
-    const disabledInput = page
-      .locator('input:disabled, textarea:disabled, select:disabled')
-      .first();
-    const hasDisabledInput = (await disabledInput.count()) > 0;
-
-    if (hasDisabledInput) {
-      // Try to fill disabled field
-      const isEditable = await disabledInput.isEditable();
-      expect(isEditable).toBe(false);
-
-      // Verify aria-disabled attribute
-      const ariaDisabled = await disabledInput.getAttribute('aria-disabled');
-      if (ariaDisabled !== null) {
-        expect(ariaDisabled).toBe('true');
-      }
-    }
-  });
-
   test('form shows loading state during submission', async ({ page }) => {
-    // Look for form with async submission
-    const form = page.locator('form').first();
-    const hasForm = (await form.count()) > 0;
+    // This was dead twice over (#850). It waited for a response whose URL contained
+    // '/api/' — but this is a static export with no API routes, and Web3Forms lives at
+    // api.web3forms.com/submit, which contains '//api.', not '/api/'. It also clicked
+    // submit on an EMPTY form, so validation blocked the request before any network
+    // call could happen. `response` was always null and its assertion never ran.
+    //
+    // Hold the Web3Forms response open so the submitting state lasts long enough to
+    // observe. This route is registered after the beforeEach one and therefore wins:
+    // Playwright matches handlers in reverse registration order.
+    let release: () => void = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route('**/api.web3forms.com/**', async (route) => {
+      await held;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, message: 'ok' }),
+      });
+    });
 
-    if (hasForm) {
-      // Set up listener for loading indicators
-      const submitButton = form.locator('button[type="submit"]').first();
+    await page.locator('#name').fill('Test Person');
+    await page.locator('#email').fill('test@example.com');
+    await page.locator('#subject').fill('Loading state check');
+    await page
+      .locator('#message')
+      .fill('Verifying that the submit button reports progress while sending.');
 
-      if ((await submitButton.count()) > 0) {
-        // Click and check for loading state
-        const [response] = await Promise.all([
-          page
-            .waitForResponse((response) => response.url().includes('/api/'), {
-              timeout: 5000,
-            })
-            .catch(() => null),
-          submitButton.click(),
-        ]);
+    const submitButton = page.locator('button[type="submit"]');
+    await submitButton.click();
 
-        if (response) {
-          // Check for loading indicator (spinner, disabled button, etc.)
-          const isDisabled = await submitButton.isDisabled();
-          const hasSpinner =
-            (await page
-              .locator('.loading, .spinner, [role="status"]')
-              .count()) > 0;
+    // One piece of state — `isSubmitting` — drives all three of these
+    // (ContactForm.tsx:362-368), so all three are asserted.
+    await expect(submitButton).toBeDisabled();
+    await expect(submitButton).toHaveClass(/loading/);
+    await expect(submitButton).toHaveText(/Sending|Queuing/);
 
-          expect(isDisabled || hasSpinner).toBe(true);
-        }
-      }
-    }
-  });
-
-  test('multi-step form navigation works correctly', async ({ page }) => {
-    // Look for multi-step form indicators
-    const stepIndicators = page.locator('[class*="step"], [data-step]');
-    const hasSteps = (await stepIndicators.count()) > 1;
-
-    if (hasSteps) {
-      // Check for next/previous buttons
-      const nextButton = page.locator('button:has-text("Next")').first();
-      const prevButton = page
-        .locator('button:has-text("Previous"), button:has-text("Back")')
-        .first();
-
-      if ((await nextButton.count()) > 0) {
-        // Click next
-        await nextButton.click();
-
-        // Previous button should now be visible
-        if ((await prevButton.count()) > 0) {
-          await expect(prevButton).toBeVisible({ timeout: 3000 });
-
-          // Go back
-          await prevButton.click();
-
-          // Verify we're back on previous step
-          await expect(nextButton).toBeVisible({ timeout: 3000 });
-        }
-      }
-    }
+    release();
   });
 });

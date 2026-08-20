@@ -131,10 +131,13 @@ test.describe('PWA Installation', () => {
     // Check if service workers are supported
     const swSupported = await page.evaluate(() => 'serviceWorker' in navigator);
 
-    if (!swSupported) {
-      // Skip test if service workers not supported (CI headless browser)
-      return;
-    }
+    // A bare `return` here reported as PASSED, so a browser with no service worker
+    // support looked like proof that offline mode works (#850). test.skip() reports
+    // what actually happened.
+    test.skip(
+      !swSupported,
+      'Service workers are not supported in this browser'
+    );
 
     // Wait for service worker to be active (with timeout)
     const swActive = await page.evaluate(async () => {
@@ -152,10 +155,8 @@ test.describe('PWA Installation', () => {
       }
     });
 
-    if (!swActive) {
-      // Skip test if service worker didn't activate (common in dev/CI)
-      return;
-    }
+    // Same again: a service worker that never activated is a skip, not a pass.
+    test.skip(!swActive, 'Service worker did not activate within 5s');
 
     // Go offline
     await context.setOffline(true);
