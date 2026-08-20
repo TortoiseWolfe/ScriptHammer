@@ -465,10 +465,17 @@ test.describe('Accessibility', () => {
         control,
         `#${field} should be marked invalid`
       ).toHaveAttribute('aria-invalid', 'true');
+      // A CONTAINS check, not an equality one: aria-describedby is a space-separated
+      // list, and subject/message also carry their `-help` hint (#855). Asserting
+      // equality here would break the moment a field gains help text, which is a
+      // change that improves accessibility — a test must not punish that.
       await expect(
         control,
         `#${field} should be described by its own error message`
-      ).toHaveAttribute('aria-describedby', `${field}-error`);
+      ).toHaveAttribute(
+        'aria-describedby',
+        new RegExp(`(^| )${field}-error( |$)`)
+      );
 
       const message = page.locator(`#${field}-error`);
       await expect(message).toBeVisible();

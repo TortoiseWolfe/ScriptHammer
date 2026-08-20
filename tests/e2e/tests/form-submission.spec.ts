@@ -180,24 +180,33 @@ test.describe('Form Submission', () => {
   });
 
   test('help text is properly associated with fields', async ({ page }) => {
-    // Look for help text
-    const helpText = page.locator('[id$="-help"]').first();
-    const hasHelpText = (await helpText.count()) > 0;
+    // Until #855 there was no help text anywhere in the product, so `[id$="-help"]`
+    // matched nothing, `if (hasHelpText)` was always false, and this test's assertion
+    // had never run on any shard (#850). It was kept rather than deleted because the
+    // gap it pointed at was real: the contact form's length constraints were invisible
+    // until a submit failed.
+    //
+    // Subject (min 5) and message (min 10) carry hints; name and email deliberately do
+    // not, so the count is asserted exactly. A hint that silently disappears is the
+    // failure this now catches.
+    const helpTexts = page.locator('[id$="-help"]');
+    await expect(helpTexts).toHaveCount(2);
 
-    if (hasHelpText) {
-      await expect(helpText).toBeVisible();
+    for (const field of ['subject', 'message']) {
+      const help = page.locator(`#${field}-help`);
+      await expect(help).toBeVisible();
+      await expect(help).not.toBeEmpty();
 
-      // Find associated input
-      const helpId = await helpText.getAttribute('id');
-      const fieldName = helpId?.replace('-help', '');
-
-      if (fieldName) {
-        const input = page.locator(`#${fieldName}`);
-        if ((await input.count()) > 0) {
-          const ariaDescribedBy = await input.getAttribute('aria-describedby');
-          expect(ariaDescribedBy).toContain(helpId);
-        }
-      }
+      // The hint is only accessible if the control points at it. aria-describedby is a
+      // space-separated list, so match the token rather than the whole value — the
+      // error id joins it once validation fails.
+      await expect(
+        page.locator(`#${field}`),
+        `#${field} should be described by its help text`
+      ).toHaveAttribute(
+        'aria-describedby',
+        new RegExp(`(^| )${field}-help( |$)`)
+      );
     }
   });
 
