@@ -452,6 +452,17 @@
     0 6px 12px -5px var(--sh-ink-shadow),
     0 2px 4px -2px var(--sh-ink-shadow-soft), inset 0 1px 0 var(--sh-ink-edge);
 
+  /* Lifted: the plate, raised further. Hover only.
+   *
+   * Built from the same inks as --sh-plate rather than a literal black. The
+   * hover rule used to hard-code `rgb(0 0 0 / 0.3)`, which is invisible on a
+   * dark surface and grey sludge on a saturated one — exactly what these ink
+   * tokens exist to replace. It survived the whole #376/#426 epic because the
+   * rule never rendered (#838), so no screenshot could show it. */
+  --sh-plate-lift:
+    0 10px 20px -6px var(--sh-ink-shadow),
+    0 4px 8px -3px var(--sh-ink-shadow-soft), inset 0 1px 0 var(--sh-ink-edge);
+
   /* Cut: data sits down inside the page.
    *
    * INSET-DOMINANT, and that is a correction to the authored recipe. The mock
@@ -651,21 +662,53 @@
   box-shadow: var(--sh-plate);
 }
 
+/* A STRICT SPECIFICITY LADDER. Read the numbers before editing (#838).
+ *
+ *   resting  chain                                  (0,7,0)
+ *   hover    chain + :hover                         (0,8,0)
+ *   active   chain + :not(.btn-disabled) + :active  (0,9,0)
+ *
+ * `:not()` contributes the specificity of its ARGUMENT, so the five-`:not()`
+ * chain on the resting rule scores 7 — and the previous hover (0,3,0) and
+ * active (0,6,0) rules both LOST to their own neighbour. Neither had ever
+ * applied on any of the three house themes: hover and active resolved to the
+ * resting `--sh-plate` and buttons never lifted and never pressed.
+ *
+ * The chain was added by #379 so this block would stop beating the `sh-*`
+ * utilities, and it silently disabled the two rules underneath it.
+ *
+ * So each state repeats the whole chain. It is verbose on purpose: the states
+ * must out-specify resting, and doing it by counting rather than by source
+ * order means re-ordering this file cannot swap them back.
+ * Gated by tests/e2e/tests/depth-tokens.spec.ts. */
 [data-theme='scripthammer-dark']
-  .btn:not(.btn-ghost):not(.btn-link):not(.btn-disabled):active,
+  .btn:not(.btn-ghost):not(.btn-link):not(.sh-plate):not(.sh-well):not(
+    .sh-groove
+  ):hover,
 [data-theme='scripthammer-light']
-  .btn:not(.btn-ghost):not(.btn-link):not(.btn-disabled):active,
+  .btn:not(.btn-ghost):not(.btn-link):not(.sh-plate):not(.sh-well):not(
+    .sh-groove
+  ):hover,
 [data-theme='scripthammer-forge']
-  .btn:not(.btn-ghost):not(.btn-link):not(.btn-disabled):active {
-  box-shadow: var(--sh-groove);
+  .btn:not(.btn-ghost):not(.btn-link):not(.sh-plate):not(.sh-well):not(
+    .sh-groove
+  ):hover {
+  box-shadow: var(--sh-plate-lift);
 }
 
-[data-theme='scripthammer-dark'] .btn:hover,
-[data-theme='scripthammer-light'] .btn:hover,
-[data-theme='scripthammer-forge'] .btn:hover {
-  box-shadow:
-    0 4px 8px -1px rgb(0 0 0 / 0.3),
-    0 2px 4px -2px rgb(0 0 0 / 0.2);
+[data-theme='scripthammer-dark']
+  .btn:not(.btn-ghost):not(.btn-link):not(.sh-plate):not(.sh-well):not(
+    .sh-groove
+  ):not(.btn-disabled):active,
+[data-theme='scripthammer-light']
+  .btn:not(.btn-ghost):not(.btn-link):not(.sh-plate):not(.sh-well):not(
+    .sh-groove
+  ):not(.btn-disabled):active,
+[data-theme='scripthammer-forge']
+  .btn:not(.btn-ghost):not(.btn-link):not(.sh-plate):not(.sh-well):not(
+    .sh-groove
+  ):not(.btn-disabled):active {
+  box-shadow: var(--sh-groove);
 }
 
 /* DaisyUI's .stat-title and .stat-desc ship base-content at 60% alpha, which
