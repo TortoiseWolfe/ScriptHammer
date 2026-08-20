@@ -20,7 +20,7 @@ export default function ThreeDGamePage() {
         {/* Heading + breadcrumb */}
         <div className="mb-4">
           <h1 className="mb-1 text-2xl font-bold">3D Game (Three.js)</h1>
-          <nav aria-label="Breadcrumb" className="text-base-content/85 text-sm">
+          <nav aria-label="Breadcrumb" className="text-base-content text-sm">
             <Link href="/game" className="text-primary underline">
               /game
             </Link>

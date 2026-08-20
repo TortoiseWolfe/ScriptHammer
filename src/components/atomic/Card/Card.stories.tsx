@@ -184,12 +184,12 @@ export const ThemeShowcase: Story = {
       </h3>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Card title="Default Card">
-          <p className="text-base-content/80">
+          <p className="text-base-content">
             Standard card with shadow on the current theme surface.
           </p>
         </Card>
         <Card title="Bordered Card" bordered>
-          <p className="text-base-content/80">
+          <p className="text-base-content">
             Card with visible border for subtle separation.
           </p>
         </Card>
@@ -206,7 +206,7 @@ export const ThemeShowcase: Story = {
             </>
           }
         >
-          <p className="text-base-content/80">
+          <p className="text-base-content">
             Primary and ghost buttons on a card surface.
           </p>
         </Card>
@@ -218,7 +218,7 @@ export const ThemeShowcase: Story = {
             </Button>
           }
         >
-          <p className="text-base-content/80">
+          <p className="text-base-content">
             Card with accent action for call-to-action emphasis.
           </p>
         </Card>
@@ -228,7 +228,7 @@ export const ThemeShowcase: Story = {
       </h3>
       <div className="bg-neutral rounded-box grid grid-cols-1 gap-4 p-4 md:grid-cols-2">
         <Card title="On Neutral" bordered>
-          <p className="text-base-content/80">
+          <p className="text-base-content">
             Card elevated above a neutral background.
           </p>
         </Card>
@@ -241,7 +241,7 @@ export const ThemeShowcase: Story = {
             </Button>
           }
         >
-          <p className="text-base-content/80">
+          <p className="text-base-content">
             Glass effect shows the neutral surface beneath.
           </p>
         </Card>

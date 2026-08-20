@@ -146,7 +146,7 @@ export const PaymentQueuePanel: React.FC<PaymentQueuePanelProps> = ({
           {statusBadge}
         </div>
 
-        <p className="text-base-content/85 text-sm" data-testid="queue-count">
+        <p className="text-base-content text-sm" data-testid="queue-count">
           {items.length === 0
             ? 'No queued payments.'
             : `${pendingCount} pending` +

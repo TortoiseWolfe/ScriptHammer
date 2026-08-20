@@ -280,7 +280,7 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({
 
       {/* Provider Info */}
       {selectedProvider && (
-        <p className="text-base-content/85 text-center text-sm">
+        <p className="text-base-content text-center text-sm">
           {selectedProvider === 'stripe'
             ? 'You will be redirected to Stripe to complete your payment securely.'
             : 'Complete your payment securely in the PayPal window.'}

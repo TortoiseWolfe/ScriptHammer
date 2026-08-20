@@ -500,7 +500,7 @@ export default function CodSkeleton({
           >
             Start the scene
           </button>
-          <p className="text-base-content/85 text-xs">
+          <p className="text-base-content text-xs">
             Then: click to capture · WASD move · Shift sprint · C crouch · X
             prone · Space jump
           </p>

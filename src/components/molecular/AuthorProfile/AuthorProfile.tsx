@@ -52,17 +52,15 @@ export default function AuthorProfile({
           )}
           <div>
             <h2 className="card-title text-2xl">{author.name}</h2>
-            <p className="text-base-content/80">@{author.username}</p>
+            <p className="text-base-content">@{author.username}</p>
           </div>
         </div>
 
         {/* Bio */}
-        {author.bio && (
-          <p className="text-base-content/80 mb-4">{author.bio}</p>
-        )}
+        {author.bio && <p className="text-base-content mb-4">{author.bio}</p>}
 
         {/* Meta Info */}
-        <div className="text-base-content/80 mb-4 flex flex-wrap gap-4 text-sm">
+        <div className="text-base-content mb-4 flex flex-wrap gap-4 text-sm">
           {author.location && (
             <span className="flex items-center gap-1">
               <svg

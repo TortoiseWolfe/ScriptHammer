@@ -291,14 +291,14 @@ export function ReAuthModal({
                 not the Google/GitHub login". Wireframes 01 + 02 (Feature 013). */}
             {oauthUser && providerName && (
               <p
-                className="text-base-content/85 mb-2 text-sm"
+                className="text-base-content mb-2 text-sm"
                 data-testid="oauth-provider-badge"
               >
                 Signed in via {providerName}
               </p>
             )}
 
-            <p id="reauth-description" className="text-base-content/80 mb-4">
+            <p id="reauth-description" className="text-base-content mb-4">
               {mode === 'setup' ? (
                 <>
                   Since you signed in with {providerName || 'OAuth'}, you need a

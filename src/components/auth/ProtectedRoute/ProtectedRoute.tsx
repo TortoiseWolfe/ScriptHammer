@@ -100,7 +100,7 @@ export default function ProtectedRoute({
             </svg>
 
             <h2 className="card-title mb-2">Authentication Required</h2>
-            <p className="text-base-content/85 mb-6">
+            <p className="text-base-content mb-6">
               Please sign in to access this page. You&apos;ll be redirected back
               here after signing in.
             </p>

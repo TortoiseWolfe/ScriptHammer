@@ -45,7 +45,7 @@ export const ThemeShowcase: Story = {
         On Surfaces
       </h3>
       <div className="bg-base-100 rounded-lg p-4">
-        <span className="text-base-content/80 text-sm">base-100:</span>
+        <span className="text-base-content text-sm">base-100:</span>
         <CreateGroupModal {...args} />
       </div>
     </div>

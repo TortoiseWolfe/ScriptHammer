@@ -109,9 +109,7 @@ export default function PasswordStrengthIndicator({
         <span className={`text-sm font-medium ${config.textColor}`}>
           {config.label}
         </span>
-        <span className="text-base-content/85 text-xs">
-          {config.description}
-        </span>
+        <span className="text-base-content text-xs">{config.description}</span>
       </div>
     </div>
   );

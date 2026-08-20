@@ -91,7 +91,7 @@ export default function TemplateStats({
                 </span>
                 <span
                   aria-hidden="true"
-                  className="text-base-content/30 group-hover:text-base-content transition-all group-hover:translate-x-1"
+                  className="text-base-content group-hover:text-base-content transition-all group-hover:translate-x-1"
                 >
                   →
                 </span>

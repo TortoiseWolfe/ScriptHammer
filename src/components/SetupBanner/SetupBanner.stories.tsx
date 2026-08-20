@@ -90,13 +90,13 @@ export const ThemeShowcase: Story = {
           On Surfaces
         </h3>
         <div className="bg-base-100 rounded-lg p-4">
-          <span className="text-base-content/80 mb-2 block text-sm">
+          <span className="text-base-content mb-2 block text-sm">
             base-100:
           </span>
           <SetupBanner show={true} />
         </div>
         <div className="bg-base-200 rounded-lg p-4">
-          <span className="text-base-content/80 mb-2 block text-sm">
+          <span className="text-base-content mb-2 block text-sm">
             base-200:
           </span>
           <SetupBanner show={true} />

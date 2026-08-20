@@ -33,7 +33,7 @@ export default function EmptyConversationPrompt({
           viewBox="0 0 24 24"
           strokeWidth={1.5}
           stroke="currentColor"
-          className="text-base-content/30 mx-auto mb-4 h-24 w-24"
+          className="text-base-content mx-auto mb-4 h-24 w-24"
           aria-hidden="true"
         >
           <path
@@ -43,7 +43,7 @@ export default function EmptyConversationPrompt({
           />
         </svg>
         <h2 className="mb-2 text-xl font-semibold">Select a conversation</h2>
-        <p className="text-base-content/85">
+        <p className="text-base-content">
           Choose a conversation from the sidebar to start messaging
         </p>
         {onOpenSidebar && (

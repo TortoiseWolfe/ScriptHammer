@@ -20,7 +20,7 @@ const SentryMonitorDoc = ({
       <h3 className="mb-2 font-bold">Sentry Monitoring</h3>
       <p>DSN configured: {dsnConfigured ? '✅ Yes' : '❌ No (inert)'}</p>
       <p>Analytics consent: {analyticsConsent ? '✅ Granted' : '❌ Denied'}</p>
-      <p className="text-base-content/85 mt-2 text-sm">
+      <p className="text-base-content mt-2 text-sm">
         {active
           ? 'Sentry is initialized; handled errors report (PII-scrubbed).'
           : 'Sentry is NOT initialized — no events are sent.'}

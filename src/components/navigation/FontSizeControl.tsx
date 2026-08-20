@@ -18,13 +18,13 @@ export function TextSettingsPanel() {
 
   return (
     <div>
-      <h3 className="text-base-content/85 mb-3 text-sm font-semibold tracking-wide uppercase">
+      <h3 className="text-base-content mb-3 text-sm font-semibold tracking-wide uppercase">
         Text Settings
       </h3>
 
       {/* Font Size */}
       <div className="mb-4">
-        <label className="text-base-content/80 mb-2 block text-xs font-medium">
+        <label className="text-base-content mb-2 block text-xs font-medium">
           Size
         </label>
         <div className="btn-group btn-group-horizontal w-full">
@@ -53,7 +53,7 @@ export function TextSettingsPanel() {
 
       {/* Line Height */}
       <div className="mb-4">
-        <label className="text-base-content/80 mb-2 block text-xs font-medium">
+        <label className="text-base-content mb-2 block text-xs font-medium">
           Spacing
         </label>
         <div className="btn-group btn-group-horizontal w-full">

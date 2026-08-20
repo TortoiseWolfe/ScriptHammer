@@ -1,5 +1,5 @@
 /**
- * `text-base-content/50`, `/60` and `/70` must not come back (#411, #462).
+ * `text-base-content` must not be dimmed by opacity at all (#411, #462).
  *
  * WHY A GUARD AND NOT JUST A FIX. #411 measured these failing the 7:1 AAA gate and
  * removed them. They came back — eight live instances in `src/twin/cesium/` and two in
@@ -20,11 +20,22 @@
  * So `/70` and below fail on EVERY surface in the light theme, with no judgement call
  * about which surface the text landed on. That is what this file pins.
  *
- * WHAT THIS DELIBERATELY DOES NOT PIN: `/80` and `/85`. They are surface-DEPENDENT —
- * `/80` passes on `base-100` (7.08, a margin of 0.08) and fails on `base-200` (6.62).
- * A blanket ban would be right by #462's recommendation but is a 184-instance change
- * across 101 files, which is its own piece of work. Banning only what fails everywhere
- * keeps this check free of surface analysis it cannot do from a string.
+ * `/80` AND `/85` ARE NOW BANNED TOO, and the reason the old note here gave for sparing
+ * them turned out to be wrong. It said they were "surface-DEPENDENT" — `/80` passing on
+ * `base-100` at 7.08 — but that table measures only `scripthammer-light`. Recomputed
+ * across ALL 35 enabled themes (composite in sRGB, then WCAG 2.x luminance, via
+ * scripts/theme-contrast/compute.mjs):
+ *
+ *              cells failing 7:1     worst ratio    a surface safe on every theme?
+ *   /85          29 of 105              4.01                    NONE
+ *   /80          38 of 105              3.78                    NONE
+ *
+ * There is no surface on which either is safe, so there was never a per-call-site
+ * judgement to make — the worst cases sit at roughly half the gate. The 184-instance
+ * sweep the old note deferred is done.
+ *
+ * This is why the regex now bans every opacity below 100 rather than a hand-picked set:
+ * "which opacities are safe" depends on the theme set, and the theme set changes.
  *
  * The instances found in 2026-08 were worse than the table suggests: they sat on
  * `bg-base-100/90` with `backdrop-blur`, floating over the Cesium canvas, at 10-11px.
@@ -41,8 +52,13 @@ const path = require('node:path');
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const SRC = path.join(REPO_ROOT, 'src');
 
-/** Opacities that fail 7:1 on every surface in the light theme (#462). */
-const BANNED = /text-base-content\/(?:[0-7]\d|[0-9])\b/;
+/**
+ * ANY opacity below 100 (#462).
+ *
+ * Not a list of "the bad ones": measured across all 35 themes, none of them is safe on
+ * any surface. Size and weight de-emphasise text without costing contrast.
+ */
+const BANNED = /text-base-content\/(?:[1-9]?[0-9])\b/;
 
 /**
  * Source files only.
@@ -126,8 +142,12 @@ function offenders() {
       if (!m) return;
       const rel = path.relative(REPO_ROOT, file);
       for (const cls of m) {
-        const pct = Number(cls.split('/')[1]);
-        if (pct > 70) continue;
+        // Uses BANNED, the same rule the self-test exercises. This line used to read
+        // `if (pct > 70) continue`, a SECOND hardcoded copy of the threshold — so
+        // widening BANNED to cover /80 and /85 changed nothing here and the guard went
+        // on passing against a reintroduced /80. Caught by mutation, not by review.
+        // One rule, one place.
+        if (!BANNED.test(cls)) continue;
         if (ALLOWED[rel]) continue;
         if (isDecorative(lines, i)) continue;
         found.push(`${rel}:${i + 1} (${cls})`);
@@ -149,7 +169,7 @@ describe('dimmed body text stays above the AAA floor (#411, #462)', () => {
     );
   });
 
-  it('has no text-base-content at 70% or below', () => {
+  it('has no text-base-content dimmed by opacity at all', () => {
     assert.deepEqual(
       offenders(),
       [],
@@ -163,18 +183,24 @@ describe('dimmed body text stays above the AAA floor (#411, #462)', () => {
 
   it('the detector can actually fail', () => {
     // The control. A regex that matched nothing would report the repo as clean.
-    const check = (line) => {
-      const m = line.match(/text-base-content\/(\d+)/g) ?? [];
-      return m.some((cls) => Number(cls.split('/')[1]) <= 70);
-    };
+    // Exercises BANNED itself rather than a reimplementation of it. The previous
+    // version re-derived the rule inline (`<= 70`), so it agreed with the regex only
+    // by coincidence — and it kept passing after BANNED was widened, still claiming
+    // /80 was allowed. A control that tests a COPY of the thing is not a control.
+    const check = (line) => BANNED.test(line);
 
     assert.equal(check('<p className="text-base-content/70 text-sm">'), true);
     assert.equal(check('<p className="text-base-content/60 text-sm">'), true);
     assert.equal(check('<p className="text-base-content/50">'), true);
-    // Surface-dependent, deliberately NOT banned here — see the header.
-    assert.equal(check('<p className="text-base-content/80">'), false);
-    assert.equal(check('<p className="text-base-content/85">'), false);
+    // Banned as of #462: measured across all 35 themes, neither is safe on ANY
+    // surface. This assertion read `false` while that was believed to be a
+    // per-surface judgement call.
+    assert.equal(check('<p className="text-base-content/80">'), true);
+    assert.equal(check('<p className="text-base-content/85">'), true);
+    assert.equal(check('<p className="text-base-content/95">'), true);
+    // Full opacity is the only acceptable form and must NOT trip the regex.
     assert.equal(check('<p className="text-base-content">'), false);
+    assert.equal(check('<p className="text-base-content-foo">'), false);
     assert.ok(BANNED instanceof RegExp);
   });
 

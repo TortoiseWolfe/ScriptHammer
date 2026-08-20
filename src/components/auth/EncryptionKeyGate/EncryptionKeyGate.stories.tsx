@@ -29,7 +29,7 @@ export const Default: Story = {
     <EncryptionKeyGate>
       <div className="p-8">
         <h2 className="text-xl font-semibold">Protected messaging content</h2>
-        <p className="text-base-content/85">
+        <p className="text-base-content">
           This only renders once encryption keys are confirmed in memory.
         </p>
       </div>
