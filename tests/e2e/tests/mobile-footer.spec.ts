@@ -29,7 +29,16 @@ test.describe('Mobile Footer', () => {
 
     const footerLinks = await page.locator('footer a').all();
 
-    if (footerLinks.length >= 2) {
+    // Asserted, not branched on (#842). The real count is 3 at every width, so this
+    // guard is always true today — which is exactly why it is worth converting: if
+    // the footer is ever emptied or the selector drifts, a guard would keep this
+    // test green while it measured nothing.
+    expect(
+      footerLinks.length,
+      'fewer than two footer links — nothing to compare (#842)'
+    ).toBeGreaterThanOrEqual(2);
+
+    {
       const box1 = await footerLinks[0].boundingBox();
       const box2 = await footerLinks[1].boundingBox();
 

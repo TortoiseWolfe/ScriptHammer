@@ -34,13 +34,30 @@ test.describe('Mobile Form Inputs', () => {
 
   test('Form inputs meet 44px height minimum', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/');
+    await page.goto('/contact/');
     await dismissCookieBanner(page);
     await waitForLayoutStability(page);
 
+    // `:not([tabindex="-1"])` excludes the spam honeypot, on the property that
+    // matters rather than by name: it is positioned off-screen with tabIndex -1, so
+    // it is not keyboard-reachable and a touch-target minimum cannot apply to it.
+    // Playwright's isVisible() returns true for off-screen elements, so filtering on
+    // visibility alone does not exclude it.
     const inputs = await page
-      .locator('input[type="text"], input[type="email"], textarea, select')
+      .locator(
+        'input[type="text"]:not([tabindex="-1"]), input[type="email"]:not([tabindex="-1"]), textarea:not([tabindex="-1"]), select:not([tabindex="-1"])'
+      )
       .all();
+
+    // ASSERT the precondition, do not branch on it (#842). This spec used to visit
+    // `/`, which has ZERO form inputs and zero `<form>` elements — measured at 390px
+    // with the page proven loaded. Every assertion below sat inside the loop, so the
+    // test passed having asserted nothing, on every run, in the required lane.
+    expect(
+      inputs.length,
+      'no form inputs found — this spec measures nothing unless the page it visits ' +
+        'actually has a form (#842)'
+    ).toBeGreaterThan(0);
 
     for (const input of inputs) {
       if (await input.isVisible()) {
@@ -58,7 +75,7 @@ test.describe('Mobile Form Inputs', () => {
 
   test('Form fields have adequate spacing', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/');
+    await page.goto('/contact/');
     await dismissCookieBanner(page);
     await waitForLayoutStability(page);
 
@@ -67,6 +84,12 @@ test.describe('Mobile Form Inputs', () => {
     const formGroups = await page
       .locator('fieldset.fieldset, label.label, [class*="input-group"]')
       .all();
+
+    expect(
+      formGroups.length,
+      'no field groups found — see #842; branching on this instead of asserting it ' +
+        'is what let this spec pass against a page with no form'
+    ).toBeGreaterThan(0);
 
     for (const group of formGroups) {
       const marginBottom = await group.evaluate((el) =>
