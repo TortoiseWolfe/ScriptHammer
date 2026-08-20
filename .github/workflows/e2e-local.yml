@@ -426,7 +426,7 @@ jobs:
               --project=${{ matrix.project }} --shard=${{ matrix.shard }} \
               $WORKERS_FLAG \
               --grep-invert='@hosted' \
-              --reporter=line,json || true
+              --reporter=line,json,./tests/e2e/reporters/assertion-count-reporter.ts || true
         env:
           CI: 'true'
           SKIP_WEBSERVER: 'true'
