@@ -167,8 +167,11 @@ test.describe('Colour vision controls (Display popover) - Accessibility', () => 
     });
     await page.waitForTimeout(300);
 
-    // Navigate to another page
-    await page.goto('/about');
+    // `/blog/`, a route that exists. This said `/about`, which this app has never
+    // had — so "navigate to another page" navigated to the 404 template, and the
+    // persistence this test claims to prove was only ever proven across an error
+    // page (#396's "an E2E test that lands on the 404 route" class).
+    await page.goto('/blog/');
     await page.waitForLoadState('networkidle');
 
     // Return to home
