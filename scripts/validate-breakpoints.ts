@@ -129,6 +129,8 @@ function validateCSSSync() {
 function validateTestViewports() {
   console.log('🔍 Validating test viewports...\n');
 
+  const beforeViewports = errors.length;
+
   for (const viewport of TEST_VIEWPORTS) {
     const breakpoint = getBreakpointByWidth(viewport.width);
 
@@ -138,6 +140,9 @@ function validateTestViewports() {
       isLandscape && breakpoint.category !== viewport.category;
 
     if (breakpoint.category !== viewport.category && !isOrientationMismatch) {
+      // Left as a WARNING deliberately: a viewport whose declared category
+      // disagrees with the breakpoint it lands in is a naming inconsistency, not
+      // lost coverage. The width is still tested.
       errors.push({
         severity: 'warning',
         message: `Test viewport "${viewport.name}" (${viewport.width}px) has category "${viewport.category}" but falls into breakpoint "${breakpoint.name}" with category "${breakpoint.category}"`,
@@ -145,7 +150,9 @@ function validateTestViewports() {
     }
   }
 
-  console.log('✅ Test viewports validated\n');
+  if (errors.length === beforeViewports) {
+    console.log('✅ Test viewports validated\n');
+  }
 }
 
 /**
@@ -154,20 +161,33 @@ function validateTestViewports() {
 function validateCriticalWidthsCoverage() {
   console.log('🔍 Validating critical mobile widths coverage...\n');
 
+  const before = errors.length;
   const testWidths = TEST_VIEWPORTS.filter((v) => v.category === 'mobile').map(
     (v) => v.width
   );
 
   for (const criticalWidth of CRITICAL_MOBILE_WIDTHS) {
     if (!testWidths.includes(criticalWidth)) {
+      // ERROR, not warning (#396). This is a COVERAGE FLOOR: if a critical width
+      // stops being tested, every mobile gate silently measures less than it
+      // claims to, and nothing else notices. `errorCount > 0` is what sets the
+      // exit code, so as a warning this check ran in CI and could not fail —
+      // which is the exact pattern #396 catalogues. Measured before the change:
+      // pointing CRITICAL_MOBILE_WIDTHS at an uncovered 999px still exited 0.
       errors.push({
-        severity: 'warning',
+        severity: 'error',
         message: `Critical mobile width ${criticalWidth}px is not covered by test viewports`,
       });
     }
   }
 
-  console.log('✅ Critical widths coverage validated\n');
+  // Only claim success if this check actually found nothing. It used to print the
+  // tick unconditionally, so a run that had just recorded an uncovered width still
+  // showed "✅ Critical widths coverage validated" in the log directly above the
+  // warning it had raised.
+  if (errors.length === before) {
+    console.log('✅ Critical widths coverage validated\n');
+  }
 }
 
 /**
