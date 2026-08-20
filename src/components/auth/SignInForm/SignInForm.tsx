@@ -42,6 +42,24 @@ export default function SignInForm({
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * The error for ONE named field, kept apart from `error` (#857).
+   *
+   * Everything used to funnel into `error` and render in a single form-level
+   * alert with no `id`, while no input carried `aria-invalid` or
+   * `aria-describedby`. A screen-reader user heard "Invalid email address" with
+   * nothing tying it to the field it was about.
+   *
+   * Only CLIENT-SIDE validation is field-scoped. The post-submit sign-in failure
+   * deliberately stays form-level: that message is generic to avoid account
+   * enumeration, and pinning it to the email input would both mislead and hint
+   * at which half was wrong. Rate limiting and the captcha challenge are not
+   * about one field either.
+   */
+  const [fieldError, setFieldError] = useState<{
+    field: 'email';
+    message: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [remainingAttempts, setRemainingAttempts] = useState<number | null>(
     null
@@ -55,11 +73,16 @@ export default function SignInForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setFieldError(null);
 
-    // Enhanced email validation (REQ-SEC-004)
+    // Enhanced email validation (REQ-SEC-004). Field-scoped: this one IS about
+    // the email input, so it is announced against it (#857).
     const emailValidation = validateEmail(email);
     if (!emailValidation.valid) {
-      setError(emailValidation.errors[0] || 'Invalid email address');
+      setFieldError({
+        field: 'email',
+        message: emailValidation.errors[0] || 'Invalid email address',
+      });
       return;
     }
 
@@ -288,12 +311,25 @@ export default function SignInForm({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="input input-bordered min-h-11 w-full"
+            className={`input input-bordered min-h-11 w-full ${
+              fieldError?.field === 'email' ? 'input-error' : ''
+            }`}
             placeholder="you@example.com"
             autoComplete="email"
             required
             disabled={loading}
+            aria-invalid={fieldError?.field === 'email'}
+            aria-describedby={
+              fieldError?.field === 'email' ? 'email-error' : undefined
+            }
           />
+          {fieldError?.field === 'email' && (
+            <div className="label" id="email-error">
+              <span className="text-error" role="alert" aria-live="polite">
+                {fieldError.message}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
