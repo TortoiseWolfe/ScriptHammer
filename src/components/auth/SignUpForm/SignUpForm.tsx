@@ -42,6 +42,23 @@ export default function SignUpForm({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * The error for ONE named field, kept apart from `error` (#857).
+   *
+   * THREE distinct field conditions used to funnel into `error` and render in a
+   * single form-level alert with no `id`: an invalid email, a short password,
+   * and a mismatched confirmation. No input carried `aria-invalid` or
+   * `aria-describedby`, so a screen-reader user heard "Passwords do not match"
+   * with nothing tying it to the field that was wrong.
+   *
+   * Only client-side validation is field-scoped. The captcha challenge, the rate
+   * limit and the sign-up failure from Supabase stay form-level — none is about
+   * one field.
+   */
+  const [fieldError, setFieldError] = useState<{
+    field: 'email' | 'password' | 'confirmPassword';
+    message: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   // (#353) Null until Turnstile solves; cleared on expiry/error so a stale
   // single-use token is never submitted. Always null when CAPTCHA is
@@ -52,11 +69,15 @@ export default function SignUpForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setFieldError(null);
 
-    // Enhanced email validation (REQ-SEC-004)
+    // Enhanced email validation (REQ-SEC-004). Field-scoped (#857).
     const emailValidation = validateEmail(email);
     if (!emailValidation.valid) {
-      setError(emailValidation.errors[0] || 'Invalid email address');
+      setFieldError({
+        field: 'email',
+        message: emailValidation.errors[0] || 'Invalid email address',
+      });
       return;
     }
 
@@ -68,13 +89,21 @@ export default function SignUpForm({
     }
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setFieldError({
+        field: 'password',
+        message: 'Password must be at least 8 characters',
+      });
       return;
     }
 
     // Confirm password match
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      // Announced against the CONFIRMATION field, not the password: that is the
+      // one the user is being asked to change.
+      setFieldError({
+        field: 'confirmPassword',
+        message: 'Passwords do not match',
+      });
       return;
     }
 
@@ -211,11 +240,24 @@ export default function SignUpForm({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="input input-bordered min-h-11 w-full"
+            className={`input input-bordered min-h-11 w-full ${
+              fieldError?.field === 'email' ? 'input-error' : ''
+            }`}
             placeholder="you@example.com"
             required
             disabled={loading}
+            aria-invalid={fieldError?.field === 'email'}
+            aria-describedby={
+              fieldError?.field === 'email' ? 'email-error' : undefined
+            }
           />
+          {fieldError?.field === 'email' && (
+            <div className="label" id="email-error">
+              <span className="text-error" role="alert" aria-live="polite">
+                {fieldError.message}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -232,11 +274,24 @@ export default function SignUpForm({
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="input input-bordered min-h-11 w-full"
+            className={`input input-bordered min-h-11 w-full ${
+              fieldError?.field === 'password' ? 'input-error' : ''
+            }`}
             placeholder="••••••••"
             required
             disabled={loading}
+            aria-invalid={fieldError?.field === 'password'}
+            aria-describedby={
+              fieldError?.field === 'password' ? 'password-error' : undefined
+            }
           />
+          {fieldError?.field === 'password' && (
+            <div className="label" id="password-error">
+              <span className="text-error" role="alert" aria-live="polite">
+                {fieldError.message}
+              </span>
+            </div>
+          )}
           {/* Password strength indicator (T042) */}
           <div className="mt-2">
             <PasswordStrengthIndicator password={password} />
@@ -257,11 +312,26 @@ export default function SignUpForm({
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="input input-bordered min-h-11 w-full"
+            className={`input input-bordered min-h-11 w-full ${
+              fieldError?.field === 'confirmPassword' ? 'input-error' : ''
+            }`}
             placeholder="••••••••"
             required
             disabled={loading}
+            aria-invalid={fieldError?.field === 'confirmPassword'}
+            aria-describedby={
+              fieldError?.field === 'confirmPassword'
+                ? 'confirm-password-error'
+                : undefined
+            }
           />
+          {fieldError?.field === 'confirmPassword' && (
+            <div className="label" id="confirm-password-error">
+              <span className="text-error" role="alert" aria-live="polite">
+                {fieldError.message}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
