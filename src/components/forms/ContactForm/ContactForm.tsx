@@ -359,7 +359,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
         <div className="mt-6">
           <button
             type="submit"
-            className={`btn btn-primary ${isSubmitting ? 'loading' : ''} ${!isOnline ? 'btn-warning' : ''}`}
+            className={`btn btn-primary min-h-11 ${isSubmitting ? 'loading' : ''} ${!isOnline ? 'btn-warning' : ''}`}
             disabled={isSubmitting || !!honeypotValue}
           >
             {isSubmitting
