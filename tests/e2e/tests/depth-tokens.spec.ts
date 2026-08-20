@@ -338,4 +338,115 @@ test.describe('#377 depth tokens', () => {
       expect(emitted[cls]).toContain('oklch');
     }
   });
+  /**
+   * T5 — a button must visibly change on hover and on press.
+   *
+   * #838: on all three house themes it did neither. The resting rule carries a
+   * five-`:not()` chain (added by #379 so this block would stop beating the
+   * `sh-*` utilities), and `:not()` contributes its argument's specificity — so
+   * resting scored (0,7,0) against hover's (0,3,0) and active's (0,6,0). Both
+   * state rules lost to their own neighbour and had never applied.
+   *
+   * Nothing could see it. No screenshot shows a state that never renders, and
+   * every other test in this file reads RESTING only — which is also how a
+   * literal `rgb(0 0 0 / 0.3)` survived the whole #376/#426 epic inside the
+   * hover rule.
+   *
+   * The assertion is DIFFERENCE, not specific values. Pinning the exact shadow
+   * would break on every legitimate design tweak while still not proving the
+   * rule applies; "the three states are three different things" is the property
+   * that actually failed, and it fails again the moment the ladder is disturbed.
+   *
+   * MUTATION CHECK: drop one `:not()` from the hover or active selector in
+   * globals.css so it sinks back below resting — that state collapses onto the
+   * resting value and this fails.
+   */
+  test('buttons lift on hover and press on active, on every house theme', async ({
+    page,
+  }) => {
+    const HOUSE = THEMES.filter((t) => t.startsWith('scripthammer-'));
+    // Non-vacuity: if the house themes are ever renamed this must fail loudly
+    // rather than pass having looped over nothing.
+    expect(
+      HOUSE.length,
+      'no scripthammer-* themes found'
+    ).toBeGreaterThanOrEqual(3);
+
+    for (const theme of HOUSE) {
+      await page.goto('/');
+      await page.evaluate((t) => {
+        document.documentElement.setAttribute('data-theme', t);
+      }, theme);
+
+      // A real, plain `.btn` — not `.btn-ghost`/`.btn-link`, which are flat by
+      // design and excluded by the resting rule on purpose.
+      await page.evaluate(() => {
+        document.querySelector('#sh-838-probe')?.remove();
+        const b = document.createElement('button');
+        b.id = 'sh-838-probe';
+        b.className = 'btn';
+        b.textContent = 'probe';
+        b.style.position = 'fixed';
+        b.style.top = '50%';
+        b.style.left = '50%';
+        b.style.zIndex = '99999';
+        document.body.appendChild(b);
+      });
+
+      const probe = page.locator('#sh-838-probe');
+      const shadowOf = () =>
+        probe.evaluate((el) => window.getComputedStyle(el).boxShadow);
+
+      // Park the pointer away first, or "resting" is whatever the previous
+      // iteration left hovered.
+      await page.mouse.move(0, 0);
+      const resting = await shadowOf();
+
+      await probe.hover();
+      // Confirm the state before reading it. The bug being pinned here is precisely a
+      // rule that does not apply, and reading a computed value without checking the
+      // element is actually in that state is how the original investigation produced
+      // three different answers for one source.
+      expect(
+        await probe.evaluate((el) => el.matches(':hover')),
+        `${theme}: probe is not :hover`
+      ).toBe(true);
+
+      // POLLED, not read once. DaisyUI transitions box-shadow, so a single read taken
+      // straight after .hover() catches the animation MID-FLIGHT — measured
+      // `7.05px 14.11px -5.26px`, partway between --sh-plate (6/12/-5) and
+      // --sh-plate-lift (10/20/-6). A one-shot read is therefore timing-dependent: it
+      // can land on a value equal to resting and fail for no reason. Polling waits for
+      // the state to settle and asserts the property instead of a moment.
+      await expect.poll(shadowOf, { timeout: 5000 }).not.toBe(resting);
+      const hover = await shadowOf();
+
+      await page.mouse.down();
+      expect(
+        await probe.evaluate((el) => el.matches(':active')),
+        `${theme}: probe is not :active`
+      ).toBe(true);
+      await expect.poll(shadowOf, { timeout: 5000 }).not.toBe(hover);
+      const active = await shadowOf();
+      await page.mouse.up();
+
+      expect(active, `${theme}: active must differ from resting`).not.toBe(
+        resting
+      );
+
+      // The depth system exists to replace literal black: it is invisible on a
+      // dark surface and grey sludge on a saturated one. This is what went
+      // unnoticed for nine tickets inside a rule that never rendered.
+      for (const [name, value] of [
+        ['resting', resting],
+        ['hover', hover],
+        ['active', active],
+      ] as const) {
+        expect(
+          value,
+          `${theme}: ${name} uses literal black instead of --sh-ink-*`
+        ).not.toMatch(/rgba?\(\s*0[,\s]+0[,\s]+0\b/);
+      }
+    }
+  });
 });
