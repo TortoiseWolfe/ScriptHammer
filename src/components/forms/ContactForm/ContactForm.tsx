@@ -293,10 +293,15 @@ export const ContactForm: React.FC<ContactFormProps> = ({
             className={`input min-h-11 ${errors.subject ? 'input-error' : ''}`}
             aria-required="true"
             aria-invalid={!!errors.subject}
-            aria-describedby={errors.subject ? 'subject-error' : undefined}
+            aria-describedby={
+              errors.subject ? 'subject-help subject-error' : 'subject-help'
+            }
             maxLength={200}
             required
           />
+          <p id="subject-help" className="text-base-content mt-1 text-sm">
+            At least 5 characters
+          </p>
           {errors.subject && (
             <label className="label" id="subject-error">
               <span className="text-error" role="alert" aria-live="polite">
@@ -320,10 +325,15 @@ export const ContactForm: React.FC<ContactFormProps> = ({
             className={`textarea ${errors.message ? 'textarea-error' : ''}`}
             aria-required="true"
             aria-invalid={!!errors.message}
-            aria-describedby={errors.message ? 'message-error' : undefined}
+            aria-describedby={
+              errors.message ? 'message-help message-error' : 'message-help'
+            }
             maxLength={5000}
             required
           />
+          <p id="message-help" className="text-base-content mt-1 text-sm">
+            At least 10 characters
+          </p>
           {errors.message && (
             <label className="label" id="message-error">
               <span className="text-error" role="alert" aria-live="polite">
