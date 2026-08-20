@@ -36,6 +36,7 @@ describe('GDPRService', () => {
         signOut: vi.fn(),
       },
       from: vi.fn(),
+      functions: { invoke: vi.fn() },
     };
 
     vi.mocked(supabaseClient.createClient).mockReturnValue(mockSupabase);
@@ -659,13 +660,10 @@ describe('GDPRService', () => {
         }),
       } as any;
 
-      // Mock user_profiles delete
-      mockSupabase.from.mockReturnValue({
-        delete: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({
-            error: null,
-          }),
-        }),
+      // Deletion is server-side now (#859).
+      mockSupabase.functions.invoke.mockResolvedValue({
+        data: { success: true },
+        error: null,
       });
 
       // Mock sign out
@@ -679,11 +677,90 @@ describe('GDPRService', () => {
       expect(mockQueuedMessagesDelete).toHaveBeenCalled();
       expect(mockCachedMessagesDelete).toHaveBeenCalled();
 
-      // Verify Supabase deletion
-      expect(mockSupabase.from).toHaveBeenCalledWith('user_profiles');
+      // This assertion used to read `expect(mockSupabase.from).toHaveBeenCalledWith(
+      // 'user_profiles')`, and it PASSED for as long as the feature deleted nothing —
+      // the mock returned `{ error: null }`, which is exactly what RLS returned in
+      // production when it filtered the statement to zero rows. Asserting that a call
+      // was made can never catch a call that does nothing.
+      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
+        'delete-account',
+        expect.objectContaining({ method: 'POST' })
+      );
+      // No user id is passed, and none must be: the function holds the service role and
+      // takes the account to delete from the verified JWT alone.
+      const [, invokeOptions] = mockSupabase.functions.invoke.mock.calls[0];
+      expect(JSON.stringify(invokeOptions ?? {})).not.toContain('user-123');
+
+      // The client must NOT try to delete the profile itself any more.
+      expect(mockSupabase.from).not.toHaveBeenCalledWith('user_profiles');
 
       // Verify sign out
       expect(mockSupabase.auth.signOut).toHaveBeenCalled();
+    });
+
+    it('throws when the function reports failure in its BODY, not just on transport (#859)', async () => {
+      mockSupabase.auth.getSession.mockResolvedValue({
+        data: { session: { user: { id: 'user-123', email: 't@e.com' } } },
+        error: null,
+      });
+      for (const table of [
+        'messaging_private_keys',
+        'messaging_queued_messages',
+        'messaging_cached_messages',
+      ]) {
+        (vi.mocked(messagingDb.messagingDb) as any)[table] = {
+          where: vi.fn().mockReturnValue({
+            equals: vi.fn().mockReturnValue({ delete: vi.fn() }),
+          }),
+        };
+      }
+
+      // A 200 with an error payload. This is the shape the whole bug was about:
+      // "no transport error" is not the same as "the account was deleted".
+      mockSupabase.functions.invoke.mockResolvedValue({
+        data: {
+          error: 'Account deletion reported success but the user still exists',
+        },
+        error: null,
+      });
+      mockSupabase.auth.signOut.mockResolvedValue({ error: null });
+
+      await expect(gdprService.deleteUserAccount()).rejects.toThrow(
+        /still exists/
+      );
+
+      // And critically: the user is NOT signed out on a failed deletion. Signing them
+      // out is what made the original defect look like success.
+      expect(mockSupabase.auth.signOut).not.toHaveBeenCalled();
+    });
+
+    it('throws when the function invocation itself errors (#859)', async () => {
+      mockSupabase.auth.getSession.mockResolvedValue({
+        data: { session: { user: { id: 'user-123', email: 't@e.com' } } },
+        error: null,
+      });
+      for (const table of [
+        'messaging_private_keys',
+        'messaging_queued_messages',
+        'messaging_cached_messages',
+      ]) {
+        (vi.mocked(messagingDb.messagingDb) as any)[table] = {
+          where: vi.fn().mockReturnValue({
+            equals: vi.fn().mockReturnValue({ delete: vi.fn() }),
+          }),
+        };
+      }
+
+      mockSupabase.functions.invoke.mockResolvedValue({
+        data: null,
+        error: new Error('Edge Function returned a non-2xx status code'),
+      });
+      mockSupabase.auth.signOut.mockResolvedValue({ error: null });
+
+      await expect(gdprService.deleteUserAccount()).rejects.toThrow(
+        /Failed to delete account/
+      );
+      expect(mockSupabase.auth.signOut).not.toHaveBeenCalled();
     });
 
     it('should throw AuthenticationError if user not signed in (T190)', async () => {
@@ -702,57 +779,34 @@ describe('GDPRService', () => {
     });
 
     it('should throw ConnectionError if deletion fails (T190)', async () => {
-      // Mock authenticated user
       mockSupabase.auth.getSession.mockResolvedValue({
         data: {
-          session: {
-            user: { id: 'user-123', email: 'test@example.com' },
-          },
+          session: { user: { id: 'user-123', email: 'test@example.com' } },
         },
         error: null,
       });
       mockSupabase.auth.getUser.mockResolvedValue({
-        data: {
-          user: {
-            id: 'user-123',
-            email: 'test@example.com',
-          },
-        },
+        data: { user: { id: 'user-123', email: 'test@example.com' } },
         error: null,
       });
 
-      // Mock IndexedDB deletions (succeed)
-      vi.mocked(messagingDb.messagingDb).messaging_private_keys = {
-        where: vi.fn().mockReturnValue({
-          equals: vi.fn().mockReturnValue({
-            delete: vi.fn().mockResolvedValue(undefined),
+      for (const table of [
+        'messaging_private_keys',
+        'messaging_queued_messages',
+        'messaging_cached_messages',
+      ]) {
+        (vi.mocked(messagingDb.messagingDb) as any)[table] = {
+          where: vi.fn().mockReturnValue({
+            equals: vi.fn().mockReturnValue({ delete: vi.fn() }),
           }),
-        }),
-      } as any;
+        };
+      }
 
-      vi.mocked(messagingDb.messagingDb).messaging_queued_messages = {
-        where: vi.fn().mockReturnValue({
-          equals: vi.fn().mockReturnValue({
-            delete: vi.fn().mockResolvedValue(undefined),
-          }),
-        }),
-      } as any;
-
-      vi.mocked(messagingDb.messagingDb).messaging_cached_messages = {
-        where: vi.fn().mockReturnValue({
-          equals: vi.fn().mockReturnValue({
-            delete: vi.fn().mockResolvedValue(undefined),
-          }),
-        }),
-      } as any;
-
-      // Mock user_profiles delete to fail
-      mockSupabase.from.mockReturnValue({
-        delete: vi.fn().mockReturnValue({
-          eq: vi.fn().mockResolvedValue({
-            error: new Error('Database error'),
-          }),
-        }),
+      // Was a mocked `from('user_profiles').delete()` failure. Deletion is server-side
+      // now (#859), so the failure that matters is the function reporting one.
+      mockSupabase.functions.invoke.mockResolvedValue({
+        data: null,
+        error: new Error('Database error'),
       });
 
       await expect(gdprService.deleteUserAccount()).rejects.toThrow(
