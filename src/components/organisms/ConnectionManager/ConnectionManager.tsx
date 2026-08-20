@@ -127,7 +127,7 @@ export default function ConnectionManager({
                     'Unknown User'}
                 </p>
                 {otherUser.username && otherUser.display_name && (
-                  <p className="text-base-content/85 text-sm">
+                  <p className="text-base-content text-sm">
                     @{otherUser.username}
                   </p>
                 )}
@@ -276,7 +276,7 @@ export default function ConnectionManager({
             (activeTab === 'sent' && connections.pending_sent.length === 0) ||
             (activeTab === 'accepted' && connections.accepted.length === 0) ||
             (activeTab === 'blocked' && connections.blocked.length === 0)) && (
-            <div className="text-base-content/85 py-8 text-center">
+            <div className="text-base-content py-8 text-center">
               <p>No {activeTab} connections</p>
             </div>
           )}

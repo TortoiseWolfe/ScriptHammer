@@ -61,7 +61,7 @@ export default function TagsPage() {
         <h1 className="font-display mb-4 !text-2xl leading-[1.05] tracking-[-0.025em] sm:!text-4xl md:!text-5xl">
           Blog Tags
         </h1>
-        <p className="text-base-content/85 text-lg">
+        <p className="text-base-content text-lg">
           Explore {tags.length} topics across {totalPosts} blog posts
         </p>
       </div>
@@ -90,7 +90,7 @@ export default function TagsPage() {
                 <h3 className="text-base-content font-display text-base leading-tight">
                   {tag.name}
                 </h3>
-                <p className="text-base-content/85 font-mono text-[11px] tracking-[.14em] uppercase">
+                <p className="text-base-content font-mono text-[11px] tracking-[.14em] uppercase">
                   {tag.count} {tag.count === 1 ? 'post' : 'posts'}
                 </p>
               </Link>
@@ -118,7 +118,7 @@ export default function TagsPage() {
               className="sh-groove bg-base-100 text-base-content hover:bg-base-200 focus-visible:ring-primary inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 font-mono text-[11px] tracking-[.1em] uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none"
             >
               {tag.name}
-              <span className="text-base-content/85">({tag.count})</span>
+              <span className="text-base-content">({tag.count})</span>
             </Link>
           ))}
         </nav>

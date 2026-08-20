@@ -49,7 +49,7 @@ export function ThemeSwitcher() {
             claim survives long enough to go stale: it reads right until
             someone adds a theme, and then it is wrong on a live page with
             nothing checking. */}
-        <p className="text-base-content/85 text-sm">
+        <p className="text-base-content text-sm">
           Choose from {THEME_COUNT} themes ({HOUSE_THEME_COUNT} house +{' '}
           {DAISYUI_THEME_COUNT} DaisyUI)
         </p>

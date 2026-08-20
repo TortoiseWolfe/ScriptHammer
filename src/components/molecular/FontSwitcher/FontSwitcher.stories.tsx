@@ -36,7 +36,7 @@ export const AllFonts: Story = {
       <div className="text-lg font-bold">Font Switcher Component</div>
       <FontSwitcher />
       <div className="divider"></div>
-      <div className="text-base-content/85 text-sm">
+      <div className="text-base-content text-sm">
         <p>Available fonts:</p>
         <ul className="mt-2 list-inside list-disc">
           <li>System Default - OS native font</li>
@@ -132,11 +132,11 @@ export const ThemeShowcase: Story = {
         On Surfaces
       </h3>
       <div className="bg-base-100 flex items-center gap-4 rounded-lg p-4">
-        <span className="text-base-content/80 text-sm">base-100:</span>
+        <span className="text-base-content text-sm">base-100:</span>
         <FontSwitcher />
       </div>
       <div className="bg-base-200 flex items-center gap-4 rounded-lg p-4">
-        <span className="text-base-content/80 text-sm">base-200:</span>
+        <span className="text-base-content text-sm">base-200:</span>
         <FontSwitcher />
       </div>
       <div className="bg-neutral flex items-center gap-4 rounded-lg p-4">

@@ -47,7 +47,7 @@ export const NoFlag: Story = {
     sessionStorage.removeItem('messaging_setup_complete');
     return (
       <div className="p-8">
-        <p className="text-base-content/85">
+        <p className="text-base-content">
           Nothing renders — sessionStorage flag not set.
         </p>
         <SetupCompleteToast />

@@ -207,7 +207,7 @@ class ErrorBoundary extends Component<Props, State> {
               </div>
 
               <div className="space-y-2">
-                <p className="text-base-content/85">
+                <p className="text-base-content">
                   {level === 'page'
                     ? 'This page encountered an error and cannot be displayed.'
                     : level === 'section'

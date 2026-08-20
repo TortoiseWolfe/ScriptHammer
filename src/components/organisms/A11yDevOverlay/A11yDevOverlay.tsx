@@ -273,9 +273,7 @@ export default function A11yDevOverlay({
                   </span>
                 )}
               </div>
-              <p className="text-base-content/80 mt-1 text-xs">
-                {violation.help}
-              </p>
+              <p className="text-base-content mt-1 text-xs">{violation.help}</p>
               {violation.nodes[0]?.target[0] && (
                 <button
                   type="button"

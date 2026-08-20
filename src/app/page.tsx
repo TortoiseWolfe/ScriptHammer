@@ -259,7 +259,7 @@ export default function Home() {
             </span>
           </h1>
 
-          <p className="text-base-content/80 max-w-[50ch] text-lg leading-relaxed">
+          <p className="text-base-content max-w-[50ch] text-lg leading-relaxed">
             Accounts, payments, encrypted messaging and offline mode — wired to
             Supabase, tested, accessible to WCAG AA, and running on this exact
             site.
@@ -499,7 +499,7 @@ export default function Home() {
               <h3 className="text-base-content font-display text-xl">
                 {m.label}
               </h3>
-              <p className="text-base-content/80 text-[14.5px] leading-[1.55]">
+              <p className="text-base-content text-[14.5px] leading-[1.55]">
                 {m.desc}
               </p>
             </Link>
@@ -544,7 +544,7 @@ export default function Home() {
                 <span className="text-base-content font-display text-xl">
                   {s.label}
                 </span>
-                <span className="text-base-content/80 flex-1 text-[14.5px] leading-[1.55]">
+                <span className="text-base-content flex-1 text-[14.5px] leading-[1.55]">
                   {s.desc}
                 </span>
                 {/* The comp recesses a screenshot here. There are none in this
@@ -672,7 +672,7 @@ export default function Home() {
               Tell us what you&rsquo;re building. We&rsquo;ll show it running
               next week.
             </h2>
-            <p className="text-base-content/80 max-w-[50ch] leading-[1.55]">
+            <p className="text-base-content max-w-[50ch] leading-[1.55]">
               Or take the whole thing yourself — it&rsquo;s open source,
               documented, and deployed on every push.
             </p>

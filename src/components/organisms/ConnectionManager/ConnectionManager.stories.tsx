@@ -25,11 +25,11 @@ export const ThemeShowcase: Story = {
         On Surfaces
       </h3>
       <div className="bg-base-100 rounded-lg p-4">
-        <span className="text-base-content/80 text-sm">base-100:</span>
+        <span className="text-base-content text-sm">base-100:</span>
         <ConnectionManager />
       </div>
       <div className="bg-base-200 rounded-lg p-4">
-        <span className="text-base-content/80 text-sm">base-200:</span>
+        <span className="text-base-content text-sm">base-200:</span>
         <ConnectionManager />
       </div>
       <div className="bg-neutral rounded-lg p-4">

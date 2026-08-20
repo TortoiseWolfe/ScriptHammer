@@ -72,7 +72,7 @@ function DocRow({ doc, large = false }: { doc: Doc; large?: boolean }) {
       <span className="text-base-content order-last w-full text-sm sm:order-none sm:ml-auto sm:w-auto">
         {doc.hint}
       </span>
-      <span className="text-base-content/30 group-hover:text-base-content transition-all group-hover:translate-x-1">
+      <span className="text-base-content group-hover:text-base-content transition-all group-hover:translate-x-1">
         {/* Decorative: the row's own label is the accessible name, and every
             external row already announces itself via the visible hint. An
             unlabelled icon here would add noise, not information (#377). */}

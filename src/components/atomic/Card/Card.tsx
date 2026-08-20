@@ -64,7 +64,7 @@ export const Card: React.FC<CardProps> = ({
           <header>
             {title && <h2 className="card-title">{title}</h2>}
             {subtitle && (
-              <p className="text-base-content/85 text-sm">{subtitle}</p>
+              <p className="text-base-content text-sm">{subtitle}</p>
             )}
           </header>
         )}

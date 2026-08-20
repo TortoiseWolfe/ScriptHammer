@@ -219,7 +219,7 @@ export function ConsentModal({
           <div className="space-y-6">
             {/* Description */}
             <div className="prose max-w-none">
-              <p className="text-base-content/80">
+              <p className="text-base-content">
                 We use cookies to enhance your browsing experience, analyze site
                 traffic, and personalize content. You can choose which types of
                 cookies you allow.
@@ -280,7 +280,7 @@ export function ConsentModal({
                           <h3 className="mb-1 text-lg font-semibold">
                             {categoryInfo.title}
                           </h3>
-                          <p className="text-base-content/85 text-sm">
+                          <p className="text-base-content text-sm">
                             {categoryInfo.description}
                           </p>
 
@@ -331,7 +331,7 @@ export function ConsentModal({
 
             {/* Last Updated */}
             {consent.lastUpdated && (
-              <div className="text-base-content/80 text-sm">
+              <div className="text-base-content text-sm">
                 Last updated: {formatDate(consent.lastUpdated)}
               </div>
             )}

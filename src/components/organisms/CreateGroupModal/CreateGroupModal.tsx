@@ -142,7 +142,7 @@ export function CreateGroupModal({
         <div className="mb-4">
           <label htmlFor="group-name" className="label">
             <span>Group Name</span>
-            <span className="text-base-content/80">
+            <span className="text-base-content">
               {groupName.length}/{GROUP_CONSTRAINTS.MAX_NAME_LENGTH}
             </span>
           </label>
@@ -160,7 +160,7 @@ export function CreateGroupModal({
             disabled={isCreating}
             aria-describedby="group-name-hint"
           />
-          <p id="group-name-hint" className="text-base-content/80 mt-1">
+          <p id="group-name-hint" className="text-base-content mt-1">
             Leave empty to auto-generate from member names
           </p>
         </div>
@@ -246,7 +246,7 @@ export function CreateGroupModal({
               <span className="loading loading-spinner loading-md" />
             </div>
           ) : searchResults.length === 0 ? (
-            <p className="text-base-content/80 p-4 text-center">
+            <p className="text-base-content p-4 text-center">
               {searchQuery
                 ? 'No connections found'
                 : 'No connections available'}

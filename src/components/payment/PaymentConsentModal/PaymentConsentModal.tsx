@@ -195,7 +195,7 @@ export const PaymentConsentModal: React.FC<PaymentConsentModalProps> = ({
           terms a buyer is said to accept can actually be produced if a dispute
           asks for them.
         */}
-        <p className="text-base-content/80 mt-4 text-center text-xs">
+        <p className="text-base-content mt-4 text-center text-xs">
           By accepting, you agree to our{' '}
           <Link
             href="/terms"

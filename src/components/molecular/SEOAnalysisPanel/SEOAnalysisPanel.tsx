@@ -197,7 +197,7 @@ export default function SEOAnalysisPanel({
                 {/* THE ALERT OWNS THE TEXT COLOUR HERE (#459).
                     `.alert-warning` paints a dark amber in the LIGHT theme and
                     sets a matching content colour. Two children fought it: this
-                    span carried `text-base-content/85`, and `.badge` sets a
+                    span carried `text-base-content`, and `.badge` sets a
                     `base-content` of its own — both dark, on dark amber,
                     measuring 1.66:1 against a 7:1 requirement. The sibling <p>
                     below never overrode anything, which is exactly why it

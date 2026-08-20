@@ -184,7 +184,7 @@ const MessageBubble = memo(
           data-message-id={message.id}
         >
           <div className="chat-header mb-1">
-            <span className="text-base-content/85 text-sm">
+            <span className="text-base-content text-sm">
               {message.senderName}
             </span>
             <time className="text-base-content ml-2 text-xs">
@@ -211,7 +211,7 @@ const MessageBubble = memo(
           data-message-id={message.id}
         >
           <div className="chat-header mb-1">
-            <span className="text-base-content/85 text-sm">
+            <span className="text-base-content text-sm">
               {message.senderName}
             </span>
             <time className="text-base-content ml-2 text-xs">
@@ -219,7 +219,7 @@ const MessageBubble = memo(
             </time>
           </div>
           <div
-            className="chat-bubble bg-base-300 text-base-content/85"
+            className="chat-bubble bg-base-300 text-base-content"
             role="group"
             aria-label="Encrypted message that cannot be decrypted"
           >
@@ -260,7 +260,7 @@ const MessageBubble = memo(
         data-message-id={message.id}
       >
         <div className="chat-header mb-1">
-          <span className="text-base-content/85 text-sm">
+          <span className="text-base-content text-sm">
             {message.senderName}
           </span>
           <time className="text-base-content ml-2 text-xs">

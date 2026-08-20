@@ -202,7 +202,7 @@ export default function BlogPostViewer({
                   ? `text-sm ${!isActive ? 'font-semibold' : ''}`
                   : item.level === 2
                     ? 'text-sm'
-                    : 'text-base-content/80 text-xs'
+                    : 'text-base-content text-xs'
               }`}
               style={{
                 paddingLeft: `${(item.level - 1) * 1 + (isActive ? 0.5 : 0)}rem`,
@@ -241,7 +241,7 @@ export default function BlogPostViewer({
           {post.title}
         </h1>
 
-        <div className="text-base-content/85 flex flex-wrap gap-2 text-xs sm:gap-3 sm:text-sm md:gap-4 md:text-base">
+        <div className="text-base-content flex flex-wrap gap-2 text-xs sm:gap-3 sm:text-sm md:gap-4 md:text-base">
           {publishedDate && (
             <time dateTime={post.publishedAt}>{publishedDate}</time>
           )}
@@ -302,7 +302,7 @@ export default function BlogPostViewer({
         {showToc && toc.length > 0 && (
           <div className="relative">
             <details className="block">
-              <summary className="text-base-content/80 hover:text-base-content/80 bg-base-100 inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-medium shadow-md transition-colors">
+              <summary className="text-base-content hover:text-base-content bg-base-100 inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1 rounded-lg px-2 py-1 text-xs font-medium shadow-md transition-colors">
                 <span className="inline-flex items-center gap-1">
                   <svg
                     className="h-4 w-4"
@@ -380,7 +380,7 @@ export default function BlogPostViewer({
             )}
             <div>
               <h2 className="text-lg font-semibold">{post.author.name}</h2>
-              <p className="text-base-content/85">Author</p>
+              <p className="text-base-content">Author</p>
             </div>
           </div>
         </footer>

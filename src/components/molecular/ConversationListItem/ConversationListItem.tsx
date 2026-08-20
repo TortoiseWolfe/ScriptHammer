@@ -202,7 +202,7 @@ export default function ConversationListItem({
           <div className="mb-1 flex items-baseline justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2">
               <h3
-                className={`truncate text-sm font-semibold ${hasUnread ? 'text-base-content' : 'text-base-content/90'}`}
+                className={`truncate text-sm font-semibold ${hasUnread ? 'text-base-content' : 'text-base-content'}`}
               >
                 {getDisplayName()}
               </h3>
@@ -214,7 +214,7 @@ export default function ConversationListItem({
             </div>
             {lastMessageAt && (
               // Solid, not `/80`. This list item sits on base-200, where
-              // `text-base-content/80` measures 6.62:1 against the 7:1 AAA
+              // `text-base-content` measures 6.62:1 against the 7:1 AAA
               // gate — the exact figure #462's light-theme table records for
               // /80 on base-200. It red-lined main's post-merge webkit shard
               // on /messages and /messages/setup.
@@ -237,7 +237,7 @@ export default function ConversationListItem({
           {/* Last message preview */}
           <div className="flex items-center justify-between gap-2">
             <p
-              className={`truncate text-sm ${hasUnread ? 'text-base-content font-medium' : 'text-base-content/85'}`}
+              className={`truncate text-sm ${hasUnread ? 'text-base-content font-medium' : 'text-base-content'}`}
             >
               {truncateMessage(lastMessage)}
             </p>

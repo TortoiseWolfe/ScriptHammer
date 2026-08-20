@@ -144,7 +144,7 @@ export default function ThemesPage() {
               scripthammer-dark only, so the grade of the other 32 is genuinely
               unmeasured here. A badge asserting it would be the #287 failure —
               a claim nobody checked. This says what is actually true. */}
-          <p className="text-base-content/80 mt-3 max-w-[60ch] leading-relaxed">
+          <p className="text-base-content mt-3 max-w-[60ch] leading-relaxed">
             These {CURATED_THEMES.length} are the ones we&rsquo;d hand a client.
             The two ScriptHammer themes are gated at WCAG AAA on every push; the
             rest are DaisyUI stock and still work.

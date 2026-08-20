@@ -69,7 +69,7 @@ function PaymentDemoContent() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="mb-2 text-4xl font-bold">Payment Integration Demo</h1>
-        <p className="text-base-content/85 text-lg">
+        <p className="text-base-content text-lg">
           Explore the payment system features: Stripe integration, GDPR consent,
           offline queue, and transaction history.
         </p>
@@ -121,7 +121,7 @@ function PaymentDemoContent() {
           <div className="card bg-base-100 rounded-box">
             <div className="card-body">
               <h2 className="card-title">Step 1: GDPR Consent</h2>
-              <p className="text-base-content/85 mb-4">
+              <p className="text-base-content mb-4">
                 Before processing payments, we need your consent to load
                 third-party payment scripts (Stripe, PayPal).
               </p>
@@ -180,7 +180,7 @@ function PaymentDemoContent() {
           <div className="card bg-base-100 rounded-box">
             <div className="card-body">
               <h2 className="card-title">Step 2: Make a Payment</h2>
-              <p className="text-base-content/85 mb-4">
+              <p className="text-base-content mb-4">
                 Click the button below to test the Stripe payment flow. Use test
                 card{' '}
                 <code className="bg-base-200 rounded px-2 py-1">
@@ -313,7 +313,7 @@ function PaymentDemoContent() {
           <div className="card bg-base-100 rounded-box">
             <div className="card-body">
               <h2 className="card-title">Step 4: Payment History</h2>
-              <p className="text-base-content/85 mb-4">
+              <p className="text-base-content mb-4">
                 View all past transactions with filters and pagination.
               </p>
               <PaymentHistory initialLimit={50} showFilters={true} />

@@ -72,7 +72,7 @@ export default function TagBadge({
     <>
       <span>{tag}</span>
       {count !== undefined && (
-        <span className="text-base-content/85 ml-1">({count})</span>
+        <span className="text-base-content ml-1">({count})</span>
       )}
     </>
   );

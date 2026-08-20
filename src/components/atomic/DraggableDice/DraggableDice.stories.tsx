@@ -93,12 +93,12 @@ export const ThemeShowcase: Story = {
           On Surfaces
         </h3>
         <div className="bg-base-100 flex flex-wrap gap-4 rounded-lg p-4">
-          <span className="text-base-content/80 text-sm">base-100:</span>
+          <span className="text-base-content text-sm">base-100:</span>
           <DraggableDice id="b1" sides={6} value={4} />
           <DraggableDice id="b2" sides={6} value={2} locked />
         </div>
         <div className="bg-base-200 flex flex-wrap gap-4 rounded-lg p-4">
-          <span className="text-base-content/80 text-sm">base-200:</span>
+          <span className="text-base-content text-sm">base-200:</span>
           <DraggableDice id="b3" sides={6} value={5} />
           <DraggableDice id="b4" sides={6} value={1} locked />
         </div>

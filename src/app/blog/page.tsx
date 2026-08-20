@@ -182,7 +182,7 @@ export default async function BlogPage() {
                   {lead.title}
                 </span>
 
-                <span className="text-base-content/80 leading-[1.6]">
+                <span className="text-base-content leading-[1.6]">
                   {lead.excerpt}
                 </span>
 
@@ -208,7 +208,7 @@ export default async function BlogPage() {
         </div>
       ) : (
         <div className="py-12 text-center">
-          <p className="text-base-content/80 text-lg">
+          <p className="text-base-content text-lg">
             No posts found. Check back soon!
           </p>
         </div>

@@ -231,7 +231,7 @@ export const ThemeShowcase: Story = {
   render: () => (
     <div className="flex flex-col gap-8">
       <div>
-        <p className="text-base-content/80 mb-2 text-sm">
+        <p className="text-base-content mb-2 text-sm">
           ScriptHammer logo — adapts to current theme via text-primary
         </p>
         <div className="flex items-center gap-8">
@@ -240,13 +240,13 @@ export const ThemeShowcase: Story = {
         </div>
       </div>
       <div className="flex flex-col gap-3">
-        <p className="text-base-content/80 text-sm">On surfaces</p>
+        <p className="text-base-content text-sm">On surfaces</p>
         <div className="bg-base-100 flex items-center gap-6 rounded-lg p-4">
-          <span className="text-base-content/80 text-sm">base-100:</span>
+          <span className="text-base-content text-sm">base-100:</span>
           <LayeredScriptHammerLogo pauseOnHover />
         </div>
         <div className="bg-base-200 flex items-center gap-6 rounded-lg p-4">
-          <span className="text-base-content/80 text-sm">base-200:</span>
+          <span className="text-base-content text-sm">base-200:</span>
           <LayeredScriptHammerLogo pauseOnHover />
         </div>
         <div className="bg-neutral flex items-center gap-6 rounded-lg p-4">

@@ -122,7 +122,7 @@ export default function BlogPostCard({
           </Link>
         </h2>
 
-        {post.excerpt && <p className="text-base-content/85">{post.excerpt}</p>}
+        {post.excerpt && <p className="text-base-content">{post.excerpt}</p>}
 
         <div className="card-actions mt-4 items-center justify-between">
           <div className="flex flex-wrap gap-2">
@@ -139,7 +139,7 @@ export default function BlogPostCard({
           {/* Mono dateline (#381). Tabular metadata reads as data, not prose,
               and the fixed advance keeps dates and read-times aligned down a
               column of cards instead of jittering with the proportional face. */}
-          <div className="text-base-content/80 flex gap-3 font-mono text-xs whitespace-nowrap">
+          <div className="text-base-content flex gap-3 font-mono text-xs whitespace-nowrap">
             <span>{publishedDate}</span>
             <span aria-hidden="true">·</span>
             {/* "9 min" visually, per the mock — but "9 min read" to a screen

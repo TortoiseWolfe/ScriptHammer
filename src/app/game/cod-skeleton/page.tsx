@@ -20,13 +20,13 @@ export default function CodSkeletonPage() {
           <h1 className="mb-1 text-2xl font-bold">
             CoD Walking Skeleton (physics spike)
           </h1>
-          <nav aria-label="Breadcrumb" className="text-base-content/85 text-sm">
+          <nav aria-label="Breadcrumb" className="text-base-content text-sm">
             <Link href="/game" className="text-primary underline">
               /game
             </Link>
             <span aria-hidden="true"> / cod-skeleton</span>
           </nav>
-          <p className="text-base-content/85 mt-2 max-w-2xl text-sm">
+          <p className="text-base-content mt-2 max-w-2xl text-sm">
             First-person capsule controller harvested from the MIT{' '}
             <a
               href="https://github.com/mshumer/Claude-of-Duty"
