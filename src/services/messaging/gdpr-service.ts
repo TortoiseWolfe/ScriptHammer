@@ -537,7 +537,6 @@ export class GDPRService {
    */
   async deleteUserAccount(): Promise<void> {
     const supabase = createClient();
-    const msgClient = createMessagingClient(supabase);
 
     // Get authenticated user with retry (getUser makes server round-trip
     // that can fail during token refresh cycles)
@@ -576,20 +575,40 @@ export class GDPRService {
         .equals(user.id)
         .delete();
 
-      // Step 2: Delete user profile (CASCADE handles related data)
-      // This will trigger:
-      // - messages deletion (ON DELETE CASCADE)
-      // - conversations deletion (ON DELETE CASCADE)
-      // - user_connections deletion (ON DELETE CASCADE)
-      // - auth.users deletion (ON DELETE CASCADE from user_profiles)
-      const { error: deleteError } = await msgClient
-        .from('user_profiles')
-        .delete()
-        .eq('id', user.id);
+      // Step 2: Delete the ACCOUNT, server-side (#859).
+      //
+      // This used to be `.from('user_profiles').delete().eq('id', user.id)` from the
+      // browser, with a comment claiming it triggered "auth.users deletion (ON DELETE
+      // CASCADE from user_profiles)". That was wrong in both directions and deleted
+      // nothing at all:
+      //
+      //   - user_profiles has RLS with no DELETE policy, so the statement matched zero
+      //     rows and returned NO error. The user was signed out and told their account
+      //     had been permanently deleted while every record remained.
+      //   - The cascade runs the other way. user_profiles_id_fkey has child
+      //     user_profiles and parent auth.users, so removing a profile could never
+      //     remove an account — and a browser client cannot delete an auth.users row,
+      //     which is the whole point: that needs the service role.
+      //
+      // The edge function verifies the caller's JWT and deletes only that user, then
+      // CASCADE removes the profile, messages, conversations and connections.
+      const { data, error: deleteError } = await supabase.functions.invoke<{
+        success?: boolean;
+        error?: string;
+      }>('delete-account', { method: 'POST' });
 
       if (deleteError) {
         throw new ConnectionError(
           'Failed to delete account: ' + deleteError.message
+        );
+      }
+
+      // An invoke that returns 200 with an error payload is still a failure. Treating
+      // "no transport error" as success is exactly how the original defect stayed
+      // invisible, so the body is checked rather than assumed.
+      if (!data?.success) {
+        throw new ConnectionError(
+          'Failed to delete account: ' + (data?.error ?? 'unknown error')
         );
       }
 

@@ -406,15 +406,31 @@ test.describe('Avatar Upload Accessibility (WCAG 2.1 AA)', () => {
     try {
       const removeButton = page.getByRole('button', { name: /remove avatar/i });
 
-      const ariaLabel = await removeButton.getAttribute('aria-label');
-      const textContent = await removeButton.textContent();
-      expect(ariaLabel || textContent).toMatch(
+      // toHaveAttribute retries; a bare getAttribute() does not. That matters here for
+      // the same reason the box is polled below.
+      await expect(removeButton).toHaveAttribute(
+        'aria-label',
         /remove.*avatar|delete.*picture/i
       );
 
-      const buttonBox = await removeButton.boundingBox();
-      expect(buttonBox?.width).toBeGreaterThanOrEqual(44);
-      expect(buttonBox?.height).toBeGreaterThanOrEqual(44);
+      // The button can appear, VANISH and reappear. `handleAvatarUploadComplete` calls
+      // refetchProfile(), which flips `profileLoading`, and AccountSettings.tsx:264
+      // returns a spinner for the entire subtree — so a single boundingBox() taken at
+      // the wrong moment returns undefined. That is exactly how this failed on webkit,
+      // whose slower timing lands inside the unmount window more often.
+      let buttonBox: { width: number; height: number } | null = null;
+      await expect
+        .poll(
+          async () => {
+            buttonBox = await removeButton.boundingBox();
+            return buttonBox?.width ?? 0;
+          },
+          { timeout: 15000 }
+        )
+        .toBeGreaterThan(0);
+
+      expect(buttonBox!.width).toBeGreaterThanOrEqual(44);
+      expect(buttonBox!.height).toBeGreaterThanOrEqual(44);
     } finally {
       await removeTestAvatar(page);
     }
@@ -496,7 +512,14 @@ test.describe('Avatar Upload Accessibility (WCAG 2.1 AA)', () => {
     });
     await page.route('**/storage/v1/object/**', async (route) => {
       await held;
-      await route.continue();
+      try {
+        await route.continue();
+      } catch {
+        // By the time `held` resolves the route may already be handled, or the test
+        // may have ended — both throw here and neither is a failure. Without this the
+        // resumed handler rejects with "Route is already handled!" and reddens an
+        // otherwise-passing shard, which is what it did on webkit.
+      }
     });
 
     try {

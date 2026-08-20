@@ -245,29 +245,16 @@ test.describe('Protected Routes E2E', () => {
   test('should verify cascade delete removes related records', async ({
     page,
   }) => {
-    // EXPECTED TO FAIL — this pins a live defect, it does not tolerate one.
+    // FIXED (#859). This test is why the defect was found: it had run zero assertions
+    // on every shard, so nobody knew that "Delete Account Permanently" deleted nothing.
     //
-    // Account deletion deletes NOTHING. `gdprService.deleteUserAccount()` issues
-    // `.from('user_profiles').delete()` from the browser, but user_profiles has RLS
-    // policies for INSERT, SELECT and UPDATE and **no DELETE policy at all**. RLS
-    // filters the statement to zero rows and returns NO error, so the service treats it
-    // as success, signs the user out and redirects to "?message=account_deleted".
-    // The profile, the auth user, the email address and every related record survive.
-    //
-    // The service's own comment claims "auth.users deletion (ON DELETE CASCADE from
-    // user_profiles)", which is backwards: user_profiles_id_fkey has child
-    // user_profiles and parent auth.users, so the cascade runs auth.users -> profile.
-    // Deleting a profile could never have removed the account.
-    //
-    // This test found it only because it was made to assert (#850) — it had run zero
-    // assertions on every shard for as long as the reporter has been looking. Filed
-    // as #859 with the full evidence and the reason a DELETE policy alone is the
-    // wrong fix.
-    //
-    // `test.fail()` rather than a skip: when the fix lands this test PASSES, Playwright
-    // reports "expected to fail but passed", and whoever fixed it is told to delete
-    // this marker. A skip would just go quiet.
-    test.fail();
+    // `gdprService.deleteUserAccount()` used to issue `.from('user_profiles').delete()`
+    // from the browser. user_profiles has RLS with no DELETE policy, so the statement
+    // matched zero rows and returned NO error — the client read that as success, signed
+    // the user out and redirected to "?message=account_deleted" while the profile, the
+    // auth user and the email address all remained. Deletion now goes through the
+    // `delete-account` Edge Function, which verifies the caller's JWT and deletes only
+    // that user; CASCADE removes the profile and everything below it.
 
     // This test requires creating a NEW user to delete (can't use pre-existing test users)
     // We'll use the admin API to create a temporary user
