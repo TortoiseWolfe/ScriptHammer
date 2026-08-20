@@ -92,17 +92,56 @@ test.describe('Accessibility', () => {
     await expect(mainContent).toBeInViewport();
   });
 
+  /**
+   * Routes that actually carry images. The describe's `beforeEach` lands on `/`,
+   * which has ZERO `<img>` elements — so this test's loop never ran and it reported
+   * zero assertions on every shard (#396). `/blog/` carries 14.
+   */
+  const IMAGE_ROUTES = ['/blog/', '/'];
+
   test('all images have alt text', async ({ page }) => {
-    const images = page.locator('img');
-    const imageCount = await images.count();
+    let checked = 0;
+    const missing: string[] = [];
 
-    for (let i = 0; i < imageCount; i++) {
-      const img = images.nth(i);
-      const alt = await img.getAttribute('alt');
+    for (const route of IMAGE_ROUTES) {
+      await page.goto(route, { waitUntil: 'domcontentloaded' });
+      await dismissCookieBanner(page);
 
-      // Images should have alt attribute (can be empty for decorative)
-      expect(alt).toBeDefined();
+      const images = page.locator('img');
+      const imageCount = await images.count();
+
+      for (let i = 0; i < imageCount; i++) {
+        const img = images.nth(i);
+        const alt = await img.getAttribute('alt');
+        checked++;
+
+        // `not.toBeNull()`, NOT `toBeDefined()` (#396). `getAttribute` returns
+        // `null` for a missing attribute, and `null` IS defined — so the previous
+        // assertion passed for an image carrying no alt at all. Proven against a
+        // real alt-less <img>: toBeDefined() passed, not.toBeNull() failed.
+        //
+        // An EMPTY alt is still correct: it marks an image as decorative. What must
+        // not happen is the attribute being absent entirely.
+        if (alt === null) {
+          missing.push(
+            `${route} — img[${i}] src=${await img.getAttribute('src')}`
+          );
+        }
+      }
     }
+
+    // Coverage floor. Without it, a route list that stops matching makes this pass
+    // having inspected nothing — which is the state it was already in.
+    expect(
+      checked,
+      `no <img> elements found across ${IMAGE_ROUTES.join(', ')} — this gate ` +
+        'inspected nothing'
+    ).toBeGreaterThan(0);
+
+    expect(
+      missing,
+      `${missing.length} image(s) have no alt attribute:\n${missing.join('\n')}`
+    ).toEqual([]);
   });
 
   test('all form inputs have labels', async ({ page }) => {
