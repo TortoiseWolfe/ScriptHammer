@@ -93,6 +93,11 @@ export default defineConfig({
     process.env.CI ? ['github'] : ['line'],
     ['json', { outputFile: 'test-results/results.json' }],
     ['junit', { outputFile: 'test-results/junit.xml' }],
+    // Names any test that finished having run ZERO assertions (#396). Reports
+    // only — it cannot fail a run. The `json` reporter above cannot do this: its
+    // result objects carry no `steps`, so assertion counts are reachable only
+    // through the reporter API.
+    ['./tests/e2e/reporters/assertion-count-reporter.ts'],
   ],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
