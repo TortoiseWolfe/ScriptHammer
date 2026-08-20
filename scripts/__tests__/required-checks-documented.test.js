@@ -121,3 +121,47 @@ test('CLAUDE.md does not call a required lane advisory', () => {
     );
   }
 });
+
+test('a workflow that supplies a required check does not disclaim its own coverage', () => {
+  // The mirror of the CLAUDE.md test above, and the other place the same
+  // contradiction lived. `e2e-local.yml` opened with "PROTOTYPE. Runs ALONGSIDE
+  // e2e.yml, never instead of it … do not treat a green run here as coverage yet"
+  // for four days after #739 made `E2E (local) result` required — so the header of
+  // a required workflow told readers the opposite of how merges are gated (#575).
+  //
+  // A person reading the workflow to understand the lane never sees CLAUDE.md, so
+  // guarding only CLAUDE.md leaves the more authoritative-looking source wrong.
+  const documented = documentedRequiredChecks(claudeMd()) ?? [];
+  assert.ok(
+    documented.length > 0,
+    'no required checks are documented, so this test would assert nothing'
+  );
+
+  const DISCLAIMERS = [
+    /\bPROTOTYPE\b/,
+    /not\s+(?:yet\s+)?coverage/i,
+    /do not treat a green run here as coverage/i,
+    /never instead of/i,
+    /ADVISORY, not required/i,
+  ];
+
+  for (const check of documented) {
+    const file = CHECK_SOURCE[check];
+    if (!file) continue;
+    const src = fs.readFileSync(path.join(WORKFLOWS, file), 'utf8');
+    // Only the header — the part a reader meets first. Deeper in the file the word
+    // may legitimately appear while describing history, as it now does.
+    const header = src.split(/^jobs:/m)[0] ?? '';
+    for (const re of DISCLAIMERS) {
+      const hit = re.exec(header);
+      assert.equal(
+        hit,
+        null,
+        `${file} supplies the REQUIRED check "${check}", but its header says ` +
+          `${JSON.stringify(hit && hit[0])}. A required lane that describes itself ` +
+          `as a prototype or as "not coverage" tells a reader the opposite of how ` +
+          `merges are gated (#575, #782).`
+      );
+    }
+  }
+});
