@@ -334,6 +334,12 @@ jobs:
           DISABLE_BASE_PATH: 'true'
           NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_e2e_dummy_not_a_real_key
           NEXT_PUBLIC_PAYPAL_CLIENT_ID: e2e_dummy_paypal_client_id
+          # Dummy, and never reached: submitToWeb3Forms() THROWS when the key is
+          # empty (web3forms.ts:95), so without this the contact form never gets
+          # as far as fetch() and its submitting state cannot be observed (#850).
+          # form-submission.spec.ts fulfils api.web3forms.com locally in
+          # beforeEach, so no request leaves the runner either way.
+          NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY: e2e_dummy_web3forms_key
           # NEXT_PUBLIC_CAPTCHA_SITE_KEY is deliberately ABSENT — do not copy it
           # from e2e.yml.
           #

@@ -219,27 +219,50 @@ test.describe('Mobile Typography', () => {
     await dismissCookieBanner(page);
     await waitForLayoutStability(page);
 
-    // Check that text containers don't overflow
-    const textContainers = await page
-      .locator('article, .prose, main, section')
-      .all();
+    // The previous version guarded on `box.width > 390`, but boundingBox() returns the
+    // BORDER box — a container with `overflow-x: auto` never exceeds the viewport, so
+    // that guard was false by construction and its assertion never ran (#850). It was
+    // also backwards: it asked whether wide containers HANDLE overflow, when the
+    // question is whether content overflows at all.
+    //
+    // scrollWidth vs clientWidth is the measurement that answers it. 1px of slack
+    // absorbs sub-pixel rounding, which is real at fractional device ratios.
+    const containers = page.locator('article, .prose, main, section');
+    const count = await containers.count();
 
-    for (const container of textContainers.slice(0, 10)) {
-      if (await container.isVisible()) {
-        const overflowX = await container.evaluate(
-          (el) => window.getComputedStyle(el).overflowX
+    // Coverage floor. Without it a selector that matches nothing reports success, which
+    // is exactly the failure mode this whole queue exists to remove (#396, #843, #851).
+    expect(
+      count,
+      'no text containers found — the selector has gone stale'
+    ).toBeGreaterThan(0);
+
+    const overflowing: string[] = [];
+    for (let i = 0; i < Math.min(count, 10); i++) {
+      const container = containers.nth(i);
+      if (!(await container.isVisible())) continue;
+
+      const measured = await container.evaluate((el) => ({
+        tag: el.tagName.toLowerCase(),
+        cls: el.className?.toString().slice(0, 40) ?? '',
+        scrollWidth: el.scrollWidth,
+        clientWidth: el.clientWidth,
+        overflowX: window.getComputedStyle(el).overflowX,
+      }));
+
+      // A container that scrolls its own content is handling overflow deliberately.
+      if (['auto', 'scroll', 'hidden'].includes(measured.overflowX)) continue;
+
+      if (measured.scrollWidth > measured.clientWidth + 1) {
+        overflowing.push(
+          `<${measured.tag} class="${measured.cls}"> scrollWidth ${measured.scrollWidth} > clientWidth ${measured.clientWidth}`
         );
-
-        const box = await container.boundingBox();
-
-        if (box && box.width > 390) {
-          // If container is wider than viewport, it should have overflow handling
-          expect(
-            ['auto', 'scroll', 'hidden'].includes(overflowX),
-            'Wide containers should have overflow handling'
-          ).toBeTruthy();
-        }
       }
     }
+
+    expect(
+      overflowing,
+      `Text overflows its container at 390px:\n${overflowing.join('\n')}`
+    ).toEqual([]);
   });
 });

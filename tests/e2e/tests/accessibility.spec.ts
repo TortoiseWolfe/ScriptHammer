@@ -435,42 +435,44 @@ test.describe('Accessibility', () => {
   });
 
   test('error messages are associated with form fields', async ({ page }) => {
-    await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
+    // Repointed from /sign-in to /contact (#850). SignInForm has NO field-level error
+    // association to test: it renders a single form-level `role="alert"` with no `id`
+    // (SignInForm.tsx:383), and both inputs carry native `required`, so an empty submit
+    // is blocked by the browser and that alert never appears. The old version therefore
+    // inspected a pristine form, `continue`d past every empty alert container, and its
+    // loop body never executed on any shard. Its own closing comment conceded as much:
+    // "The test is not asserting that errors MUST exist."
+    //
+    // ContactForm is where the association pattern is real, so that is where it is
+    // asserted. The /sign-in gap is filed separately rather than silently tolerated.
+    await page.goto('/contact', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
-
-    // Wait for form to be fully loaded
     await page.waitForSelector('form', { state: 'visible', timeout: 5000 });
-    await page.waitForLoadState('domcontentloaded');
 
-    // Look for error messages that have visible content
-    // Empty alert containers (used for dynamic errors) should be skipped
-    const errorMessages = page.locator('.text-error, [role="alert"]');
-    const errorCount = await errorMessages.count();
+    // Submitting empty is what creates the errors; react-hook-form is `mode: 'onSubmit'`.
+    await page.locator('button[type="submit"]').click();
 
-    let errorMessagesWithContent = 0;
-    for (let i = 0; i < errorCount; i++) {
-      const error = errorMessages.nth(i);
-      const errorText = (await error.textContent())?.trim();
-      const errorId = await error.getAttribute('id');
+    const fields = ['name', 'email', 'subject', 'message'];
+    const errorMessages = page.locator('[id$="-error"]');
+    await expect(errorMessages).toHaveCount(fields.length);
 
-      // Skip empty error containers (dynamic error regions)
-      if (!errorText) continue;
+    // Every field must be marked invalid AND point at its own message. Asserting this
+    // per field, unconditionally, is the difference between this test and the guarded
+    // version it replaces — there is no path through it that measures nothing.
+    for (const field of fields) {
+      const control = page.locator(`#${field}`);
+      await expect(
+        control,
+        `#${field} should be marked invalid`
+      ).toHaveAttribute('aria-invalid', 'true');
+      await expect(
+        control,
+        `#${field} should be described by its own error message`
+      ).toHaveAttribute('aria-describedby', `${field}-error`);
 
-      errorMessagesWithContent++;
-
-      if (errorId) {
-        // Find input with aria-describedby pointing to this error
-        const associatedInput = page.locator(
-          `[aria-describedby*="${errorId}"]`
-        );
-        const hasAssociation = (await associatedInput.count()) > 0;
-
-        expect(hasAssociation).toBe(true);
-      }
+      const message = page.locator(`#${field}-error`);
+      await expect(message).toBeVisible();
+      await expect(message).not.toBeEmpty();
     }
-
-    // This test passes if there are no visible error messages (valid state)
-    // OR if all visible error messages have proper associations
-    // The test is not asserting that errors MUST exist
   });
 });
