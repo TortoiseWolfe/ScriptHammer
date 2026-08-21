@@ -453,14 +453,31 @@ test.describe('Offline Message Queue', () => {
       const sendButton = viewer.page.getByRole('button', { name: /send/i });
       await sendButton.click();
 
-      // ===== STEP 4: Wait for max retries =====
-      // Wait a reasonable time for retries to complete
-      await viewer.page.waitForTimeout(15000);
-
-      // ===== STEP 5: Verify message is visible (may show failed or pending state) =====
-      // The message should at least appear in the UI
+      // ===== STEP 4: Wait for the OUTCOME, not the clock =====
+      // This was `waitForTimeout(15000)`. A wall-clock sleep is the wrong wait: it
+      // is simultaneously too long when retries finish early and too short when the
+      // runner is loaded, and it asserts nothing about what happened (#300).
       await scrollThreadToBottom(viewer.page);
+      const failedBubble = viewer.page.locator(
+        '[data-testid="queued-message-bubble"][data-queue-status="failed"]'
+      );
+      await expect(failedBubble).toBeVisible({ timeout: 60000 });
+
+      // ===== STEP 5: The message, its failed status, AND a way to act on it =====
       await expect(viewer.page.getByText(testMessage)).toBeVisible();
+      await expect(failedBubble.getByText(/Failed to send/i)).toBeVisible();
+
+      // FR-005 itself. The test named for this ('should show retry button on error
+      // state') lived in complete-user-workflow.spec.ts, visited /messages with no
+      // conversation open -- where QueuedMessageBubble cannot mount -- and guarded
+      // its only assertion behind an error banner that never appears. It ran zero
+      // assertions on every CI shard (#862). The assertion belongs here, where the
+      // failure is actually induced.
+      await expect(
+        viewer.page.getByRole('button', {
+          name: `Retry sending message: ${testMessage}`,
+        })
+      ).toBeVisible();
     } finally {
       await viewer.close();
     }
