@@ -18,11 +18,12 @@
 #   --keep-cname          Do not update public/CNAME file (keep existing domain)
 #   --preserve-ssh        Keep SSH format for git remote (if currently SSH)
 #   --preserve-attribution No-op; attribution is always kept (rebrand:keep)
-#   --icon <mark.svg>     Replace public/favicon.svg with your mark and rebuild
-#                         every PWA/favicon asset from it. WITHOUT THIS, YOUR
-#                         FORK KEEPS THE TEMPLATE'S ICONS (#659) — a rebrand
-#                         cannot draw a logo, and CRUDkit's monogram reached a
-#                         live site because nothing here said so.
+#   --icon <mark>         Rebuild every PWA/favicon asset from your mark.
+#                         Accepts .svg, .png or .webp (#898 — the SVG-only rule
+#                         is what stopped a fork with a PNG logo from using this
+#                         at all, so it shipped ours). REQUIRED unless --no-icon.
+#   --no-icon             Deliberately keep the template's icons. Say it out
+#                         loud; #659 and #898 both shipped past a mere warning.
 #   --help                Show this help message
 #
 # Exit Codes:
@@ -502,10 +503,17 @@ update_brand_icons() {
         log_error "--icon file not found: $BRAND_ICON"
         exit 1
     fi
-    case "$BRAND_ICON" in
-        *.svg) ;;
+    # #898: this used to reject anything but SVG, on the reasoning that eight
+    # sizes need a vector. That rejection is how #659 recurred: a downstream
+    # fork's mark is a PNG, so it could not use --icon at all and shipped our
+    # printing mallet on a live custom domain. generate-icons.js handles rasters
+    # now -- it trims once and embeds a per-target data: PNG -- so the only job
+    # left here is to put the mark where the generator will read it.
+    local icon_ext="${BRAND_ICON##*.}"
+    case "$(printf '%s' "$icon_ext" | tr '[:upper:]' '[:lower:]')" in
+        svg|png|webp) ;;
         *)
-            log_error "--icon must be an SVG (got: $BRAND_ICON). Icons are generated at eight sizes, so the mark has to be vector."
+            log_error "--icon must be .svg, .png or .webp (got: $BRAND_ICON)"
             exit 1
             ;;
     esac
@@ -515,11 +523,24 @@ update_brand_icons() {
         return 0
     fi
 
-    cp "$BRAND_ICON" "$REPO_ROOT/public/favicon.svg"
+    # An SVG mark becomes public/favicon.svg, which is the generator's default
+    # source and keeps the "favicon.svg IS the mark" invariant. A raster cannot
+    # be named .svg without lying about its bytes, so it lands beside it as
+    # public/brand-mark.<ext> and the generator is pointed at it -- which then
+    # emits favicon.svg as an ordinary target, so the invariant still holds when
+    # the run finishes.
+    local icon_src
+    if [ "$(printf '%s' "$icon_ext" | tr '[:upper:]' '[:lower:]')" = "svg" ]; then
+        cp "$BRAND_ICON" "$REPO_ROOT/public/favicon.svg"
+        icon_src="public/favicon.svg"
+    else
+        icon_src="public/brand-mark.$(printf '%s' "$icon_ext" | tr '[:upper:]' '[:lower:]')"
+        cp "$BRAND_ICON" "$REPO_ROOT/$icon_src"
+    fi
     # Run through node directly rather than a package manager: this may run
     # before dependencies are installed, and the only runtime need is sharp,
     # which the script itself reports on if missing.
-    if ! (cd "$REPO_ROOT" && node scripts/generate-icons.js); then
+    if ! (cd "$REPO_ROOT" && node scripts/generate-icons.js --source "$icon_src"); then
         log_error "Icon generation failed. public/favicon.svg was replaced; run 'pnpm run generate:icons' once dependencies are installed."
         exit 1
     fi
@@ -581,6 +602,14 @@ main() {
                 PRESERVE_ATTRIBUTION=true
                 shift
                 ;;
+            --no-icon)
+                # #898: the deliberate escape hatch. Skipping the mark must be a
+                # thing you SAY, not a thing you fail to notice -- the warning
+                # this replaces was correct, loud, and scrolled past in a
+                # terminal while a fork shipped our logo to a live site.
+                NO_ICON=true
+                shift
+                ;;
             --icon)
                 # #659: this script had NO icon handling whatsoever — zero
                 # matches for `icon`, `.svg` or `logo` — so every fork kept the
@@ -588,7 +617,7 @@ main() {
                 # monogram reached a live client site through two rebrands.
                 BRAND_ICON="${2:-}"
                 if [ -z "$BRAND_ICON" ]; then
-                    log_error "--icon requires a path to an SVG mark"
+                    log_error "--icon requires a path to a brand mark (.svg, .png or .webp)"
                     exit 1
                 fi
                 shift 2
@@ -616,6 +645,20 @@ main() {
     fi
 
     # Set variables
+    if [ -z "${BRAND_ICON:-}" ] && [ "${NO_ICON:-false}" != true ]; then
+        log_error "Refusing to rebrand without deciding about the app icons."
+        echo ""
+        echo "  A rebrand is string substitution, and a logo is not a string. If"
+        echo "  nothing replaces the mark, every browser tab and every home-screen"
+        echo "  install shows ${ORIGINAL_NAME}'s icon. That has now happened twice"
+        echo "  on live sites (#659, #898), both times past a warning like this one."
+        echo ""
+        echo "  Pass your mark:      --icon path/to/your-mark.svg|.png|.webp"
+        echo "  Or say so on purpose: --no-icon"
+        echo ""
+        exit 1
+    fi
+
     PROJECT_NAME="${POSITIONAL[0]}"
     OWNER="${POSITIONAL[1]}"
     DESCRIPTION="${POSITIONAL[2]}"

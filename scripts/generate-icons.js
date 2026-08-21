@@ -12,7 +12,17 @@
  * reading `000`.
  *
  * A generated INITIAL is what caused this, so the fix is not a better initial.
- * The source here is a real SVG mark, and a fork points `--source` at its own.
+ * The source here is a real mark, and a fork points `--source` at its own.
+ *
+ * RASTER SOURCES (#898). This accepted SVG only, and `rebrand.sh` enforced that
+ * with `--icon must be an SVG`. That rejection is how #659 recurred: a
+ * downstream fork's brand mark is a PNG, so it could not use `--icon` at all and
+ * was funnelled into the no-icon path, shipping our printing mallet as its
+ * favicon and home-screen icon on a live custom domain. The constraint created
+ * the failure it warned about, and it was not even true — a raster works fine
+ * here. The mark is trimmed once, then each target embeds a `data:` PNG sized to
+ * that target, so a 32px icon carries a 64px image rather than a duplicated copy
+ * of a 165KB source.
  *
  * WHY IT IS COMMITTED OUTPUT, NOT BUILD OUTPUT. #392 is the standing rule that
  * generated artifacts are build outputs and never inputs — but these are
@@ -120,6 +130,21 @@ const TARGETS = [
   { file: 'favicon.ico', size: 48, kind: 'ico', inset: ANY_INSET },
 ];
 
+/**
+ * `favicon.svg` is normally the SOURCE, so it is not in TARGETS — regenerating
+ * it from itself would be circular. When `--source` points somewhere else (a
+ * raster mark, say), it stops being the source and starts being an asset like
+ * any other, and it must be regenerated or it keeps the previous brand while
+ * everything around it moves. That is the #659 shape exactly: the one file the
+ * generator does not own is the one that lies.
+ */
+const FAVICON_TARGET = {
+  file: 'favicon.svg',
+  size: 512,
+  kind: 'svg',
+  inset: ANY_INSET,
+};
+
 /** Sizes packed into favicon.ico. 16 and 32 are what browsers actually pick. */
 const ICO_SIZES = [16, 32, 48];
 
@@ -200,6 +225,46 @@ async function tightViewBox(viewBox) {
 }
 
 /** Compose one tile: solid brand backdrop, mark centred inside the inset. */
+/**
+ * Read a raster mark. Trimmed ONCE here rather than per target, because that is
+ * what `tightViewBox` does for an SVG source and trimming per size would give
+ * each icon a slightly different crop.
+ */
+async function parseRasterSource(buf) {
+  const sharp = require('sharp');
+  let img = sharp(buf);
+  try {
+    buf = await img.trim({ threshold: 1 }).png().toBuffer();
+    img = sharp(buf);
+  } catch {
+    // Fully transparent or untrimmable: use the mark as-is.
+  }
+  const { width, height } = await img.metadata();
+  if (!width || !height) throw new Error('Source raster has no dimensions.');
+  return { viewBox: `0 0 ${width} ${height}`, raster: buf, width, height };
+}
+
+/**
+ * Resolve the body for one target. An SVG source is size-independent and passes
+ * through untouched; a raster is re-encoded to roughly twice the target's pixel
+ * size — capped at the mark's own resolution, since upscaling only adds bytes —
+ * and embedded as a `data:` URI. Declared width/height stay in the mark's own
+ * coordinate space so `composeSvg`'s nested viewBox scales it as it would vectors.
+ */
+async function bodyForTarget(parsed, size) {
+  if (!parsed.raster) return parsed;
+  const sharp = require('sharp');
+  const px = Math.max(32, Math.min(parsed.width, Math.round(size * 2)));
+  const scaled = await sharp(parsed.raster)
+    .resize(px, null, { fit: 'inside' })
+    .png({ compressionLevel: 9, palette: true })
+    .toBuffer();
+  return {
+    viewBox: parsed.viewBox,
+    body: `    <image href="data:image/png;base64,${scaled.toString('base64')}" x="0" y="0" width="${parsed.width}" height="${parsed.height}"/>`,
+  };
+}
+
 function composeSvg({ viewBox, body }, size, bg, inset) {
   const pad = Math.round(size * inset);
   const inner = size - pad * 2;
@@ -254,7 +319,12 @@ async function render(target, parsed, bg) {
   if (target.kind === 'ico') {
     const pngs = [];
     for (const size of ICO_SIZES) {
-      const svg = composeSvg(parsed, size, bg, target.inset);
+      const svg = composeSvg(
+        await bodyForTarget(parsed, size),
+        size,
+        bg,
+        target.inset
+      );
       pngs.push({
         size,
         data: await sharp(Buffer.from(svg, 'utf8')).png().toBuffer(),
@@ -262,7 +332,12 @@ async function render(target, parsed, bg) {
     }
     return packIco(pngs);
   }
-  const svg = composeSvg(parsed, target.size, bg, target.inset);
+  const svg = composeSvg(
+    await bodyForTarget(parsed, target.size),
+    target.size,
+    bg,
+    target.inset
+  );
   if (target.kind === 'svg') return Buffer.from(svg, 'utf8');
   return sharp(Buffer.from(svg, 'utf8')).png().toBuffer();
 }
@@ -281,13 +356,44 @@ async function main() {
     console.error(`generate-icons: source mark not found: ${sourcePath}`);
     process.exit(1);
   }
-  const raw = fs.readFileSync(sourcePath, 'utf8');
-  SOURCE_SVG = Buffer.from(raw, 'utf8');
-  const parsed = parseSource(raw);
-  parsed.viewBox = await tightViewBox(parsed.viewBox);
+  const bytes = fs.readFileSync(sourcePath);
+  SOURCE_SVG = bytes;
+  // Detect a RASTER positively, by magic bytes, and treat everything else as
+  // SVG. Sniffing for "<svg" instead looks reasonable and is wrong: this repo's
+  // own mark opens with a 1,300-byte comment, so any fixed-size window misses
+  // the tag and silently classifies the SVG as a raster — which produces a full
+  // set of plausible icons built from a rasterised copy of itself. `--check`
+  // caught exactly that during development; a smaller window would have shipped
+  // it. Extensions are not trusted either: a mis-named source must fail loudly
+  // in the parser rather than quietly render an empty tile.
+  const isRaster =
+    // PNG \x89PNG\r\n\x1a\n
+    bytes
+      .subarray(0, 8)
+      .equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) ||
+    // WebP: "RIFF" .... "WEBP"
+    (bytes.subarray(0, 4).toString('latin1') === 'RIFF' &&
+      bytes.subarray(8, 12).toString('latin1') === 'WEBP') ||
+    // JPEG \xff\xd8\xff
+    bytes.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff])) ||
+    // GIF87a / GIF89a
+    bytes.subarray(0, 4).toString('latin1') === 'GIF8';
+  let parsed;
+  if (!isRaster) {
+    parsed = parseSource(bytes.toString('utf8'));
+    parsed.viewBox = await tightViewBox(parsed.viewBox);
+  } else {
+    parsed = await parseRasterSource(bytes);
+  }
+
+  // See FAVICON_TARGET: only owned when it is not itself the source.
+  const targets =
+    path.resolve(PUBLIC, 'favicon.svg') === sourcePath
+      ? TARGETS
+      : [...TARGETS, FAVICON_TARGET];
 
   const drift = [];
-  for (const target of TARGETS) {
+  for (const target of targets) {
     const out = path.join(PUBLIC, target.file);
     const next = await render(target, parsed, bg);
     if (check) {
@@ -318,12 +424,12 @@ async function main() {
       process.exit(1);
     }
     console.log(
-      `generate-icons --check: all ${TARGETS.length} icons match ${path.relative(ROOT, sourcePath)}.`
+      `generate-icons --check: all ${targets.length} icons match ${path.relative(ROOT, sourcePath)}.`
     );
     return;
   }
   console.log(
-    `\ngenerate-icons: wrote ${TARGETS.length} assets from ${path.relative(ROOT, sourcePath)} on ${bg}.`
+    `\ngenerate-icons: wrote ${targets.length} assets from ${path.relative(ROOT, sourcePath)} on ${bg}.`
   );
 }
 
