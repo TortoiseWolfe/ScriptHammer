@@ -286,6 +286,133 @@
     max-width: 60ch;
   }
 
+  /* ── Copy-to-clipboard on every code block ────────────────────────────────
+     The wrapper exists because `.well` scrolls horizontally; an absolutely
+     positioned child of a scrolling box slides away with the content. */
+  .wellwrap {
+    position: relative;
+  }
+  .copy {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.6rem;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--steel);
+    background: var(--edge);
+    box-shadow: var(--sh-plate);
+    border: 0;
+    border-radius: 5px;
+    padding: 0.4rem 0.6rem;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  /* Visible on hover, and ALWAYS on keyboard focus — a control that only exists
+     for a mouse is not a control. */
+  .wellwrap:hover .copy,
+  .copy:focus-visible {
+    opacity: 1;
+  }
+  .copy:hover {
+    color: var(--ink);
+  }
+  .copy:focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 2px;
+  }
+  .copy[data-state='done'] {
+    opacity: 1;
+    color: var(--live);
+  }
+  .copy[data-state='fail'] {
+    opacity: 1;
+    color: var(--hot);
+  }
+
+  /* ── Presenter controls. Buttons carry plate -> lift -> groove: resting, hover,
+     pressed — the same three-state depth ladder the product itself uses. ───── */
+  .controls {
+    position: fixed;
+    right: 1.1rem;
+    bottom: 1.4rem;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: var(--plate);
+    box-shadow: var(--sh-groove);
+    border-radius: 10px;
+    padding: 0.45rem;
+  }
+  .controls button {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--ink);
+    background: var(--edge);
+    box-shadow: var(--sh-plate);
+    border: 0;
+    border-radius: 6px;
+    padding: 0.55rem 0.75rem;
+    cursor: pointer;
+    min-width: 2.4rem;
+  }
+  .controls button:hover {
+    box-shadow:
+      var(--sh-plate),
+      0 0 0 1px var(--amber) inset;
+  }
+  .controls button:active {
+    box-shadow: var(--sh-groove);
+  }
+  .controls button:focus-visible {
+    outline: 2px solid var(--amber);
+    outline-offset: 2px;
+  }
+  .controls .count {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--steel);
+    font-variant-numeric: tabular-nums;
+    padding: 0 0.5rem;
+  }
+  .progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0;
+    background: var(--amber);
+    z-index: 21;
+  }
+
+  /* ── Speaker notes, hidden until N. What I actually SAY, not a summary. ──── */
+  .notes {
+    display: none;
+  }
+  body.notes-on .notes {
+    display: block;
+    background: var(--plate);
+    box-shadow: var(--sh-well);
+    border-radius: 10px;
+    padding: 1.05rem 1.25rem;
+    font-size: 0.97rem;
+    line-height: 1.55;
+    color: var(--ink);
+    max-width: 60rem;
+  }
+  body.notes-on .notes::before {
+    content: 'SAY';
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.16em;
+    color: var(--amber);
+    margin-bottom: 0.5rem;
+  }
+
   .wide {
     max-width: none;
   }
@@ -356,6 +483,15 @@
     .slide > * {
       animation: none !important;
     }
+    .controls,
+    .progress,
+    .notes,
+    .copy {
+      display: none !important;
+    }
+    .deck {
+      scroll-snap-type: none;
+    }
     body {
       background: var(--ground);
     }
@@ -386,7 +522,13 @@
       pnpm run sync:wireframes<br />
       git push <span class="c">&nbsp;# GitHub Pages does the rest</span>
     </div>
-    <div class="rail"><span style="width: 2%"></span></div>
+    <aside class="notes">
+      Forty-five minutes, and by the end there will be a website on the internet
+      that does not exist right now. Somebody in this room is going to name it.
+      I need that to be real, so the four commands are up front — nothing here
+      is hidden behind an alias I wrote this morning.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 2 ───────────────────────────────────────────────────────────────────── -->
@@ -408,7 +550,14 @@
       Every number in this deck was measured on the repo this week, not
       estimated. Where I couldn't measure something, the slide says so.
     </p>
-    <div class="rail"><span style="width: 5%"></span></div>
+    <aside class="notes">
+      Three numbers, and you get to check every one of them live. Thirty-six
+      seconds, zero configuration, about six minutes to deploy. I measured all
+      three on the repo this week rather than estimating them, and where I could
+      not measure something the slide says so. If one is wrong today, you will
+      watch it be wrong.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 3 ───────────────────────────────────────────────────────────────────── -->
@@ -439,7 +588,14 @@
         </ul>
       </div>
     </div>
-    <div class="rail"><span style="width: 9%"></span></div>
+    <aside class="notes">
+      ScriptHammer is the template my own client sites run on. That matters more
+      than the feature list — it is not a demo I maintain for talks, it is the
+      thing that breaks at two in the morning if I get it wrong. The right-hand
+      column is the unusual part: most templates do not hand you their CI
+      arguments already settled.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 4 ───────────────────────────────────────────────────────────────────── -->
@@ -458,7 +614,15 @@
       >
     </p>
     <p class="note">Which is lucky, because that experiment already ran.</p>
-    <div class="rail"><span style="width: 13%"></span></div>
+    <aside class="notes">
+      Here is the honest objection, and it is the one I would raise. Templates
+      rot at the seam. You take a starter, it fits for a month, upstream moves,
+      and now you are maintaining a fork nobody can merge into. So the
+      interesting question is not whether it looks good today. It is what it
+      looks like ten weeks later, in production, owned by somebody who is not
+      me.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 5 ───────────────────────────────────────────────────────────────────── -->
@@ -482,7 +646,13 @@
         <span class="n">1,182</span><span class="l">commits of its own</span>
       </div>
     </div>
-    <div class="rail"><span style="width: 17%"></span></div>
+    <aside class="notes">
+      That experiment already ran, and I did not run it. RaisedPaws is a pet
+      adoption tracker on its own domain with real users. It split from the
+      template on the ninth of June, was live about ten weeks later, and has
+      eleven hundred and eighty-two commits of its own since.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 6 ───────────────────────────────────────────────────────────────────── -->
@@ -506,7 +676,14 @@
       without setting the fork flag. The <em>history</em> is the proof, not the
       badge.
     </p>
-    <div class="rail"><span style="width: 21%"></span></div>
+    <aside class="notes">
+      You do not have to take my word for the lineage. ScriptHammer's first
+      commit is abc485fd, and RaisedPaws has that same commit in its history —
+      one API call proves it. Worth saying plainly: GitHub will not call it a
+      fork, because template instantiation copies the history without setting
+      the fork flag. The history is the proof, not the badge.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 7 ───────────────────────────────────────────────────────────────────── -->
@@ -538,7 +715,14 @@
     <p class="note">
       That second column is the only column that should ever have been your job.
     </p>
-    <div class="rail"><span style="width: 25%"></span></div>
+    <aside class="notes">
+      This is what I would want to know as somebody deciding whether to fork.
+      Left column arrived for free. Right column is what that team actually had
+      to build. And the right column is the only one that should ever have been
+      their job — nobody starts a shelter project excited about writing password
+      reset.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 8 ───────────────────────────────────────────────────────────────────── -->
@@ -550,7 +734,13 @@
       needs. I need a name, an owner and one sentence.
     </p>
     <span class="cue">▶ take the suggestion · write it on the board</span>
-    <div class="rail"><span style="width: 29%"></span></div>
+    <aside class="notes">
+      Right. This is where I need you. Shout something out — an app, a tool, a
+      thing your shelter or your team actually needs. Three things: a name, a
+      GitHub owner, and one sentence. I will write it on the board and then we
+      are building it.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 9 ───────────────────────────────────────────────────────────────────── -->
@@ -568,7 +758,12 @@
     <p class="note">
       Nothing clever here. It's the "Use this template" button with a keyboard.
     </p>
-    <div class="rail"><span style="width: 33%"></span></div>
+    <aside class="notes">
+      Nothing clever here, and I want to be clear about that. This is the Use
+      This Template button with a keyboard instead of a mouse. If this step
+      impresses anybody, I have oversold it.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 10 ──────────────────────────────────────────────────────────────────── -->
@@ -589,7 +784,13 @@
       &nbsp;&nbsp;Time elapsed:&nbsp;&nbsp;&nbsp;<span class="ok">36s</span>
     </div>
     <span class="cue">▶ run it · let the count scroll</span>
-    <div class="rail"><span style="width: 38%"></span></div>
+    <aside class="notes">
+      Now watch the count. Two thousand eight hundred and seventy-two files,
+      eighty-four renames, thirty-six seconds. Every string that said
+      ScriptHammer now says whatever you shouted. Let it scroll — the number is
+      the point.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 11 ──────────────────────────────────────────────────────────────────── -->
@@ -609,7 +810,14 @@
       in fifteen assets. Now the tool says so out loud, every run, and takes
       <span class="stat">--icon</span> to do it properly.
     </p>
-    <div class="rail"><span style="width: 42%"></span></div>
+    <aside class="notes">
+      And here is the part I am proudest of, which is the script admitting what
+      it cannot do. A rebrand substitutes strings. A logo is not a string. We
+      learned that by shipping somebody else's monogram to a live client site
+      across fifteen separate assets, and nobody noticed for a while. Now the
+      tool says so out loud on every single run.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 12 ──────────────────────────────────────────────────────────────────── -->
@@ -629,7 +837,14 @@
       mistakes a sketch for a design.
     </p>
     <span class="cue">▶ open the viewer · sketch the idea</span>
-    <div class="rail"><span style="width: 47%"></span></div>
+    <aside class="notes">
+      Wireframes live in the repo as SVGs, versioned next to the feature they
+      describe, so they cannot drift from the thing they document. Desktop and
+      mobile on one canvas, forty-four pixel touch targets. The panels are a
+      specific warm colour and never white, so nobody mistakes a sketch for a
+      finished design in a client meeting.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 13 ──────────────────────────────────────────────────────────────────── -->
@@ -646,7 +861,13 @@
       <span class="ok">✓ live in ~6 minutes</span>
     </div>
     <span class="cue">▶ push · then keep talking while it builds</span>
-    <div class="rail"><span style="width: 52%"></span></div>
+    <aside class="notes">
+      Push is the deploy. There is no separate release step to forget. CI runs
+      the whole gate and Pages publishes it, and while that happens I am going
+      to keep talking, because six minutes of silence would be unbearable for
+      both of us.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 14 ──────────────────────────────────────────────────────────────────── -->
@@ -670,7 +891,15 @@
       I ran this before writing the slide, because a demo that needs
       configuration to survive isn't a demo, it's a rehearsal.
     </p>
-    <div class="rail"><span style="width: 57%"></span></div>
+    <aside class="notes">
+      This is the claim I was most worried about, so I tested it before writing
+      the slide. A fresh fork has none of my secrets — every environment
+      variable empty — and it still builds a hundred and forty pages and exits
+      zero. Auth stays dark until you add your own keys, but nothing is broken
+      while you decide. A demo that needs configuration to survive is not a
+      demo, it is a rehearsal.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 15 ──────────────────────────────────────────────────────────────────── -->
@@ -702,7 +931,15 @@
         </p>
       </div>
     </div>
-    <div class="rail"><span style="width: 62%"></span></div>
+    <aside class="notes">
+      Seven checks have to be green before anything merges. The one worth
+      flagging is that they run in parallel, so adding four of them last week
+      cost zero extra waiting — people assume more gates means slower, and it
+      does not if you measure it. And they apply to me. There is no admin
+      override; bypassing means editing the rule, which is a visible act instead
+      of a click.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 16 ──────────────────────────────────────────────────────────────────── -->
@@ -731,7 +968,15 @@
         </p>
       </div>
     </div>
-    <div class="rail"><span style="width: 67%"></span></div>
+    <aside class="notes">
+      Here is the uncomfortable middle of the talk. Almost every serious bug I
+      found last year was not a failing test. It was a passing one that measured
+      nothing. On the left, an assertion inside a condition that is false every
+      run. On the right, an account deletion that deleted nothing, returned no
+      error, and told the user their data was permanently gone. That one was
+      live for a long time.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 17 ──────────────────────────────────────────────────────────────────── -->
@@ -755,7 +1000,13 @@
       One of those nine was hiding the delete bug. Nine tests, months of green,
       one real data-protection defect underneath.
     </p>
-    <div class="rail"><span style="width: 72%"></span></div>
+    <aside class="notes">
+      So stop counting checkmarks and start counting assertions. Nine passing
+      tests across twenty-four CI shards had never asserted anything at all, and
+      one of those nine was hiding the delete bug. That is now a merge-blocking
+      gate, and it is in the template you just forked — you get it for free.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 18 ──────────────────────────────────────────────────────────────────── -->
@@ -764,7 +1015,12 @@
     <h1>It's live.</h1>
     <p class="lede">That URL didn't exist when this session started.</p>
     <span class="cue">▶ open the deployed site · hand the repo over</span>
-    <div class="rail"><span style="width: 78%"></span></div>
+    <aside class="notes">
+      And that should be live. That URL did not exist when we started. Let us
+      open it, and then I will transfer the repository to whoever shouted the
+      idea.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 19 ──────────────────────────────────────────────────────────────────── -->
@@ -790,7 +1046,14 @@
         </ul>
       </div>
     </div>
-    <div class="rail"><span style="width: 85%"></span></div>
+    <aside class="notes">
+      Before anybody forks this on my say-so, here is what it costs you. Static
+      export means no server API routes in production; server logic lives in
+      Supabase or edge functions. Docker-first, so local pnpm is not supported.
+      And it is opinionated — five files per component, one migration file. If
+      those constraints do not suit you, better to know now than in week three.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 20 ──────────────────────────────────────────────────────────────────── -->
@@ -819,7 +1082,14 @@
       If you shouted the idea out — the repo is yours. I'll transfer it before I
       leave the room.
     </p>
-    <div class="rail"><span style="width: 96%"></span></div>
+    <aside class="notes">
+      Everything is open. The template, the field study, and four good first
+      issues that are open right now, each with a file path and an acceptance
+      criterion — I deliberately did not relabel hard tickets to pad that
+      number. And if you shouted the idea out, the repository is yours before I
+      leave the room.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 
   <!-- 21 ──────────────────────────────────────────────────────────────────── -->
@@ -830,6 +1100,257 @@
       Questions — and if something here didn't work on stage, that's the honest
       version of the demo and I'd rather you saw it.
     </p>
-    <div class="rail"><span style="width: 100%"></span></div>
+    <aside class="notes">
+      That is the talk. Questions — and genuinely, if something here did not
+      work on stage, that is the honest version of the demo and I would rather
+      you saw it than a recording where it always works.
+    </aside>
+    <div class="rail"><span></span></div>
   </section>
 </div>
+
+<div class="progress" id="progress"></div>
+<nav class="controls" aria-label="Slide navigation">
+  <button id="prev" aria-label="Previous slide" title="Previous (←)">
+    &#8592;
+  </button>
+  <span class="count" id="count"></span>
+  <button id="next" aria-label="Next slide" title="Next (→ or Space)">
+    &#8594;
+  </button>
+  <button
+    id="notes"
+    aria-label="Toggle speaker notes"
+    title="Speaker notes (N)"
+  >
+    N
+  </button>
+  <button id="fs" aria-label="Toggle fullscreen" title="Fullscreen (F)">
+    FS
+  </button>
+</nav>
+
+<script>
+  (function () {
+    // The artifact wrapper supplies <html>, so lang has to be set here.
+    // `html-has-lang` is the first thing any audit finds, and this deck invites one.
+    document.documentElement.lang = 'en';
+
+    var deck = document.querySelector('.deck');
+    var slides = [].slice.call(document.querySelectorAll('.slide'));
+    var i = 0;
+    var progress = document.getElementById('progress');
+    var count = document.getElementById('count');
+
+    // STAMPED FROM THE DOM, never hand-written. The rail widths used to be typed
+    // into each slide, so inserting one made every later number wrong — in a deck
+    // whose whole argument is that nobody re-checks numbers.
+    function paint() {
+      slides.forEach(function (s, n) {
+        var bar = s.querySelector('.rail span');
+        if (bar)
+          bar.style.width = (((n + 1) / slides.length) * 100).toFixed(1) + '%';
+      });
+      var label = String(i + 1).padStart(2, '0') + ' / ' + slides.length;
+      if (count) count.textContent = label;
+      if (progress)
+        progress.style.width = ((i + 1) / slides.length) * 100 + '%';
+    }
+
+    function go(n) {
+      i = Math.max(0, Math.min(slides.length - 1, n));
+      slides[i].scrollIntoView({ block: 'start' });
+      paint();
+    }
+
+    function fullscreen() {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else document.documentElement.requestFullscreen().catch(function () {});
+    }
+
+    function notes() {
+      document.body.classList.toggle('notes-on');
+      // A slide can outgrow the viewport once its notes are showing, and the deck
+      // is scroll-snapped — without this the note you just opened is off-screen.
+      slides[i].scrollIntoView({ block: 'start' });
+    }
+
+    document.getElementById('prev').addEventListener('click', function (e) {
+      e.stopPropagation();
+      go(i - 1);
+    });
+    document.getElementById('next').addEventListener('click', function (e) {
+      e.stopPropagation();
+      go(i + 1);
+    });
+    document.getElementById('fs').addEventListener('click', function (e) {
+      e.stopPropagation();
+      fullscreen();
+    });
+    document.getElementById('notes').addEventListener('click', function (e) {
+      e.stopPropagation();
+      notes();
+    });
+
+    slides.forEach(function (s) {
+      s.addEventListener('click', function (e) {
+        if (e.target.closest('a, pre, code, button, table')) return;
+        if (window.getSelection && String(window.getSelection())) return;
+        go(i + 1);
+      });
+    });
+
+    document.addEventListener('keydown', function (e) {
+      // Space must not page forward while a control has focus, or a keyboard user
+      // who tabs to the back button and presses Space goes the wrong way.
+      var onControl =
+        e.target && e.target.closest && e.target.closest('button');
+      if (
+        e.key === 'ArrowRight' ||
+        e.key === 'PageDown' ||
+        (e.key === ' ' && !onControl)
+      ) {
+        e.preventDefault();
+        go(i + 1);
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        go(i - 1);
+      }
+      if (e.key === 'Home') {
+        e.preventDefault();
+        go(0);
+      }
+      if (e.key === 'End') {
+        e.preventDefault();
+        go(slides.length - 1);
+      }
+      if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        fullscreen();
+      }
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        notes();
+      }
+    });
+
+    if ('IntersectionObserver' in window) {
+      var io = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (en) {
+            if (en.isIntersecting) {
+              i = slides.indexOf(en.target);
+              paint();
+            }
+          });
+        },
+        { root: deck, threshold: 0.5 }
+      );
+      slides.forEach(function (s) {
+        io.observe(s);
+      });
+    }
+
+    // ── Copy button on every code block ───────────────────────────────────
+    //
+    // WHAT IT COPIES. A block with `$ ` prompts is a transcript: commands mixed
+    // with their output. Copying it whole would paste "✓ Created repository"
+    // into somebody's shell. So when prompts are present only the commands are
+    // taken, with the prompt stripped; otherwise the block is copied verbatim.
+    // The button SAYS which it did — silently dropping lines would be its own
+    // small version of the bug this talk is about.
+    //
+    // AND IT NEVER CLAIMS SUCCESS IT DID NOT HAVE. The Clipboard API needs a
+    // secure context and permission, and this deck is published inside an
+    // iframe where it can simply be refused. There is an execCommand fallback,
+    // and if both fail the button says so in red rather than flashing "Copied".
+    function wellText(well) {
+      var raw = well.innerText.replace(/\u00a0/g, ' ').replace(/\s+$/, '');
+      var lines = raw.split('\n');
+      var cmds = lines
+        .filter(function (l) {
+          return /^\s*\$\s/.test(l);
+        })
+        .map(function (l) {
+          return l.replace(/^\s*\$\s/, '').trim();
+        });
+      return cmds.length
+        ? {
+            text: cmds.join('\n'),
+            label:
+              cmds.length === 1
+                ? 'Copy command'
+                : 'Copy ' + cmds.length + ' commands',
+          }
+        : { text: raw.trim(), label: 'Copy' };
+    }
+
+    function toClipboard(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text);
+      }
+      return Promise.reject(new Error('clipboard api unavailable'));
+    }
+
+    function legacyCopy(text) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.cssText = 'position:fixed;top:-1000px;opacity:0';
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    [].slice.call(document.querySelectorAll('.well')).forEach(function (well) {
+      var wrap = document.createElement('div');
+      wrap.className = 'wellwrap';
+      well.parentNode.insertBefore(wrap, well);
+      wrap.appendChild(well);
+
+      var info = wellText(well);
+      var btn = document.createElement('button');
+      btn.className = 'copy';
+      btn.type = 'button';
+      btn.textContent = info.label;
+      btn.setAttribute('aria-label', info.label + ' to clipboard');
+      wrap.appendChild(btn);
+
+      var revert;
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation(); // a slide click advances the deck
+        var fresh = wellText(well);
+        function settle(state, text) {
+          btn.dataset.state = state;
+          btn.textContent = text;
+          clearTimeout(revert);
+          revert = setTimeout(function () {
+            delete btn.dataset.state;
+            btn.textContent = fresh.label;
+          }, 1800);
+        }
+        toClipboard(fresh.text).then(
+          function () {
+            settle('done', 'Copied');
+          },
+          function () {
+            // Call the fallback ONCE. Calling it twice — to pick the state and
+            // again to pick the label — would copy twice and let the second
+            // result decide the message.
+            var ok = legacyCopy(fresh.text);
+            settle(ok ? 'done' : 'fail', ok ? 'Copied' : 'Copy failed');
+          }
+        );
+      });
+    });
+
+    paint();
+  })();
+</script>
