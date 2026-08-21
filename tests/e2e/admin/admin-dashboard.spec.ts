@@ -1,12 +1,15 @@
 /**
  * E2E Test: Admin Dashboard
  *
- * Tests all 5 admin sub-pages with seeded demo data:
+ * Tests every admin sub-page with seeded demo data. The navigation test enumerates
+ * `ADMIN_SECTIONS` rather than restating it, so this list cannot drift again (#912):
  * - Overview: stat cards, sparkline trend charts
  * - Payments: provider breakdown, payment stats
+ * - Orders: fulfillment queue
  * - Audit Trail: burst detection cards, event log table
  * - Users: user table, sorting, search
  * - Messaging: conversation stats, top senders
+ * - Email: provider health
  *
  * Requires: local Supabase with seed-admin-demo.sql applied,
  * admin user test@example.com with is_admin app_metadata.
@@ -17,6 +20,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { ADMIN_SECTIONS, ADMIN_SECTION_FLOOR } from '@/config/admin-sections';
 import { createClient } from '@supabase/supabase-js';
 
 const ADMIN_EMAIL = 'test@example.com';
@@ -470,23 +474,46 @@ test.describe('Admin Dashboard E2E', () => {
       const adminNav = page.locator('nav[aria-label="Admin navigation"]');
       await expect(adminNav).toBeVisible({ timeout: 10000 });
 
-      const tabs = [
-        { name: 'Payments', url: /\/admin\/payments/ },
-        { name: 'Orders', url: /\/admin\/orders/ },
-        { name: 'Audit Trail', url: /\/admin\/audit/ },
-        { name: 'Users', url: /\/admin\/users/ },
-        { name: 'Messaging', url: /\/admin\/messaging/ },
-        { name: 'Overview', url: /\/admin\/?$/ },
-      ];
+      // ENUMERATED FROM THE NAV'S OWN DEFINITION, NOT RESTATED (#912).
+      //
+      // This was a hardcoded array of six while `ADMIN_SECTIONS` had seven, so
+      // `/admin/email` was never visited by a test named "all admin tabs". `Orders`
+      // had been added to both lists; `Email` to only one. Nothing failed, because
+      // nothing compared them. Adding a section now needs no edit here.
+      //
+      // The floor is load-bearing: an import resolving to an empty array would run
+      // this loop zero times and still pass, which is the same defect one level up.
+      expect(
+        ADMIN_SECTIONS.length,
+        'ADMIN_SECTIONS is smaller than the floor — if a section was deliberately ' +
+          'removed, lower ADMIN_SECTION_FLOOR deliberately too; never to make a run pass'
+      ).toBeGreaterThanOrEqual(ADMIN_SECTION_FLOOR);
 
-      for (const tab of tabs) {
-        const link = adminNav.getByText(tab.name);
+      // Every defined section must actually be RENDERED. Enumerating alone would
+      // still pass if the nav silently stopped drawing one — the test would visit a
+      // URL directly and never notice the link was gone.
+      const rendered = await adminNav.locator('a').allTextContents();
+      expect(
+        rendered.map((t) => t.trim()).sort(),
+        'the nav does not render exactly the sections ADMIN_SECTIONS defines'
+      ).toEqual([...ADMIN_SECTIONS].map((s) => s.label).sort());
+
+      for (const section of ADMIN_SECTIONS) {
+        const link = adminNav.getByText(section.label, { exact: true });
         await link.click();
-        await page.waitForURL(tab.url, { timeout: 10000 });
+        // `/admin` must match exactly — a loose regex would let every sub-route
+        // satisfy the Overview case.
+        const pattern =
+          section.href === '/admin'
+            ? /\/admin\/?$/
+            : new RegExp(section.href.replace(/\//g, '\\/'));
+        await page.waitForURL(pattern, { timeout: 10000 });
 
-        const body = page.locator('body');
-        const bodyText = await body.textContent();
-        expect(bodyText?.length).toBeGreaterThan(0);
+        const bodyText = await page.locator('body').textContent();
+        expect(
+          bodyText?.length,
+          `${section.label} rendered an empty body`
+        ).toBeGreaterThan(0);
       }
     });
   });
