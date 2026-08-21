@@ -666,11 +666,11 @@ tracked in fact. If you intend to untrack something, `git rm --cached` is the ac
 
 Direct pushes are rejected for everyone, admins included (#414). Work on a branch and open a PR — there is no other route in.
 
-Required checks are **`Test (20.x)`, `accessibility`, and `E2E (local) result`** — three, not two. All three come from workflows with no `paths:` filter, which is what makes them safe to require.
+Required checks are **`Test (20.x)`, `accessibility`, `E2E (local) result`, `Conformance result`, `Component Structure result`, `Auth Config Drift result`, and `Signup Mailer result`** — seven, as of 2026-08-21 (#572). Every one comes from a workflow with no trigger `paths:` filter, which is what makes them safe to require.
 
 `E2E (local) result` joined them when #739 closed. It is safe to require for the same reason: `e2e-local.yml` has no trigger `paths` filter, filtering happens in its `changes` job, and the aggregate reports green when nothing ran (see the two-lanes section above).
 
-Requiring `Build` or `Validate Component Structure` would still make every docs-only PR permanently unmergeable: a required check that never reports is _pending forever_, not skipped. The sharded E2E jobs stay excluded too — their names carry the shard count (`E2E (chromium-gen 3/6)`), so changing the matrix would orphan every required context.
+Requiring `Build` or the raw `Validate Component Structure` job would still make every docs-only PR permanently unmergeable: a required check that never reports is _pending forever_, not skipped. **Note the distinction that makes the four additions safe** — `Component Structure result` is the always-reporting aggregate, not the `Validate Component Structure` job it wraps. The job skips on unrelated changes; the aggregate runs `if: always()` and reports green when the job was legitimately skipped. Same for the other three. The sharded E2E jobs stay excluded too — their names carry the shard count (`E2E (chromium-gen 3/6)`), so changing the matrix would orphan every required context.
 
 **`scripts/__tests__/required-checks-documented.test.js` fails when this list and branch protection disagree** (#782). This passage said "two" for two days after the third was added, which made a legitimate merge refusal — "the base branch policy prohibits the merge", while both documented checks were green — read as a broken protection rule.
 
