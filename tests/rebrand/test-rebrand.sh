@@ -22,6 +22,13 @@ else
     ACTUAL_REPO=false
 fi
 
+# #898: every invocation below that is not ABOUT the brand mark passes
+# --no-icon explicitly. rebrand.sh now refuses to run without an icon decision,
+# because two live sites shipped this template's logo past a warning. These
+# tests are asserting sanitization, attribution and auth-config drift, so they
+# state the choice rather than inherit a default -- which is the whole point of
+# the flag.
+
 # Test counters
 TESTS_RUN=0
 GROUPS_RUN=0
@@ -218,7 +225,7 @@ test_name_sanitization() {
 
     # Test sanitization by checking --dry-run output (runs in temp dir)
     local output
-    output=$("$TEMP_DIR/scripts/rebrand.sh" "My App!" "testuser" "Test desc" --dry-run 2>&1 || true)
+    output=$("$TEMP_DIR/scripts/rebrand.sh" "My App!" "testuser" "Test desc" --dry-run --no-icon 2>&1 || true)
 
     if echo "$output" | grep -q "my-app"; then
         log_pass "\"My App!\" sanitizes to \"my-app\""
@@ -227,7 +234,7 @@ test_name_sanitization() {
     fi
 
     # Test with underscores
-    output=$("$TEMP_DIR/scripts/rebrand.sh" "my_cool_app" "testuser" "Test desc" --dry-run 2>&1 || true)
+    output=$("$TEMP_DIR/scripts/rebrand.sh" "my_cool_app" "testuser" "Test desc" --dry-run --no-icon 2>&1 || true)
 
     if echo "$output" | grep -q "my-cool-app"; then
         log_pass "\"my_cool_app\" sanitizes to \"my-cool-app\""
@@ -236,7 +243,7 @@ test_name_sanitization() {
     fi
 
     # Test with leading/trailing spaces
-    output=$("$TEMP_DIR/scripts/rebrand.sh" "  Spaces  " "testuser" "Test desc" --dry-run 2>&1 || true)
+    output=$("$TEMP_DIR/scripts/rebrand.sh" "  Spaces  " "testuser" "Test desc" --dry-run --no-icon 2>&1 || true)
 
     if echo "$output" | grep -q "spaces"; then
         log_pass "\"  Spaces  \" sanitizes to \"spaces\""
@@ -259,7 +266,7 @@ test_dry_run_no_changes() {
     original_hash=$(md5sum "$TEMP_DIR/package.json" | cut -d' ' -f1)
 
     # Run with --dry-run --force (in temp dir)
-    "$TEMP_DIR/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --dry-run --force 2>/dev/null || true
+    "$TEMP_DIR/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --dry-run --force --no-icon 2>/dev/null || true
 
     # Check file unchanged
     local new_hash
@@ -282,7 +289,7 @@ test_attribution_preserved() {
     setup_temp_dir
 
     # A real rebrand, not a dry run - the point is what survives on disk.
-    "$TEMP_DIR/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --force >/dev/null 2>&1 || true
+    "$TEMP_DIR/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --force --no-icon >/dev/null 2>&1 || true
 
     local footer="$TEMP_DIR/src/config/footer-links.ts"
 
@@ -309,32 +316,66 @@ test_attribution_preserved() {
 }
 
 ##
-# #659: a rebrand that silently keeps the upstream icons is how CRUDkit's `CK`
-# monogram installed onto phones from a live client site, through two rebrands.
-# The script cannot draw a logo, so the contract is: WARN when no mark is given,
-# and regenerate from the mark when one is. Both halves are asserted, because a
-# warning that stops printing is the same silent failure wearing a fix.
+# #659 / #898: a rebrand that silently keeps the upstream icons is how CRUDkit's
+# `CK` monogram installed onto phones from a live client site, through two
+# rebrands. It then happened a SECOND time -- raisedpaws.com served this repo's
+# printing mallet as its favicon and home-screen icon -- past the warning that
+# was added to prevent exactly that.
+#
+# So the contract changed. A warning is not a gate: skipping the mark must now
+# be something a forker SAYS (--no-icon), not something they fail to notice.
+#
+# The second failure also had a cause in this script: --icon rejected anything
+# but SVG, and that fork's mark is a PNG, so they could not use the flag at all.
+# The rejection funnelled them into the path it was warning about. Rasters are
+# accepted now, so this asserts the extension gate lets one through.
 ##
 test_brand_icons() {
     run_test "test_brand_icons"
     setup_temp_dir
 
-    local out
-    out=$("$TEMP_DIR/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --force 2>&1 || true)
+    local out status
 
-    if echo "$out" | grep -q "YOUR APP ICONS ARE STILL"; then
-        log_pass "Warns when no --icon is given"
+    # 1. Neither --icon nor --no-icon: REFUSE. This is the half that used to be
+    #    a warning, and the half that shipped our logo twice.
+    set +e
+    out=$("$TEMP_DIR/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --force 2>&1)
+    status=$?
+    set -e
+    if [ "$status" -ne 0 ] && echo "$out" | grep -q "Refusing to rebrand without deciding about the app icons"; then
+        log_pass "Refuses to rebrand when no icon decision was made"
     else
-        log_fail "Missing-icon warning" "a warning that the icons are unchanged" "$out"
+        log_fail "Missing icon decision" "a non-zero exit refusing to continue (got status $status)" "$out"
     fi
 
-    # And with a mark: --icon must reject a non-SVG rather than copy it into
-    # place, since the assets are generated at eight sizes.
-    out=$("$TEMP_DIR/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --force --icon "$TEMP_DIR/README.md" 2>&1 || true)
-    if echo "$out" | grep -q -- "--icon must be an SVG"; then
-        log_pass "Rejects a non-SVG mark"
+    # 2. --no-icon: the deliberate escape hatch proceeds, and still says the
+    #    icons are ours. An escape hatch that goes quiet is the old bug back.
+    out=$("$TEMP_DIR/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --force --no-icon 2>&1 || true)
+    if echo "$out" | grep -q "YOUR APP ICONS ARE STILL"; then
+        log_pass "--no-icon proceeds and still warns the icons are unchanged"
     else
-        log_fail "Non-SVG --icon" "an error naming the SVG requirement" "$out"
+        log_fail "--no-icon" "the rebrand to continue and warn about the icons" "$out"
+    fi
+
+    setup_temp_dir
+
+    # 3. An unsupported mark is still rejected, by extension.
+    out=$("$TEMP_DIR/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --force --icon "$TEMP_DIR/README.md" 2>&1 || true)
+    if echo "$out" | grep -q -- "--icon must be .svg, .png or .webp"; then
+        log_pass "Rejects an unsupported mark format"
+    else
+        log_fail "Unsupported --icon" "an error naming the accepted formats" "$out"
+    fi
+
+    # 4. #898: a PNG mark must get PAST the format gate. Generation itself needs
+    #    sharp and is covered by scripts/__tests__/generate-icons-source-kinds.test.js;
+    #    what is asserted here is that this script no longer turns a raster away.
+    printf 'not really a png' > "$TEMP_DIR/mark.png"
+    out=$("$TEMP_DIR/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --force --icon "$TEMP_DIR/mark.png" 2>&1 || true)
+    if echo "$out" | grep -q -- "--icon must be"; then
+        log_fail "PNG --icon rejected" "a raster mark to be accepted by the format gate" "$out"
+    else
+        log_pass "Accepts a raster mark (#898)"
     fi
 
     cd "$REPO_ROOT"
@@ -358,7 +399,7 @@ test_auth_config_desired_state() {
     setup_temp_dir
 
     local out
-    out=$("$TEMP_DIR/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --force 2>&1 || true)
+    out=$("$TEMP_DIR/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --force --no-icon 2>&1 || true)
 
     if echo "$out" | grep -q "YOUR AUTH DESIRED-STATE IS STILL"; then
         log_pass "Warns that the auth desired-state is unchanged"
@@ -411,7 +452,7 @@ test_rerebrand_detection() {
 
     # Run without --force, test for WARNING message in output
     local output
-    output=$("$REREBRAND_TEMP/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --dry-run 2>&1 || true)
+    output=$("$REREBRAND_TEMP/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --dry-run --no-icon 2>&1 || true)
 
     if echo "$output" | grep -qi "already.*rebranded\|no.*scripthammer.*found\|WARNING"; then
         log_pass "Re-rebrand scenario detected and warned"

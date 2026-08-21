@@ -37,16 +37,43 @@ git push
 
 The `scripts/rebrand.sh` script automates updating 200+ files:
 
-| Category   | Changes                                                                                                |
-| ---------- | ------------------------------------------------------------------------------------------------------ |
-| **Code**   | Replaces "ScriptHammer" with your project name in all TypeScript, JavaScript, JSON, and Markdown files |
-| **Files**  | Renames files containing "ScriptHammer" (e.g., `ScriptHammerLogo.tsx` → `MyProjectLogo.tsx`)           |
-| **Docker** | Updates service name in `docker-compose.yml`                                                           |
-| **Git**    | Updates remote origin URL to your repository                                                           |
-| **Config** | Updates `package.json` name, description, and repository fields                                        |
-| **Themes** | Renames `scripthammer-dark`/`scripthammer-light` theme blocks to your project name                     |
-| **Env**    | Updates `COMPOSE_PROJECT_NAME` and example commands in `.env.example`                                  |
-| **CNAME**  | Updates `public/CNAME` to your project domain (unless custom domain detected or `--keep-cname`)        |
+| Category  | Changes                                                                                                |
+| --------- | ------------------------------------------------------------------------------------------------------ |
+| **Code**  | Replaces "ScriptHammer" with your project name in all TypeScript, JavaScript, JSON, and Markdown files |
+| **Files** | Renames files containing "ScriptHammer" (e.g., `ScriptHammerLogo.tsx` → `MyProjectLogo.tsx`)           |
+
+### Your brand mark is not covered by any of that
+
+A rebrand substitutes strings, and **a logo is not a string**. Nothing in the
+table above looks at an image, so without a mark of your own every browser tab
+and every home-screen install shows ScriptHammer's icon.
+
+This is not a hypothetical: it has reached production twice, on two different
+live sites, the second time straight past a warning added to prevent the first.
+So `rebrand.sh` now **refuses to run** until you decide:
+
+```bash
+# You have a mark — .svg, .png and .webp all work
+./scripts/rebrand.sh "MyApp" myuser "My description" --icon path/to/mark.svg
+
+# You do not have one yet, and you are choosing to ship ours for now
+./scripts/rebrand.sh "MyApp" myuser "My description" --no-icon
+```
+
+`--icon` regenerates the whole set — favicon, the eight PWA sizes, the maskable
+variants, `apple-touch-icon`, and `favicon.ico` — from your single mark. Use a
+**symbol rather than a wordmark**: these render down to 32px, where text is
+illegible.
+
+If you take `--no-icon`, the icons stay ScriptHammer's until you run
+`pnpm run generate:icons` with your own mark. `pnpm run check:icons` tells you
+whether the committed set still matches it.
+| **Docker** | Updates service name in `docker-compose.yml` |
+| **Git** | Updates remote origin URL to your repository |
+| **Config** | Updates `package.json` name, description, and repository fields |
+| **Themes** | Renames `scripthammer-dark`/`scripthammer-light` theme blocks to your project name |
+| **Env** | Updates `COMPOSE_PROJECT_NAME` and example commands in `.env.example` |
+| **CNAME** | Updates `public/CNAME` to your project domain (unless custom domain detected or `--keep-cname`) |
 
 ### Script Options
 

@@ -799,7 +799,7 @@
     <h2>The script tells you what it can't do</h2>
     <div class="well wide">
       <span class="warn"
-        >→ No --icon given; PWA icons left as-is (warned in summary)</span
+        >→ Refusing to rebrand without deciding about the app icons.</span
       >
     </div>
     <p class="lede">
@@ -807,8 +807,12 @@
     </p>
     <p>
       We learned that by shipping someone else's monogram to a live client site
-      in fifteen assets. Now the tool says so out loud, every run, and takes
-      <span class="stat">--icon</span> to do it properly.
+      in fifteen assets. So the tool started saying so out loud, every run — and
+      then it happened <strong>again</strong>, past the warning, to a second
+      live site. A warning is not a gate. Now it
+      <span class="stat">refuses</span> until you pass
+      <span class="stat">--icon</span> or say
+      <span class="stat">--no-icon</span> on purpose.
     </p>
     <aside class="notes">
       And here is the part I am proudest of, which is the script admitting what
