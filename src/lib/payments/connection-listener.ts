@@ -26,22 +26,31 @@ export function startConnectionListener(): () => void {
   logger.info('Starting connection listener');
 
   const checkConnection = async () => {
+    // CHEAP GUARD FIRST, AND THE ORDER IS LOAD-BEARING (#895).
+    //
+    // `getPendingCount()` is a local IndexedDB count. `isSupabaseOnline()` is a REAL
+    // network round trip — it runs `select id from payment_intents limit 1`. This used to
+    // probe the network first and only then ask whether there was anything to drain, which
+    // meant mounting this listener anywhere cost a Supabase query every 30 seconds, on
+    // every page, for every visitor — the overwhelming majority of whom have an empty
+    // queue. That cost is why the listener was never wired up at all, so nothing drained.
+    //
+    // With the queue check first, the empty case is purely local and this is safe to mount
+    // app-wide. Do not swap these back.
+    const pendingCount = await getPendingCount();
+    if (pendingCount === 0) return;
+
     const isOnline = await isSupabaseOnline();
+    if (!isOnline) return;
 
-    if (isOnline) {
-      const pendingCount = await getPendingCount();
-
-      if (pendingCount > 0) {
-        logger.info('Connection restored! Processing queued operations', {
-          pendingCount,
-        });
-        try {
-          await processPendingOperations();
-          logger.info('Queue processed successfully');
-        } catch (error) {
-          logger.error('Failed to process queue', { error });
-        }
-      }
+    logger.info('Connection restored! Processing queued operations', {
+      pendingCount,
+    });
+    try {
+      await processPendingOperations();
+      logger.info('Queue processed successfully');
+    } catch (error) {
+      logger.error('Failed to process queue', { error });
     }
   };
 
