@@ -45,6 +45,14 @@ const CHECK_SOURCE = {
   'Test (20.x)': 'ci.yml',
   accessibility: 'accessibility.yml',
   'E2E (local) result': 'e2e-local.yml',
+  // The four advisory workflows, made requirable in #869/#872/#873/#874 and required
+  // 2026-08-21 (#572). Each is the always-reporting AGGREGATE, never the raw job: the
+  // raw jobs skip on unrelated changes, and a required check that never reports is
+  // pending forever.
+  'Conformance result': 'conformance.yml',
+  'Component Structure result': 'component-structure.yml',
+  'Auth Config Drift result': 'auth-config-drift.yml',
+  'Signup Mailer result': 'signup-mailer.yml',
 };
 
 function claudeMd() {
