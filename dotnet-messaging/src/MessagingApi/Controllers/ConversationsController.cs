@@ -192,7 +192,12 @@ public class ConversationsController : ControllerBase
 
         // Insert with sequence_number = 0 (the assign_sequence_number BEFORE
         // INSERT trigger overrides it under a per-conversation advisory lock →
-        // C13). ON CONFLICT (client_generated_id) DO NOTHING → C14 idempotency:
+        // C13). That trigger is NOT Supabase's to lend: on a database Supabase
+        // did not provision it is absent, every insert lands 0, and the second
+        // message in a conversation violates unique_sequence. Provision it from
+        // dotnet-messaging/db/c13-sequence-assignment.sql — the failure and the
+        // fix are both demonstrated in tests/rls/dotnet-sequence-assignment.test.ts.
+        // ON CONFLICT (client_generated_id) DO NOTHING → C14 idempotency:
         // a replay with the same non-null id is a no-op; NULL sends coexist.
         // sender_id is set server-side to the caller — never trusted from body.
         const string sql = @"
