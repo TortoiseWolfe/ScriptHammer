@@ -67,20 +67,28 @@ docker compose run --rm builder pnpm build
 ```bash
 gh repo fork TortoiseWolfe/ScriptHammer --clone
 cd YourProjectName
-./scripts/rebrand.sh MyProject myusername "My project description"
+./scripts/rebrand.sh MyProject myusername "My project description" --icon path/to/your-mark.svg
 cp .env.example .env
 docker compose up -d
 ```
 
-The rebrand script rewrites 200 files or so with your name. Your project name is picked up from the repository name automatically, so there's nothing else to configure.
+The rebrand script rewrites 200 files or so with your name. Your project name is picked up from the
+repository name automatically.
+
+**It will refuse to run until you decide about the app icons.** A rebrand substitutes strings, and a
+logo is not a string — so if nothing replaces the mark, every browser tab and every home-screen
+install shows ScriptHammer's. That reached two live sites before this was a hard stop (#659, #898),
+both times past a warning. Pass `--icon` with your own mark (`.svg`, `.png` or `.webp` — a symbol
+rather than a wordmark, since these render at 32px), or `--no-icon` to say out loud that you are
+shipping ours for now.
 
 <details>
 <summary><b>Rebrand options, and keeping your fork up to date</b></summary>
 
 ```bash
-./scripts/rebrand.sh MyProject myuser "Description" --dry-run      # preview only
-./scripts/rebrand.sh MyProject myuser "Description" --force        # no prompts
-./scripts/rebrand.sh MyProject myuser "Description" --keep-cname   # custom domain
+./scripts/rebrand.sh MyProject myuser "Description" --icon mark.svg --dry-run   # preview only
+./scripts/rebrand.sh MyProject myuser "Description" --icon mark.svg --force     # no prompts
+./scripts/rebrand.sh MyProject myuser "Description" --no-icon                   # keep our icons, deliberately
 ```
 
 To pull upstream changes later:
@@ -163,14 +171,25 @@ Full deployment guide: [docs/PAYMENT-DEPLOYMENT.md](./docs/PAYMENT-DEPLOYMENT.md
 <details>
 <summary><b>🔑 GitHub Actions secrets</b></summary>
 
-Add these under **Settings → Secrets and variables → Actions**.
+Add these under **Settings → Secrets and variables → Actions**. That page has two tabs and
+**the tab matters** — a value on the wrong one does not error, it arrives as an empty string.
 
-**Required for the build and deploy to work:**
+**Secrets — the deploy hard-fails without this:**
 
-| Secret                          | Purpose                   |
-| ------------------------------- | ------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Your Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon key    |
+| Secret                          | Purpose                                               |
+| ------------------------------- | ----------------------------------------------------- |
+| `NEXT_PUBLIC_PAGESPEED_API_KEY` | `deploy.yml` exits 1 before building if this is empty |
+
+**Variables, not secrets — `deploy.yml` reads these from `vars.*`:**
+
+| Variable                        | Purpose                                                        |
+| ------------------------------- | -------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Your Supabase project URL                                      |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon key                                         |
+| `NEXT_PUBLIC_SITE_URL`          | Your origin. Unset, asset retention crawls _this_ site         |
+| `NEXT_PUBLIC_DEPLOY_URL`        | Your origin. Unset, sitemap/robots advertise a `github.io` one |
+
+Put the Supabase pair in Secrets and the deploy still goes green — with no backend in the bundle.
 
 **Recommended, so the E2E suite can run:**
 

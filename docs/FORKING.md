@@ -9,8 +9,9 @@ Complete guide to creating your own project from the ScriptHammer template.
 gh repo fork TortoiseWolfe/ScriptHammer --clone
 cd YourProjectName
 
-# 2. Run the rebrand script
-./scripts/rebrand.sh MyProject myusername "My awesome project description"
+# 2. Run the rebrand script. It refuses without an icon decision -- see "Your brand
+#    mark is not covered by any of that" below. Use --no-icon if you have no mark yet.
+./scripts/rebrand.sh MyProject myusername "My awesome project description" --icon path/to/mark.svg
 
 # 3. Create environment file
 cp .env.example .env
@@ -78,20 +79,24 @@ whether the committed set still matches it.
 ### Script Options
 
 ```bash
+# Every invocation needs --icon or --no-icon. These examples use --icon; swap in
+# --no-icon if you have no mark yet.
+
 # Preview changes (no modifications)
-./scripts/rebrand.sh MyProject myuser "Description" --dry-run
+./scripts/rebrand.sh MyProject myuser "Description" --icon mark.svg --dry-run
 
 # Skip all prompts
-./scripts/rebrand.sh MyProject myuser "Description" --force
+./scripts/rebrand.sh MyProject myuser "Description" --icon mark.svg --force
 
-# Keep CNAME file
-./scripts/rebrand.sh MyProject myuser "Description" --keep-cname
+# Keep public/CNAME exactly as it is. NOTE: on a fresh fork that file contains
+# ScriptHammer's own domain, so this is only right if you have already replaced it.
+./scripts/rebrand.sh MyProject myuser "Description" --icon mark.svg --keep-cname
 
 # Preserve SSH format for git remote (if your origin is SSH)
-./scripts/rebrand.sh MyProject myuser "Description" --preserve-ssh
+./scripts/rebrand.sh MyProject myuser "Description" --icon mark.svg --preserve-ssh
 
 # Combine options
-./scripts/rebrand.sh MyProject myuser "Description" --dry-run --preserve-ssh
+./scripts/rebrand.sh MyProject myuser "Description" --no-icon --dry-run --preserve-ssh
 ```
 
 | Option                   | Description                                                                                        |
@@ -158,18 +163,37 @@ See [CUSTOM-THEME.md](./CUSTOM-THEME.md) for the full guide including color form
 2. Under "Build and deployment", select **GitHub Actions** as source
 3. Push to `main` branch to trigger deployment
 
-### Required Secrets
+### Required Secrets and Variables
 
-Add these secrets in **Settings → Secrets and variables → Actions → Repository secrets**:
+Both live under **Settings → Secrets and variables → Actions**, on two different tabs, and
+**the tab matters** — putting a value in the wrong one does not error, it arrives as an empty
+string and the site builds without it.
 
-#### Required for CI/CD (Add These First)
+#### Repository SECRETS — required, the deploy hard-fails without this one
 
-These are **required** for the build and deployment workflows to succeed:
+```
+NEXT_PUBLIC_PAGESPEED_API_KEY=your-google-api-key
+```
+
+`.github/workflows/deploy.yml` checks this before it runs the build and exits 1 if it is empty.
+It is the single thing standing between your first push and any site existing. (It ships in the
+client bundle either way, so it is a "secret" only by storage location.)
+
+#### Repository VARIABLES — not secrets
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SITE_URL=https://yourdomain.com
+NEXT_PUBLIC_DEPLOY_URL=https://yourdomain.com
 ```
+
+`deploy.yml` reads all four from `vars.*`. Put the Supabase pair in Secrets and the deploy still
+succeeds — with no backend in the bundle, and the setup banner on every page.
+
+Set the two URLs even if you are not on a custom domain yet: `sitemap.xml` and `robots.txt` fall
+back to a `github.io` origin without them, and the asset-retention step falls back to crawling
+**this template's** site rather than yours.
 
 #### Recommended for E2E Testing
 
@@ -202,7 +226,6 @@ TEST_EMAIL_DOMAIN=yourname+e2e@gmail.com
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 NEXT_PUBLIC_AUTHOR_NAME=Your Name
 NEXT_PUBLIC_AUTHOR_EMAIL=your@email.com
-NEXT_PUBLIC_PAGESPEED_API_KEY=your-google-api-key
 ```
 
 See [README.md](../README.md#-github-actions-secrets) for the complete prioritized list of secrets.

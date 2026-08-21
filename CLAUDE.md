@@ -292,22 +292,39 @@ unchanged, back to 200 within ~2 minutes (watch for `[self-heal]` in
 
 - Configure in `.env`: `TEST_USER_SECONDARY_EMAIL`, `TEST_USER_SECONDARY_PASSWORD`
 
-## GitHub Actions Secrets
+## GitHub Actions Secrets AND Variables
 
-For CI/CD deployment, add these secrets in **Settings → Secrets and variables → Actions → Repository secrets**:
+**Settings → Secrets and variables → Actions has two tabs, and which one a value lives on is
+load-bearing.** `deploy.yml` reads the Supabase pair from `vars.*`. Put them in Secrets and nothing
+errors — they arrive as empty strings, the deploy goes green, and the bundle ships with no backend.
 
-### Required for Deployment
+### Secrets — one, and the deploy hard-fails without it
+
+```
+NEXT_PUBLIC_PAGESPEED_API_KEY=your-google-api-key
+```
+
+`.github/workflows/deploy.yml:38-46` exits 1 before `pnpm build` when this is empty. Both fork docs
+called it "Optional" until #898's follow-up; it is the single wall between a first push and any site
+existing.
+
+### Variables — not secrets
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
+NEXT_PUBLIC_DEPLOY_URL=https://your-domain.com
 ```
+
+The two URLs matter even before a custom domain: unset, `sitemap.xml`/`robots.txt` advertise a
+`github.io` origin, and `retain-previous-assets.mjs` falls back to crawling **scripthammer.com**
+rather than your own site — printing "retained N asset(s)" as though it worked.
 
 ### Optional but Recommended
 
 ```
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
-NEXT_PUBLIC_PAGESPEED_API_KEY=your-google-api-key
 NEXT_PUBLIC_AUTHOR_NAME=Your Name
 NEXT_PUBLIC_AUTHOR_EMAIL=your@email.com
 ```
