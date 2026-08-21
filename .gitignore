@@ -275,3 +275,7 @@ graphify-out/
 
 # Written by the zero-assertion reporter (#861); a per-run CI verdict, never committed.
 zero-assertions.json
+
+# Talk decks: the HTML is the source and is tracked; the PDF is a build output
+# rendered by scripts/render-talk.mjs (#516-adjacent, same rule as public/*).
+docs/talks/*.pdf
