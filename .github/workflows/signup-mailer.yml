@@ -18,22 +18,21 @@
 
 name: Signup Mailer E2E
 
+# NO TRIGGER `paths:` FILTER, DELIBERATELY (#870, pattern from #869).
+#
+# A `paths:` filter means this reports NOTHING on an unrelated PR — and a required check
+# that never reports is PENDING FOREVER, not skipped, so it could never be required.
+# This suite is the only coverage of a REAL form signup against a real mailbox (#288);
+# it going red without blocking anything is exactly the #572 defect.
+#
+# The `changes` job below gates the 25-minute run on the same paths the filter named, so
+# an unrelated PR costs one trivial job rather than a full local stack. Pinned by
+# scripts/__tests__/signup-mailer-requirable.test.js.
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-    paths:
-      - 'src/components/auth/**'
-      - 'src/app/sign-up/**'
-      - 'src/app/verify-email/**'
-      - 'src/app/auth/callback/**'
-      - 'src/contexts/AuthContext.tsx'
-      - 'tests/e2e/signup-mailer/**'
-      - 'tests/e2e/utils/mailpit.ts'
-      - 'playwright.signup-mailer.config.ts'
-      - 'docker-compose.yml'
-      - '.github/workflows/signup-mailer.yml'
   workflow_dispatch:
 
 concurrency:
@@ -42,10 +41,36 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Does this change need the signup mailer suite?
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Decide
+        id: decide
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "  ${{ github.event_name }} — running unconditionally"
+            exit 0
+          fi
+          node scripts/ci/signup-mailer-changes.mjs \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.event.pull_request.head.sha }}"
+
   signup-mailer:
     name: Real-form signup + email confirmation (local Mailpit)
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
 
     steps:
       - name: Checkout code
@@ -153,3 +178,30 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose --profile supabase down -v
+
+  # The always-reporting aggregate. THIS is the context to require, not `signup-mailer`.
+  result:
+    name: Signup Mailer result
+    runs-on: ubuntu-latest
+    needs: [changes, signup-mailer]
+    if: always()
+    steps:
+      - name: Verdict
+        run: |
+          set -euo pipefail
+          RAN="${{ needs.changes.outputs.run }}"
+          RESULT="${{ needs.signup-mailer.result }}"
+          echo "  changes.run=$RAN  signup-mailer.result=$RESULT"
+
+          if [ "$RAN" != "true" ]; then
+            echo "  no signup-relevant paths changed — suite skipped, reporting green"
+            exit 0
+          fi
+
+          # A cancelled run observed nothing. This suite is cancel-in-progress on its own
+          # ref, so a rapid second push cancels the first — and calling that green would
+          # mean a fast-follow push silently drops the only real-signup coverage there is.
+          case "$RESULT" in
+            success) echo "  real-form signup + email confirmation passed"; exit 0 ;;
+            *) echo "  signup mailer did not pass (result=$RESULT)"; exit 1 ;;
+          esac
