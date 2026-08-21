@@ -236,7 +236,7 @@ If that goes wrong, check you have a remote with `git remote -v`, override the v
 | Contributing        | [CONTRIBUTING.md](./CONTRIBUTING.md)                         |
 | Creating components | [docs/CREATING_COMPONENTS.md](./docs/CREATING_COMPONENTS.md) |
 | Testing             | [docs/project/TESTING.md](./docs/project/TESTING.md)         |
-| Security            | [docs/project/SECURITY.md](./docs/project/SECURITY.md)       |
+| Security            | [.github/SECURITY.md](./.github/SECURITY.md)                 |
 | Forking             | [docs/FORKING.md](./docs/FORKING.md)                         |
 | Architecture        | [docs/architecture/README.md](./docs/architecture/README.md) |
 | Changelog           | [docs/project/CHANGELOG.md](./docs/project/CHANGELOG.md)     |

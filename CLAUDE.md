@@ -322,7 +322,7 @@ See `README.md` for the complete list of available secrets.
 | Messaging System    | `docs/messaging/QUICKSTART.md`             |
 | Messaging Contract  | `docs/messaging/AUTHORIZATION-CONTRACT.md` |
 | Payment Integration | `docs/features/payment-integration.md`     |
-| Security            | `docs/project/SECURITY.md`                 |
+| Security            | `.github/SECURITY.md`                      |
 | Mobile-First Design | `docs/MOBILE-FIRST.md`                     |
 | Component Creation  | `docs/CREATING_COMPONENTS.md`              |
 | Template Setup      | `docs/TEMPLATE-GUIDE.md`                   |

@@ -576,7 +576,7 @@ See [docs/FORKING.md](./docs/FORKING.md) for the fork-side view.
 
 - **Questions**: Open a [Discussion](https://github.com/TortoiseWolfe/ScriptHammer/discussions)
 - **Bugs**: Open an [Issue](https://github.com/TortoiseWolfe/ScriptHammer/issues)
-- **Security**: See [SECURITY.md](./docs/project/SECURITY.md) for the reporting process — do not open a public issue
+- **Security**: See [SECURITY.md](./.github/SECURITY.md) for the reporting process — do not open a public issue
 
 ### Before opening an issue
 
