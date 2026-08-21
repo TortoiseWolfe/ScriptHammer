@@ -4,6 +4,7 @@ import { PRELOAD_FONTS } from './fonts-preload.generated';
 import ThemeScript from '@/components/ThemeScript';
 import AccessibilityScript from '@/components/AccessibilityScript';
 import StylesheetGuard from '@/components/subatomic/StylesheetGuard';
+import PaymentQueueSync from '@/components/payment/PaymentQueueSync';
 import { GlobalNav } from '@/components/GlobalNav';
 import { Footer } from '@/components/Footer';
 import { AccessibilityProvider } from '@/contexts/AccessibilityContext';
@@ -164,6 +165,14 @@ export default function RootLayout({
             reported from production six times. Waits for `load`, so it costs
             nothing on a healthy page. */}
         <StylesheetGuard />
+        {/* Drains the offline payment queue when connectivity returns (#895).
+            Renders nothing. It lives HERE rather than on the payment pages
+            because the case it exists for is a payment queued and then
+            navigated away from — a drain scoped to the checkout route would
+            miss exactly that. Mounted ONCE: the listener is a module-level
+            singleton, and a second mount hands back a stop function that
+            disarms the first. */}
+        <PaymentQueueSync />
         <JsonLdScript data={generateJsonLd()} />
         <ColorblindFilters />
         <ConsentProvider>
