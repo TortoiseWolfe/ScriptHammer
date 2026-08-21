@@ -163,50 +163,68 @@ test.describe('Cross-Page Navigation', () => {
     }
   });
 
-  test('external links open in new tab', async ({ page, context }) => {
+  test('external links open in a new tab, safely', async ({ page }) => {
+    // This test used to locate one specific link by its label and do nothing when
+    // that link was absent. The link lived in `src/app/page.tsx` at the initial
+    // commit and was deleted in bf1fc5f1 (2026-03-04), after which the whole body
+    // was `if (false)` and the test passed green for five and a half months without
+    // ever executing an assertion (#861).
+    //
+    // The INTENT is still live and worth enforcing, so it is retargeted from one
+    // named link to the property itself: every off-site link opens in a new tab and
+    // carries `rel="noopener"`, so the opened page cannot reach back through
+    // `window.opener`.
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
-    // Find View Source link which opens GitHub in new tab
-    const viewSourceLink = page.locator('a:has-text("View Source")');
-    const hasViewSource = (await viewSourceLink.count()) > 0;
+    const external = await page
+      .locator('a[href^="http"]:not([href*="scripthammer.com"])')
+      .all();
 
-    if (hasViewSource) {
-      // Test link opens in new tab
-      const [newPage] = await Promise.all([
-        context.waitForEvent('page'),
-        viewSourceLink.click(),
-      ]);
+    const offenders: string[] = [];
+    let measured = 0;
 
-      await newPage.waitForLoadState();
-      expect(newPage.url()).toContain('github.com');
-      await newPage.close();
-    }
-  });
-
-  test('breadcrumb navigation works if present', async ({ page }) => {
-    await page.goto('/blog', { waitUntil: 'domcontentloaded' });
-    await dismissCookieBanner(page);
-
-    // Look for breadcrumb navigation
-    const breadcrumbs = page.locator(
-      '[aria-label="breadcrumb"], .breadcrumbs, nav.breadcrumb'
-    );
-    const hasBreadcrumbs = (await breadcrumbs.count()) > 0;
-
-    if (hasBreadcrumbs) {
-      const breadcrumbLinks = breadcrumbs.locator('a');
-      const linkCount = await breadcrumbLinks.count();
-
-      if (linkCount > 0) {
-        // Click first breadcrumb (usually Home)
-        await breadcrumbLinks.first().click();
-
-        // Should navigate to home
-        await expect(page).toHaveURL(/\/$/);
+    for (const link of external) {
+      const href = await link.getAttribute('href');
+      if (!href || href.includes('localhost') || href.includes('127.0.0.1')) {
+        continue;
+      }
+      measured++;
+      const target = await link.getAttribute('target');
+      const rel = (await link.getAttribute('rel')) ?? '';
+      if (target !== '_blank') {
+        offenders.push(`${href} -> target=${target ?? 'MISSING'}`);
+      } else if (!rel.includes('noopener')) {
+        offenders.push(
+          `${href} -> target=_blank but rel="${rel}" lacks noopener`
+        );
       }
     }
+
+    // The coverage floor, not a formality. Without it a selector that stopped
+    // matching would leave `offenders` empty and the test would pass having
+    // examined nothing -- which is exactly how it died the first time (#842).
+    expect(
+      measured,
+      'no external links found on the homepage; this test measured nothing'
+    ).toBeGreaterThan(0);
+
+    expect(offenders, offenders.join('\n')).toEqual([]);
   });
+
+  // REMOVED: 'breadcrumb navigation works if present' (#861).
+  //
+  // It looked for `[aria-label="breadcrumb"], .breadcrumbs, nav.breadcrumb` on /blog
+  // and asserted only inside a truthiness guard on that locator's count. This
+  // product has never had breadcrumbs in any form: none of those selectors matches
+  // anything in the built /blog HTML, no blog template renders them, and
+  // `generateBreadcrumbJsonLd` in src/utils/metadata.tsx has no call site, so not
+  // even the structured-data variant is emitted. The title said "if present"; the
+  // answer was always no.
+  //
+  // A test for a feature that does not exist reports success without observing
+  // anything, which is the #396 pattern. If breadcrumbs are ever added this comes
+  // back as a real test rather than a conditional one.
 
   test('navigation preserves theme selection', async ({ page }) => {
     // Set a theme

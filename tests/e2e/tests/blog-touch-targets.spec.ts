@@ -33,6 +33,7 @@ test.describe('Blog Touch Target Standards - iPhone 12', () => {
     const blogCards = await page.locator('a[href*="/blog/"]').all();
 
     const failures: string[] = [];
+    let measured = 0;
 
     for (let i = 0; i < blogCards.length; i++) {
       const card = blogCards[i];
@@ -41,6 +42,7 @@ test.describe('Blog Touch Target Standards - iPhone 12', () => {
         const box = await card.boundingBox();
 
         if (box) {
+          measured++;
           // Cards should have adequate height for tapping
           if (box.height < MINIMUM - TOLERANCE) {
             const href = await card.getAttribute('href');
@@ -52,10 +54,23 @@ test.describe('Blog Touch Target Standards - iPhone 12', () => {
       }
     }
 
-    if (failures.length > 0) {
-      const summary = `${failures.length} blog cards failed touch target requirements:\n${failures.join('\n')}`;
-      expect(failures.length, summary).toBe(0);
-    }
+    // A coverage floor, because two nested conditions stand between the locator and
+    // a measurement: a card can be invisible, and `boundingBox()` returns null for
+    // an element that is not laid out. If either silently emptied the set then the
+    // failure list would be empty and this test would report success having measured
+    // nothing (#842). It measured 61 cards when this floor was added.
+    expect(
+      measured,
+      'no visible blog cards were measured; this test proves nothing'
+    ).toBeGreaterThan(0);
+
+    // Asserted unconditionally. It used to be reached only when the failure list was
+    // already non-empty, so a clean run recorded ZERO assertions and was
+    // indistinguishable from a run that never looked at anything (#861).
+    expect(
+      failures,
+      `${failures.length} of ${measured} blog cards failed touch target requirements:\n${failures.join('\n')}`
+    ).toEqual([]);
   });
 
   test('Blog post interactive elements meet 44x44px', async ({ page }) => {

@@ -157,39 +157,79 @@ test.describe('Mobile Typography', () => {
     }
   });
 
-  test('Small text is avoided or has min-font-size', async ({ page }) => {
+  // The absolute floor below which text is not a design choice, it is a bug.
+  //
+  // This is NOT the 12px this test used to name. That number was never enforced --
+  // the test collected everything under 12px and only `console.warn`ed it, under the
+  // comment "Don't fail, just warn - some small text may be intentional". It ran zero
+  // assertions in either branch, so it could not fail for any input (#861).
+  //
+  // The comment was right that the small text is intentional, which is why nobody
+  // ever made it assert. Measured at 390px across /, /blog, a blog post,
+  // /accessibility, /sign-in, /contact, /status and /docs: the 2a Machine Shop type
+  // scale deliberately sets eyebrows, tag chips and meta lines at 10.5-11px
+  // (`text-[11px]`, `text-[10.5px]`, uppercase with wide tracking), while every
+  // paragraph of running prose is 14px or larger. The smallest text anywhere was
+  // 10.5px.
+  //
+  // So 12px is not this product's floor and asserting it would fail on correct
+  // design. 10px is a floor nothing legitimate approaches, and it still catches the
+  // regressions that matter -- a broken clamp, a bad token, a shrunk container.
+  // Raising it is a design decision for the owner, recorded on #861.
+  const ABSOLUTE_MIN_FONT_PX = 10;
+
+  test('No text renders below the absolute minimum size', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
     await waitForLayoutStability(page);
 
-    // Get all text elements
-    const textElements = await page
-      .locator('p, span, a, button, li, td, th, label')
-      .all();
-
-    const tooSmall: string[] = [];
-
-    for (const element of textElements.slice(0, 50)) {
-      // Sample first 50
-      if (await element.isVisible()) {
-        const fontSize = await element.evaluate((el) =>
-          parseFloat(window.getComputedStyle(el).fontSize)
-        );
-
-        // Text should not be smaller than 12px (minimum readable)
-        if (fontSize < 12) {
-          const text =
-            (await element.textContent())?.trim().substring(0, 30) || '';
-          tooSmall.push(`${fontSize.toFixed(1)}px: "${text}"`);
+    // ONE evaluate over every matching element, not a per-element round trip over
+    // the first 50. The sampled version measured 5 of the 133 visible text elements
+    // on this page -- the first 50 nodes in document order are mostly inside <head>
+    // and hidden wrappers -- so it covered about 4% of its own subject while looking
+    // like it covered the page. A gate is only as wide as what it points at (#396).
+    const { measured, tooSmall } = await page.evaluate((floor) => {
+      const nodes = Array.from(
+        document.querySelectorAll('p, span, a, button, li, td, th, label')
+      );
+      const small: string[] = [];
+      let seen = 0;
+      for (const el of nodes) {
+        const cs = window.getComputedStyle(el);
+        const rect = el.getBoundingClientRect();
+        const text = (el.textContent ?? '').trim();
+        if (
+          cs.display === 'none' ||
+          cs.visibility === 'hidden' ||
+          rect.width === 0 ||
+          rect.height === 0 ||
+          !text
+        ) {
+          continue;
+        }
+        seen++;
+        const fontSize = parseFloat(cs.fontSize);
+        if (fontSize < floor) {
+          small.push(`${fontSize.toFixed(1)}px: "${text.substring(0, 30)}"`);
         }
       }
-    }
+      return { measured: seen, tooSmall: small };
+    }, ABSOLUTE_MIN_FONT_PX);
 
-    if (tooSmall.length > 0) {
-      const summary = `${tooSmall.length} elements have text < 12px:\n${tooSmall.slice(0, 5).join('\n')}`;
-      console.warn(summary);
-      // Don't fail, just warn - some small text may be intentional
-    }
+    // Coverage floor, set well above zero. A visibility filter stands between the
+    // selector and every reading, so a page that failed to render would produce an
+    // empty list and a green result (#842). The homepage carries 133 visible text
+    // elements; 25 is a floor that a real regression in rendering would breach long
+    // before this assertion could pass vacuously.
+    expect(
+      measured,
+      `only ${measured} visible text elements were measured; this test is not seeing the page`
+    ).toBeGreaterThan(25);
+
+    expect(
+      tooSmall,
+      `${tooSmall.length} of ${measured} elements render below ${ABSOLUTE_MIN_FONT_PX}px:\n${tooSmall.join('\n')}`
+    ).toEqual([]);
   });
 
   test('Text remains readable in landscape orientation', async ({ page }) => {
