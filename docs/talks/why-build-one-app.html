@@ -1,600 +1,835 @@
 <title>Why Build One App When We Can Build Them All?</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Black&family=JetBrains+Mono:wght@400;500;700&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Archivo+Black&family=JetBrains+Mono:wght@400;500;700&display=swap"
+/>
 
 <style>
-/* ─────────────────────────────────────────────────────────────────────────────
+  /* ─────────────────────────────────────────────────────────────────────────────
    Palette is ScriptHammer's own `scripthammer-dark` theme, not a new one. The
    amber is the exact colour this repo MANDATES for wireframe panels
    ("Panel color: #e8d4b8 (never white)") — so the deck's accent is the demo's
    own material. Committed single-theme on purpose: it is a projected deck.
    ───────────────────────────────────────────────────────────────────────────── */
-:root {
-  --ground:  #16162a;
-  --plate:   #1a1a2e;
-  --edge:    #25254a;
-  --ink:     #e2e8f0;
-  --steel:   #a8b2c1;
-  --amber:   #e8d4b8;
-  --live:    #7fd1a6;
-  --hot:     #f0a07c;
+  :root {
+    --ground: #16162a;
+    --plate: #1a1a2e;
+    --edge: #25254a;
+    --ink: #e2e8f0;
+    --steel: #a8b2c1;
+    --amber: #e8d4b8;
+    --live: #7fd1a6;
+    --hot: #f0a07c;
 
-  --ink-shadow: rgba(6, 6, 16, 0.62);
-  --ink-edge:   rgba(226, 232, 240, 0.07);
+    --ink-shadow: rgba(6, 6, 16, 0.62);
+    --ink-edge: rgba(226, 232, 240, 0.07);
 
-  /* The Machine Shop depth system: plates sit proud, wells are cut in. */
-  --sh-plate:
-    0 1px 0 0 var(--ink-edge) inset,
-    0 14px 30px -14px var(--ink-shadow),
-    0 2px 4px -2px var(--ink-shadow);
-  --sh-well:
-    0 2px 6px -1px var(--ink-shadow) inset,
-    0 1px 0 0 var(--ink-edge);
-  --sh-groove:
-    0 1px 0 0 rgba(6, 6, 16, 0.5) inset,
-    0 -1px 0 0 var(--ink-edge) inset;
+    /* The Machine Shop depth system: plates sit proud, wells are cut in. */
+    --sh-plate:
+      0 1px 0 0 var(--ink-edge) inset, 0 14px 30px -14px var(--ink-shadow),
+      0 2px 4px -2px var(--ink-shadow);
+    --sh-well:
+      0 2px 6px -1px var(--ink-shadow) inset, 0 1px 0 0 var(--ink-edge);
+    --sh-groove:
+      0 1px 0 0 rgba(6, 6, 16, 0.5) inset, 0 -1px 0 0 var(--ink-edge) inset;
 
-  --display: 'Archivo Black', 'Arial Black', system-ui, sans-serif;
-  --body: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
-}
+    --display: 'Archivo Black', 'Arial Black', system-ui, sans-serif;
+    --body: 'Archivo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  }
 
-* { box-sizing: border-box; }
+  * {
+    box-sizing: border-box;
+  }
 
-body {
-  margin: 0;
-  background: var(--ground);
-  color: var(--ink);
-  font-family: var(--body);
-  -webkit-font-smoothing: antialiased;
-}
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    -webkit-font-smoothing: antialiased;
+  }
 
-/* THE SCROLL-SNAP PAIR. `scroll-snap-align` on the children does nothing without
+  /* THE SCROLL-SNAP PAIR. `scroll-snap-align` on the children does nothing without
    `scroll-snap-type` here — omitting it turns a deck into one long scroll, which
    is exactly what happened to the last one. */
-.deck {
-  scroll-snap-type: y mandatory;
-  overflow-y: auto;
-  height: 100vh;
-}
-
-.slide {
-  scroll-snap-align: start;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 6vh 7vw 8vh;
-  position: relative;
-  gap: 1.6rem;
-  border-bottom: 1px solid var(--edge);
-}
-
-/* ── Run-of-show rail: the structure IS the 45 minutes, so it is drawn ─────── */
-.rail {
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  height: 5px;
-  background: var(--edge);
-  box-shadow: var(--sh-groove);
-}
-.rail span {
-  display: block;
-  height: 100%;
-  background: var(--amber);
-}
-.stamp {
-  position: absolute;
-  top: 4.4vh; right: 7vw;
-  font-family: var(--mono);
-  font-size: 0.72rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--steel);
-}
-
-/* ── Type scale ───────────────────────────────────────────────────────────── */
-.eyebrow {
-  font-family: var(--mono);
-  font-size: 0.76rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--amber);
-}
-h1.ask {
-  font-size: clamp(2.2rem, 5.2vw, 4.3rem);
-  line-height: 1.02;
-}
-h1.ask em {
-  font-style: normal;
-  color: var(--amber);
-}
-h1 {
-  font-family: var(--display);
-  font-size: clamp(2.6rem, 6.4vw, 5.2rem);
-  line-height: 0.98;
-  letter-spacing: -0.02em;
-  margin: 0;
-  text-wrap: balance;
-}
-h2 {
-  font-family: var(--display);
-  font-size: clamp(1.9rem, 3.9vw, 3.1rem);
-  line-height: 1.04;
-  letter-spacing: -0.015em;
-  margin: 0;
-  text-wrap: balance;
-}
-h3 {
-  font-family: var(--body);
-  font-weight: 700;
-  font-size: 1.15rem;
-  margin: 0;
-  letter-spacing: -0.01em;
-}
-p, li { font-size: 1.12rem; line-height: 1.55; margin: 0; max-width: 62ch; }
-.lede { font-size: clamp(1.2rem, 2.1vw, 1.6rem); color: var(--steel); max-width: 54ch; }
-strong { color: var(--amber); font-weight: 600; }
-.dim { color: var(--steel); }
-
-ul { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.75rem; }
-li::marker { color: var(--amber); }
-
-/* ── Plates and wells ─────────────────────────────────────────────────────── */
-.plate {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  background: var(--plate);
-  border: 1px solid var(--edge);
-  border-radius: 10px;
-  box-shadow: var(--sh-plate);
-  padding: 1.5rem 1.7rem;
-}
-.well {
-  background: #101020;
-  border: 1px solid var(--edge);
-  border-radius: 8px;
-  box-shadow: var(--sh-well);
-  padding: 1.15rem 1.3rem;
-  font-family: var(--mono);
-  font-size: 0.94rem;
-  line-height: 1.75;
-  overflow-x: auto;
-}
-.well .c { color: var(--steel); }
-.well .ok { color: var(--live); }
-.well .hi { color: var(--amber); font-weight: 700; }
-.well .warn { color: var(--hot); }
-
-.grid { display: grid; gap: 1.1rem; }
-.g2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
-.g3 { grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); }
-
-.stat { font-family: var(--mono); font-variant-numeric: tabular-nums; }
-.stat .n {
-  display: block;
-  font-family: var(--display);
-  font-size: clamp(2rem, 4.4vw, 3.2rem);
-  color: var(--amber);
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
-.stat .l {
-  display: block;
-  margin-top: 0.5rem;
-  font-size: 0.78rem;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-  color: var(--steel);
-}
-
-table { border-collapse: collapse; width: 100%; font-size: 1rem; }
-th, td { text-align: left; padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--edge); }
-th {
-  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.14em;
-  text-transform: uppercase; color: var(--steel); font-weight: 500;
-}
-td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--amber); }
-
-.cue {
-  display: inline-flex; align-items: center; gap: 0.7rem;
-  font-family: var(--mono); font-size: 0.8rem; letter-spacing: 0.16em;
-  text-transform: uppercase; color: var(--ground);
-  background: var(--amber); padding: 0.55rem 1.1rem; border-radius: 5px;
-  box-shadow: var(--sh-plate); align-self: flex-start; font-weight: 700;
-}
-.note {
-  border-left: 3px solid var(--amber);
-  padding-left: 1.1rem;
-  color: var(--steel);
-  font-size: 1.02rem;
-  max-width: 60ch;
-}
-
-.wide { max-width: none; }
-.tight { gap: 0.9rem; }
-
-@media (prefers-reduced-motion: no-preference) {
-  .slide > * { animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both; }
-  .slide > *:nth-child(2) { animation-delay: 0.05s; }
-  .slide > *:nth-child(3) { animation-delay: 0.1s; }
-  .slide > *:nth-child(4) { animation-delay: 0.15s; }
-  @keyframes rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
-}
-
-/* PDF export: one slide per page, landscape. */
-@page { size: 279mm 157mm; margin: 0; }
-@media print {
-  .deck { height: auto; overflow: visible; }
-  .slide {
-    min-height: 157mm; height: 157mm; page-break-after: always;
-    padding: 11mm 14mm; border-bottom: none;
+  .deck {
+    scroll-snap-type: y mandatory;
+    overflow-y: auto;
+    height: 100vh;
   }
-  .slide > * { animation: none !important; }
-  body { background: var(--ground); }
-}
+
+  .slide {
+    scroll-snap-align: start;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 6vh 7vw 8vh;
+    position: relative;
+    gap: 1.6rem;
+    border-bottom: 1px solid var(--edge);
+  }
+
+  /* ── Run-of-show rail: the structure IS the 45 minutes, so it is drawn ─────── */
+  .rail {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 5px;
+    background: var(--edge);
+    box-shadow: var(--sh-groove);
+  }
+  .rail span {
+    display: block;
+    height: 100%;
+    background: var(--amber);
+  }
+  .stamp {
+    position: absolute;
+    top: 4.4vh;
+    right: 7vw;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--steel);
+  }
+
+  /* ── Type scale ───────────────────────────────────────────────────────────── */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--amber);
+  }
+  h1.ask {
+    font-size: clamp(2.2rem, 5.2vw, 4.3rem);
+    line-height: 1.02;
+  }
+  h1.ask em {
+    font-style: normal;
+    color: var(--amber);
+  }
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(2.6rem, 6.4vw, 5.2rem);
+    line-height: 0.98;
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h2 {
+    font-family: var(--display);
+    font-size: clamp(1.9rem, 3.9vw, 3.1rem);
+    line-height: 1.04;
+    letter-spacing: -0.015em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--body);
+    font-weight: 700;
+    font-size: 1.15rem;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  p,
+  li {
+    font-size: 1.12rem;
+    line-height: 1.55;
+    margin: 0;
+    max-width: 62ch;
+  }
+  .lede {
+    font-size: clamp(1.2rem, 2.1vw, 1.6rem);
+    color: var(--steel);
+    max-width: 54ch;
+  }
+  strong {
+    color: var(--amber);
+    font-weight: 600;
+  }
+  .dim {
+    color: var(--steel);
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  li::marker {
+    color: var(--amber);
+  }
+
+  /* ── Plates and wells ─────────────────────────────────────────────────────── */
+  .plate {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    background: var(--plate);
+    border: 1px solid var(--edge);
+    border-radius: 10px;
+    box-shadow: var(--sh-plate);
+    padding: 1.5rem 1.7rem;
+  }
+  .well {
+    background: #101020;
+    border: 1px solid var(--edge);
+    border-radius: 8px;
+    box-shadow: var(--sh-well);
+    padding: 1.15rem 1.3rem;
+    font-family: var(--mono);
+    font-size: 0.94rem;
+    line-height: 1.75;
+    overflow-x: auto;
+  }
+  .well .c {
+    color: var(--steel);
+  }
+  .well .ok {
+    color: var(--live);
+  }
+  .well .hi {
+    color: var(--amber);
+    font-weight: 700;
+  }
+  .well .warn {
+    color: var(--hot);
+  }
+
+  .grid {
+    display: grid;
+    gap: 1.1rem;
+  }
+  .g2 {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+  .g3 {
+    grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  }
+
+  .stat {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat .n {
+    display: block;
+    font-family: var(--display);
+    font-size: clamp(2rem, 4.4vw, 3.2rem);
+    color: var(--amber);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .stat .l {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--steel);
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 1rem;
+  }
+  th,
+  td {
+    text-align: left;
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid var(--edge);
+  }
+  th {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--steel);
+    font-weight: 500;
+  }
+  td.num {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--amber);
+  }
+
+  .cue {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ground);
+    background: var(--amber);
+    padding: 0.55rem 1.1rem;
+    border-radius: 5px;
+    box-shadow: var(--sh-plate);
+    align-self: flex-start;
+    font-weight: 700;
+  }
+  .note {
+    border-left: 3px solid var(--amber);
+    padding-left: 1.1rem;
+    color: var(--steel);
+    font-size: 1.02rem;
+    max-width: 60ch;
+  }
+
+  .wide {
+    max-width: none;
+  }
+  .tight {
+    gap: 0.9rem;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .slide > * {
+      animation: rise 0.5s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+    }
+    .slide > *:nth-child(2) {
+      animation-delay: 0.05s;
+    }
+    .slide > *:nth-child(3) {
+      animation-delay: 0.1s;
+    }
+    .slide > *:nth-child(4) {
+      animation-delay: 0.15s;
+    }
+    @keyframes rise {
+      from {
+        opacity: 0;
+        transform: translateY(9px);
+      }
+      to {
+        opacity: 1;
+        transform: none;
+      }
+    }
+  }
+
+  /* PDF export: one slide per page, landscape. */
+  @page {
+    size: 279mm 157mm;
+    margin: 0;
+  }
+  @media print {
+    .deck {
+      height: auto;
+      overflow: visible;
+    }
+    .slide {
+      min-height: 157mm;
+      height: 157mm;
+      page-break-after: always;
+      padding: 9mm 14mm;
+      border-bottom: none;
+    }
+    /* Print-only type scaling. The two tallest slides filled their box to the pixel and the
+     PDF clipped the last line; this buys headroom without touching the screen deck. */
+    .slide {
+      gap: 1.35rem;
+    }
+    h1.ask {
+      font-size: 3.4rem;
+    }
+    .well {
+      font-size: 0.88rem;
+      line-height: 1.62;
+    }
+    .lede {
+      font-size: 1.42rem;
+    }
+    ul {
+      gap: 0.62rem;
+    }
+    .slide > * {
+      animation: none !important;
+    }
+    body {
+      background: var(--ground);
+    }
+  }
 </style>
 
 <div class="deck">
-
-<!-- 1 ───────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <div class="stamp">00:00 · scripthammer.com</div>
-  <p class="eyebrow">Open source · Next.js · Chattanooga</p>
-  <h1 class="ask">Why build one app<br>when we can build<br><em>them all?</em></h1>
-  <p class="lede">Somebody in this room is going to pitch an app. We'll fork a
-  template, rebrand it, draw its wireframes and put it on the internet — before
-  this session ends.</p>
-  <div class="well" style="max-width:none">
-    <span class="c"># the whole demo, four commands</span><br>
-    gh repo create <span class="hi">&lt;your-idea&gt;</span> --template TortoiseWolfe/ScriptHammer<br>
-    ./scripts/rebrand.sh <span class="hi">&lt;Name&gt;</span> <span class="hi">&lt;owner&gt;</span> "<span class="hi">&lt;one line&gt;</span>"<br>
-    pnpm run sync:wireframes<br>
-    git push <span class="c">&nbsp;# GitHub Pages does the rest</span>
-  </div>
-  <div class="rail"><span style="width:2%"></span></div>
-</section>
-
-<!-- 2 ───────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <div class="stamp">00:02 · the promise</div>
-  <h2>Three claims, and you get to check all of them</h2>
-  <div class="grid g3">
-    <div class="plate stat"><span class="n">36s</span><span class="l">to rebrand 2,872 files</span></div>
-    <div class="plate stat"><span class="n">0</span><span class="l">config needed to deploy</span></div>
-    <div class="plate stat"><span class="n">~6m</span><span class="l">to live on the internet</span></div>
-  </div>
-  <p class="note">Every number in this deck was measured on the repo this week, not
-  estimated. Where I couldn't measure something, the slide says so.</p>
-  <div class="rail"><span style="width:5%"></span></div>
-</section>
-
-<!-- 3 ───────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">What it is</p>
-  <h2>A template you're allowed to take</h2>
-  <p class="lede">ScriptHammer is a production Next.js 15 template. Not a starter
-  you throw away at week two — the thing my own client sites run on.</p>
-  <div class="grid g2">
-    <div class="plate tight">
-      <h3>What comes in the box</h3>
-      <ul style="font-size:1rem">
-        <li>Next.js 15 · React 19 · TypeScript strict</li>
-        <li>Supabase auth, database, realtime</li>
-        <li>PWA, offline, service worker</li>
-        <li>35 themes, WCAG-tested</li>
-      </ul>
+  <!-- 1 ───────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <div class="stamp">00:00 · scripthammer.com</div>
+    <p class="eyebrow">Open source · Next.js · Chattanooga</p>
+    <h1 class="ask">
+      Why build one app<br />when we can build<br /><em>them all?</em>
+    </h1>
+    <p class="lede">
+      Somebody in this room is going to pitch an app. We'll fork a template,
+      rebrand it, draw its wireframes and put it on the internet — before this
+      session ends.
+    </p>
+    <div class="well" style="max-width: none">
+      <span class="c"># the whole demo, four commands</span><br />
+      gh repo create <span class="hi">&lt;your-idea&gt;</span> --template
+      TortoiseWolfe/ScriptHammer<br />
+      ./scripts/rebrand.sh <span class="hi">&lt;Name&gt;</span>
+      <span class="hi">&lt;owner&gt;</span> "<span class="hi"
+        >&lt;one line&gt;</span
+      >"<br />
+      pnpm run sync:wireframes<br />
+      git push <span class="c">&nbsp;# GitHub Pages does the rest</span>
     </div>
-    <div class="plate tight">
-      <h3>What's unusual</h3>
-      <ul style="font-size:1rem">
-        <li>4,750 unit tests across 448 files</li>
-        <li>E2E on 3 browsers, per-runner Supabase</li>
-        <li>7 checks must be green to merge</li>
-        <li>Docker-first — no "works on my machine"</li>
-      </ul>
+    <div class="rail"><span style="width: 2%"></span></div>
+  </section>
+
+  <!-- 2 ───────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <div class="stamp">00:02 · the promise</div>
+    <h2>Three claims, and you get to check all of them</h2>
+    <div class="g3 grid">
+      <div class="plate stat">
+        <span class="n">36s</span><span class="l">to rebrand 2,872 files</span>
+      </div>
+      <div class="plate stat">
+        <span class="n">0</span><span class="l">config needed to deploy</span>
+      </div>
+      <div class="plate stat">
+        <span class="n">~6m</span><span class="l">to live on the internet</span>
+      </div>
     </div>
-  </div>
-  <div class="rail"><span style="width:9%"></span></div>
-</section>
+    <p class="note">
+      Every number in this deck was measured on the repo this week, not
+      estimated. Where I couldn't measure something, the slide says so.
+    </p>
+    <div class="rail"><span style="width: 5%"></span></div>
+  </section>
 
-<!-- 4 ───────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">The honest part</p>
-  <h2>Templates usually rot at the seam</h2>
-  <p class="lede">You take a starter, it fits for a month, then upstream moves and
-  you're maintaining a fork nobody can merge into.</p>
-  <p>So the interesting question isn't "does it look good on day one." It's
-  <strong>what does it look like ten weeks later, in production, owned by someone
-  who isn't me.</strong></p>
-  <p class="note">Which is lucky, because that experiment already ran.</p>
-  <div class="rail"><span style="width:13%"></span></div>
-</section>
-
-<!-- 5 ───────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">Field study</p>
-  <h2>RaisedPaws.com</h2>
-  <p class="lede">A pet-adoption application tracker. Real site, real domain, real
-  users. Built from this template.</p>
-  <div class="grid g3">
-    <div class="plate stat"><span class="n">Jun 9</span><span class="l">split from the template</span></div>
-    <div class="plate stat"><span class="n">10 wks</span><span class="l">to live on its own domain</span></div>
-    <div class="plate stat"><span class="n">1,182</span><span class="l">commits of its own</span></div>
-  </div>
-  <div class="rail"><span style="width:17%"></span></div>
-</section>
-
-<!-- 6 ───────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">Field study · provenance</p>
-  <h2>You can prove the lineage in one command</h2>
-  <div class="well wide">
-    <span class="c"># ScriptHammer's very first commit</span><br>
-    $ git log --reverse --format='%h %ad %s' | head -1<br>
-    <span class="hi">abc485fd</span> 2025-09-27 Initial commit<br><br>
-    <span class="c"># does the derived project have it too?</span><br>
-    $ gh api repos/TortoiseWolfe/RescueDogs/commits/<span class="hi">abc485fd</span> --jq .sha<br>
-    <span class="ok">abc485fd…</span> <span class="c">← same commit, different product</span>
-  </div>
-  <p class="note">GitHub won't call it a fork — template instantiation copies the
-  history without setting the fork flag. The <em>history</em> is the proof, not
-  the badge.</p>
-  <div class="rail"><span style="width:21%"></span></div>
-</section>
-
-<!-- 7 ───────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">Field study · what carried over</p>
-  <h2>The boring 80% arrived for free</h2>
-  <table>
-    <tr><th>Came with the template</th><th>Had to be built</th></tr>
-    <tr><td>Auth, sessions, password reset</td><td>The adoption pipeline itself</td></tr>
-    <tr><td>CI, E2E, deploy pipeline</td><td>Shelter-specific data model</td></tr>
-    <tr><td>PWA, offline, theming</td><td>Its own brand and voice</td></tr>
-    <tr><td>Accessibility gates</td><td>The domain rules that make it useful</td></tr>
-  </table>
-  <p class="note">That second column is the only column that should ever have been
-  your job.</p>
-  <div class="rail"><span style="width:25%"></span></div>
-</section>
-
-<!-- 8 ───────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">Demo · the ask</p>
-  <h1>So — what should we build?</h1>
-  <p class="lede">Shout one out. An app, a tool, a thing your shelter or your team
-  actually needs. I need a name, an owner and one sentence.</p>
-  <span class="cue">▶ take the suggestion · write it on the board</span>
-  <div class="rail"><span style="width:29%"></span></div>
-</section>
-
-<!-- 9 ───────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <div class="stamp">live · step 1 of 4</div>
-  <p class="eyebrow">Demo · fork</p>
-  <h2>Take the template</h2>
-  <div class="well wide">
-    $ gh repo create <span class="hi">&lt;IDEA&gt;</span> --template TortoiseWolfe/ScriptHammer --public --clone<br>
-    <span class="ok">✓ Created repository</span><br>
-    <span class="ok">✓ Cloned</span>
-  </div>
-  <span class="cue">▶ switch to terminal</span>
-  <p class="note">Nothing clever here. It's the "Use this template" button with a
-  keyboard.</p>
-  <div class="rail"><span style="width:33%"></span></div>
-</section>
-
-<!-- 10 ──────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <div class="stamp">live · step 2 of 4</div>
-  <p class="eyebrow">Demo · rebrand</p>
-  <h2>Make it theirs, not mine</h2>
-  <div class="well wide">
-    $ ./scripts/rebrand.sh <span class="hi">&lt;Name&gt;</span> <span class="hi">&lt;owner&gt;</span> "<span class="hi">&lt;one line&gt;</span>"<br><br>
-    <span class="c">=========================================</span><br>
-    <span class="c">  Summary</span><br>
-    <span class="c">=========================================</span><br>
-    &nbsp;&nbsp;Files modified: <span class="hi">2872</span><br>
-    &nbsp;&nbsp;Files renamed:&nbsp;&nbsp;<span class="hi">84</span><br>
-    &nbsp;&nbsp;Time elapsed:&nbsp;&nbsp;&nbsp;<span class="ok">36s</span>
-  </div>
-  <span class="cue">▶ run it · let the count scroll</span>
-  <div class="rail"><span style="width:38%"></span></div>
-</section>
-
-<!-- 11 ──────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">Demo · the honest bit</p>
-  <h2>The script tells you what it can't do</h2>
-  <div class="well wide">
-    <span class="warn">→ No --icon given; PWA icons left as-is (warned in summary)</span>
-  </div>
-  <p class="lede">A rebrand substitutes strings. <strong>A logo is not a
-  string.</strong></p>
-  <p>We learned that by shipping someone else's monogram to a live client site in
-  fifteen assets. Now the tool says so out loud, every run, and takes
-  <span class="stat">--icon</span> to do it properly.</p>
-  <div class="rail"><span style="width:42%"></span></div>
-</section>
-
-<!-- 12 ──────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <div class="stamp">live · step 3 of 4</div>
-  <p class="eyebrow">Demo · wireframes</p>
-  <h2>Draw it before you build it</h2>
-  <div class="well wide">
-    $ pnpm run sync:wireframes<br>
-    <span class="ok">✓ 211 wireframes discovered</span><br>
-    $ open /wireframes
-  </div>
-  <p>Wireframes are SVGs in the repo, versioned next to the feature they describe.
-  Desktop and mobile on one canvas, 44px touch targets, panels in
-  <span style="color:var(--amber)">#e8d4b8</span> — never white, so nobody mistakes
-  a sketch for a design.</p>
-  <span class="cue">▶ open the viewer · sketch the idea</span>
-  <div class="rail"><span style="width:47%"></span></div>
-</section>
-
-<!-- 13 ──────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <div class="stamp">live · step 4 of 4</div>
-  <p class="eyebrow">Demo · ship</p>
-  <h2>Push. That's the deploy.</h2>
-  <div class="well wide">
-    $ git add -A &amp;&amp; git commit -m "<span class="hi">&lt;idea&gt;</span>: initial brand + wireframes"<br>
-    $ git push<br><br>
-    <span class="c">→ CI: build, test, accessibility, E2E</span><br>
-    <span class="c">→ Deploy to GitHub Pages</span><br>
-    <span class="ok">✓ live in ~6 minutes</span>
-  </div>
-  <span class="cue">▶ push · then keep talking while it builds</span>
-  <div class="rail"><span style="width:52%"></span></div>
-</section>
-
-<!-- 14 ──────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">While it builds</p>
-  <h2>A fresh fork has no secrets. It deploys anyway.</h2>
-  <div class="well wide">
-    <span class="c"># every NEXT_PUBLIC_* deliberately empty — the fresh-fork condition</span><br>
-    $ NEXT_PUBLIC_SUPABASE_URL= NEXT_PUBLIC_SUPABASE_ANON_KEY= pnpm build<br>
-    <span class="ok">✓ 140 pages built</span><br>
-    <span class="ok">BUILD EXIT: 0</span>
-  </div>
-  <p class="lede">You get a working site on day zero. Auth stays dark until you add
-  your own Supabase keys — but nothing is broken while you decide.</p>
-  <p class="note">I ran this before writing the slide, because a demo that needs
-  configuration to survive isn't a demo, it's a rehearsal.</p>
-  <div class="rail"><span style="width:57%"></span></div>
-</section>
-
-<!-- 15 ──────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">While it builds</p>
-  <h2>What's actually guarding the thing you just forked</h2>
-  <div class="grid g2">
-    <div class="plate tight">
-      <h3>Seven checks block a merge</h3>
-      <ul style="font-size:0.98rem">
-        <li>Unit tests · 4,750 of them</li>
-        <li>Accessibility · WCAG, real browser</li>
-        <li>E2E · chromium, firefox, webkit</li>
-        <li>RLS conformance · against a live database</li>
-        <li>Component structure · the 5-file pattern</li>
-        <li>Auth config drift · repo vs live project</li>
-        <li>Signup mailer · a real form, a real inbox</li>
-      </ul>
+  <!-- 3 ───────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <p class="eyebrow">What it is</p>
+    <h2>A template you're allowed to take</h2>
+    <p class="lede">
+      ScriptHammer is a production Next.js 15 template. Not a starter you throw
+      away at week two — the thing my own client sites run on.
+    </p>
+    <div class="g2 grid">
+      <div class="plate tight">
+        <h3>What comes in the box</h3>
+        <ul style="font-size: 1rem">
+          <li>Next.js 15 · React 19 · TypeScript strict</li>
+          <li>Supabase auth, database, realtime</li>
+          <li>PWA, offline, service worker</li>
+          <li>35 themes, WCAG-tested</li>
+        </ul>
+      </div>
+      <div class="plate tight">
+        <h3>What's unusual</h3>
+        <ul style="font-size: 1rem">
+          <li>4,750 unit tests across 448 files</li>
+          <li>E2E on 3 browsers, per-runner Supabase</li>
+          <li>7 checks must be green to merge</li>
+          <li>Docker-first — no "works on my machine"</li>
+        </ul>
+      </div>
     </div>
-    <div class="plate tight">
-      <h3>They run in parallel</h3>
-      <p style="font-size:0.98rem">So the wait is the slowest one, not the sum.
-      Adding four checks this week cost <strong>zero</strong> extra minutes.</p>
-      <p style="font-size:0.98rem" class="dim">And they apply to me. There's no
-      admin override — bypassing means editing the rule, which is a visible act
-      instead of a click.</p>
+    <div class="rail"><span style="width: 9%"></span></div>
+  </section>
+
+  <!-- 4 ───────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <p class="eyebrow">The honest part</p>
+    <h2>Templates usually rot at the seam</h2>
+    <p class="lede">
+      You take a starter, it fits for a month, then upstream moves and you're
+      maintaining a fork nobody can merge into.
+    </p>
+    <p>
+      So the interesting question isn't "does it look good on day one." It's
+      <strong
+        >what does it look like ten weeks later, in production, owned by someone
+        who isn't me.</strong
+      >
+    </p>
+    <p class="note">Which is lucky, because that experiment already ran.</p>
+    <div class="rail"><span style="width: 13%"></span></div>
+  </section>
+
+  <!-- 5 ───────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <p class="eyebrow">Field study</p>
+    <h2>RaisedPaws.com</h2>
+    <p class="lede">
+      A pet-adoption application tracker. Real site, real domain, real users.
+      Built from this template.
+    </p>
+    <div class="g3 grid">
+      <div class="plate stat">
+        <span class="n">Jun 9</span
+        ><span class="l">split from the template</span>
+      </div>
+      <div class="plate stat">
+        <span class="n">10 wks</span
+        ><span class="l">to live on its own domain</span>
+      </div>
+      <div class="plate stat">
+        <span class="n">1,182</span><span class="l">commits of its own</span>
+      </div>
     </div>
-  </div>
-  <div class="rail"><span style="width:62%"></span></div>
-</section>
+    <div class="rail"><span style="width: 17%"></span></div>
+  </section>
 
-<!-- 16 ──────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">While it builds · the real lesson</p>
-  <h2>Most of my bugs were green checks</h2>
-  <p class="lede">Not failures. <strong>Successes that measured nothing.</strong></p>
-  <div class="grid g2">
-    <div class="plate tight">
-      <h3>A test asserting nothing</h3>
-      <div class="well" style="font-size:0.86rem">if (errorBanner.isVisible()) {<br>
-      &nbsp;&nbsp;expect(retryButton).toBeVisible();<br>
-      }<br>
-      <span class="c">// passes when the banner never appears</span></div>
+  <!-- 6 ───────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <p class="eyebrow">Field study · provenance</p>
+    <h2>You can prove the lineage in one command</h2>
+    <div class="well wide">
+      <span class="c"># ScriptHammer's very first commit</span><br />
+      $ git log --reverse --format='%h %ad %s' | head -1<br />
+      <span class="hi">abc485fd</span> 2025-09-27 Initial commit<br /><br />
+      <span class="c"># does the derived project have it too?</span><br />
+      $ gh api repos/TortoiseWolfe/RescueDogs/commits/<span class="hi"
+        >abc485fd</span
+      >
+      --jq .sha<br />
+      <span class="ok">abc485fd…</span>
+      <span class="c">← same commit, different product</span>
     </div>
-    <div class="plate tight">
-      <h3>An account delete that deleted nothing</h3>
-      <p style="font-size:0.98rem">No delete policy on the table. The database
-      filtered the request to zero rows and returned <em>no error</em>. The app
-      said "permanently deleted" and signed you out.</p>
+    <p class="note">
+      GitHub won't call it a fork — template instantiation copies the history
+      without setting the fork flag. The <em>history</em> is the proof, not the
+      badge.
+    </p>
+    <div class="rail"><span style="width: 21%"></span></div>
+  </section>
+
+  <!-- 7 ───────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <p class="eyebrow">Field study · what carried over</p>
+    <h2>The boring 80% arrived for free</h2>
+    <table>
+      <tr>
+        <th>Came with the template</th>
+        <th>Had to be built</th>
+      </tr>
+      <tr>
+        <td>Auth, sessions, password reset</td>
+        <td>The adoption pipeline itself</td>
+      </tr>
+      <tr>
+        <td>CI, E2E, deploy pipeline</td>
+        <td>Shelter-specific data model</td>
+      </tr>
+      <tr>
+        <td>PWA, offline, theming</td>
+        <td>Its own brand and voice</td>
+      </tr>
+      <tr>
+        <td>Accessibility gates</td>
+        <td>The domain rules that make it useful</td>
+      </tr>
+    </table>
+    <p class="note">
+      That second column is the only column that should ever have been your job.
+    </p>
+    <div class="rail"><span style="width: 25%"></span></div>
+  </section>
+
+  <!-- 8 ───────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <p class="eyebrow">Demo · the ask</p>
+    <h1>So — what should we build?</h1>
+    <p class="lede">
+      Shout one out. An app, a tool, a thing your shelter or your team actually
+      needs. I need a name, an owner and one sentence.
+    </p>
+    <span class="cue">▶ take the suggestion · write it on the board</span>
+    <div class="rail"><span style="width: 29%"></span></div>
+  </section>
+
+  <!-- 9 ───────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <div class="stamp">live · step 1 of 4</div>
+    <p class="eyebrow">Demo · fork</p>
+    <h2>Take the template</h2>
+    <div class="well wide">
+      $ gh repo create <span class="hi">&lt;IDEA&gt;</span> --template
+      TortoiseWolfe/ScriptHammer --public --clone<br />
+      <span class="ok">✓ Created repository</span><br />
+      <span class="ok">✓ Cloned</span>
     </div>
-  </div>
-  <div class="rail"><span style="width:67%"></span></div>
-</section>
+    <span class="cue">▶ switch to terminal</span>
+    <p class="note">
+      Nothing clever here. It's the "Use this template" button with a keyboard.
+    </p>
+    <div class="rail"><span style="width: 33%"></span></div>
+  </section>
 
-<!-- 17 ──────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">While it builds · the fix</p>
-  <h2>Count the assertions, not the checkmarks</h2>
-  <div class="well wide">
-    <span class="c">[assertion-count]</span> 9 of 1,247 passing tests ran <span class="warn">ZERO assertions</span><br>
-    &nbsp;&nbsp;accessibility.spec.ts:23 › homepage passes automated checks<br>
-    &nbsp;&nbsp;cross-page-navigation.spec.ts:166 › external links open in new tab<br>
-    &nbsp;&nbsp;<span class="c">…</span><br><br>
-    <span class="c"># now a merge-blocking gate. this is in the template you just forked.</span>
-  </div>
-  <p class="note">One of those nine was hiding the delete bug. Nine tests, months
-  of green, one real data-protection defect underneath.</p>
-  <div class="rail"><span style="width:72%"></span></div>
-</section>
-
-<!-- 18 ──────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">Check the build</p>
-  <h1>It's live.</h1>
-  <p class="lede">That URL didn't exist when this session started.</p>
-  <span class="cue">▶ open the deployed site · hand the repo over</span>
-  <div class="rail"><span style="width:78%"></span></div>
-</section>
-
-<!-- 19 ──────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">What it costs you</p>
-  <h2>The parts I'd want to know before forking</h2>
-  <div class="grid g2">
-    <div class="plate tight">
-      <h3>Real constraints</h3>
-      <ul style="font-size:0.98rem">
-        <li>Static export — no server API routes in production</li>
-        <li>Server logic lives in Supabase or edge functions</li>
-        <li>Docker-first; local pnpm isn't supported</li>
-        <li>Opinionated: 5 files per component, one migration file</li>
-      </ul>
+  <!-- 10 ──────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <div class="stamp">live · step 2 of 4</div>
+    <p class="eyebrow">Demo · rebrand</p>
+    <h2>Make it theirs, not mine</h2>
+    <div class="well wide">
+      $ ./scripts/rebrand.sh <span class="hi">&lt;Name&gt;</span>
+      <span class="hi">&lt;owner&gt;</span> "<span class="hi"
+        >&lt;one line&gt;</span
+      >"<br /><br />
+      <span class="c">=========================================</span><br />
+      <span class="c"> Summary</span><br />
+      <span class="c">=========================================</span><br />
+      &nbsp;&nbsp;Files modified: <span class="hi">2872</span><br />
+      &nbsp;&nbsp;Files renamed:&nbsp;&nbsp;<span class="hi">84</span><br />
+      &nbsp;&nbsp;Time elapsed:&nbsp;&nbsp;&nbsp;<span class="ok">36s</span>
     </div>
-    <div class="plate tight">
-      <h3>Who it suits</h3>
-      <ul style="font-size:0.98rem">
-        <li>Small teams shipping client work</li>
-        <li>People who want the CI already argued about</li>
-        <li>Anyone tired of rebuilding auth for the fourth time</li>
-      </ul>
+    <span class="cue">▶ run it · let the count scroll</span>
+    <div class="rail"><span style="width: 38%"></span></div>
+  </section>
+
+  <!-- 11 ──────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <p class="eyebrow">Demo · the honest bit</p>
+    <h2>The script tells you what it can't do</h2>
+    <div class="well wide">
+      <span class="warn"
+        >→ No --icon given; PWA icons left as-is (warned in summary)</span
+      >
     </div>
-  </div>
-  <div class="rail"><span style="width:85%"></span></div>
-</section>
+    <p class="lede">
+      A rebrand substitutes strings. <strong>A logo is not a string.</strong>
+    </p>
+    <p>
+      We learned that by shipping someone else's monogram to a live client site
+      in fifteen assets. Now the tool says so out loud, every run, and takes
+      <span class="stat">--icon</span> to do it properly.
+    </p>
+    <div class="rail"><span style="width: 42%"></span></div>
+  </section>
 
-<!-- 20 ──────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <p class="eyebrow">Take it</p>
-  <h2>Everything here is open</h2>
-  <div class="grid g3">
-    <div class="plate"><h3>The template</h3><p class="dim" style="font-size:0.95rem">github.com/TortoiseWolfe/<br>ScriptHammer</p></div>
-    <div class="plate"><h3>The field study</h3><p class="dim" style="font-size:0.95rem">raisedpaws.com</p></div>
-    <div class="plate"><h3>Good first issues</h3><p class="dim" style="font-size:0.95rem">Four are open right now,<br>each with a file path</p></div>
-  </div>
-  <p class="lede">If you shouted the idea out — the repo is yours. I'll transfer it
-  before I leave the room.</p>
-  <div class="rail"><span style="width:96%"></span></div>
-</section>
+  <!-- 12 ──────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <div class="stamp">live · step 3 of 4</div>
+    <p class="eyebrow">Demo · wireframes</p>
+    <h2>Draw it before you build it</h2>
+    <div class="well wide">
+      $ pnpm run sync:wireframes<br />
+      <span class="ok">✓ 211 wireframes discovered</span><br />
+      $ open /wireframes
+    </div>
+    <p>
+      Wireframes are SVGs in the repo, versioned next to the feature they
+      describe. Desktop and mobile on one canvas, 44px touch targets, panels in
+      <span style="color: var(--amber)">#e8d4b8</span> — never white, so nobody
+      mistakes a sketch for a design.
+    </p>
+    <span class="cue">▶ open the viewer · sketch the idea</span>
+    <div class="rail"><span style="width: 47%"></span></div>
+  </section>
 
-<!-- 21 ──────────────────────────────────────────────────────────────────── -->
-<section class="slide">
-  <div class="stamp">45:00 · thank you</div>
-  <h1>Fork it.</h1>
-  <p class="lede">Questions — and if something here didn't work on stage, that's
-  the honest version of the demo and I'd rather you saw it.</p>
-  <div class="rail"><span style="width:100%"></span></div>
-</section>
+  <!-- 13 ──────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <div class="stamp">live · step 4 of 4</div>
+    <p class="eyebrow">Demo · ship</p>
+    <h2>Push. That's the deploy.</h2>
+    <div class="well wide">
+      $ git add -A &amp;&amp; git commit -m "<span class="hi">&lt;idea&gt;</span
+      >: initial brand + wireframes"<br />
+      $ git push<br /><br />
+      <span class="c">→ CI: build, test, accessibility, E2E</span><br />
+      <span class="c">→ Deploy to GitHub Pages</span><br />
+      <span class="ok">✓ live in ~6 minutes</span>
+    </div>
+    <span class="cue">▶ push · then keep talking while it builds</span>
+    <div class="rail"><span style="width: 52%"></span></div>
+  </section>
 
+  <!-- 14 ──────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <p class="eyebrow">While it builds</p>
+    <h2>A fresh fork has no secrets. It deploys anyway.</h2>
+    <div class="well wide">
+      <span class="c"
+        ># every NEXT_PUBLIC_* deliberately empty — the fresh-fork
+        condition</span
+      ><br />
+      $ NEXT_PUBLIC_SUPABASE_URL= NEXT_PUBLIC_SUPABASE_ANON_KEY= pnpm build<br />
+      <span class="ok">✓ 140 pages built</span><br />
+      <span class="ok">BUILD EXIT: 0</span>
+    </div>
+    <p class="lede">
+      You get a working site on day zero. Auth stays dark until you add your own
+      Supabase keys — but nothing is broken while you decide.
+    </p>
+    <p class="note">
+      I ran this before writing the slide, because a demo that needs
+      configuration to survive isn't a demo, it's a rehearsal.
+    </p>
+    <div class="rail"><span style="width: 57%"></span></div>
+  </section>
+
+  <!-- 15 ──────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <p class="eyebrow">While it builds</p>
+    <h2>What's actually guarding the thing you just forked</h2>
+    <div class="g2 grid">
+      <div class="plate tight">
+        <h3>Seven checks block a merge</h3>
+        <ul style="font-size: 0.98rem">
+          <li>Unit tests · 4,750 of them</li>
+          <li>Accessibility · WCAG, real browser</li>
+          <li>E2E · chromium, firefox, webkit</li>
+          <li>RLS conformance · against a live database</li>
+          <li>Component structure · the 5-file pattern</li>
+          <li>Auth config drift · repo vs live project</li>
+          <li>Signup mailer · a real form, a real inbox</li>
+        </ul>
+      </div>
+      <div class="plate tight">
+        <h3>They run in parallel</h3>
+        <p style="font-size: 0.98rem">
+          So the wait is the slowest one, not the sum. Adding four checks this
+          week cost <strong>zero</strong> extra minutes.
+        </p>
+        <p style="font-size: 0.98rem" class="dim">
+          And they apply to me. There's no admin override — bypassing means
+          editing the rule, which is a visible act instead of a click.
+        </p>
+      </div>
+    </div>
+    <div class="rail"><span style="width: 62%"></span></div>
+  </section>
+
+  <!-- 16 ──────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <p class="eyebrow">While it builds · the real lesson</p>
+    <h2>Most of my bugs were green checks</h2>
+    <p class="lede">
+      Not failures. <strong>Successes that measured nothing.</strong>
+    </p>
+    <div class="g2 grid">
+      <div class="plate tight">
+        <h3>A test asserting nothing</h3>
+        <div class="well" style="font-size: 0.86rem">
+          if (errorBanner.isVisible()) {<br />
+          &nbsp;&nbsp;expect(retryButton).toBeVisible();<br />
+          }<br />
+          <span class="c">// passes when the banner never appears</span>
+        </div>
+      </div>
+      <div class="plate tight">
+        <h3>An account delete that deleted nothing</h3>
+        <p style="font-size: 0.98rem">
+          No delete policy on the table. The database filtered the request to
+          zero rows and returned <em>no error</em>. The app said "permanently
+          deleted" and signed you out.
+        </p>
+      </div>
+    </div>
+    <div class="rail"><span style="width: 67%"></span></div>
+  </section>
+
+  <!-- 17 ──────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <p class="eyebrow">While it builds · the fix</p>
+    <h2>Count the assertions, not the checkmarks</h2>
+    <div class="well wide">
+      <span class="c">[assertion-count]</span> 4 of 17 passing test(s) ran
+      <span class="warn">ZERO assertions</span> (#396):<br />
+      &nbsp;&nbsp;accessibility.spec.ts:23 › homepage passes automated checks<br />
+      &nbsp;&nbsp;cross-page-navigation.spec.ts:166 › external links open in new
+      tab<br />
+      &nbsp;&nbsp;<span class="c">…</span><br /><br />
+      <span class="c"># nine of these across 24 shards and three browsers.</span
+      ><br />
+      <span class="c"
+        ># now a merge-blocking gate, in the template you just forked.</span
+      >
+    </div>
+    <p class="note">
+      One of those nine was hiding the delete bug. Nine tests, months of green,
+      one real data-protection defect underneath.
+    </p>
+    <div class="rail"><span style="width: 72%"></span></div>
+  </section>
+
+  <!-- 18 ──────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <p class="eyebrow">Check the build</p>
+    <h1>It's live.</h1>
+    <p class="lede">That URL didn't exist when this session started.</p>
+    <span class="cue">▶ open the deployed site · hand the repo over</span>
+    <div class="rail"><span style="width: 78%"></span></div>
+  </section>
+
+  <!-- 19 ──────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <p class="eyebrow">What it costs you</p>
+    <h2>The parts I'd want to know before forking</h2>
+    <div class="g2 grid">
+      <div class="plate tight">
+        <h3>Real constraints</h3>
+        <ul style="font-size: 0.98rem">
+          <li>Static export — no server API routes in production</li>
+          <li>Server logic lives in Supabase or edge functions</li>
+          <li>Docker-first; local pnpm isn't supported</li>
+          <li>Opinionated: 5 files per component, one migration file</li>
+        </ul>
+      </div>
+      <div class="plate tight">
+        <h3>Who it suits</h3>
+        <ul style="font-size: 0.98rem">
+          <li>Small teams shipping client work</li>
+          <li>People who want the CI already argued about</li>
+          <li>Anyone tired of rebuilding auth for the fourth time</li>
+        </ul>
+      </div>
+    </div>
+    <div class="rail"><span style="width: 85%"></span></div>
+  </section>
+
+  <!-- 20 ──────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <p class="eyebrow">Take it</p>
+    <h2>Everything here is open</h2>
+    <div class="g3 grid">
+      <div class="plate">
+        <h3>The template</h3>
+        <p class="dim" style="font-size: 0.95rem">
+          github.com/TortoiseWolfe/<br />ScriptHammer
+        </p>
+      </div>
+      <div class="plate">
+        <h3>The field study</h3>
+        <p class="dim" style="font-size: 0.95rem">raisedpaws.com</p>
+      </div>
+      <div class="plate">
+        <h3>Good first issues</h3>
+        <p class="dim" style="font-size: 0.95rem">
+          Four are open right now,<br />each with a file path
+        </p>
+      </div>
+    </div>
+    <p class="lede">
+      If you shouted the idea out — the repo is yours. I'll transfer it before I
+      leave the room.
+    </p>
+    <div class="rail"><span style="width: 96%"></span></div>
+  </section>
+
+  <!-- 21 ──────────────────────────────────────────────────────────────────── -->
+  <section class="slide">
+    <div class="stamp">45:00 · thank you</div>
+    <h1>Fork it.</h1>
+    <p class="lede">
+      Questions — and if something here didn't work on stage, that's the honest
+      version of the demo and I'd rather you saw it.
+    </p>
+    <div class="rail"><span style="width: 100%"></span></div>
+  </section>
 </div>

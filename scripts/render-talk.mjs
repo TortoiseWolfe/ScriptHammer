@@ -43,6 +43,17 @@ const TALKS = path.resolve('docs/talks');
 /** Families the deck asks for. A silent fallback is the failure this checks for. */
 const REQUIRED_FAMILIES = ['Archivo Black', 'Archivo', 'JetBrains Mono'];
 
+/** The deck's @page size. Overflow is measured at exactly this box. */
+const PAGE_MM = { w: 279, h: 157 };
+
+/**
+ * Minimum breathing room between the tallest content and the edge of the printed box.
+ *
+ * Not zero. A slide whose content exactly fills its content box still prints clipped — the
+ * measured case was 510px of content in 510px of room, losing the last line's descender.
+ */
+const MIN_SLACK_PX = 12;
+
 async function render(slug) {
   const src = path.join(TALKS, `${slug}.html`);
   if (!existsSync(src)) throw new Error(`no such talk: ${src}`);
@@ -93,6 +104,85 @@ async function render(slug) {
   const slidesInDom = await page.evaluate(
     () => document.querySelectorAll('.slide').length
   );
+
+  // CONTENT MUST FIT THE PAGE BOX, WITH SLACK.
+  //
+  // The page-count check below cannot see this: `page-break-after: always` emits one page
+  // per slide whether the content fits or not, so a too-full slide is silently CLIPPED and
+  // the count stays correct. Found by reading the PDF — page 1's terminal block was sliced
+  // through `git push`, across 21 perfectly-counted pages.
+  //
+  // TWO THINGS THIS GETS RIGHT THAT THE FIRST VERSION DID NOT:
+  //
+  //   `scrollHeight` is useless here. `.slide` is a centred flex column, so overflow escapes
+  //   the top as well as the bottom and scrollHeight never reports it — it read 593 of 593
+  //   on the clipped slide. The children's real bounds are measured instead.
+  //
+  //   SLACK, not overflow. Slide 1 measured content of exactly 510px in a 510px content box:
+  //   not overflowing, just flush — and the PDF's rounding clipped the last line's
+  //   descender. A slide that exactly fills its box prints as a clipped slide, so a margin
+  //   is required rather than mere containment.
+  const MM = 96 / 25.4;
+  await page.emulateMedia({ media: 'print' });
+  await page.setViewportSize({
+    width: Math.round(PAGE_MM.w * MM),
+    height: Math.round(PAGE_MM.h * MM),
+  });
+  await page.waitForTimeout(400);
+
+  const tight = await page.evaluate((minSlack) => {
+    return [...document.querySelectorAll('.slide')]
+      .map((el, i) => {
+        const boxH = el.getBoundingClientRect().height;
+        // MEASURE THE NATURAL HEIGHT, not the laid-out one. `.slide` is a centred flex
+        // column with a fixed height, so the children's rects are CLAMPED to the box —
+        // the measured slack pinned at exactly 0 whether the content fitted or
+        // overflowed, which made the first version of this check useless in both
+        // directions. Releasing the height first is what makes the number mean anything.
+        const prevH = el.style.height;
+        const prevMin = el.style.minHeight;
+        // BOTH must be released. `.slide` sets `min-height: 157mm` as well as `height`, so
+        // freeing only `height` leaves the floor in place and every slide reports exactly
+        // 0px of slack — including the near-empty closing slide, which is how this was
+        // caught.
+        el.style.height = 'auto';
+        el.style.minHeight = '0';
+        const natural = el.scrollHeight;
+        el.style.height = prevH;
+        el.style.minHeight = prevMin;
+        return {
+          i: i + 1,
+          slack: Math.round(boxH - natural),
+          title: (el.querySelector('h1, h2')?.textContent ?? '(no heading)')
+            .trim()
+            .replace(/\s+/g, ' ')
+            .slice(0, 44),
+        };
+      })
+      .filter((s) => s.slack < minSlack);
+  }, MIN_SLACK_PX);
+
+  await page.emulateMedia({ media: null });
+  await page.setViewportSize({ width: 1280, height: 720 });
+
+  if (tight.length) {
+    await browser.close();
+    throw new Error(
+      `${tight.length} slide(s) have too little room and will be CLIPPED in the PDF ` +
+        `(need ${MIN_SLACK_PX}px of slack):\n` +
+        tight
+          .map(
+            (t) =>
+              `    slide ${t.i} "${t.title}" — ` +
+              (t.slack < 0
+                ? `overflows by ${-t.slack}px`
+                : `only ${t.slack}px to spare`)
+          )
+          .join('\n') +
+        '\n  The page COUNT stays right, so only looking at the PDF reveals this. Scale the ' +
+        'type under @media print rather than cutting copy, so the deck is unchanged on screen.'
+    );
+  }
 
   await page.pdf({
     path: out,
