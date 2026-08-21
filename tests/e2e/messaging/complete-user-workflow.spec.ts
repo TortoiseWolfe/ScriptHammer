@@ -229,31 +229,23 @@ test.describe('Conversations Page Loading (Feature 029)', () => {
     }
   });
 
-  test('should show retry button on error state (FR-005)', async ({
-    browser,
-  }) => {
-    const viewer = await openAsViewer(browser, fixture!);
-    try {
-      const page = viewer.page;
-
-      // Navigate to the plain messages list.
-      await page.goto('/messages', { waitUntil: 'domcontentloaded' });
-      await page.waitForLoadState('domcontentloaded');
-      await handleReAuthModal(page, DEFAULT_TEST_PASSWORD);
-
-      // If error alert with actual error text is shown, verify retry button exists.
-      // Empty alert elements may exist on the page; only check if it has error content.
-      const errorAlert = page
-        .getByRole('alert')
-        .filter({ hasText: /error|failed|couldn't/i });
-      if (await errorAlert.isVisible().catch(() => false)) {
-        await expect(
-          page.getByRole('button', { name: /Retry/i })
-        ).toBeVisible();
-      }
-      // Test passes if no error state is triggered (normal flow).
-    } finally {
-      await viewer.close();
-    }
-  });
+  // REMOVED: 'should show retry button on error state (FR-005)' (#862).
+  //
+  // It ran ZERO assertions on every CI shard, and could not have run any. Two
+  // independent reasons:
+  //
+  //   1. Wrong page. It visited /messages with no conversation selected. The only
+  //      Retry affordance in messaging is QueuedMessageBubble, which reaches the
+  //      screen through MessageThread -> ChatWindow -> ConversationView -- all of
+  //      which need an OPEN conversation. On that page it cannot mount.
+  //   2. Wrong element. Its guard looked for a page-level `role="alert"` carrying
+  //      error text, and no such banner accompanies a Retry control anywhere.
+  //
+  // Its own trailing comment said the quiet part: "Test passes if no error state is
+  // triggered (normal flow)."
+  //
+  // FR-005 is now asserted where the failure is actually induced --
+  // tests/e2e/messaging/offline-queue.spec.ts, 'should show failed status after max
+  // retries' -- which aborts the send, then asserts the failed bubble, the "Failed
+  // to send" status and the Retry button by its accessible name.
 });
