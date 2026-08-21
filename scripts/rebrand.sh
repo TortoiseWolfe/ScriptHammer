@@ -5,7 +5,7 @@
 # Automates rebranding of the ScriptHammer template to a new project identity.
 # Updates 200+ files including code, config, and documentation.
 #
-# Usage: ./scripts/rebrand.sh <PROJECT_NAME> <OWNER> "<DESCRIPTION>" [OPTIONS]
+# Usage: ./scripts/rebrand.sh <PROJECT_NAME> <OWNER> "<DESCRIPTION>" (--icon <mark> | --no-icon) [OPTIONS]
 #
 # Arguments:
 #   PROJECT_NAME  New project name (auto-sanitized: spaces->hyphens, special chars removed)
@@ -32,11 +32,15 @@
 #   2  Re-rebrand declined by user
 #   3  Git error (not a repo, git not installed)
 #
-# Examples:
-#   ./scripts/rebrand.sh MyApp myuser "My awesome application"
-#   ./scripts/rebrand.sh "My Cool App" myuser "Description" --dry-run
-#   ./scripts/rebrand.sh MyApp myuser "Description" --force
-#   ./scripts/rebrand.sh MyApp myuser "Description" --preserve-ssh --dry-run
+# Examples (every one needs --icon or --no-icon; the script refuses without):
+#   ./scripts/rebrand.sh MyApp myuser "My awesome application" --icon mark.svg
+#   ./scripts/rebrand.sh "My Cool App" myuser "Description" --icon mark.png --dry-run
+#   ./scripts/rebrand.sh MyApp myuser "Description" --no-icon --force
+#   ./scripts/rebrand.sh MyApp myuser "Description" --icon mark.svg --preserve-ssh --dry-run
+#
+# NOTE: run this INSIDE the container. --icon shells out to generate-icons.js, which
+# needs `sharp` from node_modules -- a named Docker volume that does not exist on the
+# host, so on the host it fails AFTER replacing public/favicon.svg.
 #
 # Preserving a string across a rebrand:
 #   Put `rebrand:keep` in a comment on the SAME LINE as the string you want to

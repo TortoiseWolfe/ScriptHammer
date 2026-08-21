@@ -14,10 +14,19 @@ If you've never touched the repo before, start at the top and work down. Each st
 
 ScriptHammer ships with 200+ files that reference its own name, theme, and Docker service. The included `scripts/rebrand.sh` rewrites them all for you.
 
-- **Run**: `./scripts/rebrand.sh <YourProjectName> <YourGitHubUser> "<one-line description>" --preserve-ssh --keep-cname`
-  - Example: `./scripts/rebrand.sh MyCoolApp myuser "My awesome app" --preserve-ssh --keep-cname`
+- **Run**: `./scripts/rebrand.sh <YourProjectName> <YourGitHubUser> "<one-line description>" --icon path/to/mark.svg --preserve-ssh`
+  - Example: `./scripts/rebrand.sh MyCoolApp myuser "My awesome app" --icon mark.svg --preserve-ssh`
+  - **`--icon` or `--no-icon` is required** — the script refuses without one. A rebrand cannot draw a
+    logo, and skipping it silently is how this template's mark reached two live sites (#659, #898).
+    Accepts `.svg`, `.png`, `.webp`. Use a symbol, not a wordmark: these render at 32px.
+  - **Run it inside the container** — `docker compose exec <project> ./scripts/rebrand.sh …`. Icon
+    generation needs `sharp`, which lives in a named Docker volume and is absent from the host, so
+    `--icon` fails on the host _after_ replacing `public/favicon.svg`.
   - `--preserve-ssh` keeps your `git@github.com:…` remote in SSH format (skip if you cloned via HTTPS).
-  - `--keep-cname` skips overwriting `public/CNAME` (skip if you actually own the corresponding `.com`).
+  - **Do not pass `--keep-cname` on a fresh fork.** `public/CNAME` currently contains _this_ template's
+    domain, so keeping it publishes a hostname you do not own. Let the script rewrite it, then correct
+    the value by hand — it writes `<DisplayName>.com`, which keeps your capitalisation and drops any
+    `www.`.
   - Run `./scripts/rebrand.sh --help` for the full flag list.
 - **Full guide**: [`docs/FORKING.md` — Quick Start](FORKING.md#quick-start-5-minutes)
 - **Why it matters**: skipping this leaves your fork branded as "ScriptHammer" everywhere.
