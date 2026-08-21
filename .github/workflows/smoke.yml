@@ -119,6 +119,23 @@ jobs:
           SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
         run: node scripts/ci/check-csp-header.mjs "${SITE:-https://scripthammer.com}"
 
+      # The FOURTH dashboard-resident control (#822), and the one whose failure is
+      # silent in both directions.
+      #
+      # DMARC, SPF, the DKIM key and the inbound MX all live in Cloudflare, not in
+      # this tree — the same shape as the cache rules above. But mail fails quietly:
+      # lose the MX and admin@ stops receiving, so the security policy (#881) goes
+      # back to dropping vulnerability reports with nobody here seeing anything.
+      # Lose the DKIM key and transactional mail stops aligning, which is invisible
+      # while p=none and surfaces later as quarantined payment receipts.
+      #
+      # The intended policy is declared IN the script, so raising enforcement is a
+      # one-line reviewable change this check then enforces against live DNS.
+      - name: Mail policy still matches the intent declared in the repo (#822)
+        env:
+          MAIL_DOMAIN: scripthammer.com
+        run: node scripts/ci/check-mail-policy.mjs "$MAIL_DOMAIN"
+
       # Runs BEFORE the browser suite: it is cheap, and if production is pointed at
       # the wrong backend every test below is meaningless.
       #
