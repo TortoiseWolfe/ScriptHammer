@@ -1,0 +1,66 @@
+# Production security-schema drift (#903).
+#
+# WHY. #897 found that production had never received #565's REVOKE — `authenticated` still
+# held UPDATE on payment_intents three weeks after the migration removed it — and that
+# production was missing the `Admin can view all payment intents` policy while carrying the
+# other nine. Both were found by hand, by chance, while scoping an unrelated ticket.
+#
+# Nothing would have found them otherwise. `pnpm test:rls` runs against a LOCAL stack, so it
+# pins what a FRESH database gets from the migration and is structurally blind to the hosted
+# project. The migration is applied to production by hand, if at all — no workflow runs it —
+# so every schema change has two independent states and only one was ever checked.
+#
+# NOT PR-TRIGGERED, DELIBERATELY. This holds a production credential, and #575 and #897 are
+# both about keeping those away from PR jobs that then run an arbitrary dependency graph.
+# `intake-orphan-sweep.yml` is the existing precedent for a scheduled job that legitimately
+# holds one. The comparator itself IS gated on every PR — scripts/__tests__/prod-schema-drift.test.js
+# runs under the required `Test (20.x)` check and drives evaluate() in both directions,
+# including the real pre-fix #897 state.
+#
+# REPORTS ONLY. It never issues DDL. Applying the migration to production is a separate
+# decision with a much larger blast radius.
+#
+# Both secrets already exist in the repo (SUPABASE_ACCESS_TOKEN, and the project ref is
+# public). A missing one FAILS the job rather than passing — a misconfigured drift check
+# that reports success is the exact defect this is here to end.
+
+name: Prod Schema Drift
+
+on:
+  schedule:
+    # Daily. Out-of-band production changes have no repo event to hang off, so the cron
+    # is the whole point — #897's drift arrived with no commit behind it.
+    - cron: '40 6 * * *'
+  push:
+    branches: [main]
+    paths:
+      # A paths filter is safe HERE, unlike on a required check: nothing requires this
+      # workflow, so a run that never reports is simply a run that did not happen. The
+      # daily cron covers everything this filter skips.
+      - 'supabase/migrations/**'
+      - 'scripts/ci/check-prod-schema-drift.mjs'
+      - '.github/workflows/prod-schema-drift.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: prod-schema-drift
+  cancel-in-progress: false
+
+jobs:
+  drift:
+    name: Production schema matches the repo
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      # No install step: the checker uses built-in fetch and imports nothing.
+      - name: Compare production against INTENDED
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF || 'ozbdyopxmeqmwnfsmglp' }}
+        run: node scripts/ci/check-prod-schema-drift.mjs
