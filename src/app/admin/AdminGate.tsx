@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { AdminAuthService } from '@/services/admin';
+import { ADMIN_SECTIONS } from '@/config/admin-sections';
 
 /**
  * AdminGate
@@ -35,22 +36,13 @@ import { AdminAuthService } from '@/services/admin';
  * label change lands in both places.
  *
  * The `label` strings are PINNED by tests/e2e/admin/admin-dashboard.spec.ts:
- * it locates `nav[aria-label="Admin navigation"]` and then each tab by name
- * ('Payments', 'Audit Trail', 'Users', 'Messaging', 'Email'). Do not rename
- * them without updating that spec.
+ * it locates `nav[aria-label="Admin navigation"]` and then each tab by name.
+ * The names come from `ADMIN_SECTIONS`, which that spec now enumerates rather
+ * than restating (#912) — so adding a section needs no test edit. Renaming a
+ * label still changes an accessible name, which is an API in both directions:
+ * grep tests/e2e for SUBSTRING collisions first (#378, #408).
  */
-const SECTIONS = [
-  { href: '/admin', label: 'Overview', title: 'Admin Dashboard' },
-  // Title is 'Payment Activity', not 'Payments' — that is the text the page
-  // already shipped, and admin-dashboard.spec.ts:156 matches a heading against
-  // /payment/i. Renaming it here would have been a silent copy change.
-  { href: '/admin/payments', label: 'Payments', title: 'Payment Activity' },
-  { href: '/admin/orders', label: 'Orders', title: 'Orders' },
-  { href: '/admin/audit', label: 'Audit Trail', title: 'Audit Trail' },
-  { href: '/admin/users', label: 'Users', title: 'User Management' },
-  { href: '/admin/messaging', label: 'Messaging', title: 'Messaging Overview' },
-  { href: '/admin/email', label: 'Email', title: 'Email Provider Health' },
-] as const;
+const SECTIONS = ADMIN_SECTIONS;
 
 export function AdminGate({ children }: { children: React.ReactNode }) {
   const { user, isLoading: authLoading } = useAuth();
@@ -122,9 +114,10 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
           ~40px, under the 44px touch floor. `sh-rail`/`sh-rail-active` is the
           same vocabulary as the /docs sidebar and the /blog chips.
 
-          The `aria-label` and all six link TEXTS are pinned by
-          tests/e2e/admin/admin-dashboard.spec.ts:470-476, which locates
-          `nav[aria-label="Admin navigation"]` and then each tab by name.
+          The `aria-label` is pinned by tests/e2e/admin/admin-dashboard.spec.ts,
+          which locates this nav and then enumerates ADMIN_SECTIONS — it also
+          asserts the links RENDERED here are exactly the sections defined, so
+          dropping one fails rather than going unmeasured (#912).
           Restyled, never renamed. */}
       <nav
         className="sh-rail mb-6 flex flex-wrap gap-1 p-1"
