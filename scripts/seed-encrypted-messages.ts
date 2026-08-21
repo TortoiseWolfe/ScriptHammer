@@ -7,6 +7,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { KeyDerivationService } from '../src/lib/messaging/key-derivation';
 import { CRYPTO_PARAMS } from '../src/types/messaging';
+import { requireApprovedTarget } from './lib/supabase-target';
+
+// #877: announce and gate the destination before this script writes anything.
+requireApprovedTarget('seed-encrypted-messages');
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
