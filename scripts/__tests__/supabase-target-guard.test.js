@@ -1,5 +1,5 @@
 /**
- * A script holding the service-role key must announce its target and refuse a remote one (#877).
+ * The service-role guard is WIRED IN (#877).
  *
  * WHAT HAPPENED. On 2026-08-21 `pnpm run seed:local` wrote to the **cloud** project and gave
  * every account in it an `accepted` connection to every other account — which is the messaging
@@ -7,16 +7,19 @@
  * was reverted the same hour, but nothing in the path had said "cloud": the script name said
  * local, and the resolved URL was never printed.
  *
- * WHAT THIS PINS.
- *   1. The classifier calls the local stack local by every route it is reached (published
- *      port, compose service name, docker host gateway) and everything else remote.
- *   2. An unparseable or missing URL is REMOTE / refused — failing safe means refusing.
- *   3. The remote override must NAME the host. A blanket `=1` would be exported once and
- *      forgotten, which is a flag that protects nothing.
- *   4. Every script that holds the service-role key actually calls the guard.
- *   5. The shell wrapper forwards the target into its `docker compose exec` calls — the
+ * WHAT THIS PINS — wiring only, the parts not reachable from an import:
+ *   1. Every script that holds the service-role key actually calls the guard.
+ *   2. The destructive script names its target inside its confirmation prompt.
+ *   3. The shell wrapper forwards the target into its `docker compose exec` calls — the
  *      mechanism that made the incident possible, because each exec takes the CONTAINER's
  *      environment and silently discards the caller's.
+ *   4. package.json declares an honest local entry point and a separate cloud one.
+ *
+ * THE RULES THEMSELVES are tested by behaviour in `tests/unit/supabase-target.test.ts`,
+ * which can import the TypeScript and call `classify()` and `decide()` for real. An earlier
+ * version of this file asserted on the module's SOURCE TEXT and broke the moment the
+ * pre-commit `prettier --write` reformatted a return statement — it was checking the
+ * spelling of the rule rather than the rule.
  */
 'use strict';
 
@@ -42,75 +45,11 @@ const GUARDED = [
 
 const read = (p) => fs.readFileSync(p, 'utf8');
 
-/**
- * The module is TypeScript, so exercise its RULES against the real source rather than a
- * reimplementation: re-deriving the host list here would let the two drift, and the copy in
- * the test would keep passing while the real one broke.
- */
-function loadRules() {
-  const src = read(MODULE);
-  const hosts = [...src.matchAll(/^\s*'([^']+)',$/gm)]
-    .map((m) => m[1])
-    .filter((h) => /^[\w.:[\]-]+$/.test(h));
-  return { src, hosts };
-}
-
 describe('the Supabase target guard (#877)', () => {
   it('reads the module it is about', () => {
     // Non-vacuity: every assertion below is over this text.
     assert.ok(fs.existsSync(MODULE), `guard module missing at ${MODULE}`);
     assert.ok(read(MODULE).length > 500, 'guard module is suspiciously short');
-  });
-
-  it('treats every route to the local stack as local', () => {
-    const { hosts } = loadRules();
-    // Three genuinely different routes, all of them the same local stack. Missing one
-    // makes the guard refuse legitimate local work, which is how a guard gets disabled.
-    for (const h of [
-      '127.0.0.1',
-      'localhost',
-      'supabase-kong',
-      'host.docker.internal',
-    ]) {
-      assert.ok(hosts.includes(h), `LOCAL_HOSTS is missing ${h}`);
-    }
-  });
-
-  it('does not treat a supabase.co host as local', () => {
-    const { hosts } = loadRules();
-    assert.ok(
-      !hosts.some((h) => h.endsWith('.supabase.co') || h === 'supabase.co'),
-      'a hosted Supabase domain appears in LOCAL_HOSTS — that is the incident, encoded'
-    );
-  });
-
-  it('refuses rather than guesses when nothing is set', () => {
-    const { src } = loadRules();
-    assert.match(
-      src,
-      /refusing rather than guessing/,
-      'a missing URL must refuse; proceeding on an unset target is how this fails silently'
-    );
-    assert.match(
-      src,
-      /isLocal: false, label: '<unparseable>'/,
-      'an unparseable URL must be treated as REMOTE, not waved through'
-    );
-  });
-
-  it('requires the remote override to NAME the host', () => {
-    const { src } = loadRules();
-    assert.match(
-      src,
-      /allow === target\.host/,
-      'ALLOW_REMOTE_SUPABASE must be compared to the hostname. A truthy flag gets ' +
-        'exported once and forgotten, and then authorises every future run.'
-    );
-    assert.match(
-      src,
-      /the override must name the host it authorises/,
-      'a mismatched override must say why it was rejected'
-    );
   });
 
   it('every service-role script calls the guard', () => {
@@ -173,27 +112,6 @@ describe('the Supabase target guard (#877)', () => {
         `an exec does not forward the target: ${line}`
       );
     }
-  });
-
-  it('the URL CI seeds with is classified local', () => {
-    // The required lane runs `pnpm tsx scripts/seed-test-users.ts` against its own
-    // per-runner stack. If the guard stopped recognising that host, every PR would fail
-    // at seeding — so the two are pinned to each other rather than maintained separately.
-    const wf = read(path.join(ROOT, '.github', 'workflows', 'e2e-local.yml'));
-    // Stop at a quote: the workflow writes it as `echo "SUPABASE_ADMIN_URL=..."`, and
-    // `\S+` swallows the closing quote, producing an unparseable URL.
-    const m = wf.match(/SUPABASE_ADMIN_URL=([^"'\s]+)/);
-    assert.ok(
-      m,
-      'e2e-local.yml no longer sets SUPABASE_ADMIN_URL for the seeding step'
-    );
-    const host = new URL(m[1]).hostname;
-    const { hosts } = loadRules();
-    assert.ok(
-      hosts.includes(host),
-      `CI seeds against "${host}", which the guard does not classify as local — the ` +
-        'required lane would fail at the seeding step'
-    );
   });
 
   it('seed:local actually points at local, and cloud is a separate named script', () => {

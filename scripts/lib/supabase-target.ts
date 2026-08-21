@@ -38,6 +38,9 @@ const LOCAL_HOSTS = new Set([
   'kong',
 ]);
 
+/** Only the three variables these functions read — not the whole process environment. */
+export type SupabaseEnv = Record<string, string | undefined>;
+
 export interface SupabaseTarget {
   url: string;
   host: string;
@@ -69,9 +72,7 @@ export function classify(url: string): SupabaseTarget {
 }
 
 /** The URL a script will actually use, resolved the same way the seeders do. */
-export function resolveUrl(
-  env: NodeJS.ProcessEnv = process.env
-): string | undefined {
+export function resolveUrl(env: SupabaseEnv = process.env): string | undefined {
   return env.SUPABASE_ADMIN_URL || env.NEXT_PUBLIC_SUPABASE_URL;
 }
 
@@ -80,7 +81,7 @@ export function resolveUrl(
  *
  * Returns `{ allowed, target, reason }`.
  */
-export function decide(env: NodeJS.ProcessEnv = process.env): {
+export function decide(env: SupabaseEnv = process.env): {
   allowed: boolean;
   target: SupabaseTarget | null;
   reason: string;
