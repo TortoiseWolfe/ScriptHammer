@@ -196,8 +196,25 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .eq('id', intentIdA)
         .select();
 
-      // USING(false) means zero rows match the DELETE filter
-      expect(data).toHaveLength(0);
+      // THE REFUSAL MOVED FROM THE POLICY LAYER TO THE PRIVILEGE LAYER (#897).
+      //
+      // This used to assert `expect(data).toHaveLength(0)` and never look at
+      // `error` — the DELETE grant existed, so PostgREST ran the statement and
+      // the `USING (false)` policy filtered every row. Zero rows came back with
+      // no error, which is indistinguishable from "the filter matched nothing",
+      // and a row-state-only assertion cannot tell those apart.
+      //
+      // #897 revoked DELETE from `authenticated`, so the statement is now
+      // refused outright. Pinning 42501 is the stronger claim, and it is the
+      // one this repo asks for: a refusal must pin a status rather than be
+      // inferred from unchanged rows.
+      expect(
+        error?.code,
+        'expected DELETE on payment_intents to be refused with 42501 ' +
+          '(insufficient_privilege). If this is null the grant is back — see ' +
+          'tests/rls/payment-intents-grants.test.ts'
+      ).toBe('42501');
+      expect(data).toBeNull();
 
       // Verify it still exists
       const svc = createServiceClient();
