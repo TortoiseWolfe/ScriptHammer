@@ -2185,7 +2185,26 @@ GRANT EXECUTE ON FUNCTION admin_overview(TIMESTAMPTZ, TIMESTAMPTZ) TO authentica
 -- Correcting the file without correcting the databases it already provisioned is
 -- the "a migration file is not a migration" trap CLAUDE.md records.
 GRANT SELECT, INSERT ON payment_intents TO authenticated;
-REVOKE UPDATE ON payment_intents FROM authenticated;
+-- #897: the GRANT above describes the INTENT, never the effective state. Supabase's
+-- platform defaults hand `anon` and `authenticated` ALL privileges on every table in
+-- `public`, granted by the platform rather than by this file, so a narrower GRANT here
+-- adds nothing and removes nothing. Measured on production 2026-08-21, BOTH roles held
+-- DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE and UPDATE.
+--
+-- Every privilege revoked below was already unusable, which is exactly why it had to go:
+--   UPDATE / DELETE       RLS policies are USING (false) for PUBLIC — never succeeded
+--   TRUNCATE              not RLS-gated, but PostgREST does not expose it
+--   TRIGGER / REFERENCES  DDL privileges no application role uses
+--   anon INSERT           WITH CHECK (auth.uid() = template_user_id); anon has no uid
+--
+-- #565 made this argument for `authenticated`'s UPDATE and acted on it. It stopped one
+-- role short, and — because a migration file is not a migration — the revoke it wrote
+-- had still not reached production three weeks later. Both were executed against prod
+-- via the Management API on 2026-08-21; these lines are what a FRESH database gets.
+-- `tests/rls/payment-intents-grants.test.ts` asserts the effective grants rather than
+-- trusting these lines, since trusting the file is what hid this for so long.
+REVOKE UPDATE, DELETE, TRUNCATE, TRIGGER, REFERENCES ON payment_intents FROM authenticated;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, TRIGGER, REFERENCES ON payment_intents FROM anon;
 GRANT SELECT ON payment_results TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON subscriptions TO authenticated;
 GRANT SELECT ON payment_provider_config TO authenticated;
