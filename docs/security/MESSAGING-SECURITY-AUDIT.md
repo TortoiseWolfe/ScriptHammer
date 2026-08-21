@@ -653,7 +653,7 @@ What you should do: Change your password immediately and review your recent mess
 
 We sincerely apologize for this incident and are taking steps to prevent future occurrences.
 
-Contact: security@scripthammer.com
+Contact: admin@scripthammer.com
 ```
 
 ---

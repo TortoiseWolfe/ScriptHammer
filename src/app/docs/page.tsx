@@ -48,7 +48,7 @@ const REFERENCE: readonly { when: string; docs: readonly Doc[] }[] = [
     { label: 'Testing',             hint: 'unit · a11y · E2E',               href: gh('docs/project/TESTING.md') },
   ]},
   { when: 'How the pieces work', docs: [
-    { label: 'Security',           hint: 'RLS · Vault · secrets',               href: gh('docs/project/SECURITY.md') },
+    { label: 'Security',           hint: 'RLS · Vault · secrets',               href: gh('.github/SECURITY.md') },
     { label: 'Auto-configuration', hint: 'project detection · defaults',        href: '/blog/auto-configuration-system', internal: true },
   ]},
   { when: 'Contributing back', docs: [

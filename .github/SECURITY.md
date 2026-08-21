@@ -20,7 +20,7 @@ We take the security of ScriptHammer seriously. If you believe you have found a 
 
 ### Please DO:
 
-- Email us at security@scripthammer.com
+- Email us at admin@scripthammer.com
 - Include the following information in your report:
   - Type of issue (e.g., buffer overflow, SQL injection, cross-site scripting, etc.)
   - Full paths of source file(s) related to the manifestation of the issue
@@ -172,7 +172,7 @@ We use the following tools to maintain security:
 
 For any security-related questions or concerns, please contact:
 
-- Security Email: security@scripthammer.com
+- Security Email: admin@scripthammer.com
 - Project Maintainers: See CONTRIBUTING.md
 
 ## Acknowledgments

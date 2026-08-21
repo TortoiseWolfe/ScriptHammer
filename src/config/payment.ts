@@ -22,7 +22,7 @@
  * - PAYPAL_WEBHOOK_ID - Validates PayPal webhooks
  * - RESEND_API_KEY - Email sending capability
  *
- * @see docs/project/SECURITY.md for security guidelines
+ * @see .github/SECURITY.md for security guidelines
  */
 
 import type { Currency, PaymentInterval } from '@/types/payment';
