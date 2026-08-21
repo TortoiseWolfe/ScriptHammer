@@ -6,6 +6,10 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { requireApprovedTarget } from './lib/supabase-target';
+
+// #877: announce and gate the destination before this script writes anything.
+requireApprovedTarget('seed-connections');
 
 // In-container admin client: prefer SUPABASE_ADMIN_URL (compose-internal Kong)
 // for the local sandbox; falls back to the public URL for cloud/CI (#121).

@@ -25,14 +25,25 @@ if ! docker compose ps scripthammer | grep -q "Up"; then
     exit 1
 fi
 
+# FORWARD THE TARGET INTO THE CONTAINER (#877).
+#
+# This is the mechanism that caused the incident, and it is not obvious: each
+# `docker compose exec` below starts a fresh process whose environment comes from the
+# CONTAINER, not from this shell. So `NEXT_PUBLIC_SUPABASE_URL=... ./setup-e2e-users.sh`
+# has no effect whatsoever — the seeders read the container's `.env`, which points at the
+# cloud project. Passing `-e` explicitly is the only thing that works here.
+FORWARD=()
+[ -n "${SUPABASE_ADMIN_URL:-}" ] && FORWARD+=(-e "SUPABASE_ADMIN_URL=${SUPABASE_ADMIN_URL}")
+[ -n "${ALLOW_REMOTE_SUPABASE:-}" ] && FORWARD+=(-e "ALLOW_REMOTE_SUPABASE=${ALLOW_REMOTE_SUPABASE}")
+
 # Step 1: Create test users
 echo "📋 Step 1: Creating test users..."
-docker compose exec scripthammer pnpm exec tsx scripts/seed-test-users.ts
+docker compose exec "${FORWARD[@]}" scripthammer pnpm exec tsx scripts/seed-test-users.ts
 echo ""
 
 # Step 2: Create connections between users
 echo "📋 Step 2: Creating connections between users..."
-docker compose exec scripthammer pnpm exec tsx scripts/seed-connections.ts
+docker compose exec "${FORWARD[@]}" scripthammer pnpm exec tsx scripts/seed-connections.ts
 echo ""
 
 echo "=================================="

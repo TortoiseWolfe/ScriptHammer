@@ -22,6 +22,10 @@ import { createClient } from '@supabase/supabase-js';
 import * as readline from 'readline';
 import { spawn } from 'child_process';
 import * as path from 'path';
+import { requireApprovedTarget, classify } from './lib/supabase-target';
+
+// #877: announce and gate the destination before this script writes anything.
+requireApprovedTarget('reset-database');
 
 // Environment variables
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -216,11 +220,22 @@ async function confirmReset(): Promise<boolean> {
     output: process.stdout,
   });
 
+  // Name the target IN the prompt (#877). This already asked whether you were sure; it
+  // never said what it was about to destroy, which makes the confirmation a formality.
+  // Someone typing RESET while believing they are on localhost is the whole failure mode.
+  const { host, isLocal } = classify(SUPABASE_URL as string);
+  const where = isLocal
+    ? `the LOCAL stack (${host})`
+    : `the REMOTE project ${host}`;
+
   return new Promise((resolve) => {
-    rl.question('Type "RESET" to confirm: ', (answer) => {
-      rl.close();
-      resolve(answer.trim() === 'RESET');
-    });
+    rl.question(
+      `About to delete all user data from ${where}.\nType "RESET" to confirm: `,
+      (answer) => {
+        rl.close();
+        resolve(answer.trim() === 'RESET');
+      }
+    );
   });
 }
 
