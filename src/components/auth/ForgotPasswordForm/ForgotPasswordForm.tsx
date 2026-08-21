@@ -35,6 +35,22 @@ export default function ForgotPasswordForm({
   const supabase = createClient();
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
+  /**
+   * The error for ONE named field, kept apart from `error` (#867, same shape as #857).
+   *
+   * `validateEmail` produces a message about the email box specifically, and it used to
+   * land in the form-level alert with no `id` while the input carried neither
+   * `aria-invalid` nor `aria-describedby` — so a screen reader announced it with nothing
+   * tying it to the field.
+   *
+   * The rate limit, the captcha challenge and the reset failure stay form-level: none is
+   * about one field, and the reset response is deliberately generic so it cannot confirm
+   * whether an address is registered.
+   */
+  const [fieldError, setFieldError] = useState<{
+    field: 'email';
+    message: string;
+  } | null>(null);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   // (#353) SECURITY_CAPTCHA_ENABLED is global to Supabase auth — password
@@ -45,12 +61,16 @@ export default function ForgotPasswordForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setFieldError(null);
     setSuccess(false);
 
     // Enhanced email validation (REQ-SEC-004)
     const emailValidation = validateEmail(email);
     if (!emailValidation.valid) {
-      setError(emailValidation.errors[0] || 'Invalid email address');
+      setFieldError({
+        field: 'email',
+        message: emailValidation.errors[0] || 'Invalid email address',
+      });
       return;
     }
 
@@ -134,11 +154,24 @@ export default function ForgotPasswordForm({
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="input min-h-11"
+          className={`input min-h-11 ${
+            fieldError?.field === 'email' ? 'input-error' : ''
+          }`}
           placeholder="you@example.com"
           required
           disabled={loading}
+          aria-invalid={fieldError?.field === 'email'}
+          aria-describedby={
+            fieldError?.field === 'email' ? 'email-error' : undefined
+          }
         />
+        {fieldError?.field === 'email' && (
+          <div className="label" id="email-error">
+            <span className="text-error" role="alert" aria-live="polite">
+              {fieldError.message}
+            </span>
+          </div>
+        )}
       </div>
 
       {error && (
