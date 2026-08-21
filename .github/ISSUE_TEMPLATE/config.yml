@@ -1,0 +1,10 @@
+# Keep the blank-issue escape hatch. The templates are here to help, not to gate: an
+# unstructured report of a real problem beats a structured non-report.
+blank_issues_enabled: true
+contact_links:
+  - name: Question or idea
+    url: https://github.com/TortoiseWolfe/ScriptHammer/discussions
+    about: For anything that isn't yet a specific bug or request — setup help, "is this a good fit for my project?", showing what you built.
+  - name: Security issue
+    url: https://github.com/TortoiseWolfe/ScriptHammer/blob/main/docs/project/SECURITY.md
+    about: Please do NOT open a public issue for a vulnerability. Follow the disclosure process here.

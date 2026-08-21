@@ -31,6 +31,7 @@ const path = require('node:path');
 
 const ROOT = path.join(__dirname, '..', '..');
 const CLAUDE_MD = path.join(ROOT, 'CLAUDE.md');
+const PR_TEMPLATE = path.join(ROOT, '.github', 'PULL_REQUEST_TEMPLATE.md');
 const WORKFLOWS = path.join(ROOT, '.github', 'workflows');
 
 /**
@@ -164,4 +165,43 @@ test('a workflow that supplies a required check does not disclaim its own covera
       );
     }
   }
+});
+
+/**
+ * The PR template is a SECOND place that names the required checks (#516), and a second
+ * copy of a fact is a second thing that can go stale. `CLAUDE.md` is read by whoever is
+ * working on the repo; the PR template is read by a first-time contributor at exactly the
+ * moment they are wondering which red check matters — so it earns its copy. It does not
+ * earn the right to drift.
+ *
+ * This is the same two-sources-of-truth shape that made a text-opacity guard inert: the
+ * banned-value list was widened while a second hardcoded threshold in the same file went
+ * on deciding the answer.
+ */
+test('the PR template does not contradict CLAUDE.md about required checks', () => {
+  if (!fs.existsSync(PR_TEMPLATE)) return; // no template, nothing to contradict
+
+  const tpl = fs.readFileSync(PR_TEMPLATE, 'utf8');
+  const named = [...tpl.matchAll(/`([^`]+)`/g)]
+    .map((m) => m[1])
+    .filter((n) => Object.prototype.hasOwnProperty.call(CHECK_SOURCE, n));
+
+  // Only assert if the template actually talks about them. It is allowed not to.
+  if (named.length === 0) return;
+
+  const expected = Object.keys(CHECK_SOURCE).sort();
+  assert.deepStrictEqual(
+    [...new Set(named)].sort(),
+    expected,
+    'the PR template names a different set of required checks than CHECK_SOURCE. A ' +
+      'contributor reading it would chase the wrong red check, or ignore a real one.'
+  );
+
+  // And it must not promise that something non-required blocks the merge.
+  assert.match(
+    tpl,
+    /Cloud-quota budget/,
+    'the PR template should tell a contributor that `Cloud-quota budget` is the known ' +
+      'non-required failure, or they will think their PR is broken'
+  );
 });
