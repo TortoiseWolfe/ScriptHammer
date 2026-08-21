@@ -412,6 +412,67 @@ export function sanitizeAttachments(
   return out;
 }
 
+/**
+ * The `payment_intents` row a create-order purchase writes.
+ *
+ * PURE AND EXPORTED for the same reason as buildOrderRow: `index.ts` cannot be imported
+ * from vitest (`supabase/functions/**` is excluded, and no workflow runs `deno test`), so
+ * anything decided inline in the handler is decided where CI cannot see it.
+ *
+ * WHY IT CARRIES THE IDEMPOTENCY KEY (#559). create-order reads `Idempotency-Key` and
+ * claims it in `edge_idempotency_keys`, which dedupes at the REQUEST layer. It did not put
+ * the key on the row, so every intent created through checkout had
+ * `idempotency_key = NULL`, and two things followed:
+ *
+ *   1. `idx_payment_intents_idempotency_key` — a partial unique index that exists precisely
+ *      to stop duplicate intents — never applied to a single catalog purchase.
+ *   2. Retry lineage broke. `payment-service.ts` reads `parent.idempotency_key` and mints a
+ *      fresh UUID when it is null, so a retry of a create-order intent could not dedupe
+ *      against the attempt it was retrying.
+ *
+ * Both layers now key off the same value: the header dedupes the REQUEST, the column
+ * dedupes the ROW and anchors the retry chain.
+ *
+ * A null key is legitimate and preserved as null — the partial index ignores nulls, and a
+ * caller that sends no header simply gets the previous behaviour.
+ */
+export function buildIntentRow(input: {
+  userId: string;
+  amountCents: number;
+  product: {
+    currency: string;
+    type: string;
+    interval: string | null;
+    name: string;
+    id: string;
+  };
+  buyerEmail: string;
+  isDeposit: boolean;
+  idempotencyKey: string | null;
+}): Record<string, unknown> {
+  if (!input.userId) {
+    // Same reasoning as buildOrderRow: refusing beats writing a row nobody can read.
+    throw new Error('buildIntentRow: userId is required');
+  }
+
+  return {
+    template_user_id: input.userId,
+    amount: input.amountCents,
+    currency: input.product.currency,
+    type: input.product.type,
+    interval: input.product.interval,
+    customer_email: input.buyerEmail,
+    description: input.isDeposit
+      ? `${input.product.name} (50% deposit)`
+      : input.product.name,
+    // Intake does NOT go here. metadata is capped at 1KB serialised
+    // (metadata-validator.ts) and a job description blows straight past it;
+    // it lives on orders.intake_data, which is unbounded JSONB.
+    metadata: { product_id: input.product.id, is_deposit: input.isDeposit },
+    idempotency_key: input.idempotencyKey,
+  };
+}
+
 export function buildOrderRow(input: {
   intentId: string;
   productId: string;

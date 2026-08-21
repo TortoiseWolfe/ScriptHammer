@@ -35,6 +35,7 @@ import {
 import {
   resolveOrder,
   fingerprintRequest,
+  buildIntentRow,
   buildOrderRow,
   type ProductRow,
 } from './resolve.ts';
@@ -146,21 +147,22 @@ serve(async (req) => {
     // ---- proceed: two writes, intent then order --------------------------
     const { data: intent, error: intentError } = await supabase
       .from('payment_intents')
-      .insert({
-        template_user_id: userId,
-        amount: decision.amountCents,
-        currency: product!.currency,
-        type: product!.type,
-        interval: product!.interval,
-        customer_email: buyerEmail,
-        description: decision.isDeposit
-          ? `${product!.name} (50% deposit)`
-          : product!.name,
-        // Intake does NOT go here. metadata is capped at 1KB serialised
-        // (metadata-validator.ts) and a job description blows straight past it;
-        // it lives on orders.intake_data, which is unbounded JSONB.
-        metadata: { product_id: productId, is_deposit: decision.isDeposit },
-      })
+      .insert(
+        buildIntentRow({
+          userId,
+          amountCents: decision.amountCents,
+          product: {
+            id: productId,
+            currency: product!.currency,
+            type: product!.type,
+            interval: product!.interval,
+            name: product!.name,
+          },
+          buyerEmail,
+          isDeposit: decision.isDeposit,
+          idempotencyKey,
+        })
+      )
       .select('id')
       .single();
 

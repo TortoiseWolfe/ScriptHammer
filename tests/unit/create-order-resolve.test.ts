@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
 import {
   MAX_ATTACHMENTS,
   MIN_CHARGE_CENTS,
+  buildIntentRow,
   buildOrderRow,
   decideIdempotency,
   depositPercent,
@@ -541,5 +544,108 @@ describe('buildOrderRow sanitises attachments before they reach the row', () => 
   it('leaves an order with no attachments key alone', () => {
     const row = buildOrderRow({ ...base, intake: { business: 'X' } });
     expect(row.intake_data).toEqual({ business: 'X' });
+  });
+});
+
+describe('buildIntentRow — the payment_intents row create-order writes (#559)', () => {
+  const product = {
+    id: 'prod-1',
+    currency: 'usd',
+    type: 'one_time',
+    interval: null,
+    name: 'Care Plan',
+  };
+  const base = {
+    userId: 'user-1',
+    amountCents: 5000,
+    product,
+    buyerEmail: 'buyer@example.com',
+    isDeposit: false,
+  };
+
+  it('persists the idempotency key onto the row', () => {
+    // THE POINT OF THIS FUNCTION. create-order claimed the key in
+    // edge_idempotency_keys and left the COLUMN null, so
+    // idx_payment_intents_idempotency_key — a partial unique index that exists to
+    // stop duplicate intents — never applied to a single catalog purchase, and
+    // retry lineage (payment-service.ts reads parent.idempotency_key) had nothing
+    // to anchor to.
+    const row = buildIntentRow({ ...base, idempotencyKey: 'key-abc' });
+    expect(row.idempotency_key).toBe('key-abc');
+  });
+
+  it('preserves a null key as null rather than inventing one', () => {
+    // The partial index ignores nulls, and a caller that sends no header must keep
+    // the previous behaviour. Minting a key here would silently make every
+    // keyless request unique and defeat the index it is meant to feed.
+    const row = buildIntentRow({ ...base, idempotencyKey: null });
+    expect(row.idempotency_key).toBeNull();
+  });
+
+  it('carries the catalog-derived fields unchanged', () => {
+    const row = buildIntentRow({ ...base, idempotencyKey: 'k' });
+    expect(row).toMatchObject({
+      template_user_id: 'user-1',
+      amount: 5000,
+      currency: 'usd',
+      type: 'one_time',
+      interval: null,
+      customer_email: 'buyer@example.com',
+      description: 'Care Plan',
+      metadata: { product_id: 'prod-1', is_deposit: false },
+    });
+  });
+
+  it('labels a deposit in the description without changing the product name', () => {
+    const row = buildIntentRow({
+      ...base,
+      isDeposit: true,
+      amountCents: 2500,
+      idempotencyKey: 'k',
+    });
+    expect(row.description).toBe('Care Plan (50% deposit)');
+    expect(row.metadata).toEqual({ product_id: 'prod-1', is_deposit: true });
+  });
+
+  it('refuses to build a row with no user, rather than writing an unreadable one', () => {
+    // Same reasoning as buildOrderRow: template_user_id is what the RLS SELECT
+    // policy matches on (auth.uid() = template_user_id), so a row without it is a
+    // row its own buyer cannot read.
+    expect(() =>
+      buildIntentRow({ ...base, userId: '', idempotencyKey: 'k' })
+    ).toThrow(/userId is required/);
+  });
+});
+
+describe('the create-order handler actually uses buildIntentRow (#559)', () => {
+  // WHY A SOURCE ASSERTION. index.ts cannot be imported here — `supabase/functions/**`
+  // is excluded from vitest and no workflow runs `deno test` — so the tests above
+  // verify a function that nothing proves the handler calls. That is exactly the #895
+  // defect: a module fully unit-tested and called by nobody. Reverting index.ts to an
+  // inline .insert({...}) would leave every assertion above green while catalog
+  // purchases silently went back to a null idempotency_key.
+  const handler = (): string => {
+    const src = readFileSync(
+      path.resolve(__dirname, '../../supabase/functions/create-order/index.ts'),
+      'utf8'
+    );
+    // Comments are not code. index.ts documents this decision in prose, and matching
+    // the prose would keep this green with the call removed.
+    return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  };
+
+  it('builds the payment_intents row through buildIntentRow', () => {
+    expect(handler()).toMatch(
+      /\.from\('payment_intents'\)\s*\.insert\(\s*buildIntentRow\(/
+    );
+  });
+
+  it('passes the request idempotency key into it', () => {
+    // The header value must reach the row. Passing `null` here would satisfy the
+    // regex above while restoring the original defect.
+    const m = handler().match(/buildIntentRow\(\{[\s\S]*?\}\)/);
+    expect(m, 'no buildIntentRow({...}) call found in index.ts').not.toBeNull();
+    expect(m![0]).toMatch(/\bidempotencyKey\b/);
+    expect(m![0]).not.toMatch(/idempotencyKey:\s*null/);
   });
 });
