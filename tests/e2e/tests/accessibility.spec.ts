@@ -1,16 +1,19 @@
 import { test, expect } from '@playwright/test';
-import { injectAxe, checkA11y } from 'axe-playwright';
+import { injectAxe } from 'axe-playwright';
 import { dismissCookieBanner } from '../utils/test-user-factory';
+import { expectNoA11yViolations } from '../utils/expect-no-a11y-violations';
 
 // Axe rules to skip in automated checks:
 // - color-contrast: Theme-dependent (the registered themes vary in contrast)
 // - landmark-unique: Multiple nav elements (GlobalNav + footer) is acceptable
-const axeOptions = {
-  axeOptions: {
-    rules: {
-      'color-contrast': { enabled: false },
-      'landmark-unique': { enabled: false },
-    },
+//
+// These are axe RunOptions, passed straight through to `getViolations`. They used to be
+// wrapped one level deeper, in the shape the old axe-playwright helper wanted; the
+// violations API takes the inner object.
+const axeRunOptions = {
+  rules: {
+    'color-contrast': { enabled: false },
+    'landmark-unique': { enabled: false },
   },
 };
 
@@ -22,13 +25,7 @@ test.describe('Accessibility', () => {
 
   test('homepage passes automated accessibility checks', async ({ page }) => {
     await injectAxe(page);
-    await checkA11y(page, undefined, {
-      detailedReport: true,
-      detailedReportOptions: {
-        html: true,
-      },
-      ...axeOptions,
-    });
+    await expectNoA11yViolations(page, axeRunOptions);
   });
 
   test('themes page passes automated accessibility checks', async ({
@@ -37,7 +34,7 @@ test.describe('Accessibility', () => {
     await page.goto('/themes', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await injectAxe(page);
-    await checkA11y(page, undefined, axeOptions);
+    await expectNoA11yViolations(page, axeRunOptions);
   });
 
   test('sign-in page passes automated accessibility checks', async ({
@@ -47,18 +44,18 @@ test.describe('Accessibility', () => {
     await dismissCookieBanner(page);
     await injectAxe(page);
     // The sign-in page includes third-party OAuth widgets (Supabase/Clerk)
-    // that we cannot control. Only check for critical accessibility violations.
-    await checkA11y(page, undefined, {
-      detailedReport: true,
-      detailedReportOptions: { html: true },
-      includedImpacts: ['critical'],
-      axeOptions: {
+    // that we cannot control. Only CRITICAL violations fail here — preserving the
+    // original `includedImpacts: ['critical']`.
+    await expectNoA11yViolations(
+      page,
+      {
         rules: {
-          ...axeOptions.axeOptions.rules,
+          ...axeRunOptions.rules,
           label: { enabled: false },
         },
       },
-    });
+      ['critical']
+    );
   });
 
   test('accessibility settings page passes automated checks', async ({
@@ -67,7 +64,7 @@ test.describe('Accessibility', () => {
     await page.goto('/accessibility', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
     await injectAxe(page);
-    await checkA11y(page, undefined, axeOptions);
+    await expectNoA11yViolations(page, axeRunOptions);
   });
 
   test('skip to main content link works', async ({ page }) => {
