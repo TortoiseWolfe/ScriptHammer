@@ -29,7 +29,9 @@
  * through `expect` (a raw `throw`), and `soft` assertions are counted like any other.
  * A test with a nonzero count is not thereby proven to assert anything USEFUL.
  */
+import { writeFileSync } from 'node:fs';
 import type {
+  FullResult,
   Reporter,
   TestCase,
   TestResult,
@@ -38,6 +40,30 @@ import type {
 
 /** Steps Playwright tags as assertions. */
 const EXPECT = 'expect';
+
+/**
+ * `annotate` prints and passes; `block` fails the run. Same annotate-then-flip shape as
+ * `E2E_BUDGET_MODE` and `FLAKY_GATE_MODE`. Default stays `annotate` so a developer running
+ * one spec locally is not blocked by a pre-existing offender in a file they did not touch;
+ * `e2e-local.yml` sets `block`, which is the lane that gates merges.
+ */
+function mode(): string {
+  return process.env.ZERO_ASSERTION_GATE_MODE ?? 'annotate';
+}
+
+/**
+ * Where the machine-readable verdict lands.
+ *
+ * IT HAS TO BE A FILE. The CI shard runs Playwright under `|| true` — deliberately, so the
+ * per-shard verdict comes from parsing results.json rather than from an exit code that a
+ * cancelled or crashed run can fake (that trap is written up in `e2e-local.yml`). So
+ * returning a failed status from `onEnd` alone would be swallowed. And results.json cannot
+ * carry this: its result objects have no `steps`, which is the whole reason this is a
+ * reporter and not a post-processing script.
+ */
+function output(): string {
+  return process.env.ZERO_ASSERTION_OUTPUT ?? 'zero-assertions.json';
+}
 
 class AssertionCountReporter implements Reporter {
   private counts = new Map<string, number>();
@@ -57,7 +83,7 @@ class AssertionCountReporter implements Reporter {
     }
   }
 
-  onEnd(): void {
+  async onEnd(): Promise<{ status: FullResult['status'] } | undefined> {
     const silent = [...this.counts.entries()]
       .filter(([, n]) => n === 0)
       .map(([k]) => k)
@@ -69,14 +95,16 @@ class AssertionCountReporter implements Reporter {
       console.log(
         '\n[assertion-count] observed no tests; this run proves nothing about assertion coverage.'
       );
-      return;
+      this.write({ observed: 0, silent: [] });
+      return undefined;
     }
 
     if (silent.length === 0) {
       console.log(
         `\n[assertion-count] ${this.counts.size} passing test(s), all ran at least one assertion.`
       );
-      return;
+      this.write({ observed: this.counts.size, silent: [] });
+      return undefined;
     }
 
     console.log(
@@ -85,8 +113,36 @@ class AssertionCountReporter implements Reporter {
     for (const k of silent) console.log(`  ${k}`);
     console.log(
       '  A green result here measured nothing. Usually the page does not contain what ' +
-        'the spec guards on — see #842. Reporting only; this does not fail the run.'
+        'the spec guards on — see #842.'
     );
+    this.write({ observed: this.counts.size, silent });
+
+    if (mode() === 'block') {
+      console.log(
+        '  ZERO_ASSERTION_GATE_MODE=block — failing the run. Give the test a real ' +
+          'assertion, or a coverage floor proving it measured something.'
+      );
+      return { status: 'failed' };
+    }
+    console.log('  Reporting only; this does not fail the run.');
+    return undefined;
+  }
+
+  /**
+   * Emit the verdict for the CI shard step to read. Never throws: a reporter that crashed
+   * the run while trying to report on it would be its own worst example.
+   */
+  private write(payload: { observed: number; silent: string[] }): void {
+    try {
+      writeFileSync(
+        output(),
+        `${JSON.stringify({ mode: mode(), ...payload }, null, 2)}\n`
+      );
+    } catch (err) {
+      console.log(
+        `[assertion-count] could not write ${output()}: ${err instanceof Error ? err.message : err}`
+      );
+    }
   }
 
   private key(test: TestCase): string {

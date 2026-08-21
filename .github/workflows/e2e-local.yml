@@ -438,6 +438,11 @@ jobs:
           SKIP_WEBSERVER: 'true'
           BASE_URL: http://localhost:3000
           PLAYWRIGHT_JSON_OUTPUT_NAME: results.json
+          # #861. This lane is the required one, and the nine tests that reached
+          # `main` running zero assertions were all found here. `annotate` stays the
+          # default everywhere else so a developer running one spec is not blocked
+          # by an offender in a file they did not touch.
+          ZERO_ASSERTION_GATE_MODE: block
           # Without these three the suite falls back to the workspace `.env`,
           # whose hostnames are container-side, and dies 300 lines later as
           # `getaddrinfo EAI_AGAIN supabase-kong` inside globalSetup (#830).
@@ -535,6 +540,15 @@ jobs:
               sys.exit(1)
           EOF
 
+
+      - name: No passing test may have run zero assertions (#861)
+        if: always()
+        # Separate from the step above because it answers a different question.
+        # That one asks whether tests ran and passed; this asks whether the ones
+        # that passed measured anything. results.json cannot answer it -- it
+        # carries no `steps` -- so the reporter writes its own verdict file and
+        # this reads it. Under `|| true` an exit code would be swallowed.
+        run: node scripts/ci/check-zero-assertions.mjs
       - name: Name this shard's artifact
         if: always()
         id: slug
