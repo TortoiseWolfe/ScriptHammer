@@ -12,6 +12,9 @@
  *   - it prints a clean bill of health having observed nothing — which is the exact
  *     shape #396 catalogues, committed by the tool built to detect it
  */
+import { readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import Reporter from '../e2e/reporters/assertion-count-reporter';
 import type { TestCase, TestResult, TestStep } from '@playwright/test/reporter';
@@ -89,10 +92,9 @@ describe('assertion-count reporter (#396)', () => {
     expect(report()).not.toContain('all ran at least one assertion');
   });
 
-  it('reports only, and cannot fail a run', () => {
-    // It must never throw and never signal failure — it is wired into every lane,
-    // including the required one, and a reporter that throws breaks the run it is
-    // only supposed to describe.
+  it('never throws, whatever it is asked to report on', () => {
+    // It is wired into every lane, including the required one, and a reporter that
+    // throws breaks the run it is only supposed to describe.
     const r = new Reporter();
     const silent = testCase('/repo/tests/e2e/quiet.spec.ts', 1, 'x');
     expect(() => {
@@ -100,6 +102,83 @@ describe('assertion-count reporter (#396)', () => {
       r.onTestEnd?.(silent, passed());
       r.onEnd?.();
     }).not.toThrow();
-    expect(r.onEnd?.()).toBeUndefined();
+  });
+
+  describe('gate mode (#861)', () => {
+    // The point of these two: the same input must reach opposite verdicts. A gate that
+    // can only ever return one answer is the defect this whole family is about.
+    const silentRun = async (mode?: string) => {
+      if (mode === undefined) delete process.env.ZERO_ASSERTION_GATE_MODE;
+      else process.env.ZERO_ASSERTION_GATE_MODE = mode;
+      process.env.ZERO_ASSERTION_OUTPUT = join(
+        tmpdir(),
+        `za-${Date.now()}-${Math.random()}.json`
+      );
+      const r = new Reporter();
+      const silent = testCase(
+        '/repo/tests/e2e/quiet.spec.ts',
+        7,
+        'asserts nothing'
+      );
+      r.onTestEnd?.(silent, passed());
+      const verdict = await r.onEnd?.();
+      const written = JSON.parse(
+        readFileSync(process.env.ZERO_ASSERTION_OUTPUT, 'utf8')
+      );
+      rmSync(process.env.ZERO_ASSERTION_OUTPUT, { force: true });
+      return { verdict, written };
+    };
+
+    it('defaults to annotate — prints, does not fail', async () => {
+      const { verdict, written } = await silentRun(undefined);
+      expect(verdict).toBeUndefined();
+      expect(report()).toContain('does not fail the run');
+      expect(written.mode).toBe('annotate');
+      expect(written.silent).toHaveLength(1);
+    });
+
+    it('fails the run when the mode is block', async () => {
+      const { verdict, written } = await silentRun('block');
+      expect(verdict).toEqual({ status: 'failed' });
+      expect(report()).toContain('failing the run');
+      expect(written.mode).toBe('block');
+      expect(written.silent[0]).toContain('quiet.spec.ts:7');
+    });
+
+    it('does not fail a clean run even in block mode', async () => {
+      process.env.ZERO_ASSERTION_GATE_MODE = 'block';
+      process.env.ZERO_ASSERTION_OUTPUT = join(
+        tmpdir(),
+        `za-clean-${Date.now()}.json`
+      );
+      const r = new Reporter();
+      const real = testCase('/repo/tests/e2e/loud.spec.ts', 3, 'asserts');
+      r.onStepEnd?.(real, passed(), step('expect'));
+      r.onTestEnd?.(real, passed());
+      expect(await r.onEnd?.()).toBeUndefined();
+      const written = JSON.parse(
+        readFileSync(process.env.ZERO_ASSERTION_OUTPUT, 'utf8')
+      );
+      rmSync(process.env.ZERO_ASSERTION_OUTPUT, { force: true });
+      expect(written.silent).toEqual([]);
+      expect(written.observed).toBe(1);
+    });
+
+    it('records that it observed nothing, so a vacuous shard is detectable', async () => {
+      process.env.ZERO_ASSERTION_GATE_MODE = 'block';
+      process.env.ZERO_ASSERTION_OUTPUT = join(
+        tmpdir(),
+        `za-vac-${Date.now()}.json`
+      );
+      const r = new Reporter();
+      expect(await r.onEnd?.()).toBeUndefined();
+      const written = JSON.parse(
+        readFileSync(process.env.ZERO_ASSERTION_OUTPUT, 'utf8')
+      );
+      rmSync(process.env.ZERO_ASSERTION_OUTPUT, { force: true });
+      // The reporter itself passes here; check-zero-assertions.mjs is what turns
+      // `observed: 0` into a failure, because that is the shard-level question.
+      expect(written.observed).toBe(0);
+    });
   });
 });

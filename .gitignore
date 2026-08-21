@@ -272,3 +272,6 @@ graphify-out/
 # the builder/dev container boundary (#293).
 .chunk-modules.json
 .commitmsg.tmp
+
+# Written by the zero-assertion reporter (#861); a per-run CI verdict, never committed.
+zero-assertions.json

@@ -35,7 +35,7 @@ trap 'rm -f "$ENV_FILE"' EXIT
 # delivered message at all. `playwright-env-forwarding.test.js` derives the list from
 # `process.env.X` in the test sources and fails when the two drift, because finding
 # this by hand once is not a system.
-env | grep -E -e '^(CI|SKIP_WEBSERVER|BASE_URL|WORKERS|AUTH_SETUP_JOB|NODE_ENV|BASE_PATH|APP_BASE_PATH|E2E_PATH_PREFIX|MAILPIT_URL|STRIPE_SECRET_KEY|SUBSCRIPTION_SKU_ACTIVE|TEST_EMAIL_DOMAIN)=' -e '^(PLAYWRIGHT_|NEXT_PUBLIC_|SUPABASE_|TEST_USER_|RESEND_)' > "$ENV_FILE" || true
+env | grep -E -e '^(CI|SKIP_WEBSERVER|BASE_URL|WORKERS|AUTH_SETUP_JOB|NODE_ENV|BASE_PATH|APP_BASE_PATH|E2E_PATH_PREFIX|MAILPIT_URL|STRIPE_SECRET_KEY|SUBSCRIPTION_SKU_ACTIVE|TEST_EMAIL_DOMAIN|ZERO_ASSERTION_GATE_MODE|ZERO_ASSERTION_OUTPUT)=' -e '^(PLAYWRIGHT_|NEXT_PUBLIC_|SUPABASE_|TEST_USER_|RESEND_)' > "$ENV_FILE" || true
 
 # Fail on a missing credential rather than letting dotenv silently substitute the
 # workspace `.env`, whose hostnames are container-side. The silent fallback, not the
