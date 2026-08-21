@@ -25,20 +25,46 @@ export default function ResetPasswordForm({
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  /**
+   * The error for ONE named field, kept apart from `error` (#867, same shape as #857).
+   *
+   * TWO conditions here were funnelled into one form-level alert with no `id`: a password
+   * that fails `validatePassword`, and a confirmation that does not match. Neither input
+   * carried `aria-invalid` or `aria-describedby`, so "Passwords do not match" was
+   * announced with nothing saying which of the two boxes to fix.
+   *
+   * The Supabase update failure stays form-level — it is not about one field.
+   */
+  const [fieldError, setFieldError] = useState<{
+    field: 'password' | 'confirmPassword';
+    message: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setFieldError(null);
 
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.valid) {
-      setError(passwordValidation.error);
+      setFieldError({
+        field: 'password',
+        // `error` is `string | null` on the validator's result; the field message is
+        // not optional, so an invalid password without a message still says something.
+        message:
+          passwordValidation.error ?? 'Password does not meet the requirements',
+      });
       return;
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match');
+      // Announced against the CONFIRMATION box, not the password: that is the one the
+      // user is being asked to change.
+      setFieldError({
+        field: 'confirmPassword',
+        message: 'Passwords do not match',
+      });
       return;
     }
 
@@ -71,11 +97,24 @@ export default function ResetPasswordForm({
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="input min-h-11"
+          className={`input min-h-11 ${
+            fieldError?.field === 'password' ? 'input-error' : ''
+          }`}
           placeholder="••••••••"
           required
           disabled={loading}
+          aria-invalid={fieldError?.field === 'password'}
+          aria-describedby={
+            fieldError?.field === 'password' ? 'password-error' : undefined
+          }
         />
+        {fieldError?.field === 'password' && (
+          <div className="label" id="password-error">
+            <span className="text-error" role="alert" aria-live="polite">
+              {fieldError.message}
+            </span>
+          </div>
+        )}
       </div>
 
       <div>
@@ -87,11 +126,26 @@ export default function ResetPasswordForm({
           type="password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          className="input min-h-11"
+          className={`input min-h-11 ${
+            fieldError?.field === 'confirmPassword' ? 'input-error' : ''
+          }`}
           placeholder="••••••••"
           required
           disabled={loading}
+          aria-invalid={fieldError?.field === 'confirmPassword'}
+          aria-describedby={
+            fieldError?.field === 'confirmPassword'
+              ? 'confirm-password-error'
+              : undefined
+          }
         />
+        {fieldError?.field === 'confirmPassword' && (
+          <div className="label" id="confirm-password-error">
+            <span className="text-error" role="alert" aria-live="polite">
+              {fieldError.message}
+            </span>
+          </div>
+        )}
       </div>
 
       {error && (
