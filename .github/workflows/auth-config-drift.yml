@@ -15,15 +15,20 @@
 
 name: Auth Config Drift
 
+# NO TRIGGER `paths:` FILTER, DELIBERATELY (#870, pattern from #869).
+#
+# A `paths:` filter means this reports NOTHING on an unrelated PR — and a required check
+# that never reports is PENDING FOREVER, not skipped, so it could never be required.
+#
+# This does NOT increase the number of live Supabase calls. The `changes` job below gates
+# the drift job on exactly the paths the filter used to name, so an unrelated PR still
+# makes no API call; only the trivial aggregate runs. Pinned by
+# scripts/__tests__/auth-config-drift-requirable.test.js.
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-    paths:
-      - 'scripts/supabase/auth-config.json'
-      - 'scripts/supabase/set-auth-config.ts'
-      - '.github/workflows/auth-config-drift.yml'
   schedule:
     - cron: '15 15 * * *'
   workflow_dispatch:
@@ -33,11 +38,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Does this change need a drift check?
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      run: ${{ steps.decide.outputs.run }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Decide
+        id: decide
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            # push, schedule and dispatch always run — the daily cron is the whole point
+            # of this workflow, and main is the reference state.
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "  ${{ github.event_name }} — running unconditionally"
+            exit 0
+          fi
+          node scripts/ci/auth-config-drift-changes.mjs \
+            "${{ github.event.pull_request.base.sha }}" \
+            "${{ github.event.pull_request.head.sha }}"
+
   drift:
+    needs: changes
     name: Live auth config matches the repo
     # Secrets aren't passed to fork PRs — skip there instead of failing on a
     # missing token (same-repo PRs, push, schedule, dispatch all still run).
-    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    if: ${{ needs.changes.outputs.run == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -86,3 +118,38 @@ jobs:
           AUTH_GITHUB_CLIENT_ID: ${{ vars.AUTH_GITHUB_CLIENT_ID }}
           AUTH_GOOGLE_CLIENT_ID: ${{ vars.AUTH_GOOGLE_CLIENT_ID }}
         run: pnpm supabase:auth-config:check
+
+  # The always-reporting aggregate. THIS is the context to require, not `drift`.
+  result:
+    name: Auth Config Drift result
+    runs-on: ubuntu-latest
+    needs: [changes, drift]
+    if: always()
+    steps:
+      - name: Verdict
+        run: |
+          set -euo pipefail
+          RAN="${{ needs.changes.outputs.run }}"
+          RESULT="${{ needs.drift.result }}"
+          echo "  changes.run=$RAN  drift.result=$RESULT"
+
+          if [ "$RAN" != "true" ]; then
+            echo "  no auth-config paths changed — drift check skipped, reporting green"
+            exit 0
+          fi
+
+          # THE FORK CASE, and the reason this aggregate differs from the others.
+          # `drift` carries its own `if:` that skips on fork PRs, because secrets are
+          # withheld there and the job cannot authenticate. Treating that skip as a
+          # failure would make every fork PR permanently unmergeable once this context is
+          # required — which is the same "cannot merge" trap the paths filter created.
+          if [ "$RESULT" = "skipped" ]; then
+            echo "  drift job skipped (fork PR: no secrets available) — reporting green"
+            exit 0
+          fi
+
+          # A cancelled run observed nothing, and calling that green is the #396 shape.
+          case "$RESULT" in
+            success) echo "  live auth config matches the repo"; exit 0 ;;
+            *) echo "  drift check did not pass (result=$RESULT)"; exit 1 ;;
+          esac
