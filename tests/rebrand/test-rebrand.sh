@@ -82,8 +82,31 @@ setup_temp_dir() {
     mkdir -p src/components
     echo '{"name": "scripthammer", "description": "ScriptHammer template"}' > package.json
     echo "# ScriptHammer" > README.md
+    # public/CNAME, not ./CNAME — rebrand.sh reads "$REPO_ROOT/public/CNAME". The root-level
+    # copy that used to be here meant the CNAME branch never executed in any test.
     echo "scripthammer.com" > CNAME
+    mkdir -p public
+    echo "scripthammer.com" > public/CNAME
     echo "export const projectName = 'ScriptHammer';" > src/components/Logo.tsx
+
+    # THE BRAND TOKEN IN A FILENAME AND IN AN IDENTIFIER (#911).
+    #
+    # Every other fixture file carries it only inside a STRING, which is why the rename
+    # pass had nothing to match and no test ever produced an identifier. A fork whose name
+    # starts lowercase or contains a space rebranded this into `<geoLARPLogo />` or
+    # `<My Cool AppLogo />` — an intrinsic tag and a syntax error respectively — and the
+    # suite stayed green.
+    cat > src/components/ScriptHammerLogo.tsx <<'LOGO'
+export interface ScriptHammerLogoProps {
+  size?: number;
+}
+
+export function ScriptHammerLogo({ size = 32 }: ScriptHammerLogoProps) {
+  return <svg width={size} height={size} aria-label="ScriptHammer" />;
+}
+
+export const SimpleScriptHammer = () => <ScriptHammerLogo size={16} />;
+LOGO
     mkdir -p src/config
     cat > src/config/footer-links.ts <<'FOOTER'
 export const FOOTER_LINKS = [
@@ -330,6 +353,88 @@ test_attribution_preserved() {
 # The rejection funnelled them into the path it was warning about. Rasters are
 # accepted now, so this asserts the extension gate lets one through.
 ##
+test_component_identifiers_are_valid() {
+    run_test "test_component_identifiers_are_valid"
+    setup_temp_dir
+
+    # "geo LARP" is hostile in BOTH ways at once: a lowercase initial AND a space. The
+    # first makes JSX resolve the tag as an intrinsic DOM element; the second is a plain
+    # syntax error. A single fixture name covers both failure modes.
+    "$TEMP_DIR/scripts/rebrand.sh" "geo LARP" "testuser" "Test desc" --force --no-icon >/dev/null 2>&1 || true
+
+    # 1. The FILE must be renamed to something identifier-safe. Under the old code this
+    #    never ran at all, because no fixture filename carried the token.
+    if [ -f "$TEMP_DIR/src/components/GeoLARPLogo.tsx" ]; then
+        log_pass "Component file renamed to PascalCase (GeoLARPLogo.tsx)"
+    else
+        log_fail "Component filename" "src/components/GeoLARPLogo.tsx" \
+            "$(ls "$TEMP_DIR/src/components/" 2>/dev/null | tr '\n' ' ')"
+    fi
+
+    local logo
+    logo=$(find "$TEMP_DIR/src/components" -name "*Logo.tsx" ! -name "Logo.tsx" | head -1)
+
+    if [ -z "$logo" ]; then
+        log_fail "Component file present" "a *Logo.tsx survived the rebrand" "none found"
+        cd "$REPO_ROOT"
+        return
+    fi
+
+    # 2. Every JSX tag must be a valid component reference. This is the assertion that
+    #    fails on `<geoLARPLogo />` (lowercase initial) and on `<geo LARPLogo />` (space).
+    local bad_tags
+    bad_tags=$(grep -oE '<[A-Za-z][^ />]*' "$logo" | sed 's/^<//' \
+               | grep -vE '^[A-Z][A-Za-z0-9]*$' | grep -vE '^(svg)$' || true)
+    if [ -z "$bad_tags" ]; then
+        log_pass "JSX tags are valid component identifiers"
+    else
+        log_fail "JSX tag validity" "every tag ^[A-Z][A-Za-z0-9]*$" "$bad_tags"
+    fi
+
+    # 3. Declared identifiers must be valid too — an export with a space in it is a syntax
+    #    error the JSX check above would not see.
+    # Take EVERYTHING between the keyword and the first delimiter, not the first word.
+    # Splitting on whitespace was itself the bug: `export function geo LARPLogo(` yields
+    # "geo", a perfectly valid identifier, so this assertion passed against the broken
+    # script it was written to catch. The whole span must be one identifier.
+    local bad_ids
+    bad_ids=$(sed -nE 's/^export (function|const|interface) ([^(:={<]*).*/\2/p' "$logo" \
+              | sed 's/[[:space:]]*$//' | grep -vE '^[A-Za-z_][A-Za-z0-9_]*$' || true)
+    if [ -z "$bad_ids" ]; then
+        log_pass "Exported identifiers are syntactically valid"
+    else
+        log_fail "Identifier validity" "every export a valid identifier" "$bad_ids"
+    fi
+
+    # 4. And prose must still read as the user typed it. The fix must not achieve safety by
+    #    flattening the display name everywhere — "geo LARP" is what belongs in the README.
+    if grep -q "geo LARP" "$TEMP_DIR/README.md"; then
+        log_pass "Prose keeps the display name, spaces and all"
+    else
+        log_fail "Display name in prose" "geo LARP in README.md" "$(cat "$TEMP_DIR/README.md")"
+    fi
+
+    # 5. The same root cause in a second consumer: a hostname has its own validity rules,
+    #    and a display name spliced into it verbatim produces "geo LARP.com" — which
+    #    GitHub Pages rejects, so the custom domain silently never comes up.
+    if [ ! -f "$TEMP_DIR/public/CNAME" ]; then
+        # Absence is a FAILURE, not a skip. An `if [ -f ... ]` guard here would make this
+        # assertion vanish the moment the fixture path drifted, which is how it would have
+        # reported success while checking nothing.
+        log_fail "CNAME present" "public/CNAME written by the fixture" "missing"
+    else
+        local cname
+        cname=$(cat "$TEMP_DIR/public/CNAME")
+        if echo "$cname" | grep -qE '^[a-z0-9][a-z0-9.-]*$'; then
+            log_pass "CNAME is a syntactically valid hostname ($cname)"
+        else
+            log_fail "CNAME validity" "lowercase hostname, no spaces" "$cname"
+        fi
+    fi
+
+    cd "$REPO_ROOT"
+}
+
 test_brand_icons() {
     run_test "test_brand_icons"
     setup_temp_dir
@@ -491,6 +596,7 @@ run_all_tests() {
     test_rerebrand_detection
     test_attribution_preserved
     test_brand_icons
+    test_component_identifiers_are_valid
     test_auth_config_desired_state
 
     echo ""
@@ -533,6 +639,9 @@ if [ $# -eq 1 ]; then
         # adding the case below (#734).
         test_brand_icons)
             test_brand_icons
+            ;;
+        test_component_identifiers_are_valid)
+            test_component_identifiers_are_valid
             ;;
         test_auth_config_desired_state)
             test_auth_config_desired_state
