@@ -224,6 +224,27 @@ jobs:
             echo "::warning::Production is in Stripe TEST mode — no customer can pay. Tracked in #629."
           fi
 
+      # WHY THIS EXISTS. `/schedule` is where the pricing page's "Book a call" link lands,
+      # and the whole page is env-driven: src/config/calendar.config.ts:21 reads
+      # NEXT_PUBLIC_CALENDAR_URL and an empty value makes CalendarEmbed.tsx:78 render
+      # "Calendar URL not configured" where the booking widget belongs. Clear the repo
+      # variable and the deploy still goes green, the link still works, and only the
+      # destination degrades — silently, on the one CTA that books revenue.
+      #
+      # EQUALITY, NOT PRESENCE. The script asserts the CONFIGURED url reached the bundle,
+      # not that some calendly.com link is in there. A presence check passes on a stale
+      # literal, on a URL left by a previous owner, and on a fork that never changed the
+      # default — all green, all booking into somebody else's calendar.
+      #
+      # It walks /checkout as well as /schedule on purpose: /schedule loads CalendarEmbed
+      # via next/dynamic with ssr:false, so its calendar chunk is not referenced in that
+      # page's HTML, while /checkout reaches the same config through BookingStep.tsx:36.
+      - name: Deployed bundle books at the intended calendar
+        env:
+          SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
+          WANT: ${{ vars.NEXT_PUBLIC_CALENDAR_URL }}
+        run: node scripts/ci/check-calendar-configured.mjs
+
       # No install step (#829): the browsers come from the image. This lane used to
       # apt-install chromium on the runner, which is how a post-deploy monitor could
       # fail for reasons having nothing to do with the deploy it was monitoring.
