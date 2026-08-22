@@ -43,11 +43,31 @@ const PROJECT_CONFIG_PATH = path.join(
 );
 
 /**
- * The default base path, read from the tracked config rather than hardcoded.
+ * The base path the DEPLOY build will produce, derived the same way
+ * `scripts/detect-project.js` derives it.
  *
  * `src/config/project-detected.json` holds the real detected value but is
  * gitignored, so it cannot be the source of truth for a test that must pass on a
- * clean checkout.
+ * clean checkout. Replicating the rule is the next best thing -- and it has to
+ * replicate ALL of it (#931).
+ *
+ * WHAT THIS GOT WRONG. It used to return `/<projectName>` unconditionally, which
+ * ignored the CNAME clause at detect-project.js:132:
+ *
+ *     isGitHubActions && info.isGitHub && !cnameExists ? `/${projectName}` : ''
+ *
+ * A repo with `public/CNAME` deploys at the apex, so its base path is '' and its
+ * manifest start_url is '/'. This test demanded `/ScriptHammer/` -- a value the
+ * deploy has not produced since the custom domain was added, and which
+ * scripthammer.com does not serve. The committed manifest was a fossil, and the
+ * consequences compounded: every local build rewrote the file, so the working tree
+ * was permanently dirty, and committing the CORRECT regenerated value failed this
+ * test. Both symptoms, one stale expectation.
+ *
+ * `isGitHubActions` is deliberately NOT replicated. The committed artifact must
+ * represent what the DEPLOY produces, and the deploy always runs in Actions --
+ * keying off the local environment would make the expectation flip depending on
+ * where the suite happened to run.
  */
 function defaultBasePath() {
   const src = fs.readFileSync(PROJECT_CONFIG_PATH, 'utf8');
@@ -56,7 +76,9 @@ function defaultBasePath() {
     match,
     'could not read projectName from src/config/project.config.ts'
   );
-  return `/${match[1]}`;
+  // A custom domain serves from the apex, so there is no base path to add.
+  const cnameExists = fs.existsSync(path.join(ROOT, 'public', 'CNAME'));
+  return cnameExists ? '' : `/${match[1]}`;
 }
 
 const readManifest = () => JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
@@ -100,6 +122,52 @@ test('every icon in the committed manifest shares the manifest scope', () => {
   );
 });
 
+test('running the generator for a test never writes to the tracked artifact', () => {
+  // THE GUARD FOR THE THING THAT MADE THIS FILE DANGEROUS (#931).
+  //
+  // The generator resolved its output only against __dirname, so the test above
+  // could not run it without overwriting public/manifest.json. It compensated with
+  // `git checkout -- public/manifest.json` in a finally block -- which resets to
+  // HEAD, not to the pre-test working state. Running the suite therefore DISCARDED
+  // any uncommitted change to that file. It destroyed a fix in progress, which is
+  // how the behaviour was found rather than reasoned about.
+  //
+  // MANIFEST_OUTPUT_DIR is what makes the generator testable in isolation. This
+  // asserts it is honoured, because if it silently stopped being honoured the old
+  // clobbering would return and the only symptom would be lost work.
+  const fixture = fs.mkdtempSync(path.join(os.tmpdir(), 'manifest-isolation-'));
+  fs.mkdirSync(path.join(fixture, 'public'), { recursive: true });
+  const before = fs.readFileSync(MANIFEST_PATH, 'utf8');
+
+  try {
+    const result = spawnSync(process.execPath, [GENERATOR_PATH], {
+      cwd: ROOT,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        MANIFEST_OUTPUT_DIR: path.join(fixture, 'public'),
+        NEXT_PUBLIC_BASE_PATH: '/Isolated',
+        NEXT_PUBLIC_PROJECT_NAME: 'Isolated',
+      },
+    });
+    assert.strictEqual(result.status, 0, result.stderr || result.stdout);
+
+    assert.ok(
+      fs.existsSync(path.join(fixture, 'public', 'manifest.json')),
+      'MANIFEST_OUTPUT_DIR was ignored — the generator wrote somewhere else'
+    );
+    assert.strictEqual(
+      fs.readFileSync(MANIFEST_PATH, 'utf8'),
+      before,
+      'the generator modified the TRACKED public/manifest.json while writing to a ' +
+        'fixture. That is what forced the destructive `git checkout` restore this ' +
+        'change removed, and it silently discards uncommitted work.'
+    );
+  } finally {
+    fs.rmSync(fixture, { recursive: true, force: true });
+  }
+});
+
 test('the generator applies the base path it is given, to every field', () => {
   // The companion to the pin above: the committed copy could be correct while the
   // generator that produces it is not, and a reviewer would never see it.
@@ -114,6 +182,8 @@ test('the generator applies the base path it is given, to every field', () => {
       encoding: 'utf8',
       env: {
         ...process.env,
+        // Write into the fixture, never into public/ (#931).
+        MANIFEST_OUTPUT_DIR: path.join(fixture, 'public'),
         NEXT_PUBLIC_BASE_PATH: '/Fixture',
         NEXT_PUBLIC_PROJECT_NAME: 'Fixture',
         NEXT_PUBLIC_PROJECT_OWNER: 'ExampleOwner',
@@ -125,9 +195,11 @@ test('the generator applies the base path it is given, to every field', () => {
       `manifest generator failed:\n${result.stderr || result.stdout}`
     );
 
-    // The generator writes relative to its own directory, not cwd, so read it back
-    // from the repo and restore it afterwards — see the finally block.
-    const generated = readManifest();
+    // Read the FIXTURE's copy. This used to read the repo's own manifest, because
+    // the generator could only write there -- see MANIFEST_OUTPUT_DIR (#931).
+    const generated = JSON.parse(
+      fs.readFileSync(path.join(fixture, 'public', 'manifest.json'), 'utf8')
+    );
     assert.strictEqual(generated.start_url, '/Fixture/');
     assert.strictEqual(generated.scope, '/Fixture/');
     assert.ok(
@@ -136,19 +208,8 @@ test('the generator applies the base path it is given, to every field', () => {
     );
   } finally {
     fs.rmSync(fixture, { recursive: true, force: true });
-    // Put the committed copy back: the generator overwrote it.
-    const restore = spawnSync(
-      'git',
-      ['checkout', '--', 'public/manifest.json'],
-      {
-        cwd: ROOT,
-        encoding: 'utf8',
-      }
-    );
-    assert.strictEqual(
-      restore.status,
-      0,
-      `could not restore public/manifest.json after the generator run:\n${restore.stderr}`
-    );
+    // Nothing to restore: the generator never touched public/ (#931). The previous
+    // `git checkout -- public/manifest.json` here reset the file to HEAD, which
+    // discarded uncommitted work every time the suite ran.
   }
 });

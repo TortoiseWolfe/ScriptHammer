@@ -192,8 +192,18 @@ const manifest = {
   },
 };
 
-// Write manifest to public directory
-const outputPath = path.join(__dirname, '../public/manifest.json');
+// Write manifest to public directory.
+//
+// The destination is overridable so this generator can be exercised WITHOUT
+// clobbering the tracked artifact (#931). It used to resolve only against
+// __dirname, which meant the one test covering it had to let the generator
+// overwrite public/manifest.json and then restore it with
+// `git checkout -- public/manifest.json`. That restore resets to HEAD, so running
+// the suite silently DISCARDED any uncommitted change to that file -- it destroyed
+// a fix in progress, which is how this was found.
+const outputPath = process.env.MANIFEST_OUTPUT_DIR
+  ? path.join(path.resolve(process.env.MANIFEST_OUTPUT_DIR), 'manifest.json')
+  : path.join(__dirname, '../public/manifest.json');
 fs.writeFileSync(outputPath, JSON.stringify(manifest, null, 2));
 
 console.log(`✅ Generated manifest.json for ${projectConfig.projectName}`);
