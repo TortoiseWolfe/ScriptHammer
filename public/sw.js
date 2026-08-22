@@ -12,10 +12,28 @@
 // trailing-slash cache miss into a permanent offline page rather than a
 // one-deploy blip.
 //
-// MUST keep the `scripthammer-` prefix: the activate handler purges old caches
-// by matching that prefix, so a different one would leak storage instead of
-// cleaning up.
+// CACHE_VERSION IS THE ONLY PLACE THE BRAND APPEARS. Everything below derives its
+// prefix from it, including both cache purges, so the name that gets written and
+// the name that gets cleaned up cannot disagree.
+//
+// They did disagree in a fork, and it shipped (#939).
+// `scripts/stamp-sw-version.mjs` rewrites this line at build time and carried its
+// OWN copy of the prefix. `rebrand.sh` could not reach `.mjs` files, so a fork
+// rebranded this file and not that one: the build stamped one brand while the
+// purges matched another, nothing ever matched, and every deploy left caches that
+// could never be collected — unbounded growth in visitors' browsers.
+//
+// #922 removed that specific mechanism by discovering files with `git ls-files`,
+// so both halves are swept together now. But agreeing BECAUSE two separate strings
+// happen to be rewritten in the same pass is incidental, not structural: one
+// `rebrand:keep`, one hand edit, and they part again silently. Deriving removes the
+// second copy instead of re-synchronising it.
 const CACHE_VERSION = 'scripthammer-v1.0.0';
+
+// The brand segment, e.g. `scripthammer-`. Strips the `-v<semver>` tail and anything
+// the stamp script appends after it, so it holds for the authored
+// `scripthammer-v1.0.0` and a stamped `scripthammer-v0.0.1-<sha>` alike.
+const CACHE_PREFIX = CACHE_VERSION.replace(/-v[\d.].*$/, '') + '-';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 
@@ -37,10 +55,10 @@ const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 // 14 images loaded while real visitors saw them break.
 //
 // Bump this by hand only when the image CACHING BEHAVIOUR changes; a content
-// change does not need it, since entries are keyed by request URL. Keeps the
-// `scripthammer-` prefix so the activate purge below still owns it rather than
-// leaking it.
-const IMAGE_CACHE = 'scripthammer-images-v1';
+// change does not need it, since entries are keyed by request URL. Derived from
+// CACHE_PREFIX rather than spelled out, so the purges still own it after a rebrand
+// instead of orphaning it.
+const IMAGE_CACHE = `${CACHE_PREFIX}images-v1`;
 
 // Assets to cache on install. Paths are relative to this script's location
 // (self.registration.scope), so they resolve correctly whether the app is
@@ -84,7 +102,7 @@ self.addEventListener('activate', (event) => {
           cacheNames
             .filter((cacheName) => {
               return (
-                cacheName.startsWith('scripthammer-') &&
+                cacheName.startsWith(CACHE_PREFIX) &&
                 cacheName !== STATIC_CACHE &&
                 cacheName !== DYNAMIC_CACHE &&
                 cacheName !== IMAGE_CACHE
@@ -417,7 +435,7 @@ self.addEventListener('message', (event) => {
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames
-            .filter((cacheName) => cacheName.startsWith('scripthammer-'))
+            .filter((cacheName) => cacheName.startsWith(CACHE_PREFIX))
             .map((cacheName) => caches.delete(cacheName))
         );
       })
