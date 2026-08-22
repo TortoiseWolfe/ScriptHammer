@@ -19,10 +19,16 @@
 
 import { test, expect } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import {
+  seedIsolatedAdmin,
+  injectSessionIntoPage,
+  deleteTestUser,
+  assertLocalBackend,
+  type IsolatedAdmin,
+} from '../utils/test-user-factory';
 import { STALE_THRESHOLD_MS } from '../../../src/components/organisms/AdminConversationList/AdminConversationList';
 
-const ADMIN_EMAIL = 'test@example.com';
-const ADMIN_PASSWORD = 'TestPassword123!';
+// ADMIN_EMAIL / ADMIN_PASSWORD are gone with the shared-user sign-in they served (#914).
 
 const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
@@ -53,6 +59,12 @@ test.describe('Admin Conversation List E2E', () => {
   let serviceClient: SupabaseClient;
 
   test.beforeAll(async () => {
+    // FIRST STATEMENT, BEFORE ANY WRITE (#944). This hook seeds a conversation with
+    // service_role, which bypasses RLS — so on a cloud-pointed .env it would write to
+    // PRODUCTION. A guard placed after the write refuses too late to matter; hooks run in
+    // declaration order, so this must be the earliest thing in the file that runs.
+    assertLocalBackend('The admin conversation-list spec');
+
     // Supabase seeding can exceed the default 30s on a cold local stack.
     test.setTimeout(60000);
 
@@ -110,53 +122,34 @@ test.describe('Admin Conversation List E2E', () => {
     await serviceClient?.from('conversations').delete().eq('id', STALE_CONV_ID);
   });
 
+  // SEED A THROWAWAY ADMIN — never promote the shared fixture user (#914).
+  //
+  // This used to sign in as `test@example.com`, a constant named ADMIN_EMAIL that is not an
+  // admin: `is_admin()` reads the user_profiles.is_admin COLUMN (#240, migration:1218) and
+  // seed-test-users.ts sets it only for admin@scripthammer.com. AdminGate therefore
+  // redirected to `/` and every assertion here measured the home page.
+  //
+  // Promoting the shared user would be the cheap fix and is wrong twice over: its session is
+  // the storageState for all 24 shards, and `admin_list_users` counts only
+  // `WHERE p.is_admin = FALSE` (migration:1605) — so the promotion removes the user from the
+  // very population this spec paginates through.
+  let admin: IsolatedAdmin | null = null;
+
+  test.beforeAll(async () => {
+    // The backend was already asserted at the top of the first beforeAll above — hooks run
+    // in declaration order, and that one writes before this one.
+    admin = await seedIsolatedAdmin();
+  });
+
+  test.afterAll(async () => {
+    if (admin) await deleteTestUser(admin.user.id);
+    admin = null;
+  });
+
   test.beforeEach(async ({ page }) => {
-    const supabase = createClient(SUPABASE_ADMIN_URL, SUPABASE_ANON_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: ADMIN_EMAIL,
-      password: ADMIN_PASSWORD,
-    });
-    if (error || !data.session) {
-      throw new Error(
-        `Supabase sign-in failed: ${error?.message ?? 'no session'}`
-      );
-    }
-
-    await page.goto(`${BP}/`);
-    await page.waitForLoadState('domcontentloaded');
-
-    const session = data.session;
-    // Storage key must match the BROWSER app's, derived from the browser URL.
-    const browserUrl =
-      process.env.NEXT_PUBLIC_SUPABASE_URL || SUPABASE_ADMIN_URL;
-    const supabaseHost = new URL(browserUrl).hostname.split('.')[0];
-    const storageKey = `sb-${supabaseHost}-auth-token`;
-    await page.evaluate(
-      ({ key, accessToken, refreshToken, expiresAt, user: u }) => {
-        localStorage.setItem(
-          key,
-          JSON.stringify({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-            expires_at: expiresAt,
-            expires_in: 3600,
-            token_type: 'bearer',
-            user: u,
-          })
-        );
-      },
-      {
-        key: storageKey,
-        accessToken: session.access_token,
-        refreshToken: session.refresh_token,
-        expiresAt: session.expires_at,
-        user: session.user,
-      }
-    );
-
-    await page.goto(`${BP}/admin/messaging`);
+    test.skip(!admin, 'Admin client unavailable to seed an admin');
+    if (!admin) return;
+    await injectSessionIntoPage(page, admin.session);
     await page.waitForLoadState('networkidle');
   });
 

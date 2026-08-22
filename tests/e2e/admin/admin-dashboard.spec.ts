@@ -21,10 +21,16 @@
 
 import { test, expect } from '@playwright/test';
 import { ADMIN_SECTIONS, ADMIN_SECTION_FLOOR } from '@/config/admin-sections';
-import { createClient } from '@supabase/supabase-js';
+import {
+  seedIsolatedAdmin,
+  injectSessionIntoPage,
+  deleteTestUser,
+  assertLocalBackend,
+  type IsolatedAdmin,
+} from '../utils/test-user-factory';
 
-const ADMIN_EMAIL = 'test@example.com';
-const ADMIN_PASSWORD = 'TestPassword123!';
+// ADMIN_EMAIL / ADMIN_PASSWORD are gone: this file no longer signs in as the shared
+// fixture user. See the beforeAll below (#914).
 
 // Next.js basePath — all routes must be prefixed
 // Read the basePath, never hardcode it (#914). This file said `'/ScriptHammer'` while its
@@ -33,69 +39,58 @@ const ADMIN_PASSWORD = 'TestPassword123!';
 // measured the not-found page.
 const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
-// Local-only spec (skipped in CI). The Node test process reaches local Kong via
-// SUPABASE_ADMIN_URL (compose-internal supabase-kong:8000); the browser reaches
-// it via NEXT_PUBLIC_SUPABASE_URL (host.docker.internal:54321). The old
-// page.route interception that rewrote localhost:54321 → a hardcoded container
-// name is gone — see #121.
-const SUPABASE_ADMIN_URL =
-  process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// The Supabase client constants that used to live here are gone with the sign-in they
+// served. seedIsolatedAdmin() and injectSessionIntoPage() resolve their own endpoints —
+// the Node side via SUPABASE_ADMIN_URL (compose-internal supabase-kong:8000), the browser
+// side via NEXT_PUBLIC_SUPABASE_URL — so this file no longer restates that mapping (#121).
 
 test.describe('Admin Dashboard E2E', () => {
   test.skip(!!process.env.CI, 'Skipped in CI: requires local Docker Supabase');
   test.describe.configure({ mode: 'serial' });
 
+  // SEED A THROWAWAY ADMIN — never promote the shared fixture user (#914).
+  //
+  // This block used to sign in as `test@example.com`, a constant named ADMIN_EMAIL that
+  // is not an admin: `is_admin()` reads the user_profiles.is_admin COLUMN (#240,
+  // migration:1218) and seed-test-users.ts sets it only for admin@scripthammer.com
+  // (scripts/seed-test-users.ts:199, inside setupAdminUser). So AdminGate redirected to
+  // `/` and every assertion in this file measured the home page.
+  //
+  // Promoting `test@example.com` would be the cheap fix and is the wrong one twice over:
+  // its session is the storageState for all 24 E2E shards, and three permissive
+  // cross-user RLS policies (migration:2570) would widen what every other spec can see;
+  // and `admin_list_users` counts only `WHERE p.is_admin = FALSE` (migration:1605), so
+  // the promotion removes the user from the population admin-user-pagination asserts
+  // about. The two fixes would fight each other.
+  //
+  // `seedIsolatedAdmin()` promotes a throwaway user and verifies the promotion through
+  // that user's OWN session. admin-depth.spec.ts already does this and already runs in CI.
+  //
+  // ONCE PER FILE, not per test: these tests are `mode: 'serial'` and share no state that
+  // one could corrupt for another, so 22 user creations would be cost without isolation.
+  let admin: IsolatedAdmin | null = null;
+
+  test.beforeAll(async () => {
+    // REFUSE A NON-LOCAL BACKEND BEFORE SEEDING ANYTHING (#944). Until this existed, the
+    // only thing keeping these specs off production was `CI=true` at docker-compose.yml:84
+    // tripping a skip whose stated reason is a capability one. That skip is what #914 sets
+    // out to remove, so the safety property needed an assertion of its own.
+    assertLocalBackend('The admin dashboard spec');
+    admin = await seedIsolatedAdmin();
+  });
+
+  test.afterAll(async () => {
+    // Orphan sweep is a backstop, not a substitute (test-user-factory.ts:2815).
+    if (admin) await deleteTestUser(admin.user.id);
+    admin = null;
+  });
+
   test.beforeEach(async ({ page }) => {
-    // Sign in via the Supabase API from the Node test process (reaches Kong via
-    // the compose-internal admin URL locally; public URL on cloud/CI).
-    const supabase = createClient(SUPABASE_ADMIN_URL, SUPABASE_ANON_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: ADMIN_EMAIL,
-      password: ADMIN_PASSWORD,
-    });
-    if (error || !data.session) {
-      throw new Error(
-        `Supabase sign-in failed: ${error?.message ?? 'no session'}`
-      );
-    }
-
-    // Navigate to a page so we have a browsing context for localStorage
-    await page.goto(`${BP}/`);
-    await page.waitForLoadState('domcontentloaded');
-
-    // Inject the Supabase session into localStorage so AuthContext picks it up
-    const session = data.session;
-    await page.evaluate(
-      ({ accessToken, refreshToken, expiresAt, user: u }) => {
-        const storageKey = Object.keys(localStorage).find((k) =>
-          k.startsWith('sb-')
-        );
-        const key = storageKey || 'sb-localhost-auth-token';
-        localStorage.setItem(
-          key,
-          JSON.stringify({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-            expires_at: expiresAt,
-            expires_in: 3600,
-            token_type: 'bearer',
-            user: u,
-          })
-        );
-      },
-      {
-        accessToken: session.access_token,
-        refreshToken: session.refresh_token,
-        expiresAt: session.expires_at,
-        user: session.user,
-      }
-    );
-
-    // Reload so AuthContext reads the injected session
-    await page.reload();
+    test.skip(!admin, 'Admin client unavailable to seed an admin');
+    if (!admin) return;
+    // Derives the `sb-<host>-auth-token` key rather than guessing it, and reloads so
+    // AuthContext reads the session on init.
+    await injectSessionIntoPage(page, admin.session);
     await page.waitForLoadState('networkidle');
   });
 

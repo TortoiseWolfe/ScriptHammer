@@ -16,10 +16,15 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { createClient } from '@supabase/supabase-js';
+import {
+  seedIsolatedAdmin,
+  injectSessionIntoPage,
+  deleteTestUser,
+  assertLocalBackend,
+  type IsolatedAdmin,
+} from '../utils/test-user-factory';
 
-const ADMIN_EMAIL = 'test@example.com';
-const ADMIN_PASSWORD = 'TestPassword123!';
+// ADMIN_EMAIL / ADMIN_PASSWORD are gone with the shared-user sign-in they served (#914).
 
 // Next.js basePath — empty in local dev, '/ScriptHammer' in CI/prod
 const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
@@ -36,58 +41,34 @@ test.describe('Admin User Pagination E2E', () => {
   test.skip(!!process.env.CI, 'Skipped in CI: requires local Docker Supabase');
   test.describe.configure({ mode: 'serial' });
 
+  // SEED A THROWAWAY ADMIN — never promote the shared fixture user (#914).
+  //
+  // This used to sign in as `test@example.com`, a constant named ADMIN_EMAIL that is not an
+  // admin: `is_admin()` reads the user_profiles.is_admin COLUMN (#240, migration:1218) and
+  // seed-test-users.ts sets it only for admin@scripthammer.com. AdminGate therefore
+  // redirected to `/` and every assertion here measured the home page.
+  //
+  // Promoting the shared user would be the cheap fix and is wrong twice over: its session is
+  // the storageState for all 24 shards, and `admin_list_users` counts only
+  // `WHERE p.is_admin = FALSE` (migration:1605) — so the promotion removes the user from the
+  // very population this spec paginates through.
+  let admin: IsolatedAdmin | null = null;
+
+  test.beforeAll(async () => {
+    // Refuse a non-local backend before seeding anything (#944).
+    assertLocalBackend('The admin user-pagination spec');
+    admin = await seedIsolatedAdmin();
+  });
+
+  test.afterAll(async () => {
+    if (admin) await deleteTestUser(admin.user.id);
+    admin = null;
+  });
+
   test.beforeEach(async ({ page }) => {
-    // Sign in via the Supabase API from the Node test process (reaches Kong via
-    // the compose-internal admin URL locally; public URL on cloud/CI).
-    const supabase = createClient(SUPABASE_ADMIN_URL, SUPABASE_ANON_KEY, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: ADMIN_EMAIL,
-      password: ADMIN_PASSWORD,
-    });
-    if (error || !data.session) {
-      throw new Error(
-        `Supabase sign-in failed: ${error?.message ?? 'no session'}`
-      );
-    }
-
-    // Navigate to get a browsing context for localStorage
-    await page.goto(`${BP}/`);
-    await page.waitForLoadState('domcontentloaded');
-
-    // Inject the Supabase session so AuthContext picks it up. The storage key
-    // must match the BROWSER app's, derived from the browser URL.
-    const session = data.session;
-    const browserUrl =
-      process.env.NEXT_PUBLIC_SUPABASE_URL || SUPABASE_ADMIN_URL;
-    const supabaseHost = new URL(browserUrl).hostname.split('.')[0];
-    const storageKey = `sb-${supabaseHost}-auth-token`;
-    await page.evaluate(
-      ({ key, accessToken, refreshToken, expiresAt, user: u }) => {
-        localStorage.setItem(
-          key,
-          JSON.stringify({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-            expires_at: expiresAt,
-            expires_in: 3600,
-            token_type: 'bearer',
-            user: u,
-          })
-        );
-      },
-      {
-        key: storageKey,
-        accessToken: session.access_token,
-        refreshToken: session.refresh_token,
-        expiresAt: session.expires_at,
-        user: session.user,
-      }
-    );
-
-    // Reload so AuthContext reads the injected session
-    await page.reload();
+    test.skip(!admin, 'Admin client unavailable to seed an admin');
+    if (!admin) return;
+    await injectSessionIntoPage(page, admin.session);
     await page.waitForLoadState('networkidle');
   });
 
