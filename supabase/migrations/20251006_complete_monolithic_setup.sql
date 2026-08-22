@@ -1162,13 +1162,41 @@ GRANT EXECUTE ON FUNCTION public.log_auth_event(TEXT, UUID, JSONB, BOOLEAN, TEXT
 -- initdb. Forward-fill a stub with the canonical implementation; GoTrue's
 -- CREATE OR REPLACE overwrites it at service boot. Ownership must be
 -- supabase_auth_admin or that REPLACE dies on 42501 (must be owner).
-CREATE OR REPLACE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$
-  SELECT coalesce(
-    nullif(current_setting('request.jwt.claim', true), ''),
-    nullif(current_setting('request.jwt.claims', true), '')
-  )::jsonb
-$$;
-ALTER FUNCTION auth.jwt() OWNER TO supabase_auth_admin;
+-- GUARDED (#929): run this ONLY where auth.jwt() is genuinely absent -- i.e. the
+-- local supabase/postgres image before GoTrue's first boot, which is the whole
+-- reason the forward-fill exists.
+--
+-- Unconditionally, this statement made the file unusable for its most important
+-- job. On a NEWLY created Supabase Cloud project auth.jwt() already exists and is
+-- owned by supabase_auth_admin, while `postgres` holds USAGE but NOT CREATE on
+-- schema auth -- so the CREATE OR REPLACE aborted the entire single-transaction
+-- migration with
+--   42501: permission denied for schema auth
+-- leaving ZERO tables. Every fork pointing at its own new project hit this; the
+-- long-lived projects never did, because they already had the function.
+--
+-- Nothing else in this file needs CREATE on schema auth. The on_auth_user_created
+-- trigger on auth.users is fine -- postgres has TRIGGER on that table.
+DO $guard$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'auth' AND p.proname = 'jwt'
+  ) THEN
+    EXECUTE $fn$
+      CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $body$
+        SELECT coalesce(
+          nullif(current_setting('request.jwt.claim', true), ''),
+          nullif(current_setting('request.jwt.claims', true), '')
+        )::jsonb
+      $body$
+    $fn$;
+    EXECUTE 'ALTER FUNCTION auth.jwt() OWNER TO supabase_auth_admin';
+  END IF;
+END
+$guard$;
 
 -- ============================================================================
 -- Admin authorization: SINGLE SOURCE OF TRUTH (#240)
