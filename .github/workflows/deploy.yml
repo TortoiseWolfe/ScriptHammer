@@ -43,6 +43,10 @@ jobs:
           fi
           echo "::notice::PageSpeed API key is set (length: ${#NEXT_PUBLIC_PAGESPEED_API_KEY})"
         env:
+          # (#917) Search Console ownership token. Rendered as a <meta> tag for anyone to
+          # read, so it is a var. Without this line the tag is skipped and verification
+          # never ships, with no error anywhere.
+          NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }}
           NEXT_PUBLIC_PAGESPEED_API_KEY: ${{ secrets.NEXT_PUBLIC_PAGESPEED_API_KEY }}
 
       - name: Build Next.js app
@@ -67,6 +71,11 @@ jobs:
           # (#353) Turnstile bot protection. PUBLIC — it ships in the page
           # HTML, so it is a var not a secret. Absent/empty leaves sign-up
           # CAPTCHA inert, which is the fork-safe default.
+          # (#917) Cash App / Chime handles. PUBLIC by definition — they are payment
+          # handles printed on the page for a buyer to use, so vars not secrets (#787).
+          # Absent leaves those payment options inert, which is the fork-safe default.
+          NEXT_PUBLIC_CASHAPP_CASHTAG: ${{ vars.NEXT_PUBLIC_CASHAPP_CASHTAG }}
+          NEXT_PUBLIC_CHIME_SIGN: ${{ vars.NEXT_PUBLIC_CHIME_SIGN }}
           NEXT_PUBLIC_CAPTCHA_SITE_KEY: ${{ vars.NEXT_PUBLIC_CAPTCHA_SITE_KEY }}
           NEXT_PUBLIC_DISQUS_SHORTNAME: ${{ vars.NEXT_PUBLIC_DISQUS_SHORTNAME }}
           NEXT_PUBLIC_EMAILJS_PUBLIC_KEY: ${{ secrets.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY }}
@@ -79,6 +88,8 @@ jobs:
           NEXT_PUBLIC_PROJECT_OWNER: ${{ vars.NEXT_PUBLIC_PROJECT_OWNER }}
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
           NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+          # (#917) twitter:site attribution. Missing from EVERY page without this line.
+          NEXT_PUBLIC_SITE_TWITTER_HANDLE: ${{ vars.NEXT_PUBLIC_SITE_TWITTER_HANDLE }}
           NEXT_PUBLIC_SOCIAL_PLATFORMS: ${{ vars.NEXT_PUBLIC_SOCIAL_PLATFORMS }}
           # A variable, not a secret: it is rendered on the page for anyone to read,
           # and it needs to be auditable — the whole defect in #784 was a contact
