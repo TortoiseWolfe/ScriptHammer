@@ -118,11 +118,40 @@ export const FOOTER_LINKS = [
 ] as const;
 FOOTER
 
+    # A GITIGNORED DIRECTORY CARRYING THE BRAND TOKEN (#922).
+    #
+    # The sweep used to discover files with `find`, which has no idea what git
+    # tracks, and its hand-maintained exclusion list was already leaking --
+    # `.pay-verify/` was reached and rewritten in the real repo. Discovery is now
+    # `git ls-files`, so this file must come through untouched. Without a fixture
+    # like this the change looks identical either way.
+    echo "node_modules/" > .gitignore
+    echo ".pay-verify/" >> .gitignore
+    mkdir -p .pay-verify node_modules/some-dep
+    echo "ScriptHammer must survive here" > .pay-verify/artifact.json
+    echo "ScriptHammer must survive here too" > node_modules/some-dep/index.js
+
+    # AN EXTENSIONLESS TRACKED FILE (#910, unblocked by #922).
+    #
+    # `.husky/*` and `docker/Dockerfile*` carry no suffix, so the old allowlist
+    # could never reach them. Widening it was measured and backed out because it
+    # dragged in caches and a vendored virtualenv. Asking git instead makes these
+    # reachable for free, which is the gain that motivates the change.
+    mkdir -p .husky
+    printf '#!/bin/sh\n# ScriptHammer pre-commit hook\n' > .husky/pre-commit
+    chmod +x .husky/pre-commit
+
     # Copy the rebrand script to temp dir
     cp "$REBRAND_SCRIPT" "$TEMP_DIR/scripts/" 2>/dev/null || {
         mkdir -p scripts
         cp "$REBRAND_SCRIPT" "$TEMP_DIR/scripts/"
     }
+
+    # STAGE EVERYTHING. Discovery is `git ls-files`, so an unstaged fixture is an
+    # EMPTY fixture -- every assertion below would pass vacuously against a sweep
+    # that touched nothing. This mirrors reality: a fork is a clone, so its files
+    # are tracked. `git add` is enough; the index is what ls-files reads.
+    git add -A >/dev/null 2>&1
 
     cd "$TEMP_DIR"
 }
@@ -557,6 +586,12 @@ test_rerebrand_detection() {
 
     # Run without --force, test for WARNING message in output
     local output
+    # STAGE IT. Discovery is `git ls-files` (#922), so an unstaged fixture is an
+    # empty one -- count_references would return 0 and this test would report
+    # "already rebranded detected" no matter what the detector did. It has to
+    # measure a repository that actually contains files.
+    git add -A >/dev/null 2>&1
+
     output=$("$REREBRAND_TEMP/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --dry-run --no-icon 2>&1 || true)
 
     if echo "$output" | grep -qi "already.*rebranded\|no.*scripthammer.*found\|WARNING"; then
@@ -571,6 +606,57 @@ test_rerebrand_detection() {
 # ============================================================================
 # Test runner
 # ============================================================================
+# ============================================================================
+# #922: discovery is `git ls-files`, not `find`
+# ============================================================================
+test_discovery_is_git_tracked() {
+    run_test "test_discovery_is_git_tracked"
+
+    setup_temp_dir
+    safe_rebrand "GeoLARP" "tortoisewolfe" "A geo game" --force --no-icon > /tmp/rb-922.log 2>&1 || true
+
+    # 1. GITIGNORED CONTENT MUST SURVIVE. The old `find` had no notion of what git
+    # tracks, and its hand-maintained exclusion list was already leaking --
+    # `.pay-verify/` was reached and rewritten in the real repo. A vendored
+    # virtualenv was the worst case: a blind sed through it is corruption.
+    if grep -q "ScriptHammer" .pay-verify/artifact.json 2>/dev/null; then
+        log_pass "Gitignored file untouched (.pay-verify)"
+    else
+        log_fail "Gitignored file was rewritten" "ScriptHammer intact in .pay-verify/artifact.json" "$(cat .pay-verify/artifact.json 2>/dev/null)"
+    fi
+
+    if grep -q "ScriptHammer" node_modules/some-dep/index.js 2>/dev/null; then
+        log_pass "Gitignored file untouched (node_modules)"
+    else
+        log_fail "node_modules was rewritten" "ScriptHammer intact in node_modules/some-dep/index.js" "$(cat node_modules/some-dep/index.js 2>/dev/null)"
+    fi
+
+    # 2. AN EXTENSIONLESS TRACKED FILE MUST BE REWRITTEN. The gain that motivates
+    # the change, and the other half of #910: `.husky/*` and `docker/Dockerfile*`
+    # carry no suffix, so the old allowlist could never reach them. Widening it was
+    # backed out because it dragged in 1,746 files, 1,581 of them caches.
+    if grep -q "GeoLARP" .husky/pre-commit 2>/dev/null; then
+        log_pass "Extensionless tracked file rebranded (.husky/pre-commit)"
+    else
+        log_fail "Extensionless file was not reached" "GeoLARP in .husky/pre-commit" "$(cat .husky/pre-commit 2>/dev/null)"
+    fi
+
+    # 3. A FLOOR, so a discovery change that silently matches NOTHING fails loudly.
+    # Every assertion above is satisfiable by a sweep that touched no file at all --
+    # the gitignored ones stay intact for the wrong reason. Without this the whole
+    # group goes vacuous the moment discovery breaks. That is the #396 shape.
+    local modified
+    modified=$(grep -oE 'Files modified: *[0-9]+' /tmp/rb-922.log | grep -oE '[0-9]+' | head -1)
+    modified=${modified:-0}
+    if [ "$modified" -ge 3 ]; then
+        log_pass "Sweep still modified a plausible number of files ($modified)"
+    else
+        log_fail "Sweep modified almost nothing" "at least 3 files modified" "reported $modified -- discovery is probably finding nothing"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
 run_all_tests() {
     echo "========================================"
     echo "Rebrand Script Test Suite"
@@ -593,6 +679,7 @@ run_all_tests() {
     test_help_output_is_complete
     test_name_sanitization
     test_dry_run_no_changes
+    test_discovery_is_git_tracked
     test_rerebrand_detection
     test_attribution_preserved
     test_brand_icons
@@ -645,6 +732,9 @@ if [ $# -eq 1 ]; then
             ;;
         test_auth_config_desired_state)
             test_auth_config_desired_state
+            ;;
+        test_discovery_is_git_tracked)
+            test_discovery_is_git_tracked
             ;;
         *)
             echo "Unknown test: $1"

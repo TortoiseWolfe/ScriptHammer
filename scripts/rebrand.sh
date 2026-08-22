@@ -228,14 +228,75 @@ check_uncommitted_changes() {
     fi
 }
 
+# ============================================================================
+# FILE DISCOVERY — ask git what the repository IS (#922)
+# ============================================================================
+#
+# A rebrand rewrites THE REPOSITORY. That set has an exact definition, and it is
+# not "whatever `find` trips over": it is `git ls-files`.
+#
+# WHAT THIS REPLACED, AND WHY. Three separate mechanisms used to decide which
+# files to touch -- a `find` with an eleven-suffix allowlist, a second `find` for
+# renames, and a `grep -r` with its own `--include`/`--exclude-dir` pair. Each
+# carried a hand-maintained exclusion list, all three could disagree, and the
+# lists were already leaking: `.pay-verify/` was reached and rewritten.
+#
+# The exclusion lists are gone rather than extended. git already knows about
+# node_modules, .next, out, every cache, and a vendored virtualenv, because they
+# are not tracked. A fork that adds its own build directory is covered without
+# anyone editing this script.
+#
+# THIS ALSO SETTLES #910. Widening the suffix allowlist was measured and backed
+# out because it pulled in 1,746 files, 1,581 of them in `.speckit-cache/`,
+# `.speckit-tools/`, `.pay-verify/` and `.venv/`. Those are all untracked, so the
+# question disappears: extensionless files (`.husky/*`, `docker/Dockerfile*`) and
+# `.mjs`/`.cjs`/`.py` are reachable now, for free, with no hazard attached.
+#
+# Emits NUL-separated ABSOLUTE paths. Callers apply their own filters -- the
+# content sweep skips binaries and lockfiles, the rename pass does not, because
+# renaming a tracked PNG is exactly what it is for.
+tracked_files() {
+    if ! git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+        # Fail loudly rather than sweep nothing. A silent no-op here would report
+        # a successful rebrand having changed not one file (#396).
+        log_error "Not a git repository: $REPO_ROOT"
+        log_error "rebrand.sh discovers files with 'git ls-files', so it cannot run outside one."
+        exit 1
+    fi
+
+    git -C "$REPO_ROOT" ls-files -z --cached |
+        while IFS= read -r -d '' rel; do
+            [ -f "$REPO_ROOT/$rel" ] || continue
+            printf '%s\0' "$REPO_ROOT/$rel"
+        done
+}
+
+# True when sed may safely rewrite the file in place.
+#
+# Dropping the suffix allowlist means binaries are reachable for the first time,
+# and a sed through a PNG is corruption rather than a rebrand. `grep -I` reports
+# no match for binary content, which is the cheapest honest test available here.
+# Lockfiles are excluded by name deliberately, not by oversight: their contents
+# are generated and integrity-checked, and a brand token inside one is not prose.
+is_rewritable() {
+    case "${1##*/}" in
+        pnpm-lock.yaml|package-lock.json|yarn.lock|bun.lockb) return 1 ;;
+    esac
+    grep -Iq . "$1" 2>/dev/null
+}
+
 # Count ScriptHammer references to detect if already rebranded
 count_references() {
-    local count
-    count=$(grep -r "$ORIGINAL_NAME" --include="*.ts" --include="*.tsx" --include="*.js" \
-        --include="*.json" --include="*.md" --include="*.yml" --include="*.yaml" \
-        --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=out --exclude-dir=.git \
-        "$REPO_ROOT" 2>/dev/null | wc -l || echo "0")
-    echo "$count" | tr -d '[:space:]'
+    # Counts matching LINES across the same file set the sweep will rewrite. It
+    # used to run its own `grep -r` with a third exclusion list, so the detector
+    # and the thing it gates could disagree about what the repository contains.
+    local count=0
+    local file
+    while IFS= read -r -d '' file; do
+        is_rewritable "$file" || continue
+        count=$(( count + $(grep -c "$ORIGINAL_NAME" "$file" 2>/dev/null || echo 0) ))
+    done < <(tracked_files)
+    echo "$count"
 }
 
 # Detect previous rebrand
@@ -294,10 +355,13 @@ detect_previous_rebrand() {
 replace_in_files() {
     local search="$1"
     local replace="$2"
-    local pattern="$3"
+    # NOTE: there is no third parameter. Callers used to pass "*.ts" and it was
+    # assigned to an unused local -- the sweep has always covered every matched
+    # file regardless. Removed rather than implemented, because per-call filtering
+    # is not what any caller actually wants (#922).
 
     while IFS= read -r -d '' file; do
-        if [ -f "$file" ]; then
+        if [ -f "$file" ] && is_rewritable "$file"; then
 
             if grep -q "$search" "$file" 2>/dev/null; then
                 if [ "$DRY_RUN" = true ]; then
@@ -319,36 +383,10 @@ replace_in_files() {
                 fi
             fi
         fi
-    # THE EXTENSION LIST IS NOT THE REAL PROBLEM WITH THIS SWEEP (#910, and see the
-    # discovery ticket it spawned).
-    #
-    # #910 asked for .mjs/.cjs/.py and extensionless files to be added here, because ~8
-    # scripts document their own run command as "docker compose exec scripthammer ..."
-    # and tell a fork to exec a service that no longer exists. That was measured before
-    # widening: adding those three suffixes brings 1,746 files into scope, of which 1,581
-    # sit in .speckit-cache/, .speckit-tools/, .pay-verify/ and .venv/ — local caches and a
-    # vendored virtualenv, all but one of them gitignored.
-    #
-    # This find has NO notion of what git tracks, so the exclusion list is whack-a-mole and
-    # already leaking: .pay-verify is reached today. Widening it 200x to fix ~8 doc strings
-    # would ship a real hazard to fix a cosmetic one. The right fix is to discover files
-    # through git rather than find, which is a change to every extension at once and needs
-    # its own verification.
-    #
-    # The hooks — the reason #910 was filed — no longer need this at all: .husky/pre-commit
-    # and pre-push derive the service name from docker-compose.yml.
-    done < <(find "$REPO_ROOT" -type f \( \
-        -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" \
-        -o -name "*.json" -o -name "*.md" -o -name "*.yml" -o -name "*.yaml" \
-        -o -name "*.sh" -o -name "*.html" -o -name "*.css" \
-        \) \
-        ! -path "*/node_modules/*" \
-        ! -path "*/.next/*" \
-        ! -path "*/out/*" \
-        ! -path "*/.git/*" \
-        ! -name "pnpm-lock.yaml" \
-        ! -name "package-lock.json" \
-        -print0)
+    # Discovery is `git ls-files` (#922), so there is no suffix allowlist and no
+    # exclusion list to keep up to date. Binaries and lockfiles are filtered at the
+    # top of the loop by is_rewritable, not here.
+    done < <(tracked_files)
 }
 
 # Rename files containing original name
@@ -376,12 +414,17 @@ rename_files() {
             fi
             ((FILES_RENAMED++)) || true
         fi
-    done < <(find "$REPO_ROOT" -type f -name "*${search}*" \
-        ! -path "*/node_modules/*" \
-        ! -path "*/.next/*" \
-        ! -path "*/out/*" \
-        ! -path "*/.git/*" \
-        -print0)
+    # Same discovery as the content sweep (#922). Filtering on the basename here
+    # rather than in `find -name` keeps both passes agreeing about what the
+    # repository contains. Binaries are NOT excluded: renaming a tracked
+    # ScriptHammerLogo.png is precisely what this pass is for.
+    done < <(
+        while IFS= read -r -d '' f; do
+            case "${f##*/}" in
+                *"$search"*) printf '%s\0' "$f" ;;
+            esac
+        done < <(tracked_files)
+    )
 }
 
 # Update docker-compose.yml service name
@@ -787,11 +830,11 @@ main() {
     #
     # Order is load-bearing: the standalone pass would otherwise consume the identifier
     # occurrences before the adjacency passes ever saw them.
-    replace_in_files "$ORIGINAL_NAME\([A-Za-z0-9_]\)" "$COMPONENT_NAME\1" "*.ts"
-    replace_in_files "\([A-Za-z0-9_]\)$ORIGINAL_NAME" "\1$COMPONENT_NAME" "*.ts"
-    replace_in_files "$ORIGINAL_NAME" "$DISPLAY_NAME" "*.ts"
-    replace_in_files "$ORIGINAL_NAME_LOWER" "$SANITIZED_NAME" "*.ts"
-    replace_in_files "$ORIGINAL_OWNER" "$OWNER" "*.ts"
+    replace_in_files "$ORIGINAL_NAME\([A-Za-z0-9_]\)" "$COMPONENT_NAME\1"
+    replace_in_files "\([A-Za-z0-9_]\)$ORIGINAL_NAME" "\1$COMPONENT_NAME"
+    replace_in_files "$ORIGINAL_NAME" "$DISPLAY_NAME"
+    replace_in_files "$ORIGINAL_NAME_LOWER" "$SANITIZED_NAME"
+    replace_in_files "$ORIGINAL_OWNER" "$OWNER"
 
     echo ""
     echo "Renaming files..."
