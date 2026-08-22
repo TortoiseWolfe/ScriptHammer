@@ -2,7 +2,12 @@
 
 Complete guide to creating your own project from the ScriptHammer template.
 
-## Quick Start (5 Minutes)
+## Quick Start (about 11 minutes)
+
+Measured on 2026-08-21 by forking this template for real. `rebrand.sh` is 14 seconds; the
+rest is the cold Docker build. Add roughly another 17 minutes to reach a green build and
+test suite. Going live on your own domain is longer and mostly third-party — see
+[FORK-CHECKLIST.md](FORK-CHECKLIST.md).
 
 ```bash
 # 1. Fork and clone
