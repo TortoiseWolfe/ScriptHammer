@@ -27,7 +27,11 @@ const ADMIN_EMAIL = 'test@example.com';
 const ADMIN_PASSWORD = 'TestPassword123!';
 
 // Next.js basePath — all routes must be prefixed
-const BP = '/ScriptHammer';
+// Read the basePath, never hardcode it (#914). This file said `'/ScriptHammer'` while its
+// two sibling admin specs read the env var, and the local E2E lane builds root-served with
+// DISABLE_BASE_PATH=true — so every goto below resolved to 404.html and the whole file
+// measured the not-found page.
+const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
 // Local-only spec (skipped in CI). The Node test process reaches local Kong via
 // SUPABASE_ADMIN_URL (compose-internal supabase-kong:8000); the browser reaches
@@ -127,11 +131,19 @@ test.describe('Admin Dashboard E2E', () => {
       await page.waitForTimeout(2000);
       const chartCount = await charts.count();
 
-      if (chartCount === 0) {
-        const noDataMessages = page.getByText('No data');
-        const noDataCount = await noDataMessages.count();
-        expect(noDataCount).toBeLessThan(4);
-      }
+      // ALWAYS ASSERT. This was `if (chartCount === 0) { ... }`, and that branch is
+      // UNREACHABLE: the locator includes [data-testid*="trend"], and AdminTrendChart emits
+      // data-testid={testId} in its EMPTY branch (AdminTrendChart.tsx:142) as well as its
+      // populated one (:216). chartCount is therefore never 0, the body never ran, and this
+      // test passed having asserted NOTHING — which ZERO_ASSERTION_GATE_MODE=block correctly
+      // refuses to call green. Seeding cannot fix that; only a real assertion can (#914).
+      expect(chartCount).toBeGreaterThan(0);
+
+      // Every trend chart renders either real geometry or an explicit "No data" figure,
+      // never nothing. True with or without the demo seed, so it asserts in both states.
+      const withData = await page.locator('svg path, svg polyline').count();
+      const placeholders = await page.getByText('No data').count();
+      expect(withData + placeholders).toBeGreaterThan(0);
     });
 
     test('should have working date range filter', async ({ page }) => {
@@ -167,11 +179,21 @@ test.describe('Admin Dashboard E2E', () => {
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(3000);
 
+      // BOTH BRANCHES ASSERT (#914). Previously the only expect sat inside the `if`, so an
+      // unseeded database made this pass having measured nothing.
       const providerSection = page.getByText(/stripe|paypal/i).first();
       if (
         await providerSection.isVisible({ timeout: 5000 }).catch(() => false)
       ) {
         await expect(providerSection).toBeVisible();
+      } else {
+        // No provider rows is legitimate on an unseeded database — but then the page must
+        // say so, rather than silently rendering an empty shell.
+        await expect(
+          page
+            .getByTestId('admin-payments')
+            .or(page.getByText(/no .*(payment|data)/i))
+        ).toBeVisible();
       }
     });
 
@@ -219,20 +241,28 @@ test.describe('Admin Dashboard E2E', () => {
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(3000);
 
+      // UNCONDITIONAL: the section is gated on `trends` being loaded, NOT on any burst
+      // existing (AdminAuditTrail.tsx:218) — so once the RPC returns it renders even with
+      // zero bursts. Asserting it is honest and always possible (#914).
       const burstHeading = page.getByRole('heading', {
         name: /failed login bursts/i,
       });
-      if (await burstHeading.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await expect(page.locator('[data-testid="stat-bursts"]')).toBeVisible();
+      await expect(burstHeading).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('[data-testid="stat-bursts"]')).toBeVisible();
 
-        const burstCards = page.locator('[data-testid="burst-card"]');
-        const burstCount = await burstCards.count();
-
-        if (burstCount > 0) {
-          const firstBurst = burstCards.first();
-          await expect(firstBurst).toContainText('attempts');
-          await expect(firstBurst).toContainText(/\d+\.\d+\.\d+\.\d+/);
-        }
+      // Depth is data-dependent: the demo seed creates one (192.168.99.99, 7 failures),
+      // and real traffic creates none because nothing writes an IP (#839). Both branches
+      // assert rather than one silently passing.
+      const burstCards = page.locator('[data-testid="burst-card"]');
+      const burstCount = await burstCards.count();
+      if (burstCount > 0) {
+        const firstBurst = burstCards.first();
+        await expect(firstBurst).toContainText('attempts');
+        await expect(firstBurst).toContainText(/\d+\.\d+\.\d+\.\d+/);
+      } else {
+        await expect(page.locator('[data-testid="stat-bursts"]')).toContainText(
+          /\b0\b/
+        );
       }
     });
 
@@ -240,6 +270,12 @@ test.describe('Admin Dashboard E2E', () => {
       await page.goto(`${BP}/admin/audit`);
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(3000);
+
+      // The section itself is gated only on `trends` loading, so assert that
+      // unconditionally before branching on how much data there is (#914).
+      await expect(
+        page.getByRole('heading', { name: /failed login bursts/i })
+      ).toBeVisible({ timeout: 10000 });
 
       const burstCards = page.locator('[data-testid="burst-card"]');
       const burstCount = await burstCards.count();
@@ -258,6 +294,13 @@ test.describe('Admin Dashboard E2E', () => {
         await toggleButton.click();
         await expect(burstDetail).not.toBeVisible();
         await expect(toggleButton).toHaveAttribute('aria-expanded', 'false');
+      } else {
+        // Nothing to expand is a valid state (real traffic writes no IP, so it groups into
+        // no bursts — #839). Then there must be no toggles either, rather than a toggle
+        // that does nothing.
+        await expect(page.locator('[data-testid="burst-toggle"]')).toHaveCount(
+          0
+        );
       }
     });
 
@@ -281,20 +324,26 @@ test.describe('Admin Dashboard E2E', () => {
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(3000);
 
+      // The control is part of the page, not of the data — assert it exists rather than
+      // treating its absence as a reason to measure nothing (#914).
       const filterSelect = page.locator('[data-testid="event-type-filter"]');
-      if (await filterSelect.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await filterSelect.selectOption('sign_in_failed');
-        await page.waitForTimeout(1000);
+      await expect(filterSelect).toBeVisible({ timeout: 10000 });
 
-        const eventBadges = page.locator(
-          '[data-testid="audit-events-table"] .badge-outline'
-        );
-        const badgeCount = await eventBadges.count();
-        if (badgeCount > 0) {
-          for (let i = 0; i < badgeCount; i++) {
-            await expect(eventBadges.nth(i)).toContainText('sign_in_failed');
-          }
+      await filterSelect.selectOption('sign_in_failed');
+      await page.waitForTimeout(1000);
+
+      const eventBadges = page.locator(
+        '[data-testid="audit-events-table"] .badge-outline'
+      );
+      const badgeCount = await eventBadges.count();
+      if (badgeCount > 0) {
+        for (let i = 0; i < badgeCount; i++) {
+          await expect(eventBadges.nth(i)).toContainText('sign_in_failed');
         }
+      } else {
+        // A filter that matches nothing must SAY so. Silently rendering an empty table
+        // would be indistinguishable from the filter not working at all.
+        await expect(page.getByText(/no audit events found/i)).toBeVisible();
       }
     });
 
@@ -330,6 +379,9 @@ test.describe('Admin Dashboard E2E', () => {
       const anomalyHeading = page.getByRole('heading', {
         name: /anomaly alerts/i,
       });
+      // GENUINELY DATA-GATED: the section renders only when stats.top_failed_logins is
+      // non-empty (AdminAuditTrail.tsx:383). So the negative is asserted explicitly rather
+      // than by falling out of an `if` having measured nothing (#914).
       if (
         await anomalyHeading.isVisible({ timeout: 3000 }).catch(() => false)
       ) {
@@ -339,6 +391,11 @@ test.describe('Admin Dashboard E2E', () => {
 
         const firstCard = anomalyCards.first();
         await expect(firstCard).toContainText(/\d+ failed attempts/);
+      } else {
+        // No anomalies is a valid state — but then the section must be genuinely absent,
+        // not present-and-empty.
+        await expect(anomalyHeading).toBeHidden();
+        await expect(page.locator('.border-warning')).toHaveCount(0);
       }
     });
 
@@ -394,16 +451,17 @@ test.describe('Admin Dashboard E2E', () => {
           'input[type="search"], input[placeholder*="search" i], input[placeholder*="filter" i]'
         )
         .first();
-      if (await searchInput.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await searchInput.fill('alice');
-        await page.waitForTimeout(1000);
+      // The search box is part of the admin users page, not of its data — its absence is a
+      // regression, not a reason to measure nothing. This was the seventh zero-assertion
+      // test in this file and the only one not named in #914; a static sweep found it (#914).
+      await expect(searchInput).toBeVisible({ timeout: 10000 });
 
-        // Table should remain present after search (filtered results may be
-        // empty or non-empty — both are valid; we're asserting the search
-        // didn't crash the view).
-        const table = page.locator('table').first();
-        await expect(table).toBeVisible();
-      }
+      await searchInput.fill('alice');
+      await page.waitForTimeout(1000);
+
+      // Filtered results may be empty or non-empty — both valid. What must hold is that
+      // searching did not crash the view.
+      await expect(page.locator('table').first()).toBeVisible();
     });
 
     test('should display activity badges', async ({ page }) => {
@@ -443,13 +501,21 @@ test.describe('Admin Dashboard E2E', () => {
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(3000);
 
-      const topSendersHeading = page.getByText(/top senders/i);
+      // `.first()` matters: without it a second matching node trips Playwright strict mode
+      // INSIDE the swallowed `.catch(() => false)`, turning a real error into a silent skip.
+      const topSendersHeading = page.getByText(/top senders/i).first();
       if (
         await topSendersHeading.isVisible({ timeout: 5000 }).catch(() => false)
       ) {
         // The heading rendered without crashing — that's the real signal.
         // Top-senders rows depend on seed data and are tested elsewhere.
         await expect(topSendersHeading).toBeVisible();
+      } else {
+        // Absent is allowed, but then the messaging admin page must still have rendered —
+        // otherwise this test was measuring a blank or errored page (#914).
+        await expect(
+          page.getByRole('heading', { name: /messaging/i }).first()
+        ).toBeVisible({ timeout: 10000 });
       }
     });
 
