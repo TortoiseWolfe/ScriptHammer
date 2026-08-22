@@ -59,18 +59,30 @@ export const THEME_COUNT = THEMES.length;
 /**
  * The split, also derived (#514).
  *
- * Prose about this project says "34 themes" in some places and "32 DaisyUI
- * themes" in others, and BOTH are true — 34 total, of which 2 are ours. That
+ * Prose about this project says "35 themes" in some places and "32 DaisyUI
+ * themes" in others, and BOTH are true — 35 total, of which 3 are ours. That
  * is precisely why the numbers drift: a reader checking one against the other
  * finds a mismatch that is not a mismatch, "corrects" it, and makes a true
  * sentence false. Export both so copy can cite whichever it means and neither
  * has to be typed by hand.
  */
-export const HOUSE_THEME_COUNT = THEMES.filter((t) =>
-  t.startsWith('scripthammer-')
-).length;
+export const HOUSE_THEMES = THEMES.filter((t) => t.startsWith('scripthammer-'));
 
-/** DaisyUI's own themes — the total minus the two we ship. */
+/**
+ * The count, derived from the list above rather than typed (#915).
+ *
+ * It was already derived and therefore already correct. The PROSE beside it was not: it
+ * read "34 total, of which 2 are ours" and "the total minus the two we ship" — written when
+ * there were two house themes, and left behind when `scripthammer-forge` became the third.
+ * A comment in the one module whose stated job is stopping numbers from drifting.
+ *
+ * `HOUSE_THEMES` exists because six test files each restated the house list by hand instead
+ * of importing it, and every one of them missed forge — including `color-contrast.spec.ts`,
+ * the AAA gate, whose comment said "Both custom themes covered".
+ */
+export const HOUSE_THEME_COUNT = HOUSE_THEMES.length;
+
+/** DaisyUI's own themes — the total minus the house themes we ship. */
 export const DAISYUI_THEME_COUNT = THEME_COUNT - HOUSE_THEME_COUNT;
 
 /**

@@ -4,6 +4,13 @@
  */
 export const DARK_THEMES = [
   'scripthammer-dark',
+  // `scripthammer-forge` has base-100 #0f0d0b — near black — and was missing here
+  // (#915). Everything above keys off this list, so on forge the map tiles and every
+  // embed rendered in LIGHT mode over a near-black page. It shipped as the third house
+  // theme and each hand-maintained theme list in the repo missed it, this one included.
+  // `scripts/__tests__/theme-lists-are-derived.test.js` now derives the answer from each
+  // theme's own base-100 luminance rather than trusting this list to stay complete.
+  'scripthammer-forge',
   'dark',
   'synthwave',
   'halloween',

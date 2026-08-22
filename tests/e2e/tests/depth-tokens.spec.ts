@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { THEMES } from '@/config/themes';
+import { THEMES, HOUSE_THEMES } from '@/config/themes';
 
 /**
  * #377 — the Machine Shop depth system must read as depth on every registered theme.
@@ -283,7 +283,9 @@ test.describe('#377 depth tokens', () => {
         return out;
       },
       {
-        themes: ['scripthammer-dark', 'scripthammer-light'],
+        // Derived (#915): this named two while line ~367 of THIS FILE already
+        // derived all three correctly. Same file, both patterns.
+        themes: HOUSE_THEMES,
         plateCls: NAMES[0],
       }
     );
@@ -364,7 +366,7 @@ test.describe('#377 depth tokens', () => {
   test('buttons lift on hover and press on active, on every house theme', async ({
     page,
   }) => {
-    const HOUSE = THEMES.filter((t) => t.startsWith('scripthammer-'));
+    const HOUSE = HOUSE_THEMES;
     // Non-vacuity: if the house themes are ever renamed this must fail loudly
     // rather than pass having looped over nothing.
     expect(

@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { THEMES as ALL_THEMES } from '@/config/themes';
+import { DARK_THEMES as SOURCE_DARK_THEMES } from '@/utils/theme-utils';
 
 // Embed-theme contrast gate (issues #39, #46).
 //
@@ -33,59 +35,16 @@ import { test, expect } from '@playwright/test';
 // No theme allowlist is needed; if one were, it would carry a justification,
 // never a silent skip.
 
-const THEMES = [
-  'scripthammer-dark',
-  'scripthammer-light',
-  'light',
-  'dark',
-  'cupcake',
-  'bumblebee',
-  'emerald',
-  'corporate',
-  'synthwave',
-  'retro',
-  'cyberpunk',
-  'valentine',
-  'halloween',
-  'garden',
-  'forest',
-  'aqua',
-  'lofi',
-  'pastel',
-  'fantasy',
-  'wireframe',
-  'black',
-  'luxury',
-  'dracula',
-  'cmyk',
-  'autumn',
-  'business',
-  'acid',
-  'lemonade',
-  'night',
-  'coffee',
-  'winter',
-  'dim',
-  'nord',
-  'sunset',
-] as const;
+// DERIVED, NOT LISTED (#915). This was 34 names typed by hand against a canonical list of
+// 35 — `scripthammer-forge` was the one missing, so the embed's colours were never checked
+// on a house theme the app actually ships.
+const THEMES = ALL_THEMES;
 
-// Mirrors src/utils/theme-utils.ts DARK_THEMES (drives the Disqus bg choice).
-const DARK_THEMES = new Set([
-  'scripthammer-dark',
-  'dark',
-  'synthwave',
-  'halloween',
-  'forest',
-  'black',
-  'luxury',
-  'dracula',
-  'business',
-  'night',
-  'coffee',
-  'dim',
-  'sunset',
-]);
+// IMPORTED, NOT MIRRORED (#915). This was a hand-copied duplicate of
+// src/utils/theme-utils.ts DARK_THEMES. It had not drifted yet — 13 against 13 — but the
+// list it copied was itself missing `scripthammer-forge`, so both were wrong together and
+// the mirror could never have revealed it.
+const DARK_THEMES = new Set<string>(SOURCE_DARK_THEMES);
 
 // Mirrors DisqusComments.tsx constants.
 const DISQUS_BG_DARK = '#111827';

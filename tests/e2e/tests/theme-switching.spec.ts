@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 import { THEME_COUNT } from '@/config/themes';
+import { THEMES as ALL_THEMES } from '@/config/themes';
 
 /**
  * Wait for theme to be applied and saved to localStorage.
@@ -20,42 +21,11 @@ async function waitForThemeSaved(page: Page, theme: string): Promise<void> {
   );
 }
 
-const themes = [
-  // Light themes
-  'light',
-  'cupcake',
-  'bumblebee',
-  'emerald',
-  'corporate',
-  'synthwave',
-  'retro',
-  'cyberpunk',
-  'valentine',
-  'halloween',
-  'garden',
-  'forest',
-  'aqua',
-  'lofi',
-  'pastel',
-  'fantasy',
-  'wireframe',
-  'autumn',
-  'acid',
-  'lemonade',
-  'winter',
-  // Dark themes
-  'dark',
-  'dracula',
-  'night',
-  'coffee',
-  'dim',
-  'sunset',
-  'luxury',
-  'business',
-  'black',
-  'nord',
-  'sunset',
-];
+// DERIVED (#915). This file already imported THEME_COUNT from the canonical list to assert
+// the count, then restated the list beside it — 32 names against a real 35, missing all three
+// house themes plus `cmyk`. Reading the source of truth for the number and typing the members
+// by hand is the whole defect in one file.
+const themes = ALL_THEMES;
 
 test.describe('Theme Switching', () => {
   test.beforeEach(async ({ page }) => {
