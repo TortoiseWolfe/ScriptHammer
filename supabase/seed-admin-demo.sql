@@ -105,59 +105,77 @@ ON CONFLICT (id) DO NOTHING;
 -- 2. PAYMENT INTENTS + RESULTS (~30 transactions over 14 days)
 -- ============================================================================
 
--- Payment intents (5 intents, each with multiple results)
+-- Payment intents: ONE PER SUCCESSFUL PAYMENT (#940).
+--
+-- `idx_payment_results_one_succeeded_per_intent` (migration:132, added by #239) permits a
+-- single `succeeded` result per intent — a second raises 23505. This file predates that index
+-- and packed up to six successes onto one intent, so the whole transaction rolled back and
+-- nothing was ever seeded. Each success now owns an intent, which is also what really happens:
+-- an intent is one attempt at one purchase. `failed` and `refunded` rows still share an intent
+-- with the success they relate to, because the index is partial on status='succeeded'.
 INSERT INTO payment_intents (id, template_user_id, amount, currency, type, customer_email, created_at)
 VALUES
   ('22222222-2222-2222-2222-222222222201', '11111111-1111-1111-1111-111111111101', 2500, 'usd', 'one_time', 'alice@demo.test', now() - interval '13 days'),
-  ('22222222-2222-2222-2222-222222222202', '11111111-1111-1111-1111-111111111102', 4999, 'usd', 'one_time', 'bob@demo.test',   now() - interval '10 days'),
-  ('22222222-2222-2222-2222-222222222203', '11111111-1111-1111-1111-111111111103', 1500, 'usd', 'recurring', 'carol@demo.test', now() - interval '8 days'),
-  ('22222222-2222-2222-2222-222222222204', '11111111-1111-1111-1111-111111111104', 7500, 'eur', 'one_time', 'dave@demo.test',  now() - interval '5 days'),
-  ('22222222-2222-2222-2222-222222222205', '11111111-1111-1111-1111-111111111105', 3000, 'usd', 'one_time', 'eve@demo.test',   now() - interval '2 days')
+  ('22222222-2222-2222-2222-222222222202', '11111111-1111-1111-1111-111111111101', 2500, 'usd', 'one_time', 'alice@demo.test', now() - interval '13 days' + interval '2 hours'),
+  ('22222222-2222-2222-2222-222222222203', '11111111-1111-1111-1111-111111111101', 2500, 'usd', 'one_time', 'alice@demo.test', now() - interval '12 days'),
+  ('22222222-2222-2222-2222-222222222204', '11111111-1111-1111-1111-111111111102', 4999, 'usd', 'one_time', 'bob@demo.test', now() - interval '10 days'),
+  ('22222222-2222-2222-2222-222222222205', '11111111-1111-1111-1111-111111111102', 4999, 'usd', 'one_time', 'bob@demo.test', now() - interval '10 days' + interval '1 hour'),
+  ('22222222-2222-2222-2222-222222222206', '11111111-1111-1111-1111-111111111102', 4999, 'usd', 'one_time', 'bob@demo.test', now() - interval '10 days' + interval '4 hours'),
+  ('22222222-2222-2222-2222-222222222207', '11111111-1111-1111-1111-111111111103', 1500, 'usd', 'recurring', 'carol@demo.test', now() - interval '8 days'),
+  ('22222222-2222-2222-2222-222222222208', '11111111-1111-1111-1111-111111111103', 1500, 'usd', 'recurring', 'carol@demo.test', now() - interval '8 days' + interval '2 hours'),
+  ('22222222-2222-2222-2222-222222222209', '11111111-1111-1111-1111-111111111103', 1500, 'usd', 'recurring', 'carol@demo.test', now() - interval '7 days'),
+  ('22222222-2222-2222-2222-222222222210', '11111111-1111-1111-1111-111111111103', 1500, 'usd', 'recurring', 'carol@demo.test', now() - interval '7 days' + interval '3 hours'),
+  ('22222222-2222-2222-2222-222222222211', '11111111-1111-1111-1111-111111111104', 7500, 'eur', 'one_time', 'dave@demo.test', now() - interval '6 days'),
+  ('22222222-2222-2222-2222-222222222212', '11111111-1111-1111-1111-111111111104', 7500, 'eur', 'one_time', 'dave@demo.test', now() - interval '6 days' + interval '1 hour'),
+  ('22222222-2222-2222-2222-222222222213', '11111111-1111-1111-1111-111111111104', 7500, 'eur', 'one_time', 'dave@demo.test', now() - interval '5 days'),
+  ('22222222-2222-2222-2222-222222222214', '11111111-1111-1111-1111-111111111104', 7500, 'eur', 'one_time', 'dave@demo.test', now() - interval '5 days' + interval '2 hours'),
+  ('22222222-2222-2222-2222-222222222215', '11111111-1111-1111-1111-111111111104', 7500, 'eur', 'one_time', 'dave@demo.test', now() - interval '5 days' + interval '5 hours'),
+  ('22222222-2222-2222-2222-222222222216', '11111111-1111-1111-1111-111111111105', 3000, 'usd', 'one_time', 'eve@demo.test', now() - interval '4 days' + interval '1 hour'),
+  ('22222222-2222-2222-2222-222222222217', '11111111-1111-1111-1111-111111111105', 3000, 'usd', 'one_time', 'eve@demo.test', now() - interval '4 days' + interval '4 hours'),
+  ('22222222-2222-2222-2222-222222222218', '11111111-1111-1111-1111-111111111105', 3000, 'usd', 'one_time', 'eve@demo.test', now() - interval '3 days'),
+  ('22222222-2222-2222-2222-222222222219', '11111111-1111-1111-1111-111111111105', 3000, 'usd', 'one_time', 'eve@demo.test', now() - interval '3 days' + interval '2 hours'),
+  ('22222222-2222-2222-2222-222222222220', '11111111-1111-1111-1111-111111111105', 3000, 'usd', 'one_time', 'eve@demo.test', now() - interval '2 days'),
+  ('22222222-2222-2222-2222-222222222221', '11111111-1111-1111-1111-111111111105', 3000, 'usd', 'one_time', 'eve@demo.test', now() - interval '2 days' + interval '3 hours'),
+  ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111101', 2500, 'usd', 'one_time', 'alice@demo.test', now() - interval '1 day'),
+  ('22222222-2222-2222-2222-222222222223', '11111111-1111-1111-1111-111111111101', 2500, 'usd', 'one_time', 'alice@demo.test', now() - interval '1 day' + interval '1 hour'),
+  ('22222222-2222-2222-2222-222222222224', '11111111-1111-1111-1111-111111111101', 2500, 'usd', 'one_time', 'alice@demo.test', now() - interval '1 day' + interval '4 hours'),
+  ('22222222-2222-2222-2222-222222222225', '11111111-1111-1111-1111-111111111102', 4999, 'usd', 'one_time', 'bob@demo.test', now() - interval '6 hours')
+
 ON CONFLICT (id) DO NOTHING;
 
 -- Payment results spread over 14 days with mix of statuses and providers
 INSERT INTO payment_results (id, intent_id, provider, transaction_id, status, charged_amount, charged_currency, webhook_verified, created_at)
 VALUES
-  -- Day -13: 2 stripe succeeded
-  ('33333333-3333-3333-3333-333333333301', '22222222-2222-2222-2222-222222222201', 'stripe',  'txn_stripe_001', 'succeeded', 2500, 'usd', true, now() - interval '13 days'),
-  ('33333333-3333-3333-3333-333333333302', '22222222-2222-2222-2222-222222222201', 'stripe',  'txn_stripe_002', 'succeeded', 2500, 'usd', true, now() - interval '13 days' + interval '2 hours'),
-  -- Day -12: 1 paypal succeeded, 1 stripe failed
-  ('33333333-3333-3333-3333-333333333303', '22222222-2222-2222-2222-222222222201', 'paypal',  'txn_paypal_001', 'succeeded', 2500, 'usd', true, now() - interval '12 days'),
-  ('33333333-3333-3333-3333-333333333304', '22222222-2222-2222-2222-222222222201', 'stripe',  'txn_stripe_003', 'failed',    NULL, NULL,  false, now() - interval '12 days' + interval '3 hours'),
-  -- Day -10: 3 succeeded (stripe + paypal)
-  ('33333333-3333-3333-3333-333333333305', '22222222-2222-2222-2222-222222222202', 'stripe',  'txn_stripe_004', 'succeeded', 4999, 'usd', true, now() - interval '10 days'),
-  ('33333333-3333-3333-3333-333333333306', '22222222-2222-2222-2222-222222222202', 'paypal',  'txn_paypal_002', 'succeeded', 4999, 'usd', true, now() - interval '10 days' + interval '1 hour'),
-  ('33333333-3333-3333-3333-333333333307', '22222222-2222-2222-2222-222222222202', 'stripe',  'txn_stripe_005', 'succeeded', 4999, 'usd', true, now() - interval '10 days' + interval '4 hours'),
-  -- Day -8: 2 succeeded, 1 refunded
-  ('33333333-3333-3333-3333-333333333308', '22222222-2222-2222-2222-222222222203', 'stripe',  'txn_stripe_006', 'succeeded', 1500, 'usd', true, now() - interval '8 days'),
-  ('33333333-3333-3333-3333-333333333309', '22222222-2222-2222-2222-222222222203', 'paypal',  'txn_paypal_003', 'succeeded', 1500, 'usd', true, now() - interval '8 days' + interval '2 hours'),
-  ('33333333-3333-3333-3333-333333333310', '22222222-2222-2222-2222-222222222203', 'stripe',  'txn_stripe_007', 'refunded',  1500, 'usd', true, now() - interval '8 days' + interval '5 hours'),
-  -- Day -7: 2 succeeded
-  ('33333333-3333-3333-3333-333333333311', '22222222-2222-2222-2222-222222222203', 'stripe',  'txn_stripe_008', 'succeeded', 1500, 'usd', true, now() - interval '7 days'),
-  ('33333333-3333-3333-3333-333333333312', '22222222-2222-2222-2222-222222222203', 'paypal',  'txn_paypal_004', 'succeeded', 1500, 'usd', true, now() - interval '7 days' + interval '3 hours'),
-  -- Day -6: 1 failed, 1 succeeded
-  ('33333333-3333-3333-3333-333333333313', '22222222-2222-2222-2222-222222222204', 'paypal',  'txn_paypal_005', 'failed',    NULL, NULL,  false, now() - interval '6 days'),
-  ('33333333-3333-3333-3333-333333333314', '22222222-2222-2222-2222-222222222204', 'stripe',  'txn_stripe_009', 'succeeded', 7500, 'eur', true, now() - interval '6 days' + interval '1 hour'),
-  -- Day -5: 3 succeeded
-  ('33333333-3333-3333-3333-333333333315', '22222222-2222-2222-2222-222222222204', 'stripe',  'txn_stripe_010', 'succeeded', 7500, 'eur', true, now() - interval '5 days'),
-  ('33333333-3333-3333-3333-333333333316', '22222222-2222-2222-2222-222222222204', 'paypal',  'txn_paypal_006', 'succeeded', 7500, 'eur', true, now() - interval '5 days' + interval '2 hours'),
-  ('33333333-3333-3333-3333-333333333317', '22222222-2222-2222-2222-222222222204', 'stripe',  'txn_stripe_011', 'succeeded', 7500, 'eur', true, now() - interval '5 days' + interval '5 hours'),
-  -- Day -4: 1 refunded, 2 succeeded
-  ('33333333-3333-3333-3333-333333333318', '22222222-2222-2222-2222-222222222204', 'stripe',  'txn_stripe_012', 'refunded',  7500, 'eur', true, now() - interval '4 days'),
-  ('33333333-3333-3333-3333-333333333319', '22222222-2222-2222-2222-222222222205', 'paypal',  'txn_paypal_007', 'succeeded', 3000, 'usd', true, now() - interval '4 days' + interval '1 hour'),
-  ('33333333-3333-3333-3333-333333333320', '22222222-2222-2222-2222-222222222205', 'stripe',  'txn_stripe_013', 'succeeded', 3000, 'usd', true, now() - interval '4 days' + interval '4 hours'),
-  -- Day -3: 2 succeeded, 1 failed
-  ('33333333-3333-3333-3333-333333333321', '22222222-2222-2222-2222-222222222205', 'stripe',  'txn_stripe_014', 'succeeded', 3000, 'usd', true, now() - interval '3 days'),
-  ('33333333-3333-3333-3333-333333333322', '22222222-2222-2222-2222-222222222205', 'paypal',  'txn_paypal_008', 'succeeded', 3000, 'usd', true, now() - interval '3 days' + interval '2 hours'),
-  ('33333333-3333-3333-3333-333333333323', '22222222-2222-2222-2222-222222222205', 'stripe',  'txn_stripe_015', 'failed',    NULL, NULL,  false, now() - interval '3 days' + interval '6 hours'),
-  -- Day -2: 2 succeeded
-  ('33333333-3333-3333-3333-333333333324', '22222222-2222-2222-2222-222222222205', 'stripe',  'txn_stripe_016', 'succeeded', 3000, 'usd', true, now() - interval '2 days'),
-  ('33333333-3333-3333-3333-333333333325', '22222222-2222-2222-2222-222222222205', 'paypal',  'txn_paypal_009', 'succeeded', 3000, 'usd', true, now() - interval '2 days' + interval '3 hours'),
-  -- Day -1: 3 succeeded, 1 pending
-  ('33333333-3333-3333-3333-333333333326', '22222222-2222-2222-2222-222222222201', 'stripe',  'txn_stripe_017', 'succeeded', 2500, 'usd', true, now() - interval '1 day'),
-  ('33333333-3333-3333-3333-333333333327', '22222222-2222-2222-2222-222222222201', 'paypal',  'txn_paypal_010', 'succeeded', 2500, 'usd', true, now() - interval '1 day' + interval '1 hour'),
-  ('33333333-3333-3333-3333-333333333328', '22222222-2222-2222-2222-222222222201', 'stripe',  'txn_stripe_018', 'succeeded', 2500, 'usd', true, now() - interval '1 day' + interval '4 hours'),
-  ('33333333-3333-3333-3333-333333333329', '22222222-2222-2222-2222-222222222202', 'stripe',  'txn_stripe_019', 'pending',   4999, 'usd', false, now() - interval '6 hours')
+  ('33333333-3333-3333-3333-333333333301', '22222222-2222-2222-2222-222222222201', 'stripe', 'txn_stripe_001', 'succeeded', 2500, 'usd', true, now() - interval '13 days'),
+  ('33333333-3333-3333-3333-333333333302', '22222222-2222-2222-2222-222222222202', 'stripe', 'txn_stripe_002', 'succeeded', 2500, 'usd', true, now() - interval '13 days' + interval '2 hours'),
+  ('33333333-3333-3333-3333-333333333303', '22222222-2222-2222-2222-222222222203', 'paypal', 'txn_paypal_001', 'succeeded', 2500, 'usd', true, now() - interval '12 days'),
+  ('33333333-3333-3333-3333-333333333304', '22222222-2222-2222-2222-222222222203', 'stripe', 'txn_stripe_003', 'failed', NULL, NULL, false, now() - interval '12 days' + interval '3 hours'),
+  ('33333333-3333-3333-3333-333333333305', '22222222-2222-2222-2222-222222222204', 'stripe', 'txn_stripe_004', 'succeeded', 4999, 'usd', true, now() - interval '10 days'),
+  ('33333333-3333-3333-3333-333333333306', '22222222-2222-2222-2222-222222222205', 'paypal', 'txn_paypal_002', 'succeeded', 4999, 'usd', true, now() - interval '10 days' + interval '1 hour'),
+  ('33333333-3333-3333-3333-333333333307', '22222222-2222-2222-2222-222222222206', 'stripe', 'txn_stripe_005', 'succeeded', 4999, 'usd', true, now() - interval '10 days' + interval '4 hours'),
+  ('33333333-3333-3333-3333-333333333308', '22222222-2222-2222-2222-222222222207', 'stripe', 'txn_stripe_006', 'succeeded', 1500, 'usd', true, now() - interval '8 days'),
+  ('33333333-3333-3333-3333-333333333309', '22222222-2222-2222-2222-222222222208', 'paypal', 'txn_paypal_003', 'succeeded', 1500, 'usd', true, now() - interval '8 days' + interval '2 hours'),
+  ('33333333-3333-3333-3333-333333333310', '22222222-2222-2222-2222-222222222208', 'stripe', 'txn_stripe_007', 'refunded', 1500, 'usd', true, now() - interval '8 days' + interval '5 hours'),
+  ('33333333-3333-3333-3333-333333333311', '22222222-2222-2222-2222-222222222209', 'stripe', 'txn_stripe_008', 'succeeded', 1500, 'usd', true, now() - interval '7 days'),
+  ('33333333-3333-3333-3333-333333333312', '22222222-2222-2222-2222-222222222210', 'paypal', 'txn_paypal_004', 'succeeded', 1500, 'usd', true, now() - interval '7 days' + interval '3 hours'),
+  ('33333333-3333-3333-3333-333333333313', '22222222-2222-2222-2222-222222222211', 'paypal', 'txn_paypal_005', 'failed', NULL, NULL, false, now() - interval '6 days'),
+  ('33333333-3333-3333-3333-333333333314', '22222222-2222-2222-2222-222222222212', 'stripe', 'txn_stripe_009', 'succeeded', 7500, 'eur', true, now() - interval '6 days' + interval '1 hour'),
+  ('33333333-3333-3333-3333-333333333315', '22222222-2222-2222-2222-222222222213', 'stripe', 'txn_stripe_010', 'succeeded', 7500, 'eur', true, now() - interval '5 days'),
+  ('33333333-3333-3333-3333-333333333316', '22222222-2222-2222-2222-222222222214', 'paypal', 'txn_paypal_006', 'succeeded', 7500, 'eur', true, now() - interval '5 days' + interval '2 hours'),
+  ('33333333-3333-3333-3333-333333333317', '22222222-2222-2222-2222-222222222215', 'stripe', 'txn_stripe_011', 'succeeded', 7500, 'eur', true, now() - interval '5 days' + interval '5 hours'),
+  ('33333333-3333-3333-3333-333333333318', '22222222-2222-2222-2222-222222222215', 'stripe', 'txn_stripe_012', 'refunded', 7500, 'eur', true, now() - interval '4 days'),
+  ('33333333-3333-3333-3333-333333333319', '22222222-2222-2222-2222-222222222216', 'paypal', 'txn_paypal_007', 'succeeded', 3000, 'usd', true, now() - interval '4 days' + interval '1 hour'),
+  ('33333333-3333-3333-3333-333333333320', '22222222-2222-2222-2222-222222222217', 'stripe', 'txn_stripe_013', 'succeeded', 3000, 'usd', true, now() - interval '4 days' + interval '4 hours'),
+  ('33333333-3333-3333-3333-333333333321', '22222222-2222-2222-2222-222222222218', 'stripe', 'txn_stripe_014', 'succeeded', 3000, 'usd', true, now() - interval '3 days'),
+  ('33333333-3333-3333-3333-333333333322', '22222222-2222-2222-2222-222222222219', 'paypal', 'txn_paypal_008', 'succeeded', 3000, 'usd', true, now() - interval '3 days' + interval '2 hours'),
+  ('33333333-3333-3333-3333-333333333323', '22222222-2222-2222-2222-222222222219', 'stripe', 'txn_stripe_015', 'failed', NULL, NULL, false, now() - interval '3 days' + interval '6 hours'),
+  ('33333333-3333-3333-3333-333333333324', '22222222-2222-2222-2222-222222222220', 'stripe', 'txn_stripe_016', 'succeeded', 3000, 'usd', true, now() - interval '2 days'),
+  ('33333333-3333-3333-3333-333333333325', '22222222-2222-2222-2222-222222222221', 'paypal', 'txn_paypal_009', 'succeeded', 3000, 'usd', true, now() - interval '2 days' + interval '3 hours'),
+  ('33333333-3333-3333-3333-333333333326', '22222222-2222-2222-2222-222222222222', 'stripe', 'txn_stripe_017', 'succeeded', 2500, 'usd', true, now() - interval '1 day'),
+  ('33333333-3333-3333-3333-333333333327', '22222222-2222-2222-2222-222222222223', 'paypal', 'txn_paypal_010', 'succeeded', 2500, 'usd', true, now() - interval '1 day' + interval '1 hour'),
+  ('33333333-3333-3333-3333-333333333328', '22222222-2222-2222-2222-222222222224', 'stripe', 'txn_stripe_018', 'succeeded', 2500, 'usd', true, now() - interval '1 day' + interval '4 hours'),
+  ('33333333-3333-3333-3333-333333333329', '22222222-2222-2222-2222-222222222225', 'stripe', 'txn_stripe_019', 'pending', 4999, 'usd', false, now() - interval '6 hours')
+
 ON CONFLICT (id) DO NOTHING;
 
 -- Subscriptions (1 active, 1 canceled)
@@ -317,16 +335,31 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
--- 6. SET ADMIN FLAG ON TEST USER (ensure app_metadata has is_admin)
+-- 6. (REMOVED) THIS FILE NO LONGER CONFERS ADMIN ON ANYONE — #940
 -- ============================================================================
--- The admin RPCs check auth.jwt()->'app_metadata'->>'is_admin'. This is set
--- during login if user_profiles.is_admin is true. Ensure the existing test
--- user has it in raw_app_meta_data so the JWT includes it.
-
-UPDATE auth.users
-SET raw_app_meta_data = raw_app_meta_data || '{"is_admin": true}'::jsonb
-WHERE email = 'test@example.com'
-  AND NOT (raw_app_meta_data ? 'is_admin');
+-- What used to be here wrote `auth.users.raw_app_meta_data.is_admin = true` for
+-- test@example.com, with a comment saying the admin RPCs read
+-- `auth.jwt()->'app_metadata'->>'is_admin'`. That stopped being true at #240 and
+-- the write has been INERT ever since — it set a derived field, backwards:
+--
+--   is_admin() is the live authority and reads the user_profiles.is_admin COLUMN
+--     (migration:1218, verified live: SELECT COALESCE((SELECT is_admin FROM
+--      user_profiles WHERE id = check_user_id), false))
+--   custom_access_token_hook() DERIVES the app_metadata claim FROM that column
+--     (migration:1187), and is not even invoked yet (migration:1202)
+--
+-- So it looked like it granted admin and never did. Rather than repoint it at the
+-- column, it is gone: promoting the SHARED test@example.com is the wrong fix twice
+-- over. Its session is the storageState for all 24 E2E shards, and three permissive
+-- cross-user RLS policies (migration:2570) would widen what every other spec can
+-- see; and admin_list_users counts only `WHERE p.is_admin = FALSE`
+-- (migration:1605), so promoting that user removes it from the very population the
+-- pagination spec is asserting about.
+--
+-- Tests that need an admin should call seedIsolatedAdmin()
+-- (tests/e2e/utils/test-user-factory.ts), which promotes a throwaway user and
+-- verifies through that user's own session. admin-depth.spec.ts already does this
+-- and already runs in CI. See #914.
 
 COMMIT;
 
