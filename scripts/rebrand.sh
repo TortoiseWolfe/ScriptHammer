@@ -319,6 +319,24 @@ replace_in_files() {
                 fi
             fi
         fi
+    # THE EXTENSION LIST IS NOT THE REAL PROBLEM WITH THIS SWEEP (#910, and see the
+    # discovery ticket it spawned).
+    #
+    # #910 asked for .mjs/.cjs/.py and extensionless files to be added here, because ~8
+    # scripts document their own run command as "docker compose exec scripthammer ..."
+    # and tell a fork to exec a service that no longer exists. That was measured before
+    # widening: adding those three suffixes brings 1,746 files into scope, of which 1,581
+    # sit in .speckit-cache/, .speckit-tools/, .pay-verify/ and .venv/ — local caches and a
+    # vendored virtualenv, all but one of them gitignored.
+    #
+    # This find has NO notion of what git tracks, so the exclusion list is whack-a-mole and
+    # already leaking: .pay-verify is reached today. Widening it 200x to fix ~8 doc strings
+    # would ship a real hazard to fix a cosmetic one. The right fix is to discover files
+    # through git rather than find, which is a change to every extension at once and needs
+    # its own verification.
+    #
+    # The hooks — the reason #910 was filed — no longer need this at all: .husky/pre-commit
+    # and pre-push derive the service name from docker-compose.yml.
     done < <(find "$REPO_ROOT" -type f \( \
         -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" \
         -o -name "*.json" -o -name "*.md" -o -name "*.yml" -o -name "*.yaml" \

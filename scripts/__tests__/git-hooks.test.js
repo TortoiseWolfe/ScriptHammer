@@ -281,3 +281,113 @@ test('Docker dependency stages copy the prepare script before pnpm install', () 
     );
   }
 });
+
+/**
+ * The hooks must survive a rebrand (#910).
+ *
+ * `scripts/rebrand.sh` renames the compose service — `update_docker_compose()` rewrites the
+ * service key — so a fork's app service is called whatever the fork is called. Both hooks
+ * used to grep for and exec the literal `scripthammer`, which in a fork matches nothing.
+ * `pre-commit` then fell through to its warn-only branch, so every fork committed with no
+ * lint-staged and no formatting — silently, because the warning scrolls past in a
+ * successful commit.
+ *
+ * These assert the WIRING, not the behaviour: a hook can be perfectly correct and still be
+ * pointed at a service name that no longer exists.
+ */
+test.describe('the hooks survive a rebrand (#910)', () => {
+  const hooks = [
+    ['pre-commit', PRE_COMMIT],
+    ['pre-push', PRE_PUSH],
+  ];
+
+  /** Hook source with comments stripped — the comments discuss the literal by name. */
+  const code = (file) =>
+    readFileSync(file, 'utf8')
+      .split('\n')
+      .filter((l) => !/^\s*#/.test(l))
+      .join('\n');
+
+  for (const [name, file] of hooks) {
+    test(`${name} derives the compose service instead of hardcoding it`, () => {
+      const src = code(file);
+      assert.match(
+        src,
+        /compose_service\(\)/,
+        `${name} has no compose_service() helper — it cannot know a fork's service name`
+      );
+      assert.match(
+        src,
+        /COMPOSE_SERVICE=\$\(compose_service\)/,
+        `${name} defines the helper but never calls it`
+      );
+    });
+
+    test(`${name} never execs a hardcoded service name`, () => {
+      const src = code(file);
+      // The fallback assignment is the one permitted mention; anything else is a literal
+      // that a rebrand would strand.
+      const stray = src
+        .split('\n')
+        .filter((l) => /scripthammer/i.test(l))
+        .filter((l) => !/COMPOSE_SERVICE=scripthammer/.test(l));
+      assert.deepEqual(
+        stray,
+        [],
+        `${name} still names the service literally; a fork renames it and these lines ` +
+          'stop matching, which is exactly how lint-staged went missing'
+      );
+    });
+
+    test(`${name} uses the derived name at every docker compose call`, () => {
+      const src = code(file);
+      const calls = src.match(/docker compose (ps|exec)[^\n]*/g) ?? [];
+      assert.ok(
+        calls.length > 0,
+        `${name}: no docker compose calls found — this test is looking at the wrong thing`
+      );
+      for (const call of calls) {
+        if (/exec/.test(call)) {
+          assert.match(
+            call,
+            /"\$COMPOSE_SERVICE"/,
+            `${name}: exec call does not use the derived service: ${call.trim()}`
+          );
+        }
+      }
+    });
+  }
+
+  test('the derivation actually resolves against this repo', () => {
+    // Anti-vacuity: the helper could be present, called, and return nothing. Run the same
+    // awk the hooks run and require it to produce the service docker-compose.yml defines.
+    const compose = path.join(ROOT, 'docker-compose.yml');
+    // Extract by LINE, to the first `}` in column 0. Splitting the body on '}' does not
+    // work and is how this assertion first failed: the awk program inside is full of
+    // braces, so the extracted script was truncated mid-expression.
+    const lines = readFileSync(PRE_COMMIT, 'utf8').split('\n');
+    const start = lines.findIndex((l) => l.startsWith('compose_service() {'));
+    assert.ok(start !== -1, 'compose_service() not found in pre-commit');
+    const end = lines.findIndex((l, i) => i > start && l === '}');
+    assert.ok(end !== -1, 'compose_service() has no closing brace in column 0');
+    const script = lines.slice(start + 1, end).join('\n');
+    const res = spawnSync(
+      'sh',
+      // Newlines around the braces matter: gluing `}` to the last body line produced
+      // `2>/dev/null}`, redirecting to a file literally named "/dev/null}" — so the helper
+      // returned nothing and this assertion failed against a correct hook.
+      ['-c', `compose_service() {\n${script}\n}\ncompose_service`],
+      { cwd: ROOT, encoding: 'utf8' }
+    );
+    const derived = (res.stdout ?? '').trim();
+    assert.ok(
+      derived.length > 0,
+      'compose_service() returned nothing against this repo — the hooks would fall back'
+    );
+    assert.match(
+      readFileSync(compose, 'utf8'),
+      new RegExp(`^\\s{2}${derived}:`, 'm'),
+      `compose_service() derived "${derived}", which is not a service in docker-compose.yml`
+    );
+  });
+});
