@@ -233,6 +233,20 @@ console.log(
       .join('\n')
 );
 
+// SHARDABLE, NOT ATOMIC (#915).
+//
+// CI sets `fullyParallel: false` (playwright.config.ts:78) so that specs sharing the
+// PRIMARY/TERTIARY test users run serially. Under that setting Playwright shards by FILE:
+// a file is an indivisible unit, and this one is 142 of chromium-gen's 668 tests. Adding a
+// third house theme pushed it over a balancing threshold and left `gen 2/6` with ZERO tests
+// — measured: shard 2 went 39 -> 0, and the zero-assertion gate (#861) correctly refused to
+// call that green.
+//
+// This sweep authenticates nothing and shares no fixture user, so it is safe to schedule per
+// test. `mode: 'parallel'` makes its cases individually distributable across shards without
+// touching `workers`, which stays 1 in CI for the specs that genuinely need it.
+test.describe.configure({ mode: 'parallel' });
+
 test.describe('WCAG AAA color-contrast-enhanced (violations only)', () => {
   // Match pa11yci.json viewport.
   test.use({ viewport: { width: 1280, height: 1024 } });

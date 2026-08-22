@@ -763,7 +763,9 @@ jobs:
           on_baseline = os.environ.get("TESTED_SHA", "") == BASE_SHA
           if not on_baseline:
               print("")
-              print("Gate passed: 24/24 shards, 0 failures, above the floor.")
+              print("Artifact totals OK: 24/24 shards, 0 failures, above the floor.")
+              print("The shard matrix's OWN verdict is a separate step after this one")
+              print("— these totals cannot see a shard that failed after reporting (#934).")
               print("COUNT PARITY not evaluated — the cloud numbers describe")
               print(f"{BASE_SHA[:8]}; on any other commit the test set has moved and a")
               print("difference is uninterpretable. Re-run on that SHA to decide parity.")
@@ -775,3 +777,51 @@ jobs:
               sys.exit(1)
           print("PARITY: local matches the cloud baseline exactly.")
           EOF
+
+      # ── THE VERDICT THE SHARDS ALREADY REACHED (#934) ────────────────────
+      #
+      # Everything above reconstructs a verdict from uploaded artifacts. This asks the
+      # shards. They are different questions, and until now only the reconstructed one
+      # was asked — so this REQUIRED context concluded `success` on a run whose own
+      # matrix concluded `failure`, and PR #928 merged with three shards red.
+      #
+      # HOW THAT PASSED, from the aggregate's own log in run 32560171118:
+      #
+      #     shards reporting: 24/24
+      #       passed   2035   baseline 1807
+      #       failed      0
+      #
+      # `chromium/firefox/webkit gen 2/6` had each executed ZERO tests and failed on the
+      # zero-test detector, which was doing its job. Every condition above still passed:
+      # `Upload results` is `if: always()`, so a failing shard still uploads a valid
+      # results.json describing nothing; a shard with no tests has no FAILING tests; and
+      # Playwright redistributed the work, so the total went UP, clearing the floor.
+      #
+      # The blast radius is wider than that one detector. EVERY anti-vacuity guard in this
+      # lane runs `if: always()` after the tests, so none of their verdicts reach the
+      # artifacts — including check-zero-assertions.mjs (#861), whose whole subject is tests
+      # that pass while measuring nothing. Those are `expected` in results.json, so the
+      # totals count them as PASSED. The guards built to stop vacuous green were invisible
+      # to the check that decides whether green means anything.
+      #
+      # A STEP, NOT A JOB-LEVEL `if:`, for the reason every other condition here is a step:
+      # branch protection is never satisfied by a `skipped` job, so this must run and pass
+      # on a docs-only PR. Gated on `changes` so it does — when the matrix is skipped its
+      # result is `skipped`, which is correct there and must not fail.
+      #
+      # Deliberately LAST: the totals print first, so a future reader sees the numbers that
+      # looked fine and then the verdict that did not.
+      - name: The shards themselves must have passed
+        if: needs.changes.outputs.run == 'true'
+        run: |
+          result='${{ needs.e2e-local.result }}'
+          echo "shard matrix concluded: $result"
+          if [ "$result" != "success" ]; then
+            echo "::error::the E2E shard matrix concluded '$result', so this check fails."
+            echo "::error::The totals above may look clean — they are reconstructed from"
+            echo "::error::uploaded artifacts and cannot see a shard that failed AFTER"
+            echo "::error::writing a valid report (a zero-test shard, a zero-assertion"
+            echo "::error::verdict, any post-upload step). Open the red shard job; its own"
+            echo "::error::log names the cause. Do not relax this to make a run green."
+            exit 1
+          fi
