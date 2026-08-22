@@ -7,6 +7,27 @@ const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const path = require('node:path');
 const fs = require('node:fs');
+const os = require('node:os');
+
+/**
+ * Scratch root OUTSIDE the repository (#924).
+ *
+ * These tests used to plant their fixtures in `__dirname`, and `createBackup()`
+ * (scripts/migrate-components.js:250-256) writes its output to `path.dirname(target)` — the
+ * PARENT of what it is given. So a target at `scripts/__tests__/test-backup` produced a
+ * backup at `scripts/__tests__/.component-backup-<timestamp>`: a SIBLING of the fixture, not
+ * a child of it. Every `afterEach` here removed the fixture and left the backup.
+ *
+ * Measured before the fix: one run of this file created 5 such directories, 826 had
+ * accumulated on disk (3,850 files), and 745 of them arrived in the preceding three weeks.
+ * 66 were committed in the initial commit, which is why `.gitignore:161` never suppressed
+ * them — the rule cannot reach a path already in the index.
+ *
+ * Putting the fixtures under os.tmpdir() fixes the CLASS rather than the instance: whatever
+ * the code under test writes to its parent directory now lands in the scratch root, so no
+ * arrangement of missing cleanup can reach the working tree.
+ */
+const SCRATCH = fs.mkdtempSync(path.join(os.tmpdir(), 'migrate-components-'));
 
 // Load the module — may fail if dependencies (e.g. glob) aren't installed locally
 let migrateComponents;
@@ -46,7 +67,7 @@ describe('migrate-components', () => {
   });
 
   describe('migration process', () => {
-    const testDir = path.join(__dirname, 'test-migration');
+    const testDir = path.join(SCRATCH, 'test-migration');
 
     beforeEach(() => {
       // Create test directory structure with non-compliant components
@@ -209,7 +230,7 @@ describe('migrate-components', () => {
   });
 
   describe('backup functionality', () => {
-    const testDir = path.join(__dirname, 'test-backup');
+    const testDir = path.join(SCRATCH, 'test-backup');
 
     beforeEach(() => {
       fs.mkdirSync(testDir, { recursive: true });
@@ -271,7 +292,7 @@ describe('migrate-components', () => {
         return; // Module unavailable outside Docker
       }
 
-      const testDir = path.join(__dirname, 'test-invalid');
+      const testDir = path.join(SCRATCH, 'test-invalid');
       fs.mkdirSync(testDir, { recursive: true });
 
       // Create component with invalid name
@@ -330,7 +351,7 @@ describe('migrate-components', () => {
 
       // Use a temp dir with a non-compliant component so there's
       // actually something to migrate (src/components is 100% compliant).
-      const logTestDir = path.join(__dirname, 'test-log-progress');
+      const logTestDir = path.join(SCRATCH, 'test-log-progress');
       fs.mkdirSync(path.join(logTestDir, 'Incomplete'), { recursive: true });
       fs.writeFileSync(
         path.join(logTestDir, 'Incomplete', 'Incomplete.tsx'),
