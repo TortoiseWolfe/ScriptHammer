@@ -163,6 +163,37 @@ get_display_name() {
     echo "$name"
 }
 
+# Derive a PascalCase, identifier-safe component name (#911).
+#
+# WHY THIS IS NOT get_display_name. `ORIGINAL_NAME` ("ScriptHammer") does two jobs in this
+# tree: it is a noun in prose, and it is a code identifier — `ScriptHammerLogo`, and the
+# filename that declares it. Both substitutions used DISPLAY_NAME, which preserves the
+# user's spaces, hyphens and casing verbatim. That is right for prose and fatal for code:
+#
+#   fork "geoLARP"     -> <geoLARPLogo />       JSX reads a lowercase-initial tag as an
+#                                               INTRINSIC element, so React renders an
+#                                               unknown DOM tag instead of the component
+#   fork "My Cool App" -> <My Cool AppLogo />   a syntax error — and "My Cool App" is this
+#                                               script's own documented example (see --help)
+#
+# So the fork does not build, and nothing in the harness noticed because its fixture put
+# the brand token in a STRING rather than an identifier or a filename.
+#
+# Words are split on every character an identifier cannot contain, each is capitalised, and
+# the separators are dropped. A leading digit is prefixed, since an identifier cannot start
+# with one.
+get_component_name() {
+    local name="$1"
+    name=$(echo "$name" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    # Any run of non-alphanumerics is a word boundary, not a character to keep.
+    name=$(echo "$name" | sed 's/[^a-zA-Z0-9][^a-zA-Z0-9]*/ /g')
+    name=$(echo "$name" | awk '{out=""; for(i=1;i<=NF;i++) out=out toupper(substr($i,1,1)) substr($i,2); print out}')
+    case "$name" in
+        [0-9]*) name="App$name" ;;
+    esac
+    echo "$name"
+}
+
 # Detect if running on BSD (macOS) or GNU sed
 detect_sed() {
     if sed --version 2>/dev/null | grep -q GNU; then
@@ -388,11 +419,17 @@ update_cname() {
             if [ "$KEEP_CNAME" = true ]; then
                 log_info "Keeping CNAME file as-is (--keep-cname flag set)"
             else
+                # SANITIZED_NAME, not DISPLAY_NAME (#911). Same root cause as the
+                # identifier bug: a display name is spliced verbatim into a slot with its
+                # own validity rules. A hostname cannot contain a space or an uppercase
+                # letter, so a fork called "My Cool App" wrote `My Cool App.com` into
+                # public/CNAME — GitHub Pages rejects it and the custom domain silently
+                # never comes up. SANITIZED_NAME is already lowercase and hyphenated.
                 if [ "$DRY_RUN" = true ]; then
-                    log_verbose "[DRY-RUN] Would update public/CNAME to ${DISPLAY_NAME}.com"
+                    log_verbose "[DRY-RUN] Would update public/CNAME to ${SANITIZED_NAME}.com"
                 else
-                    echo "${DISPLAY_NAME}.com" > "$cname_file"
-                    log_verbose "Updated public/CNAME: ${domain} → ${DISPLAY_NAME}.com"
+                    echo "${SANITIZED_NAME}.com" > "$cname_file"
+                    log_verbose "Updated public/CNAME: ${domain} → ${SANITIZED_NAME}.com"
                 fi
             fi
         else
@@ -670,8 +707,15 @@ main() {
     # Sanitize names
     SANITIZED_NAME=$(sanitize_name "$PROJECT_NAME")
     DISPLAY_NAME=$(get_display_name "$PROJECT_NAME")
+    COMPONENT_NAME=$(get_component_name "$PROJECT_NAME")
 
     # Validate sanitized name
+    if [ -z "$COMPONENT_NAME" ]; then
+        log_error "Project name yields no usable component identifier"
+        echo "The name must contain at least one letter or digit that can start an identifier"
+        exit 1
+    fi
+
     if [ -z "$SANITIZED_NAME" ]; then
         log_error "Project name sanitizes to empty string"
         echo "Please provide a valid project name with at least one alphanumeric character"
@@ -716,13 +760,27 @@ main() {
     # Perform rebrand operations
     echo "Updating file contents..."
     # Replace case variations
+    # IDENTIFIER OCCURRENCES FIRST, THEN PROSE (#911).
+    #
+    # `ScriptHammer` glued to a word character is part of a larger identifier —
+    # `ScriptHammerLogo`, `SimpleScriptHammer`, `ScriptHammerLogoProps` — and must stay
+    # identifier-safe, so it takes COMPONENT_NAME. A standalone occurrence is a noun in
+    # prose and keeps DISPLAY_NAME, spaces and all.
+    #
+    # Order is load-bearing: the standalone pass would otherwise consume the identifier
+    # occurrences before the adjacency passes ever saw them.
+    replace_in_files "$ORIGINAL_NAME\([A-Za-z0-9_]\)" "$COMPONENT_NAME\1" "*.ts"
+    replace_in_files "\([A-Za-z0-9_]\)$ORIGINAL_NAME" "\1$COMPONENT_NAME" "*.ts"
     replace_in_files "$ORIGINAL_NAME" "$DISPLAY_NAME" "*.ts"
     replace_in_files "$ORIGINAL_NAME_LOWER" "$SANITIZED_NAME" "*.ts"
     replace_in_files "$ORIGINAL_OWNER" "$OWNER" "*.ts"
 
     echo ""
     echo "Renaming files..."
-    rename_files "$ORIGINAL_NAME" "$DISPLAY_NAME"
+    # FILENAMES ALWAYS TAKE THE COMPONENT NAME (#911). `ScriptHammerLogo.tsx` declares an
+    # identifier, so its filename must be identifier-safe — and no filename in this tree
+    # should acquire a space because someone forked as "My Cool App".
+    rename_files "$ORIGINAL_NAME" "$COMPONENT_NAME"
     rename_files "$ORIGINAL_NAME_LOWER" "$SANITIZED_NAME"
 
     echo ""
