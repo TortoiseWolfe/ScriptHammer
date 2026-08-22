@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { HOUSE_THEMES } from '@/config/themes';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -39,7 +40,10 @@ import { join } from 'node:path';
  */
 
 const AAA = 7;
-const THEMES = ['scripthammer-light', 'scripthammer-dark'] as const;
+// Derived, not listed (#915). This named two of the three house themes and missed
+// `scripthammer-forge`. This spec exists to pay the contrast debt for a route excluded from
+// color-contrast.spec.ts, so a gap here is not covered anywhere else.
+const THEMES = HOUSE_THEMES;
 
 /** The classes the HUD actually ships. Kept as data so the source guard can check them. */
 const HUD_SURFACE = 'bg-base-300/90';

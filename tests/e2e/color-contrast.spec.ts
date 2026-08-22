@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { HOUSE_THEMES } from '@/config/themes';
 import { readFileSync, readdirSync } from 'node:fs';
 import {
   seedIsolatedAdmin,
@@ -65,10 +66,16 @@ interface AxeResults {
   passes: AxeRuleResult[];
 }
 
-// Both custom themes covered — Pa11y's headless Chromium defaults to
-// prefers-color-scheme: light, so before this spec the dark palette had
-// no automated contrast coverage at all.
-const THEMES = ['scripthammer-light', 'scripthammer-dark'] as const;
+// THEMES ARE DERIVED, NOT LISTED — for the same reason the routes below are (#915).
+//
+// This said "Both custom themes covered" and named two. There are three: `scripthammer-forge`
+// shipped later and was never added, so the AAA gate has never measured one of the house
+// themes. The word "Both" WAS the completeness claim, exactly as the four-route list this
+// file already replaced was — and it went stale the same way, in the same file.
+//
+// Pa11y's headless Chromium defaults to prefers-color-scheme: light, so before this spec the
+// dark palette had no automated contrast coverage at all.
+const THEMES = HOUSE_THEMES;
 
 /**
  * ROUTES ARE ENUMERATED, NOT LISTED (#411).
