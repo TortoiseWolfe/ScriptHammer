@@ -18,6 +18,29 @@
 
 # `git rev-parse` disagrees with itself in a linked worktree: --git-dir is the
 # worktree's own directory, --git-common-dir the shared one.
+# THE COMPOSE SERVICE NAME IS NOT A CONSTANT (#910).
+#
+# `scripts/rebrand.sh` renames it — update_docker_compose() rewrites the service key — so a
+# fork's app service is called whatever the fork is called. A hook that greps for the
+# literal `scripthammer` matches nothing there, falls through to the warn-only branch, and
+# every fork then commits with no lint-staged and no formatting. Silently, forever: the
+# warn scrolls past in a successful commit.
+#
+# Read the name from the file that defines it. That is rename-proof by construction,
+# because docker-compose.yml is what rebrand.sh edits.
+compose_service() {
+  awk '
+    /^services:/ { in_services = 1; next }
+    in_services && /^[^[:space:]#]/ { exit }
+    in_services && /^  [A-Za-z0-9_.-]+:[[:space:]]*$/ {
+      sub(/:[[:space:]]*$/, ""); gsub(/[[:space:]]/, ""); print; exit
+    }
+  ' docker-compose.yml 2>/dev/null
+}
+
+COMPOSE_SERVICE=$(compose_service)
+[ -n "$COMPOSE_SERVICE" ] || COMPOSE_SERVICE=scripthammer
+
 in_worktree() {
   [ "$(git rev-parse --git-dir 2>/dev/null)" != "$(git rev-parse --git-common-dir 2>/dev/null)" ]
 }
@@ -57,8 +80,8 @@ run_gitleaks_staged() {
     return $SCAN_UNAVAILABLE
   fi
 
-  if command -v docker >/dev/null 2>&1 && docker compose ps 2>/dev/null | grep -q scripthammer; then
-    docker compose exec -T scripthammer pnpm run gitleaks:staged
+  if command -v docker >/dev/null 2>&1 && docker compose ps 2>/dev/null | grep -q "$COMPOSE_SERVICE"; then
+    docker compose exec -T "$COMPOSE_SERVICE" pnpm run gitleaks:staged
     GL=$?
     # Distinguishable here: 126/127 mean the command could not be executed at all,
     # and compose reports a missing env file or absent container the same way.
@@ -106,9 +129,9 @@ elif in_worktree; then
   echo "⚠️  No local lint-staged, and this is a git worktree."
   echo "   Skipping rather than formatting the primary checkout's files (#747)."
   echo "   Run prettier/eslint by hand on what you staged, per CLAUDE.md."
-elif command -v docker >/dev/null 2>&1 && docker compose ps 2>/dev/null | grep -q scripthammer; then
+elif command -v docker >/dev/null 2>&1 && docker compose ps 2>/dev/null | grep -q "$COMPOSE_SERVICE"; then
   echo "🐳 Running via Docker..."
-  docker compose exec -T scripthammer pnpm exec lint-staged --no-stash
+  docker compose exec -T "$COMPOSE_SERVICE" pnpm exec lint-staged --no-stash
 else
   echo "⚠️  lint-staged unavailable — staged files were NOT formatted or linted."
 fi

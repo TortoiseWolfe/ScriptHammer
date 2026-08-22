@@ -16,6 +16,29 @@ SCAN_CLEAN=0
 SCAN_LEAKS=1
 SCAN_UNAVAILABLE=2
 
+# THE COMPOSE SERVICE NAME IS NOT A CONSTANT (#910).
+#
+# `scripts/rebrand.sh` renames it — update_docker_compose() rewrites the service key — so a
+# fork's app service is called whatever the fork is called. A hook that greps for the
+# literal `scripthammer` matches nothing there, falls through to the warn-only branch, and
+# every fork then commits with no lint-staged and no formatting. Silently, forever: the
+# warn scrolls past in a successful commit.
+#
+# Read the name from the file that defines it. That is rename-proof by construction,
+# because docker-compose.yml is what rebrand.sh edits.
+compose_service() {
+  awk '
+    /^services:/ { in_services = 1; next }
+    in_services && /^[^[:space:]#]/ { exit }
+    in_services && /^  [A-Za-z0-9_.-]+:[[:space:]]*$/ {
+      sub(/:[[:space:]]*$/, ""); gsub(/[[:space:]]/, ""); print; exit
+    }
+  ' docker-compose.yml 2>/dev/null
+}
+
+COMPOSE_SERVICE=$(compose_service)
+[ -n "$COMPOSE_SERVICE" ] || COMPOSE_SERVICE=scripthammer
+
 in_worktree() {
   [ "$(git rev-parse --git-dir 2>/dev/null)" != "$(git rev-parse --git-common-dir 2>/dev/null)" ]
 }
@@ -45,8 +68,8 @@ run_gitleaks_full() {
     return $SCAN_UNAVAILABLE
   fi
 
-  if command -v docker >/dev/null 2>&1 && docker compose ps 2>/dev/null | grep -q scripthammer; then
-    docker compose exec -T scripthammer pnpm run gitleaks
+  if command -v docker >/dev/null 2>&1 && docker compose ps 2>/dev/null | grep -q "$COMPOSE_SERVICE"; then
+    docker compose exec -T "$COMPOSE_SERVICE" pnpm run gitleaks
     GL=$?
     if [ $GL -eq 126 ] || [ $GL -eq 127 ]; then
       echo "⚠️  Could not execute gitleaks inside the container."
