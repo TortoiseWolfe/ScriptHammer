@@ -18,10 +18,19 @@
  * `out/`, so the exported copy is rewritten instead — the same approach
  * `scripts/strip-css-script-tags.mjs` already takes for its post-build fixup.
  *
- * ## The prefix is load-bearing
- * The worker's `activate` handler purges old caches by matching names starting
- * with `scripthammer-`. A version without that prefix would never be cleaned
- * up, trading a stale-cache bug for a storage leak. Asserted below.
+ * ## The prefix is load-bearing, and is READ rather than declared (#939)
+ * The worker's `activate` handler purges old caches by matching a prefix it derives
+ * from its own CACHE_VERSION. A version stamped with a different prefix would never
+ * be cleaned up, trading a stale-cache bug for a storage leak.
+ *
+ * This file used to declare that prefix itself, which made it a second copy of a
+ * string that must agree with the worker — and in a fork the two DID diverge and
+ * ship. The check meant to catch it compared the stamped version against the very
+ * constant it was built from, so it could not fail.
+ *
+ * The prefix is now parsed out of the worker's authored CACHE_VERSION, so there is
+ * exactly one place the brand appears. Verified below by refusing to stamp when it
+ * cannot be parsed — a condition that, unlike its predecessor, can occur.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -37,7 +46,6 @@ import { execFileSync } from 'node:child_process';
 // first contact with the basePath job.
 const EXPORT_DIR = join(process.cwd(), process.env.NEXT_DIST_DIR || 'out');
 const SW = join(EXPORT_DIR, 'sw.js');
-const REQUIRED_PREFIX = 'scripthammer-';
 
 if (!existsSync(SW)) {
   // Non-fatal, but LOUD. A build with no worker to stamp must not fail the
@@ -68,21 +76,26 @@ function buildId() {
 const { version } = JSON.parse(
   readFileSync(join(process.cwd(), 'package.json'), 'utf-8')
 );
-const cacheVersion = `${REQUIRED_PREFIX}v${version}-${buildId()}`;
-
-if (!cacheVersion.startsWith(REQUIRED_PREFIX)) {
-  console.error(
-    `stamp-sw-version: refusing to write "${cacheVersion}" — the activate ` +
-      `handler purges old caches by the "${REQUIRED_PREFIX}" prefix, so this ` +
-      'would leak storage instead of cleaning it up.'
-  );
-  process.exit(1);
-}
 
 const source = readFileSync(SW, 'utf-8');
-const CACHE_VERSION_LINE = /const CACHE_VERSION = '[^']*';/;
+const CACHE_VERSION_LINE = /const CACHE_VERSION = '([^']*)';/;
 
-if (!CACHE_VERSION_LINE.test(source)) {
+// THE PREFIX IS READ FROM THE WORKER, NEVER SPELLED OUT HERE (#939).
+//
+// This file used to hold its own copy of the brand prefix, and the check that
+// followed was `cacheVersion.startsWith(<that constant>)` — a tautology, because
+// cacheVersion was BUILT from it. It could not fail, which is why the divergence
+// it was meant to prevent shipped with the check sitting right next to it.
+//
+// That divergence was real: `rebrand.sh` could not reach `.mjs`, so a fork
+// rebranded public/sw.js and left this script stamping the template's brand. The
+// worker then created caches under one name and purged another, and every deploy
+// leaked. #922 closed that path by discovering files with `git ls-files`, but two
+// strings agreeing because both get swept is incidental — deriving one from the
+// other makes it structural.
+const authored = source.match(CACHE_VERSION_LINE);
+
+if (!authored) {
   // Fail loudly rather than produce an unversioned worker: a silent no-op here
   // reinstates exactly the bug this script exists to prevent.
   console.error(
@@ -92,9 +105,30 @@ if (!CACHE_VERSION_LINE.test(source)) {
   process.exit(1);
 }
 
+// e.g. `scripthammer-v1.0.0` -> `scripthammer-`. The same expression the worker
+// uses to derive CACHE_PREFIX, so the two agree by construction, not by discipline.
+const prefix = authored[1].replace(/-v[\d.].*$/, '') + '-';
+
+if (prefix === '-' || !authored[1].includes('-v')) {
+  // A prefix we cannot parse means the worker would purge by something other than
+  // what we are about to write. Refuse rather than guess: that mismatch is the
+  // storage leak this script exists to prevent, and it is invisible at runtime.
+  // Unlike the check this replaced, this condition can actually occur.
+  console.error(
+    `stamp-sw-version: cannot derive a cache prefix from "${authored[1]}". ` +
+      'Expected `<brand>-v<semver>`; the worker purges by the segment before `-v`.'
+  );
+  process.exit(1);
+}
+
+const cacheVersion = `${prefix}v${version}-${buildId()}`;
+
 writeFileSync(
   SW,
-  source.replace(CACHE_VERSION_LINE, `const CACHE_VERSION = '${cacheVersion}';`),
+  source.replace(
+    CACHE_VERSION_LINE,
+    `const CACHE_VERSION = '${cacheVersion}';`
+  ),
   'utf-8'
 );
 
