@@ -43,10 +43,10 @@ git push
 
 The `scripts/rebrand.sh` script automates updating 200+ files:
 
-| Category  | Changes                                                                                                |
-| --------- | ------------------------------------------------------------------------------------------------------ |
-| **Code**  | Replaces "ScriptHammer" with your project name in all TypeScript, JavaScript, JSON, and Markdown files |
-| **Files** | Renames files containing "ScriptHammer" (e.g., `ScriptHammerLogo.tsx` → `MyProjectLogo.tsx`)           |
+| Category  | Changes                                                                                                          |
+| --------- | ---------------------------------------------------------------------------------------------------------------- |
+| **Code**  | Replaces every ASCII case style of "ScriptHammer" across tracked text, while keeping prose and identifiers valid |
+| **Paths** | Renames brand-bearing files and directories from one collision-checked plan; binary bytes are never rewritten    |
 
 ### Your brand mark is not covered by any of that
 
@@ -137,18 +137,40 @@ Three things worth knowing:
   the one file it never matched. Every fork silently lost the link back,
   including forks whose owners would have kept it.
 
+An applied rebrand ends with an independent, case-insensitive scan of eligible
+tracked text (excluding lockfiles, binaries, and symlink targets) plus every
+transformed path. Any old-brand survivor outside a
+same-line `rebrand:keep` marker is an error, and the script does not print
+`REBRAND COMPLETE`. Dry runs report proposed changes but do not apply that
+postcondition to the intentionally unchanged tree.
+
+Case style is intentional: `ScriptHammer` uses the display name,
+`scripthammer` uses the technical slug, `Scripthammer` uses title case, and
+`SCRIPTHAMMER` uses an uppercase identifier-safe component name. Thus a fork
+named `GeoLarp` gets `GeoLarp`, `geolarp`, `Geolarp`, and `GEOLARP`; an env-style
+`SCRIPTHAMMER_TEST_DOMAIN` becomes `GEOLARP_TEST_DOMAIN`. Arbitrary mixed forms
+such as `ScriptHAMMER` are matched too.
+
+The shell workflow and its case-mapping helper remain stable template tooling;
+only the four recorded identity fields in `scripts/rebrand.sh` change after the
+postcondition succeeds. Before a different-target re-rebrand, stage the prior
+path moves with `git add -A` (preferably commit them). Automation refuses a
+source identity whose projections are ambiguous, or one that collides with the
+stable tooling, rather than risking a partial rewrite. Same-identity reruns are
+still explicit no-ops.
+
 **Removing the attribution is a one-line edit and you are welcome to make it.**
 It is MIT. The default is "kept" so that losing it is a decision rather than an
 accident.
 
 ### Exit Codes
 
-| Code | Meaning                  |
-| ---- | ------------------------ |
-| 0    | Success                  |
-| 1    | Invalid arguments        |
-| 2    | User declined re-rebrand |
-| 3    | Git error                |
+| Code | Meaning                       |
+| ---- | ----------------------------- |
+| 0    | Success                       |
+| 1    | Validation or rebrand failure |
+| 2    | User declined re-rebrand      |
+| 3    | Git error                     |
 
 ## Customizing Your Theme
 
@@ -336,7 +358,8 @@ The `session-persistence.spec.ts` test previously created users in `beforeEach` 
 ### Build Fails After Rebrand
 
 1. Run `docker compose down && docker compose up --build` to rebuild
-2. Check for any remaining "ScriptHammer" references: `grep -r "ScriptHammer" src/`
+2. The script already fails on unmarked survivors. To inspect manually, use
+   `git grep -Iin scripthammer` and confirm every remaining line carries `rebrand:keep`.
 3. Ensure all import paths are correct after file renames
 
 ### GitHub Pages Shows 404

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
-# ScriptHammer Rebrand Script
+# ScriptHammer Rebrand Script # rebrand:keep
 # =============================================================================
-# Automates rebranding of the ScriptHammer template to a new project identity.
+# Automates rebranding of the ScriptHammer template to a new project identity. # rebrand:keep
 # Updates 200+ files including code, config, and documentation.
 #
 # Usage: ./scripts/rebrand.sh <PROJECT_NAME> <OWNER> "<DESCRIPTION>" (--icon <mark> | --no-icon) [OPTIONS]
@@ -28,7 +28,7 @@
 #
 # Exit Codes:
 #   0  Success
-#   1  Invalid arguments
+#   1  Validation or rebrand failure
 #   2  Re-rebrand declined by user
 #   3  Git error (not a repo, git not installed)
 #
@@ -49,19 +49,48 @@
 #     label: 'ScriptHammer',   // rebrand:keep
 #
 #   It is LINE-scoped, not file-scoped — a marker at the top of a file protects
-#   nothing below it. The token is deliberately brand-neutral: `scripthammer:keep`
+#   nothing below it. The token is deliberately brand-neutral: `scripthammer:keep` # rebrand:keep
 #   would itself contain the string being replaced.
 #
 #   The attribution link in src/config/footer-links.ts is protected this way,
 #   which is why --preserve-attribution is now a no-op. Removing the attribution
 #   is a one-line edit you are welcome to make. It is MIT.
+#
+# Case and postcondition:
+#   Matching is ASCII case-insensitive and replacement preserves the matched
+#   style: ScriptHammer/scripthammer/Scripthammer/SCRIPTHAMMER become the # rebrand:keep
+#   display/slug/title/uppercase-component projections. Mixed forms are matched
+#   too, and identifier-adjacent occurrences stay identifier-safe.
+#
+#   An applied run finishes by scanning the mapped tracked text and paths. Any
+#   old-brand survivor outside a same-line rebrand:keep marker exits non-zero.
+#   Uppercase tokens use the separator-free component projection, so env-shaped
+#   names such as SCRIPTHAMMER_TEST_DOMAIN stay valid. # rebrand:keep
 # =============================================================================
 
 set -euo pipefail
 
+# Execute from an immutable temporary copy. The workflow implementation stays
+# template-owned while its four identity fields are updated after verification.
+# The copy also prevents Bash from observing an explicitly updated state file
+# midway through a successful run.
+if [ "${REBRAND_RUNTIME_COPY:-false}" != true ]; then
+    REBRAND_SOURCE_PATH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
+    REBRAND_RUNTIME_PATH=$(mktemp "${TMPDIR:-/tmp}/rebrand-runtime.XXXXXX")
+    cp "$REBRAND_SOURCE_PATH" "$REBRAND_RUNTIME_PATH"
+    chmod +x "$REBRAND_RUNTIME_PATH"
+    export REBRAND_RUNTIME_COPY=true REBRAND_SOURCE_PATH REBRAND_RUNTIME_PATH
+    exec bash "$REBRAND_RUNTIME_PATH" "$@"
+fi
+
+# Early argument/help failures happen before the tracked-file snapshots install
+# their combined cleanup trap, so arm runtime cleanup immediately.
+trap 'rm -f -- "$REBRAND_RUNTIME_PATH"' EXIT
+
 # Script info
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$REBRAND_SOURCE_PATH")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CASE_HELPER="$SCRIPT_DIR/rebrand-case.mjs"
 VERSION="1.0.0"
 
 # Colors for output
@@ -85,9 +114,18 @@ PRESERVE_SSH=false
 PRESERVE_ATTRIBUTION=false
 
 # Original project name to search for
-ORIGINAL_NAME="ScriptHammer"
-ORIGINAL_NAME_LOWER="scripthammer"
+ORIGINAL_NAME="ScriptHammer" # rebrand:keep
+ORIGINAL_NAME_LOWER="scripthammer" # rebrand:keep
+ORIGINAL_COMPONENT_NAME="ScriptHammer" # rebrand:keep
+ORIGINAL_NAME_UPPER="SCRIPTHAMMER" # rebrand:keep
 ORIGINAL_OWNER="TortoiseWolfe"
+
+# One immutable view of the repository is shared by content replacement, path
+# planning, and the postcondition. Without it, the first mv makes git's cached
+# path stale and a later pass silently stops seeing the renamed file.
+TRACKED_SNAPSHOT=""
+REWRITABLE_SNAPSHOT=""
+DETECTION_SNAPSHOT=""
 
 # =============================================================================
 # Helper Functions
@@ -116,7 +154,7 @@ show_help() {
       /^#/                 { sub(/^# ?/, ""); print; next }
       /^[[:space:]]*$/     { print ""; next }              # blank line, keep going
                            { exit }                       # real code, stop
-    ' "$0"
+    ' "$REBRAND_SOURCE_PATH"
     exit 0
 }
 
@@ -165,12 +203,12 @@ get_display_name() {
 
 # Derive a PascalCase, identifier-safe component name (#911).
 #
-# WHY THIS IS NOT get_display_name. `ORIGINAL_NAME` ("ScriptHammer") does two jobs in this
-# tree: it is a noun in prose, and it is a code identifier — `ScriptHammerLogo`, and the
+# WHY THIS IS NOT get_display_name. `ORIGINAL_NAME` ("ScriptHammer") does two jobs in this # rebrand:keep
+# tree: it is a noun in prose, and it is a code identifier — `ScriptHammerLogo`, and the # rebrand:keep
 # filename that declares it. Both substitutions used DISPLAY_NAME, which preserves the
 # user's spaces, hyphens and casing verbatim. That is right for prose and fatal for code:
 #
-#   fork "geoLARP"     -> <geoLARPLogo />       JSX reads a lowercase-initial tag as an
+#   fork "geoLARP"     -> <geoLARPLogo />       JSX reads a lowercase-initial tag as an # rebrand:keep
 #                                               INTRINSIC element, so React renders an
 #                                               unknown DOM tag instead of the component
 #   fork "My Cool App" -> <My Cool AppLogo />   a syntax error — and "My Cool App" is this
@@ -214,6 +252,17 @@ check_git() {
     if ! git rev-parse --git-dir &>/dev/null; then
         log_error "Not a git repository"
         exit 3
+    fi
+
+    if ! command -v node &>/dev/null; then
+        log_error "Node.js is required for case-preserving rebranding"
+        log_error "Run rebrand.sh inside the project container, as documented."
+        exit 1
+    fi
+
+    if [ ! -f "$CASE_HELPER" ]; then
+        log_error "Case-preserving helper not found: $CASE_HELPER"
+        exit 1
     fi
 }
 
@@ -266,7 +315,10 @@ tracked_files() {
 
     git -C "$REPO_ROOT" ls-files -z --cached |
         while IFS= read -r -d '' rel; do
-            [ -f "$REPO_ROOT/$rel" ] || continue
+            # Include tracked symlinks as paths, but never follow them during
+            # content rewriting. Gitlinks/directories are outside this script's
+            # file-renaming contract.
+            [ -f "$REPO_ROOT/$rel" ] || [ -L "$REPO_ROOT/$rel" ] || continue
             printf '%s\0' "$REPO_ROOT/$rel"
         done
 }
@@ -279,41 +331,113 @@ tracked_files() {
 # Lockfiles are excluded by name deliberately, not by oversight: their contents
 # are generated and integrity-checked, and a brand token inside one is not prose.
 is_rewritable() {
+    [ ! -L "$1" ] || return 1
     case "${1##*/}" in
         pnpm-lock.yaml|package-lock.json|yarn.lock|bun.lockb) return 1 ;;
     esac
     grep -Iq . "$1" 2>/dev/null
 }
 
-# Count ScriptHammer references to detect if already rebranded
-count_references() {
-    # Counts matching LINES across the same file set the sweep will rewrite. It
-    # used to run its own `grep -r` with a third exclusion list, so the detector
-    # and the thing it gates could disagree about what the repository contains.
-    local count=0
-    local file
+cleanup_file_snapshots() {
+    [ -z "$TRACKED_SNAPSHOT" ] || rm -f -- "$TRACKED_SNAPSHOT"
+    [ -z "$REWRITABLE_SNAPSHOT" ] || rm -f -- "$REWRITABLE_SNAPSHOT"
+    [ -z "$DETECTION_SNAPSHOT" ] || rm -f -- "$DETECTION_SNAPSHOT"
+    rm -f -- "$REBRAND_RUNTIME_PATH"
+}
+
+create_file_snapshots() {
+    TRACKED_SNAPSHOT=$(mktemp "${TMPDIR:-/tmp}/rebrand-tracked.XXXXXX")
+    REWRITABLE_SNAPSHOT=$(mktemp "${TMPDIR:-/tmp}/rebrand-text.XXXXXX")
+    DETECTION_SNAPSHOT=$(mktemp "${TMPDIR:-/tmp}/rebrand-detect.XXXXXX")
+    trap cleanup_file_snapshots EXIT
+
+    tracked_files > "$TRACKED_SNAPSHOT"
     while IFS= read -r -d '' file; do
         is_rewritable "$file" || continue
-        count=$(( count + $(grep -c "$ORIGINAL_NAME" "$file" 2>/dev/null || echo 0) ))
-    done < <(tracked_files)
-    echo "$count"
+        # The workflow implementation is stable template tooling, not brand
+        # content. Its four keep-marked ORIGINAL_* fields are updated explicitly
+        # only after verification; rewriting arbitrary shell tokens can corrupt
+        # a later run when a project is named e.g. "Local" or "Rebrand".
+        if [ "$file" = "$REBRAND_SOURCE_PATH" ]; then
+            continue
+        fi
+        printf '%s\0' "$file" >> "$REWRITABLE_SNAPSHOT"
+        # Stable tooling is excluded from already-rebranded detection. The shell
+        # implementation stores the source identity, while the helper documents
+        # transformation examples; neither is application-brand evidence.
+        if [ "$file" != "$REBRAND_SOURCE_PATH" ] && [ "$file" != "$CASE_HELPER" ]; then
+            printf '%s\0' "$file" >> "$DETECTION_SNAPSHOT"
+        fi
+    done < "$TRACKED_SNAPSHOT"
+}
+
+case_helper() {
+    local command="$1"
+    shift
+    node "$CASE_HELPER" "$command" "$REPO_ROOT" \
+        "$ORIGINAL_NAME" "$ORIGINAL_NAME_LOWER" \
+        "$ORIGINAL_COMPONENT_NAME" "$ORIGINAL_NAME_UPPER" \
+        "$DISPLAY_NAME" "$SANITIZED_NAME" "$COMPONENT_NAME" "$@"
+}
+
+brand_identity_is_unchanged() {
+    [ "$DISPLAY_NAME" = "$ORIGINAL_NAME" ] &&
+        [ "$SANITIZED_NAME" = "$ORIGINAL_NAME_LOWER" ] &&
+        [ "$COMPONENT_NAME" = "$ORIGINAL_COMPONENT_NAME" ] &&
+        [ "$(printf '%s' "$COMPONENT_NAME" | tr '[:lower:]' '[:upper:]')" = "$ORIGINAL_NAME_UPPER" ]
+}
+
+validate_brand_target() {
+    # A target that still contains the recorded source identity makes the final
+    # residual contract impossible to satisfy (for example `ScriptHammer Pro` # rebrand:keep
+    # or the case-only target `scripthammer`). Fail before the first write. # rebrand:keep
+    case_helper validate-target "$OWNER" "$DESCRIPTION" < /dev/null
+    case_helper validate-runtime "scripts/rebrand.sh" "scripts/rebrand-case.mjs" < /dev/null
+
+    if [ -n "${BRAND_ICON:-}" ] && [ -f "$BRAND_ICON" ] && \
+        [ "$(printf '%s' "${BRAND_ICON##*.}" | tr '[:upper:]' '[:lower:]')" = svg ]; then
+        case_helper validate-file "$BRAND_ICON" < /dev/null
+    fi
+}
+
+assert_index_paths_current() {
+    # `git ls-files` is intentionally the repository boundary. After a prior
+    # rebrand moves tracked paths, the index still names their missing sources
+    # until the user stages or commits the rename. A different-target rerun must
+    # not silently omit those files and report a false success.
+    local missing
+    missing=$(git -C "$REPO_ROOT" ls-files --deleted | sed -n '1,5p')
+    if [ -n "$missing" ]; then
+        log_error "Tracked paths are missing from the working tree; re-rebrand cannot take a complete snapshot."
+        log_error "Stage the prior rename with 'git add -A' (preferably commit it), then retry."
+        printf '%s\n' "$missing" | sed 's/^/  missing: /' >&2
+        exit 1
+    fi
+}
+
+# Count ScriptHammer references to detect if already rebranded # rebrand:keep
+count_references() {
+    # The detector and the postcondition use the same case-insensitive matcher,
+    # the same immutable tracked/text snapshot, and the same line-scoped keep
+    # rule. A fresh minimal fork with one `Scripthammer` line must not be called # rebrand:keep
+    # "already rebranded", and attribution-only keep lines must not prevent the
+    # correct zero result.
+    case_helper count < "$DETECTION_SNAPSHOT"
 }
 
 # Detect previous rebrand
 #
-# A fresh ScriptHammer clone contains hundreds of "ScriptHammer" references
-# across .ts/.tsx/.md/.yml files. A successfully-rebranded fork contains 0–4
-# (only the Footer attribution + this script's own constants — and even those
-# is protected by `rebrand:keep` markers). The threshold below
-# uses < 5 as the "already rebranded" signal — well under any plausible
-# fresh-clone count, well above any plausible post-rebrand residual.
+# A fresh clone contains hundreds of case variants. A repository with exactly
+# zero unmarked matches of its recorded source identity has already moved on.
+# There is deliberately no "few enough" heuristic: one missed title/uppercase
+# spelling is the bug this detector is meant to expose.
 detect_previous_rebrand() {
     local ref_count
     ref_count=$(count_references)
 
-    if [ "$ref_count" -eq 0 ] || [ "$ref_count" -lt 5 ]; then
+    if [ "$ref_count" -eq 0 ]; then
         log_warning "This repository appears to have been rebranded already."
-        echo "No \"$ORIGINAL_NAME\" references found (or very few: $ref_count)."
+        echo "No unmarked case-insensitive \"$ORIGINAL_NAME\" references found."
         echo ""
 
         # Try to detect current project name from package.json
@@ -389,42 +513,80 @@ replace_in_files() {
     done < <(tracked_files)
 }
 
-# Rename files containing original name
-rename_files() {
-    local search="$1"
-    local replace="$2"
+# Consume the helper's escaped, line-oriented report without making path names
+# part of shell syntax. Discovery/input remains NUL-separated; JSON quoting is
+# used only for the human-readable log.
+consume_case_report() {
+    local report="$1"
+    local counter="$2"
+    local kind
+    local payload
+    local count=0
 
-    while IFS= read -r -d '' file; do
-        local dir
-        local base
-        local new_base
-        local new_file
+    while IFS=$'\t' read -r kind payload; do
+        case "$kind" in
+            UPDATED) log_verbose "Updated: $payload" ;;
+            WOULD_UPDATE) log_verbose "[DRY-RUN] Would update: $payload" ;;
+            RENAMED) log_verbose "Renamed: $payload" ;;
+            WOULD_RENAME) log_verbose "[DRY-RUN] Would rename: $payload" ;;
+            COUNT) count="$payload" ;;
+        esac
+    done < "$report"
 
-        dir=$(dirname "$file")
-        base=$(basename "$file")
-        new_base=$(echo "$base" | sed "s|$search|$replace|g")
+    if [ "$counter" = modified ]; then
+        FILES_MODIFIED=$((FILES_MODIFIED + count))
+    else
+        FILES_RENAMED=$((FILES_RENAMED + count))
+    fi
+}
 
-        if [ "$base" != "$new_base" ]; then
-            new_file="$dir/$new_base"
-            if [ "$DRY_RUN" = true ]; then
-                log_verbose "[DRY-RUN] Would rename: ${base} → ${new_base}"
-            else
-                mv "$file" "$new_file"
-                log_verbose "Renamed: ${base} → ${new_base}"
-            fi
-            ((FILES_RENAMED++)) || true
-        fi
-    # Same discovery as the content sweep (#922). Filtering on the basename here
-    # rather than in `find -name` keeps both passes agreeing about what the
-    # repository contains. Binaries are NOT excluded: renaming a tracked
-    # ScriptHammerLogo.png is precisely what this pass is for.
-    done < <(
-        while IFS= read -r -d '' f; do
-            case "${f##*/}" in
-                *"$search"*) printf '%s\0' "$f" ;;
-            esac
-        done < <(tracked_files)
-    )
+replace_brand_in_files() {
+    local mode="content-apply"
+    local report
+    [ "$DRY_RUN" = false ] || mode="content-dry"
+    report=$(mktemp "${TMPDIR:-/tmp}/rebrand-content-report.XXXXXX")
+
+    if ! case_helper "$mode" < "$REWRITABLE_SNAPSHOT" > "$report"; then
+        rm -f -- "$report"
+        return 1
+    fi
+    consume_case_report "$report" modified
+    rm -f -- "$report"
+}
+
+preflight_brand_paths() {
+    # This runs before ANY content mutation. `ScriptHammer.md` and # rebrand:keep
+    # `Scripthammer.md` can otherwise collapse onto the same target and mv would # rebrand:keep
+    # overwrite one of them after hundreds of files had already changed.
+    case_helper paths-check < "$TRACKED_SNAPSHOT" > /dev/null
+}
+
+rename_brand_paths() {
+    local mode="paths-apply"
+    local report
+    [ "$DRY_RUN" = false ] || mode="paths-dry"
+    report=$(mktemp "${TMPDIR:-/tmp}/rebrand-path-report.XXXXXX")
+
+    if ! case_helper "$mode" < "$TRACKED_SNAPSHOT" > "$report"; then
+        rm -f -- "$report"
+        return 1
+    fi
+    consume_case_report "$report" renamed
+    rm -f -- "$report"
+}
+
+update_rebrand_identity_state() {
+    [ "$DRY_RUN" = true ] && return 0
+    case_helper update-state "$REPO_ROOT/scripts/rebrand.sh"
+}
+
+assert_no_old_brand() {
+    case_helper verify-paths < "$TRACKED_SNAPSHOT"
+    case_helper verify < "$REWRITABLE_SNAPSHOT"
+}
+
+assert_no_old_brand_before_path_moves() {
+    case_helper verify-current < "$REWRITABLE_SNAPSHOT"
 }
 
 # Update docker-compose.yml service name
@@ -467,16 +629,16 @@ update_package_json() {
     fi
 }
 
-# Update CNAME file (replace scripthammer domain with new project domain)
+# Update CNAME file (replace scripthammer domain with new project domain) # rebrand:keep
 update_cname() {
     local cname_file="$REPO_ROOT/public/CNAME"
 
     if [ -f "$cname_file" ]; then
-        # Check if it's a custom domain (not scripthammer.com)
+        # Check if it's a custom domain (not scripthammer.com) # rebrand:keep
         local domain
         domain=$(cat "$cname_file" 2>/dev/null || echo "")
 
-        if [[ "$domain" == *"scripthammer"* ]] || [ -z "$domain" ]; then
+        if [[ "$domain" == *"scripthammer"* ]] || [ -z "$domain" ]; then # rebrand:keep
             if [ "$KEEP_CNAME" = true ]; then
                 log_info "Keeping CNAME file as-is (--keep-cname flag set)"
             else
@@ -509,27 +671,27 @@ scaffold_themes() {
     fi
 
     # Replace theme names in @plugin "daisyui" block
-    if grep -q "scripthammer-dark" "$css_file" 2>/dev/null; then
+    if grep -q "scripthammer-dark" "$css_file" 2>/dev/null; then # rebrand:keep
         if [ "$DRY_RUN" = true ]; then
             log_verbose "[DRY-RUN] Would rename theme references in globals.css"
         else
-            sed "${SED_INPLACE[@]}" "s|scripthammer-dark|${SANITIZED_NAME}-dark|g" "$css_file"
-            sed "${SED_INPLACE[@]}" "s|scripthammer-light|${SANITIZED_NAME}-light|g" "$css_file"
-            sed "${SED_INPLACE[@]}" "s|ScriptHammer Dark Theme|${DISPLAY_NAME} Dark Theme|g" "$css_file"
-            sed "${SED_INPLACE[@]}" "s|ScriptHammer Light Theme|${DISPLAY_NAME} Light Theme|g" "$css_file"
-            log_verbose "Renamed theme blocks: scripthammer-* → ${SANITIZED_NAME}-*"
+            sed "${SED_INPLACE[@]}" "s|scripthammer-dark|${SANITIZED_NAME}-dark|g" "$css_file" # rebrand:keep
+            sed "${SED_INPLACE[@]}" "s|scripthammer-light|${SANITIZED_NAME}-light|g" "$css_file" # rebrand:keep
+            sed "${SED_INPLACE[@]}" "s|ScriptHammer Dark Theme|${DISPLAY_NAME} Dark Theme|g" "$css_file" # rebrand:keep
+            sed "${SED_INPLACE[@]}" "s|ScriptHammer Light Theme|${DISPLAY_NAME} Light Theme|g" "$css_file" # rebrand:keep
+            log_verbose "Renamed theme blocks: scripthammer-* → ${SANITIZED_NAME}-*" # rebrand:keep
         fi
         ((FILES_MODIFIED++)) || true
     fi
 
     # Update ThemeScript.tsx fallback theme names
     local theme_script="$REPO_ROOT/src/components/ThemeScript.tsx"
-    if [ -f "$theme_script" ] && grep -q "scripthammer-dark" "$theme_script" 2>/dev/null; then
+    if [ -f "$theme_script" ] && grep -q "scripthammer-dark" "$theme_script" 2>/dev/null; then # rebrand:keep
         if [ "$DRY_RUN" = true ]; then
             log_verbose "[DRY-RUN] Would update ThemeScript.tsx theme names"
         else
-            sed "${SED_INPLACE[@]}" "s|scripthammer-dark|${SANITIZED_NAME}-dark|g" "$theme_script"
-            sed "${SED_INPLACE[@]}" "s|scripthammer-light|${SANITIZED_NAME}-light|g" "$theme_script"
+            sed "${SED_INPLACE[@]}" "s|scripthammer-dark|${SANITIZED_NAME}-dark|g" "$theme_script" # rebrand:keep
+            sed "${SED_INPLACE[@]}" "s|scripthammer-light|${SANITIZED_NAME}-light|g" "$theme_script" # rebrand:keep
             log_verbose "Updated ThemeScript.tsx theme fallbacks"
         fi
         ((FILES_MODIFIED++)) || true
@@ -537,12 +699,12 @@ scaffold_themes() {
 
     # Update Storybook preview theme names
     local preview_file="$REPO_ROOT/.storybook/preview.tsx"
-    if [ -f "$preview_file" ] && grep -q "scripthammer-dark" "$preview_file" 2>/dev/null; then
+    if [ -f "$preview_file" ] && grep -q "scripthammer-dark" "$preview_file" 2>/dev/null; then # rebrand:keep
         if [ "$DRY_RUN" = true ]; then
             log_verbose "[DRY-RUN] Would update .storybook/preview.tsx theme names"
         else
-            sed "${SED_INPLACE[@]}" "s|scripthammer-dark|${SANITIZED_NAME}-dark|g" "$preview_file"
-            sed "${SED_INPLACE[@]}" "s|scripthammer-light|${SANITIZED_NAME}-light|g" "$preview_file"
+            sed "${SED_INPLACE[@]}" "s|scripthammer-dark|${SANITIZED_NAME}-dark|g" "$preview_file" # rebrand:keep
+            sed "${SED_INPLACE[@]}" "s|scripthammer-light|${SANITIZED_NAME}-light|g" "$preview_file" # rebrand:keep
             log_verbose "Updated Storybook preview theme names"
         fi
         ((FILES_MODIFIED++)) || true
@@ -740,7 +902,7 @@ main() {
     if [ ${#POSITIONAL[@]} -lt 3 ]; then
         log_error "Missing required arguments"
         echo ""
-        echo "Usage: $0 <PROJECT_NAME> <OWNER> \"<DESCRIPTION>\" [OPTIONS]"
+        echo "Usage: $REBRAND_SOURCE_PATH <PROJECT_NAME> <OWNER> \"<DESCRIPTION>\" [OPTIONS]"
         echo ""
         echo "Use --help for more information"
         exit 1
@@ -792,11 +954,17 @@ main() {
     # Pre-flight checks
     check_git
     check_uncommitted_changes
+    create_file_snapshots
+
+    local same_brand=false
+    if brand_identity_is_unchanged; then
+        same_brand=true
+    fi
 
     # Header
     echo ""
     echo "========================================="
-    echo "  ScriptHammer Rebrand Script v${VERSION}"
+    echo "  ScriptHammer Rebrand Script v${VERSION}" # rebrand:keep
     echo "========================================="
     echo ""
 
@@ -815,34 +983,27 @@ main() {
         echo ""
     fi
 
-    # Check for previous rebrand
-    detect_previous_rebrand || true
+    # Check for previous rebrand. A same-target run is an explicit no-op for the
+    # brand sweep; requiring "zero old brand" when old and new are identical is
+    # a contradiction, not verification.
+    if [ "$same_brand" = true ]; then
+        log_info "Brand identity already matches; string and path transforms are a no-op."
+    else
+        validate_brand_target
+        assert_index_paths_current
+        detect_previous_rebrand || true
+        preflight_brand_paths
+    fi
 
     # Perform rebrand operations
     echo "Updating file contents..."
-    # Replace case variations
-    # IDENTIFIER OCCURRENCES FIRST, THEN PROSE (#911).
-    #
-    # `ScriptHammer` glued to a word character is part of a larger identifier —
-    # `ScriptHammerLogo`, `SimpleScriptHammer`, `ScriptHammerLogoProps` — and must stay
-    # identifier-safe, so it takes COMPONENT_NAME. A standalone occurrence is a noun in
-    # prose and keeps DISPLAY_NAME, spaces and all.
-    #
-    # Order is load-bearing: the standalone pass would otherwise consume the identifier
-    # occurrences before the adjacency passes ever saw them.
-    replace_in_files "$ORIGINAL_NAME\([A-Za-z0-9_]\)" "$COMPONENT_NAME\1"
-    replace_in_files "\([A-Za-z0-9_]\)$ORIGINAL_NAME" "\1$COMPONENT_NAME"
-    replace_in_files "$ORIGINAL_NAME" "$DISPLAY_NAME"
-    replace_in_files "$ORIGINAL_NAME_LOWER" "$SANITIZED_NAME"
+    if [ "$same_brand" = false ]; then
+        # One ASCII-case-insensitive pass handles canonical, lower, title,
+        # uppercase, and arbitrary mixed spellings. The replacement callback
+        # retains #911's display/slug/component distinction from local context.
+        replace_brand_in_files
+    fi
     replace_in_files "$ORIGINAL_OWNER" "$OWNER"
-
-    echo ""
-    echo "Renaming files..."
-    # FILENAMES ALWAYS TAKE THE COMPONENT NAME (#911). `ScriptHammerLogo.tsx` declares an
-    # identifier, so its filename must be identifier-safe — and no filename in this tree
-    # should acquire a space because someone forked as "My Cool App".
-    rename_files "$ORIGINAL_NAME" "$COMPONENT_NAME"
-    rename_files "$ORIGINAL_NAME_LOWER" "$SANITIZED_NAME"
 
     echo ""
     echo "Updating docker-compose.yml..."
@@ -871,6 +1032,33 @@ main() {
     echo ""
     echo "Updating brand icons..."
     update_brand_icons
+
+    echo ""
+    echo "Renaming tracked paths..."
+    if [ "$same_brand" = false ]; then
+        if [ "$DRY_RUN" = false ]; then
+            # Catch every content/specialized-write failure while Git's indexed
+            # source paths still exist. A retry can then repair the same tree.
+            echo "Verifying content before path moves..."
+            assert_no_old_brand_before_path_moves
+        fi
+
+        # Transform every path component from the immutable pre-mutation plan.
+        # This includes brand-bearing directories and moves binaries without
+        # reading their bytes.
+        rename_brand_paths
+    fi
+
+    if [ "$DRY_RUN" = false ] && [ "$same_brand" = false ]; then
+        echo ""
+        echo "Verifying rebrand postcondition..."
+        assert_no_old_brand
+
+        # Commit identity state only after every write and both independent
+        # postconditions succeed. The assignment lines themselves are keep-
+        # marked so the content sweep cannot publish a target state early.
+        update_rebrand_identity_state
+    fi
 
     # Summary
     END_TIME=$(date +%s)
@@ -913,7 +1101,7 @@ main() {
         # they are registered with third parties, not derived from a project name.
         # `scripts/supabase/auth-config.json` is the DESIRED STATE a daily gate
         # compares your live project against, so leaving it unset means the gate
-        # measures your project against ScriptHammer's identity and fails on values
+        # measures your project against ScriptHammer's identity and fails on values # rebrand:keep
         # that were never yours. Say so, rather than let them conclude the gate is
         # broken and stop reading it.
         echo -e "${YELLOW}  ⚠  YOUR AUTH DESIRED-STATE IS STILL ${ORIGINAL_NAME}'S.${NC}"

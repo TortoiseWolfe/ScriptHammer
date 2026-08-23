@@ -365,9 +365,9 @@ export type DetectedConfig = typeof detectedConfig;
           isGitHubActions: true,
           isGitHub: true,
           cnameExists: false,
-          projectName: 'ScriptHammer',
+          projectName: 'ScriptHammer', // rebrand:keep
         }),
-        '/ScriptHammer'
+        '/ScriptHammer' // rebrand:keep
       );
 
       // DISABLE_BASE_PATH=true wins over the auto-detection so the E2E build
