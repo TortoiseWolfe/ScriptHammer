@@ -43,6 +43,26 @@ function triggerBlock(text) {
   return end === -1 ? rest : rest.slice(0, end);
 }
 
+function matrixGateErrors(text) {
+  const errors = [];
+  const start = text.indexOf('  e2e-local:');
+  const end = text.indexOf('  parity:', start);
+  const matrix =
+    start === -1 ? '' : text.slice(start, end === -1 ? undefined : end);
+  if (!/^    needs:\s*changes$/m.test(matrix)) {
+    errors.push('matrix no longer depends on changes');
+  }
+  if (
+    !new RegExp(
+      `^    if: ${GATE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+      'm'
+    ).test(matrix)
+  ) {
+    errors.push('matrix is not gated by the changes result');
+  }
+  return errors;
+}
+
 describe('e2e-local.yml runs on every PR without trapping docs-only ones (#575)', () => {
   it('the parser found the workflow it is asserting about', () => {
     // Without this every assertion below could pass vacuously on an empty read.
@@ -72,13 +92,16 @@ describe('e2e-local.yml runs on every PR without trapping docs-only ones (#575)'
   });
 
   it('the matrix is gated on the changes job, so docs-only PRs cost nothing', () => {
-    assert.ok(
-      /e2e-local:[\s\S]*?needs:\s*changes/.test(yaml),
-      'the matrix no longer depends on `changes` — every docs typo would run 24 jobs'
+    assert.deepStrictEqual(
+      matrixGateErrors(yaml),
+      [],
+      'the e2e-local matrix itself must carry the changes dependency and gate'
     );
+
+    const ungated = yaml.replace(`    if: ${GATE}\n`, '');
     assert.ok(
-      yaml.includes(`if: ${GATE}`),
-      `the matrix is not gated on \`${GATE}\``
+      matrixGateErrors(ungated).length > 0,
+      'CONTROL: removing the matrix job gate was accepted'
     );
   });
 
