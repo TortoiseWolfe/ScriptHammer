@@ -2,6 +2,10 @@
 # which silently truncated this name to "E2E (local Supabase) —".
 name: 'E2E (local Supabase)'
 
+permissions:
+  contents: read
+  actions: read
+
 # THIS LANE IS REQUIRED, AND IT IS WHERE A PR GETS ITS E2E COVERAGE.
 #
 # `E2E (local) result` became a required context on `main` when #739 closed
@@ -22,9 +26,11 @@ name: 'E2E (local Supabase)'
 # Still true, and not to be undone casually: e2e.yml is not deleted, and its
 # repo-wide mutex stays. Six `@hosted` tests can only pass there.
 #
-# NOW THE FULL 24-JOB MATRIX (#575 step 1). It mirrors e2e.yml's three matrices
-# exactly — same projects, same shard counts, same `workers: 2` on the msg-iso
-# entries — because parity is only meaningful if the two run the SAME work.
+# THE FULL 24-SHARD MATRIX STILL EXISTS (#575 step 1), but the common PR path is
+# eight Chromium shards (#950). Firefox and WebKit run after merge on push to
+# main, on workflow_dispatch, or when the PR event already carries `full-e2e`.
+# Full mode mirrors e2e.yml exactly — same projects, same shard counts, same
+# `workers: 2` on the msg-iso entries — so parity remains meaningful there.
 #
 # What it does NOT mirror is the contention machinery. e2e.yml splits into three
 # per-browser jobs each capped at `max-parallel: 2` for one reason: to hold peak
@@ -76,6 +82,10 @@ on:
   # nothing to run.
   pull_request:
     branches: [main]
+    # `labeled` is what makes adding `full-e2e` launch the advertised 24-shard run.
+    # Other labels still take the normal Chromium path; never skip those events, because a
+    # vacuous green required context on the same SHA could hide an earlier real failure.
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main]
 
@@ -96,7 +106,35 @@ jobs:
     timeout-minutes: 5
     outputs:
       run: ${{ steps.decide.outputs.run }}
+      browsers: ${{ steps.browsers.outputs.browsers }}
+      expected_shards: ${{ steps.browsers.outputs.expected_shards }}
+      browser_mode: ${{ steps.browsers.outputs.browser_mode }}
     steps:
+      # Filter the matrix BEFORE runner allocation. A step-level browser gate would still
+      # enqueue 24 jobs and preserve the runner bottleneck #950 exists to remove.
+      - name: Select browser coverage
+        id: browsers
+        env:
+          E2E_FULL_BROWSERS: >-
+            ${{ github.event_name != 'pull_request' ||
+                contains(github.event.pull_request.labels.*.name, 'full-e2e') }}
+        run: |
+          if [ "$E2E_FULL_BROWSERS" = "true" ]; then
+            browsers='["chromium","firefox","webkit"]'
+            expected_shards=24
+            browser_mode=full
+          else
+            browsers='["chromium"]'
+            expected_shards=8
+            browser_mode=chromium
+          fi
+          {
+            echo "browsers=$browsers"
+            echo "expected_shards=$expected_shards"
+            echo "browser_mode=$browser_mode"
+          } >> "$GITHUB_OUTPUT"
+          echo "browser mode: $browser_mode ($expected_shards shards)"
+
       - uses: actions/checkout@v5
         with:
           # Full history: the PR case diffs against the merge base, which a shallow
@@ -130,7 +168,7 @@ jobs:
           node scripts/ci/e2e-local-changes.mjs "$BASE" "$HEAD"
 
   e2e-local:
-    name: ${{ matrix.project }} ${{ matrix.shard }}
+    name: ${{ matrix.browser }}-${{ matrix.slice.project }} ${{ matrix.slice.shard }}
     needs: changes
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
@@ -157,44 +195,16 @@ jobs:
       # cloud project that does not exist here.
       fail-fast: false
       matrix:
-        include:
-          # ===== CHROMIUM =====
-          - { project: chromium-msg, browser: chromium, shard: 1/1 }
-          - {
-              project: chromium-msg-iso,
-              browser: chromium,
-              shard: 1/1,
-              workers: 2,
-            }
-          - { project: chromium-gen, browser: chromium, shard: 1/6 }
-          - { project: chromium-gen, browser: chromium, shard: 2/6 }
-          - { project: chromium-gen, browser: chromium, shard: 3/6 }
-          - { project: chromium-gen, browser: chromium, shard: 4/6 }
-          - { project: chromium-gen, browser: chromium, shard: 5/6 }
-          - { project: chromium-gen, browser: chromium, shard: 6/6 }
-          # ===== FIREFOX =====
-          - { project: firefox-msg, browser: firefox, shard: 1/1 }
-          - {
-              project: firefox-msg-iso,
-              browser: firefox,
-              shard: 1/1,
-              workers: 2,
-            }
-          - { project: firefox-gen, browser: firefox, shard: 1/6 }
-          - { project: firefox-gen, browser: firefox, shard: 2/6 }
-          - { project: firefox-gen, browser: firefox, shard: 3/6 }
-          - { project: firefox-gen, browser: firefox, shard: 4/6 }
-          - { project: firefox-gen, browser: firefox, shard: 5/6 }
-          - { project: firefox-gen, browser: firefox, shard: 6/6 }
-          # ===== WEBKIT =====
-          - { project: webkit-msg, browser: webkit, shard: 1/1 }
-          - { project: webkit-msg-iso, browser: webkit, shard: 1/1, workers: 2 }
-          - { project: webkit-gen, browser: webkit, shard: 1/6 }
-          - { project: webkit-gen, browser: webkit, shard: 2/6 }
-          - { project: webkit-gen, browser: webkit, shard: 3/6 }
-          - { project: webkit-gen, browser: webkit, shard: 4/6 }
-          - { project: webkit-gen, browser: webkit, shard: 5/6 }
-          - { project: webkit-gen, browser: webkit, shard: 6/6 }
+        browser: ${{ fromJSON(needs.changes.outputs.browsers) }}
+        slice:
+          - { project: msg, shard: 1/1 }
+          - { project: msg-iso, shard: 1/1, workers: 2 }
+          - { project: gen, shard: 1/6 }
+          - { project: gen, shard: 2/6 }
+          - { project: gen, shard: 3/6 }
+          - { project: gen, shard: 4/6 }
+          - { project: gen, shard: 5/6 }
+          - { project: gen, shard: 6/6 }
 
     steps:
       - name: Checkout the code under test
@@ -374,7 +384,7 @@ jobs:
       #
       # This is also what CLAUDE.md asks for -- 'Docker-first development is
       # MANDATORY' -- and CI was the one place that ignored it.
-      - name: Run ${{ matrix.project }} ${{ matrix.shard }}
+      - name: Run ${{ matrix.browser }}-${{ matrix.slice.project }} ${{ matrix.slice.shard }}
         run: |
           npx serve out -l 3000 &
           npx wait-on http://localhost:3000 --timeout 60000
@@ -429,7 +439,7 @@ jobs:
             # the script, because it was needed identically at ten call sites and
             # the one place it was written by hand is the one place it was wrong.
             scripts/ci/playwright-in-container.sh test \
-              --project=${{ matrix.project }} --shard=${{ matrix.shard }} \
+              --project=${{ matrix.browser }}-${{ matrix.slice.project }} --shard=${{ matrix.slice.shard }} \
               $WORKERS_FLAG \
               --grep-invert='@hosted' \
               --reporter=line,json,./tests/e2e/reporters/assertion-count-reporter.ts || true
@@ -450,7 +460,7 @@ jobs:
           # the check into the shared script without this line would have
           # silently disarmed the very protection #830 added.
           PLAYWRIGHT_REQUIRED_ENV: NEXT_PUBLIC_SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY NEXT_PUBLIC_SUPABASE_ANON_KEY
-          WORKERS: ${{ matrix.workers }}
+          WORKERS: ${{ matrix.slice.workers }}
           # EVERY JOB MUST DO ITS OWN FULL SETUP (#575).
           #
           # auth.setup.ts:146 gates the second half of setup on
@@ -540,7 +550,6 @@ jobs:
               sys.exit(1)
           EOF
 
-
       - name: No passing test may have run zero assertions (#861)
         if: always()
         # Separate from the step above because it answers a different question.
@@ -552,13 +561,13 @@ jobs:
       - name: Name this shard's artifact
         if: always()
         id: slug
-        run: echo "id=${{ matrix.project }}-$(echo '${{ matrix.shard }}' | tr '/' '-')" >> "$GITHUB_OUTPUT"
+        run: echo "id=${{ matrix.browser }}-${{ matrix.slice.project }}-$(echo '${{ matrix.slice.shard }}' | tr '/' '-')" >> "$GITHUB_OUTPUT"
 
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          # 24 jobs uploading `e2e-local-report` would collide; upload-artifact v4+
+          # Every selected shard uploading `e2e-local-report` would collide; upload-artifact v4+
           # errors on a duplicate name, so every shard needs its own.
           name: e2e-local-${{ steps.slug.outputs.id }}
           path: |
@@ -577,7 +586,7 @@ jobs:
       # diagnosed from log text because the trace it advertised did not exist.
       #
       # ONLY ON FAILURE, deliberately. On a green run this directory is noise, and
-      # uploading it from 24 shards every time would trade one waste for another. The
+      # uploading it from every selected shard would trade one waste for another. The
       # artifact is worth having exactly when someone is about to go looking for it.
       - name: Upload failure diagnostics
         if: failure()
@@ -593,7 +602,7 @@ jobs:
   # PARITY — the only thing that makes this run worth doing (#575 step 2)
   # ==========================================================================
   #
-  # "All 24 jobs went green" is NOT parity. A local stack that silently skipped
+  # "All selected jobs went green" is NOT parity. A local stack that silently skipped
   # every auth test would also report all-green — that is the #396 shape, and it
   # is exactly what a migration that failed to apply would look like.
   #
@@ -608,10 +617,11 @@ jobs:
   #
   # TWO TIERS, BECAUSE THEY ANSWER DIFFERENT QUESTIONS (#732).
   #
-  #   Tier 1 — "did the suite run and pass?"  True on any commit. 24/24 shards,
-  #            zero failures, above a floor. This is the gate.
-  #   Tier 2 — "does it match the cloud exactly?"  Only interpretable on de0f7f0,
-  #            because on any other SHA the test set has moved.
+  #   Tier 1 — "did the selected suite run and pass?"  True on any commit. Every
+  #            expected shard, zero failures, above a mode-scaled floor. This is the gate.
+  #   Tier 2 — "does the full matrix match the cloud exactly?"  Only interpretable
+  #            in 24-shard mode on de0f7f0, because the baseline covers all browsers
+  #            and on any other SHA the test set has moved.
   #
   # They used to be one check, with tier 2's SHA guard placed FIRST — so on every
   # commit that was not the baseline the job exited 0 before asking whether
@@ -665,6 +675,8 @@ jobs:
           # the check on a real parity run or fail every PR against a baseline that
           # does not describe it.
           TESTED_SHA: ${{ steps.tested.outputs.sha }}
+          EXPECTED_SHARDS: ${{ needs.changes.outputs.expected_shards }}
+          BROWSER_MODE: ${{ needs.changes.outputs.browser_mode }}
         run: |
           set -uo pipefail
           python3 - <<'EOF'
@@ -678,15 +690,29 @@ jobs:
           # baseline itself cannot be regenerated (artifacts expired; quota until 09-02).
           BASE = {"passed": 1807, "skipped": 194, "flaky": 0}
           BASE_SHA = "de0f7f080c8d75949e4e6c89fdf66ab7d3da8029"
-          # Deliberately well under both the cloud baseline (1807) and the last local
-          # run (1894): this is a "did the suite actually run" floor, not a parity
-          # number. Parity is tier 2 below.
+          browser_mode = os.environ.get("BROWSER_MODE", "")
+          try:
+              expected_shards = int(os.environ["EXPECTED_SHARDS"])
+          except (KeyError, ValueError):
+              print("::error::EXPECTED_SHARDS is missing or invalid — browser selection did not report a usable plan")
+              sys.exit(1)
+          expected_by_mode = {"chromium": 8, "full": 24}
+          if expected_by_mode.get(browser_mode) != expected_shards:
+              print(f"::error::inconsistent browser plan: mode={browser_mode!r}, expected_shards={expected_shards}")
+              sys.exit(1)
+
+          # Preserve the existing 1700/24 anti-vacuity threshold and scale it for the
+          # selected matrix. ceil(1700 * 8 / 24) = 567; the measured Chromium slice on
+          # run 32584683318 reported 683 passing/flaky tests, so this keeps real margin.
+          # This is a "did the suite actually run" floor, not a parity number. Full-mode
+          # parity is tier 2 below.
           #
           # UNCHANGED by the @hosted split (#725), and the reason is worth stating because
           # it is counter-intuitive: the six excluded tests were FAILING locally, so they
           # were counted in `failed`, never in `passed`. Removing them subtracts nothing
           # from this total.
-          FLOOR = 1700
+          FULL_FLOOR = 1700
+          FLOOR = (FULL_FLOOR * expected_shards + 23) // 24
 
           files = sorted(pathlib.Path("shards").rglob("results.json"))
           if not files:
@@ -715,21 +741,28 @@ jobs:
               for s in data.get("suites", []):
                   walk(s)
 
-          print(f"shards reporting: {len(files)}/24")
-          print(f"  passed  {tot['passed']:>5}   baseline {BASE['passed']}")
-          print(f"  skipped {tot['skipped']:>5}   baseline {BASE['skipped']}")
-          print(f"  flaky   {tot['flaky']:>5}   baseline {BASE['flaky']}")
+          print(f"browser mode: {browser_mode}")
+          print(f"shards reporting: {len(files)}/{expected_shards}")
+          print(f"  passed  {tot['passed']:>5}")
+          print(f"  skipped {tot['skipped']:>5}")
+          print(f"  flaky   {tot['flaky']:>5}")
           print(f"  failed  {tot['failed']:>5}")
 
           summary = os.environ.get("GITHUB_STEP_SUMMARY")
           if summary:
               with open(summary, "a") as fh:
-                  fh.write("### E2E local parity\n\n")
-                  fh.write("| | local | cloud baseline |\n|---|---|---|\n")
-                  for k in ("passed", "skipped", "flaky"):
-                      mark = "OK" if tot[k] == BASE[k] else "DIFF"
-                      fh.write(f"| {k} | {tot[k]} | {BASE[k]} | {mark} |\n")
-                  fh.write(f"| failed | {tot['failed']} | 0 | |\n")
+                  fh.write(f"### E2E local — {browser_mode} mode\n\n")
+                  if browser_mode == "full":
+                      fh.write("| | local | cloud baseline |\n|---|---|---|\n")
+                      for k in ("passed", "skipped", "flaky"):
+                          mark = "OK" if tot[k] == BASE[k] else "DIFF"
+                          fh.write(f"| {k} | {tot[k]} | {BASE[k]} | {mark} |\n")
+                      fh.write(f"| failed | {tot['failed']} | 0 | |\n")
+                  else:
+                      fh.write("| metric | value |\n|---|---:|\n")
+                      fh.write(f"| shards | {len(files)} / {expected_shards} |\n")
+                      for k in ("passed", "skipped", "flaky", "failed"):
+                          fh.write(f"| {k} | {tot[k]} |\n")
 
           # ── TIER 1: the always-on gate (#732) ────────────────────────────────
           #
@@ -741,8 +774,8 @@ jobs:
           # "did anything fail" down with it. Those are separate questions, so
           # they are now separate tiers.
           problems = []
-          if len(files) != 24:
-              problems.append(f"only {len(files)} of 24 shards reported")
+          if len(files) != expected_shards:
+              problems.append(f"only {len(files)} of {expected_shards} shards reported")
           if tot["failed"]:
               problems.append(f"{tot['failed']} test(s) failed")
           # A floor, not an equality: the test set legitimately grows. It catches
@@ -759,11 +792,20 @@ jobs:
                   print(f"::error::{p}")
               sys.exit(1)
 
-          # ── TIER 2: count parity, only interpretable on the baseline SHA ──────
+          # ── TIER 2: count parity, only interpretable for a full baseline run ─
+          if browser_mode != "full":
+              print("")
+              print(f"Artifact totals OK: {expected_shards}/{expected_shards} shards, 0 failures, above the floor.")
+              print("The shard matrix's OWN verdict is a separate step after this one")
+              print("— these totals cannot see a shard that failed after reporting (#934).")
+              print("COUNT PARITY not evaluated — Chromium PR mode is intentionally an")
+              print("8-shard subset, while the cloud baseline describes all 24 shards.")
+              sys.exit(0)
+
           on_baseline = os.environ.get("TESTED_SHA", "") == BASE_SHA
           if not on_baseline:
               print("")
-              print("Artifact totals OK: 24/24 shards, 0 failures, above the floor.")
+              print(f"Artifact totals OK: {expected_shards}/{expected_shards} shards, 0 failures, above the floor.")
               print("The shard matrix's OWN verdict is a separate step after this one")
               print("— these totals cannot see a shard that failed after reporting (#934).")
               print("COUNT PARITY not evaluated — the cloud numbers describe")
@@ -825,3 +867,100 @@ jobs:
             echo "::error::log names the cause. Do not relax this to make a run green."
             exit 1
           fi
+
+      # Queue time and execution time were previously collapsed into one "E2E is slow"
+      # number (#950). This is observational only: telemetry must never strand the required
+      # check if GitHub's own API is unavailable.
+      - name: Report queue and execution timing
+        # Failed-job reruns carry successful jobs forward with their old timestamps, so
+        # combining them would publish plausible-looking but false queue statistics.
+        if: needs.changes.outputs.run == 'true' && github.run_attempt == '1'
+        continue-on-error: true
+        uses: actions/github-script@v8
+        env:
+          E2E_BROWSER_MODE: ${{ needs.changes.outputs.browser_mode }}
+          E2E_EXPECTED_SHARDS: ${{ needs.changes.outputs.expected_shards }}
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const runId = context.runId;
+            const attemptNumber = Number(process.env.GITHUB_RUN_ATTEMPT || '1');
+            const { data: run } = await github.rest.actions.getWorkflowRunAttempt({
+              owner,
+              repo,
+              run_id: runId,
+              attempt_number: attemptNumber,
+            });
+            const jobs = await github.paginate(
+              github.rest.actions.listJobsForWorkflowRunAttempt,
+              {
+                owner,
+                repo,
+                run_id: runId,
+                attempt_number: attemptNumber,
+                per_page: 100,
+              }
+            );
+
+            const changes = jobs.find((job) => job.name === 'Does this change need E2E?');
+            const shards = jobs.filter(
+              (job) => /^(chromium|firefox|webkit)-(msg|gen)/.test(job.name) &&
+                job.started_at && job.completed_at
+            );
+            const expected = Number(process.env.E2E_EXPECTED_SHARDS);
+            if (!changes?.started_at || !changes.completed_at || shards.length !== expected) {
+              throw new Error(
+                `timing inputs incomplete: changes=${changes?.started_at || 'missing'}/` +
+                  `${changes?.completed_at || 'missing'}, ` +
+                  `shards=${shards.length}/${expected}`
+              );
+            }
+
+            const workflowStartedAt = new Date(run.run_started_at).getTime();
+            const readyAt = new Date(changes.completed_at).getTime();
+            const minutes = (milliseconds) => milliseconds / 60000;
+            const queue = shards.map((job) =>
+              minutes(Math.max(0, new Date(job.started_at).getTime() - readyAt))
+            );
+            const execution = shards.map((job) =>
+              minutes(new Date(job.completed_at).getTime() - new Date(job.started_at).getTime())
+            );
+            const stats = (values) => {
+              const sorted = [...values].sort((a, b) => a - b);
+              const middle = Math.floor(sorted.length / 2);
+              const median = sorted.length % 2
+                ? sorted[middle]
+                : (sorted[middle - 1] + sorted[middle]) / 2;
+              return [sorted[0], median, sorted.at(-1)].map((value) => value.toFixed(1));
+            };
+            const [queueMin, queueMedian, queueMax] = stats(queue);
+            const [runMin, runMedian, runMax] = stats(execution);
+            const initialQueue = minutes(
+              Math.max(0, new Date(changes.started_at).getTime() - workflowStartedAt)
+            ).toFixed(1);
+            const firstShardAt = Math.min(
+              ...shards.map((job) => new Date(job.started_at).getTime())
+            );
+            const firstShardDelay = minutes(
+              Math.max(0, firstShardAt - workflowStartedAt)
+            ).toFixed(1);
+
+            await core.summary
+              .addHeading('E2E local timing', 3)
+              .addRaw(
+                `${process.env.E2E_BROWSER_MODE} mode · ${expected} shards · ` +
+                  `initial queue ${initialQueue} min · ` +
+                  `first shard ${firstShardDelay} min after workflow start\n\n`
+              )
+              .addTable([
+                [
+                  { data: 'minutes', header: true },
+                  { data: 'min', header: true },
+                  { data: 'median', header: true },
+                  { data: 'max', header: true },
+                ],
+                ['shard queue after changes', queueMin, queueMedian, queueMax],
+                ['shard execution', runMin, runMedian, runMax],
+              ])
+              .write();
