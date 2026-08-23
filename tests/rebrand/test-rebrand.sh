@@ -13,10 +13,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 REBRAND_SCRIPT="$REPO_ROOT/scripts/rebrand.sh"
+REBRAND_CASE_HELPER="$REPO_ROOT/scripts/rebrand-case.mjs"
+UPSTREAM_DISPLAY='Script''Hammer'
 
 # SAFETY CHECK: Never run rebrand on the actual repo
 SAFETY_FILE="$REPO_ROOT/.git/config"
-if [ -f "$SAFETY_FILE" ] && grep -q "ScriptHammer" "$SAFETY_FILE" 2>/dev/null; then
+if [ -f "$SAFETY_FILE" ] && grep -q "$UPSTREAM_DISPLAY" "$SAFETY_FILE" 2>/dev/null; then
     ACTUAL_REPO=true
 else
     ACTUAL_REPO=false
@@ -88,6 +90,7 @@ setup_temp_dir() {
     mkdir -p public
     echo "scripthammer.com" > public/CNAME
     echo "export const projectName = 'ScriptHammer';" > src/components/Logo.tsx
+    printf 'lockfileBrand: ScriptHammer\n' > pnpm-lock.yaml
 
     # THE BRAND TOKEN IN A FILENAME AND IN AN IDENTIFIER (#911).
     #
@@ -141,11 +144,52 @@ FOOTER
     printf '#!/bin/sh\n# ScriptHammer pre-commit hook\n' > .husky/pre-commit
     chmod +x .husky/pre-commit
 
-    # Copy the rebrand script to temp dir
-    cp "$REBRAND_SCRIPT" "$TEMP_DIR/scripts/" 2>/dev/null || {
-        mkdir -p scripts
-        cp "$REBRAND_SCRIPT" "$TEMP_DIR/scripts/"
-    }
+    # EVERY REAL CASE STYLE PLUS A FUTURE MIXED STYLE (#933). These are code-shaped,
+    # not just prose: a replacement can remove the old word and still make an invalid
+    # identifier for a project name with spaces.
+    cat > src/config/case-variants.ts <<'VARIANTS'
+export const canonical = 'ScriptHammer';
+export const lower = 'scripthammer';
+export const title = 'Scripthammer';
+export const upper = 'SCRIPTHAMMER';
+export const futureMixed = 'ScriptHAMMER';
+export const scripthammerCaches = true;
+export const __scripthammer_syncQueue = true;
+export const SCRIPTHAMMER_TEST_DOMAIN = '@scripthammer.test';
+export function cleanupStaleScripthammerUsers() {}
+export const keep = 'SCRIPTHAMMER + ScriptHAMMER'; // rebrand:keep
+VARIANTS
+    cat > src/config/owner-map.ts <<'OWNER_MAP'
+export const authors = {
+  ['TortoiseWolfe']: true,
+};
+OWNER_MAP
+
+    # The reported live failure: the slug/file moved but every reader-facing field
+    # kept the title-case spelling. The image directory is equally load-bearing —
+    # rewriting this URL without moving the directory produces a broken intro post.
+    mkdir -p public/blog public/blog-images/scripthammer-intro
+    cat > public/blog/scripthammer-intro.md <<'INTRO'
+---
+title: Scripthammer - Opinionated Template
+ogTitle: SCRIPTHAMMER
+featuredImageAlt: ScriptHAMMER introduction
+---
+# Scripthammer: Introduction
+![Dashboard](/blog-images/scripthammer-intro/plain.png)
+INTRO
+    printf 'binary-before\0Scripthammer\0binary-after' > public/blog-images/scripthammer-intro/plain.png
+
+    # Non-lower path styles prove the path pass is case-insensitive too.
+    mkdir -p docs
+    printf '# Scripthammer badge\n' > src/components/ScripthammerBadge.tsx
+    printf '# SCRIPTHAMMER notes\n' > docs/SCRIPTHAMMER-NOTES.md
+
+    # Copy both halves of the rebrand implementation. The shell script owns the
+    # workflow; the Node helper owns portable, callback-based casing and atomic
+    # path planning (BSD sed cannot express either safely).
+    mkdir -p scripts
+    cp "$REBRAND_SCRIPT" "$REBRAND_CASE_HELPER" "$TEMP_DIR/scripts/"
 
     # STAGE EVERYTHING. Discovery is `git ls-files`, so an unstaged fixture is an
     # EMPTY fixture -- every assertion below would pass vacuously against a sweep
@@ -171,6 +215,30 @@ safe_rebrand() {
 
     # Run rebrand script
     "$TEMP_DIR/scripts/rebrand.sh" "$@"
+}
+
+# Choose a deterministic target that remains different even when this harness
+# is executed from a fork whose current identity is already GeoLarp. The test
+# source itself is rebranded with the repository, so fixed GeoLarp arguments
+# otherwise turn the integration cases into same-target no-ops downstream.
+set_case_test_identity() {
+    CASE_SOURCE_DISPLAY=$(sed -n 's/^ORIGINAL_NAME="\([^"]*\)".*/\1/p' "$TEMP_DIR/scripts/rebrand.sh")
+    CASE_SOURCE_SLUG=$(sed -n 's/^ORIGINAL_NAME_LOWER="\([^"]*\)".*/\1/p' "$TEMP_DIR/scripts/rebrand.sh")
+    CASE_SOURCE_COMPONENT=$(sed -n 's/^ORIGINAL_COMPONENT_NAME="\([^"]*\)".*/\1/p' "$TEMP_DIR/scripts/rebrand.sh")
+    CASE_SOURCE_UPPER=$(sed -n 's/^ORIGINAL_NAME_UPPER="\([^"]*\)".*/\1/p' "$TEMP_DIR/scripts/rebrand.sh")
+    CASE_SOURCE_TITLE=$(printf '%s' "$CASE_SOURCE_COMPONENT" | tr '[:upper:]' '[:lower:]' | \
+        awk '{ print toupper(substr($0, 1, 1)) substr($0, 2) }')
+
+    if [ "$CASE_SOURCE_DISPLAY" = "GeoLarp" ]; then # rebrand:keep
+        CASE_TARGET_DISPLAY="CaseProbe" # rebrand:keep
+    else
+        CASE_TARGET_DISPLAY="GeoLarp" # rebrand:keep
+    fi
+    CASE_TARGET_SLUG=$(printf '%s' "$CASE_TARGET_DISPLAY" | tr '[:upper:]' '[:lower:]')
+    CASE_TARGET_COMPONENT="$CASE_TARGET_DISPLAY"
+    CASE_TARGET_UPPER=$(printf '%s' "$CASE_TARGET_COMPONENT" | tr '[:lower:]' '[:upper:]')
+    CASE_TARGET_TITLE=$(printf '%s' "$CASE_TARGET_COMPONENT" | tr '[:upper:]' '[:lower:]' | \
+        awk '{ print toupper(substr($0, 1, 1)) substr($0, 2) }')
 }
 
 # ============================================================================
@@ -581,23 +649,52 @@ test_rerebrand_detection() {
     echo "# OtherProject" > README.md
     echo "export const projectName = 'OtherProject';" > src/components/Logo.tsx
 
-    # Copy rebrand script
-    cp "$REBRAND_SCRIPT" "$REREBRAND_TEMP/scripts/"
+    # Commit the application fixture before copying the implementation. This
+    # gives the detector a real tracked set without letting its own source text
+    # satisfy (or contaminate) the brand count.
+    git add package.json README.md src/components/Logo.tsx >/dev/null 2>&1
+    git -c user.name=Test -c user.email=test@example.com commit -qm fixture
+    cp "$REBRAND_SCRIPT" "$REBRAND_CASE_HELPER" "$REREBRAND_TEMP/scripts/"
 
-    # Run without --force, test for WARNING message in output
-    local output
-    # STAGE IT. Discovery is `git ls-files` (#922), so an unstaged fixture is an
-    # empty one -- count_references would return 0 and this test would report
-    # "already rebranded detected" no matter what the detector did. It has to
-    # measure a repository that actually contains files.
-    git add -A >/dev/null 2>&1
-
-    output=$("$REREBRAND_TEMP/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --dry-run --no-icon 2>&1 || true)
-
-    if echo "$output" | grep -qi "already.*rebranded\|no.*scripthammer.*found\|WARNING"; then
-        log_pass "Re-rebrand scenario detected and warned"
+    local output status detector='This repository appears to have been rebranded already'
+    set +e
+    output=$("$REREBRAND_TEMP/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --dry-run --no-icon 2>&1)
+    status=$?
+    set -e
+    if [ "$status" -eq 0 ] && printf '%s\n' "$output" | grep -Fq "$detector"; then
+        log_pass "Exact-zero detector recognizes an already-rebranded tree"
     else
-        log_fail "Re-rebrand detection" "warning about already rebranded" "${output:0:200}"
+        log_fail "Re-rebrand detection" "exit 0 and exact detector warning" \
+            "status=$status output=${output:0:300}"
+    fi
+
+    # One alternate-case survivor is enough to prove this is not an already-
+    # rebranded tree. This pins removal of the former '< 5' heuristic.
+    printf "export const oldBrand = 'Scripthammer';\n" > src/components/legacy.ts
+    git add src/components/legacy.ts >/dev/null 2>&1
+    set +e
+    output=$("$REREBRAND_TEMP/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --dry-run --no-icon 2>&1)
+    status=$?
+    set -e
+    if [ "$status" -eq 0 ] && ! printf '%s\n' "$output" | grep -Fq "$detector"; then
+        log_pass "One unmarked title-case survivor prevents rebrand detection"
+    else
+        log_fail "Alternate-case detector" "no already-rebranded warning" \
+            "status=$status output=${output:0:300}"
+    fi
+
+    # The same occurrence is intentionally invisible only when its own line is
+    # explicitly protected.
+    printf "export const oldBrand = 'Scripthammer'; // rebrand:keep\n" > src/components/legacy.ts
+    set +e
+    output=$("$REREBRAND_TEMP/scripts/rebrand.sh" "MyApp" "testuser" "Test desc" --dry-run --no-icon 2>&1)
+    status=$?
+    set -e
+    if [ "$status" -eq 0 ] && printf '%s\n' "$output" | grep -Fq "$detector"; then
+        log_pass "Keep-only source references count as zero"
+    else
+        log_fail "Keep-only detector" "exit 0 and exact detector warning" \
+            "status=$status output=${output:0:300}"
     fi
 
     cd "$REPO_ROOT"
@@ -641,6 +738,15 @@ test_discovery_is_git_tracked() {
         log_fail "Extensionless file was not reached" "GeoLARP in .husky/pre-commit" "$(cat .husky/pre-commit 2>/dev/null)"
     fi
 
+    # Generated lockfiles are tracked but deliberately not content-rewritten;
+    # changing one without regenerating it can invalidate integrity metadata.
+    if grep -q "ScriptHammer" pnpm-lock.yaml 2>/dev/null; then
+        log_pass "Tracked lockfile content is left byte-stable"
+    else
+        log_fail "Lockfile exclusion" "ScriptHammer intact in pnpm-lock.yaml" \
+            "$(cat pnpm-lock.yaml 2>/dev/null)"
+    fi
+
     # 3. A FLOOR, so a discovery change that silently matches NOTHING fails loudly.
     # Every assertion above is satisfiable by a sweep that touched no file at all --
     # the gitignored ones stay intact for the wrong reason. Without this the whole
@@ -652,6 +758,373 @@ test_discovery_is_git_tracked() {
         log_pass "Sweep still modified a plausible number of files ($modified)"
     else
         log_fail "Sweep modified almost nothing" "at least 3 files modified" "reported $modified -- discovery is probably finding nothing"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
+# ============================================================================
+# #933: arbitrary casing, identifier projections, full paths, and postcondition
+# ============================================================================
+test_case_preserving_rebrand() {
+    run_test "test_case_preserving_rebrand"
+    setup_temp_dir
+    set_case_test_identity
+
+    local binary_before output status residuals old_paths key_before key_after keep_before
+    binary_before=$(git hash-object public/blog-images/scripthammer-intro/plain.png)
+    keep_before=$(tail -1 src/config/case-variants.ts)
+
+    set +e
+    output=$(safe_rebrand "$CASE_TARGET_DISPLAY" "test-user" "Test desc" --force --no-icon 2>&1)
+    status=$?
+    set -e
+    if [ "$status" -eq 0 ]; then
+        log_pass "Case-preserving rebrand exits zero"
+    else
+        log_fail "Case-preserving rebrand status" "exit 0" "exit $status: $output"
+        cd "$REPO_ROOT"
+        return
+    fi
+
+    local variants="$TEMP_DIR/src/config/case-variants.ts"
+    local expected
+    for expected in \
+        "export const canonical = '$CASE_TARGET_DISPLAY';" \
+        "export const lower = '$CASE_TARGET_SLUG';" \
+        "export const title = '$CASE_TARGET_TITLE';" \
+        "export const upper = '$CASE_TARGET_UPPER';" \
+        "export const futureMixed = '$CASE_TARGET_DISPLAY';" \
+        "export const ${CASE_TARGET_SLUG}Caches = true;" \
+        "export const __${CASE_TARGET_SLUG}_syncQueue = true;" \
+        "export const ${CASE_TARGET_UPPER}_TEST_DOMAIN = '@${CASE_TARGET_SLUG}.test';" \
+        "export function cleanupStale${CASE_TARGET_TITLE}Users() {}"; do
+        if grep -Fqx "$expected" "$variants"; then
+            log_pass "Exact case projection: $expected"
+        else
+            log_fail "Case projection" "$expected" "$(cat "$variants")"
+        fi
+    done
+
+    if [ "$(tail -1 "$variants")" = "$keep_before" ]; then
+        log_pass "All keep-line case variants remain byte-exact"
+    else
+        log_fail "Keep-line surgery" "original mixed/upper line" "$(tail -1 "$variants")"
+    fi
+
+    if grep -Fqx "  ['test-user']: true," src/config/owner-map.ts; then
+        log_pass "Hyphenated GitHub owner remains a valid quoted object key"
+    else
+        log_fail "Owner identifier safety" "quoted test-user key" \
+            "$(cat src/config/owner-map.ts)"
+    fi
+
+    local intro="$TEMP_DIR/public/blog/${CASE_TARGET_SLUG}-intro.md"
+    if [ -f "$intro" ] && grep -Fq "title: $CASE_TARGET_TITLE - Opinionated Template" "$intro" && \
+        grep -Fq "ogTitle: $CASE_TARGET_UPPER" "$intro" && grep -Fq "# $CASE_TARGET_TITLE: Introduction" "$intro"; then
+        log_pass "Renamed intro has no missed reader-facing casing"
+    else
+        log_fail "Intro rebrand" "renamed intro with Geolarp/GEOLARP content" "$(cat "$intro" 2>/dev/null)"
+    fi
+
+    local binary_after="$TEMP_DIR/public/blog-images/${CASE_TARGET_SLUG}-intro/plain.png"
+    if [ -f "$binary_after" ] && [ "$(git hash-object "$binary_after")" = "$binary_before" ]; then
+        log_pass "Brand directory renamed without changing binary bytes"
+    else
+        log_fail "Binary/path transform" "geolarp-intro path with identical hash" "missing or changed"
+    fi
+
+    if [ -f "$TEMP_DIR/src/components/${CASE_TARGET_TITLE}Badge.tsx" ] && \
+        [ -f "$TEMP_DIR/docs/${CASE_TARGET_UPPER}-NOTES.md" ]; then
+        log_pass "Title and uppercase tracked paths use their exact projections"
+    else
+        log_fail "Case-preserving paths" "GeolarpBadge.tsx and GEOLARP-NOTES.md" \
+            "$(find "$TEMP_DIR" -maxdepth 3 -type f | sort | tr '\n' ' ')"
+    fi
+
+    residuals=""
+    old_paths=""
+    local source
+    for source in "$CASE_SOURCE_DISPLAY" "$CASE_SOURCE_SLUG" "$CASE_SOURCE_COMPONENT" "$CASE_SOURCE_UPPER"; do
+        residuals+=$(find . \
+            \( -path './.git' -o -path './node_modules' -o -path './.pay-verify' \) -prune -o \
+            -type f ! -name pnpm-lock.yaml ! -name package-lock.json \
+            ! -name yarn.lock ! -name bun.lockb -print0 | \
+            xargs -0 grep -IinF "$source" 2>/dev/null | \
+            grep -v 'rebrand:keep' || true)
+        old_paths+=$(find . \
+            \( -path './.git' -o -path './node_modules' -o -path './.pay-verify' \) -prune -o \
+            -print | grep -iF "$source" || true)
+    done
+    if [ -z "$residuals" ] && [ -z "$old_paths" ] && \
+        printf '%s\n' "$output" | grep -q 'Verified: no old-brand text or tracked paths remain'; then
+        log_pass "Tree and script postcondition agree: zero unmarked old-brand survivors"
+    else
+        log_fail "Residual postcondition" "no unmarked content/path survivors" \
+            "content=[$residuals] paths=[$old_paths] output=[$output]"
+    fi
+
+    # Same-target idempotence: the intended target is not misreported as the old
+    # brand merely because rebrand.sh persisted it as the current identity.
+    key_before=$(git hash-object "$variants")
+    set +e
+    output=$(safe_rebrand "$CASE_TARGET_DISPLAY" "test-user" "Test desc" --force --no-icon 2>&1)
+    status=$?
+    set -e
+    key_after=$(git hash-object "$variants")
+    if [ "$status" -eq 0 ] && [ "$key_before" = "$key_after" ] && \
+        printf '%s\n' "$output" | grep -q 'Brand identity already matches'; then
+        log_pass "Same-target rerun is a clean no-op"
+    else
+        log_fail "Same-target rerun" "exit 0, unchanged bytes, explicit no-op" \
+            "status=$status before=$key_before after=$key_after output=$output"
+    fi
+
+    # A different-target rerun before index refresh would silently omit every
+    # renamed path. It must stop with an actionable error rather than claiming
+    # success over an incomplete snapshot.
+    set +e
+    output=$(safe_rebrand "Second App" "seconduser" "Second desc" --force --no-icon 2>&1)
+    status=$?
+    set -e
+    if [ "$status" -eq 1 ] && printf '%s\n' "$output" | grep -q "Stage the prior rename with 'git add -A'"; then
+        log_pass "Different-target rerun rejects stale index paths"
+    else
+        log_fail "Stale-index re-rebrand" "exit 1 with git add -A instruction" "status=$status output=$output"
+    fi
+
+    # Commit-equivalent index refresh, then prove a later re-rebrand can finish.
+    git add -A >/dev/null 2>&1
+    set +e
+    output=$(safe_rebrand "Second App" "seconduser" "Second desc" --force --no-icon 2>&1)
+    status=$?
+    set -e
+    if [ "$status" -eq 0 ] && grep -Fqx '# Second App' "$TEMP_DIR/README.md" && \
+        [ -f "$TEMP_DIR/src/components/SecondAppLogo.tsx" ] && \
+        grep -Fq 'SECONDAPP_TEST_DOMAIN' "$TEMP_DIR/src/config/case-variants.ts" && \
+        [ -f "$TEMP_DIR/public/blog-images/second-app-intro/plain.png" ]; then
+        log_pass "Re-rebrand succeeds after renamed paths are staged"
+    else
+        log_fail "Re-rebrand projections" "Second App across prose/code/path" "status=$status output=$output"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
+test_path_collision_is_atomic() {
+    run_test "test_path_collision_is_atomic"
+    setup_temp_dir
+    set_case_test_identity
+
+    # The uppercase fixture already exists. Its lowercase peer maps to the same
+    # case-folded destination; a portable rebrand must reject that before content
+    # writes or mv can overwrite either source.
+    local lower_peer="docs/${CASE_SOURCE_SLUG}-NOTES.md"
+    printf '# lowercase sentinel\n' > "$lower_peer"
+    git add "$lower_peer" >/dev/null 2>&1
+
+    local output status
+    set +e
+    output=$(safe_rebrand "$CASE_TARGET_DISPLAY" "testuser" "Test desc" --force --no-icon 2>&1)
+    status=$?
+    set -e
+
+    if [ "$status" -eq 1 ] && printf '%s\n' "$output" | grep -q 'rebrand path collision'; then
+        log_pass "Path collision fails before mutation"
+    else
+        log_fail "Path collision status" "exit 1 with collision diagnostic" "status=$status output=$output"
+    fi
+    if grep -Fqx "# $CASE_SOURCE_DISPLAY" README.md && \
+        grep -Fqx "# $CASE_SOURCE_UPPER notes" "docs/${CASE_SOURCE_UPPER}-NOTES.md" && \
+        grep -Fqx '# lowercase sentinel' "$lower_peer"; then
+        log_pass "Collision leaves both sources and repository content intact"
+    else
+        log_fail "Collision atomicity" "all preflight sources byte-intact" "one or more files changed"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
+test_existing_target_directory_is_atomic() {
+    run_test "test_existing_target_directory_is_atomic"
+    setup_temp_dir
+    set_case_test_identity
+
+    local target_dir="public/blog-images/${CASE_TARGET_SLUG}-intro"
+    mkdir -p "$target_dir"
+    printf 'target sentinel\n' > "$target_dir/sentinel.txt"
+
+    local output status
+    set +e
+    output=$(safe_rebrand "$CASE_TARGET_DISPLAY" "testuser" "Test desc" --force --no-icon 2>&1)
+    status=$?
+    set -e
+
+    if [ "$status" -eq 1 ] && printf '%s\n' "$output" | grep -q 'rebrand target directory already exists'; then
+        log_pass "Existing target directory fails before mutation"
+    else
+        log_fail "Target directory status" "exit 1 with target-directory diagnostic" "status=$status output=$output"
+    fi
+    if grep -Fqx "# $CASE_SOURCE_DISPLAY" README.md && \
+        grep -Fqx 'target sentinel' "$target_dir/sentinel.txt" && \
+        [ -f "public/blog-images/${CASE_SOURCE_SLUG}-intro/plain.png" ]; then
+        log_pass "Existing target directory leaves source and target byte-intact"
+    else
+        log_fail "Target directory atomicity" "source and target byte-intact" "one or more files changed"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
+test_residual_gate_is_fatal() {
+    run_test "test_residual_gate_is_fatal"
+    setup_temp_dir
+    set_case_test_identity
+
+    printf '%s FORCE_SURVIVOR\n' "$CASE_SOURCE_TITLE" > src/config/residual.ts
+    git add src/config/residual.ts >/dev/null 2>&1
+
+    # Break the shared substitution/path regex itself. The independent verifier
+    # uses a separate ASCII-folded fixed-string implementation, so it must still
+    # catch the survivor and make the whole run non-zero.
+    node - "$TEMP_DIR/scripts/rebrand-case.mjs" <<'NODE'
+const fs = require('node:fs');
+const file = process.argv[2];
+const anchor = "`(?:${identity.sources.map(asciiCasePattern).join('|')})`,";
+const source = fs.readFileSync(file, 'utf8');
+if (!source.includes(anchor)) throw new Error('replacement mutation anchor missing');
+fs.writeFileSync(file, source.replace(anchor, "'(?!)',"));
+NODE
+
+    local output status
+    set +e
+    output=$(safe_rebrand "$CASE_TARGET_DISPLAY" "testuser" "Test desc" --force --no-icon 2>&1)
+    status=$?
+    set -e
+
+    if [ "$status" -eq 1 ] && printf '%s\n' "$output" | grep -q 'Old brand remains outside rebrand:keep' && \
+        printf '%s\n' "$output" | grep -q 'residual.ts:1'; then
+        log_pass "Independent residual scan turns a missed variant into a failure"
+    else
+        log_fail "Residual gate" "exit 1 with path:line survivor" "status=$status output=$output"
+    fi
+    if printf '%s\n' "$output" | grep -q 'REBRAND COMPLETE'; then
+        log_fail "Residual success suppression" "no success banner after failed postcondition" "$output"
+    else
+        log_pass "Failed postcondition never prints REBRAND COMPLETE"
+    fi
+
+    if grep -Fqx "ORIGINAL_NAME=\"$CASE_SOURCE_DISPLAY\" # rebrand:keep" scripts/rebrand.sh; then
+        log_pass "Failed postcondition does not publish target identity state"
+    else
+        log_fail "Identity commit ordering" "source identity retained after failure" \
+            "$(grep '^ORIGINAL_' scripts/rebrand.sh)"
+    fi
+
+    # Restore the deliberately broken helper and retry the same command. Because
+    # the first failure happened before path moves and before identity commit,
+    # this is a real recovery rather than a same-target false success.
+    cp "$REBRAND_CASE_HELPER" scripts/rebrand-case.mjs
+    set +e
+    output=$(safe_rebrand "$CASE_TARGET_DISPLAY" "testuser" "Test desc" --force --no-icon 2>&1)
+    status=$?
+    set -e
+    if [ "$status" -eq 0 ] && ! grep -qiF "$CASE_SOURCE_TITLE" src/config/residual.ts && \
+        printf '%s\n' "$output" | grep -q 'REBRAND COMPLETE'; then
+        log_pass "Same-command retry repairs a failed residual run"
+    else
+        log_fail "Residual retry" "exit 0 with survivor repaired" "status=$status output=$output"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
+test_source_containing_target_is_atomic() {
+    run_test "test_source_containing_target_is_atomic"
+    setup_temp_dir
+    set_case_test_identity
+
+    local target before after output status
+    target=$(printf '%s' "$CASE_SOURCE_DISPLAY" | tr '[:upper:]' '[:lower:]')
+    if [ "$target" = "$CASE_SOURCE_DISPLAY" ]; then
+        target=$(printf '%s' "$CASE_SOURCE_DISPLAY" | tr '[:lower:]' '[:upper:]')
+    fi
+    before=$(git hash-object README.md)
+
+    set +e
+    output=$(safe_rebrand "$target" "testuser" "Test desc" --force --no-icon 2>&1)
+    status=$?
+    set -e
+    after=$(git hash-object README.md)
+
+    if [ "$status" -eq 1 ] && \
+        printf '%s\n' "$output" | grep -Eq 'target identity still contains|automated re-rebrand is unsafe'; then
+        log_pass "Case-equivalent target is rejected before writes"
+    else
+        log_fail "Source-containing target" "exit 1 with identity diagnostic" "status=$status output=$output"
+    fi
+    if [ "$before" = "$after" ] && grep -Fqx "# $CASE_SOURCE_DISPLAY" README.md; then
+        log_pass "Rejected identity leaves repository bytes unchanged"
+    else
+        log_fail "Target preflight atomicity" "README byte-intact" "before=$before after=$after"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
+test_forked_harness_smoke() {
+    run_test "test_forked_harness_smoke"
+    setup_temp_dir
+
+    local output status
+    set +e
+    output=$(safe_rebrand "HarnessProbe42" "testuser" "Fork harness probe" --force --no-icon 2>&1) # rebrand:keep
+    status=$?
+    set -e
+
+    if [ "$status" -eq 0 ] && printf '%s\n' "$output" | grep -q 'REBRAND COMPLETE'; then
+        log_pass "Forked harness can exercise a distinct safe target"
+    elif [ "$status" -eq 1 ] && \
+        printf '%s\n' "$output" | grep -q 'automated re-rebrand is unsafe'; then
+        log_pass "Forked harness confirms an intentionally unsupported source identity"
+    else
+        log_fail "Forked harness smoke" "clean success or explicit unsafe-identity refusal" \
+            "status=$status output=$output"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
+test_harness_survives_rebrand() {
+    run_test "test_harness_survives_rebrand"
+    setup_temp_dir
+
+    mkdir -p tests/rebrand
+    cp "$REPO_ROOT/tests/rebrand/test-rebrand.sh" tests/rebrand/test-rebrand.sh
+    chmod +x tests/rebrand/test-rebrand.sh
+    git add -A >/dev/null 2>&1
+
+    local output status
+    set +e
+    output=$(safe_rebrand "GeoLarp" "testuser" "Fork harness probe" --force --no-icon 2>&1) # rebrand:keep
+    status=$?
+    set -e
+    if [ "$status" -ne 0 ]; then
+        log_fail "Harness fork setup" "initial rebrand exits 0" "status=$status output=$output"
+        cd "$REPO_ROOT"
+        return
+    fi
+
+    git add -A >/dev/null 2>&1
+    set +e
+    output=$(bash tests/rebrand/test-rebrand.sh 2>&1)
+    status=$?
+    set -e
+    if [ "$status" -eq 0 ] && printf '%s\n' "$output" | grep -q 'Forked harness'; then
+        log_pass "Rebranded shell harness remains executable and green"
+    else
+        log_fail "Harness fork stability" "exit 0 through fork smoke mode" \
+            "status=$status output=$output"
     fi
 
     cd "$REPO_ROOT"
@@ -675,16 +1148,41 @@ run_all_tests() {
         chmod +x "$REBRAND_SCRIPT"
     fi
 
+    local recorded_source
+    recorded_source=$(sed -n 's/^ORIGINAL_NAME="\([^"]*\)".*/\1/p' "$REBRAND_SCRIPT")
+    if [ "$recorded_source" != "$UPSTREAM_DISPLAY" ]; then
+        # The exhaustive fixtures deliberately model the upstream source. Once
+        # this harness has itself been rebranded, use one state-relative smoke
+        # instead of replaying transformed fixed expectations as red fork CI.
+        test_forked_harness_smoke
+
+        echo ""
+        echo "========================================"
+        echo "Test Summary"
+        echo "========================================"
+        echo -e "Assertions: $TESTS_RUN  (across $GROUPS_RUN test groups)"
+        echo -e "${GREEN}Passed${NC}: $TESTS_PASSED"
+        echo -e "${RED}Failed${NC}: $TESTS_FAILED"
+        [ "$TESTS_FAILED" -eq 0 ] || exit 1
+        return
+    fi
+
     test_argument_validation
     test_help_output_is_complete
     test_name_sanitization
     test_dry_run_no_changes
     test_discovery_is_git_tracked
+    test_case_preserving_rebrand
+    test_path_collision_is_atomic
+    test_existing_target_directory_is_atomic
+    test_residual_gate_is_fatal
+    test_source_containing_target_is_atomic
     test_rerebrand_detection
     test_attribution_preserved
     test_brand_icons
     test_component_identifiers_are_valid
     test_auth_config_desired_state
+    test_harness_survives_rebrand
 
     echo ""
     echo "========================================"
@@ -736,11 +1234,32 @@ if [ $# -eq 1 ]; then
         test_discovery_is_git_tracked)
             test_discovery_is_git_tracked
             ;;
+        test_case_preserving_rebrand)
+            test_case_preserving_rebrand
+            ;;
+        test_path_collision_is_atomic)
+            test_path_collision_is_atomic
+            ;;
+        test_existing_target_directory_is_atomic)
+            test_existing_target_directory_is_atomic
+            ;;
+        test_residual_gate_is_fatal)
+            test_residual_gate_is_fatal
+            ;;
+        test_source_containing_target_is_atomic)
+            test_source_containing_target_is_atomic
+            ;;
+        test_harness_survives_rebrand)
+            test_harness_survives_rebrand
+            ;;
         *)
             echo "Unknown test: $1"
             exit 1
             ;;
     esac
+    if [ "$TESTS_FAILED" -gt 0 ]; then
+        exit 1
+    fi
 else
     run_all_tests
 fi

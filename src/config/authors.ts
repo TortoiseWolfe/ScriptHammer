@@ -174,7 +174,7 @@ export const authors: Record<string, Author> = {
     },
   },
   // Legacy alias for backwards compatibility
-  TortoiseWolfe: {
+  ['TortoiseWolfe']: {
     id: 'tortoisewolfe',
     name: authorConfigData.name,
     role: authorConfigData.role,

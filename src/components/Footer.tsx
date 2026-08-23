@@ -1,7 +1,7 @@
 import React from 'react';
 import { FOOTER_LINKS } from '@/config/footer-links';
 
-const [CRUDGAMES, GEOLARP, SCRIPTHAMMER] = FOOTER_LINKS;
+const [CRUDGAMES, GEOLARP_SITE, SCRIPTHAMMER] = FOOTER_LINKS;
 
 export function Footer() {
   return (
@@ -25,12 +25,12 @@ export function Footer() {
           </a>{' '}
           for{' '}
           <a
-            href={GEOLARP.href}
+            href={GEOLARP_SITE.href}
             target="_blank"
             rel="noopener noreferrer"
             className="link-hover link inline-block min-h-11 align-middle leading-11 font-medium"
           >
-            {GEOLARP.label}
+            {GEOLARP_SITE.label}
           </a>
         </p>
         <p className="text-base-content mt-1 text-xs">
