@@ -160,7 +160,7 @@ See `docs/CREATING_COMPONENTS.md` for details.
 
 - **Next.js 15** with App Router, static export
 - **React 19** with TypeScript strict mode
-- **Tailwind CSS 4** + DaisyUI (35 themes: 2 house + 32 DaisyUI)
+- **Tailwind CSS 4** + DaisyUI (35 themes: 3 house + 32 DaisyUI)
 - **Supabase** - Auth, Database, Storage, Realtime
 - **PWA** with Service Worker (offline support)
 - **Testing**: Vitest (unit), Playwright (E2E), Pa11y (a11y)
