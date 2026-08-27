@@ -535,8 +535,9 @@
         --public --clone &amp;&amp; cd "$IDEA" &amp;&amp;</span
       ><br />
       <span class="cmd"
-        >$ docker compose run --rm builder ./scripts/rebrand.sh "$APP_NAME"
-        "$OWNER" "$DESCRIPTION" --no-icon &amp;&amp;</span
+        >$ cp .env.example .env &amp;&amp; docker compose run --rm builder
+        ./scripts/rebrand.sh "$APP_NAME" "$OWNER" "$DESCRIPTION" --no-icon
+        &amp;&amp; rm -f public/CNAME &amp;&amp;</span
       ><br />
       <span class="cmd"
         >$ docker compose run --rm builder pnpm run sync:wireframes
@@ -559,7 +560,10 @@
       four step slides carries the exact form, prompts and preflight included,
       and the AND chain stops at the first failure. Before the talk I export one
       real PageSpeed API key; the deploy workflow requires it, and it is the
-      single value without which none of this reaches the internet.
+      single value without which none of this reaches the internet. And the
+      CNAME removal is not tidying: the rebrand writes a domain you do not own,
+      and its mere presence makes the build drop the Pages basePath, so every
+      asset 404s at the URL you actually get.
     </aside>
     <div class="rail"><span></span></div>
   </section>
