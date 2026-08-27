@@ -104,7 +104,36 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Counters
-FILES_MODIFIED=0
+# FILES_MODIFIED COUNTS PATHS, NOT INCREMENTS (#956).
+#
+# It used to be a bare ++ accumulated by two independent sweeps over the same file
+# set — the case-helper brand pass and the separate owner pass — so a file matched
+# by both counted twice. A real run reported "1002 files modified" against 926
+# paths git could see: an 8% overstatement in the one line a forker reads to find
+# out what just happened to their repository, and one that `docs/POSITIONING.md`
+# then quoted as a measurement.
+#
+# The union data was always there. consume_case_report() parses a per-path
+# UPDATED/RENAMED record for every file and threw it away in favour of a COUNT.
+MODIFIED_PATHS=$(mktemp)
+trap 'rm -f "$MODIFIED_PATHS"' EXIT
+
+mark_modified() {
+    # NORMALISE BEFORE RECORDING. The two sweeps spell the same path differently:
+    # rebrand-case.mjs JSON-quotes its payload for the human-readable log, so it
+    # reports "docs/FORKING.md" while the sed sweep reports docs/FORKING.md. Left
+    # as-is they never dedupe, and the union is no better than the double count it
+    # replaced — which is exactly what the first attempt at this measured.
+    local path="$1"
+    path=${path%\"}
+    path=${path#\"}
+    printf '%s\n' "$path" >> "$MODIFIED_PATHS"
+}
+
+modified_count() {
+    sort -u "$MODIFIED_PATHS" 2>/dev/null | grep -c . || echo 0
+}
+
 FILES_RENAMED=0
 START_TIME=$(date +%s)
 
@@ -494,7 +523,7 @@ replace_in_files() {
                     # Only claim a change if something UNmarked would actually move.
                     if grep -v 'rebrand:keep' "$file" | grep -q "$search"; then
                         log_verbose "[DRY-RUN] Would update: ${file#$REPO_ROOT/}"
-                        ((FILES_MODIFIED++)) || true
+                        mark_modified "${file#$REPO_ROOT/}"
                     fi
                 else
                     # Lines carrying `rebrand:keep` are skipped; everything else on
@@ -505,7 +534,7 @@ replace_in_files() {
                     # never matched (#513).
                     sed "${SED_INPLACE[@]}" "/rebrand:keep/!s|$search|$replace|g" "$file"
                     log_verbose "Updated: ${file#$REPO_ROOT/}"
-                    ((FILES_MODIFIED++)) || true
+                    mark_modified "${file#$REPO_ROOT/}"
                 fi
             fi
         fi
@@ -527,17 +556,23 @@ consume_case_report() {
 
     while IFS=$'\t' read -r kind payload; do
         case "$kind" in
-            UPDATED) log_verbose "Updated: $payload" ;;
-            WOULD_UPDATE) log_verbose "[DRY-RUN] Would update: $payload" ;;
+            UPDATED)
+                log_verbose "Updated: $payload"
+                [ "$counter" = modified ] && mark_modified "$payload"
+                ;;
+            WOULD_UPDATE)
+                log_verbose "[DRY-RUN] Would update: $payload"
+                [ "$counter" = modified ] && mark_modified "$payload"
+                ;;
             RENAMED) log_verbose "Renamed: $payload" ;;
             WOULD_RENAME) log_verbose "[DRY-RUN] Would rename: $payload" ;;
             COUNT) count="$payload" ;;
         esac
     done < "$report"
 
-    if [ "$counter" = modified ]; then
-        FILES_MODIFIED=$((FILES_MODIFIED + count))
-    else
+    # Renames are one path each by construction, so the helper's COUNT is exact
+    # for them. Modifications are the ones two sweeps can both claim.
+    if [ "$counter" != modified ]; then
         FILES_RENAMED=$((FILES_RENAMED + count))
     fi
 }
@@ -606,7 +641,7 @@ update_docker_compose() {
                 sed "${SED_INPLACE[@]}" "s|container_name: ${old_service}|container_name: ${new_service}|g" "$compose_file"
                 log_verbose "Updated service name in docker-compose.yml"
             fi
-            ((FILES_MODIFIED++)) || true
+            mark_modified "$compose_file"
         fi
     fi
 }
@@ -627,7 +662,7 @@ update_package_json() {
             sed "${SED_INPLACE[@]}" "s|github.com/${ORIGINAL_OWNER}/${ORIGINAL_NAME}|github.com/${OWNER}/${SANITIZED_NAME}|g" "$pkg_file"
             log_verbose "Updated package.json fields"
         fi
-        ((FILES_MODIFIED++)) || true
+        mark_modified "$pkg_file"
     fi
 }
 
@@ -704,7 +739,7 @@ scaffold_themes() {
             sed "${SED_INPLACE[@]}" "s|ScriptHammer Light Theme|${DISPLAY_NAME} Light Theme|g" "$css_file" # rebrand:keep
             log_verbose "Renamed theme blocks: scripthammer-* → ${SANITIZED_NAME}-*" # rebrand:keep
         fi
-        ((FILES_MODIFIED++)) || true
+        mark_modified "$css_file"
     fi
 
     # Update ThemeScript.tsx fallback theme names
@@ -717,7 +752,7 @@ scaffold_themes() {
             sed "${SED_INPLACE[@]}" "s|scripthammer-light|${SANITIZED_NAME}-light|g" "$theme_script" # rebrand:keep
             log_verbose "Updated ThemeScript.tsx theme fallbacks"
         fi
-        ((FILES_MODIFIED++)) || true
+        mark_modified "$theme_script"
     fi
 
     # Update Storybook preview theme names
@@ -730,7 +765,7 @@ scaffold_themes() {
             sed "${SED_INPLACE[@]}" "s|scripthammer-light|${SANITIZED_NAME}-light|g" "$preview_file" # rebrand:keep
             log_verbose "Updated Storybook preview theme names"
         fi
-        ((FILES_MODIFIED++)) || true
+        mark_modified "$preview_file"
     fi
 }
 
@@ -831,7 +866,11 @@ update_brand_icons() {
         log_error "Icon generation failed. public/favicon.svg was replaced; run 'pnpm run generate:icons' once dependencies are installed."
         exit 1
     fi
-    FILES_MODIFIED=$((FILES_MODIFIED + 17))
+    # A LITERAL 17, not a count of anything: generate-icons.js decides how many
+    # targets it emits, and this was a guess the summary then reported as a
+    # measurement. The icons get their own line in the summary; record only the
+    # source we know we touched and let that line speak for the rest.
+    mark_modified "$icon_src"
 }
 
 update_env_example() {
@@ -852,7 +891,7 @@ update_env_example() {
                 sed "${SED_INPLACE[@]}" "s|port $ORIGINAL_NAME_LOWER |port $SANITIZED_NAME |g" "$env_file"
                 log_verbose "Updated .env.example references"
             fi
-            ((FILES_MODIFIED++)) || true
+            mark_modified "$env_file"
         fi
     fi
 }
@@ -1106,7 +1145,7 @@ main() {
     echo "========================================="
     echo "  Summary"
     echo "========================================="
-    echo "  Files modified: $FILES_MODIFIED"
+    echo "  Files modified: $(modified_count)"
     echo "  Files renamed:  $FILES_RENAMED"
     echo "  Time elapsed:   ${ELAPSED}s"
     echo ""

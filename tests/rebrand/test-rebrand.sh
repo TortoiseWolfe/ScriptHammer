@@ -922,6 +922,151 @@ test_case_preserving_rebrand() {
     cd "$REPO_ROOT"
 }
 
+##
+# The #952 guard could not fail on the input that caused the bug (#958).
+#
+# test_case_preserving_rebrand asserts the case projections with
+# CASE_TARGET_DISPLAY set to "CaseProbe" or "GeoLarp" — both SINGLE-TOKEN, where
+# targetSlug and asciiLower(targetComponent) are the same string. The branch it is
+# meant to protect, rebrand-case.mjs's `identifierAdjacent ? … : …`, therefore
+# produces identical output either way: delete the branch and that suite stays
+# green.
+#
+# It only diverges for a multi-token name. `__scripthammer_syncQueue` becomes
+# `__widgetworks_syncQueue` if the branch fires and `__widget-works_syncQueue` if
+# it does not — and the latter is not an identifier at all. Prettier then reads
+# the hyphen as subtraction and rewrites it into a different valid expression, so
+# the token stops existing as a contiguous string and only the type-checker
+# notices. That is what happened in a real tree.
+#
+# CASE_TARGET_DISPLAY is shared by six test functions, so this adds a second case
+# rather than changing it. And it asserts identifier VALIDITY rather than equality
+# against a computed string: equality still passes when both sides are wrong in
+# the same way, and this is a file whose whole job is to be syntactically valid.
+##
+test_case_preserving_multiword() {
+    run_test "test_case_preserving_multiword"
+    setup_temp_dir
+
+    local target="Widget Works"
+    local slug="widget-works"
+    local component="widgetworks"
+
+    "$TEMP_DIR/scripts/rebrand.sh" "$target" "testuser" "Test desc" --force --no-icon \
+        >/dev/null 2>&1 || true
+
+    local variants="$TEMP_DIR/src/config/case-variants.ts"
+    if [ ! -f "$variants" ]; then
+        log_fail "Case variants present" "src/config/case-variants.ts after rebrand" "missing"
+        cd "$REPO_ROOT"
+        return
+    fi
+
+    # 1. Every declared name must be a syntactically valid identifier. This is the
+    #    assertion the single-token suite cannot make, because it never produces an
+    #    invalid one.
+    local bad
+    bad=$(sed -nE "s/^export (const|function) ([^ =(]*).*/\2/p" "$variants" \
+          | grep -vE '^[A-Za-z_$][A-Za-z0-9_$]*$' || true)
+    if [ -z "$bad" ]; then
+        log_pass "Multi-token rebrand leaves every declared name a valid identifier"
+    else
+        log_fail "Identifier validity (multi-token)" "every export a valid identifier" "$bad"
+    fi
+
+    # 2. And specifically: a slug glued to an identifier takes the separator-free
+    #    component projection, not the hyphenated slug. This is the branch itself.
+    if grep -Fqx "export const __${component}_syncQueue = true;" "$variants"; then
+        log_pass "Identifier-adjacent slug uses the component projection (__${component}_syncQueue)"
+    else
+        log_fail "Identifier-adjacent projection" \
+            "export const __${component}_syncQueue = true;" "$(cat "$variants")"
+    fi
+
+    # 3. While a STANDALONE slug still takes the hyphenated form — otherwise the fix
+    #    could be "never hyphenate", which would corrupt prose and hostnames.
+    if grep -Fqx "export const lower = '${slug}';" "$variants"; then
+        log_pass "Standalone slug stays hyphenated (${slug})"
+    else
+        log_fail "Standalone slug" "export const lower = '${slug}';" "$(cat "$variants")"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
+##
+# The summary must report what it did, not more (#956).
+#
+# FILES_MODIFIED was a bare ++ accumulated by two independent sweeps over the same
+# file set, so a file matched by both counted twice: a real run said "1002 files
+# modified" against 926 paths git could see. That number does not stay in the
+# terminal — docs/POSITIONING.md quoted it as a measurement — and it is the first
+# thing a forker reads about what just happened to their repository.
+#
+# Asserting against git rather than a magic number, because a hardcoded expectation
+# here would need updating every time the fixture grows and would be "corrected"
+# to whatever the script happened to print.
+##
+test_summary_counts_paths_not_increments() {
+    run_test "test_summary_counts_paths_not_increments"
+
+    # A DIFFERENTIAL, because a bound is not falsifiable here.
+    #
+    # The defect is that two sweeps — the case-helper brand pass and the separate
+    # owner pass — each incremented the same counter, so a file carrying BOTH
+    # tokens counted twice. A real run reported 1002 against 926 paths.
+    #
+    # My first attempt asserted `reported <= what git sees`, and it passed against
+    # the unfixed script: this fixture has too few dual-token files for the
+    # over-count to exceed the total. A guard that cannot fail is worth nothing, so
+    # this measures the thing itself instead — add ONE file carrying both tokens
+    # and the reported count must grow by exactly ONE.
+    local baseline delta
+    baseline=$(_summary_count_for "")
+    delta=$(_summary_count_for "dual")
+
+    if [ -z "$baseline" ] || [ -z "$delta" ]; then
+        log_fail "Summary count readable" "a 'Files modified:' line from both runs" \
+            "baseline='$baseline' with-dual='$delta'"
+        cd "$REPO_ROOT"
+        return
+    fi
+
+    local growth=$((delta - baseline))
+    if [ "$growth" -eq 1 ]; then
+        log_pass "One dual-token file adds one to the count ($baseline -> $delta)"
+    else
+        log_fail "Dual-token double count" "count to grow by 1" \
+            "grew by $growth ($baseline -> $delta) — the file was counted once per sweep"
+    fi
+
+    # A floor, so a rewrite that reports 0 for both still fails rather than
+    # satisfying the delta with two zeroes.
+    if [ "$baseline" -ge 5 ]; then
+        log_pass "Baseline count is non-vacuous ($baseline)"
+    else
+        log_fail "Summary non-vacuous" "at least 5 paths in the fixture" "$baseline"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
+# Rebrand a fresh fixture and echo the summary's "Files modified" number.
+# With "dual", first add one file carrying BOTH the brand and the owner token —
+# the only shape that distinguishes a path count from an increment count.
+_summary_count_for() {
+    setup_temp_dir
+    if [ "$1" = "dual" ]; then
+        mkdir -p "$TEMP_DIR/docs"
+        printf 'See https://github.com/TortoiseWolfe/ScriptHammer for ScriptHammer docs.\n' \
+            > "$TEMP_DIR/docs/DUAL.md"
+        (cd "$TEMP_DIR" && git add -A >/dev/null 2>&1 && \
+            git -c user.email=t@t.t -c user.name=t commit -qm dual >/dev/null 2>&1) || true
+    fi
+    "$TEMP_DIR/scripts/rebrand.sh" "geo LARP" "testuser" "Test desc" --force --no-icon 2>&1 \
+        | sed -n 's/^ *Files modified: *\([0-9]*\) *$/\1/p' | tail -1
+}
+
 test_path_collision_is_atomic() {
     run_test "test_path_collision_is_atomic"
     setup_temp_dir
@@ -1184,6 +1329,8 @@ run_all_tests() {
     test_dry_run_no_changes
     test_discovery_is_git_tracked
     test_case_preserving_rebrand
+    test_case_preserving_multiword
+    test_summary_counts_paths_not_increments
     test_path_collision_is_atomic
     test_existing_target_directory_is_atomic
     test_residual_gate_is_fatal
@@ -1247,6 +1394,12 @@ if [ $# -eq 1 ]; then
             ;;
         test_case_preserving_rebrand)
             test_case_preserving_rebrand
+            ;;
+        test_case_preserving_multiword)
+            test_case_preserving_multiword
+            ;;
+        test_summary_counts_paths_not_increments)
+            test_summary_counts_paths_not_increments
             ;;
         test_path_collision_is_atomic)
             test_path_collision_is_atomic
