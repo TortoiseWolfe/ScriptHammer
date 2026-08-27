@@ -511,22 +511,33 @@ test_component_identifiers_are_valid() {
         log_fail "Display name in prose" "geo LARP in README.md" "$(cat "$TEMP_DIR/README.md")"
     fi
 
-    # 5. The same root cause in a second consumer: a hostname has its own validity rules,
-    #    and a display name spliced into it verbatim produces "geo LARP.com" — which
-    #    GitHub Pages rejects, so the custom domain silently never comes up.
-    if [ ! -f "$TEMP_DIR/public/CNAME" ]; then
-        # Absence is a FAILURE, not a skip. An `if [ -f ... ]` guard here would make this
-        # assertion vanish the moment the fixture path drifted, which is how it would have
-        # reported success while checking nothing.
-        log_fail "CNAME present" "public/CNAME written by the fixture" "missing"
+    # 5. THE CNAME MUST BE GONE (#961), not merely well-formed.
+    #
+    #    This used to assert the file was a syntactically valid hostname, and it passed
+    #    for years while describing nothing real: the value it validated was written by
+    #    the CONTENT SWEEP, not by update_cname, whose own branch could never fire because
+    #    the sweep had already removed the old brand token it tested for. So the gate
+    #    approved `geo-larp.com` — a perfectly valid hostname that the forker does not own,
+    #    and whose mere presence drops the Pages basePath and 404s every asset.
+    #
+    #    Absence is the assertion now. Validity was the wrong question.
+    if [ -f "$TEMP_DIR/public/CNAME" ]; then
+        log_fail "CNAME removed" "public/CNAME absent after a rebrand" \
+            "still present: $(cat "$TEMP_DIR/public/CNAME")"
     else
-        local cname
-        cname=$(cat "$TEMP_DIR/public/CNAME")
-        if echo "$cname" | grep -qE '^[a-z0-9][a-z0-9.-]*$'; then
-            log_pass "CNAME is a syntactically valid hostname ($cname)"
-        else
-            log_fail "CNAME validity" "lowercase hostname, no spaces" "$cname"
-        fi
+        log_pass "CNAME removed — a fork owns no domain until it says so"
+    fi
+
+    # 6. …and --keep-cname must still keep it. Without this, "removed" could be
+    #    satisfied by a script that deletes unconditionally, which would break the
+    #    one fork that really is migrating a domain in.
+    setup_temp_dir
+    "$TEMP_DIR/scripts/rebrand.sh" "geo LARP" "testuser" "Test desc" --force --no-icon \
+        --keep-cname >/dev/null 2>&1 || true
+    if [ -f "$TEMP_DIR/public/CNAME" ]; then
+        log_pass "--keep-cname still keeps it ($(cat "$TEMP_DIR/public/CNAME"))"
+    else
+        log_fail "--keep-cname honoured" "public/CNAME retained under --keep-cname" "removed anyway"
     fi
 
     cd "$REPO_ROOT"

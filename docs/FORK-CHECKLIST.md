@@ -23,10 +23,12 @@ ScriptHammer ships with 200+ files that reference its own name, theme, and Docke
     generation needs `sharp`, which lives in a named Docker volume and is absent from the host, so
     `--icon` fails on the host _after_ replacing `public/favicon.svg`.
   - `--preserve-ssh` keeps your `git@github.com:…` remote in SSH format (skip if you cloned via HTTPS).
-  - **Do not pass `--keep-cname` on a fresh fork.** `public/CNAME` currently contains _this_ template's
-    domain, so keeping it publishes a hostname you do not own. Let the script rewrite it, then correct
-    the value by hand — it writes `<DisplayName>.com`, which keeps your capitalisation and drops any
-    `www.`.
+    - **Do not pass `--keep-cname` on a fresh fork.** `public/CNAME` contains _this_ template's
+      domain, so keeping it publishes a hostname you do not own. Without the flag the script
+      **deletes** the file, which is what you want until you actually own a domain: its mere
+      existence tells the build a custom domain is configured, which drops the GitHub Pages
+      basePath and 404s every asset at the URL you were actually given. Add the file back,
+      containing just your hostname, on the day you point DNS at it.
   - Run `./scripts/rebrand.sh --help` for the full flag list.
 - **Full guide**: [`docs/FORKING.md` — Quick Start](FORKING.md#quick-start-5-minutes)
 - **Why it matters**: skipping this leaves your fork branded as "ScriptHammer" everywhere.
