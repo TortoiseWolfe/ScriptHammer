@@ -19,6 +19,14 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# The app service is renamed by scripts/rebrand.sh, so a fork cannot exec the
+# template's original service name. Shared with the Git hooks and the other
+# scripts that exec into the app — see the header there for why it is shared.
+# shellcheck source=scripts/lib/compose-service.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/compose-service.sh"
+COMPOSE_SERVICE=$(compose_service)
+[ -n "$COMPOSE_SERVICE" ] || COMPOSE_SERVICE=scripthammer
+
 # Track if we're in Docker or not
 if [ -f /.dockerenv ]; then
     IN_DOCKER=true
@@ -51,7 +59,7 @@ run_check() {
         fi
     else
         # Running outside Docker, use docker compose exec
-        if docker compose exec -T scripthammer $command; then
+        if docker compose exec -T "$COMPOSE_SERVICE" $command; then
             echo -e "${GREEN}✅ ${name} passed${NC}"
         else
             echo -e "${RED}❌ ${name} failed${NC}"
