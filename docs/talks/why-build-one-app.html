@@ -574,7 +574,7 @@
     <h2>Three claims, and you get to check all of them</h2>
     <div class="g3 grid">
       <div class="plate stat">
-        <span class="n">16s</span><span class="l">to rebrand 926 files</span>
+        <span class="n">15s</span><span class="l">to rebrand 928 files</span>
       </div>
       <div class="plate stat">
         <span class="n">11m</span><span class="l">to a rebranded fork</span>
@@ -588,18 +588,18 @@
       2026-08-21, with a stopwatch. This slide used to claim &ldquo;0
       config&rdquo; and &ldquo;~6m to live&rdquo;. Both were wrong, and finding
       that out is why the rest of this deck changed. The rebrand figure was
-      re-measured on 2026-08-26. The script&rsquo;s own summary says 1002,
-      because it counts a file once per substitution pass; git sees 926 paths
-      change. 926 is the one you can check.
+      re-measured on 2026-08-26. The script&rsquo;s own summary says 1002, and
+      git sees the same 928 paths change — it used to say 1002, counting a file
+      once per substitution pass, until #956.
     </p>
     <aside class="notes">
       Three numbers, and you get to check every one of them live. Sixteen
       seconds to run the rebrand script, about eleven minutes to a rebranded
       fork, and about twenty-eight minutes to a green build. I measured all
-      three rather than estimating them. If the count on screen looks off
-      against the summary, that is because the script counts a file once per
-      pass — git is the arbiter. If one is wrong today, you will watch it be
-      wrong.
+      three rather than estimating them. The summary used to over-report — it
+      counted a file once per substitution pass — so the number on screen and
+      git's now agree, which they did not a week ago. If one is wrong today, you
+      will watch it be wrong.
     </aside>
     <div class="rail"><span></span></div>
   </section>
@@ -872,9 +872,9 @@
       <span class="c">=========================================</span><br />
       <span class="c"> Summary</span><br />
       <span class="c">=========================================</span><br />
-      &nbsp;&nbsp;Files modified: <span class="hi">1002</span><br />
+      &nbsp;&nbsp;Files modified: <span class="hi">928</span><br />
       &nbsp;&nbsp;Files renamed:&nbsp;&nbsp;<span class="hi">19</span><br />
-      &nbsp;&nbsp;Time elapsed:&nbsp;&nbsp;&nbsp;<span class="ok">16s</span>
+      &nbsp;&nbsp;Time elapsed:&nbsp;&nbsp;&nbsp;<span class="ok">15s</span>
     </div>
     <span class="cue">▶ run it · let the count scroll</span>
     <aside class="notes">

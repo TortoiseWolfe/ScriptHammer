@@ -21,7 +21,8 @@
 This is a real product, not a scaffold. It runs at [scripthammer.com](https://www.scripthammer.com/) with OAuth and email sign-in, Stripe and PayPal payments, end-to-end encrypted messaging, an admin surface, and an installable offline-capable app that meets WCAG AA.
 
 You can also fork it and build your own thing on top. Measured, by doing it: the rebrand
-script itself takes **14 seconds**, you have a rebranded fork in about **11 minutes**, and a
+script itself takes **15 seconds** and rewrites **928 files**, you have a rebranded fork in
+about **11 minutes**, and a
 green build and test suite in about **28**. Most of that is one cold `docker compose up`.
 
 Getting a fork _live on its own domain_ is a different number, and none of it is this
