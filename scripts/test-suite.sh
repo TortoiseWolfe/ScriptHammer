@@ -3,6 +3,12 @@
 # Test Suite Runner for ScriptHammer
 # Runs all tests with clear feedback and actionable results
 
+# Rename-proof app service (#957) — a fork's is not `scripthammer`.
+# shellcheck source=scripts/lib/compose-service.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/compose-service.sh"
+COMPOSE_SERVICE=$(compose_service)
+[ -n "$COMPOSE_SERVICE" ] || COMPOSE_SERVICE=scripthammer
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -75,7 +81,7 @@ echo -e "${CYAN}Running all tests to ensure code quality and functionality...${N
 if in_docker; then
     CMD_PREFIX=""
 else
-    CMD_PREFIX="docker compose exec scripthammer"
+    CMD_PREFIX="docker compose exec $COMPOSE_SERVICE"
 fi
 
 # 1. TypeScript Type Checking

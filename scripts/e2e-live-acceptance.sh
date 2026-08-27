@@ -19,6 +19,12 @@
 #      prepend it to gotos → app-styled 404s on a root-path build.
 #   4. The build runs in the `builder` SERVICE, never in the dev container
 #      (#293, #508). See the header of step 1.
+# Rename-proof app service (#957) — a fork's is not `scripthammer`.
+# shellcheck source=scripts/lib/compose-service.sh
+. "$(dirname "${BASH_SOURCE[0]}")/lib/compose-service.sh"
+COMPOSE_SERVICE=$(compose_service)
+[ -n "$COMPOSE_SERVICE" ] || COMPOSE_SERVICE=scripthammer
+
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -66,7 +72,7 @@ done
 # Matches both the npx and pnpm-exec forms of the serve process (whose
 # cmdline is node .../serve/build/main.js out -l 3001 — no literal "serve out").
 kill_serve() {
-  docker compose exec -T scripthammer pkill -f "serve.*-l 3001" >/dev/null 2>&1 || true
+  docker compose exec -T "$COMPOSE_SERVICE" pkill -f "serve.*-l 3001" >/dev/null 2>&1 || true
 }
 
 cleanup() {
@@ -149,13 +155,13 @@ kill_serve
 # Assert it exists before serving: `serve` happily starts on a missing directory
 # and every request then 404s, which reads as an app failure rather than a
 # missing build.
-docker compose exec -T scripthammer sh -c '[ -f out/index.html ]' || {
+docker compose exec -T "$COMPOSE_SERVICE" sh -c '[ -f out/index.html ]' || {
   echo "build produced no out/index.html — step 1 did not export" >&2
   exit 1
 }
-docker compose exec -T -d scripthammer pnpm exec serve out -l 3001
+docker compose exec -T -d "$COMPOSE_SERVICE" pnpm exec serve out -l 3001
 for i in $(seq 1 30); do
-  if docker compose exec -T scripthammer sh -c 'curl -sf -o /dev/null http://localhost:3001/'; then
+  if docker compose exec -T "$COMPOSE_SERVICE" sh -c 'curl -sf -o /dev/null http://localhost:3001/'; then
     break
   fi
   [ "$i" -eq 30 ] && { echo "serve never came up on :3001" >&2; exit 1; }
@@ -170,7 +176,7 @@ docker compose exec -T \
   -e SKIP_WEBSERVER=1 \
   -e BASE_URL=http://localhost:3001 \
   -e NEXT_PUBLIC_BASE_PATH= \
-  scripthammer pnpm exec playwright test --reporter=list "${ARGS[@]}"
+  "$COMPOSE_SERVICE" pnpm exec playwright test --reporter=list "${ARGS[@]}"
 
 echo "== done — read the per-test PASS/SKIP lines above; a live test that"
 echo "   SKIPPED means a cred is missing from .env, not that it passed."
