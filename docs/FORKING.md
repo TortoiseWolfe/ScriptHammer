@@ -79,7 +79,7 @@ whether the committed set still matches it.
 | **Config** | Updates `package.json` name, description, and repository fields |
 | **Themes** | Renames `scripthammer-dark`/`scripthammer-light` theme blocks to your project name |
 | **Env** | Updates `COMPOSE_PROJECT_NAME` and example commands in `.env.example` |
-| **CNAME** | Updates `public/CNAME` to your project domain (unless custom domain detected or `--keep-cname`) |
+| **CNAME** | **Deletes** `public/CNAME` — a fork has no custom domain yet, and the file's presence drops the Pages basePath (unless a real custom domain is already set, or `--keep-cname`) |
 
 ### Script Options
 
@@ -316,7 +316,7 @@ After forking, verify everything works:
 - [ ] `git remote -v` shows your repository URL
 - [ ] `.env` has `COMPOSE_PROJECT_NAME=<yourproject>` (not `scripthammer`)
 - [ ] `.env` is owner-only (`chmod 600 .env`) before it contains credentials
-- [ ] `public/CNAME` contains your domain (or is absent if no custom domain)
+- [ ] `public/CNAME` contains your domain — or is **absent**, which is correct until you own one. Its presence drops the Pages basePath, so a CNAME naming a domain you do not control 404s every asset.
 - [ ] `docker compose ps` shows your project name in container names
 - [ ] GitHub Pages deployment succeeds (if enabled)
 - [ ] Site loads at `https://username.github.io/project-name/`

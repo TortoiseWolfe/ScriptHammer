@@ -56,6 +56,58 @@ const routeOf = (file) => {
   return '/' + noIndex.replace(/^\/+/, '');
 };
 
+/**
+ * THE PREFIX A CANONICAL CARRIES IS NOT THE basePath (#964).
+ *
+ * `routeOf()` above is relative to out/, so it never carries a prefix. A canonical
+ * href carries `new URL(projectConfig.deployUrl).pathname`, which on a GitHub Pages
+ * PROJECT site is `/<repo>`. Compared raw, the two can only ever be equal when that
+ * prefix is empty — so this gate passed here and failed EVERY route of EVERY fork.
+ * Measured on a real one: 85 then 102 "cross-canonicals", none of them real.
+ *
+ * WHY NOT JUST READ basePath. Because they are different quantities, and this repo is
+ * the counter-example: basePath is `/ScriptHammer` while its canonicals read
+ * `https://scripthammer.com/` — non-empty basePath, zero prefix. Subtracting basePath
+ * would break the deployment this gate exists to protect.
+ *
+ * So derive the prefix from the export's own root canonical, which IS that quantity by
+ * construction and needs no repo context — it works against a tmpdir fixture. The
+ * fallbacks are only for an export whose root claims nothing; resolve project-detected
+ * from this file, never from cwd, or the fallback silently misses under a fixture.
+ */
+async function derivePrefix(outDir) {
+  try {
+    const root = await readFile(join(outDir, 'index.html'), 'utf8');
+    const m = root.match(CANONICAL_RE);
+    if (m) {
+      return {
+        prefix: new URL(m[1]).pathname.replace(/\/+$/, ''),
+        source: 'the export root canonical',
+      };
+    }
+  } catch {
+    /* fall through to the config */
+  }
+  try {
+    const cfg = JSON.parse(
+      await readFile(
+        new URL('../../src/config/project-detected.json', import.meta.url),
+        'utf8'
+      )
+    );
+    return {
+      prefix: (cfg.basePath || '').replace(/\/+$/, ''),
+      source: 'src/config/project-detected.json',
+    };
+  } catch {
+    /* fall through to the env */
+  }
+  return {
+    prefix: (process.env.NEXT_PUBLIC_BASE_PATH || '').replace(/\/+$/, ''),
+    source: 'NEXT_PUBLIC_BASE_PATH',
+  };
+}
+
 const CANONICAL_RE = /<link[^>]+rel="canonical"[^>]+href="([^"]+)"/i;
 
 let checked = 0;
@@ -63,6 +115,8 @@ let selfCanonical = 0;
 let missing = 0;
 let allowed = 0;
 const wrong = [];
+
+const { prefix: BASE, source: BASE_SOURCE } = await derivePrefix(OUT);
 
 for await (const file of htmlFiles(OUT)) {
   const route = routeOf(file);
@@ -86,6 +140,12 @@ for await (const file of htmlFiles(OUT)) {
     continue;
   }
 
+  // Only where it actually leads: an off-prefix or off-site canonical shares no
+  // prefix, nothing is stripped, and it still fails. Subtracting unconditionally
+  // would turn this gate off rather than fix it.
+  if (BASE && declared.startsWith(BASE + '/'))
+    declared = declared.slice(BASE.length);
+
   if (declared === route) {
     selfCanonical++;
     continue;
@@ -101,6 +161,10 @@ for await (const file of htmlFiles(OUT)) {
 }
 
 console.log(`  checked          ${checked} route(s) in ${OUT}/`);
+if (BASE)
+  console.log(
+    `  prefix           ${BASE}  (from ${BASE_SOURCE}; subtracted before comparing)`
+  );
 console.log(`  self-canonical   ${selfCanonical}`);
 console.log(
   `  no canonical     ${missing}  (fine — a page with none is self-canonical)`

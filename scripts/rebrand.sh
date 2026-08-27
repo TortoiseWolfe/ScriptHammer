@@ -15,7 +15,9 @@
 # Options:
 #   --force               Skip all confirmation prompts
 #   --dry-run             Show what would change without modifying files
-#   --keep-cname          Do not update public/CNAME file (keep existing domain)
+#   --keep-cname          Keep public/CNAME. WITHOUT it the file is REMOVED: a fork has
+#                         no custom domain yet, and the file merely existing drops the
+#                         GitHub Pages basePath, which 404s every asset (#961).
 #   --preserve-ssh        Keep SSH format for git remote (if currently SSH)
 #   --preserve-attribution No-op; attribution is always kept (rebrand:keep)
 #   --icon <mark>         Rebuild every PWA/favicon asset from your mark.
@@ -633,31 +635,52 @@ update_package_json() {
 update_cname() {
     local cname_file="$REPO_ROOT/public/CNAME"
 
-    if [ -f "$cname_file" ]; then
-        # Check if it's a custom domain (not scripthammer.com) # rebrand:keep
-        local domain
-        domain=$(cat "$cname_file" 2>/dev/null || echo "")
+    [ -f "$cname_file" ] || return 0
 
-        if [[ "$domain" == *"scripthammer"* ]] || [ -z "$domain" ]; then # rebrand:keep
-            if [ "$KEEP_CNAME" = true ]; then
-                log_info "Keeping CNAME file as-is (--keep-cname flag set)"
-            else
-                # SANITIZED_NAME, not DISPLAY_NAME (#911). Same root cause as the
-                # identifier bug: a display name is spliced verbatim into a slot with its
-                # own validity rules. A hostname cannot contain a space or an uppercase
-                # letter, so a fork called "My Cool App" wrote `My Cool App.com` into
-                # public/CNAME — GitHub Pages rejects it and the custom domain silently
-                # never comes up. SANITIZED_NAME is already lowercase and hyphenated.
-                if [ "$DRY_RUN" = true ]; then
-                    log_verbose "[DRY-RUN] Would update public/CNAME to ${SANITIZED_NAME}.com"
-                else
-                    echo "${SANITIZED_NAME}.com" > "$cname_file"
-                    log_verbose "Updated public/CNAME: ${domain} → ${SANITIZED_NAME}.com"
-                fi
-            fi
-        else
-            log_info "Keeping CNAME file (custom domain: $domain)"
-        fi
+    if [ "$KEEP_CNAME" = true ]; then
+        log_info "Keeping CNAME file as-is (--keep-cname flag set)"
+        return 0
+    fi
+
+    # CNAME_IS_INHERITED is decided by classify_cname() BEFORE the content sweep
+    # runs, and that ordering is the whole point. The sweep rewrites the file like
+    # any other text — `www.<old-brand>.com` becomes `www.<new-brand>.com` — so by the
+    # time this function runs the old brand token is already gone and a check
+    # against the CURRENT contents can never recognise an inherited domain. The
+    # previous version tested the current contents and therefore never fired: the
+    # `<slug>.com` it appeared to write was actually the sweep's output, and a fork
+    # inherited a domain nobody had chosen.
+    if [ "${CNAME_IS_INHERITED:-false}" != true ]; then
+        log_info "Keeping CNAME file (custom domain: $(cat "$cname_file" 2>/dev/null))"
+        return 0
+    fi
+
+    # DELETE IT. Do not invent a domain (#961).
+    #
+    # A fork has no custom domain until somebody configures one. Absence is the
+    # honest default, and it is also the CORRECT one: the file merely existing is
+    # how detect-project.js decides a custom domain is configured, so it sets
+    # basePath to '' while Pages still serves the site under /<repo>/. Measured on a
+    # real fork, that made the deploy fail outright — the canonical gate named 102
+    # routes and never mentioned this file.
+    if [ "$DRY_RUN" = true ]; then
+        log_verbose "[DRY-RUN] Would remove public/CNAME (inherited domain, none owned yet)"
+    else
+        rm -f "$cname_file"
+        log_verbose "Removed public/CNAME; add it back when you own a domain"
+    fi
+}
+
+# Decide whether public/CNAME is inherited from the template, while its contents
+# still say so. Must run BEFORE the content sweep — see update_cname().
+classify_cname() {
+    local cname_file="$REPO_ROOT/public/CNAME"
+    CNAME_IS_INHERITED=false
+    [ -f "$cname_file" ] || return 0
+    local domain
+    domain=$(cat "$cname_file" 2>/dev/null || echo "")
+    if [ -z "$domain" ] || printf '%s' "$domain" | grep -qiF "$ORIGINAL_NAME_LOWER"; then
+        CNAME_IS_INHERITED=true
     fi
 }
 
@@ -996,6 +1019,9 @@ main() {
     fi
 
     # Perform rebrand operations
+    # Read the CNAME verdict before the sweep rewrites the file out from under it.
+    classify_cname
+
     echo "Updating file contents..."
     if [ "$same_brand" = false ]; then
         # One ASCII-case-insensitive pass handles canonical, lower, title,
@@ -1020,10 +1046,6 @@ main() {
     echo ""
     echo "Updating git remote..."
     update_git_remote
-
-    echo ""
-    echo "Updating CNAME..."
-    update_cname
 
     echo ""
     echo "Updating .env.example..."
@@ -1059,6 +1081,22 @@ main() {
         # marked so the content sweep cannot publish a target state early.
         update_rebrand_identity_state
     fi
+
+    # LAST MUTATION, and the position is load-bearing (#961).
+    #
+    # Removing public/CNAME deletes a TRACKED path, and two separate guards care.
+    # rebrand-case.mjs's verifier walks the pre-mutation path snapshot and reports
+    # anything absent as "missing after rebrand"; assert_index_paths_current()
+    # refuses the NEXT run while `git ls-files --deleted` names it. Doing this
+    # before either one turned a correct deletion into a failed rebrand, and then
+    # into an unrunnable retry. Both were caught by the harness rather than by
+    # reasoning, which is the argument for the harness.
+    #
+    # After the postconditions there is nothing left to verify and nothing left to
+    # repair, so the deletion is safe and the user stages it with everything else.
+    echo ""
+    echo "Updating CNAME..."
+    update_cname
 
     # Summary
     END_TIME=$(date +%s)
