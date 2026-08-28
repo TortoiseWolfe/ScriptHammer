@@ -128,6 +128,59 @@ function sanitizeCategory(category: string): string {
 /**
  * Redact sensitive values in context object.
  */
+/**
+ * Convert Error instances into plain, serializable objects.
+ *
+ * WHY THIS EXISTS. An Error's `name`, `message` and `stack` are NON-ENUMERABLE, so
+ * `JSON.stringify(new Error('boom'))` is `{}` — and `redactSensitiveData` round-trips
+ * every object value through exactly that. The result was an error report that could
+ * not report the error: a fresh fork logged
+ * `[contexts-auth] ERROR: Failed to get session after retries {}`.
+ *
+ * It was never one message. 84 call sites pass `{ error }` to logger.error/warn, and
+ * all of them lost the message, the type and the stack the moment anything serialized
+ * the context — the Next.js error overlay, a JSON log sink, Sentry.
+ *
+ * Applied once, before serialization, so every caller is fixed without touching any
+ * of them. Only plain objects and arrays are recursed: instances of other classes are
+ * left alone rather than silently reshaped.
+ *
+ * The stack is omitted in production, where it is noise rather than signal.
+ */
+function serializeErrors(value: unknown, depth = 0): unknown {
+  if (depth > 4) return value;
+
+  if (value instanceof Error) {
+    const serialized: Record<string, unknown> = {
+      name: value.name,
+      message: value.message,
+    };
+    if (!isProduction && value.stack) serialized.stack = value.stack;
+    if (value.cause !== undefined) {
+      serialized.cause = serializeErrors(value.cause, depth + 1);
+    }
+    return serialized;
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((entry) => serializeErrors(entry, depth + 1));
+  }
+
+  if (
+    value !== null &&
+    typeof value === 'object' &&
+    Object.getPrototypeOf(value) === Object.prototype
+  ) {
+    const mapped: Record<string, unknown> = {};
+    for (const [key, nested] of Object.entries(value)) {
+      mapped[key] = serializeErrors(nested, depth + 1);
+    }
+    return mapped;
+  }
+
+  return value;
+}
+
 function redactSensitiveData(context: LogContext): LogContext {
   const redacted: LogContext = {};
 
@@ -153,8 +206,12 @@ function redactSensitiveData(context: LogContext): LogContext {
 /**
  * Safely serialize context, handling circular references.
  */
-function safeSerializeContext(context?: LogContext): LogContext | undefined {
-  if (!context) return undefined;
+function safeSerializeContext(rawContext?: LogContext): LogContext | undefined {
+  if (!rawContext) return undefined;
+
+  // Errors first, and once: both branches below serialize, and both flattened Errors
+  // to `{}` before this existed.
+  const context = serializeErrors(rawContext) as LogContext;
 
   try {
     // Test for circular references

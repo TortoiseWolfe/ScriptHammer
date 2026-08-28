@@ -329,4 +329,92 @@ describe('Logger Service', () => {
       expect(LogLevel.ERROR).toBe(3);
     });
   });
+
+  /**
+   * AN ERROR LOGGED AS CONTEXT MUST SURVIVE SERIALIZATION.
+   *
+   * `redactSensitiveData` round-trips every object value through
+   * `JSON.parse(JSON.stringify(value))`. An Error's `name`, `message` and `stack` are
+   * NON-ENUMERABLE, so that round-trip flattens it to `{}` and the log says only that
+   * something failed.
+   *
+   * This is not one message: 84 call sites in src/ pass `{ error }` to
+   * logger.error/logger.warn. It surfaced on a fresh fork as
+   * `[contexts-auth] ERROR: Failed to get session after retries {}` — an error report
+   * that could not report the error.
+   */
+  describe('Error objects in context', () => {
+    const contextOf = (mock: ReturnType<typeof vi.fn>) =>
+      mock.mock.calls[0]?.[1] as Record<string, unknown>;
+
+    it('keeps the message and name of a top-level Error', () => {
+      const log = createLogger('test');
+      log.error('Failed to get session', {
+        error: new Error('Supabase not configured'),
+      });
+
+      const ctx = contextOf(console.error as ReturnType<typeof vi.fn>);
+      expect(ctx.error).toMatchObject({
+        name: 'Error',
+        message: 'Supabase not configured',
+      });
+    });
+
+    it('survives JSON.stringify, which is where the message was being lost', () => {
+      // The assertion that matches the real failure mode: the browser console shows
+      // `Object`, but the Next.js error overlay, a JSON log sink and Sentry all
+      // serialize — and that is where `{}` appeared.
+      const log = createLogger('test');
+      log.error('boom', { error: new Error('the real cause') });
+
+      const ctx = contextOf(console.error as ReturnType<typeof vi.fn>);
+      expect(JSON.stringify(ctx)).toContain('the real cause');
+    });
+
+    it('keeps a subclassed error and its name', () => {
+      class TimeoutError extends Error {
+        constructor(message: string) {
+          super(message);
+          this.name = 'TimeoutError';
+        }
+      }
+      const log = createLogger('test');
+      log.error('boom', { error: new TimeoutError('took too long') });
+
+      const ctx = contextOf(console.error as ReturnType<typeof vi.fn>);
+      expect(ctx.error).toMatchObject({
+        name: 'TimeoutError',
+        message: 'took too long',
+      });
+    });
+
+    it('finds an Error nested inside a plain object', () => {
+      const log = createLogger('test');
+      log.error('boom', { detail: { cause: new Error('nested cause') } });
+
+      const ctx = contextOf(console.error as ReturnType<typeof vi.fn>);
+      expect(JSON.stringify(ctx)).toContain('nested cause');
+    });
+
+    it('still redacts sensitive siblings, so Error handling did not bypass redaction', () => {
+      // The guard on the guard: it would be easy to fix serialization by returning the
+      // context untouched, which would also stop redacting.
+      const log = createLogger('test');
+      log.error('boom', { error: new Error('visible'), password: 'hunter2' });
+
+      const ctx = contextOf(console.error as ReturnType<typeof vi.fn>);
+      expect(ctx.password).toBe('[REDACTED]');
+      expect(JSON.stringify(ctx)).not.toContain('hunter2');
+      expect(JSON.stringify(ctx)).toContain('visible');
+    });
+
+    it('leaves a plain object context exactly as it was', () => {
+      // Non-Error values must not change shape because of this.
+      const log = createLogger('test');
+      log.error('boom', { status: 503, detail: { code: 'X' } });
+
+      const ctx = contextOf(console.error as ReturnType<typeof vi.fn>);
+      expect(ctx).toMatchObject({ status: 503, detail: { code: 'X' } });
+    });
+  });
 });
