@@ -279,3 +279,8 @@ zero-assertions.json
 # Talk decks: the HTML is the source and is tracked; the PDF is a build output
 # rendered by scripts/render-talk.mjs (#516-adjacent, same rule as public/*).
 docs/talks/*.pdf
+
+# Written by scripts/worktree-setup.sh. Machine-specific: it mounts the parent
+# repository's .git at an absolute path so a worktree's `gitdir:` pointer resolves
+# inside the container (#932). Committing one would break every other checkout.
+docker-compose.override.yml
