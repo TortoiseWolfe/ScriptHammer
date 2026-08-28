@@ -69,8 +69,30 @@ So `rebrand.sh` now **refuses to run** until you decide:
 
 `--icon` regenerates the whole set — favicon, the eight PWA sizes, the maskable
 variants, `apple-touch-icon`, and `favicon.ico` — from your single mark. Use a
-**symbol rather than a wordmark**: these render down to 32px, where text is
-illegible.
+**symbol rather than a wordmark**: `favicon.ico` carries a **16px** frame, which is
+what a standard-DPI browser tab shows, and 16px is 256 pixels in total.
+
+That advice used to say 32px. It was correct and insufficient (#906): a mark can read
+cleanly at 32 and be an indistinct smudge at 16. The failure is predictable rather than
+mysterious — **interior text, hairline strokes, facet edges, or more than about three
+tonal areas** are more detail than 256 pixels can carry. Measured on a real fork's mark,
+a faceted die with a thin outline and an interior numeral: clean at 48, readable at 32,
+and at 16 neither the shape nor the numeral survived.
+
+Nothing can check this for you. `pnpm check:icons` asserts the icons match your mark; it
+cannot assert your mark was suitable. Open `public/favicon.ico` at 100% and look, or
+accept the smudge knowingly.
+
+If your mark genuinely needs its detail, pass a second, simplified one:
+
+```bash
+./scripts/rebrand.sh MyProject myuser "Description" --icon mark.svg --icon-small mark-16.svg
+```
+
+`--icon-small` is used for everything at or below 32px — the two small `favicon.ico`
+frames and `icon.svg` — while the main mark keeps 48px and up. It is copied to
+`public/favicon-small.*`, so `pnpm check:icons` and later `generate:icons` runs pick it
+up on their own.
 
 If you take `--no-icon`, the icons stay ScriptHammer's until you run
 `pnpm run generate:icons` with your own mark. `pnpm run check:icons` tells you

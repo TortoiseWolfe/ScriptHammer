@@ -18,7 +18,11 @@ ScriptHammer ships with 928 files that reference its own name, theme, and Docker
   - Example: `./scripts/rebrand.sh MyCoolApp myuser "My awesome app" --icon mark.svg --preserve-ssh`
   - **`--icon` or `--no-icon` is required** — the script refuses without one. A rebrand cannot draw a
     logo, and skipping it silently is how this template's mark reached two live sites (#659, #898).
-    Accepts `.svg`, `.png`, `.webp`. Use a symbol, not a wordmark: these render at 32px.
+    Accepts `.svg`, `.png`, `.webp`. Use a symbol, not a wordmark: `favicon.ico` carries
+    a **16px** frame, and 16px is 256 pixels — interior text, hairline strokes and more
+    than ~3 tonal areas do not survive it (#906). If your mark needs its detail, pass a
+    simplified second one with `--icon-small <mark>`, used for everything at or below
+    32px. Nothing can check legibility for you; open the .ico and look.
   - **Run it inside the container** — `docker compose exec <project> ./scripts/rebrand.sh …`. Icon
     generation needs `sharp`, which lives in a named Docker volume and is absent from the host, so
     `--icon` fails on the host _after_ replacing `public/favicon.svg`.

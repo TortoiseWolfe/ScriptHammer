@@ -82,7 +82,19 @@ setup_temp_dir() {
 
     # Create essential files with ScriptHammer references
     mkdir -p src/components
-    echo '{"name": "scripthammer", "description": "ScriptHammer template"}' > package.json
+    # A repository field, because #972 was filed from a fixture that had one and the
+    # template's own package.json does not. Adding a repository is an ordinary thing
+    # for a fork to do, and the targeted helper that was meant to fix it was dead.
+    cat > package.json <<'PKG'
+{
+  "name": "scripthammer",
+  "description": "ScriptHammer template",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TortoiseWolfe/ScriptHammer.git"
+  }
+}
+PKG
     echo "# ScriptHammer" > README.md
     # public/CNAME, not ./CNAME — rebrand.sh reads "$REPO_ROOT/public/CNAME". The root-level
     # copy that used to be here meant the CNAME branch never executed in any test.
@@ -1506,6 +1518,53 @@ test_keep_blog_opts_out() {
 
     cd "$REPO_ROOT"
 }
+##
+# package.json's repository URL must match the fork's actual remote (#972).
+#
+# `update_package_json()` searched for `github.com/<upstream-owner>/<UpstreamName>` and
+# replaced it. That string is GONE before the search runs — the general content sweep
+# rewrote it already — so the branch was dead, and dead in a way that mattered: the
+# sweep substitutes the DISPLAY name, so a fork ended up advertising
+# `github.com/owner/Widget Works` while its git remote said `widget-works`.
+#
+# Measured against the unfixed script, the fork's URL came out
+# `github.com/acmecorp/WidgetWorks.git` — the case engine's identifier projection, not
+# the slug `widget-works` that `pkg.name` and the git remote both use. Nothing is
+# malformed, which is why nobody would notice: it is simply a different repository than
+# the one the fork actually has, and it is what `npm publish`, provenance, and every
+# "view repository" link read.
+##
+test_repository_url_matches_the_remote() {
+    run_test "test_repository_url_matches_the_remote"
+    setup_temp_dir
+
+    safe_rebrand "Widget Works" "acmecorp" "A widget" --force --no-icon >/dev/null 2>&1 || true
+
+    local url
+    url=$(node -e 'const p=require(process.argv[1]);
+const r=p.repository;
+process.stdout.write(typeof r==="string"?r:(r&&r.url)||"");' "$TEMP_DIR/package.json" 2>/dev/null)
+
+    if [ "$url" = "git+https://github.com/acmecorp/widget-works.git" ]; then
+        log_pass "repository.url carries the fork's owner and SLUG"
+    else
+        log_fail "repository.url" "git+https://github.com/acmecorp/widget-works.git" "$url"
+    fi
+
+    # The invariant behind the literal above: package.json must not disagree with
+    # itself. `name` is the slug, and the repository URL has to name the same thing.
+    if node -e 'const p=require(process.argv[1]);
+const r=p.repository;
+const url=typeof r==="string"?r:(r&&r.url)||"";
+process.exit(url.includes("/"+p.name)?0:1);' "$TEMP_DIR/package.json" 2>/dev/null; then
+        log_pass "repository.url and package.json name agree on the repository"
+    else
+        log_fail "package.json self-agreement" "repository.url containing /$(node -e 'console.log(require(process.argv[1]).name)' "$TEMP_DIR/package.json")" "$url"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
 
 
 
@@ -1778,6 +1837,7 @@ run_all_tests() {
     test_hostile_description_is_escaped
     test_fork_does_not_republish_the_template_blog
     test_keep_blog_opts_out
+    test_repository_url_matches_the_remote
     test_path_collision_is_atomic
     test_existing_target_directory_is_atomic
     test_residual_gate_is_fatal
@@ -1862,6 +1922,9 @@ if [ $# -eq 1 ]; then
             ;;
         test_keep_blog_opts_out)
             test_keep_blog_opts_out
+            ;;
+        test_repository_url_matches_the_remote)
+            test_repository_url_matches_the_remote
             ;;
         test_path_collision_is_atomic)
             test_path_collision_is_atomic

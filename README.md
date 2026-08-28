@@ -87,7 +87,9 @@ repository name automatically.
 logo is not a string — so if nothing replaces the mark, every browser tab and every home-screen
 install shows ScriptHammer's. That reached two live sites before this was a hard stop (#659, #898),
 both times past a warning. Pass `--icon` with your own mark (`.svg`, `.png` or `.webp` — a symbol
-rather than a wordmark, since these render at 32px), or `--no-icon` to say out loud that you are
+rather than a wordmark, since `favicon.ico` carries a 16px frame — 256 pixels, where interior
+text and hairlines disappear; `--icon-small` takes a simplified mark for those sizes, #906), or
+`--no-icon` to say out loud that you are
 shipping ours for now.
 
 <details>
