@@ -12,6 +12,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
 const { createServer } = require('node:http');
+const fs = require('node:fs');
 const path = require('node:path');
 
 const SCRIPT = path.join(__dirname, '..', 'ci', 'check-cache-headers.mjs');
@@ -96,6 +97,101 @@ async function withFixture(opts, fn) {
   }
 }
 
+/**
+ * A project-Pages deployment: the site lives under a path prefix, and the page's own
+ * asset hrefs carry it. This is what every fork gets, and what this repo would get
+ * without a custom domain.
+ *
+ * @param {object} o
+ * @param {string} o.prefix e.g. '/widget'
+ */
+function prefixedFixture({ prefix, assetCacheControl = 'max-age=31536000' }) {
+  const page = `<!doctype html><html><head>
+    <link rel="stylesheet" href="${prefix}/_next/static/css/deadbeef.css">
+    </head><body>hi</body></html>`;
+  return createServer((req, res) => {
+    const url = req.url.split('?')[0];
+    const headers = { 'cf-ray': '8f0000000000abcd-ATL' };
+    // Serve NOTHING outside the prefix, exactly like GitHub Pages: the doubled URL
+    // `/widget/widget/_next/…` has to 404, or the test cannot see the bug.
+    if (!url.startsWith(`${prefix}/`) && url !== prefix) {
+      res.writeHead(404, headers);
+      res.end('nope');
+      return;
+    }
+    if (url.startsWith(`${prefix}/_next/static/`)) {
+      res.writeHead(200, {
+        ...headers,
+        'Content-Type': 'text/css',
+        'Cache-Control': assetCacheControl,
+      });
+      res.end('body{}');
+      return;
+    }
+    res.writeHead(200, {
+      ...headers,
+      'Content-Type': 'text/html',
+      'Cache-Control': 'no-cache',
+    });
+    res.end(page);
+  });
+}
+
+test('resolves assets against the document, not by concatenating the base (#970)', async () => {
+  // Before the fix this built `…/widget/widget/_next/static/css/deadbeef.css` and
+  // reported a 404 for an asset the fixture serves correctly.
+  const server = prefixedFixture({ prefix: '/widget' });
+  const port = await listen(server);
+  try {
+    const { code, stdout, stderr } = await runProbe(
+      `http://127.0.0.1:${port}/widget`,
+      { CHECK_PATHS: '/' }
+    );
+    assert.equal(code, 0, `expected pass, got:\n${stdout}\n${stderr}`);
+    assert.ok(
+      !/widget\/widget/.test(stdout + stderr),
+      'the basePath was doubled somewhere in the output'
+    );
+  } finally {
+    server.close();
+  }
+});
+
+test('a genuinely missing asset is still reported on a prefixed deployment', async () => {
+  // The negative control for the test above: the fix must not be "stop checking".
+  const server = createServer((req, res) => {
+    const url = req.url.split('?')[0];
+    const headers = { 'cf-ray': '8f0000000000abcd-ATL' };
+    if (url === '/widget/' || url === '/widget') {
+      res.writeHead(200, {
+        ...headers,
+        'Content-Type': 'text/html',
+        'Cache-Control': 'no-cache',
+      });
+      res.end(
+        `<!doctype html><html><head><link rel="stylesheet" href="/widget/_next/static/css/gone.css"></head><body>hi</body></html>`
+      );
+      return;
+    }
+    res.writeHead(404, headers);
+    res.end('nope');
+  });
+  const port = await listen(server);
+  try {
+    const { code, stdout, stderr } = await runProbe(
+      `http://127.0.0.1:${port}/widget`,
+      { CHECK_PATHS: '/' }
+    );
+    assert.equal(code, 1, 'a missing asset must still fail the gate');
+    assert.ok(
+      /gone\.css/.test(stdout + stderr),
+      `expected the missing asset to be named:\n${stdout}\n${stderr}`
+    );
+  } finally {
+    server.close();
+  }
+});
+
 test('passes when the #635 contract is served', async () => {
   await withFixture(
     {
@@ -149,7 +245,10 @@ test('FAILS when Cloudflare did not serve the response (no cf-ray)', async () =>
       edge: false,
     },
     async (base) => {
-      const { code, stderr } = await runProbe(base);
+      // REQUIRE_EDGE is opt-in since #970, so this states the condition it is
+      // testing rather than relying on a default. smoke.yml passes the same
+      // value, and a test below fails if it stops doing so.
+      const { code, stderr } = await runProbe(base, { REQUIRE_EDGE: 'true' });
       assert.equal(
         code,
         1,
@@ -230,4 +329,68 @@ test('checks EVERY configured path, not just the first', async () => {
   } finally {
     server.close();
   }
+});
+
+test('a fork without a Cloudflare edge is not failed for lacking one', async () => {
+  // The other half of the same default. `cf-ray` exists here only because Cloudflare
+  // fronts this zone (#635); no fork inherits that, and failing every fork's correct
+  // deployment teaches people to ignore the check (#970).
+  await withFixture(
+    {
+      docCacheControl: 'no-cache',
+      assetCacheControl: 'max-age=31536000',
+      edge: false,
+    },
+    async (base) => {
+      const { code, stdout, stderr } = await runProbe(base);
+      assert.equal(
+        code,
+        0,
+        `expected pass without an edge:\n${stdout}\n${stderr}`
+      );
+    }
+  );
+});
+
+test('smoke.yml still demands the edge for THIS deployment', () => {
+  // A flipped default weakens a gate by omission: nothing fails, the check just stops
+  // asking. The edge requirement is the only thing that can see the #635 cure, so the
+  // workflow has to keep asserting it explicitly, and this fails if that line is lost.
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '..', '..', '.github', 'workflows', 'smoke.yml'),
+    'utf8'
+  );
+  assert.match(
+    workflow,
+    /REQUIRE_EDGE:\s*'true'/,
+    "smoke.yml must pass REQUIRE_EDGE: 'true' — without it the #635 edge contract is " +
+      'no longer checked anywhere, and nothing else would fail'
+  );
+});
+
+test('refuses to run with no base URL rather than measuring another site', () => {
+  // It used to default to this project's own domain, and smoke.yml layered a `:-`
+  // fallback on top, so a fork with NEXT_PUBLIC_DEPLOY_URL unset ran a green check
+  // against somebody else's site (#970).
+  const workflow = fs.readFileSync(
+    path.join(__dirname, '..', '..', '.github', 'workflows', 'smoke.yml'),
+    'utf8'
+  );
+  assert.ok(
+    !/check-cache-headers\.mjs "\$\{SITE:-/.test(workflow),
+    'smoke.yml must not fall back to a hardcoded site'
+  );
+  // Strip comments before matching: this file DISCUSSES the old default at length, and
+  // a guard that matches its own prose passes with the code deleted.
+  const script = fs
+    .readFileSync(
+      path.join(__dirname, '..', 'ci', 'check-cache-headers.mjs'),
+      'utf8'
+    )
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+  assert.ok(
+    !/scripthammer\.com/i.test(script),
+    'no hardcoded upstream host may remain in the executable part of the script'
+  );
 });

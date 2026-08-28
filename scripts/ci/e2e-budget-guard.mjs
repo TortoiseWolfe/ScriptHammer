@@ -74,11 +74,85 @@ export const BACKEND_EPOCH = '2026-08-07T06:00:00Z';
  * and no way to notice. That is the failure #726 is about: this script has never had
  * any idea which backend it is metering.
  *
- * Compared against `SUPABASE_PROJECT_REF` at runtime. A mismatch does not block — the
- * count may still be roughly right — but it says so loudly, because the epoch is then
- * stale by definition.
+ * Compared against `SUPABASE_PROJECT_REF` at runtime, and a mismatch BLOCKS as of
+ * #949. It used to warn. The warning was the right shape for a backend swap in this
+ * repo — where a human reads the run — and exactly the wrong shape for a fork, where
+ * nobody is looking and the consequence is spending someone's free tier.
+ *
+ * A fork inherits this guard faithfully and the state that made it protective not at
+ * all: the counter restarts at zero, so the fork runs the expensive lane precisely
+ * because it is new, against its own newly created Supabase project, while the repo it
+ * came from is blocked. Measured across the two: this repo blocked at 100+ runs, the
+ * fork green at 29 of 30, one run below a cap calibrated for a different project's
+ * quota.
+ *
+ * A guard cannot claim to protect a project it is not counting for, so it now refuses
+ * instead. Adopting it for your own backend means setting both overrides below.
  */
 export const BACKEND_EPOCH_PROJECT_REF = 'ozbdyopxmeqmwnfsmglp';
+
+/**
+ * Resolve which project the epoch is claimed to describe.
+ *
+ * `E2E_BUDGET_BACKEND_PROJECT_REF` is the companion to `E2E_BUDGET_BACKEND_EPOCH`, and
+ * they are only useful together: a fork that sets an epoch without saying whose it is
+ * has moved the window without establishing that the window belongs to the backend
+ * being metered.
+ *
+ * Empty means "use the constant", for the same reason resolveBackendEpoch treats it
+ * that way — an unset `${{ vars.FOO }}` arrives as an empty string.
+ *
+ * @param {string|undefined} raw
+ * @returns {string}
+ */
+export function resolveBackendProjectRef(raw) {
+  const trimmed = (raw || '').trim();
+  return trimmed || BACKEND_EPOCH_PROJECT_REF;
+}
+
+/**
+ * Can this guard honestly claim to be metering the backend in front of it?
+ *
+ * Pure, so the refusal is testable without a network or a workflow. Both failing cases
+ * are refusals rather than warnings (#949): metering a project the constants do not
+ * describe, and not knowing which project is being metered at all, are the same
+ * failure wearing different clothes.
+ *
+ * @param {object} o
+ * @param {string|null} o.projectRef  the backend actually configured, or null
+ * @param {string} o.expectedRef      the project the epoch describes
+ * @param {string} o.epoch            the epoch in force, for the message
+ * @returns {{allowed: boolean, code: string, message: string}}
+ */
+export function backendIdentity({ projectRef, expectedRef, epoch }) {
+  if (!projectRef) {
+    return {
+      allowed: false,
+      code: 'BACKEND_UNKNOWN',
+      message:
+        'SUPABASE_PROJECT_REF is not set, so this guard cannot tell which backend it ' +
+        'is metering, and cannot claim to be protecting it. Pass it from ' +
+        'vars.SUPABASE_PROJECT_REF (#726, #949).',
+    };
+  }
+  if (projectRef !== expectedRef) {
+    return {
+      allowed: false,
+      code: 'BACKEND_MISMATCH',
+      message:
+        `metering project ${projectRef}, but the backend epoch (${epoch}) belongs to ` +
+        `${expectedRef}, so the run count describes a different project's quota. If ` +
+        `${projectRef} is your backend, adopt this guard for it: set ` +
+        `E2E_BUDGET_BACKEND_PROJECT_REF to ${projectRef} and ` +
+        `E2E_BUDGET_BACKEND_EPOCH to when that project came into service (#949).`,
+    };
+  }
+  return {
+    allowed: true,
+    code: 'BACKEND_MATCHED',
+    message: `metering ${projectRef}, which is the project the epoch describes`,
+  };
+}
 
 /**
  * Explicit opt-out value for the epoch override.
@@ -394,18 +468,32 @@ async function main() {
   // those runs consumed. This is the one cross-check available without a usage API:
   // is the project being metered the same one the epoch describes?
   const projectRef = env.SUPABASE_PROJECT_REF || null;
-  if (projectRef && projectRef !== BACKEND_EPOCH_PROJECT_REF) {
-    console.warn(
-      `::warning::E2E budget guard is metering project ${projectRef}, but its backend ` +
-        `epoch (${BACKEND_EPOCH}) belongs to ${BACKEND_EPOCH_PROJECT_REF}. The count ` +
-        `includes runs billed to a different project. Update BACKEND_EPOCH and ` +
-        `BACKEND_EPOCH_PROJECT_REF, or set E2E_BUDGET_BACKEND_EPOCH (#726).`
+  const identity = backendIdentity({
+    projectRef,
+    expectedRef: resolveBackendProjectRef(env.E2E_BUDGET_BACKEND_PROJECT_REF),
+    epoch: backendEpoch,
+  });
+
+  // Refused BEFORE counting, because the count is the thing that would be meaningless.
+  // Running the API calls first and then reporting a tidy `29 / 30` would be the most
+  // convincing possible way to say nothing (#949).
+  if (!identity.allowed) {
+    console.log('E2E cloud-quota budget');
+    console.log(`  mode ........... ${mode}`);
+    console.log(`  verdict ........ ${identity.code}`);
+    console.log(`  ${identity.message}`);
+    console.log(
+      `::error::E2E blocked by the cloud-quota circuit breaker — ${identity.message}`
     );
-  } else if (!projectRef) {
-    console.warn(
-      '::warning::SUPABASE_PROJECT_REF is not set, so the budget guard cannot tell ' +
-        'which backend it is metering. Pass it from vars.SUPABASE_PROJECT_REF (#726).'
-    );
+    if (dryRun) {
+      console.log(
+        mode === 'annotate'
+          ? '::warning::E2E_BUDGET_MODE=annotate — backend unverified, running anyway.'
+          : '(--dry-run: would have blocked, exiting 0)'
+      );
+      process.exit(0);
+    }
+    process.exit(1);
   }
 
   if (!repo || !token) {

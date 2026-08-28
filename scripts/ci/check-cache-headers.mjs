@@ -40,11 +40,26 @@
  * Exits 1 if the contract is not being served.
  */
 
-const BASE = (
-  process.argv[2] ||
-  process.env.BASE ||
-  'https://scripthammer.com'
-).replace(/\/$/, '');
+/**
+ * NO DEFAULT SITE, deliberately (#970).
+ *
+ * This used to fall back to `https://scripthammer.com`, and `smoke.yml` passed
+ * `"${SITE:-https://scripthammer.com}"` on top of that. A fork whose
+ * `NEXT_PUBLIC_DEPLOY_URL` variable was unset therefore ran a green post-deploy check
+ * against THIS project's site — reporting, accurately, that somebody else's cache
+ * headers were fine. A gate that measures the wrong host is worse than no gate: it
+ * reads as coverage.
+ */
+const BASE = (process.argv[2] || process.env.BASE || '').replace(/\/$/, '');
+
+if (!BASE) {
+  console.error(
+    '✗ No site to check. Pass a base URL as the first argument or set BASE.\n' +
+      '  In CI this comes from `vars.NEXT_PUBLIC_DEPLOY_URL`; if that is unset, set it\n' +
+      '  to your own deployed URL rather than letting this measure another site.'
+  );
+  process.exit(1);
+}
 
 /**
  * Documents to check. More than one because the Cloudflare expression matches on
@@ -65,9 +80,17 @@ const ASSET_MIN_MAX_AGE = Number(process.env.ASSET_MIN_MAX_AGE ?? 31536000);
  * `max-age=600` is what visitors get, and every other assertion here becomes a
  * statement about a machine that is no longer serving the site.
  *
- * Off only for the unit test's local fixture server, never in CI.
+ * OPT-IN, and the default flipped in #970. It used to default ON, which made this
+ * check unpassable in any fork: `cf-ray` exists here only because Cloudflare fronts
+ * this zone, and no fork inherits that. A fork still gets the useful half — documents
+ * revalidate, hashed assets are cached for a year — without being told its correct
+ * deployment is broken.
+ *
+ * Flipping a default weakens a gate by omission, so `smoke.yml` passes REQUIRE_EDGE
+ * explicitly and `scripts/__tests__/check-cache-headers.test.js` fails if that line
+ * ever goes away. Losing the edge silently is the #635 regression this exists to catch.
  */
-const REQUIRE_EDGE = process.env.REQUIRE_EDGE !== 'false';
+const REQUIRE_EDGE = process.env.REQUIRE_EDGE === 'true';
 
 const failures = [];
 const notes = [];
@@ -100,6 +123,7 @@ async function head(url) {
 
 // ── documents must revalidate ────────────────────────────────────────────────
 let html = '';
+let htmlUrl = '';
 for (const path of DOC_PATHS) {
   const url = `${BASE}${path}`;
   let res;
@@ -115,7 +139,12 @@ for (const path of DOC_PATHS) {
     continue;
   }
 
-  if (path === DOC_PATHS[0]) html = await res.body.text();
+  if (path === DOC_PATHS[0]) {
+    html = await res.body.text();
+    // Keep the URL the HTML came from: the asset hrefs below are relative to THIS
+    // document, not to BASE, and on a project-Pages deployment the two differ.
+    htmlUrl = url;
+  }
 
   if (!revalidates(res.cacheControl)) {
     const age = maxAgeOf(res.cacheControl);
@@ -145,7 +174,9 @@ for (const path of DOC_PATHS) {
 const assets = [
   ...new Set(
     Array.from(
-      html.matchAll(/["'(]([^"'()\s]*\/_next\/static\/[^"'()\s]+?\.(?:js|css))/g),
+      html.matchAll(
+        /["'(]([^"'()\s]*\/_next\/static\/[^"'()\s]+?\.(?:js|css))/g
+      ),
       (m) => m[1]
     )
   ),
@@ -161,9 +192,14 @@ if (assets.length === 0) {
   );
 } else {
   const rel = assets[0];
-  const url = rel.startsWith('http')
-    ? rel
-    : `${BASE}/${rel.replace(/^\/+/, '')}`;
+  // RESOLVE, DON'T CONCATENATE (#970). `rel` is scraped from the page's own HTML, so
+  // on a project-Pages deployment it already carries the basePath:
+  // `/widget/_next/static/…`. Joining that onto a BASE that also carries it produced
+  // `https://owner.github.io/widget/widget/_next/…`, and the gate reported 404 for an
+  // asset that was being served correctly. The URL resolver handles all three shapes
+  // the regex can yield — absolute path, relative path, full URL — and resolving
+  // against the document is what a `<link href>` actually means.
+  const url = new URL(rel, htmlUrl || BASE).href;
   try {
     const res = await head(url);
     if (res.status !== 200) {
@@ -181,7 +217,9 @@ if (assets.length === 0) {
         notes.push(`${rel} → ${res.cacheControl}`);
       }
       if (REQUIRE_EDGE && !res.cfRay) {
-        failures.push(`${url} carries no \`cf-ray\`; Cloudflare did not serve it.`);
+        failures.push(
+          `${url} carries no \`cf-ray\`; Cloudflare did not serve it.`
+        );
       }
     }
   } catch (err) {

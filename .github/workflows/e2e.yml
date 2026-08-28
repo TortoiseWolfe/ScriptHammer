@@ -134,10 +134,20 @@ jobs:
           # Mirrors FLAKY_GATE_MODE further down this file — same pattern, same reason.
           E2E_BUDGET_MODE: ${{ vars.E2E_BUDGET_MODE || 'block' }}
           # #726: the guard counts Actions runs, so it cannot see WHICH backend those
-          # runs consumed. Passing the ref lets it warn when the hardcoded backend
-          # epoch belongs to a different project than the one being metered — the
-          # #567 swap was exactly that situation, and nothing detected it.
+          # runs consumed. Passing the ref lets it check that the hardcoded backend
+          # epoch belongs to the project being metered — the #567 swap was exactly that
+          # situation, and nothing detected it.
+          #
+          # As of #949 a disagreement BLOCKS rather than warns, and so does leaving this
+          # unset. A fork inherits the guard with its counter reset to zero, so it runs
+          # the expensive lane precisely because it is new, against its own free-tier
+          # project, while the repo it forked from is blocked. A guard cannot claim to
+          # protect a project it is not counting for.
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          # How a fork adopts this guard for its own backend: set both, together. An
+          # epoch without a ref moves the window without establishing whose window it
+          # is. Unset here, so the constants in the script apply.
+          E2E_BUDGET_BACKEND_PROJECT_REF: ${{ vars.E2E_BUDGET_BACKEND_PROJECT_REF }}
           # Read by the guard but NEVER passed until now, so the hardcoded epoch always
           # won. An unset repo variable arrives as an EMPTY STRING, not as absent —
           # which is why empty means "use the default" and opting out is spelled

@@ -177,6 +177,29 @@ post stays live, still in the sitemap, still in the feed.
 `scripts/__tests__/blog-index-matches-disk.test.js` fails when the two sides disagree, so CI
 catches it — but it is quicker to remember than to be told.
 
+### The hosted E2E lane is switched off in your fork until you claim it
+
+Your PRs get their E2E coverage from `e2e-local.yml`, which brings up a Supabase per
+runner and needs no secrets. The second lane, `e2e.yml`, runs ~24 jobs against a real
+hosted project, and it is what exhausted a free tier here.
+
+`scripts/ci/e2e-budget-guard.mjs` counts runs **in the repository it is running in**, so
+a fresh fork's counter starts at zero and the cost guard would wave through the
+expensive lane precisely when nobody has thought about quota yet. It therefore refuses
+to meter a backend it cannot identify: with `vars.SUPABASE_PROJECT_REF` unset, or set to
+a project the script's constants do not describe, the lane is blocked.
+
+To adopt it for your own backend, set both repository variables together:
+
+| Variable                         | Value                                        |
+| -------------------------------- | -------------------------------------------- |
+| `E2E_BUDGET_BACKEND_PROJECT_REF` | your Supabase project ref                    |
+| `E2E_BUDGET_BACKEND_EPOCH`       | ISO 8601 date that project came into service |
+
+Limits are `E2E_BUDGET_DAY` / `E2E_BUDGET_MONTH` (10 and 30 by default — sized for the
+free tier, not for you). An epoch without a ref moves the counting window without
+establishing whose window it is, which is why they go together.
+
 ### Don't run `pnpm install` on the host
 
 The container runs as your user (UID/GID from `.env`), and installing locally creates a `node_modules` directory the container can't manage. If you accidentally run it: `docker compose down && docker compose run --rm scripthammer rm -rf node_modules && docker compose up`. Full rules in [`CLAUDE.md`](../CLAUDE.md#docker-first-development-mandatory).

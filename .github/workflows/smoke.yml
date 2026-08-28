@@ -101,7 +101,14 @@ jobs:
       - name: Cache contract is still served (Cloudflare rules still in place)
         env:
           SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
-        run: node scripts/ci/check-cache-headers.mjs "${SITE:-https://scripthammer.com}"
+          # Explicit, and load-bearing (#970). The script defaults this OFF so a fork
+          # is not failed for lacking a Cloudflare edge it never had; this repo DOES
+          # have one, and losing it silently is the #635 regression this job exists to
+          # catch. check-cache-headers.test.js fails if this line disappears.
+          REQUIRE_EDGE: 'true'
+        # No `:-` fallback: a fork with NEXT_PUBLIC_DEPLOY_URL unset used to measure
+        # ScriptHammer's site and report green. The script now refuses an empty base.
+        run: node scripts/ci/check-cache-headers.mjs "$SITE"
 
       # The third dashboard-resident control, alongside the two above (#393).
       #
