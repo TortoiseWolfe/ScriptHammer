@@ -3,7 +3,7 @@
 # ScriptHammer Rebrand Script # rebrand:keep
 # =============================================================================
 # Automates rebranding of the ScriptHammer template to a new project identity. # rebrand:keep
-# Updates 200+ files including code, config, and documentation.
+# Updates ~930 files including code, config, and documentation.
 #
 # Usage: ./scripts/rebrand.sh <PROJECT_NAME> <OWNER> "<DESCRIPTION>" (--icon <mark> | --no-icon) [OPTIONS]
 #

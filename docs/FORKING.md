@@ -4,7 +4,8 @@ Complete guide to creating your own project from the ScriptHammer template.
 
 ## Quick Start (about 11 minutes)
 
-Measured on 2026-08-21 by forking this template for real. `rebrand.sh` is 14 seconds; the
+Measured by forking this template for real — the fork times on 2026-08-21, the rebrand
+figures re-measured on 2026-08-27. `rebrand.sh` is 15 seconds and rewrites 928 files; the
 rest is the cold Docker build. Add roughly another 17 minutes to reach a green build and
 test suite. Going live on your own domain is longer and mostly third-party — see
 [FORK-CHECKLIST.md](FORK-CHECKLIST.md).
@@ -41,7 +42,7 @@ git push
 
 ## What the Rebrand Script Does
 
-The `scripts/rebrand.sh` script automates updating 200+ files:
+The `scripts/rebrand.sh` script automates updating 928 files:
 
 | Category  | Changes                                                                                                          |
 | --------- | ---------------------------------------------------------------------------------------------------------------- |

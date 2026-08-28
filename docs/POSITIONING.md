@@ -19,7 +19,7 @@ Backed by ~900 source files, ~130 test files, and roughly 49 tracked SpecKit fea
 
 Forking is a real, supported feature, not the headline:
 
-- `scripts/rebrand.sh` — a 600+ line script that rebrands 645 files in 14 seconds (measured 2026-08-21) (name, owner, theme, docker service, env example), with `--dry-run`, CI-friendly exit codes, and already-rebranded detection.
+- `scripts/rebrand.sh` — a 600+ line script that rebrands 928 files in 15 seconds (measured 2026-08-27) (name, owner, theme, docker service, env example), with `--dry-run`, CI-friendly exit codes, and already-rebranded detection.
 - `docs/FORKING.md`, `docs/FORK-CHECKLIST.md`, `docs/TEMPLATE-GUIDE.md` — the fork onboarding path.
 - A Plop component generator enforcing the five-file atomic component pattern.
 

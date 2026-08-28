@@ -10,9 +10,9 @@ If you've never touched the repo before, start at the top and work down. Each st
 
 ## Setup order (do these in order)
 
-### 1. Rebrand the repo (~15 min, of which 14s is the script)
+### 1. Rebrand the repo (~15 min, of which 15s is the script)
 
-ScriptHammer ships with 200+ files that reference its own name, theme, and Docker service. The included `scripts/rebrand.sh` rewrites them all for you.
+ScriptHammer ships with 928 files that reference its own name, theme, and Docker service. The included `scripts/rebrand.sh` rewrites them all for you.
 
 - **Run**: `./scripts/rebrand.sh <YourProjectName> <YourGitHubUser> "<one-line description>" --icon path/to/mark.svg --preserve-ssh`
   - Example: `./scripts/rebrand.sh MyCoolApp myuser "My awesome app" --icon mark.svg --preserve-ssh`
