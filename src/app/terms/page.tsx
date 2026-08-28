@@ -1,11 +1,11 @@
 import React from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
+import { routeMetadata } from '@/utils/metadata';
 
 export const metadata: Metadata = {
-  // This route claims its own URL (#668).
-  alternates: { canonical: '/terms/' },
-  openGraph: { url: '/terms/' },
+  // This route claims its own URL and keeps the social card (#668, #990).
+  ...routeMetadata('/terms/'),
   title: 'Terms of Service - ScriptHammer',
   description:
     'The terms that govern purchases of ScriptHammer services and products, including payment, refunds, cancellation and ownership of delivered work.',

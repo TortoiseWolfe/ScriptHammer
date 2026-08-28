@@ -9,6 +9,7 @@ import { detectedConfig } from '@/config/project-detected';
 import { CURATED_THEMES, THEME_COUNT } from '@/config/themes';
 import { countWireframes } from '@/config/wireframes';
 import pkg from '../../package.json';
+import { routeMetadata } from '@/utils/metadata';
 
 /**
  * The homepage claims `/` HERE, not in the root layout (#668).
@@ -18,8 +19,8 @@ import pkg from '../../package.json';
  * claim at the route it describes is what makes that impossible.
  */
 export const metadata: Metadata = {
-  alternates: { canonical: '/' },
-  openGraph: { url: '/' },
+  // This route claims its own URL and keeps the social card (#668, #990).
+  ...routeMetadata('/'),
 };
 
 // ── The 2a "Machine Shop" landing page (#379). ──────────────────────────────

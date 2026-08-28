@@ -1,11 +1,11 @@
 import React from 'react';
 import { Metadata } from 'next';
 import { CookieActions } from '@/components/privacy/CookieActions';
+import { routeMetadata } from '@/utils/metadata';
 
 export const metadata: Metadata = {
-  // This route claims its own URL (#668).
-  alternates: { canonical: '/cookies/' },
-  openGraph: { url: '/cookies/' },
+  // This route claims its own URL and keeps the social card (#668, #990).
+  ...routeMetadata('/cookies/'),
   title: 'Cookie Policy - ScriptHammer',
   description:
     'Learn how ScriptHammer uses cookies and how you can manage your cookie preferences.',

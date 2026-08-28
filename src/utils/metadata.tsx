@@ -34,6 +34,41 @@ export interface MetadataOptions {
  * Generate comprehensive metadata for social media sharing
  * Following 2025 best practices for Open Graph and Twitter Cards
  */
+/**
+ * The shared Open Graph image, as an absolute URL.
+ *
+ * Every platform except Twitter/X reads `og:image`, and Next's App Router REPLACES
+ * nested metadata objects rather than deep-merging them. So a page that declares
+ * `openGraph: { url: '/x/' }` to claim its URL silently discards the layout's
+ * `images` — and ten routes did exactly that, including `/` and `/blog/` (#990).
+ * Measured live: `/themes/` had a card because it never overrode openGraph, `/` and
+ * `/blog/` had none at all.
+ */
+export function ogImage() {
+  return {
+    url: `${projectConfig.deployUrl}/opengraph-image.png`,
+    width: 1200,
+    height: 630,
+    alt: `${projectConfig.projectName} - ${projectConfig.projectDescription}`,
+  };
+}
+
+/**
+ * Claim a route's canonical URL WITHOUT losing the social card.
+ *
+ * This is what #668's routes actually wanted: a canonical and an `og:url`. Spelling it
+ * out as two literals costs the image, because of the replace-not-merge rule above.
+ * Spread this instead and the card comes along by construction.
+ *
+ * @param path route path with a trailing slash, e.g. '/pricing/'
+ */
+export function routeMetadata(path: string): Metadata {
+  return {
+    alternates: { canonical: path },
+    openGraph: { url: path, images: [ogImage()] },
+  };
+}
+
 export function generateMetadata(options: MetadataOptions = {}): Metadata {
   const {
     title = projectConfig.projectName,
