@@ -225,16 +225,18 @@ describe('Admin RPC Shape Contract — admin caller', () => {
   // expects — is a plain object with string keys and number values. An
   // array satisfies `typeof x === 'object'` and has `.length`, so we need
   // all three checks to distinguish {stripe: 2500} from [{provider, total}].
-  const expectRecordStringNumber = (
-    actual: unknown,
-    label: string
-  ): void => {
-    expect(actual, `${label} must be a plain object, not array`).not.toBeInstanceOf(Array);
+  const expectRecordStringNumber = (actual: unknown, label: string): void => {
+    expect(
+      actual,
+      `${label} must be a plain object, not array`
+    ).not.toBeInstanceOf(Array);
     expect(typeof actual, `${label} must be an object`).toBe('object');
     expect(actual, `${label} must not be null`).not.toBeNull();
     for (const [k, v] of Object.entries(actual as object)) {
       expect(typeof k).toBe('string');
-      expect(typeof v, `${label}[${k}] must be a number, got ${typeof v}`).toBe('number');
+      expect(typeof v, `${label}[${k}] must be a number, got ${typeof v}`).toBe(
+        'number'
+      );
     }
   };
 
@@ -249,10 +251,7 @@ describe('Admin RPC Shape Contract — admin caller', () => {
     // json_object_agg(provider, total) produces the Record shape directly.
     const { data, error } = await admin.rpc('admin_payment_stats');
     expect(error).toBeNull();
-    expectRecordStringNumber(
-      data.revenue_by_provider,
-      'revenue_by_provider'
-    );
+    expectRecordStringNumber(data.revenue_by_provider, 'revenue_by_provider');
   });
 
   it('admin_auth_stats.top_failed_logins entries have .attempts, not .fail_count', async () => {

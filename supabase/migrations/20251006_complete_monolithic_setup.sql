@@ -1772,27 +1772,27 @@ $$;
 REVOKE ALL ON FUNCTION admin_payment_trends(TIMESTAMPTZ, TIMESTAMPTZ) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION admin_payment_trends(TIMESTAMPTZ, TIMESTAMPTZ) TO authenticated;
 
--- admin_audit_trends(p_start, p_end, ...): Failed-login burst detection for admin dashboard
+-- admin_audit_trends(p_start, p_end): sign-in totals and a daily series for the admin dashboard
 --
--- SECURITY DEFINER: JWT guard is the only gate. auth_audit_logs happens to have an
+-- SECURITY DEFINER: is_admin() is the only gate. auth_audit_logs happens to have an
 -- admin RLS policy, but this function does not rely on it — same pattern as
 -- admin_payment_trends so messaging aggregates can follow without an RLS policy.
 --
--- Bursts (gaps-and-islands): a burst is a contiguous run of sign_in_failed rows
--- from one IP where no two consecutive attempts are more than p_burst_gap apart.
--- LAG finds gaps, cumulative SUM assigns a burst_id, GROUP BY (ip, burst_id)
--- collapses each run, HAVING count >= p_burst_min_attempts keeps the meaningful ones.
--- An IP that fails once on Monday and 12 times in a tight cluster on Friday yields
--- ONE burst (Friday), not a misleading 5-day span.
+-- BURST DETECTION WAS REMOVED HERE (#839). It sessionized sign_in_failed rows by
+-- ip_address (gaps-and-islands via LAG + cumulative SUM) and could never return a row,
+-- because nothing ever wrote an ip_address: production carried 7440 rows in
+-- auth_audit_logs and ZERO with an IP. GoTrue emits no failed-login event, and a
+-- static-export app has no server-side place to observe a client IP honestly — a
+-- browser-reported one is set by the very attacker the detection would be for.
+-- The `WHERE ip_address IS NOT NULL` filter meant the CTE chain always collapsed to [].
 --
--- distinct_users disambiguates: 1 = targeted account, many = credential stuffing.
--- COUNT(DISTINCT user_id) ignores NULL, which is correct — failed logins against
--- unknown emails have user_id=NULL and shouldn't inflate the distinct count.
+-- SIGNATURE CHANGED: p_burst_min_attempts and p_burst_gap are gone, so the DROP below
+-- is load-bearing. CREATE OR REPLACE with fewer parameters creates an OVERLOAD rather
+-- than replacing, and the old 4-arg function would keep answering.
+DROP FUNCTION IF EXISTS admin_audit_trends(TIMESTAMPTZ, TIMESTAMPTZ, INT, INTERVAL);
 CREATE OR REPLACE FUNCTION admin_audit_trends(
   p_start              TIMESTAMPTZ DEFAULT (now() - interval '7 days'),
-  p_end                TIMESTAMPTZ DEFAULT now(),
-  p_burst_min_attempts INT         DEFAULT 5,
-  p_burst_gap          INTERVAL    DEFAULT interval '10 minutes'
+  p_end                TIMESTAMPTZ DEFAULT now()
 )
 RETURNS JSON
 LANGUAGE plpgsql
@@ -1803,7 +1803,6 @@ AS $$
 DECLARE
   v_failed    BIGINT;
   v_succeeded BIGINT;
-  v_bursts    JSON;
 BEGIN
   IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
     RETURN '{}'::json;
@@ -1817,52 +1816,12 @@ BEGIN
   FROM auth_audit_logs
   WHERE created_at >= p_start AND created_at < p_end;
 
-  -- Burst sessionization. The first row per IP has LAG=NULL → NULL > interval
-  -- is NULL → CASE falls through to 0, so burst_id starts at 0 per IP. Correct.
-  WITH failed AS (
-    SELECT ip_address, user_id, created_at
-    FROM auth_audit_logs
-    WHERE event_type = 'sign_in_failed'
-      AND ip_address IS NOT NULL
-      AND created_at >= p_start AND created_at < p_end
-  ),
-  gapped AS (
-    SELECT *,
-      CASE
-        WHEN created_at - LAG(created_at) OVER (
-          PARTITION BY ip_address ORDER BY created_at
-        ) > p_burst_gap
-        THEN 1 ELSE 0
-      END AS gap
-    FROM failed
-  ),
-  bursted AS (
-    SELECT *,
-      SUM(gap) OVER (PARTITION BY ip_address ORDER BY created_at) AS burst_id
-    FROM gapped
-  )
-  SELECT COALESCE(json_agg(row_to_json(b) ORDER BY b.attempts DESC), '[]'::json)
-  INTO v_bursts
-  FROM (
-    SELECT
-      host(ip_address)             AS ip_address,
-      MIN(created_at)              AS first_seen,
-      MAX(created_at)              AS last_seen,
-      COUNT(*)::int                AS attempts,
-      COUNT(DISTINCT user_id)::int AS distinct_users
-    FROM bursted
-    GROUP BY ip_address, burst_id
-    HAVING COUNT(*) >= p_burst_min_attempts
-  ) b;
-
   RETURN json_build_object(
     'range', json_build_object('start', p_start, 'end', p_end),
     'totals', json_build_object(
       'sign_in_failed',  v_failed,
-      'sign_in_success', v_succeeded,
-      'bursts',          COALESCE(json_array_length(v_bursts), 0)
+      'sign_in_success', v_succeeded
     ),
-    'bursts', v_bursts,
     'daily_series', (
       SELECT COALESCE(json_agg(row_to_json(d) ORDER BY d.day), '[]'::json)
       FROM (
@@ -1890,8 +1849,8 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION admin_audit_trends(TIMESTAMPTZ, TIMESTAMPTZ, INT, INTERVAL) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION admin_audit_trends(TIMESTAMPTZ, TIMESTAMPTZ, INT, INTERVAL) TO authenticated;
+REVOKE ALL ON FUNCTION admin_audit_trends(TIMESTAMPTZ, TIMESTAMPTZ) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_audit_trends(TIMESTAMPTZ, TIMESTAMPTZ) TO authenticated;
 
 -- admin_messaging_trends(p_start, p_end, p_top_limit): Messaging volume for admin dashboard
 --

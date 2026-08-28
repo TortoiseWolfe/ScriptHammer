@@ -13,26 +13,7 @@ export interface AuditLogEntry {
   user_id: string | null;
   event_type: string;
   success: boolean;
-  ip_address: string | null;
   created_at: string;
-}
-
-/**
- * A contiguous run of failed sign-ins from one IP where no two consecutive
- * attempts are more than the burst gap apart (gaps-and-islands sessionized).
- *
- * distinct_users is the triage signal:
- *   1  → someone hammering a specific account
- *   >1 → credential stuffing / spray across accounts
- * COUNT(DISTINCT user_id) ignores NULL in the SQL, so failed logins against
- * unknown emails don't inflate this number.
- */
-export interface AuditBurst {
-  ip_address: string;
-  first_seen: string;
-  last_seen: string;
-  attempts: number;
-  distinct_users: number;
 }
 
 export interface DailyAuditPoint {
@@ -46,9 +27,7 @@ export interface AdminAuditTrends {
   totals: {
     sign_in_failed: number;
     sign_in_success: number;
-    bursts: number;
   };
-  bursts: AuditBurst[];
   daily_series: DailyAuditPoint[];
 }
 
@@ -97,7 +76,7 @@ export class AdminAuditService {
     this.ensureInitialized();
     let query = this.supabase
       .from('auth_audit_logs')
-      .select('id, user_id, event_type, success, ip_address, created_at')
+      .select('id, user_id, event_type, success, created_at')
       .order('created_at', { ascending: false })
       .limit(limit);
     if (eventType) query = query.eq('event_type', eventType);

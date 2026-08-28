@@ -37,7 +37,6 @@ export interface RateLimitResult {
  *
  * @param identifier - Email address or IP being rate-limited
  * @param attemptType - Type of authentication attempt
- * @param ipAddress - Optional IP address for additional tracking
  * @returns RateLimitResult indicating if attempt is allowed
  *
  * @example
@@ -48,14 +47,12 @@ export interface RateLimitResult {
  */
 export async function checkRateLimit(
   identifier: string,
-  attemptType: 'sign_in' | 'sign_up' | 'password_reset',
-  ipAddress?: string
+  attemptType: 'sign_in' | 'sign_up' | 'password_reset'
 ): Promise<RateLimitResult> {
   try {
     const { data, error } = await supabaseClient.rpc('check_rate_limit', {
       p_identifier: identifier,
       p_attempt_type: attemptType,
-      p_ip_address: ipAddress || null,
     });
 
     if (error) {
@@ -63,7 +60,6 @@ export async function checkRateLimit(
         error,
         identifier,
         attemptType,
-        ipAddress,
       });
       // Fail closed - block attempt if rate limit check fails
       // This prevents brute force if rate limiting infrastructure is down
@@ -81,7 +77,6 @@ export async function checkRateLimit(
       error,
       identifier,
       attemptType,
-      ipAddress,
     });
     // Fail closed - block attempt if rate limit check fails
     return {
@@ -98,7 +93,6 @@ export async function checkRateLimit(
  *
  * @param identifier - Email address or IP being rate-limited
  * @param attemptType - Type of authentication attempt
- * @param ipAddress - Optional IP address for audit trail
  *
  * @example
  * try {
@@ -110,14 +104,12 @@ export async function checkRateLimit(
  */
 export async function recordFailedAttempt(
   identifier: string,
-  attemptType: 'sign_in' | 'sign_up' | 'password_reset',
-  ipAddress?: string
+  attemptType: 'sign_in' | 'sign_up' | 'password_reset'
 ): Promise<void> {
   try {
     const { error } = await supabaseClient.rpc('record_failed_attempt', {
       p_identifier: identifier,
       p_attempt_type: attemptType,
-      p_ip_address: ipAddress || null,
     });
 
     if (error) {
@@ -125,7 +117,6 @@ export async function recordFailedAttempt(
         error,
         identifier,
         attemptType,
-        ipAddress,
       });
       // Non-critical failure - don't throw
     }
@@ -134,7 +125,6 @@ export async function recordFailedAttempt(
       error,
       identifier,
       attemptType,
-      ipAddress,
     });
     // Non-critical failure - don't throw
   }

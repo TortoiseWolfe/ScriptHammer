@@ -11,7 +11,6 @@ export interface UserAuditEntry {
   id: string;
   event_type: string;
   success: boolean;
-  ip_address: string | null;
   user_agent: string | null;
   created_at: string;
 }
@@ -65,7 +64,7 @@ function formatWhen(iso: string): string {
  * "Users can view own audit logs" (`auth.uid() = user_id`) means a plain
  * authenticated SELECT returns ONLY this user's rows — no client-side user_id
  * filter is trusted for isolation. Mirrors the admin AdminAuditTrail organism
- * but intentionally simpler (no cross-user views, no burst grouping).
+ * but intentionally simpler (no cross-user views).
  *
  * @category molecular
  */
@@ -83,7 +82,7 @@ export default function UserAuditTrail({
       // RLS scopes this to the caller's own rows (auth.uid() = user_id).
       const { data, error: queryError } = await supabase
         .from('auth_audit_logs')
-        .select('id, event_type, success, ip_address, user_agent, created_at')
+        .select('id, event_type, success, user_agent, created_at')
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -148,7 +147,6 @@ export default function UserAuditTrail({
                   <th scope="col">Event</th>
                   <th scope="col">When</th>
                   <th scope="col">Result</th>
-                  <th scope="col">IP address</th>
                 </tr>
               </thead>
               <tbody>
@@ -168,9 +166,6 @@ export default function UserAuditTrail({
                       >
                         {entry.success ? 'Success' : 'Failed'}
                       </span>
-                    </td>
-                    <td className="font-mono text-sm">
-                      {entry.ip_address ?? '—'}
                     </td>
                   </tr>
                 ))}
