@@ -169,3 +169,156 @@ describe('generate-icons source classification (#898)', () => {
     }
   });
 });
+
+/**
+ * #906 — the guidance said marks "render down to 32px", and favicon.ico has always
+ * carried a 16px frame as well.
+ *
+ * 16 is where marks actually fall apart: a mark can be clean at 32 and an indistinct
+ * smudge at 16. Measured on a real fork's mark — a faceted die with a thin outline and
+ * an interior numeral — 48 and 32 read, 16 recovers neither the shape nor the numeral.
+ * No heuristic can decide that for a fork, so `--source-small` is an escape hatch, not
+ * a detector: a simplified silhouette for the sizes that cannot carry detail.
+ *
+ * The assertions below decode the ICO's frames and read a pixel out of each, because
+ * "the small mark was used" is a claim about the BYTES a browser gets. Asserting that
+ * the flag was accepted, or that the file changed, would pass with the sizes wired up
+ * backwards.
+ */
+describe('a second, simpler mark for the small sizes (#906)', () => {
+  const SOLID = (hex) =>
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="${hex}"/></svg>`;
+
+  /** Decode favicon.ico into [{ px, rgb }], centre pixel per frame. */
+  async function icoFrames(file) {
+    const sharp = require('sharp');
+    const buf = fs.readFileSync(file);
+    const count = buf.readUInt16LE(4);
+    const frames = [];
+    for (let i = 0; i < count; i++) {
+      const o = 6 + i * 16;
+      const px = buf.readUInt8(o) === 0 ? 256 : buf.readUInt8(o);
+      const len = buf.readUInt32LE(o + 8);
+      const off = buf.readUInt32LE(o + 12);
+      const { data, info } = await sharp(buf.subarray(off, off + len))
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      const p =
+        (Math.floor(info.height / 2) * info.width +
+          Math.floor(info.width / 2)) *
+        info.channels;
+      frames.push({
+        px,
+        rgb: [data[p], data[p + 1], data[p + 2]].join(','),
+      });
+    }
+    return frames.sort((a, b) => a.px - b.px);
+  }
+
+  test('the small mark reaches 16 and 32; the full mark still owns 48', async () => {
+    const dir = scratchRepo();
+    try {
+      const RED = '255,0,0';
+      const BLUE = '0,0,255';
+      fs.writeFileSync(path.join(dir, 'public', 'mark.svg'), SOLID('#0000ff'));
+      fs.writeFileSync(path.join(dir, 'public', 'tiny.svg'), SOLID('#ff0000'));
+      run(
+        ['--source', 'public/mark.svg', '--source-small', 'public/tiny.svg'],
+        dir
+      );
+
+      const frames = await icoFrames(path.join(dir, 'public', 'favicon.ico'));
+      assert.deepStrictEqual(
+        frames.map((f) => f.px),
+        [16, 32, 48],
+        'favicon.ico no longer packs the three frames this test reasons about'
+      );
+      assert.equal(
+        frames[0].rgb,
+        RED,
+        '16px frame did not come from the small mark'
+      );
+      assert.equal(
+        frames[1].rgb,
+        RED,
+        '32px frame did not come from the small mark'
+      );
+      assert.equal(
+        frames[2].rgb,
+        BLUE,
+        '48px frame came from the small mark — the simplified silhouette is being ' +
+          'used at a size that can carry the real one'
+      );
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('the small mark is committed where --check will find it', () => {
+    // `pnpm check:icons` runs with no arguments. If the small source were only ever a
+    // CLI flag, the check would regenerate the small frames from the FULL mark and
+    // report drift against correctly-generated icons — a gate failing on the fix.
+    const dir = scratchRepo();
+    try {
+      fs.writeFileSync(path.join(dir, 'public', 'mark.svg'), SOLID('#0000ff'));
+      fs.writeFileSync(path.join(dir, 'public', 'tiny.svg'), SOLID('#ff0000'));
+      run(
+        ['--source', 'public/mark.svg', '--source-small', 'public/tiny.svg'],
+        dir
+      );
+
+      assert.ok(
+        fs.existsSync(path.join(dir, 'public', 'favicon-small.svg')),
+        'favicon-small.svg was not written, so a later `check:icons` cannot see ' +
+          'which mark the small frames came from'
+      );
+      // And the check passes against what generation produced, with no flags.
+      const out = run(['--check', '--source', 'public/mark.svg'], dir);
+      assert.match(out, /all \d+ icons match/);
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('without a small mark, every size still comes from the one mark', async () => {
+    // The feature is opt-in, and this repo does not use it. If its absence changed
+    // any output, the escape hatch would be a tax on everyone who does not need it.
+    const dir = scratchRepo();
+    try {
+      fs.writeFileSync(path.join(dir, 'public', 'mark.svg'), SOLID('#0000ff'));
+      run(['--source', 'public/mark.svg'], dir);
+      const frames = await icoFrames(path.join(dir, 'public', 'favicon.ico'));
+      assert.deepStrictEqual(
+        [...new Set(frames.map((f) => f.rgb))],
+        ['0,0,255'],
+        'some frame came from somewhere other than the single source mark'
+      );
+      assert.ok(!fs.existsSync(path.join(dir, 'public', 'favicon-small.svg')));
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('a named small mark that does not exist fails loudly', () => {
+    const dir = scratchRepo();
+    try {
+      fs.writeFileSync(path.join(dir, 'public', 'mark.svg'), SOLID('#0000ff'));
+      assert.throws(
+        () =>
+          run(
+            [
+              '--source',
+              'public/mark.svg',
+              '--source-small',
+              'public/nope.svg',
+            ],
+            dir
+          ),
+        /small mark not found/,
+        'a typo in --source-small must not silently fall back to the full mark'
+      );
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

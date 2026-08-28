@@ -18,6 +18,11 @@
 #   --keep-cname          Keep public/CNAME. WITHOUT it the file is REMOVED: a fork has
 #                         no custom domain yet, and the file merely existing drops the
 #                         GitHub Pages basePath, which 404s every asset (#961).
+#   --icon-small <mark>   A SIMPLER mark for the sizes that cannot carry detail.
+#                         Optional. Used for everything at or below 32px — the
+#                         favicon.ico 16 and 32 frames, and icon.svg — while the main
+#                         mark keeps the rest. 16px is 256 pixels; a mark that is clean
+#                         at 32 can be an indistinct smudge there (#906).
 #   --keep-blog           Keep the template's blog posts. WITHOUT it every post except
 #                         the `hello-world` exemplar is REMOVED: a fork should not
 #                         republish the template's writing under its own name (#936).
@@ -745,12 +750,29 @@ const pkg = JSON.parse(fs.readFileSync(file, 'utf8'));
 pkg.name = name;
 pkg.description = description;
 
-const oldRepo = `github.com/${originalOwner}/${originalName}`;
-const newRepo = `github.com/${owner}/${name}`;
+// SET IT, DON'T SEARCH FOR IT (#972).
+//
+// This searched for `github.com/${originalOwner}/${originalName}` and replaced it.
+// That string is gone before this line runs: the general content sweep has already
+// rewritten it, so the search could never match and the branch was dead. Worse than
+// dead — the sweep substitutes the DISPLAY name, so a fork with a repository field
+// ended up pointing at `github.com/owner/My Project` while its git remote said
+// `my-project`, and nothing here corrected it.
+//
+// Rewriting whatever owner/repo pair is currently there is correct regardless of what
+// the sweep did or did not do to it. Absent field stays absent: package.json has no
+// `repository` today, and inventing one is not this script's job.
+// The separator is CAPTURED, not assumed: `git@github.com:owner/repo.git` is an SSH
+// URL and rewriting its colon to a slash quietly breaks it.
+const canonical = (u) =>
+  u.replace(
+    /github\.com([/:])[^/]+\/[^/#?]+?(\.git)?(?=$|[/#?])/,
+    (_, sep, git) => `github.com${sep}${owner}/${name}${git || ''}`
+  );
 if (typeof pkg.repository === 'string') {
-  pkg.repository = pkg.repository.replace(oldRepo, newRepo);
+  pkg.repository = canonical(pkg.repository);
 } else if (pkg.repository && typeof pkg.repository.url === 'string') {
-  pkg.repository.url = pkg.repository.url.replace(oldRepo, newRepo);
+  pkg.repository.url = canonical(pkg.repository.url);
 }
 
 fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
@@ -1149,7 +1171,29 @@ update_brand_icons() {
     # Run through node directly rather than a package manager: this may run
     # before dependencies are installed, and the only runtime need is sharp,
     # which the script itself reports on if missing.
-    if ! (cd "$REPO_ROOT" && node scripts/generate-icons.js --source "$icon_src"); then
+    # The simplified mark for small sizes, if the fork supplied one (#906). Copied
+    # into public/ by the generator so `pnpm check:icons` can find it afterwards
+    # without being told again.
+    local icon_args=(--source "$icon_src")
+    if [ -n "${BRAND_ICON_SMALL:-}" ]; then
+        if [ ! -f "$BRAND_ICON_SMALL" ]; then
+            log_error "--icon-small file not found: $BRAND_ICON_SMALL"
+            exit 1
+        fi
+        local small_ext
+        small_ext="$(printf '%s' "${BRAND_ICON_SMALL##*.}" | tr '[:upper:]' '[:lower:]')"
+        case "$small_ext" in
+            svg|png|webp) ;;
+            *)
+                log_error "--icon-small must be .svg, .png or .webp (got: $BRAND_ICON_SMALL)"
+                exit 1
+                ;;
+        esac
+        cp "$BRAND_ICON_SMALL" "$REPO_ROOT/public/favicon-small.$small_ext"
+        icon_args+=(--source-small "public/favicon-small.$small_ext")
+        mark_modified "$REPO_ROOT/public/favicon-small.$small_ext"
+    fi
+    if ! (cd "$REPO_ROOT" && node scripts/generate-icons.js "${icon_args[@]}"); then
         log_error "Icon generation failed. public/favicon.svg was replaced; run 'pnpm run generate:icons' once dependencies are installed."
         exit 1
     fi
@@ -1210,6 +1254,10 @@ main() {
             --keep-blog)
                 KEEP_BLOG=true
                 shift
+                ;;
+            --icon-small)
+                BRAND_ICON_SMALL="$2"
+                shift 2
                 ;;
             --preserve-ssh)
                 PRESERVE_SSH=true

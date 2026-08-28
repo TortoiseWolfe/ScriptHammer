@@ -48,7 +48,6 @@ const ROOT = path.join(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
 
 /** Raw bytes of the chosen mark, set in main() before any rendering. */
-let SOURCE_SVG = null;
 
 /**
  * The default mark. `favicon.svg` is the printing mallet over angle brackets —
@@ -149,6 +148,47 @@ const FAVICON_TARGET = {
 const ICO_SIZES = [16, 32, 48];
 
 /**
+ * A SECOND, SIMPLER MARK FOR THE SIZES THAT CANNOT CARRY DETAIL (#906).
+ *
+ * The fork guidance said marks "render down to 32px". `favicon.ico` has always
+ * carried a 16px frame as well, and 16 is where marks actually fall apart: a mark
+ * can be clean at 32 and an indistinct smudge at 16. Measured on a real fork's mark —
+ * a faceted die with a thin outline and an interior numeral — 48 and 32 read, 16
+ * recovers neither the shape nor the numeral. 256 pixels is not many.
+ *
+ * No heuristic can tell whether a mark survives that, so this is an escape hatch
+ * rather than a detector: point `--source-small` at a simplified silhouette and it is
+ * used for everything at or below SMALL_MAX_PX. Vector-ness does not save you here —
+ * `icon.svg` is 32px of screen whatever its format — so the rule is by size, not kind.
+ *
+ * Entirely optional. Without it, every size comes from the one mark, exactly as before.
+ */
+const SMALL_MAX_PX = 32;
+
+/**
+ * Where a small mark lives once adopted, and why it has a default at all.
+ *
+ * `pnpm check:icons` runs with no arguments. If the small source were only ever a CLI
+ * flag, the check would regenerate the small frames from the FULL mark and report
+ * drift against correctly-generated icons — a gate failing on the fix. So the small
+ * mark is committed next to `favicon.svg`, and picked up automatically when present.
+ */
+const SMALL_SOURCE_NAMES = [
+  'public/favicon-small.svg',
+  'public/favicon-small.png',
+  'public/favicon-small.webp',
+];
+
+/** The committed small mark, whatever kind it is, or null when a fork has none. */
+function findSmallSource() {
+  for (const rel of SMALL_SOURCE_NAMES) {
+    const abs = path.resolve(ROOT, rel);
+    if (fs.existsSync(abs)) return abs;
+  }
+  return null;
+}
+
+/**
  * Split a source SVG into its viewBox and its drawable body.
  *
  * The body is nested as an inner `<svg>` rather than base64'd into an
@@ -192,7 +232,7 @@ function parseSource(svg) {
  * true bounding box from arbitrary SVG paths (with transforms, strokes and
  * markers) is a rendering problem, not a parsing one.
  */
-async function tightViewBox(viewBox) {
+async function tightViewBox(viewBox, sourceBytes) {
   const [vx, vy, vw, vh] = viewBox.split(/[\s,]+/).map(Number);
   if (![vx, vy, vw, vh].every(Number.isFinite) || vw <= 0 || vh <= 0) {
     throw new Error(`Unparseable viewBox: "${viewBox}"`);
@@ -201,7 +241,7 @@ async function tightViewBox(viewBox) {
   // Enough resolution that a 1px trim error is negligible at any icon size.
   const W = 1024;
   const H = Math.max(1, Math.round((W * vh) / vw));
-  const flat = await sharp(SOURCE_SVG)
+  const flat = await sharp(sourceBytes)
     .resize(W, H, { fit: 'fill' })
     .png()
     .toBuffer();
@@ -314,13 +354,18 @@ function packIco(pngs) {
   return Buffer.concat([dir, ...entries, ...pngs.map((p) => p.data)]);
 }
 
-async function render(target, parsed, bg) {
+async function render(target, parsed, bg, parsedSmall = null) {
   const sharp = require('sharp');
+  // Per FRAME, not per file: favicon.ico packs 16, 32 and 48 into one artifact, so
+  // choosing a source per target would apply the simplified mark to the 48px frame
+  // too, or to none of them (#906).
+  const sourceFor = (px) =>
+    parsedSmall && px <= SMALL_MAX_PX ? parsedSmall : parsed;
   if (target.kind === 'ico') {
     const pngs = [];
     for (const size of ICO_SIZES) {
       const svg = composeSvg(
-        await bodyForTarget(parsed, size),
+        await bodyForTarget(sourceFor(size), size),
         size,
         bg,
         target.inset
@@ -333,7 +378,7 @@ async function render(target, parsed, bg) {
     return packIco(pngs);
   }
   const svg = composeSvg(
-    await bodyForTarget(parsed, target.size),
+    await bodyForTarget(sourceFor(target.size), target.size),
     target.size,
     bg,
     target.inset
@@ -342,22 +387,15 @@ async function render(target, parsed, bg) {
   return sharp(Buffer.from(svg, 'utf8')).png().toBuffer();
 }
 
-async function main() {
-  const argv = process.argv.slice(2);
-  const arg = (name, fallback) => {
-    const i = argv.indexOf(name);
-    return i !== -1 && argv[i + 1] ? argv[i + 1] : fallback;
-  };
-  const check = argv.includes('--check');
-  const sourcePath = path.resolve(ROOT, arg('--source', DEFAULT_SOURCE));
-  const bg = arg('--bg', DEFAULT_BG);
-
-  if (!fs.existsSync(sourcePath)) {
-    console.error(`generate-icons: source mark not found: ${sourcePath}`);
-    process.exit(1);
-  }
-  const bytes = fs.readFileSync(sourcePath);
-  SOURCE_SVG = bytes;
+/**
+ * Read one mark and parse it into the shape the renderer wants.
+ *
+ * Extracted from main() when the small mark arrived (#906): two sources must be
+ * classified by exactly the same rules, and a second copy of the magic-byte sniffing
+ * below is a second place for them to drift apart.
+ */
+async function loadSource(filePath) {
+  const bytes = fs.readFileSync(filePath);
   // Detect a RASTER positively, by magic bytes, and treat everything else as
   // SVG. Sniffing for "<svg" instead looks reasonable and is wrong: this repo's
   // own mark opens with a 1,300-byte comment, so any fixed-size window misses
@@ -378,24 +416,76 @@ async function main() {
     bytes.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff])) ||
     // GIF87a / GIF89a
     bytes.subarray(0, 4).toString('latin1') === 'GIF8';
-  let parsed;
-  if (!isRaster) {
-    parsed = parseSource(bytes.toString('utf8'));
-    parsed.viewBox = await tightViewBox(parsed.viewBox);
-  } else {
-    parsed = await parseRasterSource(bytes);
+  if (isRaster) return { parsed: await parseRasterSource(bytes), bytes };
+  const parsed = parseSource(bytes.toString('utf8'));
+  parsed.viewBox = await tightViewBox(parsed.viewBox, bytes);
+  return { parsed, bytes };
+}
+
+async function main() {
+  const argv = process.argv.slice(2);
+  const arg = (name, fallback) => {
+    const i = argv.indexOf(name);
+    return i !== -1 && argv[i + 1] ? argv[i + 1] : fallback;
+  };
+  const check = argv.includes('--check');
+  const sourcePath = path.resolve(ROOT, arg('--source', DEFAULT_SOURCE));
+  const bg = arg('--bg', DEFAULT_BG);
+
+  if (!fs.existsSync(sourcePath)) {
+    console.error(`generate-icons: source mark not found: ${sourcePath}`);
+    process.exit(1);
+  }
+  const loaded = await loadSource(sourcePath);
+  const parsed = loaded.parsed;
+
+  // The small mark is optional in both directions: pointed at explicitly, or picked
+  // up from its committed home so `check:icons` sees what generation saw (#906).
+  const smallArg = arg('--source-small', null);
+  let smallPath = smallArg ? path.resolve(ROOT, smallArg) : findSmallSource();
+  if (smallArg && !fs.existsSync(smallPath)) {
+    console.error(`generate-icons: small mark not found: ${smallPath}`);
+    process.exit(1);
   }
 
+  // COPIED VERBATIM, NOT RENDERED, and the distinction is the whole point.
+  //
+  // The first version emitted favicon-small.svg as an ordinary 512px target, the way
+  // favicon.svg is emitted. That output is a COMPOSED tile — background rect, inset,
+  // nested viewBox — so feeding it back in as a source on the next run composed it a
+  // second time and `--check` reported drift against icons that were correct. The
+  // test caught it; the reasoning had looked fine.
+  //
+  // A source is a source. It is copied byte-for-byte, keeping its own extension so a
+  // raster small mark stays honest about what it is (#898's lesson: refusing rasters
+  // is how a fork ends up shipping the template's mark).
+  if (smallPath && fs.existsSync(smallPath) && !check) {
+    const dest = path.join(PUBLIC, `favicon-small${path.extname(smallPath)}`);
+    if (path.resolve(dest) !== path.resolve(smallPath)) {
+      fs.copyFileSync(smallPath, dest);
+      console.log(`  ${path.basename(dest).padEnd(30)} small mark (copied)`);
+      smallPath = dest;
+    }
+  }
+
+  const parsedSmall =
+    smallPath && fs.existsSync(smallPath)
+      ? (await loadSource(smallPath)).parsed
+      : null;
+
   // See FAVICON_TARGET: only owned when it is not itself the source.
-  const targets =
-    path.resolve(PUBLIC, 'favicon.svg') === sourcePath
-      ? TARGETS
-      : [...TARGETS, FAVICON_TARGET];
+  const targets = [
+    ...TARGETS,
+    // See FAVICON_TARGET: only owned when it is not itself the source.
+    ...(path.resolve(PUBLIC, 'favicon.svg') === sourcePath
+      ? []
+      : [FAVICON_TARGET]),
+  ];
 
   const drift = [];
   for (const target of targets) {
     const out = path.join(PUBLIC, target.file);
-    const next = await render(target, parsed, bg);
+    const next = await render(target, parsed, bg, parsedSmall);
     if (check) {
       const current = fs.existsSync(out) ? fs.readFileSync(out) : null;
       // PNG bytes are not reproducible across sharp/libvips versions, so
