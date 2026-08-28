@@ -706,6 +706,99 @@ update_cname() {
     fi
 }
 
+# A URL POINTING AT THE UPSTREAM REPOSITORY IS A CITATION, NOT BRANDING (#926).
+#
+# Inherited documentation links to the template as evidence — a bug report used as
+# a worked example, a file on main. The substitution has no notion of that, so it
+# rewrites `github.com/TortoiseWolfe/ScriptHammer/issues/51` into a link to the # rebrand:keep
+# fork's own empty tracker. Measured on a real fork: 42 issue and PR URLs, every
+# one a 404.
+#
+# The owner pass makes it broader than the brand pass alone. Another repository the
+# same author owns carries no brand token, so its NAME survives while its OWNER is
+# rewritten — breaking links to every repo upstream owns, not just this one.
+#
+# Both halves are hidden behind a sentinel before any pass runs and restored after,
+# which is why one mechanism covers a case-preserving projection engine and a plain
+# sed in the same breath. The sentinel carries no brand or owner text, so nothing
+# matches it.
+#
+# The two substitutions are ordered: owner+name first, bare owner second, so the
+# specific case is claimed before the general one.
+UPSTREAM_OWNER_SENTINEL="@@REBRAND_UPSTREAM_OWNER@@"
+UPSTREAM_NAME_SENTINEL="@@REBRAND_UPSTREAM_NAME@@"
+SELF_REPO_SENTINEL="@@REBRAND_SELF_REPO@@"
+
+# WHICH URLS ARE CITATIONS, AND WHICH ARE THE FORK'S OWN IDENTITY.
+#
+# Not every `github.com/OWNER/ScriptHammer` points at the template. package.json's # rebrand:keep
+# repository field, the clone URL in the README, CONTRIBUTING's "open a
+# Discussion" link — those name THIS project and must become the fork's. Protecting
+# them all was the obvious first move and it is wrong: it leaves a fork's
+# package.json declaring the upstream repository as its own.
+#
+# The distinction is whether the link names a SPECIFIC upstream artifact. An issue
+# or PR by number, a file at a ref — those are evidence, and #926 states the intent
+# plainly: "an inherited doc that cites an upstream issue should keep citing the
+# upstream issue." A bare repository URL, a `.git` clone URL, or an unnumbered
+# /issues or /discussions is a project LOCATION, and a fork wants its own.
+# ONE PATTERN PER ENTRY, NOT AN ALTERNATION. replace_in_files builds
+# `s|$search|$replace|g`, so `|` is the sed DELIMITER — a `\|` alternation here
+# silently terminates the expression and the pattern matches nothing. That cost a
+# debugging round: the citations simply stayed unprotected with no error.
+UPSTREAM_ARTIFACT_PATHS=(
+    'issues/[0-9]'
+    'pull/[0-9]'
+    'blob/'
+    'tree/'
+    'commit/'
+    'releases/tag/'
+)
+
+protect_upstream_citations() {
+    # ORDER IS THE WHOLE MECHANISM, because sed cannot express "this owner but not
+    # that repository". Four steps, narrowest first.
+
+    # 1. This repository cited by ARTIFACT — evidence a fork cannot reproduce.
+    local artifact
+    for artifact in "${UPSTREAM_ARTIFACT_PATHS[@]}"; do
+        # Captured, not re-spelled: `issues/[0-9]` in the REPLACEMENT would write
+        # that string literally and eat the issue number.
+        replace_in_files \
+            "github\.com/$ORIGINAL_OWNER/$ORIGINAL_NAME/\($artifact\)" \
+            "github.com/$UPSTREAM_OWNER_SENTINEL/$UPSTREAM_NAME_SENTINEL/\1"
+    done
+
+    # 2. Every remaining reference to THIS repository is the project's own identity
+    #    — package.json's repository field, the clone URL, the discussions link —
+    #    and must rebrand. Park it behind a different marker so step 3 cannot claim
+    #    it, then hand it back in step 4.
+    replace_in_files \
+        "github\.com/$ORIGINAL_OWNER/$ORIGINAL_NAME" \
+        "github.com/$SELF_REPO_SENTINEL"
+
+    # 3. Anything still under the upstream owner is a DIFFERENT repository they own.
+    #    Never the fork by any reading, and its name carries no brand token — so
+    #    only the owner pass breaks it, silently, for every repo upstream owns.
+    replace_in_files \
+        "github\.com/$ORIGINAL_OWNER/" \
+        "github.com/$UPSTREAM_OWNER_SENTINEL/"
+
+    # 4. Give the self-references back, as plain text, so every pass rebrands them.
+    replace_in_files \
+        "github\.com/$SELF_REPO_SENTINEL" \
+        "github.com/$ORIGINAL_OWNER/$ORIGINAL_NAME"
+}
+
+restore_upstream_citations() {
+    replace_in_files \
+        "github\.com/$UPSTREAM_OWNER_SENTINEL/$UPSTREAM_NAME_SENTINEL/" \
+        "github.com/$ORIGINAL_OWNER/$ORIGINAL_NAME/"
+    replace_in_files \
+        "github\.com/$UPSTREAM_OWNER_SENTINEL/" \
+        "github.com/$ORIGINAL_OWNER/"
+}
+
 # Decide whether public/CNAME is inherited from the template, while its contents
 # still say so. Must run BEFORE the content sweep — see update_cname().
 classify_cname() {
@@ -1061,6 +1154,9 @@ main() {
     # Read the CNAME verdict before the sweep rewrites the file out from under it.
     classify_cname
 
+    # Hide upstream citations from every pass (#926).
+    protect_upstream_citations
+
     echo "Updating file contents..."
     if [ "$same_brand" = false ]; then
         # One ASCII-case-insensitive pass handles canonical, lower, title,
@@ -1120,6 +1216,13 @@ main() {
         # marked so the content sweep cannot publish a target state early.
         update_rebrand_identity_state
     fi
+
+    # AFTER the residual verifier, deliberately (#926). A protected citation is
+    # brand text the rebrand chose to keep, so showing it to a gate whose question
+    # is "did anything get missed?" can only produce a false positive. They are
+    # invisible to it by construction — the substitution never saw them either —
+    # and test_upstream_citations_survive is what actually covers them.
+    restore_upstream_citations
 
     # LAST MUTATION, and the position is load-bearing (#961).
     #

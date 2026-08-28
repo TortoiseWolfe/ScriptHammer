@@ -92,6 +92,34 @@ setup_temp_dir() {
     echo "export const projectName = 'ScriptHammer';" > src/components/Logo.tsx
     printf 'lockfileBrand: ScriptHammer\n' > pnpm-lock.yaml
 
+    # URLS THAT CITE THE TEMPLATE RATHER THAN NAMING THE FORK (#926).
+    #
+    # A fork inherits documentation linking to the upstream repository as evidence
+    # — a bug report used as a worked example, a file on main. The substitution
+    # rewrites those into links to the fork's own empty tracker, so `.../issues/51`
+    # becomes a 404 in a repository that has no issue 51.
+    #
+    # Four shapes, because they break through different passes: the brand pass
+    # rewrites the NAME half, and the owner pass rewrites the OWNER half even for
+    # repositories whose names carry no brand token at all.
+    mkdir -p docs
+    cat > docs/CITATIONS.md <<'CITEDOC'
+# Citations
+
+A worked example of a good bug report:
+https://github.com/TortoiseWolfe/ScriptHammer/issues/51
+
+A file on the template's main branch:
+https://github.com/TortoiseWolfe/ScriptHammer/blob/main/docs/FORKING.md
+
+Another repository the same author owns — its name carries no brand token, but
+the owner pass rewrites it anyway:
+https://github.com/TortoiseWolfe/RescueDogs/issues/15
+
+The same host lowercased, which the case-sensitive owner pass walks past:
+https://github.com/tortoisewolfe/CRUDkit
+CITEDOC
+
     # THE BRAND TOKEN IN A FILENAME AND IN AN IDENTIFIER (#911).
     #
     # Every other fixture file carries it only inside a STRING, which is why the rename
@@ -853,6 +881,19 @@ test_case_preserving_rebrand() {
             "$(find "$TEMP_DIR" -maxdepth 3 -type f | sort | tr '\n' ' ')"
     fi
 
+    # TWO KINDS OF LEGITIMATE SURVIVOR NOW, not one (#926).
+    #
+    # `rebrand:keep` marks a line the author chose to protect. A URL under the
+    # upstream owner is the second kind: an inherited doc citing the template as
+    # evidence — an issue by number, a file at a ref — which a fork cannot
+    # reproduce because its own tracker has no issue 51. Those are retained on
+    # purpose, so a gate whose question is "did anything get MISSED?" must not
+    # count them.
+    #
+    # Scoped to `github.com/<upstream-owner>/` rather than the brand token, because
+    # the owner pass breaks links to every repository upstream owns — including
+    # ones whose names carry no brand token at all.
+    local CASE_SOURCE_OWNER="TortoiseWolfe" # rebrand:keep
     residuals=""
     old_paths=""
     local source
@@ -862,7 +903,8 @@ test_case_preserving_rebrand() {
             -type f ! -name pnpm-lock.yaml ! -name package-lock.json \
             ! -name yarn.lock ! -name bun.lockb -print0 | \
             xargs -0 grep -IinF "$source" 2>/dev/null | \
-            grep -v 'rebrand:keep' || true)
+            grep -v 'rebrand:keep' | \
+            grep -v "github.com/$CASE_SOURCE_OWNER/" || true)
         old_paths+=$(find . \
             \( -path './.git' -o -path './node_modules' -o -path './.pay-verify' \) -prune -o \
             -print | grep -iF "$source" || true)
@@ -1065,6 +1107,60 @@ _summary_count_for() {
     fi
     "$TEMP_DIR/scripts/rebrand.sh" "geo LARP" "testuser" "Test desc" --force --no-icon 2>&1 \
         | sed -n 's/^ *Files modified: *\([0-9]*\) *$/\1/p' | tail -1
+}
+
+##
+# A URL pointing at the template is a CITATION, not branding (#926).
+#
+# The substitution has no notion that `github.com/OWNER/ScriptHammer/...` points
+# BACK at the template rather than being an instance of the fork's own name, so
+# every fork silently converts inherited documentation links into links to its own
+# empty tracker. Measured on a real fork: 42 issue and PR URLs retargeted, every
+# one a 404.
+#
+# The owner pass makes it worse than the brand pass alone. `RescueDogs` carries no
+# brand token, so the name survives — and the owner is rewritten anyway, which
+# breaks links to EVERY repository the template's author owns. And because that
+# pass is case-sensitive, the same link survives or breaks depending on how it was
+# capitalised, which is the kind of asymmetry nobody discovers on purpose.
+##
+test_upstream_citations_survive() {
+    run_test "test_upstream_citations_survive"
+    setup_temp_dir
+
+    "$TEMP_DIR/scripts/rebrand.sh" "geo LARP" "testuser" "Test desc" --force --no-icon \
+        >/dev/null 2>&1 || true
+
+    local doc="$TEMP_DIR/docs/CITATIONS.md"
+    if [ ! -f "$doc" ]; then
+        log_fail "Citation fixture present" "docs/CITATIONS.md after rebrand" "missing"
+        cd "$REPO_ROOT"
+        return
+    fi
+
+    local expected
+    for expected in \
+        "https://github.com/TortoiseWolfe/ScriptHammer/issues/51" \
+        "https://github.com/TortoiseWolfe/ScriptHammer/blob/main/docs/FORKING.md" \
+        "https://github.com/TortoiseWolfe/RescueDogs/issues/15" \
+        "https://github.com/tortoisewolfe/CRUDkit"; do
+        if grep -Fq "$expected" "$doc"; then
+            log_pass "Citation survives: ${expected#https://github.com/}"
+        else
+            log_fail "Citation rewritten" "$expected" "$(grep -oE 'https://github\.com/[^ ]*' "$doc" | tr '\n' ' ')"
+        fi
+    done
+
+    # THE POSITIVE CONTROL. The exemption must be about URLs pointing at the
+    # template, not about switching the substitution off — prose naming the fork
+    # still has to rebrand, or "citations survive" is satisfied by doing nothing.
+    if grep -q "geo LARP" "$TEMP_DIR/README.md"; then
+        log_pass "Prose still rebrands (the exemption is scoped to citations)"
+    else
+        log_fail "Prose rebrands" "geo LARP in README.md" "$(cat "$TEMP_DIR/README.md")"
+    fi
+
+    cd "$REPO_ROOT"
 }
 
 test_path_collision_is_atomic() {
@@ -1331,6 +1427,7 @@ run_all_tests() {
     test_case_preserving_rebrand
     test_case_preserving_multiword
     test_summary_counts_paths_not_increments
+    test_upstream_citations_survive
     test_path_collision_is_atomic
     test_existing_target_directory_is_atomic
     test_residual_gate_is_fatal
@@ -1400,6 +1497,9 @@ if [ $# -eq 1 ]; then
             ;;
         test_summary_counts_paths_not_increments)
             test_summary_counts_paths_not_increments
+            ;;
+        test_upstream_citations_survive)
+            test_upstream_citations_survive
             ;;
         test_path_collision_is_atomic)
             test_path_collision_is_atomic
