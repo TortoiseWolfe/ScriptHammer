@@ -111,6 +111,10 @@ PKG
     # carries the brand so the path-move phase renames it before the blog is cleared.
     # CLAUDE.md is author guidance living in the same directory and must survive —
     # the generator's ALL-CAPS exclusion is the only thing that saves it.
+    # A stand-in for the template's 1200x630 social card. Its CONTENT does not
+    # matter; that a fork must not still be serving THESE BYTES does.
+    printf 'TEMPLATE-OG-CARD-BYTES' > public/opengraph-image.png
+
     mkdir -p public/blog src/lib/blog
     mkdir -p public/blog-images/hello-world public/blog-images/template-post-one \
         public/blog-images/scripthammer-intro
@@ -1603,6 +1607,37 @@ test_fork_does_not_inherit_the_lockup() {
 
     cd "$REPO_ROOT"
 }
+##
+# A fork must not keep the template's social card (#988 follow-up).
+#
+# public/opengraph-image.png is what Slack, LinkedIn and iMessage render when someone
+# pastes the link — the surface that reaches people who never open the site. It shipped
+# this template's lockup to every fork.
+#
+# Either outcome is acceptable and the test says so: regenerated from the fork's own
+# name, or REMOVED when sharp is unavailable. What is unacceptable is unchanged.
+# An absent card degrades to no preview; an inherited one is someone else's brand.
+##
+test_fork_does_not_keep_our_social_card() {
+    run_test "test_fork_does_not_keep_our_social_card"
+    setup_temp_dir
+
+    safe_rebrand "Widget Works" "testuser" "A widget" --force --no-icon >/dev/null 2>&1 || true
+
+    local card="$TEMP_DIR/public/opengraph-image.png"
+
+    if [ ! -f "$card" ]; then
+        log_pass "Card removed rather than inherited (no renderer available)"
+    elif grep -q "TEMPLATE-OG-CARD-BYTES" "$card" 2>/dev/null; then
+        log_fail "Social card" "regenerated or removed" \
+            "the fork still serves the template's card byte-for-byte"
+    else
+        log_pass "Card regenerated from the fork's own name"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
 
 
 
@@ -1879,6 +1914,7 @@ run_all_tests() {
     test_keep_blog_opts_out
     test_repository_url_matches_the_remote
     test_fork_does_not_inherit_the_lockup
+    test_fork_does_not_keep_our_social_card
     test_path_collision_is_atomic
     test_existing_target_directory_is_atomic
     test_residual_gate_is_fatal
@@ -1969,6 +2005,9 @@ if [ $# -eq 1 ]; then
             ;;
         test_fork_does_not_inherit_the_lockup)
             test_fork_does_not_inherit_the_lockup
+            ;;
+        test_fork_does_not_keep_our_social_card)
+            test_fork_does_not_keep_our_social_card
             ;;
         test_path_collision_is_atomic)
             test_path_collision_is_atomic

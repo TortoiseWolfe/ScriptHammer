@@ -695,6 +695,45 @@ update_docker_compose() {
 # So the mark is CHOSEN, not swept. project.config.ts defaults to 'placeholder'
 # already, which protects a fork even without this; setting it here as well means the
 # guarantee does not depend on the forker never editing that default back.
+# THE CARD PEOPLE SEE BEFORE THEY EVER VISIT (#988 follow-up).
+#
+# public/opengraph-image.png is 1200x630 of this template's lockup, and it is what
+# Slack, LinkedIn, iMessage and Twitter render when anyone pastes a fork's link. Every
+# fork inherited it. #988 fixed the on-page hero; this is the same borrowed artwork on
+# the surface that reaches people who never open the site.
+#
+# The replacement is DERIVED, NOT DESIGNED: the project's own name and its initials on
+# a neutral ground. No tagline, no illustration, no logo — a script cannot know what a
+# project looks like, and inventing one is the mistake that put a domain nobody owned
+# in CNAME and a description nobody wrote in package.json.
+#
+# IF IT CANNOT BE GENERATED, THE BORROWED CARD IS DELETED. sharp lives in node_modules,
+# and a rebrand may run before anything is installed. An absent card degrades to no
+# preview image, which is honest; shipping someone else's brand is not. Same call as
+# CNAME: remove rather than inherit, and say so.
+update_og_image() {
+    local card="$REPO_ROOT/public/opengraph-image.png"
+    local generator="$REPO_ROOT/scripts/generate-og-image.mjs"
+
+    [ -f "$card" ] || return 0
+
+    if [ "$DRY_RUN" = true ]; then
+        log_verbose "[DRY-RUN] Would regenerate public/opengraph-image.png for ${DISPLAY_NAME}"
+        return 0
+    fi
+
+    if [ -f "$generator" ] && (cd "$REPO_ROOT" && node "$generator" "$DISPLAY_NAME" "public/opengraph-image.png" >/dev/null 2>&1); then
+        log_success "Regenerated public/opengraph-image.png for ${DISPLAY_NAME}"
+        mark_modified "$card"
+        return 0
+    fi
+
+    rm -f "$card"
+    log_warning "Could not render a social card (sharp unavailable?), so the inherited one was REMOVED."
+    log_warning "  Run: node scripts/generate-og-image.mjs \"${DISPLAY_NAME}\" — or add your own 1200x630 public/opengraph-image.png"
+    mark_modified "$card"
+}
+
 update_brand_mark() {
     local conf="$REPO_ROOT/src/config/project.config.ts"
 
@@ -1548,6 +1587,16 @@ main() {
     echo ""
     echo "Clearing the template's blog..."
     clear_template_blog
+
+    # LAST MUTATIONS, and the position is load-bearing for the same reason as CNAME
+    # and the blog (#961): this DELETES a tracked path when it cannot render a
+    # replacement, and the pre-move verifier walks the pre-mutation snapshot and
+    # reports anything absent as "missing before path rename". Doing it early turned a
+    # correct deletion into a failed rebrand — caught by the harness, exactly as the
+    # CNAME comment above warned and I did anyway.
+    echo ""
+    echo "Updating the social card..."
+    update_og_image
 
     # Summary
     END_TIME=$(date +%s)
