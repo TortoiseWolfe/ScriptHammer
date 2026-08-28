@@ -53,6 +53,10 @@ vi.mock('@/lib/supabase/client', () => {
     createClient: vi.fn(() => mockSupabaseClient),
     supabase: mockSupabaseClient,
     setAllowAuthTokenRemoval: vi.fn(),
+    // This mock supplies a WORKING client, so the provider must take the real
+    // session path. Without this the provider short-circuits as "not configured"
+    // and every assertion below silently measures nothing.
+    isSupabaseConfigured: vi.fn(() => true),
   };
 });
 

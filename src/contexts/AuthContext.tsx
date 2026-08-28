@@ -15,7 +15,11 @@ import React, {
   useMemo,
 } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import { supabase, setAllowAuthTokenRemoval } from '@/lib/supabase/client';
+import {
+  supabase,
+  setAllowAuthTokenRemoval,
+  isSupabaseConfigured,
+} from '@/lib/supabase/client';
 import { getInternalUrl, getRedirectUrl } from '@/config/project.config';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { retryWithBackoff } from '@/lib/auth/retry-utils';
@@ -172,6 +176,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
+    // NOTHING TO RETRY WHEN SUPABASE WAS NEVER CONFIGURED.
+    //
+    // `createDisabledClient()` is a deterministic mock: its getSession() resolves
+    // instantly to `{ error: 'Supabase not configured' }`, every time, forever. Sending
+    // that through retryWithBackoff meant a fresh fork spent ~7 seconds (1s + 2s + 4s)
+    // retrying something that cannot succeed, held `isLoading` true for the whole of
+    // it, then logged at ERROR.
+    //
+    // The state is already known, handled and visible: `isSupabaseConfigured()` is what
+    // SetupBanner uses to render the "Supabase is not configured" banner the user
+    // actually sees. A console ERROR for it is noise on top of a working explanation,
+    // and noise is what teaches people to stop reading the console.
+    //
+    // Debug, not error, and no retry. A fork gets a clean console and an auth UI that
+    // resolves on first paint instead of seven seconds later.
+    if (!isSupabaseConfigured()) {
+      logger.debug(
+        'Supabase is not configured; skipping session lookup. SetupBanner explains this to the user.'
+      );
+      setSession(null);
+      setUser(null);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     // Fallback timeout - prevent infinite loading (FR-001)
     // Must be longer than retry delays (1s + 2s + 4s = 7s) to allow retries to complete
     const loadingTimeout = setTimeout(() => {
