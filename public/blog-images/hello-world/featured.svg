@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630" role="img" aria-label="Hello, world.">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e293b"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <g fill="none" stroke="#334155" stroke-width="2">
+    <path d="M0 210h1200M0 420h1200M400 0v630M800 0v630"/>
+  </g>
+  <text x="600" y="300" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="88" fill="#e2e8f0">Hello, world.</text>
+  <text x="600" y="372" text-anchor="middle" font-family="ui-sans-serif, system-ui, sans-serif" font-size="34" fill="#94a3b8">An example post. Delete it and write your own.</text>
+</svg>

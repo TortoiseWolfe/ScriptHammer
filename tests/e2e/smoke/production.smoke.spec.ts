@@ -149,9 +149,15 @@ test.describe('@smoke production deploy (#288)', () => {
     );
 
     // Coverage floor. A selector or route change that silently stops matching
-    // must fail loudly rather than pass by measuring nothing (#396). Never
-    // lower this to make a run go green.
-    const FLOOR = 10;
+    // must fail loudly rather than pass by measuring nothing (#396).
+    //
+    // This was 10. A count is the wrong shape for that job: it encodes how much
+    // content the blog has, so it goes stale when the corpus shrinks and fails in
+    // every fork, where rebrand.sh keeps a single post (#936). Non-vacuity is what
+    // #396 actually asked for, and completeness of the index is checked against the
+    // independent source on disk by scripts/__tests__/blog-index-matches-disk.test.js
+    // (#938). Never raise this back into a content-size claim.
+    const FLOOR = 1;
     console.log(`[canonical] checking ${postUrls.length} blog posts`);
     expect(
       postUrls.length,

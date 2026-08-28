@@ -31,19 +31,10 @@ const path = require('node:path');
 const BLOG_DIR = path.join(__dirname, '..', '..', 'public', 'blog');
 const PUBLIC_DIR = path.join(__dirname, '..', '..', 'public');
 
-/**
- * `bad-seo-example.md` is a deliberate demonstration of bad SEO — it exists to show
- * what a post looks like with a bloated slug, a weak title and no imagery. Requiring
- * an image would destroy the thing it demonstrates. Exempted by name, with the reason,
- * rather than by loosening the rule for everyone.
- */
-const INTENTIONALLY_IMAGELESS = new Set(['bad-seo-example.md']);
-
 // CLAUDE.md in public/blog is guidance for authors, not a post.
 const all = fs
   .readdirSync(BLOG_DIR)
   .filter((f) => f.endsWith('.md') && f !== 'CLAUDE.md');
-const posts = all.filter((f) => !INTENTIONALLY_IMAGELESS.has(f));
 
 const frontmatter = (file) => {
   const raw = fs.readFileSync(path.join(BLOG_DIR, file), 'utf8');
@@ -56,25 +47,47 @@ const field = (fm, name) => {
   return m ? m[1] : null;
 };
 
+/**
+ * A post may declare `intentionallyImageless: true` to opt out — `bad-seo-example.md`
+ * does, because it demonstrates what a post looks like with a bloated slug, a weak title
+ * and no imagery, and requiring an image would destroy the thing it demonstrates.
+ *
+ * This used to be a hardcoded `Set(['bad-seo-example.md'])` here, guarded by a second
+ * test asserting the name still matched a real file. Two problems with that: a rename
+ * orphans it, and `rebrand.sh` now removes the template's posts in a fork (#936) — so
+ * the exemption named a legitimately-absent file and failed in every fork. Declaring it
+ * in the post's own frontmatter cannot be orphaned and is deleted with the post.
+ */
+const exempt = (file) =>
+  /^intentionallyImageless:\s*true\s*$/m.test(frontmatter(file));
+const posts = all.filter((f) => !exempt(f));
+
 describe('every blog post ships with images a reader can actually see', () => {
   it('finds posts to check at all', () => {
     // A glob that silently matches nothing would make every assertion below vacuous.
+    // This was `>= 10`. That number was never a vacuity guard — it was a claim about
+    // how much content the blog has, which goes stale when the corpus shrinks and
+    // fails in every fork, where rebrand.sh keeps one post (#936). Whether the corpus
+    // is COMPLETE is a different question, answered against the independent source in
+    // scripts/__tests__/blog-index-matches-disk.test.js (#938).
     assert.ok(
-      posts.length >= 10,
+      posts.length > 0,
       `expected the blog to have posts, found ${posts.length}`
     );
   });
 
-  it('the exemption list still matches real files', () => {
-    // An exemption for a file that no longer exists is a rule quietly not applying to
-    // anything. If the demo post is renamed, this fails instead of going stale.
-    const missing = [...INTENTIONALLY_IMAGELESS].filter(
-      (f) => !all.includes(f)
-    );
+  it('an exemption is only claimed by a post that needs it', () => {
+    // The staleness guard, inverted so it works file-locally. A post carrying the flag
+    // while declaring a featuredImage does not need the flag: the exemption has outlived
+    // its reason and should go, rather than sit there quietly excusing a post from a rule
+    // it already satisfies.
+    const unnecessary = all
+      .filter((f) => exempt(f))
+      .filter((f) => field(frontmatter(f), 'featuredImage'));
     assert.deepStrictEqual(
-      missing,
+      unnecessary,
       [],
-      `exempted but not present: ${missing.join(', ')} — remove the exemption or fix the name`
+      `these declare intentionallyImageless but do have a featuredImage: ${unnecessary.join(', ')} — drop the flag`
     );
   });
 

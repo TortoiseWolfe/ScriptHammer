@@ -81,6 +81,7 @@ whether the committed set still matches it.
 | **Themes** | Renames `scripthammer-dark`/`scripthammer-light` theme blocks to your project name |
 | **Env** | Updates `COMPOSE_PROJECT_NAME` and example commands in `.env.example` |
 | **CNAME** | **Deletes** `public/CNAME` — a fork has no custom domain yet, and the file's presence drops the Pages basePath (unless a real custom domain is already set, or `--keep-cname`) |
+| **Blog** | **Removes the template's posts**, keeping only the `hello-world` exemplar, and filters `src/lib/blog/blog-data.json` to match (unless `--keep-blog`) — see below |
 
 ### Script Options
 
@@ -110,8 +111,33 @@ whether the committed set still matches it.
 | `--dry-run`              | Preview changes without modifying files                                                            |
 | `--force`                | Skip all confirmation prompts                                                                      |
 | `--keep-cname`           | Don't update `public/CNAME` file (keep existing domain)                                            |
+| `--keep-blog`            | Keep the template's blog posts instead of removing them                                            |
 | `--preserve-ssh`         | Keep SSH format (`git@github.com:`) if currently using SSH                                         |
 | `--preserve-attribution` | **No-op.** Attribution is always kept — see below. Still parses, so scripts passing it don't break |
+
+### The blog
+
+A brand sweep is the wrong tool for writing. Left alone it rewrites `public/blog/*.md` like
+any other file, so the template's posts come out with your name on them — public, indexed, in
+your `sitemap.xml` and your RSS feed. That includes this project's personal essays and
+`bad-seo-example.md`, a deliberate bad-SEO **test fixture** that would ship as a real post.
+A real fork measured before this changed was republishing 15 of the template's 16 posts, and
+its own introduction slug served a post titled "ScriptHammer — Opinionated Next.js PWA
+Template".
+
+So the rebrand removes them, keeping one `hello-world` post that documents the frontmatter
+contract and tells you to delete it. `public/blog-images/<slug>/` goes with each removed post.
+`public/blog/CLAUDE.md` stays — it is authoring guidance, not a post, and the generator's
+ALL-CAPS exclusion is what distinguishes them.
+
+**Both sides are cleared, and that is the point.** `src/app/blog/[slug]/page.tsx` renders out
+of the committed index at `src/lib/blog/blog-data.json` and never reads the markdown, so
+deleting the files alone would leave every post still being served, with no file left to edit.
+The rebrand filters the index to match and recomputes its tag and category lists, so your blog
+filters do not offer facets nothing is filed under.
+
+The same asymmetry applies afterwards, whenever you write: **a post is not published until you
+run `pnpm generate:blog` and commit the index.** See the fork checklist for the details.
 
 ### Keeping a string through a rebrand — `rebrand:keep`
 

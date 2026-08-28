@@ -196,7 +196,14 @@ describe('renderBlogMarkdown heading compatibility', () => {
     // reporting green — the vacuous-gate shape this repo keeps paying for (#396,
     // #411). This test cannot be skipped out of existence by a bad import, so it is
     // what makes the sweep's silence audible.
-    expect(corpus.length).toBeGreaterThanOrEqual(10);
+    // Non-vacuity only. This was `>= 10`, which is not a vacuity guard at all —
+    // it is a claim about how much content the blog has, so it goes stale when the
+    // corpus shrinks, means nothing when it grows, and fails outright in a fork,
+    // which keeps a single post after rebrand.sh (#936). That the corpus is
+    // COMPLETE is a different question, and it is now answered where it belongs,
+    // against the independent source: scripts/__tests__/blog-index-matches-disk.js
+    // compares this index to public/blog/ in both directions (#938).
+    expect(corpus.length).toBeGreaterThan(0);
     expect(
       corpus.every((post) => post.slug && post.content?.length > 0),
       'every post needs a slug and content for the sweep to mean anything'

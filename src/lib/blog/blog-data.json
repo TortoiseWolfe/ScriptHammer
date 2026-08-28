@@ -1,6 +1,66 @@
 {
   "posts": [
     {
+      "id": "post_a1d955ae",
+      "slug": "hello-world",
+      "title": "Hello, world",
+      "content": "\n# Hello, world\n\nThis is the only post a freshly rebranded fork keeps. Everything else in\n`public/blog/` belongs to the template and is removed by `scripts/rebrand.sh`, because a\nnew project should not publish the template's posts under its own name.\n\nRead this once, then delete it.\n\n## How a post works\n\nA post is one markdown file in `public/blog/`. The frontmatter above is the whole\ncontract:\n\n- `title`, `date`, `excerpt` — what the blog index and the post page render.\n- `slug` — the URL. It overrides the filename, so `hello-world.md` need not be\n  `/blog/hello-world/`. Keep them the same unless you have a reason.\n- `tags`, `categories` — the filters on the blog index.\n- `featuredImage` — **what a reader sees**, on the card and at the top of the post. A\n  post without one is blank on the site.\n- `ogImage` — the social card, shown when someone pastes the link. Use a PNG, 1200×630.\n\nBoth images must exist on disk; a test fails the build if they do not.\n\n## The one thing that will catch you out\n\n`public/blog/*.md` is **not** what the site serves. The site, the sitemap, the RSS feed\nand the JSON feed all read `src/lib/blog/blog-data.json`, a committed index — and\ngenerating it is deliberately not part of the build.\n\nSo after adding, editing, **or deleting** a post:\n\n```bash\ndocker compose exec scripthammer pnpm generate:blog\n```\n\nand commit the resulting `blog-data.json` diff. Skip it and nothing happens: your edit\nnever ships, and a deleted post stays live, still in the sitemap, still in the feed.\n\n`scripts/__tests__/blog-index-matches-disk.test.js` fails when the two sides disagree, so\nCI will tell you — but it is quicker to remember than to be told.\n\n## Writing your own\n\nCopy this file, change the frontmatter, replace the body, regenerate the index:\n\n```bash\ncp public/blog/hello-world.md public/blog/my-first-post.md\n# edit it, then:\ndocker compose exec scripthammer pnpm generate:blog\n```\n\nThen delete this one.\n",
+      "excerpt": "The one post a fresh fork keeps. It exists to show the format — read it once, then delete it and write your own.",
+      "publishedAt": "2026-08-27T00:00:00.000Z",
+      "updatedAt": "2026-08-27T00:00:00.000Z",
+      "status": "published",
+      "author": {
+        "id": "default",
+        "name": "TortoiseWolfe"
+      },
+      "metadata": {
+        "tags": [
+          "example"
+        ],
+        "categories": [
+          "example"
+        ],
+        "readingTime": 2,
+        "wordCount": 318,
+        "showToc": true,
+        "showAuthor": true,
+        "showShareButtons": true,
+        "featured": false,
+        "featuredImage": "/blog-images/hello-world/featured.svg",
+        "featuredImageAlt": "A dark card reading \"Hello, world.\" above the words \"An example post. Delete it and write your own.\""
+      },
+      "seo": {
+        "title": "Hello, world",
+        "description": "The one post a fresh fork keeps. It exists to show the format — read it once, then delete it and write your own.",
+        "keywords": [
+          "example"
+        ],
+        "ogTitle": "Hello, world",
+        "ogDescription": "The example post every fork of this template starts with.",
+        "ogImage": "/blog-images/hello-world/og.png",
+        "twitterCard": "summary_large_image"
+      },
+      "frontMatter": {
+        "title": "Hello, world",
+        "author": "TortoiseWolfe",
+        "date": "2026-08-27T00:00:00.000Z",
+        "slug": "hello-world",
+        "tags": [
+          "example"
+        ],
+        "categories": [
+          "example"
+        ],
+        "excerpt": "The one post a fresh fork keeps. It exists to show the format — read it once, then delete it and write your own.",
+        "featuredImage": "/blog-images/hello-world/featured.svg",
+        "featuredImageAlt": "A dark card reading \"Hello, world.\" above the words \"An example post. Delete it and write your own.\"",
+        "ogImage": "/blog-images/hello-world/og.png",
+        "ogTitle": "Hello, world",
+        "ogDescription": "The example post every fork of this template starts with.",
+        "twitterCard": "summary_large_image"
+      }
+    },
+    {
       "id": "post_50de87ab",
       "slug": "ride-the-open-source-city",
       "title": "Why Build One Game When You Can Build All the Games?",
@@ -976,6 +1036,7 @@
         "date": "2025-09-28T00:00:00.000Z",
         "slug": "this-is-an-extremely-long-url-slug-that-should-be-much-shorter-for-better-seo",
         "excerpt": "This is a blog post",
+        "intentionallyImageless": true,
         "ogImage": "/blog-images/bad-seo-example-og.png",
         "tags": [
           "seo",
@@ -1129,8 +1190,9 @@
       }
     }
   ],
-  "count": 15,
+  "count": 16,
   "tags": [
+    "example",
     "three-js",
     "game-engine",
     "open-source",
@@ -1200,6 +1262,7 @@
     "docker"
   ],
   "categories": [
+    "example",
     "features",
     "engineering",
     "tutorial",
