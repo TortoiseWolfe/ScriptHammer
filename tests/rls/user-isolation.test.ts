@@ -53,9 +53,12 @@ describe.skipIf(!hasRlsTestEnvironment())(
         TEST_USERS.userA.password
       );
 
+      // `select('*')` needs the privilege on EVERY column, and `authenticated`
+      // no longer holds one on `is_admin` — so a star fails outright rather
+      // than quietly omitting it. Name what this test needs.
       const { data, error } = await clientA
         .from('user_profiles')
-        .select('*')
+        .select('id, username, display_name, bio')
         .eq('id', userA.id);
 
       expect(error).toBeNull();
@@ -88,12 +91,16 @@ describe.skipIf(!hasRlsTestEnvironment())(
     it('unauthenticated user cannot query profiles', async () => {
       const anonClient = createAnonClient();
 
+      // anon now holds NO privilege on this table at all, so the refusal
+      // happens at the GRANT layer rather than by RLS returning an empty set.
+      // That is strictly stronger — a row policy that stops matching would
+      // silently re-open the table, whereas a missing privilege cannot.
       const { data, error } = await anonClient
         .from('user_profiles')
-        .select('*');
+        .select('id');
 
-      // RLS should return empty set for anon users (no policy grants access)
-      expect(data).toHaveLength(0);
+      expect(error?.code).toBe('42501');
+      expect(data).toBeNull();
     });
   }
 );
@@ -132,7 +139,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .from('user_profiles')
         .update({ display_name: newDisplayName })
         .eq('id', userA.id)
-        .select()
+        .select('id, display_name, bio')
         .single();
 
       expect(error).toBeNull();
@@ -151,7 +158,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .from('user_profiles')
         .update({ bio: newBio })
         .eq('id', userA.id)
-        .select()
+        .select('id, display_name, bio')
         .single();
 
       expect(error).toBeNull();
@@ -170,7 +177,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .from('user_profiles')
         .update({ display_name: 'Hacked Name' })
         .eq('id', userB.id)
-        .select();
+        .select('id, display_name, bio');
 
       // Should return empty - no rows matched (RLS prevents access)
       expect(data).toHaveLength(0);
@@ -188,7 +195,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .from('user_profiles')
         .update({ display_name: 'Attempted Hack' })
         .eq('id', userB.id)
-        .select();
+        .select('id, display_name, bio');
 
       // RLS silently filters - returns empty result, not error
       expect(error).toBeNull();

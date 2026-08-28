@@ -1083,9 +1083,14 @@ DROP POLICY IF EXISTS "Users update own profile" ON user_profiles;
 CREATE POLICY "Users update own profile" ON user_profiles
   FOR UPDATE USING (auth.uid() = id);
 
+-- was `FOR INSERT WITH CHECK (true)` with no role restriction, while `anon`
+-- held a platform-default INSERT grant — so an unauthenticated caller could
+-- create rows in this table. The signup path does not rely on this policy: the
+-- `handle_new_user` trigger (:645) is SECURITY DEFINER and runs as the table
+-- owner, which bypasses RLS entirely.
 DROP POLICY IF EXISTS "Service creates profiles" ON user_profiles;
 CREATE POLICY "Service creates profiles" ON user_profiles
-  FOR INSERT WITH CHECK (true);
+  FOR INSERT TO authenticated WITH CHECK (auth.uid() = id);
 
 -- Auth audit logs (Feature 017)
 DROP POLICY IF EXISTS "Users can view own audit logs" ON auth_audit_logs;
@@ -2195,7 +2200,58 @@ REVOKE INSERT, UPDATE, DELETE, TRUNCATE, TRIGGER, REFERENCES ON payment_intents 
 GRANT SELECT ON payment_results TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON subscriptions TO authenticated;
 GRANT SELECT ON payment_provider_config TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON user_profiles TO authenticated;
+-- ============================================================================
+-- user_profiles: COLUMN-SCOPED privileges 
+-- ============================================================================
+-- Measured on production 2026-08-28, BEFORE this change: `anon` AND
+-- `authenticated` each held DELETE, INSERT, REFERENCES, SELECT, TRIGGER,
+-- TRUNCATE and UPDATE on all nine columns. The line that used to be here —
+-- `GRANT SELECT, INSERT, UPDATE ON user_profiles TO authenticated` — never
+-- narrowed anything: Supabase's platform defaults grant both roles ALL
+-- privileges on every table in `public`, so a narrower GRANT sits on top of a
+-- wider one and changes nothing. Same trap as #897 on payment_intents.
+--
+-- WHAT WAS EXPLOITABLE. RLS restricts ROWS, never COLUMNS. With the
+-- `Users update own profile` policy allowing `auth.uid() = id`, a table-wide
+-- UPDATE grant and no guard trigger, any signed-in user could run
+--
+--   UPDATE user_profiles SET is_admin = true WHERE id = auth.uid();
+--
+-- and `is_admin()` (:1231) reads that column LIVE as the single authority for
+-- every admin RPC and policy. That is privilege escalation, not merely the
+-- disclosure this was filed about. Verified unexploited at the time of the fix:
+-- 1 profile, 0 admins.
+--
+-- THE REVOKE IS THE LOAD-BEARING LINE. Without it the grants below are additive
+-- and this whole block is decoration.
+REVOKE ALL ON public.user_profiles FROM anon, authenticated;
+
+-- `is_admin` appears in NO grant. It is set out-of-band and read only through
+-- the SECURITY DEFINER `is_admin()` RPC, which no grant here can reach —
+-- `admin-auth-service.checkIsAdmin` already calls that RPC rather than the
+-- column, so nothing in the client loses a capability it was using.
+--
+-- Column lists are also DENY BY DEFAULT for columns that do not exist yet. A
+-- `last_seen_cell` added to this table later is not readable by anyone until
+-- someone names it here — which is the property the report wanted, in a smaller change
+-- than the view it proposed.
+GRANT SELECT (
+  id, username, display_name, avatar_url, bio, welcome_message_sent,
+  created_at, updated_at
+) ON public.user_profiles TO authenticated;
+
+-- Only the fields a user edits about themselves. `id`, `created_at` and
+-- `updated_at` are excluded because nothing should rewrite them from a browser;
+-- `welcome_message_sent` is included because welcome-service.ts:266 sets it.
+GRANT UPDATE (
+  username, display_name, avatar_url, bio, welcome_message_sent
+) ON public.user_profiles TO authenticated;
+
+-- For AccountSettings' upsert. The signup trigger does not need this — it is
+-- SECURITY DEFINER and runs as the table owner.
+GRANT INSERT (
+  id, username, display_name, avatar_url, bio
+) ON public.user_profiles TO authenticated;
 GRANT SELECT, INSERT ON auth_audit_logs TO authenticated;
 GRANT SELECT ON products TO authenticated;
 GRANT SELECT ON orders TO authenticated;
