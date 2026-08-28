@@ -92,6 +92,26 @@ setup_temp_dir() {
     echo "export const projectName = 'ScriptHammer';" > src/components/Logo.tsx
     printf 'lockfileBrand: ScriptHammer\n' > pnpm-lock.yaml
 
+    # THE DESCRIPTION EVERY USER-VISIBLE SURFACE ACTUALLY READS (#923).
+    #
+    # DESCRIPTION reached package.json and stopped there. og:description,
+    # twitter:description, the meta description and the PWA manifest all read
+    # projectConfig.projectDescription, whose default carries NO brand token — so
+    # the sweep cannot match it and a fork's social cards keep describing the
+    # template. A live fork about live action role playing advertised "a
+    # production Next.js and Supabase platform…" that way. No fork is named here:
+    # a brand written into this tree becomes a brand that cannot be re-rebranded.
+    mkdir -p src/config
+    cat > src/config/project.config.ts <<'PROJCONF'
+const defaultConfig = {
+  projectName: 'ScriptHammer',
+  projectOwner: 'TortoiseWolfe',
+  projectDescription:
+    'A production Next.js and Supabase platform with auth, payments, encrypted messaging, and an accessible offline-capable PWA',
+  basePath: '',
+};
+PROJCONF
+
     # URLS THAT CITE THE TEMPLATE RATHER THAN NAMING THE FORK (#926).
     #
     # A fork inherits documentation linking to the upstream repository as evidence
@@ -1163,6 +1183,125 @@ test_upstream_citations_survive() {
     cd "$REPO_ROOT"
 }
 
+##
+# The description a forker passes must reach the surfaces users see (#923).
+#
+# It reached package.json and stopped. Everything user-visible — og:description,
+# twitter:description, the meta description, the PWA manifest — reads
+# projectConfig.projectDescription, whose default contains no brand token, so the
+# substitution sweep has nothing to match and cannot reach it.
+#
+# Asserted on the CONFIG rather than on package.json, because package.json was
+# always right and that is exactly why nobody noticed.
+##
+test_description_reaches_the_site() {
+    run_test "test_description_reaches_the_site"
+    setup_temp_dir
+
+    local desc="a widget for widgeting"
+    "$TEMP_DIR/scripts/rebrand.sh" "geo LARP" "testuser" "$desc" --force --no-icon \
+        >/dev/null 2>&1 || true
+
+    local conf="$TEMP_DIR/src/config/project.config.ts"
+    if [ ! -f "$conf" ]; then
+        log_fail "Config present" "src/config/project.config.ts after rebrand" "missing"
+        cd "$REPO_ROOT"
+        return
+    fi
+
+    if grep -Fq "$desc" "$conf"; then
+        log_pass "projectDescription carries the description the forker passed"
+    else
+        log_fail "Description reaches the config" "$desc in projectDescription" \
+            "$(grep -A2 'projectDescription' "$conf")"
+    fi
+
+    # And the template's own copy must be GONE — leaving both would let a stale
+    # default win depending on which one a reader edits.
+    if grep -q "production Next.js and Supabase platform" "$conf"; then
+        log_fail "Template description removed" "no trace of the template's own text" \
+            "$(grep -A2 'projectDescription' "$conf")"
+    else
+        log_pass "The template's own description no longer survives in the config"
+    fi
+
+    # package.json was always right; assert it still is, so the fix does not move
+    # the problem rather than solving it.
+    if grep -Fq "\"description\": \"$desc\"" "$TEMP_DIR/package.json"; then
+        log_pass "package.json description unchanged by the fix"
+    else
+        log_fail "package.json description" "\"description\": \"$desc\"" \
+            "$(cat "$TEMP_DIR/package.json")"
+    fi
+
+    cd "$REPO_ROOT"
+}
+##
+# A description is free text, and it reaches two files with incompatible
+# escaping rules (#923, #972).
+#
+# `update_package_json` built `s|"description": "…"|"description": "$DESCRIPTION"|`
+# — `|` as the delimiter, DESCRIPTION interpolated raw. A description containing
+# a pipe TERMINATED the expression and the rebrand died mid-run, after the
+# content sweep had already rewritten the whole tree:
+#
+#   sed: -e expression #1, char 59: unknown option to `s'
+#
+# Reproduced against the shipped script, not a fixture. The same string breaks
+# the other three ways too: `&` expands to the whole match in a sed replacement,
+# `"` breaks JSON, and `'` closes the TypeScript literal in project.config.ts.
+# One input covers all four. Assert the value ROUND-TRIPS rather than that the
+# run exits zero, because a silently mangled description also exits zero.
+##
+test_hostile_description_is_escaped() {
+    run_test "test_hostile_description_is_escaped"
+    setup_temp_dir
+
+    local desc status conf
+    desc='Care & rescue | it'"'"'s "now" — 100%'
+
+    set +e
+    "$TEMP_DIR/scripts/rebrand.sh" "Widget Works" "testuser" "$desc" --force --no-icon \
+        >/dev/null 2>&1
+    status=$?
+    set -e
+
+    if [ "$status" -eq 0 ]; then
+        log_pass "Rebrand survives a description containing & | ' and \""
+    else
+        log_fail "Hostile description" "exit 0" "exit $status (sed delimiter collision?)"
+        cd "$REPO_ROOT"
+        return
+    fi
+
+    if node -e 'const fs=require("node:fs");
+const pkg=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));
+process.exit(pkg.description===process.argv[2]?0:1);' \
+        "$TEMP_DIR/package.json" "$desc" 2>/dev/null; then
+        log_pass "package.json stays valid JSON and round-trips the description"
+    else
+        log_fail "package.json escaping" "valid JSON holding the exact description" \
+            "$(grep -m1 description "$TEMP_DIR/package.json" || true)"
+    fi
+
+    conf="$TEMP_DIR/src/config/project.config.ts"
+    if node -e 'const fs=require("node:fs");
+const src=fs.readFileSync(process.argv[1],"utf8");
+new Function(src.replace(/\bconst\b/g,"var"));
+const m=src.match(/projectDescription:\s*\x27((?:[^\x27\\]|\\.)*)\x27/);
+if(!m)process.exit(1);
+process.exit(m[1].replace(/\\\x27/g,"\x27")===process.argv[2]?0:1);' \
+        "$conf" "$desc" 2>/dev/null; then
+        log_pass "project.config.ts still parses and round-trips the description"
+    else
+        log_fail "config escaping" "parseable literal holding the exact description" \
+            "$(grep -A2 projectDescription "$conf" 2>/dev/null || echo missing)"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
+
 test_path_collision_is_atomic() {
     run_test "test_path_collision_is_atomic"
     setup_temp_dir
@@ -1428,6 +1567,8 @@ run_all_tests() {
     test_case_preserving_multiword
     test_summary_counts_paths_not_increments
     test_upstream_citations_survive
+    test_description_reaches_the_site
+    test_hostile_description_is_escaped
     test_path_collision_is_atomic
     test_existing_target_directory_is_atomic
     test_residual_gate_is_fatal
@@ -1500,6 +1641,12 @@ if [ $# -eq 1 ]; then
             ;;
         test_upstream_citations_survive)
             test_upstream_citations_survive
+            ;;
+        test_description_reaches_the_site)
+            test_description_reaches_the_site
+            ;;
+        test_hostile_description_is_escaped)
+            test_hostile_description_is_escaped
             ;;
         test_path_collision_is_atomic)
             test_path_collision_is_atomic
