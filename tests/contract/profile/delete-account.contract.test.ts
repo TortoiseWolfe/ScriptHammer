@@ -35,7 +35,7 @@ describe('Account Deletion Contract', () => {
     // Verify profile exists
     const { data: beforeProfile } = await supabase
       .from('user_profiles')
-      .select('*')
+      .select('id, username, display_name, avatar_url, bio, created_at, updated_at')
       .eq('id', testUserId)
       .single();
 
@@ -60,7 +60,7 @@ describe('Account Deletion Contract', () => {
     // Verify audit log exists
     const { data: beforeLogs } = await supabase
       .from('auth_audit_logs')
-      .select('*')
+      .select('id, username, display_name, avatar_url, bio, created_at, updated_at')
       .eq('user_id', testUserId);
 
     expect(beforeLogs).toBeDefined();
@@ -83,7 +83,7 @@ describe('Account Deletion Contract', () => {
     // Verify payment intent exists
     const { data: beforePayments } = await supabase
       .from('payment_intents')
-      .select('*')
+      .select('id, username, display_name, avatar_url, bio, created_at, updated_at')
       .eq('template_user_id', testUserId);
 
     expect(beforePayments).toBeDefined();

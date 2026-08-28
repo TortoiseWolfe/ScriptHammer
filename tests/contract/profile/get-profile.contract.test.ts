@@ -29,7 +29,7 @@ describe('User Profile GET Contract', () => {
   it('should return user profile structure', async () => {
     const { data, error } = await supabase
       .from('user_profiles')
-      .select('*')
+      .select('id, username, display_name, avatar_url, bio, created_at, updated_at')
       .eq('id', testUserId)
       .single();
 
@@ -47,7 +47,7 @@ describe('User Profile GET Contract', () => {
   it('should have profile matching user ID', async () => {
     const { data, error } = await supabase
       .from('user_profiles')
-      .select('*')
+      .select('id, username, display_name, avatar_url, bio, created_at, updated_at')
       .eq('id', testUserId)
       .single();
 
@@ -58,7 +58,7 @@ describe('User Profile GET Contract', () => {
 
   it('should allow viewing all profiles for friend search (Feature 023)', async () => {
     // Query all profiles - Feature 023 requires this for friend search functionality
-    const { data, error } = await supabase.from('user_profiles').select('*');
+    const { data, error } = await supabase.from('user_profiles').select('id, username, display_name, avatar_url, bio, created_at, updated_at');
 
     expect(error).toBeNull();
     expect(data).toBeDefined();
@@ -86,7 +86,7 @@ describe('User Profile GET Contract', () => {
 
     const { data, error } = await supabase
       .from('user_profiles')
-      .select('*')
+      .select('id, username, display_name, avatar_url, bio, created_at, updated_at')
       .eq('id', fakeId)
       .single();
 

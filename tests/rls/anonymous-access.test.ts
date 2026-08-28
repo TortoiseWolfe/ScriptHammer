@@ -43,13 +43,16 @@ describe.skipIf(!hasRlsTestEnvironment())(
     it('anon user cannot SELECT from profiles', async () => {
       const anonClient = createAnonClient();
 
+      // anon now holds NO privilege on this table at all, so the refusal
+      // happens at the GRANT layer rather than by RLS returning an empty set.
+      // That is strictly stronger — a row policy that stops matching would
+      // silently re-open the table, whereas a missing privilege cannot.
       const { data, error } = await anonClient
         .from('user_profiles')
-        .select('*');
+        .select('id');
 
-      // RLS returns empty set for anon (no policy grants SELECT)
-      expect(error).toBeNull();
-      expect(data).toHaveLength(0);
+      expect(error?.code).toBe('42501');
+      expect(data).toBeNull();
     });
 
     // T040: Anon user cannot INSERT to profiles
@@ -85,23 +88,32 @@ describe.skipIf(!hasRlsTestEnvironment())(
       // Try various enumeration techniques
 
       // 1. Direct select all
-      const { data: allProfiles } = await anonClient
+      const { data: allProfiles, error: allError } = await anonClient
         .from('user_profiles')
         .select('id');
-      expect(allProfiles).toHaveLength(0);
+      // Refused by privilege, not filtered to empty. `data` is null on an
+      // error, so toHaveLength(0) would throw rather than pass.
+      expect(allError?.code).toBe('42501');
+      expect(allProfiles).toBeNull();
 
       // 2. Count query
-      const { count } = await anonClient
+      // `head: true` issues a HEAD request, which has no body — supabase-js has
+      // no PostgREST JSON to read a `code` out of, so assert the refusal and the
+      // absence of a count, not the code. The sibling probes are plain GETs and
+      // do pin 42501.
+      const { count, error: countError } = await anonClient
         .from('user_profiles')
-        .select('*', { count: 'exact', head: true });
-      expect(count).toBe(0);
+        .select('id', { count: 'exact', head: true });
+      expect(countError).not.toBeNull();
+      expect(count ?? 0).toBe(0);
 
       // 3. Range query
-      const { data: rangeData } = await anonClient
+      const { data: rangeData, error: rangeError } = await anonClient
         .from('user_profiles')
         .select('id')
         .range(0, 100);
-      expect(rangeData).toHaveLength(0);
+      expect(rangeError?.code).toBe('42501');
+      expect(rangeData).toBeNull();
     });
 
     // Additional test: Anon cannot UPDATE profiles
