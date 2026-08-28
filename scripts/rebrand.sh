@@ -647,6 +647,65 @@ update_docker_compose() {
 }
 
 # Update package.json fields
+# THE DESCRIPTION HAS TO REACH THE SURFACES USERS SEE (#923).
+#
+# DESCRIPTION used to land in package.json and stop. Nothing a visitor encounters
+# reads package.json: og:description, twitter:description, the meta description and
+# the PWA manifest all come from projectConfig.projectDescription, whose default is
+# a plain English sentence with no brand token in it — so the substitution sweep has
+# nothing to match and cannot reach it, no matter how the sweep is widened.
+#
+# A live fork about geo-located live action role playing therefore advertised "a
+# production Next.js and Supabase platform with auth, payments, encrypted
+# messaging…" to every social card and search result. package.json had the right
+# text the whole time, which is exactly why nobody noticed. (No fork is named
+# here on purpose: a brand mentioned in this file is a brand that can never
+# re-rebrand, because the tooling-collision guard would see its own prose.)
+#
+# Written with node rather than sed: a description is free text a forker supplies,
+# and `Care & rescue | "now"` would expand `&`, terminate a `|`-delimited sed
+# expression, or inject an unescaped quote into a TypeScript string literal.
+update_project_description() {
+    local conf="$REPO_ROOT/src/config/project.config.ts"
+
+    [ -f "$conf" ] || return 0
+
+    if [ "$DRY_RUN" = true ]; then
+        log_verbose "[DRY-RUN] Would set projectDescription in src/config/project.config.ts"
+        mark_modified "$conf"
+        return 0
+    fi
+
+    if ! node - "$conf" "$DESCRIPTION" <<'NODE'; then
+const fs = require('node:fs');
+const [file, description] = process.argv.slice(2);
+const source = fs.readFileSync(file, 'utf8');
+
+// Match the key and whatever literal follows it, across a line break — prettier
+// wraps this one onto its own line, so a single-line pattern misses it entirely.
+const pattern = /(projectDescription:\s*)'(?:[^'\\]|\\.)*'/;
+if (!pattern.test(source)) {
+  process.stderr.write('projectDescription literal not found in project.config.ts\n');
+  process.exit(1);
+}
+
+// JSON.stringify handles the escaping, then swap to single quotes to match the
+// file's own style without hand-rolling an escaper.
+const literal = JSON.stringify(description)
+  .slice(1, -1)
+  .replace(/\\"/g, '"')
+  .replace(/'/g, "\\'");
+
+fs.writeFileSync(file, source.replace(pattern, `$1'${literal}'`));
+NODE
+        log_error "Could not set projectDescription in src/config/project.config.ts"
+        exit 1
+    fi
+
+    log_verbose "Set projectDescription in src/config/project.config.ts"
+    mark_modified "$conf"
+}
+
 update_package_json() {
     local pkg_file="$REPO_ROOT/package.json"
 
@@ -654,12 +713,43 @@ update_package_json() {
         if [ "$DRY_RUN" = true ]; then
             log_verbose "[DRY-RUN] Would update package.json fields"
         else
-            # Update name
-            sed "${SED_INPLACE[@]}" "s|\"name\": \"[^\"]*\"|\"name\": \"${SANITIZED_NAME}\"|" "$pkg_file"
-            # Update description
-            sed "${SED_INPLACE[@]}" "s|\"description\": \"[^\"]*\"|\"description\": \"${DESCRIPTION}\"|" "$pkg_file"
-            # Update repository URL
-            sed "${SED_INPLACE[@]}" "s|github.com/${ORIGINAL_OWNER}/${ORIGINAL_NAME}|github.com/${OWNER}/${SANITIZED_NAME}|g" "$pkg_file"
+            # JSON VALUES ARE NOT SED REPLACEMENT STRINGS, and DESCRIPTION is free
+            # text a forker supplies. `Care & rescue | it's "now"` expands the `&`,
+            # TERMINATES the `|`-delimited expression outright, and injects an
+            # unescaped quote into JSON. Reproduced on this exact input:
+            #
+            #   sed: -e expression #1, char 59: unknown option to `s'
+            #
+            # — the rebrand dies mid-run, after the content sweep has already
+            # rewritten the tree. Let JSON.stringify do the escaping instead.
+            #
+            # The repository URL is handled here too, but note it is DEAD as
+            # written (#972): the content sweep has already replaced that token by
+            # the time this runs, so the search never matches. Left in place rather
+            # than silently dropped, because #972 tracks the decision.
+            if ! node - "$pkg_file" "$SANITIZED_NAME" "$DESCRIPTION" \
+                "$OWNER" "$ORIGINAL_OWNER" "$ORIGINAL_NAME" <<'NODE'; then
+const fs = require('node:fs');
+const [file, name, description, owner, originalOwner, originalName] =
+  process.argv.slice(2);
+const pkg = JSON.parse(fs.readFileSync(file, 'utf8'));
+
+pkg.name = name;
+pkg.description = description;
+
+const oldRepo = `github.com/${originalOwner}/${originalName}`;
+const newRepo = `github.com/${owner}/${name}`;
+if (typeof pkg.repository === 'string') {
+  pkg.repository = pkg.repository.replace(oldRepo, newRepo);
+} else if (pkg.repository && typeof pkg.repository.url === 'string') {
+  pkg.repository.url = pkg.repository.url.replace(oldRepo, newRepo);
+}
+
+fs.writeFileSync(file, `${JSON.stringify(pkg, null, 2)}\n`);
+NODE
+                log_error "Could not update package.json"
+                exit 1
+            fi
             log_verbose "Updated package.json fields"
         fi
         mark_modified "$pkg_file"
@@ -1173,6 +1263,10 @@ main() {
     echo ""
     echo "Updating package.json..."
     update_package_json
+
+    echo ""
+    echo "Updating project description..."
+    update_project_description
 
     echo ""
     echo "Scaffolding custom themes..."
