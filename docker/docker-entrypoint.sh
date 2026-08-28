@@ -21,6 +21,39 @@ clean_next() {
   fi
 }
 
+# A WORKTREE WHOSE PARENT .git IS NOT MOUNTED CRASHLOOPS SILENTLY (#932).
+#
+# In a worktree, /app/.git is a FILE holding `gitdir: /abs/path/into/the/parent`.
+# That path lives outside the Compose bind mount, so it does not resolve in here.
+# The next line runs husky's `prepare`, which exits 1, and the container restarts
+# forever — with nothing in the output mentioning worktrees.
+#
+# Checked BEFORE `pnpm install`, because install is what fails. Reporting the cause
+# afterwards would mean reporting it after the confusing error, which is where the
+# hour goes.
+if [ -f /app/.git ]; then
+  GITDIR="$(sed -n 's/^gitdir:[[:space:]]*//p' /app/.git | head -1)"
+  if [ -n "$GITDIR" ] && [ ! -e "$GITDIR" ]; then
+    echo ""
+    echo "ERROR: this checkout is a git worktree, and its parent repository is not"
+    echo "       mounted into the container."
+    echo ""
+    echo "  /app/.git points at: $GITDIR"
+    echo "  which does not exist in here, so every git operation fails — starting"
+    echo "  with husky's prepare during 'pnpm install'."
+    echo ""
+    echo "  Fix it from the HOST, in this worktree:"
+    echo ""
+    echo "      ./scripts/worktree-setup.sh"
+    echo ""
+    echo "  That writes a gitignored docker-compose.override.yml mounting the parent"
+    echo "  .git at the same absolute path, and sets a non-colliding"
+    echo "  COMPOSE_PROJECT_NAME and SH_PORT. Then 'docker compose up' again. (#932)"
+    echo ""
+    exit 1
+  fi
+fi
+
 # Ensure dependencies match package.json (fast when already current)
 echo "Checking dependencies..."
 pnpm install --frozen-lockfile

@@ -536,9 +536,21 @@ by switching branches or running a production build.
 
 - Create one worktree per task and branch. Do not switch the primary checkout while another
   agent may be using it.
+- **Run `./scripts/worktree-setup.sh` in the new worktree before `docker compose up`** (#932).
+  Without it the container does not start at all: a worktree's `.git` is a FILE holding a
+  `gitdir:` pointer into the parent repository, which lives outside the Compose bind mount,
+  so the path does not resolve inside the container and `pnpm install` fails at husky's
+  `prepare`. The script writes a gitignored `docker-compose.override.yml` mounting the parent
+  `.git` at that same absolute path — for the **builder service too**, which otherwise fails
+  the identical way when the pre-push gate runs a production build — and sets the
+  `COMPOSE_PROJECT_NAME` and `SH_PORT` described below. The entrypoint now refuses with an
+  explanation if you skip it, rather than crashlooping.
 - **Never copy `.env` verbatim into a worktree.** Use a separately provisioned local
   configuration with a unique `COMPOSE_PROJECT_NAME` (and a non-conflicting `SH_PORT`)
   before running Docker. The project name namespaces the ordinary Compose volumes.
+  `worktree-setup.sh` creates one from `.env.example` and fills in those two values; it will
+  not copy a sibling's, because a second container pointed at the same backend is two agents
+  writing to one database.
 - Compose isolation does **not** make concurrent local Supabase profiles safe: that profile
   has fixed default host ports and a global container name. Run it only with explicit
   coordination.
