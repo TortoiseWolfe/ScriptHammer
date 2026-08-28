@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { AdminStatCard } from '@/components/molecular/AdminStatCard';
 import { AdminDataTable } from '@/components/molecular/AdminDataTable';
 import DateRangeFilter, {
@@ -11,7 +11,6 @@ import type {
   AdminAuthStats,
   AuditLogEntry,
   AdminAuditTrends,
-  AuditBurst,
 } from '@/services/admin/admin-audit-service';
 
 export interface AdminAuditTrailProps {
@@ -19,7 +18,7 @@ export interface AdminAuditTrailProps {
   stats: AdminAuthStats | null;
   /** Audit log events */
   events: AuditLogEntry[];
-  /** Date-ranged burst detection — section hidden when absent */
+  /** Date-ranged sign-in totals and series — section hidden when absent */
   trends?: AdminAuditTrends | null;
   /** Current date range for the filter */
   range?: DateRange;
@@ -64,32 +63,6 @@ function formatId(id: string | null): string {
   return id;
 }
 
-function burstSpanMinutes(b: AuditBurst): number {
-  const ms = new Date(b.last_seen).getTime() - new Date(b.first_seen).getTime();
-  return Math.max(1, Math.round(ms / 60_000));
-}
-
-// 1 distinct user → someone targeting an account. Many → spray.
-// The card wording changes because the triage action differs.
-function burstKindLabel(b: AuditBurst): string {
-  return b.distinct_users <= 1 ? 'Targeted account' : 'Credential spray';
-}
-
-// ISO8601 UTC strings sort lexically, so string >= / <= is correct
-// without Date parsing. ip_address on AuditLogEntry is nullable;
-// AuditBurst.ip_address is not, so the === filters out null for free.
-function eventsInBurst(
-  events: AuditLogEntry[],
-  b: AuditBurst
-): AuditLogEntry[] {
-  return events.filter(
-    (e) =>
-      e.ip_address === b.ip_address &&
-      e.created_at >= b.first_seen &&
-      e.created_at <= b.last_seen
-  );
-}
-
 type EventRow = AuditLogEntry & Record<string, unknown>;
 
 const columns: AdminDataTableColumn<EventRow>[] = [
@@ -128,16 +101,6 @@ const columns: AdminDataTableColumn<EventRow>[] = [
         <span className="badge badge-error">No</span>
       ),
   },
-  {
-    key: 'ip_address',
-    label: 'IP Address',
-    sortable: true,
-    render: (row) => (
-      <span className="font-mono text-xs">
-        {(row.ip_address as string) || 'N/A'}
-      </span>
-    ),
-  },
 ];
 
 /**
@@ -157,13 +120,6 @@ export function AdminAuditTrail({
   className = '',
   testId,
 }: AdminAuditTrailProps) {
-  // Accordion state — keyed the same as the React key so it survives
-  // re-ordering if the bursts array ever comes back in a different order.
-  const [expandedBurstKey, setExpandedBurstKey] = useState<string | null>(null);
-  const toggleBurst = (key: string) => {
-    setExpandedBurstKey((prev) => (prev === key ? null : key));
-  };
-
   if (isLoading) {
     return (
       <div
@@ -211,12 +167,19 @@ export function AdminAuditTrail({
         </div>
       </section>
 
-      {/* Burst detection — the primary view. Raw event log below is the fallback. */}
+      {/* Sign-in activity over the selected range.
+          This was the "Failed Login Bursts" section until #839. The IP-keyed burst panel
+          was removed because nothing ever wrote an ip_address: production carried 7440
+          rows in auth_audit_logs and ZERO with an IP, GoTrue emits no failed-login event,
+          and a static-export app has no server-side place to observe a client IP honestly
+          (a browser-reported one is set by the very attacker the panel would detect).
+          The range filter and the two range totals lived INSIDE that section and are real,
+          so the section stays and carries them. */}
       {trends && (
-        <section aria-labelledby="audit-bursts-heading">
+        <section aria-labelledby="audit-range-heading">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
-            <h2 id="audit-bursts-heading" className="text-xl font-semibold">
-              Failed Login Bursts
+            <h2 id="audit-range-heading" className="text-xl font-semibold">
+              Sign-in Activity
             </h2>
             {onRangeChange && (
               <DateRangeFilter
@@ -227,13 +190,7 @@ export function AdminAuditTrail({
             )}
           </div>
 
-          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <AdminStatCard
-              label="Bursts Detected"
-              value={trends.totals?.bursts ?? 0}
-              trend={(trends.totals?.bursts ?? 0) > 0 ? 'down' : 'neutral'}
-              testId="stat-bursts"
-            />
+          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <AdminStatCard
               label="Failed Sign-ins"
               value={trends.totals?.sign_in_failed ?? 0}
@@ -245,100 +202,6 @@ export function AdminAuditTrail({
               testId="stat-range-success"
             />
           </div>
-
-          {(trends.bursts ?? []).length > 0 ? (
-            <div
-              className="grid grid-cols-1 gap-4 md:grid-cols-2"
-              data-testid="burst-cards"
-            >
-              {(trends.bursts ?? []).map((b) => {
-                const burstKey = `${b.ip_address}-${b.first_seen}`;
-                const isExpanded = expandedBurstKey === burstKey;
-                const matched = isExpanded ? eventsInBurst(events, b) : [];
-                // Card-click is the mouse affordance. The button is the
-                // a11y-correct trigger — aria-expanded is valid on button
-                // but not on a plain div. Same pattern as AdminDataTable.
-                return (
-                  <div
-                    key={burstKey}
-                    className="card border-error bg-error/10 cursor-pointer border p-4"
-                    data-testid="burst-card"
-                    onClick={() => toggleBurst(burstKey)}
-                  >
-                    <div className="mb-2 flex items-start justify-between gap-2">
-                      <span className="font-mono text-sm">{b.ip_address}</span>
-                      <span className="badge badge-error">
-                        {burstKindLabel(b)}
-                      </span>
-                    </div>
-                    <p className="text-error text-2xl font-bold">
-                      {b.attempts} attempts
-                    </p>
-                    <p className="text-base-content text-sm">
-                      {b.distinct_users}{' '}
-                      {b.distinct_users === 1 ? 'user' : 'users'} ·{' '}
-                      {burstSpanMinutes(b)} min span
-                    </p>
-                    <p className="text-base-content mt-1 text-xs">
-                      {formatTime(b.first_seen)} → {formatTime(b.last_seen)}
-                    </p>
-                    <button
-                      type="button"
-                      aria-expanded={isExpanded}
-                      aria-label={
-                        isExpanded
-                          ? `Hide events for ${b.ip_address}`
-                          : `Show events for ${b.ip_address}`
-                      }
-                      className="btn btn-ghost btn-sm mt-2 min-h-11 min-w-11 self-start"
-                      data-testid="burst-toggle"
-                      onClick={(e) => {
-                        // Card also listens. Without this the click bubbles
-                        // and toggles twice — open then immediately close.
-                        e.stopPropagation();
-                        toggleBurst(burstKey);
-                      }}
-                    >
-                      <span aria-hidden="true">
-                        {isExpanded ? '\u25be' : '\u25b8'} Events
-                      </span>
-                    </button>
-                    {isExpanded && (
-                      <div
-                        className="border-error/30 mt-3 cursor-default border-t pt-3"
-                        data-testid="burst-detail"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <p className="text-base-content mb-2 text-xs">
-                          {matched.length} of {b.attempts} in current log
-                        </p>
-                        {matched.length > 0 && (
-                          <ul className="space-y-1 text-xs">
-                            {matched.map((e) => (
-                              <li
-                                key={e.id}
-                                className="flex justify-between gap-2 font-mono"
-                                data-testid="burst-event-row"
-                              >
-                                <span>{formatTime(e.created_at)}</span>
-                                <span className="text-base-content">
-                                  {formatId(e.user_id)}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-base-content text-sm" data-testid="burst-empty">
-              No bursts detected in this range.
-            </p>
-          )}
         </section>
       )}
 

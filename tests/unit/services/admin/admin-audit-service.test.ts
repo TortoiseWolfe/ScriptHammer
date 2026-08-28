@@ -20,23 +20,7 @@ const sampleTrends: AdminAuditTrends = {
     start: '2026-02-26T00:00:00+00:00',
     end: '2026-03-05T00:00:00+00:00',
   },
-  totals: { sign_in_failed: 18, sign_in_success: 412, bursts: 2 },
-  bursts: [
-    {
-      ip_address: '203.0.113.42',
-      first_seen: '2026-03-03T14:02:11+00:00',
-      last_seen: '2026-03-03T14:09:47+00:00',
-      attempts: 11,
-      distinct_users: 1,
-    },
-    {
-      ip_address: '198.51.100.7',
-      first_seen: '2026-03-04T03:15:00+00:00',
-      last_seen: '2026-03-04T03:22:30+00:00',
-      attempts: 6,
-      distinct_users: 4,
-    },
-  ],
+  totals: { sign_in_failed: 18, sign_in_success: 412 },
   daily_series: [
     { day: '2026-02-26', failed: 0, succeeded: 55 },
     { day: '2026-02-27', failed: 1, succeeded: 60 },
@@ -98,32 +82,5 @@ describe('AdminAuditService.getTrends', () => {
     await service.initialize('admin-user-id');
 
     await expect(service.getTrends()).rejects.toThrow('permission denied');
-  });
-
-  it('surfaces burst correlation fields intact', async () => {
-    await service.initialize('admin-user-id');
-    const result = await service.getTrends();
-
-    // The discriminator between "targeted account" and "credential stuffing"
-    // is distinct_users. Make sure the service doesn't drop it.
-    expect(result.bursts[0].distinct_users).toBe(1);
-    expect(result.bursts[1].distinct_users).toBe(4);
-    expect(result.bursts[0].attempts).toBe(11);
-  });
-
-  it('returns empty bursts array when no bursts', async () => {
-    rpc.mockResolvedValueOnce({
-      data: {
-        ...sampleTrends,
-        bursts: [],
-        totals: { ...sampleTrends.totals, bursts: 0 },
-      },
-      error: null,
-    });
-    await service.initialize('admin-user-id');
-
-    const result = await service.getTrends();
-    expect(result.bursts).toEqual([]);
-    expect(result.totals.bursts).toBe(0);
   });
 });

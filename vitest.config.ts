@@ -17,6 +17,11 @@ export default defineConfig({
       'node_modules/**',
       '.next/**',
       'out/**',
+      // Sibling build outputs. `out/**` alone was not enough — see the coverage
+      // exclude below for what that cost (#978).
+      'out-basepath/**',
+      '.pay-verify/**',
+      '.chatt-verify/**',
       'scripts/**/*.test.js', // Exclude Node.js test runner tests
       'scripts/__tests__/**', // Exclude all script tests
       'tests/e2e/**', // Exclude Playwright E2E tests
@@ -75,6 +80,23 @@ export default defineConfig({
         '**/*.config.*',
         '.next/**',
         'out/**',
+        // BUILD OUTPUT IS NOT SOURCE, AND `out/**` DID NOT COVER ALL OF IT (#978).
+        //
+        // The repo's own scripts write export directories next to `out/`, and every
+        // file in them counted as 0%-covered source. Measured on one checkout: 9,778
+        // statements across out-basepath (5,445, from scripts/serve-basepath.sh),
+        // .pay-verify (3,293) and .chatt-verify (1,040) — dragging a 70.52% tree to
+        // 59.22% and failing all four thresholds on a clean checkout with all 452 test
+        // files passing.
+        //
+        // The failure only reaches people who have run the verification builds the
+        // docs tell them to run, and it reads as "your branch broke coverage" rather
+        // than "your working tree has build output in it". It cost exactly that
+        // misdiagnosis, twice, before being measured.
+        'out-basepath/**',
+        '.pay-verify/**',
+        '.chatt-verify/**',
+        'coverage/**',
         'public/**',
         '.storybook/**',
         'storybook-static/**',

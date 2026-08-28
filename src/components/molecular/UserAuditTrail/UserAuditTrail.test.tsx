@@ -19,7 +19,6 @@ const ROW = {
   id: '00000000-0000-0000-0000-000000000001',
   event_type: 'sign_in_success',
   success: true,
-  ip_address: '203.0.113.7',
   user_agent: 'Mozilla/5.0',
   created_at: '2026-06-01T10:00:00.000Z',
 };
@@ -48,7 +47,6 @@ describe('UserAuditTrail', () => {
     render(<UserAuditTrail />);
     expect(await screen.findByText('Signed in')).toBeInTheDocument();
     expect(screen.getByText('Success')).toBeInTheDocument();
-    expect(screen.getByText('203.0.113.7')).toBeInTheDocument();
   });
 
   it('shows a failed badge for unsuccessful events', async () => {

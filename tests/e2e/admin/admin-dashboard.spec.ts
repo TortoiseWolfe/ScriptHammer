@@ -6,7 +6,7 @@
  * - Overview: stat cards, sparkline trend charts
  * - Payments: provider breakdown, payment stats
  * - Orders: fulfillment queue
- * - Audit Trail: burst detection cards, event log table
+ * - Audit Trail: sign-in activity, event log table
  * - Users: user table, sorting, search
  * - Messaging: conversation stats, top senders
  * - Email: provider health
@@ -229,74 +229,6 @@ test.describe('Admin Dashboard E2E', () => {
         page.locator('[data-testid="stat-rate-limited"]')
       ).toBeVisible();
       await expect(page.locator('[data-testid="stat-signups"]')).toBeVisible();
-    });
-
-    test('should display burst detection cards', async ({ page }) => {
-      await page.goto(`${BP}/admin/audit`);
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(3000);
-
-      // UNCONDITIONAL: the section is gated on `trends` being loaded, NOT on any burst
-      // existing (AdminAuditTrail.tsx:218) — so once the RPC returns it renders even with
-      // zero bursts. Asserting it is honest and always possible (#914).
-      const burstHeading = page.getByRole('heading', {
-        name: /failed login bursts/i,
-      });
-      await expect(burstHeading).toBeVisible({ timeout: 10000 });
-      await expect(page.locator('[data-testid="stat-bursts"]')).toBeVisible();
-
-      // Depth is data-dependent: the demo seed creates one (192.168.99.99, 7 failures),
-      // and real traffic creates none because nothing writes an IP (#839). Both branches
-      // assert rather than one silently passing.
-      const burstCards = page.locator('[data-testid="burst-card"]');
-      const burstCount = await burstCards.count();
-      if (burstCount > 0) {
-        const firstBurst = burstCards.first();
-        await expect(firstBurst).toContainText('attempts');
-        await expect(firstBurst).toContainText(/\d+\.\d+\.\d+\.\d+/);
-      } else {
-        await expect(page.locator('[data-testid="stat-bursts"]')).toContainText(
-          /\b0\b/
-        );
-      }
-    });
-
-    test('should expand burst card to show event details', async ({ page }) => {
-      await page.goto(`${BP}/admin/audit`);
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(3000);
-
-      // The section itself is gated only on `trends` loading, so assert that
-      // unconditionally before branching on how much data there is (#914).
-      await expect(
-        page.getByRole('heading', { name: /failed login bursts/i })
-      ).toBeVisible({ timeout: 10000 });
-
-      const burstCards = page.locator('[data-testid="burst-card"]');
-      const burstCount = await burstCards.count();
-
-      if (burstCount > 0) {
-        const toggleButton = page
-          .locator('[data-testid="burst-toggle"]')
-          .first();
-        await toggleButton.click();
-
-        const burstDetail = page.locator('[data-testid="burst-detail"]');
-        await expect(burstDetail).toBeVisible({ timeout: 3000 });
-
-        await expect(toggleButton).toHaveAttribute('aria-expanded', 'true');
-
-        await toggleButton.click();
-        await expect(burstDetail).not.toBeVisible();
-        await expect(toggleButton).toHaveAttribute('aria-expanded', 'false');
-      } else {
-        // Nothing to expand is a valid state (real traffic writes no IP, so it groups into
-        // no bursts — #839). Then there must be no toggles either, rather than a toggle
-        // that does nothing.
-        await expect(page.locator('[data-testid="burst-toggle"]')).toHaveCount(
-          0
-        );
-      }
     });
 
     test('should display event log table with rows', async ({ page }) => {

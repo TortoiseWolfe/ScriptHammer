@@ -186,66 +186,75 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
--- 3. AUTH AUDIT LOGS (~55 events over 14 days, including a burst)
+-- 3. AUTH AUDIT LOGS (~55 events over 14 days)
+-- ============================================================================
+-- ip_address is seeded NULL on every row (#839), because that is what production
+-- actually looks like: 7440 rows in auth_audit_logs, ZERO with an IP. Nothing in
+-- the app ever writes one. Seeding fake IPs made a burst panel look functional in
+-- any dev database while it could never populate from real traffic.
+--
+-- The former 192.168.99.99 "burst" rows are KEPT as failed sign-ins: they carry real
+-- user_ids, so they still feed sign_in_failed totals and the Anomaly Alerts section,
+-- which is keyed on user_id and works on real data.
 -- ============================================================================
 
 INSERT INTO auth_audit_logs (id, user_id, event_type, success, ip_address, created_at)
 VALUES
   -- Signups (staggered over 30 days for signups_this_month)
-  ('55555555-5555-5555-5555-555555555501', '11111111-1111-1111-1111-111111111101', 'sign_up', true, '10.0.0.1', now() - interval '45 days'),
-  ('55555555-5555-5555-5555-555555555502', '11111111-1111-1111-1111-111111111102', 'sign_up', true, '10.0.0.2', now() - interval '30 days'),
-  ('55555555-5555-5555-5555-555555555503', '11111111-1111-1111-1111-111111111103', 'sign_up', true, '10.0.0.3', now() - interval '25 days'),
-  ('55555555-5555-5555-5555-555555555504', '11111111-1111-1111-1111-111111111108', 'sign_up', true, '10.0.0.8', now() - interval '20 days'),
-  ('55555555-5555-5555-5555-555555555505', '11111111-1111-1111-1111-111111111107', 'sign_up', true, '10.0.0.7', now() - interval '15 days'),
+  ('55555555-5555-5555-5555-555555555501', '11111111-1111-1111-1111-111111111101', 'sign_up', true, NULL, now() - interval '45 days'),
+  ('55555555-5555-5555-5555-555555555502', '11111111-1111-1111-1111-111111111102', 'sign_up', true, NULL, now() - interval '30 days'),
+  ('55555555-5555-5555-5555-555555555503', '11111111-1111-1111-1111-111111111103', 'sign_up', true, NULL, now() - interval '25 days'),
+  ('55555555-5555-5555-5555-555555555504', '11111111-1111-1111-1111-111111111108', 'sign_up', true, NULL, now() - interval '20 days'),
+  ('55555555-5555-5555-5555-555555555505', '11111111-1111-1111-1111-111111111107', 'sign_up', true, NULL, now() - interval '15 days'),
 
   -- Successful logins spread over the week (for logins_today and sparkline)
-  ('55555555-5555-5555-5555-555555555510', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, '10.0.0.1', now() - interval '6 days'),
-  ('55555555-5555-5555-5555-555555555511', '11111111-1111-1111-1111-111111111102', 'sign_in_success', true, '10.0.0.2', now() - interval '6 days' + interval '1 hour'),
-  ('55555555-5555-5555-5555-555555555512', '11111111-1111-1111-1111-111111111103', 'sign_in_success', true, '10.0.0.3', now() - interval '5 days'),
-  ('55555555-5555-5555-5555-555555555513', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, '10.0.0.1', now() - interval '5 days' + interval '3 hours'),
-  ('55555555-5555-5555-5555-555555555514', '11111111-1111-1111-1111-111111111104', 'sign_in_success', true, '10.0.0.4', now() - interval '4 days'),
-  ('55555555-5555-5555-5555-555555555515', '11111111-1111-1111-1111-111111111102', 'sign_in_success', true, '10.0.0.2', now() - interval '4 days' + interval '2 hours'),
-  ('55555555-5555-5555-5555-555555555516', '11111111-1111-1111-1111-111111111105', 'sign_in_success', true, '10.0.0.5', now() - interval '3 days'),
-  ('55555555-5555-5555-5555-555555555517', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, '10.0.0.1', now() - interval '3 days' + interval '4 hours'),
-  ('55555555-5555-5555-5555-555555555518', '11111111-1111-1111-1111-111111111103', 'sign_in_success', true, '10.0.0.3', now() - interval '2 days'),
-  ('55555555-5555-5555-5555-555555555519', '11111111-1111-1111-1111-111111111102', 'sign_in_success', true, '10.0.0.2', now() - interval '2 days' + interval '1 hour'),
-  ('55555555-5555-5555-5555-555555555520', '11111111-1111-1111-1111-111111111108', 'sign_in_success', true, '10.0.0.8', now() - interval '1 day'),
-  ('55555555-5555-5555-5555-555555555521', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, '10.0.0.1', now() - interval '1 day' + interval '2 hours'),
+  ('55555555-5555-5555-5555-555555555510', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, NULL, now() - interval '6 days'),
+  ('55555555-5555-5555-5555-555555555511', '11111111-1111-1111-1111-111111111102', 'sign_in_success', true, NULL, now() - interval '6 days' + interval '1 hour'),
+  ('55555555-5555-5555-5555-555555555512', '11111111-1111-1111-1111-111111111103', 'sign_in_success', true, NULL, now() - interval '5 days'),
+  ('55555555-5555-5555-5555-555555555513', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, NULL, now() - interval '5 days' + interval '3 hours'),
+  ('55555555-5555-5555-5555-555555555514', '11111111-1111-1111-1111-111111111104', 'sign_in_success', true, NULL, now() - interval '4 days'),
+  ('55555555-5555-5555-5555-555555555515', '11111111-1111-1111-1111-111111111102', 'sign_in_success', true, NULL, now() - interval '4 days' + interval '2 hours'),
+  ('55555555-5555-5555-5555-555555555516', '11111111-1111-1111-1111-111111111105', 'sign_in_success', true, NULL, now() - interval '3 days'),
+  ('55555555-5555-5555-5555-555555555517', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, NULL, now() - interval '3 days' + interval '4 hours'),
+  ('55555555-5555-5555-5555-555555555518', '11111111-1111-1111-1111-111111111103', 'sign_in_success', true, NULL, now() - interval '2 days'),
+  ('55555555-5555-5555-5555-555555555519', '11111111-1111-1111-1111-111111111102', 'sign_in_success', true, NULL, now() - interval '2 days' + interval '1 hour'),
+  ('55555555-5555-5555-5555-555555555520', '11111111-1111-1111-1111-111111111108', 'sign_in_success', true, NULL, now() - interval '1 day'),
+  ('55555555-5555-5555-5555-555555555521', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, NULL, now() - interval '1 day' + interval '2 hours'),
   -- Today logins
-  ('55555555-5555-5555-5555-555555555522', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, '10.0.0.1', now() - interval '3 hours'),
-  ('55555555-5555-5555-5555-555555555523', '11111111-1111-1111-1111-111111111102', 'sign_in_success', true, '10.0.0.2', now() - interval '2 hours'),
-  ('55555555-5555-5555-5555-555555555524', '11111111-1111-1111-1111-111111111103', 'sign_in_success', true, '10.0.0.3', now() - interval '1 hour'),
+  ('55555555-5555-5555-5555-555555555522', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, NULL, now() - interval '3 hours'),
+  ('55555555-5555-5555-5555-555555555523', '11111111-1111-1111-1111-111111111102', 'sign_in_success', true, NULL, now() - interval '2 hours'),
+  ('55555555-5555-5555-5555-555555555524', '11111111-1111-1111-1111-111111111103', 'sign_in_success', true, NULL, now() - interval '1 hour'),
 
   -- Failed logins spread over the week
-  ('55555555-5555-5555-5555-555555555530', '11111111-1111-1111-1111-111111111104', 'sign_in_failed', false, '10.0.0.4', now() - interval '6 days'),
-  ('55555555-5555-5555-5555-555555555531', '11111111-1111-1111-1111-111111111105', 'sign_in_failed', false, '10.0.0.5', now() - interval '5 days'),
-  ('55555555-5555-5555-5555-555555555532', '11111111-1111-1111-1111-111111111104', 'sign_in_failed', false, '10.0.0.4', now() - interval '4 days'),
-  ('55555555-5555-5555-5555-555555555533', '11111111-1111-1111-1111-111111111106', 'sign_in_failed', false, '10.0.0.6', now() - interval '3 days'),
-  ('55555555-5555-5555-5555-555555555534', '11111111-1111-1111-1111-111111111105', 'sign_in_failed', false, '10.0.0.5', now() - interval '2 days'),
-  ('55555555-5555-5555-5555-555555555535', '11111111-1111-1111-1111-111111111104', 'sign_in_failed', false, '10.0.0.4', now() - interval '1 day'),
+  ('55555555-5555-5555-5555-555555555530', '11111111-1111-1111-1111-111111111104', 'sign_in_failed', false, NULL, now() - interval '6 days'),
+  ('55555555-5555-5555-5555-555555555531', '11111111-1111-1111-1111-111111111105', 'sign_in_failed', false, NULL, now() - interval '5 days'),
+  ('55555555-5555-5555-5555-555555555532', '11111111-1111-1111-1111-111111111104', 'sign_in_failed', false, NULL, now() - interval '4 days'),
+  ('55555555-5555-5555-5555-555555555533', '11111111-1111-1111-1111-111111111106', 'sign_in_failed', false, NULL, now() - interval '3 days'),
+  ('55555555-5555-5555-5555-555555555534', '11111111-1111-1111-1111-111111111105', 'sign_in_failed', false, NULL, now() - interval '2 days'),
+  ('55555555-5555-5555-5555-555555555535', '11111111-1111-1111-1111-111111111104', 'sign_in_failed', false, NULL, now() - interval '1 day'),
 
   -- BURST: 7 rapid failed logins from same IP within 10 minutes (triggers burst detection)
-  ('55555555-5555-5555-5555-555555555540', '11111111-1111-1111-1111-111111111101', 'sign_in_failed', false, '192.168.99.99', now() - interval '2 days' + interval '14 hours'),
-  ('55555555-5555-5555-5555-555555555541', '11111111-1111-1111-1111-111111111102', 'sign_in_failed', false, '192.168.99.99', now() - interval '2 days' + interval '14 hours' + interval '30 seconds'),
-  ('55555555-5555-5555-5555-555555555542', '11111111-1111-1111-1111-111111111103', 'sign_in_failed', false, '192.168.99.99', now() - interval '2 days' + interval '14 hours' + interval '1 minute'),
-  ('55555555-5555-5555-5555-555555555543', '11111111-1111-1111-1111-111111111104', 'sign_in_failed', false, '192.168.99.99', now() - interval '2 days' + interval '14 hours' + interval '2 minutes'),
-  ('55555555-5555-5555-5555-555555555544', '11111111-1111-1111-1111-111111111105', 'sign_in_failed', false, '192.168.99.99', now() - interval '2 days' + interval '14 hours' + interval '3 minutes'),
-  ('55555555-5555-5555-5555-555555555545', '11111111-1111-1111-1111-111111111106', 'sign_in_failed', false, '192.168.99.99', now() - interval '2 days' + interval '14 hours' + interval '4 minutes'),
-  ('55555555-5555-5555-5555-555555555546', '11111111-1111-1111-1111-111111111101', 'sign_in_failed', false, '192.168.99.99', now() - interval '2 days' + interval '14 hours' + interval '5 minutes'),
+  ('55555555-5555-5555-5555-555555555540', '11111111-1111-1111-1111-111111111101', 'sign_in_failed', false, NULL, now() - interval '2 days' + interval '14 hours'),
+  ('55555555-5555-5555-5555-555555555541', '11111111-1111-1111-1111-111111111102', 'sign_in_failed', false, NULL, now() - interval '2 days' + interval '14 hours' + interval '30 seconds'),
+  ('55555555-5555-5555-5555-555555555542', '11111111-1111-1111-1111-111111111103', 'sign_in_failed', false, NULL, now() - interval '2 days' + interval '14 hours' + interval '1 minute'),
+  ('55555555-5555-5555-5555-555555555543', '11111111-1111-1111-1111-111111111104', 'sign_in_failed', false, NULL, now() - interval '2 days' + interval '14 hours' + interval '2 minutes'),
+  ('55555555-5555-5555-5555-555555555544', '11111111-1111-1111-1111-111111111105', 'sign_in_failed', false, NULL, now() - interval '2 days' + interval '14 hours' + interval '3 minutes'),
+  ('55555555-5555-5555-5555-555555555545', '11111111-1111-1111-1111-111111111106', 'sign_in_failed', false, NULL, now() - interval '2 days' + interval '14 hours' + interval '4 minutes'),
+  ('55555555-5555-5555-5555-555555555546', '11111111-1111-1111-1111-111111111101', 'sign_in_failed', false, NULL, now() - interval '2 days' + interval '14 hours' + interval '5 minutes'),
 
   -- More scattered events for variety
-  ('55555555-5555-5555-5555-555555555550', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, '10.0.0.1', now() - interval '10 days'),
-  ('55555555-5555-5555-5555-555555555551', '11111111-1111-1111-1111-111111111102', 'sign_in_success', true, '10.0.0.2', now() - interval '9 days'),
-  ('55555555-5555-5555-5555-555555555552', '11111111-1111-1111-1111-111111111103', 'sign_in_success', true, '10.0.0.3', now() - interval '8 days'),
-  ('55555555-5555-5555-5555-555555555553', '11111111-1111-1111-1111-111111111108', 'sign_in_success', true, '10.0.0.8', now() - interval '7 days'),
-  ('55555555-5555-5555-5555-555555555554', '11111111-1111-1111-1111-111111111101', 'sign_in_failed',  false, '10.0.0.99', now() - interval '11 days'),
-  ('55555555-5555-5555-5555-555555555555', '11111111-1111-1111-1111-111111111102', 'sign_in_failed',  false, '10.0.0.99', now() - interval '9 days')
+  ('55555555-5555-5555-5555-555555555550', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, NULL, now() - interval '10 days'),
+  ('55555555-5555-5555-5555-555555555551', '11111111-1111-1111-1111-111111111102', 'sign_in_success', true, NULL, now() - interval '9 days'),
+  ('55555555-5555-5555-5555-555555555552', '11111111-1111-1111-1111-111111111103', 'sign_in_success', true, NULL, now() - interval '8 days'),
+  ('55555555-5555-5555-5555-555555555553', '11111111-1111-1111-1111-111111111108', 'sign_in_success', true, NULL, now() - interval '7 days'),
+  ('55555555-5555-5555-5555-555555555554', '11111111-1111-1111-1111-111111111101', 'sign_in_failed',  false, NULL, now() - interval '11 days'),
+  ('55555555-5555-5555-5555-555555555555', '11111111-1111-1111-1111-111111111102', 'sign_in_failed',  false, NULL, now() - interval '9 days')
 ON CONFLICT (id) DO NOTHING;
 
 -- Rate limit entry (shows as rate_limited_users in audit stats)
 INSERT INTO rate_limit_attempts (id, identifier, attempt_type, ip_address, attempt_count, locked_until, window_start, created_at)
 VALUES
-  ('66666666-6666-6666-6666-666666666601', 'eve@demo.test', 'sign_in', '10.0.0.5', 6, now() - interval '10 minutes', now() - interval '30 minutes', now() - interval '30 minutes')
+  ('66666666-6666-6666-6666-666666666601', 'eve@demo.test', 'sign_in', NULL, 6, now() - interval '10 minutes', now() - interval '30 minutes', now() - interval '30 minutes')
 ON CONFLICT (identifier, attempt_type) DO NOTHING;
 
 -- ============================================================================
