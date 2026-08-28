@@ -5,6 +5,7 @@ import BlogPostCard from '@/components/molecular/BlogPostCard';
 import TagBadge from '@/components/atomic/TagBadge';
 import blogData from '@/lib/blog/blog-data.json';
 import type { BlogPost } from '@/types/blog';
+import { ogImage } from '@/utils/metadata';
 
 interface PageProps {
   params: Promise<{
@@ -39,6 +40,9 @@ export async function generateMetadata({
     description: `Browse all blog posts tagged with ${properTag}`,
     alternates: { canonical: tagPath },
     openGraph: {
+      // Without this the card is dropped: App Router REPLACES nested
+      // metadata objects rather than merging them (#990).
+      images: [ogImage()],
       title: `Posts tagged "${properTag}"`,
       description: `Browse all blog posts tagged with ${properTag}`,
       url: tagPath,

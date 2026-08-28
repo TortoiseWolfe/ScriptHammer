@@ -2,6 +2,7 @@ import React from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
 import styles from './pricing.module.css';
+import { routeMetadata } from '@/utils/metadata';
 
 // FONT FACES ARE VENDORED (#730). These were fetched from Google at BUILD time, which
 // killed the production deploy of an unrelated hotfix. The @font-face rules now live in
@@ -14,9 +15,8 @@ const body = { className: 'sh-font-plex-sans' };
 const mono = { className: 'sh-font-plex-mono' };
 
 export const metadata: Metadata = {
-  // This route claims its own URL (#668).
-  alternates: { canonical: '/pricing/' },
-  openGraph: { url: '/pricing/' },
+  // This route claims its own URL and keeps the social card (#668, #990).
+  ...routeMetadata('/pricing/'),
   title: 'Pricing - ScriptHammer',
   description:
     "We don't sell business portals without running one. Fixed-scope, fixed-price builds for local businesses, and productized packs for developers.",

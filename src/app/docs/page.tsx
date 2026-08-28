@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { detectedConfig } from '@/config/project-detected';
 import Icon from '@/components/atomic/Icon';
 import { DOCS, SECTIONS } from '@/lib/docs/registry';
+import { routeMetadata } from '@/utils/metadata';
 
 // Docs index. Audience: someone who just clicked through from the landing
 // page with a question. Hierarchy: first-hour path is larger and sits right
@@ -15,9 +16,8 @@ import { DOCS, SECTIONS } from '@/lib/docs/registry';
 // 13 hardcoded repo URLs → one detectedConfig.projectUrl base.
 
 export const metadata: Metadata = {
-  // This route claims its own URL (#668).
-  alternates: { canonical: '/docs/' },
-  openGraph: { url: '/docs/' },
+  // This route claims its own URL and keeps the social card (#668, #990).
+  ...routeMetadata('/docs/'),
   title: 'Documentation - ScriptHammer',
   description: 'Documentation index for ScriptHammer — configure, build, ship.',
 };

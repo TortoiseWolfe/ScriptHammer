@@ -5,6 +5,7 @@ import type { BlogPost, BlogPostListResponse } from '@/types/blog';
 import fs from 'fs/promises';
 import path from 'path';
 import { createLogger } from '@/lib/logger';
+import { routeMetadata } from '@/utils/metadata';
 
 const logger = createLogger('app:blog:page');
 
@@ -220,7 +221,6 @@ export default async function BlogPage() {
 export const metadata = {
   title: 'Blog',
   description: 'Read our latest blog posts and insights',
-  // This route claims its own URL (#668).
-  alternates: { canonical: '/blog/' },
-  openGraph: { url: '/blog/' },
+  // This route claims its own URL and keeps the social card (#668, #990).
+  ...routeMetadata('/blog/'),
 };

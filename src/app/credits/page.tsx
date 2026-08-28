@@ -3,11 +3,11 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { routeMetadata } from '@/utils/metadata';
 
 export const metadata: Metadata = {
-  // This route claims its own URL (#668).
-  alternates: { canonical: '/credits/' },
-  openGraph: { url: '/credits/' },
+  // This route claims its own URL and keeps the social card (#668, #990).
+  ...routeMetadata('/credits/'),
   title: 'Credits & Model Licensing - ScriptHammer',
   description:
     'Every 3D model in the Chattanooga digital twin, its author, and a link to the original — plus what the 3D Warehouse license does and does not permit.',
