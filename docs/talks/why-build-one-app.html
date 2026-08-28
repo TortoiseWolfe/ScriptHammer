@@ -537,7 +537,7 @@
       <span class="cmd"
         >$ cp .env.example .env &amp;&amp; docker compose run --rm builder
         ./scripts/rebrand.sh "$APP_NAME" "$OWNER" "$DESCRIPTION" --no-icon
-        &amp;&amp; rm -f public/CNAME &amp;&amp;</span
+        &amp;&amp;</span
       ><br />
       <span class="cmd"
         >$ docker compose run --rm builder pnpm run sync:wireframes
@@ -561,9 +561,12 @@
       and the AND chain stops at the first failure. Before the talk I export one
       real PageSpeed API key; the deploy workflow requires it, and it is the
       single value without which none of this reaches the internet. And the
-      CNAME removal is not tidying: the rebrand writes a domain you do not own,
-      and its mere presence makes the build drop the Pages basePath, so every
-      asset 404s at the URL you actually get.
+      CNAME removal is not tidying, and the script does it for you now: the
+      template ships a public/CNAME naming a domain you do not own, and its mere
+      presence makes the build drop the Pages basePath, so every asset 404s at
+      the URL you actually get. It used to write your slug into that file and
+      hand you a hostname nobody had registered; there is a hand-written rm in
+      older copies of this deck for exactly that reason.
     </aside>
     <div class="rail"><span></span></div>
   </section>
@@ -574,7 +577,7 @@
     <h2>Three claims, and you get to check all of them</h2>
     <div class="g3 grid">
       <div class="plate stat">
-        <span class="n">15s</span><span class="l">to rebrand 928 files</span>
+        <span class="n">71s</span><span class="l">to rebrand 932 files</span>
       </div>
       <div class="plate stat">
         <span class="n">11m</span><span class="l">to a rebranded fork</span>
@@ -588,12 +591,15 @@
       2026-08-21, with a stopwatch. This slide used to claim &ldquo;0
       config&rdquo; and &ldquo;~6m to live&rdquo;. Both were wrong, and finding
       that out is why the rest of this deck changed. The rebrand figure was
-      re-measured on 2026-08-26. The script&rsquo;s own summary says 1002, and
-      git sees the same 928 paths change — it used to say 1002, counting a file
-      once per substitution pass, until #956.
+      re-measured on 2026-08-28, after the script learned to clear the
+      template&rsquo;s blog: its summary and git now agree on 932 paths, and the
+      run takes about seventy seconds rather than the fifteen this slide claimed
+      when the script was smaller &mdash; timed twice on the demo machine, once
+      on the host and once inside the container. The summary used to say 1002,
+      counting a file once per substitution pass, until #956.
     </p>
     <aside class="notes">
-      Three numbers, and you get to check every one of them live. Sixteen
+      Three numbers, and you get to check every one of them live. About seventy
       seconds to run the rebrand script, about eleven minutes to a rebranded
       fork, and about twenty-eight minutes to a green build. I measured all
       three rather than estimating them. The summary used to over-report — it
@@ -817,7 +823,7 @@
         .login)" &amp;&amp;</span
       ><br />
       <span class="cmd"
-        >$ APP_NAME="$(required "Application name (for example, ScriptHammer): "
+        >$ APP_NAME="$(required "Application name (for example, Grand Daze): "
         '[[:alnum:]]')" &amp;&amp; DESCRIPTION="$(required "One-line
         description: " '[^[:space:]]')" &amp;&amp;</span
       ><br />
@@ -865,16 +871,21 @@
         compose run --rm builder ./scripts/rebrand.sh "$APP_NAME" "$OWNER"
         "$DESCRIPTION" --no-icon --force &amp;&amp;</span
       ><br />
-      <span class="cmd"
-        >$ cp .env.example .env &amp;&amp; chmod 600 .env &amp;&amp; rm -f
-        public/CNAME</span
+      <span class="cmd">$ cp .env.example .env &amp;&amp; chmod 600 .env</span
       ><br /><br />
       <span class="c">=========================================</span><br />
       <span class="c"> Summary</span><br />
       <span class="c">=========================================</span><br />
-      &nbsp;&nbsp;Files modified: <span class="hi">928</span><br />
+      <span class="c"
+        >&nbsp;&nbsp;Removed public/CNAME; add it back when you own a
+        domain</span
+      ><br />
+      <span class="c"
+        >&nbsp;&nbsp;Removed 15 template blog post(s); kept hello-world.md</span
+      ><br />
+      &nbsp;&nbsp;Files modified: <span class="hi">932</span><br />
       &nbsp;&nbsp;Files renamed:&nbsp;&nbsp;<span class="hi">19</span><br />
-      &nbsp;&nbsp;Time elapsed:&nbsp;&nbsp;&nbsp;<span class="ok">15s</span>
+      &nbsp;&nbsp;Time elapsed:&nbsp;&nbsp;&nbsp;<span class="ok">71s</span>
     </div>
     <span class="cue">▶ run it · let the count scroll</span>
     <aside class="notes">
