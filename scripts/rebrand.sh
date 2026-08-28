@@ -18,6 +18,9 @@
 #   --keep-cname          Keep public/CNAME. WITHOUT it the file is REMOVED: a fork has
 #                         no custom domain yet, and the file merely existing drops the
 #                         GitHub Pages basePath, which 404s every asset (#961).
+#   --keep-blog           Keep the template's blog posts. WITHOUT it every post except
+#                         the `hello-world` exemplar is REMOVED: a fork should not
+#                         republish the template's writing under its own name (#936).
 #   --preserve-ssh        Keep SSH format for git remote (if currently SSH)
 #   --preserve-attribution No-op; attribution is always kept (rebrand:keep)
 #   --icon <mark>         Rebuild every PWA/favicon asset from your mark.
@@ -141,6 +144,11 @@ START_TIME=$(date +%s)
 DRY_RUN=false
 FORCE=false
 KEEP_CNAME=false
+KEEP_BLOG=false
+
+# The one post a fork keeps. It is written to be deleted: it documents the frontmatter
+# contract and the `generate:blog` step, and says so in its own text.
+BLOG_EXEMPLAR="hello-world.md"
 PRESERVE_SSH=false
 PRESERVE_ATTRIBUTION=false
 
@@ -756,6 +764,102 @@ NODE
     fi
 }
 
+# A FORK MUST NOT REPUBLISH THE TEMPLATE'S BLOG (#936).
+#
+# rebrand.sh had no concept of the blog. It swept brand strings across every file,
+# public/blog/*.md included, so the template's posts had the brand swapped and silently
+# became the fork's writing — public, indexed, in its sitemap and its RSS feed. Measured
+# on a real fork: 15 of its 16 posts existed upstream, and its own introduction slug
+# served a post titled "<Template> - Opinionated Next.js PWA Template". The tell is that
+# a deliberate bad-SEO TEST FIXTURE shipped as a real post: nothing in the pipeline
+# distinguished a demo from content a fork should publish.
+#
+# TWO SIDES HAVE TO GO, and deleting only the markdown would be worse than doing
+# nothing. src/app/blog/[slug]/page.tsx renders out of the committed index, never from
+# the markdown, and generate:blog is deliberately not part of prebuild (#938) — so a
+# fork that deleted the posts alone would keep serving every one of them from
+# blog-data.json, with the files gone and no way to edit them.
+#
+# The index is filtered here rather than regenerated because generate:blog needs
+# gray-matter from node_modules, and a forker may well run this before installing
+# anything. Filtering copies each retained entry verbatim, so every field-mirroring test
+# (rss-feed.test.js) still holds.
+clear_template_blog() {
+    local blog_dir="$REPO_ROOT/public/blog"
+    local index="$REPO_ROOT/src/lib/blog/blog-data.json"
+
+    if [ "$KEEP_BLOG" = true ]; then
+        log_info "Keeping the template's blog posts (--keep-blog flag set)"
+        return 0
+    fi
+
+    [ -d "$blog_dir" ] || return 0
+
+    if [ "$DRY_RUN" = true ]; then
+        log_verbose "[DRY-RUN] Would remove the template's blog posts, keeping ${BLOG_EXEMPLAR}"
+        return 0
+    fi
+
+    local removed
+    removed=$(node - "$blog_dir" "$index" "$REPO_ROOT/public/blog-images" \
+        "$BLOG_EXEMPLAR" <<'NODE'
+const fs = require('node:fs');
+const path = require('node:path');
+const [blogDir, indexPath, imagesDir, exemplar] = process.argv.slice(2);
+
+// Mirrors scripts/generate-blog-data.js: `.md` only, and its ALL-CAPS exclusion —
+// CLAUDE.md in public/blog is author guidance, not a post, and must survive.
+const isPost = (f) => f.endsWith('.md') && !/^[A-Z]+\.md$/.test(f);
+
+const slugOf = (file) => {
+  const src = fs.readFileSync(path.join(blogDir, file), 'utf8');
+  const fm = src.startsWith('---') ? src.slice(3, src.indexOf('\n---', 3)) : '';
+  const m = fm.match(/^slug:\s*['"]?([^'"\n]+?)['"]?\s*$/m);
+  return m ? m[1].trim() : file.replace(/\.md$/, '');
+};
+
+const files = fs.readdirSync(blogDir).filter(isPost);
+const doomed = files.filter((f) => f !== exemplar);
+const keptSlugs = new Set(files.filter((f) => f === exemplar).map(slugOf));
+
+for (const file of doomed) {
+  // Read the slug BEFORE unlinking; it names the image directory, which is not
+  // always the filename because frontmatter may override the slug.
+  const slug = slugOf(file);
+  fs.rmSync(path.join(blogDir, file));
+  const assets = path.join(imagesDir, slug);
+  if (fs.existsSync(assets)) fs.rmSync(assets, { recursive: true });
+}
+
+if (fs.existsSync(indexPath)) {
+  const index = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
+  index.posts = (index.posts || []).filter((p) => keptSlugs.has(p.slug));
+  index.count = index.posts.length;
+  // Recomputed, not preserved: leaving the template's tag and category lists behind
+  // would populate the fork's blog filters with facets nothing is filed under.
+  const collect = (key) => [
+    ...new Set(index.posts.flatMap((p) => p.frontMatter?.[key] || [])),
+  ];
+  if ('tags' in index) index.tags = collect('tags');
+  if ('categories' in index) index.categories = collect('categories');
+  fs.writeFileSync(indexPath, `${JSON.stringify(index, null, 2)}\n`);
+}
+
+process.stdout.write(String(doomed.length));
+NODE
+    ) || {
+        log_error "Could not clear the template's blog posts"
+        exit 1
+    }
+
+    if [ "${removed:-0}" -gt 0 ]; then
+        log_success "Removed ${removed} template blog post(s); kept ${BLOG_EXEMPLAR}"
+        mark_modified "$index"
+    else
+        log_verbose "No template blog posts to remove"
+    fi
+}
+
 # Update CNAME file (replace scripthammer domain with new project domain) # rebrand:keep
 update_cname() {
     local cname_file="$REPO_ROOT/public/CNAME"
@@ -1103,6 +1207,10 @@ main() {
                 KEEP_CNAME=true
                 shift
                 ;;
+            --keep-blog)
+                KEEP_BLOG=true
+                shift
+                ;;
             --preserve-ssh)
                 PRESERVE_SSH=true
                 shift
@@ -1333,6 +1441,15 @@ main() {
     echo ""
     echo "Updating CNAME..."
     update_cname
+
+    # Same position, same reason (#936). Clearing the blog deletes tracked paths — the
+    # posts and their image directories — so it has to sit after both postconditions
+    # for exactly the argument made above about CNAME. It also has to sit after the
+    # content sweep for a second reason: the retained exemplar and the index entry that
+    # describes it are brand text, and they must be rewritten before they are kept.
+    echo ""
+    echo "Clearing the template's blog..."
+    clear_template_blog
 
     # Summary
     END_TIME=$(date +%s)

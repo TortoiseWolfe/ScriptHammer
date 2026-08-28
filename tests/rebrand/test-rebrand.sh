@@ -92,6 +92,90 @@ setup_temp_dir() {
     echo "export const projectName = 'ScriptHammer';" > src/components/Logo.tsx
     printf 'lockfileBrand: ScriptHammer\n' > pnpm-lock.yaml
 
+    # A BLOG THE FORK MUST NOT REPUBLISH (#936).
+    #
+    # Three posts and an index that describes them, mirroring the real shapes: one
+    # exemplar the fork keeps, one ordinary template post, and one whose FILENAME
+    # carries the brand so the path-move phase renames it before the blog is cleared.
+    # CLAUDE.md is author guidance living in the same directory and must survive —
+    # the generator's ALL-CAPS exclusion is the only thing that saves it.
+    mkdir -p public/blog src/lib/blog
+    mkdir -p public/blog-images/hello-world public/blog-images/template-post-one \
+        public/blog-images/scripthammer-intro
+    : > public/blog-images/hello-world/featured.svg
+    : > public/blog-images/template-post-one/featured.svg
+    : > public/blog-images/scripthammer-intro/featured.svg
+
+    cat > public/blog/hello-world.md <<'HELLO'
+---
+title: Hello, world
+slug: hello-world
+tags:
+  - example
+categories:
+  - example
+---
+
+An example post shipped by ScriptHammer.
+HELLO
+
+    cat > public/blog/template-post-one.md <<'POST1'
+---
+title: A template post
+slug: template-post-one
+tags:
+  - template
+categories:
+  - engineering
+---
+
+ScriptHammer wrote this, not the fork.
+POST1
+
+    cat > public/blog/scripthammer-intro.md <<'POST2'
+---
+title: ScriptHammer - Opinionated Next.js PWA Template
+slug: scripthammer-intro
+tags:
+  - intro
+categories:
+  - features
+---
+
+Introducing ScriptHammer.
+POST2
+
+    cat > public/blog/CLAUDE.md <<'GUIDE'
+# Blog authoring guidance for ScriptHammer
+
+Not a post. The generator excludes ALL-CAPS filenames.
+GUIDE
+
+    cat > src/lib/blog/blog-data.json <<'INDEX'
+{
+  "posts": [
+    {
+      "slug": "hello-world",
+      "title": "Hello, world",
+      "frontMatter": { "tags": ["example"], "categories": ["example"] }
+    },
+    {
+      "slug": "template-post-one",
+      "title": "A template post",
+      "frontMatter": { "tags": ["template"], "categories": ["engineering"] }
+    },
+    {
+      "slug": "scripthammer-intro",
+      "title": "ScriptHammer - Opinionated Next.js PWA Template",
+      "frontMatter": { "tags": ["intro"], "categories": ["features"] }
+    }
+  ],
+  "count": 3,
+  "tags": ["example", "template", "intro"],
+  "categories": ["example", "engineering", "features"]
+}
+INDEX
+
     # THE DESCRIPTION EVERY USER-VISIBLE SURFACE ACTUALLY READS (#923).
     #
     # DESCRIPTION reached package.json and stopped there. og:description,
@@ -834,8 +918,12 @@ test_case_preserving_rebrand() {
     binary_before=$(git hash-object public/blog-images/scripthammer-intro/plain.png)
     keep_before=$(tail -1 src/config/case-variants.ts)
 
+    # --keep-blog because this test's SUBJECT is the blog intro post: it is where the
+    # renamed-path casing and the untouched-binary assertions below are measured. The
+    # clearing itself is covered by test_fork_does_not_republish_the_template_blog;
+    # letting it delete the subject here would leave those assertions checking nothing.
     set +e
-    output=$(safe_rebrand "$CASE_TARGET_DISPLAY" "test-user" "Test desc" --force --no-icon 2>&1)
+    output=$(safe_rebrand "$CASE_TARGET_DISPLAY" "test-user" "Test desc" --force --no-icon --keep-blog 2>&1)
     status=$?
     set -e
     if [ "$status" -eq 0 ]; then
@@ -941,7 +1029,7 @@ test_case_preserving_rebrand() {
     # brand merely because rebrand.sh persisted it as the current identity.
     key_before=$(git hash-object "$variants")
     set +e
-    output=$(safe_rebrand "$CASE_TARGET_DISPLAY" "test-user" "Test desc" --force --no-icon 2>&1)
+    output=$(safe_rebrand "$CASE_TARGET_DISPLAY" "test-user" "Test desc" --force --no-icon --keep-blog 2>&1)
     status=$?
     set -e
     key_after=$(git hash-object "$variants")
@@ -957,7 +1045,7 @@ test_case_preserving_rebrand() {
     # renamed path. It must stop with an actionable error rather than claiming
     # success over an incomplete snapshot.
     set +e
-    output=$(safe_rebrand "Second App" "seconduser" "Second desc" --force --no-icon 2>&1)
+    output=$(safe_rebrand "Second App" "seconduser" "Second desc" --force --no-icon --keep-blog 2>&1)
     status=$?
     set -e
     if [ "$status" -eq 1 ] && printf '%s\n' "$output" | grep -q "Stage the prior rename with 'git add -A'"; then
@@ -969,7 +1057,7 @@ test_case_preserving_rebrand() {
     # Commit-equivalent index refresh, then prove a later re-rebrand can finish.
     git add -A >/dev/null 2>&1
     set +e
-    output=$(safe_rebrand "Second App" "seconduser" "Second desc" --force --no-icon 2>&1)
+    output=$(safe_rebrand "Second App" "seconduser" "Second desc" --force --no-icon --keep-blog 2>&1)
     status=$?
     set -e
     if [ "$status" -eq 0 ] && grep -Fqx '# Second App' "$TEMP_DIR/README.md" && \
@@ -1300,6 +1388,125 @@ process.exit(m[1].replace(/\\\x27/g,"\x27")===process.argv[2]?0:1);' \
 
     cd "$REPO_ROOT"
 }
+##
+# A fork must not republish the template's blog (#936).
+#
+# The sweep rewrote public/blog/*.md like any other file, so the template's posts had
+# the brand swapped and became the fork's writing — public, indexed, in its sitemap and
+# feed. Measured on a real fork: 15 of 16 posts existed upstream.
+#
+# The assertion that matters is the SECOND one. Deleting the markdown alone would leave
+# every post still being served, because the site renders from the committed index and
+# never reads the markdown (#938) — so this checks both sides, and checks they still
+# agree with each other, which is the invariant a fork actually needs.
+##
+test_fork_does_not_republish_the_template_blog() {
+    run_test "test_fork_does_not_republish_the_template_blog"
+    setup_temp_dir
+
+    safe_rebrand "Widget Works" "testuser" "A widget" --force --no-icon >/dev/null 2>&1 || true
+
+    local blog="$TEMP_DIR/public/blog"
+    local index="$TEMP_DIR/src/lib/blog/blog-data.json"
+
+    local remaining
+    remaining=$(cd "$blog" && ls *.md 2>/dev/null | tr '\n' ' ')
+    if [ "$remaining" = "CLAUDE.md hello-world.md " ]; then
+        log_pass "Only the exemplar survives on disk, and author guidance is not a post"
+    else
+        log_fail "Blog cleared" "CLAUDE.md hello-world.md" "$remaining"
+    fi
+
+    # The half that actually controls what is published.
+    if node -e 'const d=require(process.argv[1]);
+const slugs=d.posts.map(p=>p.slug);
+process.exit(slugs.length===1&&slugs[0]==="hello-world"&&d.count===1?0:1);' \
+        "$index" 2>/dev/null; then
+        log_pass "The committed index publishes only the exemplar"
+    else
+        log_fail "Index filtered" "one post, hello-world, count 1" "$(cat "$index")"
+    fi
+
+    # Disk and index must still describe the same set — the #938 invariant, asserted on
+    # a rebranded tree because that is where it was never true.
+    if node -e 'const fs=require("fs"),path=require("path");
+const [blog,idx]=process.argv.slice(1);
+const disk=fs.readdirSync(blog).filter(f=>f.endsWith(".md")&&!/^[A-Z]+\.md$/.test(f))
+  .map(f=>{const src=fs.readFileSync(path.join(blog,f),"utf8");
+    const fm=src.startsWith("---")?src.slice(3,src.indexOf("\n---",3)):"";
+    const m=fm.match(/^slug:\s*[\x27"]?([^\x27"\n]+?)[\x27"]?\s*$/m);
+    return m?m[1].trim():f.replace(/\.md$/,"");}).sort();
+const index=JSON.parse(fs.readFileSync(idx,"utf8")).posts.map(p=>p.slug).sort();
+process.exit(JSON.stringify(disk)===JSON.stringify(index)?0:1);' \
+        "$blog" "$index" 2>/dev/null; then
+        log_pass "Disk and index agree after the rebrand"
+    else
+        log_fail "Blog drift after rebrand" "identical slug sets" \
+            "disk=$(ls "$blog") index=$(cat "$index")"
+    fi
+
+    # A deleted post's images are dead weight in a fork's repo and its deploy.
+    if [ ! -d "$TEMP_DIR/public/blog-images/template-post-one" ] &&
+        [ -d "$TEMP_DIR/public/blog-images/hello-world" ]; then
+        log_pass "Removed posts take their images with them; the exemplar keeps its own"
+    else
+        log_fail "Blog images" "template-post-one/ gone, hello-world/ kept" \
+            "$(ls "$TEMP_DIR/public/blog-images" 2>/dev/null | tr '\n' ' ')"
+    fi
+
+    # The renamed post is the ordering test: its filename carried the brand, so the
+    # path-move phase renames it first and the cleaner has to find it under its NEW
+    # name. A cleaner that ran before the move would leave it behind.
+    if ! ls "$blog"/*intro*.md >/dev/null 2>&1; then
+        log_pass "A post renamed by the path-move phase is still removed"
+    else
+        log_fail "Renamed post survived" "no *intro*.md" "$(ls "$blog")"
+    fi
+
+    # Facets belonging to deleted posts would populate the fork's blog filters with
+    # categories nothing is filed under.
+    if node -e 'const d=require(process.argv[1]);
+process.exit(JSON.stringify(d.tags)===JSON.stringify(["example"])&&
+             JSON.stringify(d.categories)===JSON.stringify(["example"])?0:1);' \
+        "$index" 2>/dev/null; then
+        log_pass "Tag and category lists are recomputed, not inherited"
+    else
+        log_fail "Facets" 'tags ["example"], categories ["example"]' \
+            "$(node -e 'const d=require(process.argv[1]);console.log(JSON.stringify({tags:d.tags,categories:d.categories}))' "$index")"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
+##
+# --keep-blog is the opt-out, and it has to be honoured on both sides too.
+##
+test_keep_blog_opts_out() {
+    run_test "test_keep_blog_opts_out"
+    setup_temp_dir
+
+    safe_rebrand "Widget Works" "testuser" "A widget" --force --no-icon --keep-blog \
+        >/dev/null 2>&1 || true
+
+    local count
+    count=$(ls "$TEMP_DIR/public/blog"/*.md 2>/dev/null | wc -l)
+    if [ "$count" -eq 4 ]; then
+        log_pass "--keep-blog keeps every post on disk"
+    else
+        log_fail "--keep-blog disk" "4 .md files" "$count"
+    fi
+
+    if node -e 'const d=require(process.argv[1]);process.exit(d.posts.length===3?0:1);' \
+        "$TEMP_DIR/src/lib/blog/blog-data.json" 2>/dev/null; then
+        log_pass "--keep-blog leaves the index untouched"
+    else
+        log_fail "--keep-blog index" "3 posts" \
+            "$(node -e 'console.log(require(process.argv[1]).posts.length)' "$TEMP_DIR/src/lib/blog/blog-data.json")"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
 
 
 test_path_collision_is_atomic() {
@@ -1569,6 +1776,8 @@ run_all_tests() {
     test_upstream_citations_survive
     test_description_reaches_the_site
     test_hostile_description_is_escaped
+    test_fork_does_not_republish_the_template_blog
+    test_keep_blog_opts_out
     test_path_collision_is_atomic
     test_existing_target_directory_is_atomic
     test_residual_gate_is_fatal
@@ -1647,6 +1856,12 @@ if [ $# -eq 1 ]; then
             ;;
         test_hostile_description_is_escaped)
             test_hostile_description_is_escaped
+            ;;
+        test_fork_does_not_republish_the_template_blog)
+            test_fork_does_not_republish_the_template_blog
+            ;;
+        test_keep_blog_opts_out)
+            test_keep_blog_opts_out
             ;;
         test_path_collision_is_atomic)
             test_path_collision_is_atomic

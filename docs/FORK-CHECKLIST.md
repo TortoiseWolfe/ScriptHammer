@@ -29,6 +29,12 @@ ScriptHammer ships with 928 files that reference its own name, theme, and Docker
       existence tells the build a custom domain is configured, which drops the GitHub Pages
       basePath and 404s every asset at the URL you were actually given. Add the file back,
       containing just your hostname, on the day you point DNS at it.
+    - **The template's blog posts are removed**, all but one. They are this project's
+      writing — including personal essays and a deliberate bad-SEO test fixture — and a
+      sweep that only swaps the brand would republish them, indexed and in your feed, as
+      though you had written them. A single `hello-world` post is kept; it documents the
+      frontmatter format and then tells you to delete it. Pass `--keep-blog` to keep the
+      lot; you rarely want that.
   - Run `./scripts/rebrand.sh --help` for the full flag list.
 - **Full guide**: [`docs/FORKING.md` — Quick Start](FORKING.md#quick-start-5-minutes)
 - **Why it matters**: skipping this leaves your fork branded as "ScriptHammer" everywhere.
@@ -154,6 +160,22 @@ Skipping this means OAuth round-trips work locally but fail in production with r
 This template static-exports to GitHub Pages — there's no Next.js server runtime. Any env var without a `NEXT_PUBLIC_` prefix is unused by the client and must live in Supabase Vault if it's needed by Edge Functions (e.g., `STRIPE_SECRET_KEY`, `PAYPAL_CLIENT_SECRET`, `RESEND_API_KEY`).
 
 Set them via: `https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/settings/functions` → Edge Function Secrets, or via CLI: `docker compose exec scripthammer supabase secrets set KEY=value`.
+
+### Editing a blog post does nothing until you regenerate the index
+
+`public/blog/*.md` is not what the site serves. The blog, the sitemap, the RSS feed and the
+JSON feed all read `src/lib/blog/blog-data.json`, a committed artifact — and generating it is
+deliberately not part of the build. So adding, editing **or deleting** a post has no effect
+until you run:
+
+```bash
+docker compose exec <project> pnpm generate:blog
+```
+
+and commit the resulting diff. Deleting a post file is the surprising one: without this the
+post stays live, still in the sitemap, still in the feed.
+`scripts/__tests__/blog-index-matches-disk.test.js` fails when the two sides disagree, so CI
+catches it — but it is quicker to remember than to be told.
 
 ### Don't run `pnpm install` on the host
 

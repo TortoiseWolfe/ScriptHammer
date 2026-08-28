@@ -4,6 +4,11 @@ author: Anonymous
 date: 2025-09-28
 slug: this-is-an-extremely-long-url-slug-that-should-be-much-shorter-for-better-seo
 excerpt: This is a blog post
+# Deliberately has no featuredImage: this post demonstrates bad SEO, and requiring one
+# would destroy the thing it demonstrates. The flag lives here rather than in a list
+# inside the test, so it cannot be orphaned by a rename and it is removed along with
+# the post when rebrand.sh clears the template's blog (#936).
+intentionallyImageless: true
 ogImage: /blog-images/bad-seo-example-og.png
 tags:
   - seo
