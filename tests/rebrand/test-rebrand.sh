@@ -205,6 +205,9 @@ const defaultConfig = {
   projectDescription:
     'A production Next.js and Supabase platform with auth, payments, encrypted messaging, and an accessible offline-capable PWA',
   basePath: '',
+  // No `as` cast here: test_hostile_description_is_escaped parses this fixture
+  // with `new Function`, which cannot read TypeScript annotations.
+  brandMark: 'lockup',
 };
 PROJCONF
 
@@ -1564,6 +1567,43 @@ process.exit(url.includes("/"+p.name)?0:1);' "$TEMP_DIR/package.json" 2>/dev/nul
 
     cd "$REPO_ROOT"
 }
+##
+# A fork must not publish this template's lockup.
+#
+# The home page hero rendered `LayeredScriptHammerLogo` unconditionally: a gear ring,
+# a printing mallet and "SCRIPTHAMMER.COM" twice around the rim. A real fork shipped
+# all of it on its own public front page.
+#
+# NO SWEEP COULD HAVE FIXED THAT, which is the point of testing it here rather than
+# trusting the residual verifier. The rim lettering is outlined glyph paths in
+# ringWordmark.ts — mask cut-outs generated from a font, containing no "ScriptHammer"
+# string to substitute. The residual gate is happy; the fork still shows our logo.
+##
+test_fork_does_not_inherit_the_lockup() {
+    run_test "test_fork_does_not_inherit_the_lockup"
+    setup_temp_dir
+
+    safe_rebrand "Widget Works" "testuser" "A widget" --force --no-icon >/dev/null 2>&1 || true
+
+    local conf="$TEMP_DIR/src/config/project.config.ts"
+    if grep -Eq "brandMark:\s*'placeholder'" "$conf"; then
+        log_pass "brandMark is reset, so the hero renders the fork's own initials"
+    else
+        log_fail "brandMark after rebrand" "brandMark: 'placeholder'" \
+            "$(grep -n brandMark "$conf" 2>/dev/null || echo 'field absent')"
+    fi
+
+    # The invariant behind it: nothing in the config still opts in to our lockup.
+    if grep -Eq "brandMark:\s*'lockup'" "$conf"; then
+        log_fail "lockup still selected" "no 'lockup' selection in a fork" \
+            "$(grep -n brandMark "$conf")"
+    else
+        log_pass "No 'lockup' selection survives into the fork"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
 
 
 
@@ -1838,6 +1878,7 @@ run_all_tests() {
     test_fork_does_not_republish_the_template_blog
     test_keep_blog_opts_out
     test_repository_url_matches_the_remote
+    test_fork_does_not_inherit_the_lockup
     test_path_collision_is_atomic
     test_existing_target_directory_is_atomic
     test_residual_gate_is_fatal
@@ -1925,6 +1966,9 @@ if [ $# -eq 1 ]; then
             ;;
         test_repository_url_matches_the_remote)
             test_repository_url_matches_the_remote
+            ;;
+        test_fork_does_not_inherit_the_lockup)
+            test_fork_does_not_inherit_the_lockup
             ;;
         test_path_collision_is_atomic)
             test_path_collision_is_atomic

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LayeredScriptHammerLogo } from '@/components/atomic/SpinningLogo';
+import { PlaceholderMark } from '@/components/atomic/PlaceholderMark';
+import { getProjectConfig } from '@/config/project.config';
 import Icon from '@/components/atomic/Icon';
 import { type TemplateDemo } from '@/components/molecular/TemplateStats';
 import { detectedConfig } from '@/config/project-detected';
@@ -168,6 +170,10 @@ const MODULES = [
 ] as const;
 
 export default function Home() {
+  // Which mark the hero shows. Defaults to the placeholder so a fork cannot
+  // publish this project's lockup; this repo opts in via project.config.ts.
+  const { brandMark } = getProjectConfig();
+
   return (
     // The ambient glow from the top of the comp. It is what sets the mood of
     // the whole page, and it was the single biggest thing missing — the built
@@ -214,7 +220,15 @@ export default function Home() {
           }}
         >
           <div className="h-[88%] w-[88%]">
-            <LayeredScriptHammerLogo wordmark pauseOnHover />
+            {/* A fork must not publish OUR lockup. Its rim lettering lives in
+                ringWordmark.ts as outlined glyph paths — mask cut-outs with no
+                "ScriptHammer" string in them — so no rebrand sweep could ever
+                have substituted it. The mark has to be chosen, not swept. */}
+            {brandMark === 'lockup' ? (
+              <LayeredScriptHammerLogo wordmark pauseOnHover />
+            ) : (
+              <PlaceholderMark />
+            )}
           </div>
         </div>
 

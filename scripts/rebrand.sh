@@ -678,6 +678,53 @@ update_docker_compose() {
 # Written with node rather than sed: a description is free text a forker supplies,
 # and `Care & rescue | "now"` would expand `&`, terminate a `|`-delimited sed
 # expression, or inject an unescaped quote into a TypeScript string literal.
+# A FORK MUST NOT PUBLISH THIS TEMPLATE'S LOCKUP.
+#
+# The home page hero renders `LayeredScriptHammerLogo` — a gear ring, a printing # rebrand:keep
+# mallet, and "SCRIPTHAMMER.COM" twice around the rim. A real fork shipped the whole # rebrand:keep
+# thing on its own public front page while every string around it was correctly
+# rebranded.
+#
+# THE SWEEP COULD NEVER HAVE FIXED IT. The rim lettering lives in
+# src/components/atomic/SpinningLogo/ringWordmark.ts as outlined glyph paths — mask
+# cut-outs generated from a font by a Python/fontTools pipeline. There is no
+# "ScriptHammer" string anywhere in it to substitute. Renaming public/*-logo.svg, # rebrand:keep
+# which the path-move phase does, changes nothing either: the hero is inline SVG and
+# those files are not on its critical path.
+#
+# So the mark is CHOSEN, not swept. project.config.ts defaults to 'placeholder'
+# already, which protects a fork even without this; setting it here as well means the
+# guarantee does not depend on the forker never editing that default back.
+update_brand_mark() {
+    local conf="$REPO_ROOT/src/config/project.config.ts"
+
+    [ -f "$conf" ] || return 0
+
+    if [ "$DRY_RUN" = true ]; then
+        log_verbose "[DRY-RUN] Would set brandMark to 'placeholder' in src/config/project.config.ts"
+        return 0
+    fi
+
+    if ! node - "$conf" <<'NODE'; then
+const fs = require('node:fs');
+const [file] = process.argv.slice(2);
+const source = fs.readFileSync(file, 'utf8');
+
+const pattern = /(brandMark:\s*)'(?:placeholder|lockup)'/;
+if (!pattern.test(source)) {
+  // Not an error: an older checkout may predate the field entirely.
+  process.exit(0);
+}
+fs.writeFileSync(file, source.replace(pattern, "$1'placeholder'"));
+NODE
+        log_error "Could not set brandMark in src/config/project.config.ts"
+        exit 1
+    fi
+
+    log_verbose "Set brandMark to 'placeholder'; the hero renders your initials until you supply a mark"
+    mark_modified "$conf"
+}
+
 update_project_description() {
     local conf="$REPO_ROOT/src/config/project.config.ts"
 
@@ -718,6 +765,8 @@ NODE
     log_verbose "Set projectDescription in src/config/project.config.ts"
     mark_modified "$conf"
 }
+
+
 
 update_package_json() {
     local pkg_file="$REPO_ROOT/package.json"
@@ -1423,6 +1472,7 @@ main() {
     echo ""
     echo "Updating project description..."
     update_project_description
+    update_brand_mark
 
     echo ""
     echo "Scaffolding custom themes..."

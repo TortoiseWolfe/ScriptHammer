@@ -16,6 +16,22 @@ const defaultConfig = {
   projectDescription:
     'A production Next.js and Supabase platform with auth, payments, encrypted messaging, and an accessible offline-capable PWA',
   basePath: '',
+  /**
+   * WHICH MARK THE HERO RENDERS, and the default is deliberately NOT ours.
+   *
+   * 'lockup' is this project's own identity: a gear ring, a printing mallet and
+   * "SCRIPTHAMMER.COM" twice around the rim. A fork inherited the whole thing and put
+   * it on its own public front page, and no rebrand could have prevented that — the
+   * rim lettering is outlined glyph paths in ringWordmark.ts, mask cut-outs generated
+   * from a font, with no "ScriptHammer" string anywhere in it to substitute.
+   *
+   * So the default is 'placeholder', and THIS repo opts in to the lockup below.
+   * A fork that somehow keeps this file verbatim still cannot publish our mark,
+   * and rebrand.sh resets the value as well. Two independent guards, because the
+   * failure mode is shipping someone else's brand to production.
+   */
+  // ScriptHammer's own site renders ScriptHammer's lockup. A fork does not.
+  brandMark: 'lockup' as 'placeholder' | 'lockup',
 };
 
 /**
@@ -34,6 +50,7 @@ export function getProjectConfig() {
       process.env.NEXT_PUBLIC_PROJECT_OWNER || defaultConfig.projectOwner,
     projectDescription: defaultConfig.projectDescription,
     basePath: process.env.NEXT_PUBLIC_BASE_PATH ?? defaultConfig.basePath,
+    brandMark: defaultConfig.brandMark,
     // A monitored address a visitor can write to when the contact FORM cannot
     // deliver. The form depends on a third-party key, and production shipped an
     // EMPTY one, so `/contact/` offered no working channel at all while Stripe
