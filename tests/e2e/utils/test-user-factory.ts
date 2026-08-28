@@ -121,64 +121,16 @@ let adminClient: SupabaseClient | null = null;
  * anticipate every hosted form (`*.supabase.co`, a custom domain, an IP), and anything it
  * fails to anticipate is treated as safe. This way an unrecognised host is refused.
  */
-const LOCAL_SUPABASE_HOSTS = new Set([
-  'localhost',
-  '127.0.0.1',
-  '::1',
-  'host.docker.internal',
-  'supabase-kong',
-]);
-
-/**
- * Is this URL unambiguously a local Supabase stack? (#944)
- *
- * Pure, so `tests/unit/local-backend-guard.test.ts` can drive both directions without a
- * network or a container — the only way to know a guard can refuse.
- *
- * An EMPTY or unparseable URL is `false`. Absence of evidence is not evidence of a local
- * backend, and treating it as one is how a guard reports reassurance.
- */
-export function isLocalSupabaseUrl(url: string | undefined | null): boolean {
-  if (!url) return false;
-  try {
-    return LOCAL_SUPABASE_HOSTS.has(new URL(url).hostname);
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Refuse to run when the resolved Supabase backend is not local (#944).
- *
- * WHY THIS EXISTS. The admin specs describe themselves as local-only, and nothing made that
- * true. `getAdminClient()` resolves `SUPABASE_ADMIN_URL || NEXT_PUBLIC_SUPABASE_URL`, and the
- * repo's default cloud `.env` sets the second to the hosted project and the first not at all —
- * so the fallback lands on PRODUCTION, where `seedIsolatedAdmin()` would create and promote a
- * real admin account with the service-role key.
- *
- * What prevented that was `CI=true`, hardcoded at docker-compose.yml:84, tripping a
- * `test.skip` whose stated reason is a capability one ("requires local Docker Supabase").
- * Safety was riding on a skip nobody knew was load-bearing — and #914 exists to delete it.
- * This assertion is what lets that skip come off without taking the protection with it.
- *
- * Call it in `beforeAll` so a misconfigured run produces ONE clear message instead of N
- * confusing ones.
- */
-export function assertLocalBackend(what = 'this spec'): void {
-  const resolved =
-    process.env.SUPABASE_ADMIN_URL ||
-    process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    '';
-  if (isLocalSupabaseUrl(resolved)) return;
-  throw new Error(
-    `${what} seeds and mutates data, so it refuses to run against a non-local Supabase.\n` +
-      `  resolved backend: ${resolved || '(empty — SUPABASE_ADMIN_URL and NEXT_PUBLIC_SUPABASE_URL are both unset)'}\n` +
-      `  allowed hosts:    ${[...LOCAL_SUPABASE_HOSTS].join(', ')}\n` +
-      'Switch with `pnpm dev:local` (writes .env.local-supabase), then bring the stack up with\n' +
-      '`docker compose --profile supabase up -d --force-recreate` — a plain restart keeps the old env.\n' +
-      'See #944; the same trap wrote to production in #877.'
-  );
-}
+// Moved to tests/utils/local-backend.ts, which imports nothing (#959). This file
+// pulls in @playwright/test and the messaging key services, so anything outside
+// Playwright that wanted the guard had to inherit all of it — which is why
+// tests/supabase-admin.ts went without one. Re-exported so every existing caller
+// keeps working.
+export {
+  isLocalSupabaseUrl,
+  assertLocalBackend,
+  resolveBackendUrl,
+} from '../../utils/local-backend';
 
 export function getAdminClient(): SupabaseClient | null {
   if (adminClient) return adminClient;

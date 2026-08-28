@@ -1,8 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import {
-  isLocalSupabaseUrl,
-  assertLocalBackend,
-} from '../e2e/utils/test-user-factory';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { isLocalSupabaseUrl, assertLocalBackend } from '../utils/local-backend';
 
 /**
  * The local-backend guard must be able to REFUSE (#944).
@@ -106,5 +105,45 @@ describe('assertLocalBackend', () => {
     process.env.SUPABASE_ADMIN_URL = 'http://supabase-kong:8000';
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://myproject.supabase.co';
     expect(() => assertLocalBackend('spec')).not.toThrow();
+  });
+});
+
+describe('the guard is reusable, which is what #959 was about', () => {
+  it('tests/utils/local-backend.ts imports nothing', () => {
+    // The whole defect was that the guard lived in a module importing
+    // @playwright/test and the messaging key services, so tests/supabase-admin.ts
+    // could not adopt it and went unguarded. If this file grows an import, the
+    // next non-Playwright consumer will hit the same wall.
+    const src = readFileSync(
+      join(__dirname, '..', 'utils', 'local-backend.ts'),
+      'utf8'
+    );
+    const imports = src
+      .split('\n')
+      .filter((l) => /^\s*import\b/.test(l) && !/^\s*import type\b/.test(l));
+    expect(imports).toEqual([]);
+  });
+
+  it('the service-role admin client refuses a non-local backend', async () => {
+    // The construction-time refusal, driven the only way that proves it: with a
+    // cloud URL in the environment. Its one consumer is vitest-excluded, so
+    // without this assertion nothing in CI ever executes that code path.
+    const prev = {
+      url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      admin: process.env.SUPABASE_ADMIN_URL,
+      key: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    };
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
+    process.env.SUPABASE_ADMIN_URL = '';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'not-a-real-key';
+    try {
+      await expect(import('../supabase-admin')).rejects.toThrow(
+        /refuses to run against a non-local Supabase/
+      );
+    } finally {
+      process.env.NEXT_PUBLIC_SUPABASE_URL = prev.url;
+      process.env.SUPABASE_ADMIN_URL = prev.admin;
+      process.env.SUPABASE_SERVICE_ROLE_KEY = prev.key;
+    }
   });
 });
