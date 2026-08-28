@@ -684,3 +684,111 @@ test('#726: the workflow passes the ref and the epoch to the guard', async () =>
     'the epoch override is unreachable again — it is read by the guard but not passed'
   );
 });
+
+/**
+ * #949 — a fork inherits the guard faithfully and the state that made it protective
+ * not at all.
+ *
+ * The counter is per-repository: `…/repos/${repo}/actions/workflows/e2e.yml/runs`. A
+ * fresh fork therefore starts at zero and passes, however hard the repo it came from
+ * is blocked. Measured across the two on 2026-08-21: this repo blocked at 100+ runs
+ * with 9 of 10 hosted jobs skipped, the fork green at 29 of 30 and running 42 minutes
+ * of them — against its own newly created free-tier Supabase project, and one run
+ * below a cap calibrated for a different project's quota entirely.
+ *
+ * `BACKEND_EPOCH` and `BACKEND_EPOCH_PROJECT_REF` are both this repo's, and neither
+ * contains the brand token, so `rebrand.sh` correctly leaves them alone — rewriting an
+ * opaque project ref would be worse. That means the constants cannot travel, and the
+ * only honest thing left is to refuse.
+ *
+ * The mismatch detector already existed (#726) and was a WARNING. A warning is the
+ * right shape where a human reads the run and the wrong shape in a fork, where nobody
+ * is looking and the cost lands on someone's free tier.
+ */
+
+test('#949: metering a project the epoch does not describe is a refusal, not a warning', async () => {
+  const { backendIdentity } = await import(MOD);
+  const v = backendIdentity({
+    projectRef: 'xsnvwamytkniojrdnavt',
+    expectedRef: 'ozbdyopxmeqmwnfsmglp',
+    epoch: '2026-08-07T06:00:00Z',
+  });
+  assert.equal(
+    v.allowed,
+    false,
+    'a fork must not run the lane on an unmetered backend'
+  );
+  assert.equal(v.code, 'BACKEND_MISMATCH');
+  // The message has to say how to adopt the guard, or the only way forward looks like
+  // deleting it.
+  assert.match(v.message, /E2E_BUDGET_BACKEND_PROJECT_REF/);
+  assert.match(v.message, /E2E_BUDGET_BACKEND_EPOCH/);
+});
+
+test('#949: not knowing which backend is metered is the same refusal', async () => {
+  const { backendIdentity } = await import(MOD);
+  const v = backendIdentity({
+    projectRef: null,
+    expectedRef: 'ozbdyopxmeqmwnfsmglp',
+    epoch: '2026-08-07T06:00:00Z',
+  });
+  assert.equal(v.allowed, false);
+  assert.equal(v.code, 'BACKEND_UNKNOWN');
+});
+
+test('#949: the guard still runs for the backend it does describe', async () => {
+  // The case that must NOT be refused, or the fix is just "switch the lane off".
+  const { backendIdentity, BACKEND_EPOCH_PROJECT_REF } = await import(MOD);
+  const v = backendIdentity({
+    projectRef: BACKEND_EPOCH_PROJECT_REF,
+    expectedRef: BACKEND_EPOCH_PROJECT_REF,
+    epoch: '2026-08-07T06:00:00Z',
+  });
+  assert.equal(v.allowed, true);
+  assert.equal(v.code, 'BACKEND_MATCHED');
+});
+
+test('#949: a fork can adopt the guard by naming its own project', async () => {
+  const { backendIdentity, resolveBackendProjectRef } = await import(MOD);
+  const forkRef = 'xsnvwamytkniojrdnavt';
+  const v = backendIdentity({
+    projectRef: forkRef,
+    expectedRef: resolveBackendProjectRef(forkRef),
+    epoch: '2026-08-21T00:00:00Z',
+  });
+  assert.equal(
+    v.allowed,
+    true,
+    'the override must be a real way out, not decoration'
+  );
+});
+
+test('#949: an unset override keeps the constant, it does not disable the check', async () => {
+  // Same trap as the epoch override: `${{ vars.FOO }}` arrives as an EMPTY STRING when
+  // unset. If empty meant "anything goes", wiring the variable up would silently turn
+  // the refusal off for everyone, this repo included.
+  const { resolveBackendProjectRef, BACKEND_EPOCH_PROJECT_REF } = await import(
+    MOD
+  );
+  assert.equal(resolveBackendProjectRef(''), BACKEND_EPOCH_PROJECT_REF);
+  assert.equal(resolveBackendProjectRef(undefined), BACKEND_EPOCH_PROJECT_REF);
+  assert.equal(resolveBackendProjectRef('   '), BACKEND_EPOCH_PROJECT_REF);
+});
+
+test('#949: the workflow passes the project-ref override', async () => {
+  const { readFileSync } = require('node:fs');
+  const wf = readFileSync(
+    path.join(__dirname, '..', '..', '.github', 'workflows', 'e2e.yml'),
+    'utf8'
+  );
+  const step = wf.slice(
+    wf.indexOf('Check recent E2E run rate'),
+    wf.indexOf('e2e-budget-guard.mjs')
+  );
+  assert.match(
+    step,
+    /E2E_BUDGET_BACKEND_PROJECT_REF:\s*\$\{\{\s*vars\.E2E_BUDGET_BACKEND_PROJECT_REF\s*\}\}/,
+    'the adoption route is unreachable: the guard reads this override but the workflow ' +
+      'does not pass it, which is exactly how E2E_BUDGET_BACKEND_EPOCH sat dead (#726)'
+  );
+});
