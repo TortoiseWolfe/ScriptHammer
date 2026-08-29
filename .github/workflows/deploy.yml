@@ -190,6 +190,32 @@ jobs:
             Cache-Control: public, max-age=31536000, immutable
           EOF
 
+      # THE FIRST GATE THAT LOOKS AT WHAT IS ACTUALLY UPLOADED (#980).
+      #
+      # The three build gates above — chunks-parse, first-load-budget, canonicals — all read
+      # `out/`, and all three run BEFORE the merge that assembles `merged-output`. But
+      # `merged-output` is what `upload-pages-artifact` receives, so everything between the
+      # merge and the upload has never been examined by anything.
+      #
+      # What it asserts is that the artifact agrees with itself about its own address: a
+      # CNAME at the root means an apex, which means assets must be unprefixed; no CNAME
+      # means a project site at /<repo>/, which means they must be prefixed. Out of step,
+      # this deploy goes green while every asset 404s — #961's failure, which nothing
+      # currently detects.
+      #
+      # Placed immediately after the merge rather than after the retention step so it fails
+      # fast. That is safe because retention only ever writes under `_next/static/` and never
+      # overwrites, so it cannot touch the CNAME or index.html this reads.
+      #
+      # DEPLOY_URL, deliberately NOT the NEXT_PUBLIC_ name:
+      # `deploy-passes-what-code-reads.test.js` greps this whole file for
+      # `NEXT_PUBLIC_*: ${{ ... }}` and cannot see step boundaries, so reusing that name here
+      # would make the guard read as satisfied even if the build step stopped setting it.
+      - name: Verify the artifact agrees about its own domain (#980)
+        run: node scripts/ci/check-custom-domain.mjs merged-output
+        env:
+          DEPLOY_URL: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
+
       # KEEP THE PREVIOUS BUILD'S HASHED ASSETS (#476).
       #
       # Runs AFTER the merge, so it can see what this build produced and add only
