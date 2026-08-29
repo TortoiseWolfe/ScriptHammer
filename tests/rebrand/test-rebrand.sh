@@ -115,6 +115,17 @@ PKG
     # matter; that a fork must not still be serving THESE BYTES does.
     printf 'TEMPLATE-OG-CARD-BYTES' > public/opengraph-image.png
 
+    # The template's manifest: served from an apex domain, so no base path. A fork
+    # deploys at /<repo>/ and must not inherit these paths (#985).
+    cat > public/manifest.json <<'MANIFEST'
+{
+  "name": "ScriptHammer",
+  "start_url": "/",
+  "scope": "/",
+  "icons": [{ "src": "/icon-72.svg", "sizes": "72x72", "type": "image/svg+xml" }]
+}
+MANIFEST
+
     mkdir -p public/blog src/lib/blog
     mkdir -p public/blog-images/hello-world public/blog-images/template-post-one \
         public/blog-images/scripthammer-intro
@@ -341,6 +352,9 @@ INTRO
     # path planning (BSD sed cannot express either safely).
     mkdir -p scripts
     cp "$REBRAND_SCRIPT" "$REBRAND_CASE_HELPER" "$TEMP_DIR/scripts/"
+    # update_manifest shells out to this one, and a fixture without it makes the
+    # manifest assertions pass vacuously by never running the code under test (#985).
+    cp "$REPO_ROOT/scripts/generate-manifest.js" "$TEMP_DIR/scripts/"
 
     # STAGE EVERYTHING. Discovery is `git ls-files`, so an unstaged fixture is an
     # EMPTY fixture -- every assertion below would pass vacuously against a sweep
@@ -1637,6 +1651,48 @@ test_fork_does_not_keep_our_social_card() {
 
     cd "$REPO_ROOT"
 }
+##
+# The committed manifest must describe the FORK's deployment, not the template's (#985).
+#
+# public/manifest.json is tracked on purpose (#392) so its paths are reviewable. Those
+# paths depend on the base path, which depends on whether public/CNAME exists — and the
+# rebrand has just removed it. A fork inheriting `start_url: "/"` gets a PWA whose
+# install scope does not match where the app is served, and a first push that fails the
+# repo's own generated-manifest test with nothing the forker can do.
+#
+# Asserted on the SLUG, because that is what the deploy uses: detect-project.js takes
+# the repo name from the git remote. A fork called "Widget Works" deploys at
+# /widget-works/, never /Widget Works/ — a path with a space in it, which was the
+# expectation the old test computed.
+##
+test_manifest_describes_the_fork_deployment() {
+    run_test "test_manifest_describes_the_fork_deployment"
+    setup_temp_dir
+
+    safe_rebrand "Widget Works" "testuser" "A widget" --force --no-icon >/dev/null 2>&1 || true
+
+    local manifest="$TEMP_DIR/public/manifest.json"
+
+    if node -e 'const m=require(process.argv[1]);
+process.exit(m.start_url==="/widget-works/" && m.scope==="/widget-works/" ? 0 : 1);' \
+        "$manifest" 2>/dev/null; then
+        log_pass "start_url and scope carry the fork's own base path"
+    else
+        log_fail "manifest base path" '"/widget-works/"' \
+            "$(node -e 'const m=require(process.argv[1]);console.log(JSON.stringify({start_url:m.start_url,scope:m.scope}))' "$manifest" 2>/dev/null || echo unreadable)"
+    fi
+
+    # A path with a space in it is the specific wrong answer the old expectation
+    # produced, so name it rather than trusting the check above to imply it.
+    if grep -q '"/Widget Works/"' "$manifest" 2>/dev/null; then
+        log_fail "manifest uses the display name" "the slug" "the display name, which cannot be a URL path"
+    else
+        log_pass "The display name is not used as a URL path"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
 
 
 
@@ -1915,6 +1971,7 @@ run_all_tests() {
     test_repository_url_matches_the_remote
     test_fork_does_not_inherit_the_lockup
     test_fork_does_not_keep_our_social_card
+    test_manifest_describes_the_fork_deployment
     test_path_collision_is_atomic
     test_existing_target_directory_is_atomic
     test_residual_gate_is_fatal
@@ -2008,6 +2065,9 @@ if [ $# -eq 1 ]; then
             ;;
         test_fork_does_not_keep_our_social_card)
             test_fork_does_not_keep_our_social_card
+            ;;
+        test_manifest_describes_the_fork_deployment)
+            test_manifest_describes_the_fork_deployment
             ;;
         test_path_collision_is_atomic)
             test_path_collision_is_atomic
