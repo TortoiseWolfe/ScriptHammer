@@ -98,9 +98,15 @@ PKG
     echo "# ScriptHammer" > README.md
     # public/CNAME, not ./CNAME — rebrand.sh reads "$REPO_ROOT/public/CNAME". The root-level
     # copy that used to be here meant the CNAME branch never executed in any test.
-    echo "scripthammer.com" > CNAME
+    # A RESERVED TLD, on purpose (#983). classify_cname() detects an inherited domain
+    # by the BRAND TOKEN in it, so this fixture only has to carry the token — and
+    # `.example` keeps it clear of the `.com` handling, whose whole job is now to stop
+    # a rebrand minting `<slug>.com`. With a `.com` here the fixture would be rewritten
+    # to the placeholder domain, which carries no token, and the inheritance branch this
+    # fixture exists to exercise would stop firing in a forked harness.
+    echo "scripthammer.example" > CNAME
     mkdir -p public
-    echo "scripthammer.com" > public/CNAME
+    echo "scripthammer.example" > public/CNAME
     echo "export const projectName = 'ScriptHammer';" > src/components/Logo.tsx
     printf 'lockfileBrand: ScriptHammer\n' > pnpm-lock.yaml
 
@@ -801,6 +807,117 @@ test_auth_config_desired_state() {
         log_pass "Lists the override variables"
     else
         log_fail "Auth-config warning omits variables" "every AUTH_* name" "missing:$missing"
+    fi
+
+    cd "$REPO_ROOT"
+}
+
+##
+# #983: the content sweep rewrote `<brand>.com` like any other brand token, minting
+# `<fork-slug>.com` — a well-formed domain nobody registered. #961 is the same defect
+# one file over, in public/CNAME, where the gate approved `geo-larp.com` because it
+# asked whether the hostname was VALID rather than whether it was OWNED.
+#
+# Measured on a real rebrand of this repository before the fix: 78 tracked files, and
+# seven of them read by a machine — Supabase auth redirects, the payment-receipt
+# sender, the Disqus thread URL shipped to browsers, the seeded admin, the smoke
+# baseURL, the deploy SITE_URL fallback, and robots.txt.
+#
+# The replacement is decided by SYNTAX, so this asserts each shape separately. A test
+# that only checked "no <slug>.com survives" would pass on a script that deleted every
+# URL in the repository.
+##
+test_no_invented_domain() {
+    run_test "test_no_invented_domain"
+    setup_temp_dir
+
+    mkdir -p scripts/supabase docs
+    cat > scripts/supabase/auth-config.json <<'AUTHCONF'
+{
+  "site_url": "${AUTH_SITE_URL:-https://scripthammer.com}",
+  "uri_allow_list": "${AUTH_URI_ALLOW_LIST:-https://scripthammer.com,https://scripthammer.com/**,https://www.scripthammer.com,https://www.scripthammer.com/**,http://localhost:3000}",
+  "smtp_admin_email": "${AUTH_SMTP_ADMIN_EMAIL:-noreply@scripthammer.com}"
+}
+AUTHCONF
+    cat > docs/domain-shapes.md <<'SHAPES'
+apex-url: https://scripthammer.com/sitemap.xml
+www-url: https://www.scripthammer.com/blog
+email: noreply@scripthammer.com
+bare: scripthammer.com
+bare-www: www.scripthammer.com
+SHAPES
+    git add -A >/dev/null 2>&1
+
+    "$TEMP_DIR/scripts/rebrand.sh" "Grand Daze" "acmecorp" "Test desc" --force --no-icon \
+        >/dev/null 2>&1 || true
+
+    local origin="https://acmecorp.github.io/grand-daze"
+    local shapes="$TEMP_DIR/docs/domain-shapes.md"
+    local conf="$TEMP_DIR/scripts/supabase/auth-config.json"
+
+    # 1. NOTHING may carry the minted domain. This is the headline assertion, and the
+    #    one that fails against the pre-fix script in 78 files.
+    local minted
+    minted=$(cd "$TEMP_DIR" && git grep -lE '[A-Za-z-]*daze\.com' -- . 2>/dev/null || true)
+    if [ -z "$minted" ]; then
+        log_pass "No file names a domain the fork does not own"
+    else
+        log_fail "Invented domain" "no <slug>.com anywhere" "$minted"
+    fi
+
+    # 2. A URL becomes the fork's real Pages origin — derived, not guessed, and equal
+    #    to what scripts/site-url.js resolves with no NEXT_PUBLIC_DEPLOY_URL set.
+    if grep -q "^apex-url: ${origin}/sitemap.xml$" "$shapes"; then
+        log_pass "https://<brand>.com becomes the fork's Pages origin"
+    else
+        log_fail "Apex URL" "apex-url: ${origin}/sitemap.xml" "$(grep '^apex-url:' "$shapes")"
+    fi
+    if grep -q "^www-url: ${origin}/blog$" "$shapes"; then
+        log_pass "https://www.<brand>.com becomes the fork's Pages origin"
+    else
+        log_fail "www URL" "www-url: ${origin}/blog" "$(grep '^www-url:' "$shapes")"
+    fi
+
+    # 3. An email domain cannot be derived from a project name, so it becomes a
+    #    reserved placeholder that reads as one.
+    if grep -q '^email: noreply@example\.com$' "$shapes"; then
+        log_pass "An email domain becomes the reserved placeholder"
+    else
+        log_fail "Email domain" "email: noreply@example.com" "$(grep '^email:' "$shapes")"
+    fi
+    if grep -q '^bare: example\.com$' "$shapes" && grep -q '^bare-www: example\.com$' "$shapes"; then
+        log_pass "A bare hostname becomes the reserved placeholder"
+    else
+        log_fail "Bare hostname" "example.com for both bare forms" \
+            "$(grep -E '^bare' "$shapes" | tr '\n' ' ')"
+    fi
+
+    # 4. The Supabase desired state is the highest-consequence consumer: site_url is
+    #    where every verification and reset link a fork sends will point.
+    if grep -qF "\"site_url\": \"\${AUTH_SITE_URL:-${origin}}\"" "$conf"; then
+        log_pass "Supabase site_url points at a host that resolves"
+    else
+        log_fail "auth site_url" "\${AUTH_SITE_URL:-${origin}}" "$(grep site_url "$conf")"
+    fi
+
+    # 5. …and its allow list must not repeat itself. The apex and www forms collapse
+    #    onto one origin, so de-duplication is what keeps the file reviewable.
+    local allow dupes
+    allow=$(sed -nE 's/.*"uri_allow_list": "\$\{[A-Z_]+:-(.*)\}".*/\1/p' "$conf")
+    dupes=$(printf '%s' "$allow" | tr ',' '\n' | sort | uniq -d)
+    if [ -n "$allow" ] && [ -z "$dupes" ]; then
+        log_pass "Allow list carries each origin once"
+    else
+        log_fail "Allow list duplicates" "each entry once" "duplicated:${dupes:-<empty allow list>}"
+    fi
+
+    # 6. NEGATIVE CONTROL. Every assertion above is a grep, and a grep that cannot
+    #    fail proves nothing. Re-run assertion 1's matcher against text that DOES
+    #    carry a minted domain, and require it to catch it.
+    if printf 'ship: https://grand-daze.com/x\n' | grep -qE '[A-Za-z-]*daze\.com'; then
+        log_pass "The matcher detects a minted domain when one is present"
+    else
+        log_fail "Negative control" "the minted-domain matcher fires on grand-daze.com" "it did not"
     fi
 
     cd "$REPO_ROOT"
@@ -1981,6 +2098,7 @@ run_all_tests() {
     test_brand_icons
     test_component_identifiers_are_valid
     test_auth_config_desired_state
+    test_no_invented_domain
     test_harness_survives_rebrand
 
     echo ""
@@ -2029,6 +2147,9 @@ if [ $# -eq 1 ]; then
             ;;
         test_auth_config_desired_state)
             test_auth_config_desired_state
+            ;;
+        test_no_invented_domain)
+            test_no_invented_domain
             ;;
         test_discovery_is_git_tracked)
             test_discovery_is_git_tracked
