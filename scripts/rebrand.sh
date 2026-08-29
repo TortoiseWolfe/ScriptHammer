@@ -1071,6 +1071,41 @@ UPSTREAM_OWNER_SENTINEL="@@REBRAND_UPSTREAM_OWNER@@"
 UPSTREAM_NAME_SENTINEL="@@REBRAND_UPSTREAM_NAME@@"
 SELF_REPO_SENTINEL="@@REBRAND_SELF_REPO@@"
 
+# THE SWEEP MUST NOT MINT A HOSTNAME (#983).
+#
+# `<brand>.com` is a brand token in a tracked file, so the content sweep rewrites it
+# like any other — turning this template's domain into `<fork-slug>.com`, a perfectly
+# well-formed domain that nobody registered. #961 already learned this one file over,
+# in public/CNAME, where the gate approved `geo-larp.com` for exactly the same reason:
+# validity was the wrong question, ownership is the question.
+#
+# Measured on a real rebrand of this repository: 78 tracked files, 139 occurrences, and
+# SEVEN of them are read by a machine rather than a human —
+#
+#   scripts/supabase/auth-config.json   site_url, uri_allow_list and the mail sender
+#                                       PUSHED to Supabase, so every verification and
+#                                       reset link points at a domain that does not
+#                                       resolve. Signup is broken, silently.
+#   supabase/functions/send-payment-email  the From: of every payment receipt, on a
+#                                       domain with no SPF or DKIM — so it is rejected
+#                                       or filed as spam.
+#   src/components/molecular/DisqusComments.tsx  the fallback thread URL, shipped to
+#                                       the browser; comments key off the dead host.
+#   scripts/seed-test-users.ts          seeds the welcome-message admin there.
+#   playwright.smoke.config.ts          the default baseURL of the post-deploy smoke.
+#   .github/workflows/deploy.yml        the SITE_URL fallback.
+#   public/robots.txt                   advertises a sitemap nobody can fetch.
+#
+# Same mechanism as the citations above: park it behind a sentinel that carries no
+# brand text, then hand back an HONEST value once the sweep has run.
+BRAND_DOMAIN_SENTINEL="@@REBRAND_BRAND_DOMAIN@@"
+
+# RFC 2606 reserves example.com precisely so it can never be registered. An email
+# domain cannot be derived from a project name — there is no honest guess — so this is
+# a placeholder the forker must replace, and one that reads as a placeholder. The same
+# call as CNAME: say you do not know, rather than invent something plausible.
+PLACEHOLDER_DOMAIN="example.com"
+
 # WHICH URLS ARE CITATIONS, AND WHICH ARE THE FORK'S OWN IDENTITY.
 #
 # Not every `github.com/OWNER/ScriptHammer` points at the template. package.json's # rebrand:keep
@@ -1130,6 +1165,108 @@ protect_upstream_citations() {
     replace_in_files \
         "github\.com/$SELF_REPO_SENTINEL" \
         "github.com/$ORIGINAL_OWNER/$ORIGINAL_NAME"
+}
+
+# Park the template's own hostname so no pass can rewrite it. Must run BEFORE the
+# content sweep, for the same reason classify_cname does: afterwards the text that
+# identifies it is already gone.
+#
+# Two passes because the case-preserving engine projects case: the hostname appears
+# lowercase (201×) and in the canonical spelling (5×), and a plain sed sees them as
+# different strings. Both land on the same sentinel — the distinction that survives is
+# the SYNTACTIC one made in resolve_brand_domain, not the capitalisation.
+protect_brand_domain() {
+    # public/CNAME is EXEMPT, and deliberately so. update_cname() is that file's only
+    # writer: it deletes an inherited domain, keeps a custom one, and honours
+    # --keep-cname, and every one of those decisions is tested. A second writer
+    # reaching into it is the coupling that produced #961 in the first place. Snapshot
+    # it across the window so the sweep sees exactly what it sees today.
+    local cname_file="$REPO_ROOT/public/CNAME"
+    local cname_before=""
+    [ -f "$cname_file" ] && cname_before=$(cat "$cname_file")
+
+    replace_in_files "$ORIGINAL_NAME\.com" "$BRAND_DOMAIN_SENTINEL"
+    replace_in_files "$ORIGINAL_NAME_LOWER\.com" "$BRAND_DOMAIN_SENTINEL"
+
+    if [ -n "$cname_before" ] && [ "$DRY_RUN" = false ]; then
+        printf '%s\n' "$cname_before" > "$cname_file"
+    fi
+}
+
+# Hand the parked hostname back as something true.
+#
+# THE ANSWER DEPENDS ON SYNTAX, and there are only two answers:
+#
+#   a URL     → the fork's GitHub Pages origin. Real, reachable, and derived rather
+#               than guessed: it is exactly what scripts/site-url.js resolves to with
+#               no NEXT_PUBLIC_DEPLOY_URL set, which is the state every fresh fork is
+#               in. So the committed artifacts agree with what a build produces
+#               instead of drifting from it (#504).
+#   an email  → example.com. See PLACEHOLDER_DOMAIN.
+#
+# Deliberately NOT derived from public/CNAME even when one survives --keep-cname:
+# site-url.js refuses to do that on purpose, because this repository's CNAME names the
+# `www` host while its canonical origin is the apex, and a generated URL at the wrong
+# host is the same SEO failure in a new place. A fork with a domain sets
+# NEXT_PUBLIC_DEPLOY_URL, and the next build rewrites the generated artifacts anyway.
+#
+# Ordered longest-match first, because sed is not a parser: `https://www.` has to be
+# claimed before `https://`, and both before the bare form.
+resolve_brand_domain() {
+    local pages_origin="https://$(printf '%s' "$OWNER" | tr '[:upper:]' '[:lower:]').github.io/${SANITIZED_NAME}"
+
+    replace_in_files "https://www\.$BRAND_DOMAIN_SENTINEL" "$pages_origin"
+    replace_in_files "http://www\.$BRAND_DOMAIN_SENTINEL" "$pages_origin"
+    replace_in_files "https://$BRAND_DOMAIN_SENTINEL" "$pages_origin"
+    replace_in_files "http://$BRAND_DOMAIN_SENTINEL" "$pages_origin"
+    replace_in_files "www\.$BRAND_DOMAIN_SENTINEL" "$PLACEHOLDER_DOMAIN"
+    replace_in_files "$BRAND_DOMAIN_SENTINEL" "$PLACEHOLDER_DOMAIN"
+}
+
+# `https://<brand>.com` and `https://www.<brand>.com` are different strings that both
+# resolve to one origin, so the allow list comes out of resolve_brand_domain carrying
+# the same entry twice. Harmless to Supabase and confusing to a human, and this file is
+# tracked to BE read — it is the desired state auth-config-drift.yml compares a live
+# project against.
+#
+# Order-preserving, first-occurrence-wins: the list's shape (origin, origin/**, then
+# the localhost pair) is what makes it reviewable, so it must survive deduplication.
+dedupe_auth_allow_list() {
+    local conf="$REPO_ROOT/scripts/supabase/auth-config.json"
+
+    [ -f "$conf" ] || return 0
+    if [ "$DRY_RUN" = true ]; then
+        log_verbose "[DRY-RUN] Would de-duplicate auth-config.json uri_allow_list"
+        return 0
+    fi
+
+    if node -e '
+        const fs = require("fs");
+        const file = process.argv[1];
+        const raw = fs.readFileSync(file, "utf8");
+        // RAW TEXT, not parse-and-reserialize. JSON.stringify would drop the blank
+        // line that separates the OAuth block from the rest, so a de-duplication
+        // would arrive as a whole-file reformat in the first diff a fork sees.
+        const line = /("uri_allow_list":\s*")([^"]*)(")/;
+        const found = line.exec(raw);
+        if (!found) process.exit(0);
+        const value = found[2];
+        const envelope = /^(\$\{[A-Z_]+:-)(.*)(\})$/.exec(value);
+        const [prefix, body, suffix] = envelope
+            ? [envelope[1], envelope[2], envelope[3]]
+            : ["", value, ""];
+        const entries = body.split(",").map((s) => s.trim()).filter(Boolean);
+        const deduped = [...new Set(entries)];
+        if (deduped.length === entries.length) process.exit(0);
+        fs.writeFileSync(
+            file,
+            raw.replace(line, found[1] + prefix + deduped.join(",") + suffix + found[3])
+        );
+    ' "$conf" 2>/dev/null; then
+        mark_modified "$conf"
+    else
+        log_warning "Could not de-duplicate scripts/supabase/auth-config.json uri_allow_list; check it by hand"
+    fi
 }
 
 restore_upstream_citations() {
@@ -1529,6 +1666,10 @@ main() {
     # Hide upstream citations from every pass (#926).
     protect_upstream_citations
 
+    # Same, for the template's own hostname (#983). A domain is not a brand token to
+    # be projected — it is something somebody registered.
+    protect_brand_domain
+
     echo "Updating file contents..."
     if [ "$same_brand" = false ]; then
         # One ASCII-case-insensitive pass handles canonical, lower, title,
@@ -1600,6 +1741,13 @@ main() {
     # invisible to it by construction — the substitution never saw them either —
     # and test_upstream_citations_survive is what actually covers them.
     restore_upstream_citations
+
+    # Same position, same argument (#983): the sentinel carries no brand text, so the
+    # residual verifier could not have seen these either way — and the honest values
+    # this writes contain the FORK's owner and repository, which is precisely what a
+    # gate asking "did anything get missed?" would flag if it ran afterwards.
+    resolve_brand_domain
+    dedupe_auth_allow_list
 
     # LAST MUTATION, and the position is load-bearing (#961).
     #
