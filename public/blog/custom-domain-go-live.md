@@ -76,19 +76,23 @@ The steps that follow have a **Pages path** and a **Vercel path** where they dif
 
 A Next.js app deployed to `github.io/YourApp` runs under a **basePath** of `/YourApp` — every asset and link is prefixed with it. A custom apex domain serves from the **root** (`/`), so the basePath must be **dropped**. If you forget, every asset 404s at the new domain.
 
-Well-built templates automate this. In ScriptHammer-based apps, the basePath is auto-detected: it's set to `/RepoName` **only when no `public/CNAME` file exists**. So adding the CNAME file is the single switch that both configures the domain _and_ drops the basePath:
+Well-built templates automate this. In ScriptHammer-based apps the basePath is derived from **configuration**: it's `/RepoName` unless a custom domain is declared. Declaring the domain is the single switch that both configures it _and_ drops the basePath:
 
 ```js
 // scripts/detect-project.js — the load-bearing line
 const basePath =
-  isGitHubActions && isGitHub && !cnameExists ? `/${projectName}` : '';
+  isGitHubActions && isGitHub && !customDomain ? `/${projectName}` : '';
 ```
 
-Add `public/CNAME` with one line — your canonical domain:
+Set it in `config/deployment.json`:
 
-```text
-heldpaws.com
+```json
+{ "customDomain": "heldpaws.com" }
 ```
+
+`public/CNAME` still ships — GitHub Pages needs it in the published artifact — but it is **generated** from that key during `prebuild`, alongside the manifest, sitemap and feeds. You do not create or commit it.
+
+This used to be the file's job on its own, and the file's mere **existence** was the setting: you could not comment it, could not empty it, and the only way to turn it off was to delete it. That is a magic file pretending to be a config value, and it cost this project two issues — one where a rebrand invented a domain nobody owned, another where the opt-out flag kept one.
 
 Commit it. On the next build, `basePath` becomes `''` and the app serves from root.
 
@@ -157,23 +161,25 @@ Verify: `curl -s https://heldpaws.com/manifest.json` shows `scope` and `start_ur
 
 ## 🔧 The invariant that just inverted
 
-One last thing that saves a future headache. If your template auto-detects basePath from the presence of `public/CNAME` (as above), then **your project's own documentation probably says "`public/CNAME` must NOT exist."** That rule was correct _while you were on the project URL_. The moment you go live, it inverts: **`public/CNAME` must now exist and must survive future merges** — or a routine upstream sync could delete it and silently knock you back to the project URL.
+One last thing that saves a future headache — and the reason the section above changed.
 
-Update that note in your `CLAUDE.md` / README as part of go-live, so nobody (human or agent) "cleans up" the CNAME six months from now.
+If your template keys basePath off the **presence** of a file, then its docs say "this file must NOT exist", and that rule is correct only while you are on the project URL. The moment you go live it inverts: the file must now exist _and survive every future merge_, or a routine upstream sync deletes it and silently knocks you back to the project URL.
+
+An inverting invariant is a bad invariant. The fix is to stop encoding a setting as a file's existence: put the domain in configuration, generate the file from it, and the rule stops depending on which side of go-live you are on. If you are still on a version that reads the file, move the value into config as part of go-live rather than writing a note asking people not to clean it up.
 
 ## 🎯 Launch checklist
 
 ```text
 [ ] Canonical domain chosen; others set to 301-redirect to it
 [ ] Host chosen (Pages: static + registrar/Cloudflare redirects | Vercel: all-in-one)
-[ ] public/CNAME added → basePath drops to ''
+[ ] customDomain set in config → basePath drops to '' and CNAME is generated
 [ ] DNS records live; dig resolves; HTTPS enforced
 [ ] Non-canonical domains 301 → canonical
 [ ] Supabase Site URL + redirect allow-list updated (trailing slashes!)
 [ ] Server + build env vars set to the new domain; redeployed
 [ ] All 4 auth/payment flows verified end-to-end on the new domain
 [ ] PWA manifest scope = /, app installs from the new domain
-[ ] The "CNAME must not exist" note inverted in project docs
+[ ] No doc left saying "CNAME must not exist" — the rule is configuration now
 ```
 
 Go in order, verify each step before the next, and the launch is boring — which is exactly what you want a launch to be. The single highest-risk item is Step 4: change the domain, forget the Supabase allow-list, and the app _looks_ live while every new sign-up quietly fails. Test it with a real fresh email before you tell anyone the doors are open.

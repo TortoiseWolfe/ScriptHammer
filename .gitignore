@@ -76,6 +76,19 @@ public/cesium/
 
 public/TASKS.md
 
+# public/CNAME IS GENERATED NOW (#980), from config/deployment.json.
+#
+# It used to be tracked, and its EXISTENCE — never its contents — was what decided the
+# GitHub Pages base path. That made it the only deploy configuration in the project you
+# could not comment, could not empty, and could only change by deleting; #961 exists
+# because a rebrand wrote a domain nobody owned into it.
+#
+# The rule below only does anything because `git rm --cached` ran in the same commit.
+# An ignore rule alone does NOTHING to a tracked file, and `git check-ignore` is
+# index-aware so it reports "not ignored" while the rule sits right there — exactly what
+# happened to manifest.json for months, per the note below.
+/public/CNAME
+
 # public/manifest.json IS TRACKED ON PURPOSE, so it has no rule here (#392).
 #
 # A rule for it sat on this line for months and did nothing: ignore rules do not
