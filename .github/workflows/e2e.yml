@@ -112,8 +112,26 @@ jobs:
   #
   # To bypass deliberately, dispatch with a reason — the reason is the audit trail:
   #   gh workflow run e2e.yml -f budget_override='verifying the #575 cutover'
+  #
+  # A FORK HAS NO HOSTED BACKEND, so this whole lane has nothing to run against
+  # (#985). Before this, a fresh fork's first push failed here — and failed for a
+  # deliberate reason: #949 made an unidentifiable backend BLOCK rather than warn,
+  # precisely so a fork could not run the expensive lane against an unmetered project.
+  #
+  # Skipping is strictly stronger than blocking and says the true thing. The lane does
+  # not run either way; the difference is only whether a new forker is taught that red
+  # checks are normal. #949's protection is untouched: a ref that disagrees with the
+  # counted backend still blocks, because that case HAS a ref.
+  #
+  # A repository VARIABLE, so it is testable in a job-level `if:` — the `secrets`
+  # context is not. That also makes the gate the same knob a fork sets to adopt the
+  # guard, rather than a second thing to discover.
+  #
+  # `hosted-lane-status` below always runs and says which way this went, so a skipped
+  # lane is visible rather than silent.
   budget:
     name: Cloud-quota budget
+    if: vars.SUPABASE_PROJECT_REF != ''
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -155,6 +173,26 @@ jobs:
           # days and counted runs billed to the deleted project.
           E2E_BUDGET_BACKEND_EPOCH: ${{ vars.E2E_BUDGET_BACKEND_EPOCH }}
         run: node scripts/ci/e2e-budget-guard.mjs
+
+  # Says out loud which way the gate above went. Without this a fork sees an entire
+  # workflow quietly do nothing, which is a different bad signal from the red one it
+  # replaces — and this repo would lose its hosted lane in silence if the variable were
+  # ever unset.
+  hosted-lane-status:
+    name: Hosted E2E lane
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Say whether the hosted lane can run
+        env:
+          PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: |
+          set -euo pipefail
+          if [ -n "$PROJECT_REF" ]; then
+            echo "  hosted backend configured — the metered lane runs"
+            exit 0
+          fi
+          echo "::notice::Hosted E2E skipped: no SUPABASE_PROJECT_REF repository variable, so there is no backend to run against or meter. Your PR coverage comes from the E2E (local Supabase) lane, which needs no secrets. Set SUPABASE_PROJECT_REF to enable this one."
 
   # ============================================
   # STEP 1: Build once, cache for all shards
