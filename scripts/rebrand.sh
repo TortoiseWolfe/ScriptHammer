@@ -1663,6 +1663,38 @@ main() {
     # Read the CNAME verdict before the sweep rewrites the file out from under it.
     classify_cname
 
+    # --keep-cname ON AN INHERITED DOMAIN IS INCOHERENT, AND IT USED TO SUCCEED (#995).
+    #
+    # The flag exists for a fork migrating in a domain it already owns. Pointed at the
+    # template's own CNAME it kept a domain nobody owned: update_cname() returns at its
+    # KEEP_CNAME branch BEFORE consulting CNAME_IS_INHERITED, so the verdict computed
+    # two lines above was thrown away, and what survived was whatever the content sweep
+    # had rewritten the file to — `www.<fork-slug>.com`.
+    #
+    # That is worse than an ordinary wrong string, because public/CNAME's EXISTENCE is
+    # what drops the Pages base path (detect-project.js:123). The result is a fork
+    # serving from /<repo>/ with every asset URL rooted at /, so all of them 404 — the
+    # exact failure #961 was filed for, reached through the one door it left open.
+    #
+    # Refused in PREFLIGHT, before any mutation, so a rejected run leaves the tree
+    # untouched rather than half-rebranded. The verdict already exists at this point;
+    # the bug was never that it was unknowable, only that nobody asked.
+    if [ "$KEEP_CNAME" = true ] && [ "${CNAME_IS_INHERITED:-false}" = true ]; then
+        log_error "--keep-cname was passed, but public/CNAME still holds the template's domain."
+        echo ""
+        echo "     public/CNAME: $(cat "$REPO_ROOT/public/CNAME" 2>/dev/null)"
+        echo ""
+        echo "     That domain belongs to ${ORIGINAL_NAME}, not to you, and keeping it does not"
+        echo "     give you a site: the file's mere EXISTENCE drops the GitHub Pages base path,"
+        echo "     so a fork served from /<repo>/ 404s every asset (#961)."
+        echo ""
+        echo "     --keep-cname is for a domain you ALREADY OWN. Either:"
+        echo "       • drop the flag — the file is removed, and you add it back when you own one"
+        echo "       • or put your own domain in public/CNAME first, then pass --keep-cname"
+        echo ""
+        exit 1
+    fi
+
     # Hide upstream citations from every pass (#926).
     protect_upstream_citations
 
