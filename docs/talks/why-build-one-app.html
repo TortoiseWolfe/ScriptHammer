@@ -510,6 +510,59 @@
       background: var(--ground);
     }
   }
+
+  /* The up-front configuration table. 38 rows is a lot for one slide, so it
+         scrolls inside its own box rather than pushing the page wide. */
+  .envtable {
+    max-height: 46vh;
+    overflow: auto;
+    border: 1px solid color-mix(in oklab, currentColor 18%, transparent);
+    border-radius: 8px;
+  }
+  .envtable table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.62em;
+  }
+  .envtable th,
+  .envtable td {
+    text-align: left;
+    padding: 0.3em 0.6em;
+    vertical-align: top;
+    border-bottom: 1px solid color-mix(in oklab, currentColor 10%, transparent);
+  }
+  .envtable thead th {
+    position: sticky;
+    top: 0;
+    background: var(--bg, #14161c);
+  }
+  .envtable .grp {
+    font-size: 1.05em;
+    padding-top: 0.9em;
+  }
+  .envtable .sec {
+    white-space: nowrap;
+    font-weight: 700;
+  }
+  .envtable .var {
+    white-space: nowrap;
+    opacity: 0.85;
+  }
+
+  /* This slide trades headline scale for rows: 38 values do not fit at the
+         narrative slides' type sizes, and the table is the point of it. */
+  .slide.dense h2 {
+    font-size: clamp(1.6rem, 3.2vw, 2.4rem);
+    margin-bottom: 0.35em;
+  }
+  .slide.dense .lede {
+    font-size: 0.82em;
+    line-height: 1.45;
+    margin-bottom: 0.7em;
+  }
+  .slide.dense .envtable {
+    max-height: 62vh;
+  }
 </style>
 
 <div class="deck">
@@ -800,6 +853,288 @@
       sentence. The GitHub account already authenticated in this terminal
       becomes the owner. I will write it on the board and then we are building
       it.
+    </aside>
+    <div class="rail"><span></span></div>
+  </section>
+
+  <!-- Before the demo: the complete configuration surface ─────────────────── -->
+  <section class="slide dense">
+    <p class="eyebrow">Before the demo</p>
+    <h2>Everything you need, and where it goes</h2>
+    <p class="lede">
+      Before the rebrand script: <strong>nothing</strong> — a name, an owner, a
+      description, <code>--icon</code>. Everything below configures the
+      <em>deployed</em> site, in
+      <strong>Settings &rarr; Secrets and variables</strong>.
+      <strong>That page has two tabs and the choice is load-bearing</strong>:
+      the deploy reads Supabase from <em>Variables</em>, so filing it under
+      Secrets ships a green deploy with no backend. One row stops a site
+      existing; the rest fail silently.
+    </p>
+    <div class="envtable">
+      <table>
+        <thead>
+          <tr>
+            <th>Value</th>
+            <th>Tab</th>
+            <th>Without it</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th colspan="3" class="grp">Stops the deploy</th>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_PAGESPEED_API_KEY</code></td>
+            <td class="sec">Secret</td>
+            <td>
+              The ONLY hard stop. deploy.yml exits before `pnpm build`, so no
+              site is ever published. Nothing in the app reads it (#987).
+            </td>
+          </tr>
+          <tr>
+            <th colspan="3" class="grp">Stops the app working</th>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_SUPABASE_URL</code></td>
+            <td class="var">Variable</td>
+            <td>
+              No accounts, payments or messaging. The site builds and shows a
+              "not configured" banner.
+            </td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></td>
+            <td class="var">Variable</td>
+            <td>
+              Same. Both are VARIABLES — put them in Secrets and they arrive
+              empty, the deploy goes green, and the site ships with no backend.
+            </td>
+          </tr>
+          <tr>
+            <th colspan="3" class="grp">
+              Makes the site advertise the wrong address
+            </th>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_DEPLOY_URL</code></td>
+            <td class="var">Variable</td>
+            <td>
+              Canonicals, sitemap, robots.txt and og:image fall back to a
+              github.io origin. retain-previous-assets.mjs crawls the TEMPLATE's
+              site instead of yours.
+            </td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_SITE_URL</code></td>
+            <td class="var">Variable</td>
+            <td>Same family: the origin the app reports as its own.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_BASE_URL</code></td>
+            <td class="var">Variable</td>
+            <td>Same family.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_PROJECT_NAME</code></td>
+            <td class="var">Variable</td>
+            <td>
+              Overrides the name detect-project.js derives from the git remote.
+              Usually unnecessary.
+            </td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_PROJECT_OWNER</code></td>
+            <td class="var">Variable</td>
+            <td>
+              Overrides the owner detect-project.js derives from the git remote.
+            </td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION</code></td>
+            <td class="var">Variable</td>
+            <td>
+              The Search Console meta tag is skipped, so verification never
+              ships and nothing says so (#917).
+            </td>
+          </tr>
+          <tr>
+            <th colspan="3" class="grp">
+              Author identity on posts and the about surface
+            </th>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_AUTHOR_NAME</code></td>
+            <td class="var">Variable</td>
+            <td>Bylines fall back to the git owner.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_AUTHOR_EMAIL</code></td>
+            <td class="var">Variable</td>
+            <td>Contact link on author surfaces is omitted.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_AUTHOR_AVATAR</code></td>
+            <td class="var">Variable</td>
+            <td>No author image.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_AUTHOR_BIO</code></td>
+            <td class="var">Variable</td>
+            <td>No author bio.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_AUTHOR_ROLE</code></td>
+            <td class="var">Variable</td>
+            <td>No role line.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_AUTHOR_GITHUB</code></td>
+            <td class="var">Variable</td>
+            <td>Social link omitted.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_AUTHOR_LINKEDIN</code></td>
+            <td class="var">Variable</td>
+            <td>Social link omitted.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_AUTHOR_TWITTER</code></td>
+            <td class="var">Variable</td>
+            <td>Social link omitted.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_AUTHOR_BLUESKY</code></td>
+            <td class="var">Variable</td>
+            <td>Social link omitted.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_AUTHOR_MASTODON</code></td>
+            <td class="var">Variable</td>
+            <td>Social link omitted.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_AUTHOR_TWITCH</code></td>
+            <td class="var">Variable</td>
+            <td>Social link omitted.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_AUTHOR_WEBSITE</code></td>
+            <td class="var">Variable</td>
+            <td>Social link omitted.</td>
+          </tr>
+          <tr>
+            <th colspan="3" class="grp">Payments</th>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY</code></td>
+            <td class="var">Variable</td>
+            <td>Card checkout unavailable.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_PAYPAL_CLIENT_ID</code></td>
+            <td class="sec">Secret</td>
+            <td>PayPal button unavailable.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_CASHAPP_CASHTAG</code></td>
+            <td class="var">Variable</td>
+            <td>Cash App option hidden.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_CHIME_SIGN</code></td>
+            <td class="var">Variable</td>
+            <td>Chime option hidden.</td>
+          </tr>
+          <tr>
+            <th colspan="3" class="grp">Contact and email</th>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY</code></td>
+            <td class="sec">Secret</td>
+            <td>
+              The contact form cannot deliver. Production shipped this empty
+              once, leaving /contact/ with no working channel (#784).
+            </td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_EMAILJS_PUBLIC_KEY</code></td>
+            <td class="sec">Secret</td>
+            <td>EmailJS fallback disabled.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_EMAILJS_SERVICE_ID</code></td>
+            <td class="var">Variable</td>
+            <td>EmailJS fallback disabled.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_EMAILJS_TEMPLATE_ID</code></td>
+            <td class="var">Variable</td>
+            <td>EmailJS fallback disabled.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_SUPPORT_EMAIL</code></td>
+            <td class="var">Variable</td>
+            <td>
+              No mailto is rendered when the form cannot deliver. Empty by
+              default ON PURPOSE — a hardcoded address would put the template
+              maintainer's inbox on every fork.
+            </td>
+          </tr>
+          <tr>
+            <th colspan="3" class="grp">Analytics, monitoring and extras</th>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_GA_MEASUREMENT_ID</code></td>
+            <td class="var">Variable</td>
+            <td>No Google Analytics.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_SENTRY_DSN</code></td>
+            <td class="sec">Secret</td>
+            <td>No error reporting.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_DISQUS_SHORTNAME</code></td>
+            <td class="var">Variable</td>
+            <td>Blog comments disabled.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_CALENDAR_PROVIDER</code></td>
+            <td class="var">Variable</td>
+            <td>Scheduling embed disabled.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_CALENDAR_URL</code></td>
+            <td class="var">Variable</td>
+            <td>Scheduling embed disabled.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_CAPTCHA_SITE_KEY</code></td>
+            <td class="var">Variable</td>
+            <td>Sign-up captcha disabled.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_SITE_TWITTER_HANDLE</code></td>
+            <td class="var">Variable</td>
+            <td>twitter:site omitted from cards.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_SOCIAL_PLATFORMS</code></td>
+            <td class="var">Variable</td>
+            <td>Share buttons fall back to defaults.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <aside class="notes">
+      This is the slide to photograph. Two tabs on one settings page, and the
+      difference matters: the deploy reads Supabase from Variables, so putting
+      those under Secrets hands you an empty string, a green check, and a site
+      with no backend. Exactly one value stops the deploy outright, and it is
+      the PageSpeed key, which nothing in the app actually reads. Everything
+      below it fails quietly. This table is generated from the deploy workflow
+      rather than typed, so it cannot drift from what the pipeline really reads.
     </aside>
     <div class="rail"><span></span></div>
   </section>

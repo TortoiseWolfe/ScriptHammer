@@ -165,6 +165,119 @@ This template static-exports to GitHub Pages — there's no Next.js server runti
 
 Set them via: `https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/settings/functions` → Edge Function Secrets, or via CLI: `docker compose exec scripthammer supabase secrets set KEY=value`.
 
+## What you need in your hand
+
+**Before running `rebrand.sh`: nothing.** It takes three arguments and an icon flag —
+`<PROJECT_NAME> <OWNER> "<DESCRIPTION>"` plus `--icon <mark>` or `--no-icon`. No keys, no
+accounts, no `.env`.
+
+Everything below is for the **deployed** site, and it goes in one place:
+
+> GitHub → your repo → **Settings → Secrets and variables → Actions**
+
+**That page has two tabs, and which one you use is load-bearing.** `deploy.yml` reads Supabase
+from `vars.*`. Put those in **Secrets** and they arrive as empty strings: the deploy goes green
+and the site ships with no backend, with nothing anywhere saying so.
+
+`.env` is a different thing entirely — local development only, gitignored, and never read by a
+deploy. Copy it from `.env.example` after rebranding, so it picks up your project's values.
+
+Only the first row stops a site existing. **Everything else fails silently**, which is why the
+whole list is here rather than the four that usually matter.
+
+<!-- env-inventory:start -->
+
+#### Stops the deploy
+
+| Value                           | Tab    | Without it                                                                                                                  |
+| ------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_PAGESPEED_API_KEY` | Secret | The ONLY hard stop. deploy.yml exits before `pnpm build`, so no site is ever published. Nothing in the app reads it (#987). |
+
+#### Stops the app working
+
+| Value                           | Tab      | Without it                                                                                                                       |
+| ------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Variable | No accounts, payments or messaging. The site builds and shows a "not configured" banner.                                         |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Variable | Same. Both are VARIABLES — put them in Secrets and they arrive empty, the deploy goes green, and the site ships with no backend. |
+
+#### Makes the site advertise the wrong address
+
+| Value                                  | Tab      | Without it                                                                                                                                            |
+| -------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_DEPLOY_URL`               | Variable | Canonicals, sitemap, robots.txt and og:image fall back to a github.io origin. retain-previous-assets.mjs crawls the TEMPLATE's site instead of yours. |
+| `NEXT_PUBLIC_SITE_URL`                 | Variable | Same family: the origin the app reports as its own.                                                                                                   |
+| `NEXT_PUBLIC_BASE_URL`                 | Variable | Same family.                                                                                                                                          |
+| `NEXT_PUBLIC_PROJECT_NAME`             | Variable | Overrides the name detect-project.js derives from the git remote. Usually unnecessary.                                                                |
+| `NEXT_PUBLIC_PROJECT_OWNER`            | Variable | Overrides the owner detect-project.js derives from the git remote.                                                                                    |
+| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Variable | The Search Console meta tag is skipped, so verification never ships and nothing says so (#917).                                                       |
+
+#### Author identity on posts and the about surface
+
+| Value                         | Tab      | Without it                                  |
+| ----------------------------- | -------- | ------------------------------------------- |
+| `NEXT_PUBLIC_AUTHOR_NAME`     | Variable | Bylines fall back to the git owner.         |
+| `NEXT_PUBLIC_AUTHOR_EMAIL`    | Variable | Contact link on author surfaces is omitted. |
+| `NEXT_PUBLIC_AUTHOR_AVATAR`   | Variable | No author image.                            |
+| `NEXT_PUBLIC_AUTHOR_BIO`      | Variable | No author bio.                              |
+| `NEXT_PUBLIC_AUTHOR_ROLE`     | Variable | No role line.                               |
+| `NEXT_PUBLIC_AUTHOR_GITHUB`   | Variable | Social link omitted.                        |
+| `NEXT_PUBLIC_AUTHOR_LINKEDIN` | Variable | Social link omitted.                        |
+| `NEXT_PUBLIC_AUTHOR_TWITTER`  | Variable | Social link omitted.                        |
+| `NEXT_PUBLIC_AUTHOR_BLUESKY`  | Variable | Social link omitted.                        |
+| `NEXT_PUBLIC_AUTHOR_MASTODON` | Variable | Social link omitted.                        |
+| `NEXT_PUBLIC_AUTHOR_TWITCH`   | Variable | Social link omitted.                        |
+| `NEXT_PUBLIC_AUTHOR_WEBSITE`  | Variable | Social link omitted.                        |
+
+#### Payments
+
+| Value                                | Tab      | Without it                 |
+| ------------------------------------ | -------- | -------------------------- |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Variable | Card checkout unavailable. |
+| `NEXT_PUBLIC_PAYPAL_CLIENT_ID`       | Secret   | PayPal button unavailable. |
+| `NEXT_PUBLIC_CASHAPP_CASHTAG`        | Variable | Cash App option hidden.    |
+| `NEXT_PUBLIC_CHIME_SIGN`             | Variable | Chime option hidden.       |
+
+#### Contact and email
+
+| Value                              | Tab      | Without it                                                                                                                                                     |
+| ---------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY` | Secret   | The contact form cannot deliver. Production shipped this empty once, leaving /contact/ with no working channel (#784).                                         |
+| `NEXT_PUBLIC_EMAILJS_PUBLIC_KEY`   | Secret   | EmailJS fallback disabled.                                                                                                                                     |
+| `NEXT_PUBLIC_EMAILJS_SERVICE_ID`   | Variable | EmailJS fallback disabled.                                                                                                                                     |
+| `NEXT_PUBLIC_EMAILJS_TEMPLATE_ID`  | Variable | EmailJS fallback disabled.                                                                                                                                     |
+| `NEXT_PUBLIC_SUPPORT_EMAIL`        | Variable | No mailto is rendered when the form cannot deliver. Empty by default ON PURPOSE — a hardcoded address would put the template maintainer's inbox on every fork. |
+
+#### Analytics, monitoring and extras
+
+| Value                             | Tab      | Without it                           |
+| --------------------------------- | -------- | ------------------------------------ |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID`   | Variable | No Google Analytics.                 |
+| `NEXT_PUBLIC_SENTRY_DSN`          | Secret   | No error reporting.                  |
+| `NEXT_PUBLIC_DISQUS_SHORTNAME`    | Variable | Blog comments disabled.              |
+| `NEXT_PUBLIC_CALENDAR_PROVIDER`   | Variable | Scheduling embed disabled.           |
+| `NEXT_PUBLIC_CALENDAR_URL`        | Variable | Scheduling embed disabled.           |
+| `NEXT_PUBLIC_CAPTCHA_SITE_KEY`    | Variable | Sign-up captcha disabled.            |
+| `NEXT_PUBLIC_SITE_TWITTER_HANDLE` | Variable | twitter:site omitted from cards.     |
+| `NEXT_PUBLIC_SOCIAL_PLATFORMS`    | Variable | Share buttons fall back to defaults. |
+
+<!-- env-inventory:end -->
+
+### Taking a fix from the template later
+
+A repo created with **Use this template** shares no git history with the template, so you cannot
+merge from it by default — but you can still fetch it:
+
+```bash
+git remote add upstream https://github.com/TortoiseWolfe/ScriptHammer.git
+git fetch upstream
+git cherry-pick <commit-sha>
+```
+
+Cherry-pick works across unrelated histories. Where the rebrand renamed something, you get
+ordinary **conflict markers** to resolve rather than a flat refusal — which is the difference
+between a five-minute merge and rewriting the change by hand. Hand-rewriting is how a template
+literal became a literal string in one fork, canonicalising seven pages to `/docs/$%7Bslug%7D/`.
+
 ### Editing a blog post does nothing until you regenerate the index
 
 `public/blog/*.md` is not what the site serves. The blog, the sitemap, the RSS feed and the
