@@ -612,14 +612,16 @@
       nothing here is hidden behind an alias I wrote this morning. Each of the
       four step slides carries the exact form, prompts and preflight included,
       and the AND chain stops at the first failure. Before the talk I export one
-      real PageSpeed API key; the deploy workflow requires it, and it is the
-      single value without which none of this reaches the internet. And the
-      CNAME removal is not tidying, and the script does it for you now: the
-      template ships a public/CNAME naming a domain you do not own, and its mere
-      presence makes the build drop the Pages basePath, so every asset 404s at
-      the URL you actually get. It used to write your slug into that file and
-      hand you a hostname nobody had registered; there is a hand-written rm in
-      older copies of this deck for exactly that reason.
+      real PageSpeed API key. That used to be the one value without which none
+        of this reached the internet; as of #987 the deploy only warns, and the
+        key buys a bigger quota for the live audit on /status. And the
+      custom domain is configuration now rather than a file:
+        config/deployment.json holds it, and public/CNAME is generated from that
+        key. The rebrand sets it to null, because a fork owns no domain yet —
+        and a configured domain makes the build drop the Pages basePath, so
+        every asset 404s at the URL you actually get. Older copies of this deck
+        carry a hand-written rm here, from when the file's mere existence was
+        the setting.
     </aside>
     <div class="rail"><span></span></div>
   </section>
@@ -1210,8 +1212,8 @@
       <span class="c"> Summary</span><br />
       <span class="c">=========================================</span><br />
       <span class="c"
-        >&nbsp;&nbsp;Removed public/CNAME; add it back when you own a
-        domain</span
+        >&nbsp;&nbsp;Custom domain cleared; set it in
+          config/deployment.json</span
       ><br />
       <span class="c"
         >&nbsp;&nbsp;Removed 15 template blog post(s); kept hello-world.md</span
@@ -1225,7 +1227,8 @@
       The first environment copy lets Compose start without borrowing the
       template checkout's Docker project. Rebrand runs inside the builder, where
       its dependencies live; the second copy picks up the new Compose name.
-      There is no custom domain yet, so we remove the generated CNAME.
+      There is no custom domain yet, so the config says null and no CNAME is
+      generated.
     </aside>
     <div class="rail"><span></span></div>
   </section>

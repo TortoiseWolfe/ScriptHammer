@@ -102,7 +102,7 @@ whether the committed set still matches it.
 | **Config** | Updates `package.json` name, description, and repository fields |
 | **Themes** | Renames `scripthammer-dark`/`scripthammer-light` theme blocks to your project name |
 | **Env** | Updates `COMPOSE_PROJECT_NAME` and example commands in `.env.example` |
-| **CNAME** | **Deletes** `public/CNAME` — a fork has no custom domain yet, and the file's presence drops the Pages basePath (unless a real custom domain is already set, or `--keep-cname`) |
+| **Custom domain** | Sets `customDomain` to `null` in `config/deployment.json` — a fork has no custom domain yet (unless one is already configured, or `--keep-cname`). `public/CNAME` is generated from that key, so there is no longer a file to delete |
 | **Blog** | **Removes the template's posts**, keeping only the `hello-world` exemplar, and filters `src/lib/blog/blog-data.json` to match (unless `--keep-blog`) — see below |
 
 ### Script Options
@@ -117,8 +117,8 @@ whether the committed set still matches it.
 # Skip all prompts
 ./scripts/rebrand.sh MyProject myuser "Description" --icon mark.svg --force
 
-# Keep public/CNAME exactly as it is. NOTE: on a fresh fork that file contains
-# ScriptHammer's own domain, so this is only right if you have already replaced it.
+# Keep the configured custom domain. On a fresh fork that is still ScriptHammer's own
+# domain, so the script REFUSES this combination (#995) — set your own first.
 ./scripts/rebrand.sh MyProject myuser "Description" --icon mark.svg --keep-cname
 
 # Preserve SSH format for git remote (if your origin is SSH)
@@ -132,7 +132,7 @@ whether the committed set still matches it.
 | ------------------------ | -------------------------------------------------------------------------------------------------- |
 | `--dry-run`              | Preview changes without modifying files                                                            |
 | `--force`                | Skip all confirmation prompts                                                                      |
-| `--keep-cname`           | Don't update `public/CNAME` file (keep existing domain)                                            |
+| `--keep-cname`           | Keep the configured custom domain. Refused when it is still the template's (#995)                  |
 | `--keep-blog`            | Keep the template's blog posts instead of removing them                                            |
 | `--preserve-ssh`         | Keep SSH format (`git@github.com:`) if currently using SSH                                         |
 | `--preserve-attribution` | **No-op.** Attribution is always kept — see below. Still parses, so scripts passing it don't break |
@@ -372,7 +372,7 @@ After forking, verify everything works:
 - [ ] `git remote -v` shows your repository URL
 - [ ] `.env` has `COMPOSE_PROJECT_NAME=<yourproject>` (not `scripthammer`)
 - [ ] `.env` is owner-only (`chmod 600 .env`) before it contains credentials
-- [ ] `public/CNAME` contains your domain — or is **absent**, which is correct until you own one. Its presence drops the Pages basePath, so a CNAME naming a domain you do not control 404s every asset.
+- [ ] `config/deployment.json` has `"customDomain": null` — correct until you own a domain. Set it to your hostname on the day you point DNS at it, and `public/CNAME` is generated to match. A domain you do not control drops the Pages basePath and 404s every asset.
 - [ ] `docker compose ps` shows your project name in container names
 - [ ] GitHub Pages deployment succeeds (if enabled)
 - [ ] Site loads at `https://username.github.io/project-name/`

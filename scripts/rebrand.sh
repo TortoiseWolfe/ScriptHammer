@@ -732,9 +732,12 @@ update_manifest() {
     [ -f "$manifest" ] || return 0
     [ -f "$generator" ] || return 0
 
-    # CNAME present means a custom domain at the apex, so no base path.
+    # A configured custom domain means an apex, so no base path (#980). This used to ask
+    # whether public/CNAME existed — which, once that file became generated and gitignored,
+    # is always false in a fresh clone and would have written /<slug>/ paths into the
+    # manifest of a fork that legitimately kept a domain.
     local base=""
-    [ -f "$REPO_ROOT/public/CNAME" ] || base="/${SANITIZED_NAME}"
+    [ -n "$(deployment_domain)" ] || base="/${SANITIZED_NAME}"
 
     if [ "$DRY_RUN" = true ]; then
         log_verbose "[DRY-RUN] Would regenerate public/manifest.json with basePath '${base}'"
@@ -1008,11 +1011,33 @@ NODE
     fi
 }
 
+# THE CUSTOM DOMAIN IS CONFIGURATION NOW (#980).
+#
+# `config/deployment.json` holds it; `public/CNAME` is generated from that key by
+# detect-project.js and is gitignored. Four separate places in this script used to ask
+# `[ -f public/CNAME ]`, and every one of them would have silently changed meaning the
+# moment the file stopped being tracked — a fresh fork clone simply does not have it.
+#
+# Reading the config in one helper is what keeps them in step.
+deployment_domain() {
+    local conf="$REPO_ROOT/config/deployment.json"
+    [ -f "$conf" ] || return 0
+    node -e '
+        const fs = require("fs");
+        try {
+            const v = JSON.parse(fs.readFileSync(process.argv[1], "utf8")).customDomain;
+            if (typeof v === "string" && v.trim()) process.stdout.write(v.trim());
+        } catch {}
+    ' "$conf" 2>/dev/null || true
+}
+
 # Update CNAME file (replace scripthammer domain with new project domain) # rebrand:keep
 update_cname() {
     local cname_file="$REPO_ROOT/public/CNAME"
+    local conf="$REPO_ROOT/config/deployment.json"
 
-    [ -f "$cname_file" ] || return 0
+    # Nothing to do when neither the config nor a legacy file names a domain.
+    [ -f "$conf" ] || [ -f "$cname_file" ] || return 0
 
     if [ "$KEEP_CNAME" = true ]; then
         log_info "Keeping CNAME file as-is (--keep-cname flag set)"
@@ -1043,6 +1068,19 @@ update_cname() {
     if [ "$DRY_RUN" = true ]; then
         log_verbose "[DRY-RUN] Would remove public/CNAME (inherited domain, none owned yet)"
     else
+        # THE CONFIG IS WHAT IS DELETED FROM NOW ON, not a tracked path (#980).
+        # Setting the key to null is an ordinary content edit, so this no longer has to be
+        # the last mutation in the script to avoid tripping the two guards that watch for
+        # `git ls-files --deleted`. The legacy file is removed too when one is present, so
+        # a fork created before this change does not inherit a live domain.
+        if [ -f "$conf" ]; then
+            node -e '
+                const fs = require("fs");
+                const f = process.argv[1];
+                const raw = fs.readFileSync(f, "utf8");
+                fs.writeFileSync(f, raw.replace(/"customDomain":\s*("(?:[^"\\]|\\.)*"|null)/, "\"customDomain\": null"));
+            ' "$conf" 2>/dev/null && mark_modified "$conf"
+        fi
         rm -f "$cname_file"
         log_verbose "Removed public/CNAME; add it back when you own a domain"
     fi
@@ -1182,14 +1220,20 @@ protect_brand_domain() {
     # reaching into it is the coupling that produced #961 in the first place. Snapshot
     # it across the window so the sweep sees exactly what it sees today.
     local cname_file="$REPO_ROOT/public/CNAME"
-    local cname_before=""
+    local conf="$REPO_ROOT/config/deployment.json"
+    local cname_before="" conf_before=""
     [ -f "$cname_file" ] && cname_before=$(cat "$cname_file")
+    # config/deployment.json holds a HOSTNAME, so the brand sweep would mint
+    # `<slug>.com` in it exactly as it used to in the CNAME (#983). Same exemption,
+    # same reason: update_cname is that value's only writer.
+    [ -f "$conf" ] && conf_before=$(cat "$conf")
 
     replace_in_files "$ORIGINAL_NAME\.com" "$BRAND_DOMAIN_SENTINEL"
     replace_in_files "$ORIGINAL_NAME_LOWER\.com" "$BRAND_DOMAIN_SENTINEL"
 
-    if [ -n "$cname_before" ] && [ "$DRY_RUN" = false ]; then
-        printf '%s\n' "$cname_before" > "$cname_file"
+    if [ "$DRY_RUN" = false ]; then
+        [ -n "$cname_before" ] && printf '%s' "$cname_before" > "$cname_file"
+        [ -n "$conf_before" ] && printf '%s' "$conf_before" > "$conf"
     fi
 }
 
@@ -1283,9 +1327,16 @@ restore_upstream_citations() {
 classify_cname() {
     local cname_file="$REPO_ROOT/public/CNAME"
     CNAME_IS_INHERITED=false
-    [ -f "$cname_file" ] || return 0
     local domain
-    domain=$(cat "$cname_file" 2>/dev/null || echo "")
+    # The CONFIG first (#980), then a legacy tracked file for a fork that has not migrated.
+    # Asking only about the file would report "not inherited" on every fresh clone, since
+    # the file is generated and gitignored — and update_cname would then keep the
+    # template's domain in the fork's config.
+    domain=$(deployment_domain)
+    if [ -z "$domain" ]; then
+        [ -f "$cname_file" ] || return 0
+        domain=$(cat "$cname_file" 2>/dev/null || echo "")
+    fi
     if [ -z "$domain" ] || printf '%s' "$domain" | grep -qiF "$ORIGINAL_NAME_LOWER"; then
         CNAME_IS_INHERITED=true
     fi

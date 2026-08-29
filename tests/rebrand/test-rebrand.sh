@@ -96,17 +96,19 @@ setup_temp_dir() {
 }
 PKG
     echo "# ScriptHammer" > README.md
-    # public/CNAME, not ./CNAME — rebrand.sh reads "$REPO_ROOT/public/CNAME". The root-level
-    # copy that used to be here meant the CNAME branch never executed in any test.
-    # A RESERVED TLD, on purpose (#983). classify_cname() detects an inherited domain
-    # by the BRAND TOKEN in it, so this fixture only has to carry the token — and
-    # `.example` keeps it clear of the `.com` handling, whose whole job is now to stop
-    # a rebrand minting `<slug>.com`. With a `.com` here the fixture would be rewritten
-    # to the placeholder domain, which carries no token, and the inheritance branch this
-    # fixture exists to exercise would stop firing in a forked harness.
-    echo "scripthammer.example" > CNAME
-    mkdir -p public
-    echo "scripthammer.example" > public/CNAME
+    # THE CUSTOM DOMAIN IS CONFIGURATION (#980), so the fixture configures it.
+    #
+    # This used to write public/CNAME by hand, and that is precisely why the harness could
+    # not see the regression this change had to avoid: every temp tree it built had the
+    # file a real post-#980 clone does not. A fixture that manufactures the thing under
+    # test cannot observe its absence.
+    #
+    # A RESERVED TLD, still on purpose (#983): classify_cname detects an inherited domain
+    # by the BRAND TOKEN in it, so the value only has to carry the token, and `.example`
+    # keeps it clear of the `.com` handling whose job is to stop a rebrand minting
+    # `<slug>.com`.
+    mkdir -p config public
+    printf '{\n  "customDomain": "scripthammer.example"\n}\n' > config/deployment.json
     echo "export const projectName = 'ScriptHammer';" > src/components/Logo.tsx
     printf 'lockfileBrand: ScriptHammer\n' > pnpm-lock.yaml
 
@@ -692,11 +694,22 @@ test_component_identifiers_are_valid() {
     #    and whose mere presence drops the Pages basePath and 404s every asset.
     #
     #    Absence is the assertion now. Validity was the wrong question.
+    #    THE CONFIG IS THE ASSERTION NOW (#980). Checking only that public/CNAME is absent
+    #    went VACUOUS the moment the fixture stopped creating one — it would pass against a
+    #    script that did nothing at all. What has to be true is that the fork's declared
+    #    domain is null, which is a value, and can therefore be wrong in a visible way.
+    local declared
+    declared=$(grep -o '"customDomain":[^,}]*' "$TEMP_DIR/config/deployment.json" 2>/dev/null || echo MISSING)
+    if [ "$declared" = '"customDomain": null' ]; then
+        log_pass "Custom domain cleared — a fork owns no domain until it says so"
+    else
+        log_fail "Custom domain cleared" '"customDomain": null' "$declared"
+    fi
     if [ -f "$TEMP_DIR/public/CNAME" ]; then
-        log_fail "CNAME removed" "public/CNAME absent after a rebrand" \
+        log_fail "Legacy CNAME removed" "no public/CNAME after a rebrand" \
             "still present: $(cat "$TEMP_DIR/public/CNAME")"
     else
-        log_pass "CNAME removed — a fork owns no domain until it says so"
+        log_pass "…and no legacy CNAME is left behind"
     fi
 
     # 6. --keep-cname ON AN INHERITED DOMAIN MUST REFUSE (#995).
@@ -720,7 +733,7 @@ test_component_identifiers_are_valid() {
         log_pass "--keep-cname refuses an inherited domain"
     else
         log_fail "--keep-cname refusal" "a non-zero exit" \
-            "exited 0, keeping $(cat "$TEMP_DIR/public/CNAME" 2>/dev/null)"
+            "exited 0, keeping $(cat "$TEMP_DIR/config/deployment.json" 2>/dev/null)"
     fi
     if [ "$(cat "$TEMP_DIR/README.md")" = "$before_readme" ]; then
         log_pass "The refusal happens before any mutation"
@@ -739,7 +752,8 @@ test_component_identifiers_are_valid() {
     #    passed every assertion here until the status and the rebrand-actually-ran
     #    checks were added.
     setup_temp_dir
-    printf 'forkowner-realdomain.net' > "$TEMP_DIR/public/CNAME"
+    printf '{\n  "customDomain": "forkowner-realdomain.net"\n}\n' \
+        > "$TEMP_DIR/config/deployment.json"
     (cd "$TEMP_DIR" && git add -A >/dev/null 2>&1)
     set +e
     "$TEMP_DIR/scripts/rebrand.sh" "geo LARP" "testuser" "Test desc" --force --no-icon \
@@ -756,11 +770,12 @@ test_component_identifiers_are_valid() {
     else
         log_fail "Rebrand ran" "geo LARP in README.md" "$(cat "$TEMP_DIR/README.md")"
     fi
-    if [ "$(cat "$TEMP_DIR/public/CNAME" 2>/dev/null)" = "forkowner-realdomain.net" ]; then
+    if grep -q '"customDomain": "forkowner-realdomain.net"' \
+        "$TEMP_DIR/config/deployment.json" 2>/dev/null; then
         log_pass "--keep-cname preserves a domain the fork owns, unchanged"
     else
         log_fail "--keep-cname honoured" "forkowner-realdomain.net preserved exactly" \
-            "$(cat "$TEMP_DIR/public/CNAME" 2>/dev/null || echo '<removed>')"
+            "$(cat "$TEMP_DIR/config/deployment.json" 2>/dev/null || echo '<removed>')"
     fi
 
     cd "$REPO_ROOT"

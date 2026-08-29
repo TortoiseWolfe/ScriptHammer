@@ -41,10 +41,37 @@ const ROOT = path.resolve(
  * truth to a config key, this function is the only thing that changes.
  */
 export function configuredDomain(root = ROOT) {
-  const file = path.join(root, 'public', 'CNAME');
-  if (!existsSync(file)) return null;
-  const value = readFileSync(file, 'utf8').trim();
-  return value || null;
+  // WHAT THE BUILD DECIDED, not a second derivation of it. detect-project.js resolves the
+  // domain (config/deployment.json, or a tracked legacy public/CNAME on a fork that has not
+  // migrated yet) and records the answer here, in prebuild, before anything copies public/.
+  //
+  // Re-deriving it would make this gate disagree with the build in exactly the case that
+  // matters — a fork mid-migration, whose legacy file is correct and whose inherited config
+  // is not — and would fail their deploy for doing the right thing. Clause C is what keeps
+  // this honest: it compares the decision against the deploy origin, which is configured
+  // outside the tree entirely.
+  try {
+    const detected = JSON.parse(
+      readFileSync(
+        path.join(root, 'src', 'config', 'project-detected.json'),
+        'utf8'
+      )
+    );
+    if ('customDomain' in detected) return detected.customDomain || null;
+  } catch {
+    /* generated file; absent on a clean checkout */
+  }
+  try {
+    const parsed = JSON.parse(
+      readFileSync(path.join(root, 'config', 'deployment.json'), 'utf8')
+    );
+    return (
+      (typeof parsed.customDomain === 'string' && parsed.customDomain.trim()) ||
+      null
+    );
+  } catch {
+    return null;
+  }
 }
 
 /** The repository name, which is the base-path segment a project site is served under. */

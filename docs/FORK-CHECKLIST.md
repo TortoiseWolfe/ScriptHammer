@@ -27,12 +27,13 @@ ScriptHammer ships with 932 files that reference its own name, theme, and Docker
     generation needs `sharp`, which lives in a named Docker volume and is absent from the host, so
     `--icon` fails on the host _after_ replacing `public/favicon.svg`.
   - `--preserve-ssh` keeps your `git@github.com:…` remote in SSH format (skip if you cloned via HTTPS).
-    - **Do not pass `--keep-cname` on a fresh fork.** `public/CNAME` contains _this_ template's
-      domain, so keeping it publishes a hostname you do not own. Without the flag the script
-      **deletes** the file, which is what you want until you actually own a domain: its mere
-      existence tells the build a custom domain is configured, which drops the GitHub Pages
-      basePath and 404s every asset at the URL you were actually given. Add the file back,
-      containing just your hostname, on the day you point DNS at it.
+    - **`--keep-cname` on a fresh fork is refused** (#995). The configured domain is still
+      _this_ template's, and keeping it would publish a hostname you do not own. Without the
+      flag the script sets `customDomain` to `null` in `config/deployment.json`, which is what
+      you want until you actually own a domain: a configured domain tells the build to serve
+      from an apex, which drops the GitHub Pages basePath and 404s every asset at the URL you
+      were actually given. Set that key to your hostname on the day you point DNS at it —
+      `public/CNAME` is generated from it (#980), so there is no file to add or delete.
     - **The template's blog posts are removed**, all but one. They are this project's
       writing — including personal essays and a deliberate bad-SEO test fixture — and a
       sweep that only swaps the brand would republish them, indexed and in your feed, as

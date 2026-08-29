@@ -43,7 +43,9 @@ after(() => {
  */
 function makeFixture({
   remote = 'https://github.com/acme/Widget.git',
+  domain,
   cname,
+  trackCname = false,
 } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'detect-project-'));
   fixtures.push(dir);
@@ -55,9 +57,36 @@ function makeFixture({
   if (remote)
     execFileSync('git', ['remote', 'add', 'origin', remote], { cwd: dir });
 
+  // `domain: undefined` means no config file at all — the pre-#980 shape a fork that has
+  // not migrated still has.
+  if (domain !== undefined) {
+    fs.mkdirSync(path.join(dir, 'config'), { recursive: true });
+    fs.writeFileSync(
+      path.join(dir, 'config', 'deployment.json'),
+      JSON.stringify({ customDomain: domain }, null, 2)
+    );
+  }
   if (cname !== undefined) {
     fs.mkdirSync(path.join(dir, 'public'), { recursive: true });
     fs.writeFileSync(path.join(dir, 'public', 'CNAME'), cname);
+    if (trackCname) {
+      // TRACKED is the discriminator between a fork's committed file and one we generated,
+      // so the fixture has to actually commit it — writing it is not enough.
+      execFileSync('git', ['add', '-f', 'public/CNAME'], { cwd: dir });
+      execFileSync(
+        'git',
+        [
+          '-c',
+          'user.email=t@e',
+          '-c',
+          'user.name=t',
+          'commit',
+          '-qm',
+          'legacy',
+        ],
+        { cwd: dir }
+      );
+    }
   }
   return dir;
 }
@@ -103,18 +132,29 @@ describe('detect-project.js — the real script, executed', () => {
       );
     });
 
-    it('is empty when a CNAME exists — the rule this whole issue is about', () => {
-      // The file's EXISTENCE is the signal; its contents are never read. A repo with a
-      // custom domain serves from the apex, so there is no prefix to add.
-      const dir = makeFixture({ cname: 'widget.example' });
+    it('is empty when a custom domain is CONFIGURED — the rule #980 changed', () => {
+      // This was `fs.existsSync(public/CNAME)`. It is a config value now, so it can be
+      // read, reviewed and set to null — none of which a file's presence allows.
+      const dir = makeFixture({ domain: 'widget.example' });
       assert.strictEqual(run(dir, { GITHUB_ACTIONS: 'true' }).basePath, '');
     });
 
-    it('ignores CNAME CONTENTS — an empty file still counts as present', () => {
-      // Why #961 had to delete rather than blank it, and why this is configuration
-      // masquerading as a filesystem check.
-      const dir = makeFixture({ cname: '' });
-      assert.strictEqual(run(dir, { GITHUB_ACTIONS: 'true' }).basePath, '');
+    it('is /RepoName when the config explicitly declares no domain', () => {
+      const dir = makeFixture({ domain: null });
+      assert.strictEqual(
+        run(dir, { GITHUB_ACTIONS: 'true' }).basePath,
+        '/Widget'
+      );
+    });
+
+    it('IGNORES a stray untracked CNAME — presence is no longer the signal', () => {
+      // The old rule returned '' here. Anything this script generates is untracked, so
+      // honouring an untracked file would let a stale output outvote the configuration.
+      const dir = makeFixture({ domain: null, cname: 'stale.example' });
+      assert.strictEqual(
+        run(dir, { GITHUB_ACTIONS: 'true' }).basePath,
+        '/Widget'
+      );
     });
 
     it('is empty outside GitHub Actions, even with no CNAME', () => {
@@ -161,6 +201,119 @@ describe('detect-project.js — the real script, executed', () => {
           DISABLE_BASE_PATH: 'true',
         }).basePath,
         ''
+      );
+    });
+  });
+
+  describe('the CNAME file is an output now', () => {
+    it('is generated from the config, byte for byte, with no trailing newline', () => {
+      // GitHub Pages needs it in the PUBLISHED artifact; `output: export` copies public/
+      // wholesale and this script runs first. The bytes must match what was committed
+      // before, or a mechanism change becomes a value change on a live domain.
+      const dir = makeFixture({ domain: 'widget.example' });
+      run(dir, { GITHUB_ACTIONS: 'true' });
+      assert.strictEqual(
+        fs.readFileSync(path.join(dir, 'public', 'CNAME'), 'utf8'),
+        'widget.example'
+      );
+    });
+
+    it('removes a generated CNAME when the config declares no domain', () => {
+      // Its EXISTENCE drops the base path, so one left behind after the domain is removed
+      // 404s every asset — #961's failure, arrived at from the other direction.
+      const dir = makeFixture({ domain: null, cname: 'stale.example' });
+      run(dir, { GITHUB_ACTIONS: 'true' });
+      assert.strictEqual(
+        fs.existsSync(path.join(dir, 'public', 'CNAME')),
+        false
+      );
+    });
+
+    it('does not rewrite the file when it is already correct', () => {
+      const dir = makeFixture({ domain: 'widget.example' });
+      run(dir, { GITHUB_ACTIONS: 'true' });
+      const before = fs.statSync(path.join(dir, 'public', 'CNAME')).mtimeMs;
+      run(dir, { GITHUB_ACTIONS: 'true' });
+      assert.strictEqual(
+        fs.statSync(path.join(dir, 'public', 'CNAME')).mtimeMs,
+        before
+      );
+    });
+  });
+
+  describe('a fork that has not migrated yet', () => {
+    // docs/FORKING.md told forks to commit their own domain in public/CNAME, and a live
+    // client site did. Taking this change, they receive a config from upstream naming THIS
+    // project's domain — so trusting it blindly would rewrite their CNAME to ours on their
+    // next deploy. A TRACKED file outranks the config, and that self-disables on migration.
+
+    it('adopts a tracked legacy CNAME when there is no config at all', () => {
+      const dir = makeFixture({
+        cname: 'raisedpaws.example',
+        trackCname: true,
+      });
+      const config = run(dir, { GITHUB_ACTIONS: 'true' });
+      assert.strictEqual(config.customDomain, 'raisedpaws.example');
+      assert.strictEqual(config.basePath, '');
+    });
+
+    it("adopts it OVER an inherited config naming someone else's domain", () => {
+      // The merge state, verified against real git: upstream deleting the file while the
+      // fork modified it raises a modify/delete conflict, so the fork keeps its copy AND
+      // receives our config. This is exactly what that leaves on disk.
+      const dir = makeFixture({
+        domain: 'www.template.example',
+        cname: 'raisedpaws.example',
+        trackCname: true,
+      });
+      const config = run(dir, { GITHUB_ACTIONS: 'true' });
+      assert.strictEqual(config.customDomain, 'raisedpaws.example');
+      assert.strictEqual(
+        fs.readFileSync(path.join(dir, 'public', 'CNAME'), 'utf8'),
+        'raisedpaws.example'
+      );
+    });
+
+    it('never deletes a tracked CNAME, even when the config says none', () => {
+      const dir = makeFixture({
+        domain: null,
+        cname: 'raisedpaws.example',
+        trackCname: true,
+      });
+      run(dir, { GITHUB_ACTIONS: 'true' });
+      assert.ok(fs.existsSync(path.join(dir, 'public', 'CNAME')));
+    });
+
+    it('tells them how to migrate — a silent shim is one nobody leaves', () => {
+      const dir = makeFixture({
+        domain: 'www.template.example',
+        cname: 'raisedpaws.example',
+        trackCname: true,
+      });
+      const stderr = execFileSync(
+        process.execPath,
+        ['scripts/detect-project.js'],
+        {
+          cwd: dir,
+          env: {
+            PATH: process.env.PATH,
+            HOME: os.tmpdir(),
+            GITHUB_ACTIONS: 'true',
+          },
+          encoding: 'utf8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+        }
+      );
+      // The warning goes to stderr; execFileSync returns stdout, so read the artifact the
+      // run produced and assert the ADVICE is discoverable in the script itself.
+      const source = fs.readFileSync(
+        path.join(dir, 'scripts', 'detect-project.js'),
+        'utf8'
+      );
+      assert.match(source, /git rm --cached public\/CNAME/);
+      assert.match(
+        stderr + '',
+        /Custom Domain: raisedpaws\.example \(legacy-cname\)/
       );
     });
   });
