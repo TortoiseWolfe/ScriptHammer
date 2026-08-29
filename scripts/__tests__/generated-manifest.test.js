@@ -30,6 +30,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 const { spawnSync } = require('node:child_process');
 
 const ROOT = path.join(__dirname, '..', '..');
@@ -69,16 +70,41 @@ const PROJECT_CONFIG_PATH = path.join(
  * keying off the local environment would make the expectation flip depending on
  * where the suite happened to run.
  */
+/**
+ * The SLUG, from the git remote — the same source detect-project.js uses.
+ *
+ * This used to read `projectName` out of src/config/project.config.ts. For this repo
+ * the two coincide ("ScriptHammer" either way), so it passed here and broke in every
+ * fork whose display name is not identical to its repository name: a fork called
+ * "Grand Daze" made this expect `/Grand Daze/` — a path with a SPACE in it, which the
+ * deploy never produces and no URL can contain.
+ *
+ * detect-project.js:87 takes `gitInfo.repo` and :133 builds `/${info.projectName}`
+ * from it, so the deploy serves `/grand-daze/`. Measured against a real fork's live
+ * manifest, which reads `start_url: "/grand-daze/"`. Reading the same source is the
+ * only way this expectation can be right for a repo it was not written in (#985).
+ */
 function defaultBasePath() {
-  const src = fs.readFileSync(PROJECT_CONFIG_PATH, 'utf8');
-  const match = /projectName:\s*'([^']+)'/.exec(src);
-  assert.ok(
-    match,
-    'could not read projectName from src/config/project.config.ts'
-  );
   // A custom domain serves from the apex, so there is no base path to add.
-  const cnameExists = fs.existsSync(path.join(ROOT, 'public', 'CNAME'));
-  return cnameExists ? '' : `/${match[1]}`;
+  if (fs.existsSync(path.join(ROOT, 'public', 'CNAME'))) return '';
+
+  // The env override wins in detect-project.js:74, so it wins here too.
+  const override = process.env.NEXT_PUBLIC_PROJECT_NAME;
+  if (override) return `/${override}`;
+
+  const remote = execFileSync('git', ['remote', 'get-url', 'origin'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  }).trim();
+  const slug = remote
+    .replace(/\.git$/, '')
+    .split(/[/:]/)
+    .pop();
+  assert.ok(
+    slug,
+    `could not read a repository name from the git remote: ${remote}`
+  );
+  return `/${slug}`;
 }
 
 const readManifest = () => JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));

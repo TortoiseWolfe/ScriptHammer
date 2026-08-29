@@ -711,6 +711,44 @@ update_docker_compose() {
 # and a rebrand may run before anything is installed. An absent card degrades to no
 # preview image, which is honest; shipping someone else's brand is not. Same call as
 # CNAME: remove rather than inherit, and say so.
+# THE COMMITTED MANIFEST MUST DESCRIBE THE FORK'S OWN DEPLOYMENT (#985).
+#
+# public/manifest.json is tracked on purpose (#392) so its start_url, scope and icon
+# paths are reviewable. Those paths depend on the base path, and the base path depends
+# on whether public/CNAME exists — which this script has just decided.
+#
+# A fork inherits `start_url: "/"`, correct for a template served from an apex domain
+# and wrong for a fork served from /<repo>/. The result is a PWA whose install scope
+# does not match where the app lives, and a first push that fails the repo's own
+# generated-manifest test with nothing the forker can do about it.
+#
+# generate-manifest.js needs only fs and path, so this runs before `pnpm install` ever
+# has to have happened. The base path is passed explicitly because detect-project.js
+# only derives one under GITHUB_ACTIONS, and this is a local run.
+update_manifest() {
+    local manifest="$REPO_ROOT/public/manifest.json"
+    local generator="$REPO_ROOT/scripts/generate-manifest.js"
+
+    [ -f "$manifest" ] || return 0
+    [ -f "$generator" ] || return 0
+
+    # CNAME present means a custom domain at the apex, so no base path.
+    local base=""
+    [ -f "$REPO_ROOT/public/CNAME" ] || base="/${SANITIZED_NAME}"
+
+    if [ "$DRY_RUN" = true ]; then
+        log_verbose "[DRY-RUN] Would regenerate public/manifest.json with basePath '${base}'"
+        return 0
+    fi
+
+    if (cd "$REPO_ROOT" && NEXT_PUBLIC_BASE_PATH="$base" node "$generator" >/dev/null 2>&1); then
+        log_success "Regenerated public/manifest.json for basePath '${base:-/}'"
+        mark_modified "$manifest"
+    else
+        log_warning "Could not regenerate public/manifest.json; run 'pnpm run generate:manifest' before your first push"
+    fi
+}
+
 update_og_image() {
     local card="$REPO_ROOT/public/opengraph-image.png"
     local generator="$REPO_ROOT/scripts/generate-og-image.mjs"
@@ -1597,6 +1635,12 @@ main() {
     echo ""
     echo "Updating the social card..."
     update_og_image
+
+    # AFTER update_cname, and that order is the point: the manifest's paths depend on
+    # whether a CNAME exists, and this script has just removed it.
+    echo ""
+    echo "Regenerating the web manifest..."
+    update_manifest
 
     # Summary
     END_TIME=$(date +%s)

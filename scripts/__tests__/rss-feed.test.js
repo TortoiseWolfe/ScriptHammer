@@ -135,21 +135,34 @@ test('RSS and JSON feeds mirror the published site index at its configured origi
       assert.ok(rss.includes(`<link>${url}</link>`));
       assert.ok(rss.includes(`<guid isPermaLink="true">${url}</guid>`));
     }
-    assert.ok(rss.includes('Stripe, PayPal &amp; GDPR'));
-    assert.deepStrictEqual(
-      jsonFeed.items.find(
-        (item) =>
-          item.url === 'https://example.test/blog/ride-the-open-source-city/'
-      ).tags,
-      [
-        'three-js',
-        'game-engine',
-        'open-source',
-        'react-three-fiber',
-        'game-dev',
-        'indie',
-      ]
-    );
+    // DERIVED, NOT NAMED. These two assertions used to reference a specific
+    // template post — the title "Stripe, PayPal & GDPR" and the tag list of
+    // `ride-the-open-source-city`. rebrand.sh removes the template's posts from every
+    // fork (#936), so both asserted content a fork cannot have, and this test failed
+    // on a fresh fork's first push with nothing the forker could do about it (#985).
+    //
+    // Checking EVERY post instead is both fork-portable and stronger than checking one.
+    for (const post of result.blogPosts) {
+      const escaped = post.title
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+      assert.ok(
+        rss.includes(escaped),
+        `RSS is missing the title of ${post.url} — titles must be XML-escaped, not dropped`
+      );
+    }
+
+    for (const item of jsonFeed.items) {
+      const post = result.blogPosts.find(
+        (p) => `https://example.test${p.url}` === item.url
+      );
+      assert.deepStrictEqual(
+        item.tags,
+        post.tags,
+        `JSON Feed tags for ${item.url} do not match the post they came from`
+      );
+    }
   } finally {
     fs.rmSync(outputDir, { recursive: true, force: true });
   }
