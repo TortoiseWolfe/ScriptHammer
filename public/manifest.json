@@ -1,7 +1,7 @@
 {
   "name": "ScriptHammer",
   "short_name": "ScriptHammer",
-  "description": "ScriptHammer - A production Next.js and Supabase platform with auth, payments, encrypted messaging, and an accessible offline-capable PWA",
+  "description": "A production Next.js and Supabase platform with auth, payments, encrypted messaging, and an accessible offline-capable PWA",
   "theme_color": "#1a1a2e",
   "background_color": "#1a1a2e",
   "display": "standalone",
