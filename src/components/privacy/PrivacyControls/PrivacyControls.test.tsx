@@ -4,6 +4,18 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PrivacyControls } from './PrivacyControls';
 import { useConsent } from '../../../contexts/ConsentContext';
+import { clearUserData } from '../../../utils/privacy';
+
+// clearUserData wipes real browser storage. Mocking it is what lets these tests assert
+// that it is NOT called — the whole point of #955.
+vi.mock('../../../utils/privacy', async () => {
+  const actual = await vi.importActual('../../../utils/privacy');
+  return {
+    ...actual,
+    clearUserData: vi.fn().mockResolvedValue({ success: true }),
+    exportUserData: vi.fn().mockResolvedValue({}),
+  };
+});
 
 // Mock the ConsentContext to control state
 vi.mock('../../../contexts/ConsentContext', async () => {
@@ -130,7 +142,8 @@ describe('PrivacyControls', () => {
     it('should allow revoking consent', async () => {
       const user = userEvent.setup();
       mockHasConsented.mockReturnValue(true);
-      render(<PrivacyControls />);
+      // showConfirmation={false} explicitly (#955): this asserts the revoke ACTION, not the
+      render(<PrivacyControls showConfirmation={false} />);
 
       const revokeButton = screen.getByRole('button', {
         name: /revoke consent/i,
@@ -328,12 +341,116 @@ describe('PrivacyControls', () => {
       const user = userEvent.setup();
       mockHasConsented.mockReturnValue(true);
 
-      render(<PrivacyControls onRevoke={onRevoke} />);
+      // Explicit opt-out (#955): this asserts the callback fires, not that a guard exists.
+      render(<PrivacyControls onRevoke={onRevoke} showConfirmation={false} />);
 
       await user.click(screen.getByRole('button', { name: /revoke consent/i }));
 
       expect(mockResetConsent).toHaveBeenCalled();
       expect(onRevoke).toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * #955: /privacy-controls deleted ALL browser storage on the FIRST click.
+   *
+   * The confirmation dialog existed and was correct — it just was not switched on. The
+   * prop defaulted to false, and src/app/privacy-controls/page.tsx passes no props, so the
+   * only route that ships this component ran the destructive path immediately. The dialog
+   * saying "This action cannot be undone" never rendered on the page it was written for.
+   *
+   * There was NO test over the delete path at all, which is how it shipped. A component
+   * whose safety is opt-in ships unsafe, because the safe path requires the consumer to
+   * know the prop exists.
+   */
+  describe('Destructive actions confirm by default (#955)', () => {
+    beforeEach(() => {
+      vi.mocked(clearUserData).mockClear();
+    });
+
+    it('does NOT delete anything on the first click, with no props', () => {
+      // Rendered exactly as the route does — propless. This is the regression.
+      return (async () => {
+        const user = userEvent.setup();
+        render(<PrivacyControls />);
+
+        await user.click(
+          screen.getByRole('button', { name: /delete my data/i })
+        );
+
+        expect(clearUserData).not.toHaveBeenCalled();
+      })();
+    });
+
+    it('warns that the action cannot be undone before doing it', async () => {
+      const user = userEvent.setup();
+      render(<PrivacyControls />);
+
+      await user.click(screen.getByRole('button', { name: /delete my data/i }));
+
+      expect(screen.getByText(/delete all data\?/i)).toBeInTheDocument();
+      expect(screen.getByText(/cannot be undone/i)).toBeInTheDocument();
+    });
+
+    it('deletes only after the second, explicit confirmation', async () => {
+      const user = userEvent.setup();
+      render(<PrivacyControls />);
+
+      await user.click(screen.getByRole('button', { name: /delete my data/i }));
+      await user.click(screen.getByRole('button', { name: /confirm delete/i }));
+
+      expect(clearUserData).toHaveBeenCalledTimes(1);
+    });
+
+    it('cancelling deletes nothing and dismisses the dialog', async () => {
+      // Without this, "confirms" would be satisfied by a dialog with no working way out.
+      const user = userEvent.setup();
+      render(<PrivacyControls />);
+
+      await user.click(screen.getByRole('button', { name: /delete my data/i }));
+      await user.click(screen.getByRole('button', { name: /^cancel$/i }));
+
+      expect(clearUserData).not.toHaveBeenCalled();
+      expect(screen.queryByText(/delete all data\?/i)).not.toBeInTheDocument();
+    });
+
+    it('revoking consent confirms by default too — the same prop gates both', async () => {
+      const user = userEvent.setup();
+      mockHasConsented.mockReturnValue(true);
+      render(<PrivacyControls />);
+
+      await user.click(screen.getByRole('button', { name: /revoke consent/i }));
+      expect(mockResetConsent).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole('button', { name: /confirm/i }));
+      expect(mockResetConsent).toHaveBeenCalledTimes(1);
+    });
+
+    it('still allows an explicit opt-out, so the escape hatch is real', async () => {
+      // ANTI-VACUITY: without this, "confirms by default" would be satisfied by a
+      // component that had lost the ability to act at all.
+      const user = userEvent.setup();
+      render(<PrivacyControls showConfirmation={false} />);
+
+      await user.click(screen.getByRole('button', { name: /delete my data/i }));
+
+      expect(clearUserData).toHaveBeenCalledTimes(1);
+    });
+
+    it('gives the confirm and cancel buttons a 44px touch target', async () => {
+      // This dialog has never been reachable on the route that ships it, so no gate has
+      // ever measured it. Making it reachable without this would ship a 32px `btn-sm`
+      // DESTRUCTIVE control on mobile — below the AAA floor this project targets.
+      const user = userEvent.setup();
+      render(<PrivacyControls />);
+
+      await user.click(screen.getByRole('button', { name: /delete my data/i }));
+
+      for (const name of [/confirm delete/i, /^cancel$/i]) {
+        const button = screen.getByRole('button', { name });
+        expect(button.className).toMatch(/min-h-11/);
+        expect(button.className).toMatch(/min-w-11/);
+      }
     });
   });
 });

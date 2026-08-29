@@ -16,6 +16,18 @@ export interface PrivacyControlsProps {
   compact?: boolean;
   expanded?: boolean;
   expandable?: boolean;
+  /**
+   * Ask before the two destructive actions. DEFAULTS TO TRUE (#955).
+   *
+   * It defaulted to false, and src/app/privacy-controls/page.tsx — the only route that
+   * ships this component — passes no props, so "Delete My Data" wiped all browser storage
+   * on the first click and the "cannot be undone" dialog below never rendered on the page
+   * it was written for.
+   *
+   * The safe value is the default because a component whose safety is opt-in ships unsafe:
+   * the safe path requires every consumer to know the prop exists. Pass `false` explicitly
+   * where a caller has already confirmed by other means.
+   */
   showConfirmation?: boolean;
   theme?: 'light' | 'dark';
   onManage?: () => void;
@@ -33,7 +45,7 @@ export function PrivacyControls({
   compact = false,
   expanded: initialExpanded = false,
   expandable = false,
-  showConfirmation = false,
+  showConfirmation = true,
   theme,
   onManage,
   onRevoke,
@@ -308,14 +320,14 @@ export function PrivacyControls({
             <div className="flex gap-2">
               <button
                 onClick={() => setShowRevokeConfirm(false)}
-                className="btn btn-sm"
+                className="btn btn-sm min-h-11 min-w-11"
                 aria-label="Cancel"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRevoke}
-                className="btn btn-sm btn-error"
+                className="btn btn-sm btn-error min-h-11 min-w-11"
                 aria-label="Confirm revoke"
               >
                 Confirm
@@ -352,14 +364,14 @@ export function PrivacyControls({
             <div className="flex gap-2">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                className="btn btn-sm"
+                className="btn btn-sm min-h-11 min-w-11"
                 aria-label="Cancel"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
-                className="btn btn-sm btn-error"
+                className="btn btn-sm btn-error min-h-11 min-w-11"
                 aria-label="Confirm delete"
               >
                 Delete All Data

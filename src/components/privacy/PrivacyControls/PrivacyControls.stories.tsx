@@ -46,6 +46,17 @@ export const Expandable: Story = {
   },
 };
 
+/**
+ * The confirmation is the DEFAULT now (#955), so this story documents the opt-OUT — the
+ * only way to get the immediate, irreversible behaviour that used to ship on
+ * /privacy-controls without anyone asking for it.
+ */
+export const WithoutConfirmation: Story = {
+  args: {
+    showConfirmation: false,
+  },
+};
+
 export const WithConfirmation: Story = {
   args: {
     showConfirmation: true,
