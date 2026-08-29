@@ -1,458 +1,222 @@
-#!/usr/bin/env node
+/**
+ * `scripts/detect-project.js` decides `basePath` — whether every asset URL in the deployed
+ * site is `/` or `/RepoName/`. Getting it wrong 404s the entire site.
+ *
+ * THIS FILE USED TO TEST NOTHING. It never required the script. It re-implemented
+ * `parseGitUrl` and the basePath rule inline and asserted against its own copies, so the
+ * executable body of the real script had zero coverage — any rewrite of it would have left
+ * the suite green. The copy had already drifted: it hardcoded `isGitHub: false` for the
+ * generic-host branch where the script computes `genericMatch[1].includes('github')`, so a
+ * GitHub Enterprise remote was described one way by the test and another by the code.
+ *
+ * WHY IT DRIFTED, and what this file does about it. The script resolves every path from
+ * `__dirname`, not `cwd`, and it WRITES — `src/config/project-detected.{json,ts}` and
+ * `.env.local`. Requiring it, or running it with a different `cwd`, mutates the real
+ * repository. That is what pushed the original into re-implementation.
+ *
+ * The fix is a fixture tree: copy the script to `<tmp>/scripts/detect-project.js`, so its
+ * own `__dirname/..` resolves to the fixture root, and run it as a child process with a
+ * controlled environment. It writes into the fixture and cannot reach this checkout.
+ */
+'use strict';
 
-const { describe, test } = require('node:test');
+const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert');
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { execFileSync } = require('node:child_process');
 
-// Mock functions
-const mockExecSync = (command) => {
-  if (command === 'git remote get-url origin') {
-    if (mockExecSync.mockReturnValue) {
-      return mockExecSync.mockReturnValue;
-    }
-    throw new Error('Not a git repository');
+const ROOT = path.resolve(__dirname, '..', '..');
+const SCRIPT = path.join(ROOT, 'scripts', 'detect-project.js');
+
+const fixtures = [];
+
+after(() => {
+  for (const dir of fixtures) fs.rmSync(dir, { recursive: true, force: true });
+});
+
+/**
+ * A throwaway repository with a copy of the script in it.
+ * `remote: null` leaves the repo with no origin, which is the "not a git repository or no
+ * remote" path.
+ */
+function makeFixture({
+  remote = 'https://github.com/acme/Widget.git',
+  cname,
+} = {}) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'detect-project-'));
+  fixtures.push(dir);
+
+  fs.mkdirSync(path.join(dir, 'scripts'), { recursive: true });
+  fs.copyFileSync(SCRIPT, path.join(dir, 'scripts', 'detect-project.js'));
+
+  execFileSync('git', ['init', '-q'], { cwd: dir });
+  if (remote)
+    execFileSync('git', ['remote', 'add', 'origin', remote], { cwd: dir });
+
+  if (cname !== undefined) {
+    fs.mkdirSync(path.join(dir, 'public'), { recursive: true });
+    fs.writeFileSync(path.join(dir, 'public', 'CNAME'), cname);
   }
-  return '';
-};
-
-const mockFs = {
-  writeFileSync: (path, content) => {
-    mockFs.writtenFiles.push({ path, content });
-  },
-  existsSync: (path) => true,
-  writtenFiles: [],
-};
-
-// Test the git URL parsing logic directly
-function parseGitUrl(url) {
-  if (!url) return null;
-
-  // Handle different Git URL formats
-  const patterns = [
-    // HTTPS: https://github.com/username/repo.git
-    /https?:\/\/github\.com\/([^\/]+)\/([^\/\.]+)(\.git)?$/,
-    // SSH: git@github.com:username/repo.git
-    /git@github\.com:([^\/]+)\/([^\/\.]+)(\.git)?$/,
-    // GitHub CLI: gh:username/repo
-    /gh:([^\/]+)\/([^\/]+)$/,
-  ];
-
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match) {
-      return {
-        owner: match[1],
-        repo: match[2],
-        isGitHub: true,
-      };
-    }
-  }
-
-  // Try generic git URL parsing for other hosts.
-  // ^ anchor + @ in the host exclusion class are both load-bearing: without
-  // them, `git@@github.com:user/repo` matches and captures `@github.com` as
-  // the host — garbage that silently propagates into basePath/projectUrl.
-  const genericPattern =
-    /^(?:git@|https?:\/\/)([^:\/@]+)[:\/]([^\/]+)\/([^\/\.]+)(?:\.git)?$/;
-  const genericMatch = url.match(genericPattern);
-  if (genericMatch) {
-    return {
-      host: genericMatch[1],
-      owner: genericMatch[2],
-      repo: genericMatch[3],
-      isGitHub: false,
-    };
-  }
-
-  return null;
+  return dir;
 }
 
-describe('detect-project.js', () => {
-  describe('parseGitUrl', () => {
-    test('should parse HTTPS GitHub URLs', () => {
-      const result = parseGitUrl('https://github.com/username/repo.git');
-      assert.strictEqual(result.owner, 'username');
-      assert.strictEqual(result.repo, 'repo');
-      assert.strictEqual(result.isGitHub, true);
-    });
+/**
+ * The environment is built from a whitelist rather than inherited. GITHUB_ACTIONS is set in
+ * CI, and letting it leak in would make these assertions mean something different depending
+ * on where the suite ran — the exact hazard `generated-manifest.test.js:67-71` documents.
+ */
+function run(dir, env = {}) {
+  execFileSync(process.execPath, ['scripts/detect-project.js'], {
+    cwd: dir,
+    env: { PATH: process.env.PATH, HOME: os.tmpdir(), ...env },
+    stdio: 'pipe',
+  });
+  return JSON.parse(
+    fs.readFileSync(
+      path.join(dir, 'src', 'config', 'project-detected.json'),
+      'utf8'
+    )
+  );
+}
 
-    test('should parse HTTPS GitHub URLs without .git extension', () => {
-      const result = parseGitUrl('https://github.com/username/repo');
-      assert.strictEqual(result.owner, 'username');
-      assert.strictEqual(result.repo, 'repo');
-      assert.strictEqual(result.isGitHub, true);
-    });
-
-    test('should parse SSH GitHub URLs', () => {
-      const result = parseGitUrl('git@github.com:username/repo.git');
-      assert.strictEqual(result.owner, 'username');
-      assert.strictEqual(result.repo, 'repo');
-      assert.strictEqual(result.isGitHub, true);
-    });
-
-    test('should parse GitHub CLI URLs', () => {
-      const result = parseGitUrl('gh:username/repo');
-      assert.strictEqual(result.owner, 'username');
-      assert.strictEqual(result.repo, 'repo');
-      assert.strictEqual(result.isGitHub, true);
-    });
-
-    test('should parse generic git URLs', () => {
-      const result = parseGitUrl('git@gitlab.com:owner/project.git');
-      assert.strictEqual(result.host, 'gitlab.com');
-      assert.strictEqual(result.owner, 'owner');
-      assert.strictEqual(result.repo, 'project');
-      assert.strictEqual(result.isGitHub, false);
-    });
-
-    test('should return null for invalid URLs', () => {
-      assert.strictEqual(parseGitUrl('not-a-url'), null);
-      assert.strictEqual(parseGitUrl(''), null);
-      assert.strictEqual(parseGitUrl(null), null);
-    });
-
-    test('should handle URLs with special characters', () => {
-      const result = parseGitUrl('https://github.com/user-name/repo-name.git');
-      assert.strictEqual(result.owner, 'user-name');
-      assert.strictEqual(result.repo, 'repo-name');
-    });
-
-    test('should handle URLs with numbers', () => {
-      const result = parseGitUrl('https://github.com/user123/repo456.git');
-      assert.strictEqual(result.owner, 'user123');
-      assert.strictEqual(result.repo, 'repo456');
-    });
-
-    test('should handle URLs with underscores', () => {
-      const result = parseGitUrl('https://github.com/user_name/repo_name.git');
-      assert.strictEqual(result.owner, 'user_name');
-      assert.strictEqual(result.repo, 'repo_name');
-    });
+describe('detect-project.js — the real script, executed', () => {
+  it('runs at all and writes both artifacts', () => {
+    // Non-vacuity. Every assertion below reads project-detected.json; if the script
+    // stopped writing it they would all error rather than fail, which is a worse signal.
+    const dir = makeFixture();
+    const config = run(dir);
+    assert.strictEqual(config.projectName, 'Widget');
+    assert.strictEqual(config.projectOwner, 'acme');
+    assert.ok(
+      fs.existsSync(path.join(dir, 'src', 'config', 'project-detected.ts'))
+    );
   });
 
-  describe('Configuration Generation', () => {
-    test('should generate default config when git is not available', () => {
-      const config = {
-        projectName: process.env.NEXT_PUBLIC_PROJECT_NAME || 'ScriptHammer',
-        projectOwner: process.env.NEXT_PUBLIC_PROJECT_OWNER || 'TortoiseWolfe',
-        projectHost: 'github.com',
-        projectUrl: 'https://github.com/TortoiseWolfe/ScriptHammer',
-        basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
-        isGitHub: true,
-        detectionSource: 'fallback',
-        generatedAt: new Date().toISOString(),
-      };
-
-      assert.strictEqual(config.projectName, 'ScriptHammer');
-      assert.strictEqual(config.projectOwner, 'TortoiseWolfe');
-      assert.strictEqual(config.detectionSource, 'fallback');
-    });
-
-    test('should use environment variables when set', () => {
-      const originalEnv = { ...process.env };
-      process.env.NEXT_PUBLIC_PROJECT_NAME = 'TestProject';
-      process.env.NEXT_PUBLIC_PROJECT_OWNER = 'TestOwner';
-      process.env.NEXT_PUBLIC_BASE_PATH = '/test';
-
-      const config = {
-        projectName: process.env.NEXT_PUBLIC_PROJECT_NAME || 'ScriptHammer',
-        projectOwner: process.env.NEXT_PUBLIC_PROJECT_OWNER || 'TortoiseWolfe',
-        basePath: process.env.NEXT_PUBLIC_BASE_PATH || '',
-      };
-
-      assert.strictEqual(config.projectName, 'TestProject');
-      assert.strictEqual(config.projectOwner, 'TestOwner');
-      assert.strictEqual(config.basePath, '/test');
-
-      // Restore environment
-      process.env = originalEnv;
-    });
-
-    test('should generate correct GitHub Pages base path', () => {
-      const originalGHA = process.env.GITHUB_ACTIONS;
-      delete process.env.GITHUB_ACTIONS;
-
-      const repoName = 'my-repo';
-      const isGitHubPages = process.env.GITHUB_ACTIONS === 'true';
-      const basePath = isGitHubPages ? `/${repoName}` : '';
-
-      // Test without GitHub Actions — env var cleared above
-      assert.strictEqual(basePath, '');
-
-      if (originalGHA !== undefined) {
-        process.env.GITHUB_ACTIONS = originalGHA;
-      }
-    });
-  });
-
-  describe('File Generation', () => {
-    test('should generate valid JSON configuration', () => {
-      const config = {
-        projectName: 'TestProject',
-        projectOwner: 'TestOwner',
-        projectHost: 'github.com',
-        projectUrl: 'https://github.com/TestOwner/TestProject',
-        basePath: '',
-        isGitHub: true,
-        detectionSource: 'git',
-        generatedAt: new Date().toISOString(),
-      };
-
-      const jsonContent = JSON.stringify(config, null, 2);
-      const parsed = JSON.parse(jsonContent);
-
-      assert.strictEqual(parsed.projectName, config.projectName);
-      assert.strictEqual(parsed.projectOwner, config.projectOwner);
-      assert.strictEqual(parsed.isGitHub, true);
-    });
-
-    test('should generate valid TypeScript module', () => {
-      const config = {
-        projectName: 'TestProject',
-        projectOwner: 'TestOwner',
-        projectHost: 'github.com',
-        projectUrl: 'https://github.com/TestOwner/TestProject',
-        basePath: '',
-        isGitHub: true,
-        detectionSource: 'git',
-        generatedAt: new Date().toISOString(),
-      };
-
-      const tsContent = `// Auto-generated by detect-project.js
-// DO NOT EDIT MANUALLY - This file is regenerated on each build
-
-export const detectedConfig = ${JSON.stringify(config, null, 2)} as const;
-
-export type DetectedConfig = typeof detectedConfig;
-`;
-
-      assert(tsContent.includes('export const detectedConfig'));
-      assert(tsContent.includes('as const'));
-      assert(tsContent.includes('export type DetectedConfig'));
-      assert(tsContent.includes('DO NOT EDIT MANUALLY'));
-    });
-  });
-
-  describe('Edge Cases', () => {
-    test('should handle missing git repository gracefully', () => {
-      let errorCaught = false;
-      try {
-        execSync('git remote get-url origin', { encoding: 'utf8' });
-      } catch (error) {
-        errorCaught = true;
-      }
-
-      // This test might not catch error if run in a git repo
-      // The important part is that the code handles it gracefully
-      assert(true, 'Should handle missing git gracefully');
-    });
-
-    test('should handle malformed git URLs', () => {
-      const malformedUrls = [
-        'http://',
-        'git@',
-        'github.com/user',
-        '://github.com/user/repo',
-        'git@@github.com:user/repo',
-        'https://github.com/',
-        'https://github.com/user/',
-      ];
-
-      for (const url of malformedUrls) {
-        const result = parseGitUrl(url);
-        assert(
-          result === null ||
-            result.owner === undefined ||
-            result.repo === undefined,
-          `Should not parse malformed URL: ${url}`
-        );
-      }
-    });
-
-    test('should handle empty environment variables', () => {
-      const originalEnv = { ...process.env };
-      process.env.NEXT_PUBLIC_PROJECT_NAME = '';
-      process.env.NEXT_PUBLIC_PROJECT_OWNER = '';
-
-      const config = {
-        projectName: process.env.NEXT_PUBLIC_PROJECT_NAME || 'ScriptHammer',
-        projectOwner: process.env.NEXT_PUBLIC_PROJECT_OWNER || 'TortoiseWolfe',
-      };
-
-      assert.strictEqual(config.projectName, 'ScriptHammer');
-      assert.strictEqual(config.projectOwner, 'TortoiseWolfe');
-
-      // Restore environment
-      process.env = originalEnv;
-    });
-
-    test('should handle special characters in project names', () => {
-      const specialNames = [
-        'project-name',
-        'project_name',
-        'project.name',
-        'ProjectName',
-        'project123',
-        '123project',
-      ];
-
-      for (const name of specialNames) {
-        const config = {
-          projectName: name,
-          projectOwner: 'owner',
-        };
-
-        const jsonContent = JSON.stringify(config, null, 2);
-        const parsed = JSON.parse(jsonContent);
-
-        assert.strictEqual(parsed.projectName, name);
-      }
-    });
-  });
-
-  describe('Integration Scenarios', () => {
-    test('should handle GitHub Actions environment', () => {
-      const originalEnv = { ...process.env };
-      process.env.GITHUB_ACTIONS = 'true';
-
-      const isGitHubActions = process.env.GITHUB_ACTIONS === 'true';
-      assert.strictEqual(isGitHubActions, true);
-
-      // Restore environment
-      process.env = originalEnv;
-    });
-
-    test('should prioritize environment variables over git detection', () => {
-      const gitInfo = parseGitUrl('https://github.com/gituser/gitrepo.git');
-      const envName = 'EnvProject';
-      const envOwner = 'EnvOwner';
-
-      const config = {
-        projectName: envName || gitInfo?.repo || 'ScriptHammer',
-        projectOwner: envOwner || gitInfo?.owner || 'TortoiseWolfe',
-      };
-
-      assert.strictEqual(config.projectName, 'EnvProject');
-      assert.strictEqual(config.projectOwner, 'EnvOwner');
-    });
-
-    // Mirrors the basePath resolution in detect-project.js:
-    //   basePathDisabled ? '' : NEXT_PUBLIC_BASE_PATH || (isGitHubActions && isGitHub && !cnameExists ? `/${name}` : '')
-    const resolveBasePath = ({
-      disableBasePath,
-      envBasePath,
-      isGitHubActions,
-      isGitHub,
-      cnameExists,
-      projectName,
-    }) =>
-      disableBasePath
-        ? ''
-        : envBasePath ||
-          (isGitHubActions && isGitHub && !cnameExists
-            ? `/${projectName}`
-            : '');
-
-    test('DISABLE_BASE_PATH forces an empty base path even in GitHub Actions', () => {
-      // Without the disable flag, a project-site build (GHA, GitHub repo, no
-      // CNAME) would auto-detect the /RepoName prefix.
+  describe('basePath', () => {
+    it('is /RepoName on a GitHub Pages deploy with no custom domain', () => {
+      const dir = makeFixture();
       assert.strictEqual(
-        resolveBasePath({
-          disableBasePath: false,
-          envBasePath: '',
-          isGitHubActions: true,
-          isGitHub: true,
-          cnameExists: false,
-          projectName: 'ScriptHammer', // rebrand:keep
-        }),
-        '/ScriptHammer' // rebrand:keep
+        run(dir, { GITHUB_ACTIONS: 'true' }).basePath,
+        '/Widget'
       );
+    });
 
-      // DISABLE_BASE_PATH=true wins over the auto-detection so the E2E build
-      // serves from the root.
+    it('is empty when a CNAME exists — the rule this whole issue is about', () => {
+      // The file's EXISTENCE is the signal; its contents are never read. A repo with a
+      // custom domain serves from the apex, so there is no prefix to add.
+      const dir = makeFixture({ cname: 'widget.example' });
+      assert.strictEqual(run(dir, { GITHUB_ACTIONS: 'true' }).basePath, '');
+    });
+
+    it('ignores CNAME CONTENTS — an empty file still counts as present', () => {
+      // Why #961 had to delete rather than blank it, and why this is configuration
+      // masquerading as a filesystem check.
+      const dir = makeFixture({ cname: '' });
+      assert.strictEqual(run(dir, { GITHUB_ACTIONS: 'true' }).basePath, '');
+    });
+
+    it('is empty outside GitHub Actions, even with no CNAME', () => {
+      const dir = makeFixture();
+      assert.strictEqual(run(dir).basePath, '');
+    });
+
+    it('is empty for a non-GitHub remote even inside Actions', () => {
+      const dir = makeFixture({ remote: 'git@gitlab.com:acme/Widget.git' });
+      const config = run(dir, { GITHUB_ACTIONS: 'true' });
+      assert.strictEqual(config.isGitHub, false);
+      assert.strictEqual(config.basePath, '');
+    });
+
+    it('treats a GitHub Enterprise host as GitHub — the drift the old copy had backwards', () => {
+      const dir = makeFixture({
+        remote: 'git@github.acme.com:acme/Widget.git',
+      });
+      const config = run(dir, { GITHUB_ACTIONS: 'true' });
       assert.strictEqual(
-        resolveBasePath({
-          disableBasePath: true,
-          envBasePath: '',
-          isGitHubActions: true,
-          isGitHub: true,
-          cnameExists: false,
-          projectName: 'ScriptHammer',
-        }),
-        ''
+        config.isGitHub,
+        true,
+        'host containing "github" is GitHub'
       );
+      assert.strictEqual(config.basePath, '/Widget');
+    });
 
-      // The disable flag even overrides an explicit NEXT_PUBLIC_BASE_PATH.
+    it('honours an explicit NEXT_PUBLIC_BASE_PATH over auto-detection', () => {
+      const dir = makeFixture({ cname: 'widget.example' });
       assert.strictEqual(
-        resolveBasePath({
-          disableBasePath: true,
-          envBasePath: '/ScriptHammer',
-          isGitHubActions: true,
-          isGitHub: true,
-          cnameExists: false,
-          projectName: 'ScriptHammer',
-        }),
+        run(dir, { GITHUB_ACTIONS: 'true', NEXT_PUBLIC_BASE_PATH: '/Explicit' })
+          .basePath,
+        '/Explicit'
+      );
+    });
+
+    it('lets DISABLE_BASE_PATH beat even an explicit base path', () => {
+      // Load-bearing for the E2E lane, which serves the export from the root.
+      const dir = makeFixture();
+      assert.strictEqual(
+        run(dir, {
+          GITHUB_ACTIONS: 'true',
+          NEXT_PUBLIC_BASE_PATH: '/Explicit',
+          DISABLE_BASE_PATH: 'true',
+        }).basePath,
         ''
       );
     });
+  });
 
-    test('base path resolution is unchanged when DISABLE_BASE_PATH is unset', () => {
-      // A custom-domain deploy (CNAME present) resolves to '' — the template case.
-      assert.strictEqual(
-        resolveBasePath({
-          disableBasePath: false,
-          envBasePath: '',
-          isGitHubActions: true,
-          isGitHub: true,
-          cnameExists: true,
-          projectName: 'ScriptHammer',
-        }),
-        ''
-      );
+  describe('identity', () => {
+    it('prefers the env override pair, and needs BOTH halves', () => {
+      const dir = makeFixture();
+      const both = run(dir, {
+        NEXT_PUBLIC_PROJECT_NAME: 'Override',
+        NEXT_PUBLIC_PROJECT_OWNER: 'someone',
+      });
+      assert.strictEqual(both.detectionSource, 'env');
+      assert.strictEqual(both.projectName, 'Override');
 
-      // An explicit env var still wins over auto-detection.
-      assert.strictEqual(
-        resolveBasePath({
-          disableBasePath: false,
-          envBasePath: '/custom',
-          isGitHubActions: true,
-          isGitHub: true,
-          cnameExists: false,
-          projectName: 'ScriptHammer',
-        }),
-        '/custom'
-      );
-
-      // Outside GitHub Actions there is no base path.
-      assert.strictEqual(
-        resolveBasePath({
-          disableBasePath: false,
-          envBasePath: '',
-          isGitHubActions: false,
-          isGitHub: true,
-          cnameExists: false,
-          projectName: 'ScriptHammer',
-        }),
-        ''
-      );
+      // One half alone is ignored entirely — it falls through to git.
+      const half = run(dir, { NEXT_PUBLIC_PROJECT_NAME: 'Override' });
+      assert.strictEqual(half.detectionSource, 'git');
+      assert.strictEqual(half.projectName, 'Widget');
     });
 
-    test('should handle concurrent file writes', () => {
-      // This tests that file writes won't interfere with each other
-      const paths = ['/tmp/test1.json', '/tmp/test2.json', '/tmp/test3.json'];
+    it('falls back to the template defaults with no remote', () => {
+      const dir = makeFixture({ remote: null });
+      const config = run(dir);
+      assert.strictEqual(config.detectionSource, 'default');
+      assert.strictEqual(config.projectName, 'ScriptHammer'); // rebrand:keep
+    });
 
-      const writes = [];
-      for (const p of paths) {
-        writes.push({
-          path: p,
-          content: JSON.stringify({ test: true }),
-        });
-      }
+    it('parses SSH remotes as well as HTTPS', () => {
+      const dir = makeFixture({ remote: 'git@github.com:acme/Widget.git' });
+      const config = run(dir, { GITHUB_ACTIONS: 'true' });
+      assert.strictEqual(config.projectOwner, 'acme');
+      assert.strictEqual(config.basePath, '/Widget');
+    });
+  });
 
-      // In real implementation, these should be synchronous
-      assert.strictEqual(writes.length, 3);
+  describe('writes', () => {
+    it('creates .env.local once and never overwrites it', () => {
+      // Write-once by design. A test that missed this would let a change silently start
+      // clobbering a developer's local configuration.
+      const dir = makeFixture();
+      run(dir);
+      const envPath = path.join(dir, '.env.local');
+      assert.ok(fs.existsSync(envPath));
+
+      fs.writeFileSync(envPath, 'HAND_EDITED=1\n');
+      run(dir, { GITHUB_ACTIONS: 'true' });
+      assert.strictEqual(fs.readFileSync(envPath, 'utf8'), 'HAND_EDITED=1\n');
+    });
+
+    it('is safe to run repeatedly — only the timestamp moves', () => {
+      const dir = makeFixture();
+      const first = run(dir, { GITHUB_ACTIONS: 'true' });
+      const second = run(dir, { GITHUB_ACTIONS: 'true' });
+      delete first.generatedAt;
+      delete second.generatedAt;
+      assert.deepStrictEqual(second, first);
     });
   });
 });
