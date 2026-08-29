@@ -245,15 +245,22 @@ Both live under **Settings → Secrets and variables → Actions**, on two diffe
 **the tab matters** — putting a value in the wrong one does not error, it arrives as an empty
 string and the site builds without it.
 
-#### Repository SECRETS — required, the deploy hard-fails without this one
+#### Repository SECRETS — optional; nothing here stops a deploy
 
 ```
 NEXT_PUBLIC_PAGESPEED_API_KEY=your-google-api-key
 ```
 
-`.github/workflows/deploy.yml` checks this before it runs the build and exits 1 if it is empty.
-It is the single thing standing between your first push and any site existing. (It ships in the
-client bundle either way, so it is a "secret" only by storage location.)
+**Your first push publishes a site whether or not you set this.** It used to exit 1 before the
+build, which is why older copies of this guide called it required (#987).
+
+What it buys: `/status` asks PageSpeed Insights to audit your live site — a lab run Google performs
+on demand, plus real-user field data once you have enough traffic for it. The API answers without a
+key at a lower rate, so unset, that panel may read "over the anonymous quota" instead of showing
+scores.
+
+It ships in the client bundle, because the call happens in the browser. Restrict it by HTTP referrer
+in the Google console; the Secrets tab is storage, not protection.
 
 #### Repository VARIABLES — not secrets
 

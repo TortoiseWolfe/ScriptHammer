@@ -882,17 +882,6 @@
         </thead>
         <tbody>
           <tr>
-            <th colspan="3" class="grp">Stops the deploy</th>
-          </tr>
-          <tr>
-            <td><code>NEXT_PUBLIC_PAGESPEED_API_KEY</code></td>
-            <td class="sec">Secret</td>
-            <td>
-              The ONLY hard stop. deploy.yml exits before `pnpm build`, so no
-              site is ever published. Nothing in the app reads it (#987).
-            </td>
-          </tr>
-          <tr>
             <th colspan="3" class="grp">Stops the app working</th>
           </tr>
           <tr>
@@ -1088,6 +1077,15 @@
             <td><code>NEXT_PUBLIC_GA_MEASUREMENT_ID</code></td>
             <td class="var">Variable</td>
             <td>No Google Analytics.</td>
+          </tr>
+          <tr>
+            <td><code>NEXT_PUBLIC_PAGESPEED_API_KEY</code></td>
+            <td class="sec">Secret</td>
+            <td>
+              /status falls back to the unauthenticated PageSpeed quota, so its
+              live scores may read &ldquo;over the anonymous quota&rdquo;. It
+              stopped the deploy until #987; it no longer does.
+            </td>
           </tr>
           <tr>
             <td><code>NEXT_PUBLIC_SENTRY_DSN</code></td>

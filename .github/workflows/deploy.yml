@@ -35,11 +35,28 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Verify PageSpeed API Key
+      # THIS USED TO EXIT 1, AND IT WAS THE ONLY HARD STOP IN THE WHOLE DEPLOY (#987).
+      #
+      # A new project could not publish a site at all without obtaining a Google API
+      # key — and setting one changed nothing, because nothing consumed it. The check
+      # was an emptiness test, never a validity one, so any string satisfied it: a real
+      # fork deployed on the literal value `placeholder-no-pagespeed-key-see-issue`.
+      # The failure happened BEFORE `pnpm build`, so Pages reported "never built" and
+      # the URL 404'd with no signal that a secret was the cause.
+      #
+      # The key is load-bearing now — /status calls PageSpeed Insights with it — but
+      # what it buys is a bigger quota on one panel. The v5 endpoint answers
+      # unauthenticated requests at a lower rate, so a missing key degrades that panel
+      # and nothing else. Refusing to publish a site over it was never proportionate.
+      #
+      # It stays a step rather than disappearing, because "you have not set this and
+      # here is what it costs you" is the signal a forker actually needs. It is stated
+      # once, at deploy time, where they are looking.
+      - name: Report PageSpeed API key status
         run: |
           if [ -z "${{ secrets.NEXT_PUBLIC_PAGESPEED_API_KEY }}" ]; then
-            echo "::error::NEXT_PUBLIC_PAGESPEED_API_KEY secret is empty or not set"
-            exit 1
+            echo "::warning::No NEXT_PUBLIC_PAGESPEED_API_KEY secret. The site deploys normally; /status falls back to the unauthenticated PageSpeed quota and may show 'over the anonymous quota' instead of live scores. Set the secret to raise it."
+            exit 0
           fi
           echo "::notice::PageSpeed API key is set (length: ${#NEXT_PUBLIC_PAGESPEED_API_KEY})"
         env:

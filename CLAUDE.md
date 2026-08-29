@@ -298,15 +298,24 @@ unchanged, back to 200 within ~2 minutes (watch for `[self-heal]` in
 load-bearing.** `deploy.yml` reads the Supabase pair from `vars.*`. Put them in Secrets and nothing
 errors — they arrive as empty strings, the deploy goes green, and the bundle ships with no backend.
 
-### Secrets — one, and the deploy hard-fails without it
+### Secrets — none of them stop a deploy any more
 
 ```
 NEXT_PUBLIC_PAGESPEED_API_KEY=your-google-api-key
 ```
 
-`.github/workflows/deploy.yml:38-46` exits 1 before `pnpm build` when this is empty. Both fork docs
-called it "Optional" until #898's follow-up; it is the single wall between a first push and any site
-existing.
+**There is no longer any hard stop in the deploy (#987).** This value used to be one:
+`deploy.yml` exited 1 before `pnpm build` when it was empty, so a fork could not publish a site at
+all — while nothing in the repo read the key. The check was an emptiness test, never a validity
+one, so any string passed it; a real fork deployed on `placeholder-no-pagespeed-key-see-issue`.
+
+The key is load-bearing now — `/status` calls PageSpeed Insights with it, for a lab audit Google
+runs on demand plus CrUX field data when the URL has enough traffic. What it buys is **quota**: the
+v5 endpoint answers unauthenticated requests at a lower rate, so a missing key degrades one panel
+and nothing else. The step still runs and now warns instead of failing.
+
+It ships in the client bundle by design, because the call is made from the browser. Restrict it by
+HTTP referrer in the Google console rather than treating its storage tab as protection.
 
 ### Variables — not secrets
 
