@@ -58,9 +58,47 @@ jobs:
         with:
           node-version: '20.x'
 
-      # No install step: the checker uses built-in fetch and imports nothing.
-      - name: Compare production against INTENDED
+      # IS THERE A PROJECT TO INTERROGATE? (#985)
+      #
+      # A fresh fork has no Supabase project, so this asked a live API about nothing
+      # and failed. A step, not a job-level `if:`, because half the pair is a secret
+      # and the `secrets` context is not available in a job-level condition.
+      #
+      # THE HARDCODED FALLBACK IS GONE, and that is the other half of this change.
+      # The `||` default pointed every fork's CI at THIS project's ref — so a fork was
+      # not merely failing, it was failing while
+      # asking questions about somebody else's database. The variable is set on this
+      # repository to exactly that value, so removing the default changes nothing here.
+      #
+      # HALF-CONFIGURED STILL FAILS: neither set is "no project yet"; exactly one set
+      # is a misconfiguration, and letting it skip would mean deleting the token
+      # silently retires a daily gate.
+      - name: Is a Supabase project configured?
+        id: configured
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF || 'ozbdyopxmeqmwnfsmglp' }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: |
+          set -euo pipefail
+          if [ -n "$SUPABASE_ACCESS_TOKEN" ] && [ -n "$SUPABASE_PROJECT_REF" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "  Supabase project configured — the drift check will run"
+            exit 0
+          fi
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ] && [ -z "$SUPABASE_PROJECT_REF" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No Supabase project configured, so there is no production schema to compare against. Set the SUPABASE_PROJECT_REF repository VARIABLE and the SUPABASE_ACCESS_TOKEN repository SECRET to enable this check."
+            exit 0
+          fi
+          echo "::error::Supabase is half-configured, which is not the same as unconfigured."
+          [ -n "$SUPABASE_PROJECT_REF" ] || echo "::error::  missing repository VARIABLE  SUPABASE_PROJECT_REF"
+          [ -n "$SUPABASE_ACCESS_TOKEN" ] || echo "::error::  missing repository SECRET    SUPABASE_ACCESS_TOKEN"
+          exit 1
+
+      # No install step: the checker uses built-in fetch and imports nothing.
+      - name: Compare production against INTENDED
+        if: steps.configured.outputs.configured == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
         run: node scripts/ci/check-prod-schema-drift.mjs

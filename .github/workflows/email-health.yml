@@ -86,7 +86,30 @@ jobs:
         with:
           node-version: 20.x
 
+      # IS THERE A SENDING ACCOUNT TO ASK ABOUT? (#985)
+      #
+      # A fresh fork has no Resend account, so this asked a live API about nothing and
+      # failed. Unlike the Supabase pair there is no half-configured state here — one
+      # credential, present or absent — so a single check is the whole condition.
+      #
+      # A step rather than a job-level `if:`, because the `secrets` context is not
+      # available in a job-level condition at all.
+      - name: Is a sending account configured?
+        id: configured
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "$RESEND_API_KEY" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            echo "  Resend configured — the bounce-rate check will run"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No Resend account configured, so there is no sending reputation to measure. Set the RESEND_API_KEY repository SECRET to enable this check."
+          fi
+
       - name: Check bounce rate against Resend
+        if: steps.configured.outputs.configured == 'true'
         env:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           # Both dispatch inputs go through env, never interpolated into the
