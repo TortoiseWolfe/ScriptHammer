@@ -699,16 +699,68 @@ test_component_identifiers_are_valid() {
         log_pass "CNAME removed — a fork owns no domain until it says so"
     fi
 
-    # 6. …and --keep-cname must still keep it. Without this, "removed" could be
-    #    satisfied by a script that deletes unconditionally, which would break the
-    #    one fork that really is migrating a domain in.
+    # 6. --keep-cname ON AN INHERITED DOMAIN MUST REFUSE (#995).
+    #
+    #    This assertion used to be `[ -f public/CNAME ]` — existence — and it passed
+    #    while printing the invented domain into its own success message. That is the
+    #    same shape as the pre-#961 gate it sits next to: it asked whether a hostname
+    #    was THERE rather than whether anybody owned it.
+    #
+    #    Exit status AND an unmodified tree, because a refusal that has already
+    #    rewritten half the repository is not a refusal.
     setup_temp_dir
+    local before_readme status
+    before_readme=$(cat "$TEMP_DIR/README.md")
+    set +e
     "$TEMP_DIR/scripts/rebrand.sh" "geo LARP" "testuser" "Test desc" --force --no-icon \
-        --keep-cname >/dev/null 2>&1 || true
-    if [ -f "$TEMP_DIR/public/CNAME" ]; then
-        log_pass "--keep-cname still keeps it ($(cat "$TEMP_DIR/public/CNAME"))"
+        --keep-cname >/dev/null 2>&1
+    status=$?
+    set -e
+    if [ "$status" -ne 0 ]; then
+        log_pass "--keep-cname refuses an inherited domain"
     else
-        log_fail "--keep-cname honoured" "public/CNAME retained under --keep-cname" "removed anyway"
+        log_fail "--keep-cname refusal" "a non-zero exit" \
+            "exited 0, keeping $(cat "$TEMP_DIR/public/CNAME" 2>/dev/null)"
+    fi
+    if [ "$(cat "$TEMP_DIR/README.md")" = "$before_readme" ]; then
+        log_pass "The refusal happens before any mutation"
+    else
+        log_fail "Refusal is preflight" "README.md untouched by a refused run" \
+            "$(cat "$TEMP_DIR/README.md")"
+    fi
+
+    # 7. …but a domain the forker ACTUALLY OWNS must survive --keep-cname byte for
+    #    byte. Without this pair, "refuses" is satisfied by a script that refuses
+    #    unconditionally, which would break the one fork the flag exists for — and
+    #    byte-for-byte because a rewritten hostname is a dead site, not a typo.
+    #    THE EXIT STATUS IS HALF THE ASSERTION, and leaving it out made this pair
+    #    vacuous: a script that refuses UNCONDITIONALLY also leaves the file
+    #    untouched, because the refusal is preflight. Measured — that mutation
+    #    passed every assertion here until the status and the rebrand-actually-ran
+    #    checks were added.
+    setup_temp_dir
+    printf 'forkowner-realdomain.net' > "$TEMP_DIR/public/CNAME"
+    (cd "$TEMP_DIR" && git add -A >/dev/null 2>&1)
+    set +e
+    "$TEMP_DIR/scripts/rebrand.sh" "geo LARP" "testuser" "Test desc" --force --no-icon \
+        --keep-cname >/dev/null 2>&1
+    status=$?
+    set -e
+    if [ "$status" -eq 0 ]; then
+        log_pass "--keep-cname on an owned domain is accepted"
+    else
+        log_fail "--keep-cname accepted" "exit 0 for a domain the fork owns" "exit $status"
+    fi
+    if grep -q "geo LARP" "$TEMP_DIR/README.md"; then
+        log_pass "…and the rebrand actually ran"
+    else
+        log_fail "Rebrand ran" "geo LARP in README.md" "$(cat "$TEMP_DIR/README.md")"
+    fi
+    if [ "$(cat "$TEMP_DIR/public/CNAME" 2>/dev/null)" = "forkowner-realdomain.net" ]; then
+        log_pass "--keep-cname preserves a domain the fork owns, unchanged"
+    else
+        log_fail "--keep-cname honoured" "forkowner-realdomain.net preserved exactly" \
+            "$(cat "$TEMP_DIR/public/CNAME" 2>/dev/null || echo '<removed>')"
     fi
 
     cd "$REPO_ROOT"
