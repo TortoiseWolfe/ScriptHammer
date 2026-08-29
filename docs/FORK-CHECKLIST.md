@@ -187,12 +187,6 @@ whole list is here rather than the four that usually matter.
 
 <!-- env-inventory:start -->
 
-#### Stops the deploy
-
-| Value                           | Tab    | Without it                                                                                                                  |
-| ------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_PAGESPEED_API_KEY` | Secret | The ONLY hard stop. deploy.yml exits before `pnpm build`, so no site is ever published. Nothing in the app reads it (#987). |
-
 #### Stops the app working
 
 | Value                           | Tab      | Without it                                                                                                                       |
@@ -249,16 +243,17 @@ whole list is here rather than the four that usually matter.
 
 #### Analytics, monitoring and extras
 
-| Value                             | Tab      | Without it                           |
-| --------------------------------- | -------- | ------------------------------------ |
-| `NEXT_PUBLIC_GA_MEASUREMENT_ID`   | Variable | No Google Analytics.                 |
-| `NEXT_PUBLIC_SENTRY_DSN`          | Secret   | No error reporting.                  |
-| `NEXT_PUBLIC_DISQUS_SHORTNAME`    | Variable | Blog comments disabled.              |
-| `NEXT_PUBLIC_CALENDAR_PROVIDER`   | Variable | Scheduling embed disabled.           |
-| `NEXT_PUBLIC_CALENDAR_URL`        | Variable | Scheduling embed disabled.           |
-| `NEXT_PUBLIC_CAPTCHA_SITE_KEY`    | Variable | Sign-up captcha disabled.            |
-| `NEXT_PUBLIC_SITE_TWITTER_HANDLE` | Variable | twitter:site omitted from cards.     |
-| `NEXT_PUBLIC_SOCIAL_PLATFORMS`    | Variable | Share buttons fall back to defaults. |
+| Value                             | Tab      | Without it                                                                                                                                                              |
+| --------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID`   | Variable | No Google Analytics.                                                                                                                                                    |
+| `NEXT_PUBLIC_PAGESPEED_API_KEY`   | Secret   | /status falls back to the unauthenticated PageSpeed quota, so its live scores may read 'over the anonymous quota'. It stopped the deploy until #987; it no longer does. |
+| `NEXT_PUBLIC_SENTRY_DSN`          | Secret   | No error reporting.                                                                                                                                                     |
+| `NEXT_PUBLIC_DISQUS_SHORTNAME`    | Variable | Blog comments disabled.                                                                                                                                                 |
+| `NEXT_PUBLIC_CALENDAR_PROVIDER`   | Variable | Scheduling embed disabled.                                                                                                                                              |
+| `NEXT_PUBLIC_CALENDAR_URL`        | Variable | Scheduling embed disabled.                                                                                                                                              |
+| `NEXT_PUBLIC_CAPTCHA_SITE_KEY`    | Variable | Sign-up captcha disabled.                                                                                                                                               |
+| `NEXT_PUBLIC_SITE_TWITTER_HANDLE` | Variable | twitter:site omitted from cards.                                                                                                                                        |
+| `NEXT_PUBLIC_SOCIAL_PLATFORMS`    | Variable | Share buttons fall back to defaults.                                                                                                                                    |
 
 <!-- env-inventory:end -->
 

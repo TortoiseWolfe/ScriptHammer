@@ -32,20 +32,16 @@ export const END = '<!-- env-inventory:end -->';
 /**
  * What breaks without each value, and which group it belongs to.
  *
- * Ordered by consequence, not alphabetically: the first group stops a site existing,
- * the second stops it working, the third makes it lie about its own address, and the
- * rest are features that are simply absent.
+ * Ordered by consequence, not alphabetically: the first group stops the app working,
+ * the second makes it lie about its own address, and the rest are features that are
+ * simply absent.
+ *
+ * THERE IS NO LONGER A "STOPS THE DEPLOY" GROUP, and that is the point of #987. It held
+ * exactly one value — NEXT_PUBLIC_PAGESPEED_API_KEY — which stopped a site existing
+ * while nothing in the repo read it. Every value here now degrades a feature; none of
+ * them prevents publishing.
  */
 export const GROUPS = [
-  [
-    'Stops the deploy',
-    [
-      [
-        'NEXT_PUBLIC_PAGESPEED_API_KEY',
-        'The ONLY hard stop. deploy.yml exits before `pnpm build`, so no site is ever published. Nothing in the app reads it (#987).',
-      ],
-    ],
-  ],
   [
     'Stops the app working',
     [
@@ -134,6 +130,10 @@ export const GROUPS = [
     'Analytics, monitoring and extras',
     [
       ['NEXT_PUBLIC_GA_MEASUREMENT_ID', 'No Google Analytics.'],
+      [
+        'NEXT_PUBLIC_PAGESPEED_API_KEY',
+        "/status falls back to the unauthenticated PageSpeed quota, so its live scores may read 'over the anonymous quota'. It stopped the deploy until #987; it no longer does.",
+      ],
       ['NEXT_PUBLIC_SENTRY_DSN', 'No error reporting.'],
       ['NEXT_PUBLIC_DISQUS_SHORTNAME', 'Blog comments disabled.'],
       ['NEXT_PUBLIC_CALENDAR_PROVIDER', 'Scheduling embed disabled.'],

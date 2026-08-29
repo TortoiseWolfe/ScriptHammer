@@ -15,6 +15,11 @@ import { useEffect, useState } from 'react';
 import { pwaTester, type PWATestResult } from '@/utils/pwa-test';
 import { onFCP, onLCP, onCLS, onTTFB, type Metric } from '@/utils/web-vitals';
 import { getAssetUrl } from '@/config/project.config';
+import {
+  fetchPageSpeed,
+  type PageSpeedLab,
+  type PageSpeedResult,
+} from '@/utils/pagespeed';
 import pkg from '../../../package.json';
 
 type State = 'pass' | 'warn' | 'fail' | 'pending';
@@ -39,6 +44,52 @@ const LH: readonly (readonly [string, string])[] = [
 
 // prettier-ignore
 const rateLH = (n: number): State => (n >= 90 ? 'pass' : n >= 50 ? 'warn' : 'fail');
+
+// PageSpeed Insights (#987). The key `deploy.yml` demanded now buys something: a lab
+// audit Google runs on demand, plus CrUX field data when the URL has enough real
+// traffic. Both are things neither the committed CI scores nor this visitor's own
+// vitals can provide — CI scores are stale by construction (monitor.yml's commit step
+// is disabled), and one visitor is a sample of one.
+const PSI_GROUP = 'PageSpeed · live · Google';
+const PSI_FIELD_GROUP = 'PageSpeed · field · CrUX 28d';
+// prettier-ignore
+const PSI_LAB: readonly (readonly [keyof PageSpeedLab, string])[] = [
+  ['performance', 'Performance'], ['accessibility', 'Accessibility'],
+  ['bestPractices', 'Best Practices'], ['seo', 'SEO'],
+];
+// Google's own bucketing, not ours — re-deriving thresholds here would drift from
+// whatever CrUX considers fast this quarter.
+// prettier-ignore
+const fromCrux = (c: string): State =>
+  c === 'FAST' ? 'pass' : c === 'AVERAGE' ? 'warn' : c === 'SLOW' ? 'fail' : 'pending';
+// prettier-ignore
+const CRUX_LABEL: Record<string, string> = {
+  LARGEST_CONTENTFUL_PAINT_MS: 'LCP', FIRST_CONTENTFUL_PAINT_MS: 'FCP',
+  CUMULATIVE_LAYOUT_SHIFT_SCORE: 'CLS', INTERACTION_TO_NEXT_PAINT: 'INP',
+  EXPERIMENTAL_TIME_TO_FIRST_BYTE: 'TTFB',
+};
+/**
+ * Why a PageSpeed row has no number. Each string sends the reader somewhere
+ * different, which is the entire point: "rate limited" and "no key" have different
+ * fixes, and telling someone their key is missing when they are simply over the
+ * anonymous quota sends them to buy something they may already have.
+ */
+// prettier-ignore
+function psiDetail(psi: PageSpeedResult | null): string {
+  if (psi == null) return 'asking Google…';
+  if (psi.state === 'rate-limited') {
+    return psi.keyless
+      ? 'over the anonymous quota — set NEXT_PUBLIC_PAGESPEED_API_KEY to raise it'
+      : 'over quota for this API key';
+  }
+  if (psi.state === 'error') return psi.message;
+  return 'no score returned';
+}
+
+/** CLS is reported as an integer hundredth; everything else is milliseconds. */
+// prettier-ignore
+const cruxValue = (id: string, p: number): string =>
+  id === 'CUMULATIVE_LAYOUT_SHIFT_SCORE' ? (p / 100).toFixed(3) : `${p} ms`;
 // prettier-ignore
 const fromVital = (r: Metric['rating']): State =>
   r === 'good' ? 'pass' : r === 'needs-improvement' ? 'warn' : 'fail';
@@ -101,6 +152,7 @@ export default function StatusPage() {
   const [lh, setLh] = useState<Record<string, number | null> | null>(null);
   const [lhTime, setLhTime] = useState<string | null>(null);
   const [online, setOnline] = useState(true);
+  const [psi, setPsi] = useState<PageSpeedResult | null>(null);
 
   // prettier-ignore
   useEffect(() => {
@@ -117,7 +169,19 @@ export default function StatusPage() {
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((d) => { setLh(d.mobile ?? d); setLhTime(d.timestamp ?? null); })
       .catch(() => {});
-    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+    // Audit the page the visitor is actually on. A local origin is unreachable from
+    // Google, so say that instead of spending a request to be told 400 — the error a
+    // dev server produces reads like a broken integration and is not one.
+    const controller = new AbortController();
+    const origin = window.location.origin;
+    if (/^https:\/\//.test(origin) && !/^https:\/\/(localhost|127\.|\[?::1)/.test(origin)) {
+      fetchPageSpeed(origin + window.location.pathname, 'mobile', { signal: controller.signal })
+        .then(setPsi)
+        .catch(() => setPsi({ state: 'error', message: 'request failed' }));
+    } else {
+      setPsi({ state: 'error', message: 'not audited from a local origin' });
+    }
+    return () => { controller.abort(); window.removeEventListener('online', on); window.removeEventListener('offline', off); };
   }, []);
 
   // Normalize three sources → one Check[]. Rendering just maps it.
@@ -141,6 +205,23 @@ export default function StatusPage() {
       group: 'PWA · live probe', label: r.feature, value: r.status,
       state: r.status === 'pass' ? 'pass' : r.status === 'warning' ? 'warn' : 'fail',
       detail: r.message,
+    })),
+    // PageSpeed lab. Four rows always, so a rate-limited or errored call is VISIBLE
+    // rather than an absent section — an empty space reads as "nothing to report",
+    // which is the opposite of what a status page owes the reader.
+    ...PSI_LAB.map(([key, label]): Check => {
+      const n = psi?.state === 'ok' ? psi.lab[key] : null;
+      if (typeof n === 'number') return { group: PSI_GROUP, label, value: String(n), state: rateLH(n) };
+      return { group: PSI_GROUP, label, value: '—', state: 'pending', detail: psiDetail(psi) };
+    }),
+    // Field data only when CrUX actually has it. Most sites, and every new fork, do
+    // not have enough traffic — so no rows here is the honest common case, not a bug.
+    ...(psi?.state === 'ok' && psi.field ? psi.field : []).map((m): Check => ({
+      group: PSI_FIELD_GROUP,
+      label: CRUX_LABEL[m.id] ?? m.id,
+      value: cruxValue(m.id, m.percentile),
+      state: fromCrux(m.category),
+      detail: '75th percentile of real users, 28-day rolling',
     })),
   ];
 

@@ -184,11 +184,11 @@ Full deployment guide: [docs/PAYMENT-DEPLOYMENT.md](./docs/PAYMENT-DEPLOYMENT.md
 Add these under **Settings → Secrets and variables → Actions**. That page has two tabs and
 **the tab matters** — a value on the wrong one does not error, it arrives as an empty string.
 
-**Secrets — the deploy hard-fails without this:**
+**Secrets — none of these stop a deploy:**
 
-| Secret                          | Purpose                                               |
-| ------------------------------- | ----------------------------------------------------- |
-| `NEXT_PUBLIC_PAGESPEED_API_KEY` | `deploy.yml` exits 1 before building if this is empty |
+| Secret                          | Purpose                                                                      |
+| ------------------------------- | ---------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_PAGESPEED_API_KEY` | Raises the PageSpeed quota `/status` uses. Unset, that panel is rate-limited |
 
 **Variables, not secrets — `deploy.yml` reads these from `vars.*`:**
 
