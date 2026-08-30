@@ -67,7 +67,7 @@ export const CustomContent: Story = {
   args: {
     customContent: (
       <div>
-        <h3 className="mb-2 text-lg font-bold">🍪 Cookie Notice</h3>
+        <h3 className="mb-2 text-lg font-bold">Cookie Notice</h3>
         <p className="text-sm">
           This website uses cookies to ensure you get the best experience. We
           use essential cookies for site functionality and optional cookies for
