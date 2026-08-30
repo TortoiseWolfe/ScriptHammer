@@ -214,17 +214,29 @@ describe('DisqusComments', () => {
     expect(readConfig().url).toBe('https://example.com/blog/hello-world');
   });
 
-  it('falls back to the TEMPLATE domain when handed a relative URL', async () => {
-    // Recording the real behaviour, not the behaviour one would prefer. The
-    // fallback is `https://scripthammer.com/blog/${slug}`, justified by a comment
-    // saying env vars are unavailable during the Actions build. That claim is
-    // stale — deploy.yml passes NEXT_PUBLIC_DEPLOY_URL at build time, and
-    // blog/[slug]/page.tsx always hands over an absolute URL built from it, so
-    // this branch is unreachable in practice (#1014). If someone stops passing `url`,
-    // this test names the domain a fork would silently start posting against.
+  it("falls back to THIS SITE's origin, not the template's (#1014)", async () => {
+    // Stubbed to a fork-like origin ON PURPOSE. This container runs with
+    // NEXT_PUBLIC_DEPLOY_URL=https://scripthammer.com, so asserting that string
+    // would pass whether the value were resolved or hardcoded — which is exactly
+    // how the previous version of this test stopped meaning anything the moment
+    // the hardcoding was removed. A value no one would hardcode is what makes the
+    // assertion discriminate.
+    vi.stubEnv('NEXT_PUBLIC_DEPLOY_URL', 'https://a-fork.example');
     render(<DisqusComments {...PROPS} url="/blog/hello-world" />);
     scrollIntoView();
     await waitFor(() => expect(window.disqus_config).toBeDefined());
-    expect(readConfig().url).toBe('https://scripthammer.com/blog/hello-world');
+    expect(readConfig().url).toBe('https://a-fork.example/blog/hello-world');
+    vi.unstubAllEnvs();
+  });
+
+  it('prefers an absolute URL it is given over its own fallback', async () => {
+    // The caller always supplies one in practice (blog/[slug]/page.tsx), so this
+    // is the path that actually runs; the fallback above is the fork trap.
+    vi.stubEnv('NEXT_PUBLIC_DEPLOY_URL', 'https://a-fork.example');
+    render(<DisqusComments {...PROPS} />);
+    scrollIntoView();
+    await waitFor(() => expect(window.disqus_config).toBeDefined());
+    expect(readConfig().url).toBe('https://example.com/blog/hello-world');
+    vi.unstubAllEnvs();
   });
 });

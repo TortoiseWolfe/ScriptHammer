@@ -7,6 +7,7 @@ import {
   getRedirectUrl,
   generateManifest,
   projectConfig,
+  resolveBaseUrl,
 } from '../project.config';
 
 // Mock environment variables
@@ -122,6 +123,39 @@ describe('Project Configuration', () => {
       expect(config.swPath).toBe('/my-app/sw.js');
       expect(config.faviconPath).toBe('/my-app/favicon.svg');
       expect(config.appleTouchIconPath).toBe('/my-app/apple-touch-icon.svg');
+    });
+  });
+
+  describe('resolveBaseUrl (#1014)', () => {
+    beforeEach(() => {
+      delete process.env.NEXT_PUBLIC_BASE_URL;
+    });
+
+    it('uses the configured deploy URL', () => {
+      process.env.NEXT_PUBLIC_DEPLOY_URL = 'https://a-fork.example';
+      expect(resolveBaseUrl()).toBe('https://a-fork.example');
+    });
+
+    it('lets NEXT_PUBLIC_BASE_URL override the deploy URL', () => {
+      // The per-fork escape hatch. Untested until this became a shared export —
+      // mutation-testing #1014 showed the override branch could be deleted
+      // entirely with every suite still green.
+      process.env.NEXT_PUBLIC_DEPLOY_URL = 'https://a-fork.example';
+      process.env.NEXT_PUBLIC_BASE_URL = 'https://override.example';
+      expect(resolveBaseUrl()).toBe('https://override.example');
+    });
+
+    it('ignores a blank or whitespace override rather than returning an empty origin', () => {
+      process.env.NEXT_PUBLIC_DEPLOY_URL = 'https://a-fork.example';
+      process.env.NEXT_PUBLIC_BASE_URL = '   ';
+      expect(resolveBaseUrl()).toBe('https://a-fork.example');
+    });
+
+    it('strips trailing slashes, so callers can concatenate a path safely', () => {
+      // Every caller writes `${resolveBaseUrl()}/blog/...`; without this a
+      // configured value ending in `/` yields a double slash in canonical URLs.
+      process.env.NEXT_PUBLIC_DEPLOY_URL = 'https://a-fork.example///';
+      expect(resolveBaseUrl()).toBe('https://a-fork.example');
     });
   });
 
