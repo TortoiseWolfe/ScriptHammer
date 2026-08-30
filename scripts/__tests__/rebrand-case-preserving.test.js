@@ -153,8 +153,11 @@ describe('case-preserving rebrand transform (#933)', () => {
 
   test('does not collide with an existing target identifier', async () => {
     const { replaceBrandText } = await helper;
+    // Footer moved into its own directory when it adopted the 5-file pattern (#547).
+    // It is used here as a FIXTURE — it destructures FOOTER_LINKS into three names, and a
+    // case-preserving rebrand must not collapse two of them onto one identifier.
     const footer = readFileSync(
-      path.join(ROOT, 'src', 'components', 'Footer.tsx'),
+      path.join(ROOT, 'src', 'components', 'Footer', 'Footer.tsx'),
       'utf8'
     );
     const transformed = replaceBrandText(
