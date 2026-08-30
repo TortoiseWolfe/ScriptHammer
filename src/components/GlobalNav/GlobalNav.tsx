@@ -10,6 +10,11 @@ import { TextSettingsPanel } from '@/components/navigation/FontSizeControl';
 import { detectedConfig } from '@/config/project-detected';
 import { THEMES } from '@/config/themes';
 import { getInternalUrl } from '@/config/project.config';
+import {
+  applyTheme,
+  readStoredThemeOrNull,
+  DEFAULT_THEME,
+} from '@/utils/apply-theme';
 import { selectRenderer } from '@/twin/renderer-select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
@@ -223,13 +228,19 @@ export function GlobalNav() {
   }, [user?.id]);
 
   // Theme management — read existing theme, don't overwrite ThemeScript's work.
-  // ThemeScript runs before hydration and sets data-theme from localStorage
+  // ThemeScript runs before hydration and sets data-theme from the stored value
   // or system preference; we just sync React state to it here.
+  //
+  // readStoredThemeOrNull rather than readStoredTheme (#1016): the latter answers
+  // DEFAULT_THEME when nothing is stored, which is indistinguishable from "the
+  // default is stored" — and applying it would stomp the system-preference theme
+  // ThemeScript has already painted, on every load for every visitor who has
+  // never picked one. The documentElement leg has to stay.
   useEffect(() => {
     const savedTheme =
-      localStorage.getItem('theme') ||
+      readStoredThemeOrNull() ||
       document.documentElement.getAttribute('data-theme') ||
-      'scripthammer-dark';
+      DEFAULT_THEME;
     setTheme(savedTheme);
     document.documentElement.setAttribute('data-theme', savedTheme);
 
@@ -239,22 +250,21 @@ export function GlobalNav() {
     }
   }, []);
 
+  /**
+   * One implementation, shared with /themes' ThemeSwitcher (#382, #1016).
+   *
+   * This used to be a second copy: it wrote localStorage UNCONDITIONALLY, so
+   * picking a theme from the nav — the path most visitors take, since the nav is
+   * on every page and /themes is a destination — ignored the visitor's
+   * functional-cookie choice, while doing the same thing on /themes respected it.
+   * applyTheme is the version that gates persistence, writes body as well as
+   * html, broadcasts to other tabs, and tells the service worker.
+   *
+   * React state stays here; applyTheme touches the DOM and storage only.
+   */
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-
-    // Also set on body for consistency
-    if (document.body) {
-      document.body.setAttribute('data-theme', newTheme);
-    }
-
-    // Dispatch custom event for other components to listen to
-    window.dispatchEvent(
-      new CustomEvent('themechange', {
-        detail: { theme: newTheme },
-      })
-    );
+    applyTheme(newTheme);
   };
 
   // PWA installation
