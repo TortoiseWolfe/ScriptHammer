@@ -1457,6 +1457,23 @@ function TwinCanvasInner({
         // shadows the photo already has (measured: ~half the walk workload) —
         // retired. Movers get a cheap blob shadow instead.
         onPointerMissed={handlePointerMissed}
+        // STOP FORCING A SYNCHRONOUS SHADER LINK IN PRODUCTION (#719).
+        //
+        // Three.js calls `getProgramInfoLog()` after every program link while
+        // `debug.checkShaderErrors` is true, which it is by default. That query cannot be
+        // answered until the driver has finished linking, so asking it CONVERTS an
+        // asynchronous link into a blocking wait — on the main thread, once per material.
+        //
+        // Measured on /twins/chatt/?ortho: `getProgramInfoLog` 194 ms of self time, second
+        // only to native rendering, on a route where nothing has gone wrong.
+        //
+        // The guard has a direction (CLAUDE.md): this is a DEVELOPMENT DIAGNOSTIC, not a
+        // protection, so development keeps it and production does not. A shader that fails
+        // to link still fails; what production stops doing is waiting to ask about the ones
+        // that succeeded.
+        onCreated={({ gl }) => {
+          gl.debug.checkShaderErrors = process.env.NODE_ENV === 'development';
+        }}
         dpr={[1, 1.75]}
         gl={{
           toneMapping: NoToneMapping,
