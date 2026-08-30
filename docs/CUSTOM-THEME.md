@@ -158,7 +158,7 @@ After defining your theme blocks, register them in the `@plugin "daisyui"` block
 
 ### ThemeScript.tsx
 
-Update the system theme fallback in `src/components/ThemeScript.tsx`:
+Update the system theme fallback in `src/components/ThemeScript/ThemeScript.tsx`:
 
 ```javascript
 // Change these two return values:
