@@ -87,37 +87,60 @@ describe('PWAInstall', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it.fails('honours a stored dismissal at all', async () => {
-    // KNOWN GAP #1 (#1012), recorded so it goes red when fixed.
-    //
-    // The `pwa-install-dismissed` branch cannot change the outcome in ANY
-    // scenario, which is why an ordinary test of it is vacuous — mutation-testing
-    // proved that: deleting the branch entirely leaves every assertion green.
-    // Before a prompt arrives the pill is already hidden, so setting
-    // showInstallButton(false) does nothing; after one arrives, this mount-only
-    // effect has already run and the beforeinstallprompt handler has set it back
-    // to true. So the assertion below is written the only way that can fail:
-    // against a prompt that arrives after mount, which is the ordinary case in a
-    // real browser.
+  it('honours a stored dismissal even when the prompt arrives LATER', async () => {
+    // #1012. This was an it.fails until the dismissal became state and the check
+    // moved into the render guard. The prompt arriving AFTER mount is the case
+    // that matters, because that is the ordinary order in a real browser — the
+    // mount-only read was set straight back to true by the event handler.
     localStorage.setItem('pwa-install-dismissed', 'true');
     const { container } = render(<PWAInstall />);
     await firePrompt();
     expect(container).toBeEmptyDOMElement();
   });
 
-  it.fails('offers any way to dismiss the prompt for good', async () => {
-    // KNOWN GAP #2 (#1012), and the reason gap #1 has never been reported: NOTHING writes
-    // `pwa-install-dismissed`. The component only ever reads it and removes it.
-    // The × minimises — the pill shrinks to a circular trigger that then sits on
-    // every page forever. A stale comment at PWAInstall.tsx:177 says the
-    // functionality is "handled by handleDismiss", but the only handleDismiss in
-    // the repo belongs to SetupBanner.
+  it('offers a way to dismiss the prompt for good', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<PWAInstall />);
+    await firePrompt();
+
+    await user.click(
+      screen.getByRole('button', { name: "Don't show this again" })
+    );
+
+    // Gone now, and gone on the next page too.
+    expect(container).toBeEmptyDOMElement();
+    expect(localStorage.getItem('pwa-install-dismissed')).toBe('true');
+    expect(trackPWAEvent).toHaveBeenCalledWith('install_prompt_dismissed');
+  });
+
+  it('keeps dismiss and minimise as DIFFERENT actions', async () => {
+    const user = userEvent.setup();
     render(<PWAInstall />);
     await firePrompt();
-    const dismiss = screen.queryByRole('button', {
-      name: /dismiss|don't show|no thanks/i,
-    });
-    expect(dismiss).not.toBeNull();
+
+    // Minimising still collapses to the trigger and is still reversible; only
+    // dismiss is permanent. The old single × did the first while reading as the
+    // second, which is what left visitors stuck with it.
+    await user.click(screen.getByRole('button', { name: 'Minimize' }));
+    expect(
+      screen.getByRole('button', { name: 'Install Progressive Web App' })
+    ).toBeInTheDocument();
+    expect(localStorage.getItem('pwa-install-dismissed')).toBeNull();
+  });
+
+  it('lets ?pwa-reset=true bring back a dismissed prompt', async () => {
+    setSearch('?pwa-reset=true');
+    localStorage.setItem('pwa-install-dismissed', 'true');
+    render(<PWAInstall />);
+    await waitFor(() =>
+      expect(localStorage.getItem('pwa-install-dismissed')).toBeNull()
+    );
+    // The state has to clear too, not just the key — otherwise the reset only
+    // works on the NEXT page load, which is not what the flag says it does.
+    await firePrompt();
+    expect(
+      await screen.findByRole('button', { name: 'Install' })
+    ).toBeInTheDocument();
   });
 
   it('hands the browser prompt over on click, and records the outcome', async () => {

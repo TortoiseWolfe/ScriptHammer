@@ -80,17 +80,36 @@ describe('PWAInstall Accessibility', () => {
     ).toBeInTheDocument();
   });
 
-  it.fails('meets the 44px touch floor on every control', async () => {
-    // KNOWN GAP (#1013), recorded so it goes RED when fixed rather than sitting in a
-    // comment. The pill's controls are btn-xs (~24px) and the collapsed trigger
-    // btn-sm (~32px), against this repo's documented `min-h-11 min-w-11`. The
-    // close button is the worst of them: it is the control someone reaches for to
-    // dismiss an overlay they did not ask for. Filed separately — enlarging them
-    // changes the visual design, which does not belong in a structure PR.
+  it('meets the 44px touch floor on every control', async () => {
+    // #1013. Was an it.fails: the pill's controls were btn-xs (~24px) and the
+    // collapsed trigger btn-sm (~32px), against this repo's documented
+    // `min-h-11 min-w-11`. No E2E gate could see them — mobile-touch-targets
+    // walks ordinary pages and this needs an install prompt to exist at all.
     render(<PWAInstall />);
     await screen.findByRole('button', { name: 'Install' });
     for (const button of screen.getAllByRole('button')) {
       expect(button.className).toContain('min-h-11');
     }
+  });
+
+  it('keeps the floor on the collapsed trigger too', async () => {
+    const u = userEvent.setup();
+    render(<PWAInstall />);
+    await u.click(await screen.findByRole('button', { name: 'Minimize' }));
+    const trigger = screen.getByRole('button', {
+      name: 'Install Progressive Web App',
+    });
+    // The state a visitor is left in for the longest, and the one they must hit
+    // to get the prompt back.
+    expect(trigger.className).toContain('min-h-11');
+    expect(trigger.className).toContain('min-w-11');
+  });
+
+  it('names the dismiss control by what it does, not by its glyph', async () => {
+    render(<PWAInstall />);
+    await screen.findByRole('button', { name: 'Install' });
+    expect(
+      screen.getByRole('button', { name: "Don't show this again" })
+    ).toBeInTheDocument();
   });
 });
