@@ -16,18 +16,40 @@ import { CookieCategory } from './consent-types';
  */
 export const DEFAULT_THEME = 'scripthammer-dark';
 
-/** Read the persisted theme, preferring whichever store consent allows. */
-export function readStoredTheme(): string {
-  if (typeof window === 'undefined') return DEFAULT_THEME;
+/**
+ * Read the persisted theme, or null when nothing is stored.
+ *
+ * The consent-selected store is preferred, but the OTHER store is consulted as a
+ * fallback, and that asymmetry is deliberate: consent governs whether we may
+ * WRITE a value, not whether we may read one that is already sitting there.
+ * Without the fallback, every visitor who chose a theme before persistence was
+ * consent-gated (#1016) would silently lose it, because the nav used to write
+ * localStorage unconditionally while a declined visitor now reads sessionStorage.
+ *
+ * Returns null rather than DEFAULT_THEME so a caller can tell "nothing stored"
+ * from "stored the default" — GlobalNav needs that distinction to avoid stomping
+ * the theme ThemeScript has already painted.
+ */
+export function readStoredThemeOrNull(): string | null {
+  if (typeof window === 'undefined') return null;
+  const preferred = canUseCookies(CookieCategory.FUNCTIONAL)
+    ? window.localStorage
+    : window.sessionStorage;
+  const other =
+    preferred === window.localStorage
+      ? window.sessionStorage
+      : window.localStorage;
   try {
-    const store = canUseCookies(CookieCategory.FUNCTIONAL)
-      ? window.localStorage
-      : window.sessionStorage;
-    return store.getItem('theme') || DEFAULT_THEME;
+    return preferred.getItem('theme') || other.getItem('theme') || null;
   } catch {
     // Safari private mode throws on access.
-    return DEFAULT_THEME;
+    return null;
   }
+}
+
+/** Read the persisted theme, falling back to the default. */
+export function readStoredTheme(): string {
+  return readStoredThemeOrNull() || DEFAULT_THEME;
 }
 
 export function applyTheme(theme: string): void {
@@ -38,6 +60,13 @@ export function applyTheme(theme: string): void {
   // nearest ancestor carrying it.
   document.documentElement.setAttribute('data-theme', theme);
   document.body?.setAttribute('data-theme', theme);
+
+  // In-page broadcast, dispatched unconditionally because it touches no storage
+  // and therefore carries no consent implication. GlobalNav used to dispatch this
+  // itself (#1016); moving it here rather than dropping it keeps the one signal
+  // that reaches a DECLINED visitor — the StorageEvent below is consent-gated, so
+  // without this they would get no broadcast at all.
+  window.dispatchEvent(new CustomEvent('themechange', { detail: { theme } }));
 
   const canPersist = canUseCookies(CookieCategory.FUNCTIONAL);
 

@@ -1,6 +1,43 @@
+import { CONSENT_STORAGE_KEY } from '@/config/accessibility-tokens';
+
 export default function ThemeScript() {
   const themeScript = `
     (function() {
+      var CONSENT_KEY = ${JSON.stringify(CONSENT_STORAGE_KEY)};
+
+      /*
+        Mirrors readStoredThemeOrNull() in src/utils/apply-theme.ts (#1016).
+
+        This USED to read localStorage unconditionally, which was fine only while
+        the nav wrote there unconditionally too. Now that persistence is
+        consent-gated, a visitor who declined functional cookies has their theme
+        in sessionStorage — and reading only localStorage would paint the default
+        before hydration and then flip, on every single page load.
+
+        The other store is consulted as a fallback for the same reason it is
+        there: consent governs what may be WRITTEN, not what may be read back,
+        and without it every theme chosen before the gate existed is lost.
+      */
+      function canPersist() {
+        try {
+          var raw = localStorage.getItem(CONSENT_KEY);
+          if (!raw) return false;
+          return JSON.parse(raw).functional === true;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function storedTheme() {
+        try {
+          var preferred = canPersist() ? localStorage : sessionStorage;
+          var other = preferred === localStorage ? sessionStorage : localStorage;
+          return preferred.getItem('theme') || other.getItem('theme') || null;
+        } catch (e) {
+          return null;
+        }
+      }
+
       function getSystemTheme() {
         // Check if user prefers dark mode
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -11,18 +48,8 @@ export default function ThemeScript() {
 
       function applyTheme(theme) {
         if (!theme) {
-          try {
-            // First check if user has manually selected a theme
-            theme = localStorage.getItem('theme');
-
-            // If no saved theme, use system preference
-            if (!theme) {
-              theme = getSystemTheme();
-            }
-          } catch (e) {
-            // Fallback if localStorage is not available
-            theme = getSystemTheme();
-          }
+          // storedTheme() swallows storage errors and returns null of its own.
+          theme = storedTheme() || getSystemTheme();
         }
 
         document.documentElement.setAttribute('data-theme', theme);
@@ -53,6 +80,10 @@ export default function ThemeScript() {
       });
 
       // Listen for custom theme change events (from same tab)
+      // Producer: applyTheme() in src/utils/apply-theme.ts, which dispatches this
+      // unconditionally. That matters for a visitor who declined functional
+      // cookies — the StorageEvent applyTheme also fires IS consent-gated, so
+      // this CustomEvent is the only signal they get (#1016).
       window.addEventListener('themechange', function(e) {
         if (e.detail && e.detail.theme) {
           currentTheme = e.detail.theme;
@@ -74,8 +105,10 @@ export default function ThemeScript() {
       // Listen for system theme changes
       if (window.matchMedia) {
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-          // Only apply system theme if user hasn't manually selected a theme
-          if (!localStorage.getItem('theme')) {
+          // Only apply system theme if the user has not chosen one. Reading
+          // localStorage alone went blind for a declined visitor, so flipping
+          // the OS theme overrode a choice they had explicitly made (#1016).
+          if (!storedTheme()) {
             currentTheme = getSystemTheme();
             applyTheme(currentTheme);
           }

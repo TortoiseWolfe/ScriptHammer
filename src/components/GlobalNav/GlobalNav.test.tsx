@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GlobalNav } from './GlobalNav';
 import { THEMES } from '@/config/themes';
+import { CONSENT_STORAGE_KEY } from '@/config/accessibility-tokens';
 
 const { signOut, checkIsAdmin } = vi.hoisted(() => ({
   signOut: vi.fn(),
@@ -51,6 +52,13 @@ vi.mock('@/components/atomic/AvatarDisplay', () => ({
 let renderer: 'atlas' | 'diorama' = 'atlas';
 vi.mock('@/twin/renderer-select', () => ({ selectRenderer: () => renderer }));
 
+/** Grant functional consent, which is what allows persistence to localStorage. */
+const allowFunctional = () =>
+  localStorage.setItem(
+    CONSENT_STORAGE_KEY,
+    JSON.stringify({ functional: true })
+  );
+
 const setSearch = (search: string) =>
   window.history.replaceState({}, '', `/${search}`);
 
@@ -62,6 +70,10 @@ beforeEach(() => {
   signOut.mockClear();
   checkIsAdmin.mockClear().mockResolvedValue(false);
   localStorage.clear();
+  // sessionStorage too: applyTheme writes there on EVERY path, consent or not, so
+  // leaving it set carries one test's chosen theme into the next mount. Same trap
+  // as ThemeSwitcher.test.tsx.
+  sessionStorage.clear();
   setSearch('');
   document.documentElement.removeAttribute('data-theme');
   window.matchMedia = vi.fn().mockReturnValue({
@@ -289,20 +301,48 @@ describe('GlobalNav theming', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBe(THEMES[6]);
   });
 
-  it.fails(
-    'persists that choice through the consent gate (#1016)',
-    async () => {
-      // KNOWN GAP. GlobalNav carries its OWN theme implementation and imports none
-      // of applyTheme / readStoredTheme / canUseCookies — so picking a theme here
-      // writes localStorage unconditionally, while doing it on /themes respects the
-      // visitor's functional-cookie choice. #382 extracted that helper precisely so
-      // there would not be a second copy; this is the second copy.
-      const u = userEvent.setup();
-      render(<GlobalNav />);
-      await u.click(screen.getByRole('button', { name: 'Display' }));
-      await u.click(screen.getByRole('button', { name: THEMES[6] }));
-      // No consent has been granted in this test, so nothing may be in localStorage.
-      expect(localStorage.getItem('theme')).toBeNull();
-    }
-  );
+  it('does NOT persist to localStorage without functional consent (#1016)', async () => {
+    // Was an it.fails. GlobalNav carried its own theme implementation and wrote
+    // localStorage unconditionally, so picking a theme here ignored the
+    // visitor's cookie choice while doing it on /themes respected it. #382
+    // extracted applyTheme precisely so a second copy could not drift.
+    const u = userEvent.setup();
+    render(<GlobalNav />);
+    await u.click(screen.getByRole('button', { name: 'Display' }));
+    await u.click(screen.getByRole('button', { name: THEMES[6] }));
+
+    expect(localStorage.getItem('theme')).toBeNull();
+    // Still remembered for the session — declining cookies costs persistence
+    // across visits, not the ability to choose a theme at all.
+    expect(sessionStorage.getItem('theme')).toBe(THEMES[6]);
+  });
+
+  it('DOES persist once functional consent is granted', async () => {
+    // The other half, so the test above cannot be satisfied by a component that
+    // simply never writes anything.
+    allowFunctional();
+    const u = userEvent.setup();
+    render(<GlobalNav />);
+    await u.click(screen.getByRole('button', { name: 'Display' }));
+    await u.click(screen.getByRole('button', { name: THEMES[6] }));
+
+    expect(localStorage.getItem('theme')).toBe(THEMES[6]);
+  });
+
+  it('broadcasts the change to components listening in-page', async () => {
+    // applyTheme's StorageEvent is consent-gated; this CustomEvent is not, and is
+    // the only signal a declined visitor produces.
+    const heard: string[] = [];
+    const onThemeChange = (e: Event) =>
+      heard.push((e as CustomEvent).detail.theme);
+    window.addEventListener('themechange', onThemeChange);
+
+    const u = userEvent.setup();
+    render(<GlobalNav />);
+    await u.click(screen.getByRole('button', { name: 'Display' }));
+    await u.click(screen.getByRole('button', { name: THEMES[6] }));
+
+    window.removeEventListener('themechange', onThemeChange);
+    expect(heard).toContain(THEMES[6]);
+  });
 });
