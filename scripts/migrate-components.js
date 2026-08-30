@@ -193,9 +193,36 @@ function planMigration(component) {
 function executeMigration(component) {
   const created = [];
 
+  // A BARE COMPONENT'S `path` IS A FILE, not a directory (#1017).
+  //
+  // This used to `path.join(component.path, file)` unconditionally, so for
+  // `src/components/Foo.tsx` it attempted `src/components/Foo.tsx/index.tsx` and
+  // died with ENOTDIR. There was no mkdir and no move anywhere in the script —
+  // meaning the one command CI tells people to run could not fix the one thing
+  // CI fails them for. All twenty components migrated for #547 were moved by hand.
+  let dir = component.path;
+  if (component.bareFile) {
+    dir = path.join(
+      path.dirname(component.path),
+      path.basename(component.path, '.tsx')
+    );
+    fs.mkdirSync(dir, { recursive: true });
+    const moved = path.join(dir, path.basename(component.path));
+    fs.renameSync(component.path, moved);
+    created.push(`${component.path} -> ${moved}`);
+  }
+
+  // Read the exports from the component's real source, wherever it now lives, so
+  // the barrel and the generated imports match it. Ten of #547's seventeen had no
+  // default export, and the templates assumed one.
+  const sourcePath = component.bareFile
+    ? path.join(dir, path.basename(component.path))
+    : path.join(dir, `${component.name}.tsx`);
+  const exports = detectExports(sourcePath, component.name);
+
   component.missing.forEach((file) => {
-    const filePath = path.join(component.path, file);
-    const content = generateFileContent(file, component.name, component.path);
+    const filePath = path.join(dir, file);
+    const content = generateFileContent(file, component.name, dir, exports);
 
     fs.writeFileSync(filePath, content);
     created.push(filePath);
@@ -205,18 +232,53 @@ function executeMigration(component) {
 }
 
 /**
+ * How a component actually exposes itself, read from its source.
+ *
+ * The templates used to assume `export default` unconditionally while the
+ * accessibility template imported `{ Name }` — so for any given component one of
+ * the two was wrong, and it produced files that did not compile. Ten of the
+ * seventeen components migrated for #547 had no default export at all (#1017).
+ *
+ * Returns { hasDefault, hasNamed, hasPropsType }.
+ */
+function detectExports(sourcePath, componentName) {
+  let src = '';
+  try {
+    src = fs.readFileSync(sourcePath, 'utf8');
+  } catch {
+    // Unreadable source: assume the plop default rather than guessing wrong in
+    // the other direction, and let the caller's file writes surface the problem.
+    return { hasDefault: true, hasNamed: false, hasPropsType: false };
+  }
+  // Comments stripped first: a docblock saying "export default" is not one.
+  const code = src
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^\s*\/\/.*$/gm, '');
+  const name = componentName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return {
+    hasDefault: /export\s+default\s/.test(code),
+    hasNamed: new RegExp(
+      `export\\s+(?:const|function|class)\\s+${name}\\b`
+    ).test(code),
+    hasPropsType: new RegExp(
+      `export\\s+(?:interface|type)\\s+${name}Props\\b`
+    ).test(code),
+  };
+}
+
+/**
  * Generate content for missing file
  */
-function generateFileContent(fileName, componentName, componentPath) {
+function generateFileContent(fileName, componentName, componentPath, exports) {
   if (fileName === 'index.tsx') {
-    return getIndexTemplate(componentName);
+    return getIndexTemplate(componentName, exports);
   } else if (fileName.endsWith('.accessibility.test.tsx')) {
-    return getAccessibilityTestTemplate(componentName);
+    return getAccessibilityTestTemplate(componentName, exports);
   } else if (fileName.endsWith('.test.tsx')) {
-    return getTestTemplate(componentName);
+    return getTestTemplate(componentName, exports);
   } else if (fileName.endsWith('.stories.tsx')) {
     const category = detectCategory(componentPath);
-    return getStoryTemplate(componentName, category);
+    return getStoryTemplate(componentName, category, exports);
   }
   return '';
 }
@@ -281,19 +343,41 @@ function copyDirectory(src, dest) {
 /**
  * Template for index.tsx
  */
-function getIndexTemplate(componentName) {
-  return `export { default } from './${componentName}';
-export type { ${componentName}Props } from './${componentName}';
-`;
+function getIndexTemplate(componentName, exports = { hasDefault: true }) {
+  const lines = [];
+  if (exports.hasDefault) {
+    lines.push(`export { default } from './${componentName}';`);
+  }
+  if (exports.hasNamed) {
+    lines.push(`export { ${componentName} } from './${componentName}';`);
+  }
+  // Neither detected: fall back to the default form rather than emitting an empty
+  // barrel, which would fail confusingly at the import site instead of here.
+  if (lines.length === 0) {
+    lines.push(`export { default } from './${componentName}';`);
+  }
+  if (exports.hasPropsType) {
+    lines.push(
+      `export type { ${componentName}Props } from './${componentName}';`
+    );
+  }
+  return lines.join('\n') + '\n';
+}
+
+/** The import a generated test or story should use, matching the real export. */
+function importLine(componentName, exports = { hasDefault: true }) {
+  return exports.hasDefault
+    ? `import ${componentName} from './${componentName}';`
+    : `import { ${componentName} } from './${componentName}';`;
 }
 
 /**
  * Template for test file
  */
-function getTestTemplate(componentName) {
+function getTestTemplate(componentName, exports) {
   return `import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
-import ${componentName} from './${componentName}';
+${importLine(componentName, exports)}
 
 describe('${componentName}', () => {
   it('renders without crashing', () => {
@@ -309,9 +393,9 @@ describe('${componentName}', () => {
 /**
  * Template for story file
  */
-function getStoryTemplate(componentName, category) {
+function getStoryTemplate(componentName, category, exports) {
   return `import type { Meta, StoryObj } from '@storybook/react';
-import ${componentName} from './${componentName}';
+${importLine(componentName, exports)}
 
 const meta: Meta<typeof ${componentName}> = {
   title: 'Components/${category}/${componentName}',
@@ -334,11 +418,11 @@ export const Default: Story = {
 /**
  * Template for accessibility test file
  */
-function getAccessibilityTestTemplate(componentName) {
+function getAccessibilityTestTemplate(componentName, exports) {
   return `import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import { axe } from 'jest-axe';
-import { ${componentName} } from './${componentName}';
+${importLine(componentName, exports)}
 
 describe('${componentName} Accessibility', () => {
   it('should have no accessibility violations with default props', async () => {
