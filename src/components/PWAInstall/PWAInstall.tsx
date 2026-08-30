@@ -18,6 +18,13 @@ export default function PWAInstall() {
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  // State, not a one-shot read (#1012). The old code consulted
+  // `pwa-install-dismissed` inside a mount-only effect and called
+  // setShowInstallButton(false), which the beforeinstallprompt handler then set
+  // straight back to true whenever the browser fired — on its own schedule,
+  // usually after mount. Holding it as state and gating the RENDER means a later
+  // prompt cannot resurrect a pill the visitor has already dismissed.
+  const [isDismissed, setIsDismissed] = useState(false);
   const { trackPWAEvent } = useAnalytics();
 
   // Check debug mode immediately
@@ -174,7 +181,20 @@ export default function PWAInstall() {
     trackPWAEvent('install_prompt_expanded');
   };
 
-  // Removed unused handleHideForever - functionality handled by handleDismiss
+  /**
+   * Dismiss for good (#1012).
+   *
+   * Nothing used to write `pwa-install-dismissed` — the component only ever read
+   * and removed it, and the close button minimised instead. So the prompt could
+   * be shrunk to a circle that then sat on every page forever, but never told to
+   * go away. `?pwa-debug=true` and `?pwa-reset=true` still clear it.
+   */
+  const handleDismiss = () => {
+    setIsDismissed(true);
+    setShowInstallButton(false);
+    localStorage.setItem('pwa-install-dismissed', 'true');
+    trackPWAEvent('install_prompt_dismissed');
+  };
 
   // Check localStorage for previous state
   useEffect(() => {
@@ -190,6 +210,7 @@ export default function PWAInstall() {
       localStorage.removeItem('pwa-install-dismissed');
       localStorage.removeItem('pwa-install-minimized');
     } else if (localStorage.getItem('pwa-install-dismissed') === 'true') {
+      setIsDismissed(true);
       setShowInstallButton(false);
     } else if (localStorage.getItem('pwa-install-minimized') === 'true') {
       setIsMinimized(true);
@@ -202,14 +223,18 @@ export default function PWAInstall() {
     if (urlParams.get('pwa-reset') === 'true') {
       logger.debug('Resetting install prompt dismissal');
       localStorage.removeItem('pwa-install-dismissed');
+      setIsDismissed(false);
       // Remove the query parameter to avoid constant resets
       const newUrl = window.location.pathname + window.location.hash;
       window.history.replaceState({}, '', newUrl);
     }
   }, []);
 
-  // Show if: debug mode is on, OR install button should show and not installed
-  if (!isDebugMode && (!showInstallButton || isInstalled)) return null;
+  // Show if: debug mode is on, OR install button should show and not installed.
+  // isDismissed is checked HERE rather than only at mount, so it survives a
+  // beforeinstallprompt that arrives later (#1012).
+  if (!isDebugMode && (isDismissed || !showInstallButton || isInstalled))
+    return null;
 
   // Log debug info
   if (isDebugMode) {
@@ -226,7 +251,7 @@ export default function PWAInstall() {
       <div className="fixed top-20 right-4 z-50">
         <button
           onClick={handleExpand}
-          className="btn btn-circle btn-info btn-sm shadow-lg transition-all hover:scale-110"
+          className="btn btn-circle btn-info min-h-11 min-w-11 shadow-lg transition-all hover:scale-110"
           aria-label="Install Progressive Web App"
           title="Progressive Web App (PWA) - An app that works offline, can be installed like a native app, and loads instantly"
         >
@@ -273,21 +298,46 @@ export default function PWAInstall() {
         </span>
         <button
           onClick={handleInstallClick}
-          className="btn btn-info btn-xs"
+          className="btn btn-info min-h-11"
           title="Progressive Web App (PWA) - Install this website as an app that works offline, loads instantly, and doesn't require an app store"
         >
           Install
         </button>
+        {/* Minimise and dismiss are SEPARATE controls (#1012). A single × that
+            minimised was the whole problem: it reads as "close", and what it
+            actually did was shrink the prompt to a circle that then followed the
+            visitor across every page with no way to be rid of it. */}
         <button
           onClick={handleMinimize}
-          className="btn btn-ghost btn-circle btn-xs"
+          className="btn btn-ghost btn-circle min-h-11 min-w-11"
           aria-label="Minimize"
+          title="Collapse this to a small button"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
-            className="h-3 w-3 stroke-current"
+            className="h-4 w-4 stroke-current"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M20 12H4"
+            />
+          </svg>
+        </button>
+        <button
+          onClick={handleDismiss}
+          className="btn btn-ghost btn-circle min-h-11 min-w-11"
+          aria-label="Don't show this again"
+          title="Don't show this again"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            className="h-4 w-4 stroke-current"
           >
             <path
               strokeLinecap="round"

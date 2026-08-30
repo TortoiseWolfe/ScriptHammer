@@ -83,14 +83,9 @@ describe('ErrorBoundary Accessibility', () => {
     ).toBeInTheDocument();
   });
 
-  it.fails('meets the 44px touch floor on its recovery buttons', () => {
-    // KNOWN GAP (#1013), recorded as a failing expectation so it goes RED when fixed.
-    // Both buttons are btn-sm (~32px) against this repo's documented
-    // `min-h-11 min-w-11` rule. It has gone unmeasured because
-    // mobile-touch-targets.spec.ts can only see controls that render on a normal
-    // page, and this fallback needs a crash to appear at all. Filed separately;
-    // enlarging them is a visual change, not a rename, so it is not smuggled into
-    // a component-structure PR.
+  it('meets the 44px touch floor on its recovery buttons', () => {
+    // #1013. Was an it.fails: both were btn-sm (~32px). Unmeasured by every E2E
+    // gate, because this fallback only renders once something has crashed.
     render(
       <ErrorBoundary level="page">
         <Boom />

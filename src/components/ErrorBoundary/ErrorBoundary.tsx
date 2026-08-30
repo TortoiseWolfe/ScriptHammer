@@ -281,14 +281,14 @@ class ErrorBoundary extends Component<Props, State> {
               <div className="card-actions mt-4 justify-end">
                 <button
                   onClick={this.handleReset}
-                  className="btn btn-primary btn-sm"
+                  className="btn btn-primary min-h-11"
                 >
                   Try Again
                 </button>
                 {level === 'page' && (
                   <button
                     onClick={() => (window.location.href = getInternalUrl('/'))}
-                    className="btn btn-ghost btn-sm"
+                    className="btn btn-ghost min-h-11"
                   >
                     Go Home
                   </button>
