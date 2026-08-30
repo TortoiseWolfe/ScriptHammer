@@ -212,17 +212,51 @@ describe('GlobalNav authentication', () => {
     expect(screen.queryByRole('link', { name: 'Sign In' })).toBeNull();
   });
 
-  it.fails('makes the account trigger a real button (#1018)', () => {
-    // KNOWN GAP. It is a `<label tabIndex={0}>` inside a DaisyUI `:focus-within`
-    // dropdown — the exact pattern #378 rejected for the Display and Demos
-    // popovers, and the one FontSizeControl is already flagged for. It therefore
-    // has no aria-expanded, is not announced as a button, and Escape cannot
-    // close it without immediately reopening it.
+  it('makes the account trigger a real button that reports its state (#1018)', async () => {
+    // Was an it.fails. It used to be a `<label tabIndex={0}>` inside a DaisyUI
+    // `:focus-within` dropdown — the pattern #378 rejected for Display and Demos
+    // because returning focus to a trigger that lives inside `.dropdown`
+    // re-opens the panel on the same frame.
     user = { id: 'user-1' };
+    const u = userEvent.setup();
     render(<GlobalNav />);
-    expect(
-      screen.getByRole('button', { name: 'User account menu' })
-    ).toBeInTheDocument();
+    const trigger = screen.getByRole('button', { name: 'User account menu' });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+
+    await u.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('closes the account menu when a destination in it is chosen', async () => {
+    // useDismissable closes on an outside press, Escape and tab-out — a link
+    // INSIDE the panel is none of those. The DaisyUI version closed by accident,
+    // because activating a link moved focus out of the `<label>`. Without
+    // closeOnSelect the menu would stay open over the page just navigated to.
+    user = { id: 'user-1' };
+    const u = userEvent.setup();
+    render(<GlobalNav />);
+    const trigger = screen.getByRole('button', { name: 'User account menu' });
+    await u.click(trigger);
+    await u.click(screen.getByRole('link', { name: 'Profile' }));
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('closes on keyboard activation too, not just pointer', async () => {
+    // The pointer case alone would be satisfied by the wrapper's existing blur
+    // handler in some situations, so the keyboard path is asserted separately:
+    // Enter on a focused link keeps focus INSIDE the wrapper, so blur cannot be
+    // what closes it — only closeOnSelect can.
+    user = { id: 'user-1' };
+    const u = userEvent.setup();
+    render(<GlobalNav />);
+    const trigger = screen.getByRole('button', { name: 'User account menu' });
+    await u.click(trigger);
+
+    screen.getByRole('link', { name: 'Profile' }).focus();
+    await u.keyboard('{Enter}');
+
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
   });
 
   it('hides the admin link from a non-admin', async () => {
@@ -240,11 +274,13 @@ describe('GlobalNav authentication', () => {
     const u = userEvent.setup();
     render(<GlobalNav />);
     await u.click(screen.getByLabelText('User account menu'));
-    // Rendered in BOTH the desktop dropdown and the mobile menu.
-    const links = await screen.findAllByRole('link', {
-      name: 'Admin Dashboard',
-    });
-    expect(links[0]).toHaveAttribute('href', '/admin');
+    // Tightened from findAllByRole(...)[0] to the singular query. Both panels
+    // used to render at all times, so the name matched twice and the index hid
+    // it; only the opened panel is mounted now, so a duplicate name here would
+    // be a real regression and this will catch it (#1018).
+    expect(
+      await screen.findByRole('link', { name: 'Admin Dashboard' })
+    ).toHaveAttribute('href', '/admin');
   });
 
   it('does not ask whether a signed-out visitor is an admin', () => {

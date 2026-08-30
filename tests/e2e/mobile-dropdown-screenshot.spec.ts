@@ -13,47 +13,52 @@ test.describe('Mobile Dropdown Menu Screenshots', () => {
     // Wait for page to load
     await page.waitForLoadState('networkidle');
 
-    // Find the mobile/tablet hamburger menu (it's a label, not a button).
-    // Use the aria-label to match, independent of the responsive class name.
-    const menuLabel = page.getByLabel('Navigation menu').first();
-
-    // Take screenshot before opening
+    // Capture the closed state first, for comparison against the open one.
     await page.screenshot({
       path: 'screenshots/mobile-dropdown-closed.png',
       fullPage: false,
     });
 
-    // Get the hamburger's .dropdown parent — NOT the user account dropdown.
-    // When the test runs logged-in (auth storageState is loaded), the nav
-    // shows TWO dropdowns: the user account avatar (first in DOM) AND the
-    // hamburger menu. The previous selector `.dropdown-content.menu`.first()
-    // was matching the user account dropdown-content instead of the
-    // hamburger's, which is why toBeVisible() always failed — we opened
-    // the hamburger but asserted against a different dropdown.
-    const hamburgerDropdown = page
-      .locator('.dropdown', { has: menuLabel })
-      .first();
+    // The hamburger is a real button since #1018, so it is clicked like one.
+    const menuTrigger = page.getByRole('button', { name: 'Navigation menu' });
+    await expect(menuTrigger).toBeVisible();
 
-    // Open the dropdown deterministically via DaisyUI's .dropdown-open class.
-    // CSS-only :focus-within is unreliable because <label> focus semantics
-    // differ across browsers/headless modes, and clicking a label after
-    // the dropdown opens triggers "intercepts pointer events" errors.
-    await hamburgerDropdown.evaluate((el) => {
-      el.classList.add('dropdown-open');
-    });
+    // Retried. The panel is React state, so a click landing before React attaches
+    // its handler is silently swallowed — the hazard measured and written up in
+    // mobile-touch-targets.spec.ts. The idempotent guard means a retry after a
+    // successful open cannot toggle it shut again.
+    await expect(async () => {
+      if ((await menuTrigger.getAttribute('aria-expanded')) !== 'true') {
+        await menuTrigger.click();
+      }
+      await expect(menuTrigger).toHaveAttribute('aria-expanded', 'true', {
+        timeout: 1000,
+      });
+    }).toPass({ timeout: 15000 });
 
-    // Wait for dropdown to be visible
-    await page.waitForTimeout(500); // Animation time
+    // This file used to force the menu open by adding DaisyUI's `.dropdown-open`
+    // class to a `.dropdown` ancestor, because `<label>` focus semantics differed
+    // across headless browsers. Both the class and the `<label>` are gone; a real
+    // gesture is now both possible and more honest about what it proves.
+    const panel = page.getByTestId('nav-popover-navigation');
+    await expect(panel).toBeVisible();
 
-    // Take screenshot with dropdown open
+    await page.waitForTimeout(500); // let the panel settle before the capture
+
     await page.screenshot({
       path: 'screenshots/mobile-dropdown-open.png',
       fullPage: false,
     });
 
-    // Verify the hamburger's dropdown-content is visible (scoped to the
-    // hamburger parent, not the user account dropdown).
-    const dropdownMenu = hamburgerDropdown.locator('.dropdown-content.menu');
-    await expect(dropdownMenu).toBeVisible();
+    // MEASURES SOMETHING, rather than merely running. This spec used to carry a
+    // single assertion and two screenshots nobody diffs; `ZERO_ASSERTION_GATE_MODE`
+    // is `block` on the required lane, so one assertion was the difference between
+    // "not zero" and "checked anything". The link floor is what makes the capture
+    // meaningful — a screenshot of an empty panel would have satisfied the old one.
+    const links = panel.locator('a');
+    expect(
+      await links.count(),
+      'the mobile menu opened but exposed no destinations'
+    ).toBeGreaterThanOrEqual(13);
   });
 });

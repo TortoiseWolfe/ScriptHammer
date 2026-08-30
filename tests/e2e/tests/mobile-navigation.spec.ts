@@ -149,7 +149,8 @@ test.describe('Mobile Navigation', () => {
       ).toBeLessThanOrEqual(320 + 1);
     }
 
-    // Check for visible interactive elements in the nav (not hidden dropdown contents)
+    // Check for visible interactive elements in the nav (closed panels are not
+    // rendered at all since #1018, so nothing hidden can be counted here)
     // At 320px, we expect: logo link, hamburger menu button
     const logo = nav.locator('a').first();
     await expect(logo, 'Logo should be visible').toBeVisible();
@@ -183,31 +184,45 @@ test.describe('Mobile Navigation', () => {
     await dismissCookieBanner(page);
     await waitForLayoutStability(page);
 
-    // Look for mobile menu button (hamburger icon) - it's a label in DaisyUI dropdown
-    const menuButton = page
-      .locator('[aria-label*="menu" i], [aria-label*="navigation" i]')
-      .first();
+    // PINNED to the hamburger by its exact name. The previous locator was
+    // `[aria-label*="menu" i], [aria-label*="navigation" i]` with `.first()`,
+    // which ALSO matches "User account menu" — and that trigger precedes the
+    // hamburger in document order, so signed-in runs opened the account menu and
+    // this test has never exercised the control it is named after.
+    const menuButton = page.locator('[aria-label="Navigation menu"]');
 
-    if (await menuButton.isVisible()) {
-      // Click to open mobile menu
+    // ASSERTED, not branched on. `if (await menuButton.isVisible())` made "the
+    // hamburger is missing" and "the menu is broken" report identically — green
+    // either way. Same lesson as cross-page-navigation.spec.ts (#396).
+    await expect(
+      menuButton,
+      'no hamburger at this width — the mobile nav gate cannot run'
+    ).toBeVisible();
+
+    // Retried: the panel is React state, so a click landing before React attaches
+    // its handler is silently swallowed (#1018).
+    await expect(async () => {
       await menuButton.click();
+      await expect(menuButton).toHaveAttribute('aria-expanded', 'true', {
+        timeout: 1000,
+      });
+    }).toPass({ timeout: 15000 });
 
-      // Menu content should become visible (DaisyUI uses dropdown-content class)
-      const menuContent = page.locator('nav .dropdown-content').first();
+    // Scoped to the panel this trigger owns, not to a class shared page-wide.
+    const menuContent = page.getByTestId('nav-popover-navigation');
+    await expect(menuContent).toBeVisible({ timeout: 2000 });
 
-      // Wait for menu content to be visible (replaces waitForTimeout)
-      await expect(menuContent).toBeVisible({ timeout: 2000 });
+    // Verify menu contains navigation items
+    const menuLinks = menuContent.locator('a');
+    const linkCount = await menuLinks.count();
+    expect(linkCount, 'Menu should contain navigation links').toBeGreaterThan(
+      0
+    );
 
-      // Verify menu contains navigation items
-      const menuLinks = menuContent.locator('a');
-      const linkCount = await menuLinks.count();
-      expect(linkCount, 'Menu should contain navigation links').toBeGreaterThan(
-        0
-      );
-
-      // Close by clicking outside (DaisyUI dropdowns are focus-based)
-      await page.locator('body').click({ position: { x: 10, y: 10 } });
-    }
+    // Close by pressing outside it. useDismissable listens for `mousedown` on the
+    // document and closes when the press lands outside the wrapper.
+    await page.locator('body').click({ position: { x: 10, y: 10 } });
+    await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
   });
 
   test('Navigation adapts to orientation change', async ({ page }) => {
