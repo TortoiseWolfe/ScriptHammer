@@ -43,15 +43,11 @@ const REPO_ROOT = path.resolve(__dirname, '..');
  */
 const KNOWN_BARE_COMPONENTS = {
   // App-shell singletons, all mounted directly in src/app/layout.tsx.
-  'src/components/ErrorBoundary.tsx':
-    'Class component wrapping the whole tree in layout.tsx',
   'src/components/GlobalNav.tsx':
     'App-shell singleton mounted in layout.tsx — 837 lines, the strongest candidate to move',
-  'src/components/PWAInstall.tsx': 'App-shell singleton mounted in layout.tsx',
 
   // Ordinary components that simply never adopted the pattern. #538 did not
   // know about these eleven; the discovery found them.
-  'src/components/molecular/DisqusComments.tsx': 'Never adopted the pattern',
 };
 
 /**

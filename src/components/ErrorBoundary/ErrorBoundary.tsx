@@ -177,7 +177,13 @@ class ErrorBoundary extends Component<Props, State> {
 
       // Default fallback UI
       return (
-        <div className="error-boundary-fallback flex min-h-[200px] items-center justify-center p-4">
+        // role=alert so the swap is ANNOUNCED. Without it a screen-reader user's
+        // content is silently replaced by an error they are never told about —
+        // and at level="page" that is the whole page.
+        <div
+          role="alert"
+          className="error-boundary-fallback flex min-h-[200px] items-center justify-center p-4"
+        >
           <div className="card bg-base-100 w-full max-w-lg shadow-xl">
             <div className="card-body">
               <div className="mb-4 flex items-center gap-3">
