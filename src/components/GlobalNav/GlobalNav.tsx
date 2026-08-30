@@ -425,7 +425,15 @@ export function GlobalNav() {
           </div>
 
           {/* Main Navigation */}
-          <nav className="sh-rail hidden items-center lg:flex">
+          {/* A DIV, not a second <nav>. This sits INSIDE the <nav> above, and two
+              nested navigation landmarks with no accessible name are announced
+              identically in a landmark list — axe's landmark-unique, which
+              jest-axe catches because it runs best-practice rules that the
+              WCAG2AA E2E sweep does not. `sh-rail` is a plain CSS utility, used
+              on a div in ConversationList and AdminGate too, so nothing about the
+              appearance changes; `nav button` E2E selectors still match, because
+              the outer nav still wraps this. */}
+          <div className="sh-rail hidden items-center lg:flex">
             {navItems.map((entry) => {
               // min-h-11 keeps the 44px target the repo gates on; the comp's
               // 33px rows are a desktop-only drawing.
@@ -480,7 +488,7 @@ export function GlobalNav() {
                 </Link>
               );
             })}
-          </nav>
+          </div>
 
           {/* Right Section: Auth, Theme & PWA - Mobile-first spacing (PRP-017 T025) */}
           {/* Use flex-shrink-0 to prevent items from shrinking, overflow-hidden to prevent horizontal scroll */}

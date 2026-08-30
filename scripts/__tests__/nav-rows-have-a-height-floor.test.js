@@ -34,6 +34,7 @@ const NAV = path.join(
   '..',
   'src',
   'components',
+  'GlobalNav',
   'GlobalNav.tsx'
 );
 
@@ -104,6 +105,32 @@ describe('every global-nav row has an explicit height floor (#378, #502)', () =>
         'review (#378). Use the shared `MENU_ITEM` constant. Note the signed-in rows ' +
         'are measured by NO e2e gate — the touch-target sweep runs signed out (#502).'
     );
+  });
+
+  it('the tokens FLOOR trusts actually carry a floor', () => {
+    // FLOOR accepts the literal text `MENU_ITEM`, `{cls}` and `{base}` on the
+    // grounds that each is "asserted separately by its own definition". That was
+    // true of cls and base and NOT of MENU_ITEM: mutation-testing during #547
+    // showed that rewriting the constant to 'flex items-center' left every row
+    // green, because the rows only ever mention its NAME. A guard that trusts an
+    // indirection has to check the indirection.
+    const src = fs.readFileSync(NAV, 'utf8');
+
+    const menuItem = src.match(/const MENU_ITEM = '([^']*)'/);
+    assert.ok(
+      menuItem,
+      'MENU_ITEM constant not found — did it move or get renamed?'
+    );
+    assert.match(
+      menuItem[1],
+      /min-h-11|leading-11/,
+      `MENU_ITEM is '${menuItem[1]}' — every row that uses it now ships without a ` +
+        'height floor, and each of those rows still reads as compliant here.'
+    );
+
+    const base = src.match(/const base =\s*\n?\s*'([^']*)'/);
+    assert.ok(base, 'the `base` rail class string not found');
+    assert.match(base[1], /min-h-11|leading-11|\bbtn\b/);
   });
 
   it('the detector can actually fail', () => {
