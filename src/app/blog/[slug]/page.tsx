@@ -4,7 +4,7 @@ import { markdownProcessor } from '@/lib/blog/markdown-processor';
 import { tocGenerator } from '@/lib/blog/toc-generator';
 import { seoAnalyzer } from '@/lib/blog/seo-analyzer';
 import { detectedConfig } from '@/config/project-detected';
-import { getProjectConfig } from '@/config/project.config';
+import { getProjectConfig, resolveBaseUrl } from '@/config/project.config';
 import type { BlogPost } from '@/types/blog';
 import type { Author } from '@/types/author';
 import fs from 'fs/promises';
@@ -27,10 +27,6 @@ const logger = createLogger('app:blog:slug:page');
  *
  * `NEXT_PUBLIC_BASE_URL` stays supported as an explicit per-fork override.
  */
-function resolveBaseUrl(): string {
-  const override = process.env.NEXT_PUBLIC_BASE_URL?.trim();
-  return (override || getProjectConfig().deployUrl).replace(/\/+$/, '');
-}
 
 /**
  * Canonical URL for a post, with the trailing slash `next.config.ts` enforces

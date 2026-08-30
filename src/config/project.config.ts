@@ -100,6 +100,25 @@ export const projectConfig = getProjectConfig();
 export type ProjectConfig = ReturnType<typeof getProjectConfig>;
 
 // Helper function to check if running in GitHub Pages
+/**
+ * The site's own origin, with any trailing slash stripped.
+ *
+ * ONE implementation, shared. This lived privately in `blog/[slug]/page.tsx` while
+ * `DisqusComments` carried a hardcoded `https://scripthammer.com` fallback instead
+ * (#1014) — so a fork rendering comments without an absolute `url` posted them
+ * against the template's domain rather than its own. A second copy of a value like
+ * this drifts the moment either side changes; #382 is the same lesson about themes.
+ *
+ * `NEXT_PUBLIC_BASE_URL` stays supported as an explicit per-fork override, ahead of
+ * the computed `deployUrl`. Note the ORDER matters and is deliberate: reading
+ * `NEXT_PUBLIC_SITE_URL` first is what stamped all 16 blog posts with a retired
+ * github.io origin (#665).
+ */
+export function resolveBaseUrl(): string {
+  const override = process.env.NEXT_PUBLIC_BASE_URL?.trim();
+  return (override || getProjectConfig().deployUrl).replace(/\/+$/, '');
+}
+
 export function isGitHubPages(): boolean {
   const config = getProjectConfig();
   return (

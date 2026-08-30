@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
 import { useEmbedThemeColor } from '@/hooks/useEmbedThemeColor';
 import { getAccessibleEmbedColor } from '@/utils/embed-theme';
+import { resolveBaseUrl } from '@/config/project.config';
 
 // Disqus thread background (hardcoded RGB so Disqus's embed.js never sees an
 // OKLCH value it can't parse). Link text must stay legible against these.
@@ -34,9 +35,13 @@ declare global {
 /**
  * Disqus Comments Component
  *
- * IMPORTANT FIXES:
- * 1. URL is hardcoded to scripthammer.com because environment variables
- *    are not available during GitHub Actions static build
+ * NOTES:
+ * 1. The thread URL falls back to this site's own origin via resolveBaseUrl().
+ *    It used to be hardcoded to `https://scripthammer.com`, justified by a claim
+ *    that "environment variables are not available during GitHub Actions static
+ *    build". That was not true: deploy.yml passes NEXT_PUBLIC_DEPLOY_URL into the
+ *    build and project.config reads it. A fork rendering comments without an
+ *    absolute `url` therefore posted them against the template's domain (#1014).
  * 2. CSS overrides are applied to prevent OKLCH color parsing errors
  *    (Disqus embed.js cannot parse modern OKLCH color format)
  * 3. No dynamic imports - they exclude components from static builds
@@ -66,10 +71,15 @@ export default function DisqusComments({
     'p'
   );
 
-  // Generate production URL - hardcoded for GitHub Actions compatibility
+  // Thread URL: whatever the caller passed, else this site's own origin.
+  //
+  // Threads key on `page.identifier = slug`, not on the URL (#667), so existing
+  // threads survive this change — but a fork whose comments were keyed against
+  // the template's domain would have been silently posting somewhere it does not
+  // own, and nothing would have said so.
   const productionUrl = url?.startsWith('http')
     ? url
-    : `https://scripthammer.com/blog/${slug}`;
+    : `${resolveBaseUrl()}/blog/${slug}`;
 
   // Set up intersection observer for lazy loading
   useEffect(() => {
