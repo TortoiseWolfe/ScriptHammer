@@ -241,11 +241,18 @@ describe('GlobalNav names and targets', () => {
     expect(screen.getByTestId('nav-popover-navigation')).toBeInTheDocument();
   });
 
-  it('keeps the 320px width cap that stops the panel overflowing (#803)', async () => {
-    // max-w-[calc(100vw-4rem)] is what actually protects a 320px viewport;
-    // mobile-open-menu-overflow.spec.ts exists to prove it in a real browser.
-    // Asserted here too so the class cannot be dropped in a refactor that never
-    // runs the E2E lane.
+  it('keeps the width cap that backstops a 320px viewport (#803, #1022)', async () => {
+    // Measured, so the reason is right rather than inherited (#1022). This cap is
+    // NOT what keeps the panel inside 320px today — the panel is 160px, and
+    // deleting the cap changes nothing. It is a BACKSTOP: at 320px, widening the
+    // panel to 384px puts its left edge at -121px, and with the cap present the
+    // same change clamps to 256px and stays inside.
+    //
+    // The overflow runs off the LEFT edge because `-right-2` pins the right one,
+    // which is why mobile-open-menu-overflow.spec.ts checks both.
+    //
+    // Asserted here so the class cannot be dropped in a refactor that never runs
+    // the E2E lane.
     const u = userEvent.setup();
     render(<GlobalNav />);
     await u.click(screen.getByRole('button', { name: 'Navigation menu' }));

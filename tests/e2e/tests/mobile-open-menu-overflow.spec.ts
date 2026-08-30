@@ -14,27 +14,31 @@
  * The nav-width assertions elsewhere do not cover it either: an open panel is
  * `position: absolute`, so it never contributes to `<nav>`'s bounding box.
  *
- * WHAT #803 REPORTED is that a single CSS class — `max-w-[calc(100vw-4rem)]` on the
- * panel in `GlobalNav.tsx` — was the only thing keeping it inside a 320px viewport,
- * and that deleting it left every other gate in the suite green. The class is still
- * there, verbatim, and `GlobalNav.accessibility.test.tsx` now asserts its presence.
+ * WHAT PROTECTS 320px, MEASURED (#1022). #803's write-up named
+ * `max-w-[calc(100vw-4rem)]` as "the only thing keeping it inside a 320px viewport".
+ * That was not re-tested for years. It is now, in a real browser at 320px with the
+ * menu open, by editing the panel's class list live and re-measuring:
  *
- * THAT CLAIM IS STALE, and #1018 measured it rather than inheriting it. In a real
- * browser at a 320px viewport with the menu open:
+ *     as shipped                 width 160px   left 103   inside
+ *     max-w REMOVED              width 160px   left 103   inside   <- no effect
+ *     w-40 REMOVED               width  97px   left 166   inside   <- no effect
+ *     w-96 WITH max-w            width 256px   left   7   inside   <- cap engages
+ *     w-96 WITHOUT max-w         width 384px   left -121  OVERFLOWS
  *
- *     width     160px      <- `w-40` wins the cascade
- *     max-width 256px      <- calc(100vw - 4rem), never reached
- *     panel     103..263   <- inside a 320px viewport with room to spare
+ * So NEITHER class protects 320px today: the panel is simply narrower than the
+ * viewport, and removing either one alone changes nothing. What `max-w` actually is
+ * is a BACKSTOP — it does nothing until the width grows, and then it is the whole
+ * defence. The last two rows are the pair that proves it, and they are why the class
+ * stays and why `GlobalNav.accessibility.test.tsx` asserts it is present.
  *
- * So the max-width does not bind at any width this spec runs, and `w-40` is what
- * actually keeps the panel inside the viewport today. (Both `w-40` and daisyUI's
- * `.menu { width: fit-content }` sit in `@layer utilities` at equal specificity, so
- * source order decides, and source order goes to `w-40`.) The class is kept anyway —
- * it is the backstop if the width ever becomes content-sized — and #1022 tracks the
- * stale claim.
+ * THE OVERFLOW IS OFF THE LEFT EDGE, which is the counter-intuitive part and the
+ * reason the assertion below tests `b.left < -1` as well as the right edge. The panel
+ * is anchored by `-right-2`, so its right edge is pinned near the trigger and extra
+ * width grows LEFTWARD, off-screen. A right-edge-only probe reports every one of the
+ * rows above as clean — including the one that overflows by 121px.
  *
  * What this spec guarantees is the PROPERTY, not the mechanism: whatever is open,
- * nothing inside it crosses the viewport edge. Widen the panel and this goes red
+ * nothing inside it crosses either viewport edge. Widen the panel and this goes red
  * regardless of which class was doing the work.
  *
  * WHY TRIGGERS ARE DISCOVERED, NOT LISTED. A hardcoded list silently stops covering a
