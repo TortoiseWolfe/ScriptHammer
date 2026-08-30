@@ -423,21 +423,45 @@ describe('the recorded bare-component baseline (#538)', () => {
     );
   });
 
-  it('keeps the reported rate below 100, because it is not 100', () => {
-    // THE REGRESSION GUARD FOR #538 ITSELF. If the bare-file discovery is ever
-    // removed or the baseline is excluded from the denominator, the rate springs
-    // back to a false 100% — which is the original bug, restored silently. This
-    // is the assertion that would have caught it the first time.
+  it('still DISCOVERS bare files, now that none are recorded', () => {
+    // THE REGRESSION GUARD FOR #538 ITSELF. If bare-file discovery is removed, or
+    // the baseline is excluded from the denominator, the rate springs back to a
+    // false 100% — which is the original bug, restored silently.
+    //
+    // It used to assert `complianceRate < 100` and `knownBare > 0`, which worked
+    // only while real debt existed. #547 cleared the last of it, so that phrasing
+    // now fails for the best possible reason and, worse, its message would send
+    // the next reader looking for a regression that has not happened. The guard
+    // has to prove the CAPABILITY instead of relying on debt being present.
+    const probe = path.join(
+      process.cwd(),
+      'src',
+      'components',
+      '__RateProbe.tsx'
+    );
+    fs.writeFileSync(probe, 'export const RateProbe = () => null;\n');
+    try {
+      const result = auditComponents({ path: 'src/components' });
+      assert.ok(
+        result.newBare.some((c) => c.path.endsWith('__RateProbe.tsx')),
+        'bare-file discovery found nothing — it has regressed to directories only'
+      );
+      assert.ok(
+        result.summary.complianceRate < 100,
+        `compliance rate is ${result.summary.complianceRate}% while a bare component ` +
+          `is present — bare files are being excluded from the denominator`
+      );
+    } finally {
+      fs.unlinkSync(probe);
+    }
+  });
+
+  it('reports a clean 100 once nothing bare remains', () => {
+    // The other direction, so the probe above cannot be satisfied by a checker
+    // that simply always reports below 100.
     const result = auditComponents({ path: 'src/components' });
-    assert.ok(
-      result.summary.knownBare > 0,
-      'bare-file discovery found nothing — it has regressed to directories only'
-    );
-    assert.ok(
-      result.summary.complianceRate < 100,
-      `compliance rate is ${result.summary.complianceRate}% while ${result.summary.knownBare} ` +
-        `bare components are recorded — the baseline is being excluded from the denominator`
-    );
+    assert.strictEqual(result.summary.newBare, 0);
+    assert.strictEqual(result.summary.complianceRate, 100);
   });
 
   it('matches the baseline from any working directory, not just the repo root', () => {
