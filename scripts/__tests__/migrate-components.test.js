@@ -229,6 +229,151 @@ describe('migrate-components', () => {
     });
   });
 
+  describe('bare components — the case CI tells people to run this for (#1017)', () => {
+    const bareDir = path.join(SCRATCH, 'bare-migration');
+
+    beforeEach(() => {
+      fs.rmSync(bareDir, { recursive: true, force: true });
+      fs.mkdirSync(bareDir, { recursive: true });
+    });
+
+    afterEach(() => {
+      fs.rmSync(bareDir, { recursive: true, force: true });
+    });
+
+    it('turns Foo.tsx into Foo/ instead of crashing with ENOTDIR', () => {
+      if (!requireModule()) return;
+      // The whole ticket. `component.path` for a bare component is a FILE, so the
+      // old code attempted `.../Foo.tsx/index.tsx` and threw ENOTDIR — the one
+      // command CI recommends could not fix the one thing CI fails you for.
+      fs.writeFileSync(
+        path.join(bareDir, 'Bare.tsx'),
+        'export default function Bare() { return null; }\n'
+      );
+
+      const result = migrateComponents({ path: bareDir, dryRun: false });
+
+      assert.ok(result.success !== false, 'migration reported failure');
+      assert.ok(
+        fs.existsSync(path.join(bareDir, 'Bare', 'Bare.tsx')),
+        'the component was not moved into its own directory'
+      );
+      assert.ok(
+        !fs.existsSync(path.join(bareDir, 'Bare.tsx')),
+        'the original bare file is still there — it was copied, not moved'
+      );
+      for (const f of [
+        'index.tsx',
+        'Bare.test.tsx',
+        'Bare.stories.tsx',
+        'Bare.accessibility.test.tsx',
+      ]) {
+        assert.ok(
+          fs.existsSync(path.join(bareDir, 'Bare', f)),
+          `missing generated ${f}`
+        );
+      }
+    });
+
+    it('writes a barrel matching a DEFAULT export', () => {
+      if (!requireModule()) return;
+      fs.writeFileSync(
+        path.join(bareDir, 'Def.tsx'),
+        'export default function Def() { return null; }\n'
+      );
+      migrateComponents({ path: bareDir, dryRun: false });
+      const index = fs.readFileSync(
+        path.join(bareDir, 'Def', 'index.tsx'),
+        'utf8'
+      );
+      assert.match(index, /export \{ default \} from '\.\/Def'/);
+    });
+
+    it('writes a barrel matching a NAMED-only export', () => {
+      if (!requireModule()) return;
+      // Ten of #547's seventeen were named-only, and the template emitted
+      // `export { default }` regardless — a barrel that does not compile.
+      fs.writeFileSync(
+        path.join(bareDir, 'Named.tsx'),
+        'export const Named = () => null;\n'
+      );
+      migrateComponents({ path: bareDir, dryRun: false });
+      const index = fs.readFileSync(
+        path.join(bareDir, 'Named', 'index.tsx'),
+        'utf8'
+      );
+      assert.match(index, /export \{ Named \} from '\.\/Named'/);
+      assert.doesNotMatch(index, /export \{ default \}/);
+    });
+
+    it('generates tests that import the way the component actually exports', () => {
+      if (!requireModule()) return;
+      // getIndexTemplate said `export { default }` while
+      // getAccessibilityTestTemplate said `import { Name }`, so for any given
+      // component one of the two was wrong.
+      fs.writeFileSync(
+        path.join(bareDir, 'Named2.tsx'),
+        'export const Named2 = () => null;\n'
+      );
+      migrateComponents({ path: bareDir, dryRun: false });
+      const a11y = fs.readFileSync(
+        path.join(bareDir, 'Named2', 'Named2.accessibility.test.tsx'),
+        'utf8'
+      );
+      const unit = fs.readFileSync(
+        path.join(bareDir, 'Named2', 'Named2.test.tsx'),
+        'utf8'
+      );
+      for (const [file, content] of [
+        ['accessibility', a11y],
+        ['unit', unit],
+      ]) {
+        assert.match(
+          content,
+          /import \{ Named2 \} from '\.\/Named2'/,
+          `${file} test imports a default export the component does not have`
+        );
+      }
+    });
+
+    it('re-exports the Props type only when one is exported', () => {
+      if (!requireModule()) return;
+      fs.writeFileSync(
+        path.join(bareDir, 'NoProps.tsx'),
+        'export default function NoProps() { return null; }\n'
+      );
+      migrateComponents({ path: bareDir, dryRun: false });
+      const index = fs.readFileSync(
+        path.join(bareDir, 'NoProps', 'index.tsx'),
+        'utf8'
+      );
+      // Re-exporting a type that does not exist is a compile error, and the old
+      // template emitted it unconditionally.
+      assert.doesNotMatch(index, /export type \{ NoPropsProps \}/);
+    });
+
+    it('is not fooled by the words "export default" inside a comment', () => {
+      if (!requireModule()) return;
+      fs.writeFileSync(
+        path.join(bareDir, 'Commented.tsx'),
+        // The comment must contain a phrase the detector's regex would MATCH —
+        // `export default ` with trailing whitespace. An earlier fixture wrote
+        // "does not export default." with a period, which the regex never matched
+        // with or without comment stripping, so the test proved nothing.
+        '/** This used to export default Commented, before #547. */\n' +
+          '// Another line mentioning export default Commented too.\n' +
+          'export const Commented = () => null;\n'
+      );
+      migrateComponents({ path: bareDir, dryRun: false });
+      const index = fs.readFileSync(
+        path.join(bareDir, 'Commented', 'index.tsx'),
+        'utf8'
+      );
+      assert.match(index, /export \{ Commented \}/);
+      assert.doesNotMatch(index, /export \{ default \}/);
+    });
+  });
+
   describe('backup functionality', () => {
     const testDir = path.join(SCRATCH, 'test-backup');
 
@@ -384,14 +529,34 @@ describe('migrate-components', () => {
       }
 
       const template = migrateComponents.getIndexTemplate || (() => '');
-      const result = template('ButtonComponent');
 
-      assert.ok(result.includes('export { default }'), 'Should export default');
+      // The barrel now follows what the component ACTUALLY exports (#1017).
+      // This used to emit `export type { NameProps }` unconditionally, which is a
+      // compile error for the many components that export no such type — and it
+      // sat alongside an accessibility template importing `{ Name }`, so for any
+      // given component one of the two was always wrong.
+      const withProps = template('ButtonComponent', {
+        hasDefault: true,
+        hasPropsType: true,
+      });
       assert.ok(
-        result.includes('ButtonComponent'),
+        withProps.includes('export { default }'),
+        'Should export default'
+      );
+      assert.ok(
+        withProps.includes('ButtonComponent'),
         'Should include component name'
       );
-      assert.ok(result.includes('Props'), 'Should export props type');
+      assert.ok(
+        withProps.includes('export type { ButtonComponentProps }'),
+        'Should re-export the props type when the component has one'
+      );
+
+      const withoutProps = template('ButtonComponent', { hasDefault: true });
+      assert.ok(
+        !withoutProps.includes('Props'),
+        'Should NOT re-export a props type the component does not export'
+      );
     });
 
     it('should use correct template for test files', () => {
