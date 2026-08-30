@@ -3,7 +3,7 @@
 import React, { forwardRef, useEffect, useState } from 'react';
 import { z } from 'zod';
 import { validateField } from '@/schemas/forms';
-import { FormError } from './FormError';
+import { FormError } from '../FormError';
 
 export interface ValidatedInputProps
   extends Omit<

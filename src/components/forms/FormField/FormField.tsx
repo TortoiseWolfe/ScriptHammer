@@ -1,5 +1,5 @@
 import React from 'react';
-import { FormError } from './FormError';
+import { FormError } from '../FormError';
 
 export interface FormFieldProps {
   /** Field label */
@@ -131,9 +131,14 @@ export function getFormFieldInputProps({
     id: name,
     name,
     'aria-invalid': !!error,
+    // `helpText && !error` mirrors what FormField actually RENDERS: the help div is
+    // dropped once there is an error. Describing an element that is not in the DOM
+    // is an aria-describedby pointing at nothing — axe flags it, and a screen reader
+    // announces the error without the help it promised.
     'aria-describedby':
-      [error && errorId, helpText && helpId].filter(Boolean).join(' ') ||
-      undefined,
+      [error && errorId, helpText && !error && helpId]
+        .filter(Boolean)
+        .join(' ') || undefined,
     'aria-required': required,
     className: `${className} ${error ? 'input-error' : ''}`.trim(),
   };

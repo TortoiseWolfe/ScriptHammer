@@ -34,6 +34,12 @@ const CATEGORY_TITLE_MAP: Record<string, string> = {
   payment: 'Features/Payment',
   privacy: 'Features/Privacy',
   forms: 'Features/Forms',
+  // Added with #547 batch 3. Both directories were unmapped, which means their
+  // titles were not checked at all rather than checked and allowed — the gate
+  // simply did not point at them. They have one story each, both added here, so
+  // mapping them now costs nothing and stops the next one drifting.
+  theme: 'Features/Theme',
+  navigation: 'Features/Navigation',
 };
 
 const LIB_TITLE_MAP: Record<string, string> = {
