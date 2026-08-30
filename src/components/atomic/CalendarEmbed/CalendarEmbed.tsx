@@ -66,12 +66,10 @@ const CalendarEmbed: FC<CalendarEmbedProps> = ({
   // Require functional consent for calendar embedding
   if (!consent.functional) {
     return (
-      <CalendarConsent
-        provider={provider}
-        onAccept={() => {
-          // Update consent will trigger re-render
-        }}
-      />
+      // `url` is passed so the card can offer a plain booking link to someone who does
+      // not want third-party cookies (#919). No onAccept: updating consent re-renders
+      // this component, which is the transition.
+      <CalendarConsent provider={provider} url={url} />
     );
   }
 
