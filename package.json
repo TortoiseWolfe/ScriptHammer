@@ -74,7 +74,7 @@
     "audit:components": "node scripts/audit-components.js",
     "analyze": "ANALYZE=true pnpm run build",
     "migrate:components": "node scripts/migrate-components.js",
-    "validate:structure": "node scripts/validate-structure.js",
+    "validate:structure": "node scripts/validate-structure.js --strict",
     "generate:component": "plop component",
     "generate:blog": "node scripts/generate-blog-data.js",
     "generate:icons": "node scripts/generate-icons.js",
