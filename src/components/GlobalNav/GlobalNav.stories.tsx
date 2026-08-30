@@ -9,7 +9,7 @@ const meta = {
     docs: {
       description: {
         component:
-          'The site header, mounted once in `layout.tsx`. Its two dropdown popovers are React-owned rather than DaisyUI `:focus-within`, because the keyboard contract needs Escape to return focus to the trigger — with `:focus-within` the trigger lives inside `.dropdown`, so doing that re-opens the panel on the same frame. `Display ▾` is a `role="group"` disclosure since it holds controls; `Demos ▾` is a real `role="menu"` since it holds destinations.\n\nIt reads auth, profile, unread count and admin status from context, so these stories show it signed out. `data-global-nav` is a styling hook for the twin routes’ glass treatment, not a test id.',
+          'The site header, mounted once in `layout.tsx`. All four of its popovers are React-owned rather than DaisyUI `:focus-within`, because the keyboard contract needs Escape to return focus to the trigger — with `:focus-within` the trigger lives inside `.dropdown`, so doing that re-opens the panel on the same frame. `Display ▾` is a `role="group"` disclosure since it holds controls; `Demos ▾` is a real `role="menu"` since it holds destinations. The account menu and the mobile hamburger are `role="group"` too (#1018): each holds a heading and a button as well as links, so a menu would misdescribe them.\n\nPanels are mounted only while open, and close on Escape, on an outside press, on tab-out, and when a destination inside them is chosen.\n\nIt reads auth, profile, unread count and admin status from context, so these stories show it signed out. `data-global-nav` is a styling hook for the twin routes’ glass treatment, not a test id.',
       },
     },
   },

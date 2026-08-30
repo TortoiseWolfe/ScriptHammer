@@ -992,14 +992,29 @@ export async function handleEncryptionSetup(
  * // User is now signed out
  */
 export async function signOutViaDropdown(page: Page): Promise<void> {
-  // Click the avatar to open dropdown
+  // Click the avatar to open the account menu.
   // Try multiple selectors since AvatarDisplay may override parent aria-label
   const avatarButton = page
     .getByLabel('User account menu')
     .or(page.locator('[aria-label*="avatar"]'));
-  await avatarButton.first().click();
 
-  // Wait for dropdown to open and click Sign Out
+  // RETRIED, and the retry is load-bearing since #1018. The panel is React state
+  // now and is not in the DOM at all until it opens, so a click dispatched before
+  // React attaches its handler is silently swallowed and the wait below times out
+  // on a button that was never going to appear. Previously the menu was a DaisyUI
+  // dropdown whose contents were always present and merely hidden, so a swallowed
+  // click still left `Sign Out` findable and this raced only on visibility.
+  await expect(async () => {
+    if ((await avatarButton.first().getAttribute('aria-expanded')) !== 'true') {
+      await avatarButton.first().click();
+    }
+    await expect(avatarButton.first()).toHaveAttribute(
+      'aria-expanded',
+      'true',
+      { timeout: 1000 }
+    );
+  }).toPass({ timeout: 15000 });
+
   const signOutButton = page.getByRole('button', { name: 'Sign Out' });
   await signOutButton.waitFor({ state: 'visible', timeout: 5000 });
   await signOutButton.click();

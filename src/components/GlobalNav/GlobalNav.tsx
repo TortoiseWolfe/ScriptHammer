@@ -74,15 +74,57 @@ function useDismissable() {
  *
  * `aria-haspopup="true"` rather than `"menu"` for the same reason.
  */
+const NAV_POPOVER_PANEL =
+  'sh-plate bg-base-100 rounded-box absolute end-0 z-[1] mt-2 max-h-[80vh] w-72 max-w-[calc(100vw-1.5rem)] space-y-4 overflow-y-auto p-4';
+
 function NavPopover({
   label,
   triggerClass,
   icon,
+  showLabel = true,
+  wrapperClass = 'relative',
+  panelClass = NAV_POPOVER_PANEL,
+  testId,
+  closeOnSelect = false,
   children,
 }: {
   label: string;
   triggerClass: string;
   icon?: React.ReactNode;
+  /**
+   * Icon-only triggers (the avatar, the hamburger) pass false. A visible text
+   * label and a `▾` chevron are wrong on both, and the accessible name still
+   * comes from `aria-label` either way.
+   */
+  showLabel?: boolean;
+  /** `lg:hidden` for the hamburger. Defaults to what the wrapper always was. */
+  wrapperClass?: string;
+  /**
+   * Defaults to the Display panel's exact string, so adding these props changed
+   * nothing about the popovers that already existed.
+   *
+   * A converted DaisyUI panel must NOT pass its old class list verbatim:
+   * `position:absolute`, `z-index` and the hide rule are all scoped by DaisyUI
+   * to a `.dropdown` ANCESTOR, so an orphaned `dropdown-content` contributes
+   * only `margin-top` and `padding` — the panel would render in flow and shove
+   * the header apart. Say `absolute` explicitly instead (#1018).
+   */
+  panelClass?: string;
+  /**
+   * Defaults to the label, lowercased. Pass one explicitly for a multi-word
+   * label, or the derived id contains SPACES.
+   */
+  testId?: string;
+  /**
+   * Close when something inside the panel is activated.
+   *
+   * Menus of DESTINATIONS need this: `useDismissable` only closes on an outside
+   * press, Escape, or tab-out, and a link inside the panel is none of those. The
+   * DaisyUI version closed by accident, because activating a link moved focus out
+   * of the `<label>` and `:focus-within` went false. Without this the mobile menu
+   * stays open over the page you just navigated to (#1018).
+   */
+  closeOnSelect?: boolean;
   children: React.ReactNode;
 }) {
   const { open, setOpen, wrap, trigger } = useDismissable();
@@ -91,7 +133,7 @@ function NavPopover({
   return (
     <div
       ref={wrap}
-      className="relative"
+      className={wrapperClass}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false);
       }}
@@ -107,12 +149,16 @@ function NavPopover({
         onClick={() => setOpen((v) => !v)}
       >
         {icon}
-        <span className="hidden lg:inline">{label}</span>
-        <span aria-hidden="true">▾</span>
+        {showLabel && (
+          <>
+            <span className="hidden lg:inline">{label}</span>
+            <span aria-hidden="true">▾</span>
+          </>
+        )}
       </button>
       {open && (
         <div
-          className="sh-plate bg-base-100 rounded-box absolute end-0 z-[1] mt-2 max-h-[80vh] w-72 max-w-[calc(100vw-1.5rem)] space-y-4 overflow-y-auto p-4"
+          className={panelClass}
           role="group"
           // NAMED BY THE TRIGGER, not by a second `aria-label={label}`.
           // Putting the same label on both put two elements in the
@@ -120,7 +166,19 @@ function NavPopover({
           // made `[aria-label="Display"]` resolve to two nodes, which is a
           // Playwright strict-mode violation. Caught by the new gate test.
           aria-labelledby={triggerId}
-          data-testid={`nav-popover-${label.toLowerCase()}`}
+          data-testid={testId ?? `nav-popover-${label.toLowerCase()}`}
+          // Bubble phase deliberately: the link's own handler runs first, then
+          // this closes the panel. A tag check rather than a bare close so the
+          // handler responds to a SELECTION, not to any click that lands in the
+          // panel.
+          onClick={
+            closeOnSelect
+              ? (e) => {
+                  const el = (e.target as HTMLElement).closest('a, button');
+                  if (el && wrap.current?.contains(el)) setOpen(false);
+                }
+              : undefined
+          }
         >
           {children}
         </div>
@@ -537,12 +595,17 @@ export function GlobalNav() {
             {/* User account dropdown (logged in) or auth buttons (logged out) */}
             {/* Auth buttons hidden on mobile - they're in the hamburger menu */}
             {user ? (
-              <div className="dropdown dropdown-end">
-                <label
-                  tabIndex={0}
-                  className="btn btn-ghost btn-circle min-h-11 min-w-11"
-                  aria-label="User account menu"
-                >
+              <NavPopover
+                label="User account menu"
+                showLabel={false}
+                closeOnSelect
+                testId="nav-popover-account"
+                triggerClass="btn btn-ghost btn-circle min-h-11 min-w-11"
+                // dropdown-content -> absolute. DaisyUI scopes position, z-index
+                // and the hide rule to a `.dropdown` ancestor that no longer
+                // exists; everything else is the previous string verbatim.
+                panelClass="menu menu-sm absolute bg-base-100 rounded-box -right-2 z-[1] mt-3 w-48 max-w-[calc(100vw-4rem)] p-2 shadow sm:w-52"
+                icon={
                   <AvatarDisplay
                     avatarUrl={
                       profile?.avatar_url ||
@@ -552,11 +615,9 @@ export function GlobalNav() {
                     displayName={profile?.display_name || user.email || 'User'}
                     size="sm"
                   />
-                </label>
-                <ul
-                  tabIndex={0}
-                  className="menu menu-sm dropdown-content bg-base-100 rounded-box -right-2 z-[1] mt-3 w-48 max-w-[calc(100vw-4rem)] p-2 shadow sm:w-52"
-                >
+                }
+              >
+                <ul>
                   <li className="menu-title">
                     <span>{user.email}</span>
                   </li>
@@ -614,10 +675,10 @@ export function GlobalNav() {
                       className="min-h-11"
                       onClick={(e) => {
                         e.preventDefault();
-                        // Close dropdown
-                        if (document.activeElement instanceof HTMLElement) {
-                          document.activeElement.blur();
-                        }
+                        // No blur() to "close the dropdown" any more — the panel
+                        // is React state now, and closeOnSelect handles it
+                        // (#1018). Blurring closed nothing and only moved focus.
+                        //
                         // signOut() handles the window.location.href='/'
                         // redirect internally; setting it again here races
                         // with the in-flight navigation on Firefox and
@@ -630,7 +691,7 @@ export function GlobalNav() {
                     </button>
                   </li>
                 </ul>
-              </div>
+              </NavPopover>
             ) : (
               <>
                 {/* The comp pairs a quiet text action with one lit pill.
@@ -653,18 +714,26 @@ export function GlobalNav() {
             )}
 
             {/* Mobile/tablet menu (visible below lg) - 44px touch target */}
-            <div className="dropdown dropdown-end lg:hidden">
-              <label
-                tabIndex={0}
-                className="btn btn-ghost btn-circle min-h-11 min-w-11"
-                aria-label="Navigation menu"
-              >
+            <NavPopover
+              label="Navigation menu"
+              showLabel={false}
+              closeOnSelect
+              testId="nav-popover-navigation"
+              wrapperClass="relative lg:hidden"
+              triggerClass="btn btn-ghost btn-circle min-h-11 min-w-11"
+              // dropdown-content -> absolute, as on the account panel above.
+              // max-w-[calc(100vw-4rem)] is load-bearing and must survive: it is
+              // what actually keeps this panel inside a 320px viewport (#803),
+              // and mobile-open-menu-overflow.spec.ts exists to prove it.
+              panelClass="menu menu-sm absolute bg-base-100 rounded-box -right-2 z-[1] mt-3 w-40 max-w-[calc(100vw-4rem)] p-2 shadow sm:w-44"
+              icon={
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -673,11 +742,9 @@ export function GlobalNav() {
                     d="M4 6h16M4 12h16M4 18h16"
                   />
                 </svg>
-              </label>
-              <ul
-                tabIndex={0}
-                className="menu menu-sm dropdown-content bg-base-100 rounded-box -right-2 z-[1] mt-3 w-40 max-w-[calc(100vw-4rem)] p-2 shadow sm:w-44"
-              >
+              }
+            >
+              <ul>
                 {navLeaves.map((item) => (
                   <li key={item.href}>
                     {item.reload ? (
@@ -747,10 +814,8 @@ export function GlobalNav() {
                         className="min-h-11"
                         onClick={(e) => {
                           e.preventDefault();
-                          // Close dropdown
-                          if (document.activeElement instanceof HTMLElement) {
-                            document.activeElement.blur();
-                          }
+                          // No blur() — closeOnSelect closes the panel now
+                          // (#1018); blurring closed nothing.
                           // signOut() handles the redirect internally.
                           void signOut();
                         }}
@@ -777,7 +842,7 @@ export function GlobalNav() {
                   </>
                 )}
               </ul>
-            </div>
+            </NavPopover>
 
             {/* PWA Install Button */}
             {showInstallButton && !isInstalled && (

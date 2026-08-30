@@ -321,14 +321,17 @@ test.describe('Cross-Page Navigation', () => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
 
-    // `[aria-label=...]`, NOT `button[aria-label=...]` (#396). The hamburger is a
-    // DaisyUI dropdown trigger, which renders as a `<label>` — so the old selector
-    // matched ZERO elements, `hasMenuButton` was always false, and this entire test
-    // body (both assertions) never ran. Measured on production at 375px:
-    //   [aria-label="Navigation menu"]        -> 1  (tagName: label)
-    //   button[aria-label="Navigation menu"]  -> 0
-    //   .dropdown-content a                   -> 15
-    // So the menu was there and testable the whole time; only the locator was wrong.
+    // Attribute-only, NOT `button[aria-label=...]` (#396) — kept deliberately even
+    // though the element IS a button since #1018. The lesson is why, not the
+    // measurement: this locator once read `button[aria-label=...]` while the
+    // hamburger was a DaisyUI `<label>`, so it matched ZERO elements,
+    // `hasMenuButton` was always false, and this entire test body never ran.
+    // Staying agnostic to the element type is what stops that recurring the next
+    // time the markup changes.
+    //
+    // (Measured at 375px when that was written: `[aria-label="Navigation menu"]`
+    // matched 1 `<label>`, `button[aria-label=…]` matched 0. Both now match the
+    // same single `<button>`. The numbers moved; the reason for the shape did not.)
     const menuButton = page.locator('[aria-label="Navigation menu"]');
 
     // ASSERTED, not branched on. A guard here makes "the menu is broken" and "the
@@ -339,33 +342,37 @@ test.describe('Cross-Page Navigation', () => {
     ).toHaveCount(1);
 
     {
-      // Open mobile menu
-      await menuButton.click();
+      // Retried: the panel is React state, and a click landing before React
+      // attaches its handler is silently swallowed (#1018).
+      await expect(async () => {
+        await menuButton.click();
+        await expect(menuButton).toHaveAttribute('aria-expanded', 'true', {
+          timeout: 1000,
+        });
+      }).toPass({ timeout: 15000 });
 
-      // SCOPED to the dropdown this trigger belongs to (#396). A bare
-      // `.dropdown-content a` matches EVERY dropdown on the page, and `.first()`
-      // takes document order — which lands on the account menu (`Profile`), not the
-      // navigation menu just opened. That menu is closed, so the link is hidden and
-      // the assertion fails on an element the test never meant to look at.
-      //
-      // This bug was invisible until the fix above let the body run at all: the
-      // guard was permanently false, so nothing downstream of it had ever executed.
-      const menu = page.locator('.dropdown', { has: menuButton });
-      const menuItems = menu.locator('.dropdown-content a');
+      // SCOPED to the panel this trigger owns (#396). The scoping matters as much
+      // as it ever did: signed in, the account menu also exists and precedes this
+      // one in document order, so a page-wide selector plus `.first()` lands on a
+      // menu the test never meant to look at.
+      const menuItems = page.getByTestId('nav-popover-navigation').locator('a');
 
       await expect(
         menuItems.first(),
-        'the navigation dropdown did not open'
+        'the navigation menu did not open'
       ).toBeVisible();
 
-      // Click Home link
-      const homeLink = menuItems.filter({ hasText: 'Home' }).first();
-      if ((await homeLink.count()) > 0) {
-        await homeLink.click();
-
-        // Check navigation occurred (back to home)
-        await expect(page).toHaveURL(/\/$/);
-      }
+      // Navigate via a destination that actually exists. This used to filter for
+      // 'Home' behind an `if (count > 0)`, and #378 moved Home onto the logo — as
+      // this file records at the top — so the branch never ran and the URL was
+      // never asserted. Docs is a real leaf in `navItems`.
+      const docsLink = menuItems.filter({ hasText: 'Docs' }).first();
+      await expect(
+        docsLink,
+        'no Docs entry in the mobile menu — the nav list changed shape'
+      ).toBeVisible();
+      await docsLink.click();
+      await expect(page).toHaveURL(/\/docs\/?$/);
     }
   });
 

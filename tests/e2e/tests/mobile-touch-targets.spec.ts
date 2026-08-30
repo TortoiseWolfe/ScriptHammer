@@ -59,16 +59,22 @@ test.describe('Touch Target Standards', () => {
     // 57 sit inside the closed dropdown, `isVisible()` skips them, and the
     // test reports green having checked a single 44px button.
     //
-    // The nav is a DaisyUI `dropdown` held open by `:focus-within`, so
-    // focusing the trigger opens it (#378 will add more of these).
-    const menuTrigger = page.locator('[aria-label="Navigation menu"]');
+    // The panel is React state (#1018), so it must be CLICKED — focusing the
+    // trigger does nothing. It also must be retried: a click dispatched before
+    // React attaches its handler is silently swallowed, which is the hazard
+    // measured and documented further down this file ("identical code passed one
+    // run and failed the next"). Waiting on aria-expanded rather than a fixed
+    // timeout is what makes the retry meaningful.
+    const menuTrigger = page.locator('button[aria-label="Navigation menu"]');
     if (await menuTrigger.count()) {
-      // click(), not focus(): a DaisyUI dropdown is held open by
-      // :focus-within, and a programmatic focus on the <label> does not
-      // reliably establish it. Measured — focus() surfaced 3 targets, click()
-      // surfaces the full menu.
-      await menuTrigger.first().click();
-      await page.waitForTimeout(250);
+      await expect(async () => {
+        await menuTrigger.first().click();
+        await expect(menuTrigger.first()).toHaveAttribute(
+          'aria-expanded',
+          'true',
+          { timeout: 1000 }
+        );
+      }).toPass({ timeout: 15000 });
     }
 
     // Check primary navigation buttons only (not all interactive elements)
@@ -216,22 +222,30 @@ test.describe('Touch Target Standards', () => {
     // note says bare `<a>` items are exempt as "inline text links". That is true
     // of a link in a paragraph. It is not true of these: below lg they are the
     // ENTIRE navigation. Measured before the fix, at 390px with the menu open,
-    // all 13 destinations were 26x144 against a 44px floor — DaisyUI renders
-    // `menu li > a` at 26px, and nothing here could see them because they sit
-    // inside a closed dropdown.
+    // all 13 destinations were 26x144 against a 44px floor — DaisyUI's `menu`
+    // renders `li > a` at 26px, and nothing here could see them because the panel
+    // was closed. Since #1018 a closed panel is not in the DOM at all.
     for (const width of [320, 390, 428, 768]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto('/', { waitUntil: 'domcontentloaded' });
       await dismissCookieBanner(page);
       await waitForLayoutStability(page);
 
-      const trigger = page.locator('[aria-label="Navigation menu"]');
+      const trigger = page.locator('button[aria-label="Navigation menu"]');
       await expect(trigger).toBeVisible();
-      await trigger.click();
+      await expect(async () => {
+        await trigger.click();
+        await expect(trigger).toHaveAttribute('aria-expanded', 'true', {
+          timeout: 1000,
+        });
+      }).toPass({ timeout: 15000 });
 
-      const items = page.locator(
-        '.dropdown-content a, .dropdown-content button'
-      );
+      // SCOPED to the hamburger's own panel. The previous selector was page-wide
+      // `.dropdown-content …`, which signed-in also matched the account panel and
+      // inflated this count with rows from a menu the test is not about (#1018).
+      const items = page
+        .getByTestId('nav-popover-navigation')
+        .locator('a, button');
       const count = await items.count();
 
       // COVERAGE FLOOR. Everything below is conditional on finding items, so a

@@ -6,17 +6,36 @@
  * viewport. It misses open menus for two independent reasons, either sufficient alone:
  *
  *   1. It never opens anything — the sweep is goto → resize → evaluate.
- *   2. A CLOSED DaisyUI dropdown is `display: none`, so its `<ul>` and every row inside
- *      report 0x0 and are discarded by the sweep's own first guard
- *      (`if (r.width === 0 && r.height === 0) continue;`).
+ *   2. A closed panel contributes nothing to measure. It used to be a DaisyUI
+ *      `.dropdown-content` at `display: none`; since #1018 the header's panels are
+ *      React-owned and are not in the DOM at all until opened. Either way the sweep's
+ *      first guard (`if (r.width === 0 && r.height === 0) continue;`) discards them.
  *
- * The nav-width assertions elsewhere do not cover it either: `.dropdown-content` is
+ * The nav-width assertions elsewhere do not cover it either: an open panel is
  * `position: absolute`, so it never contributes to `<nav>`'s bounding box.
  *
- * WHAT ACTUALLY PROTECTS 320px TODAY is a single CSS class — `max-w-[calc(100vw-4rem)]`
- * on the dropdown `<ul>` in `GlobalNav.tsx`. Nothing asserted it. Delete that one class
- * and every gate in the suite stayed green, which is what #803 reported and what this
- * spec is mutation-verified against.
+ * WHAT #803 REPORTED is that a single CSS class — `max-w-[calc(100vw-4rem)]` on the
+ * panel in `GlobalNav.tsx` — was the only thing keeping it inside a 320px viewport,
+ * and that deleting it left every other gate in the suite green. The class is still
+ * there, verbatim, and `GlobalNav.accessibility.test.tsx` now asserts its presence.
+ *
+ * THAT CLAIM IS STALE, and #1018 measured it rather than inheriting it. In a real
+ * browser at a 320px viewport with the menu open:
+ *
+ *     width     160px      <- `w-40` wins the cascade
+ *     max-width 256px      <- calc(100vw - 4rem), never reached
+ *     panel     103..263   <- inside a 320px viewport with room to spare
+ *
+ * So the max-width does not bind at any width this spec runs, and `w-40` is what
+ * actually keeps the panel inside the viewport today. (Both `w-40` and daisyUI's
+ * `.menu { width: fit-content }` sit in `@layer utilities` at equal specificity, so
+ * source order decides, and source order goes to `w-40`.) The class is kept anyway —
+ * it is the backstop if the width ever becomes content-sized — and #1022 tracks the
+ * stale claim.
+ *
+ * What this spec guarantees is the PROPERTY, not the mechanism: whatever is open,
+ * nothing inside it crosses the viewport edge. Widen the panel and this goes red
+ * regardless of which class was doing the work.
  *
  * WHY TRIGGERS ARE DISCOVERED, NOT LISTED. A hardcoded list silently stops covering a
  * control that gets added, renamed or hidden — and `hidden lg:block` already removes
@@ -30,27 +49,33 @@
 import { test, expect } from '@playwright/test';
 import { CRITICAL_MOBILE_WIDTHS } from '@/config/test-viewports';
 
-/** Controls that open a dropdown and are expected to exist at mobile widths. */
+/** Controls that open a panel and are expected to exist at mobile widths. */
 const REQUIRED_TRIGGERS = ['Navigation menu'];
 
-test.describe('open dropdowns stay inside the viewport (#803)', () => {
+test.describe('open menus stay inside the viewport (#803)', () => {
   for (const width of CRITICAL_MOBILE_WIDTHS) {
-    test(`no open dropdown overflows at ${width}px`, async ({ page }) => {
+    test(`no open menu overflows at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 800 });
       await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-      // Every visible control that owns a `.dropdown-content`, by accessible name.
+      // Every visible control that opens a panel, by accessible name.
+      //
+      // Discovered from the ARIA contract (`aria-expanded` on a button) rather than
+      // from markup classes. The previous version keyed off `.closest('.dropdown')`,
+      // which stopped matching anything the moment the header's popovers became
+      // React-owned (#1018) — and because the list would then be EMPTY, the
+      // non-vacuity assert below is what would have caught it. Keying off the role
+      // contract instead means the next structural change does not silently empty it.
       const triggers: string[] = await page.evaluate(() => {
         const names: string[] = [];
-        document.querySelectorAll('[aria-label]').forEach((el) => {
-          const r = el.getBoundingClientRect();
-          if (r.width === 0 && r.height === 0) return;
-          const root = el.closest('.dropdown');
-          if (root && root.querySelector('.dropdown-content')) {
+        document
+          .querySelectorAll('button[aria-expanded][aria-label]')
+          .forEach((el) => {
+            const r = el.getBoundingClientRect();
+            if (r.width === 0 && r.height === 0) return;
             const name = el.getAttribute('aria-label');
             if (name && !names.includes(name)) names.push(name);
-          }
-        });
+          });
         return names;
       });
 
@@ -60,18 +85,27 @@ test.describe('open dropdowns stay inside the viewport (#803)', () => {
       for (const required of REQUIRED_TRIGGERS) {
         expect(
           triggers,
-          `no dropdown trigger named "${required}" was found at ${width}px, so this ` +
+          `no panel trigger named "${required}" was found at ${width}px, so this ` +
             `test would pass without measuring the menu it exists to measure`
         ).toContain(required);
       }
 
       for (const name of triggers) {
-        const trigger = page.locator(`[aria-label="${name}"]`).first();
-        await trigger.click();
+        const trigger = page.locator(`button[aria-label="${name}"]`).first();
+
+        // Retry the click until the panel actually opens. These popovers are React
+        // state now, and a click dispatched before React attaches its handler is
+        // silently swallowed — the same hazard mobile-touch-targets.spec.ts
+        // documents measuring ("identical code passed one run and failed the next").
+        await expect(async () => {
+          await trigger.click();
+          await expect(trigger).toHaveAttribute('aria-expanded', 'true', {
+            timeout: 1000,
+          });
+        }).toPass({ timeout: 15000 });
 
         const content = page
-          .locator('.dropdown-content')
-          .filter({ has: page.locator(':scope *') })
+          .locator('[data-testid^="nav-popover-"]')
           .locator('visible=true')
           .first();
         await expect(
@@ -113,15 +147,18 @@ test.describe('open dropdowns stay inside the viewport (#803)', () => {
         );
         expect(
           overflowing,
-          `at ${width}px the open "${name}" dropdown puts ${overflowing.length} ` +
+          `at ${width}px the open "${name}" menu puts ${overflowing.length} ` +
             `element(s) outside the ${measured.vw}px viewport: ` +
             overflowing
               .map((b) => `<${b.tag}> "${b.text}" spans ${b.left}..${b.right}`)
               .join('; ')
         ).toEqual([]);
 
+        // Escape genuinely closes these, and returns focus to the trigger. Waited
+        // on rather than fired-and-forgotten, so the next iteration cannot measure
+        // the previous panel.
         await page.keyboard.press('Escape');
-        await trigger.blur().catch(() => {});
+        await expect(trigger).toHaveAttribute('aria-expanded', 'false');
       }
     });
   }

@@ -66,6 +66,39 @@ describe('GlobalNav Accessibility', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('has no violations with the HAMBURGER open', async () => {
+    // The closed-nav scan cannot see this: panels are unmounted until opened, so
+    // axe was scanning strictly less markup after #1018, not more. The specific
+    // risk is the panel being role="group" while carrying DaisyUI's `menu`
+    // classes — if a refactor ever flattened the inner <ul> away, the <li>s would
+    // be listitems inside a group, which is invalid and axe reports as
+    // aria-required-parent. Nothing else in the suite would catch it.
+    const u = userEvent.setup();
+    const { container } = render(<GlobalNav />);
+    await u.click(screen.getByRole('button', { name: 'Navigation menu' }));
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('has no violations with the ACCOUNT menu open', async () => {
+    user = { id: 'user-1' };
+    const u = userEvent.setup();
+    const { container } = render(<GlobalNav />);
+    await u.click(screen.getByRole('button', { name: 'User account menu' }));
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('keeps the panel list structure valid, not just violation-free', async () => {
+    // Stated directly as well as via axe. The <li>s must have a list parent; the
+    // role="group" div is not one.
+    const u = userEvent.setup();
+    render(<GlobalNav />);
+    await u.click(screen.getByRole('button', { name: 'Navigation menu' }));
+    const panel = screen.getByTestId('nav-popover-navigation');
+    for (const li of Array.from(panel.querySelectorAll('li'))) {
+      expect(li.parentElement?.tagName).toBe('UL');
+    }
+  });
+
   it('has no violations with a group open', async () => {
     const u = userEvent.setup();
     const { container } = render(<GlobalNav />);
@@ -160,27 +193,66 @@ describe('GlobalNav names and targets', () => {
 
   it('names the mobile hamburger unambiguously', () => {
     render(<GlobalNav />);
-    // getByLabelText, not getByRole('button'): the hamburger is a
-    // `<label tabIndex={0}>`, see the it.fails below.
-    expect(screen.getByLabelText('Navigation menu')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Navigation menu' })
+    ).toBeInTheDocument();
   });
 
-  it.fails(
-    'makes the hamburger and account triggers real buttons (#1018)',
-    () => {
-      // KNOWN GAP, red when fixed. Both are `<label tabIndex={0}>` inside DaisyUI
-      // `:focus-within` dropdowns — the pattern #378 replaced for the Display and
-      // Demos popovers because returning focus to a trigger that lives inside
-      // `.dropdown` re-opens the panel on the same frame. So neither carries
-      // aria-expanded, neither is announced as a button, and Escape cannot close
-      // them. The two React-owned popovers beside them show what the fix looks
-      // like; the tests above prove that contract already holds for those.
-      render(<GlobalNav />);
-      expect(
-        screen.getByRole('button', { name: 'Navigation menu' })
-      ).toBeInTheDocument();
-    }
-  );
+  it('makes the hamburger and account triggers real buttons (#1018)', async () => {
+    // Was an it.fails. Both were `<label tabIndex={0}>` inside DaisyUI
+    // `:focus-within` dropdowns — the pattern #378 replaced for Display and Demos
+    // because returning focus to a trigger living inside `.dropdown` re-opens the
+    // panel on the same frame. All four header popovers are React-owned now.
+    const u = userEvent.setup();
+    render(<GlobalNav />);
+    const hamburger = screen.getByRole('button', { name: 'Navigation menu' });
+    expect(hamburger).toHaveAttribute('aria-expanded', 'false');
+    await u.click(hamburger);
+    expect(hamburger).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('closes the hamburger on Escape AND returns focus to it', async () => {
+    // The half a `:focus-within` dropdown structurally cannot do. Focus is moved
+    // INTO the panel first — clicking the trigger already leaves focus on it, so
+    // asserting toHaveFocus() straight after Escape would pass whether or not
+    // anything was restored.
+    const u = userEvent.setup();
+    render(<GlobalNav />);
+    const hamburger = screen.getByRole('button', { name: 'Navigation menu' });
+    await u.click(hamburger);
+
+    const firstLink = screen.getAllByRole('link', { name: 'Docs' }).pop()!;
+    firstLink.focus();
+    expect(firstLink).toHaveFocus();
+
+    await u.keyboard('{Escape}');
+    expect(hamburger).toHaveAttribute('aria-expanded', 'false');
+    expect(hamburger).toHaveFocus();
+  });
+
+  it('mounts the hamburger panel only while it is open', async () => {
+    // Not cosmetic: closed panels used to sit in the DOM behind CSS, which is
+    // what made `.dropdown-content a` match two panels at once and inflated
+    // every count a spec took signed-in.
+    const u = userEvent.setup();
+    render(<GlobalNav />);
+    expect(screen.queryByTestId('nav-popover-navigation')).toBeNull();
+    await u.click(screen.getByRole('button', { name: 'Navigation menu' }));
+    expect(screen.getByTestId('nav-popover-navigation')).toBeInTheDocument();
+  });
+
+  it('keeps the 320px width cap that stops the panel overflowing (#803)', async () => {
+    // max-w-[calc(100vw-4rem)] is what actually protects a 320px viewport;
+    // mobile-open-menu-overflow.spec.ts exists to prove it in a real browser.
+    // Asserted here too so the class cannot be dropped in a refactor that never
+    // runs the E2E lane.
+    const u = userEvent.setup();
+    render(<GlobalNav />);
+    await u.click(screen.getByRole('button', { name: 'Navigation menu' }));
+    expect(screen.getByTestId('nav-popover-navigation').className).toContain(
+      'max-w-[calc(100vw-4rem)]'
+    );
+  });
 
   it('has ONE navigation landmark, so a landmark list is not ambiguous', () => {
     render(<GlobalNav />);
