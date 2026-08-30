@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { FormError } from './FormError';
 
 const meta = {
-  title: 'Forms/FormError',
+  title: 'Features/Forms/FormError',
   component: FormError,
   parameters: {
     layout: 'centered',

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { CookieActions } from './CookieActions';
 
 const meta = {
-  title: 'Privacy/CookieActions',
+  title: 'Features/Privacy/CookieActions',
   component: CookieActions,
   parameters: {
     layout: 'padded',

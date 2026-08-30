@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { PrivacyActions } from './PrivacyActions';
 
 const meta = {
-  title: 'Privacy/PrivacyActions',
+  title: 'Features/Privacy/PrivacyActions',
   component: PrivacyActions,
   parameters: {
     layout: 'padded',
