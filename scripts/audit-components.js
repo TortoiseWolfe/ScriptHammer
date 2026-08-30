@@ -51,11 +51,7 @@ const KNOWN_BARE_COMPONENTS = {
 
   // Ordinary components that simply never adopted the pattern. #538 did not
   // know about these eleven; the discovery found them.
-  'src/components/theme/ThemeSwitcher.tsx': 'Never adopted the pattern',
-  'src/components/navigation/FontSizeControl.tsx': 'Never adopted the pattern',
   'src/components/molecular/DisqusComments.tsx': 'Never adopted the pattern',
-  'src/components/forms/ValidatedInput.tsx': 'Never adopted the pattern',
-  'src/components/forms/FormField.tsx': 'Never adopted the pattern',
   'src/components/calendar/CalendarConsent.tsx': 'Never adopted the pattern',
   'src/components/calendar/providers/CalendlyProvider.tsx':
     'Never adopted the pattern',
