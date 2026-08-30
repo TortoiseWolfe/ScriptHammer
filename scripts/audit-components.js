@@ -43,10 +43,6 @@ const REPO_ROOT = path.resolve(__dirname, '..');
  */
 const KNOWN_BARE_COMPONENTS = {
   // App-shell singletons, all mounted directly in src/app/layout.tsx.
-  'src/components/AccessibilityScript.tsx':
-    'Inlined <script>, must run before hydration — no rendered DOM to story or axe',
-  'src/components/ThemeScript.tsx':
-    'Inlined <script>, must run before hydration — no rendered DOM to story or axe',
   'src/components/ErrorBoundary.tsx':
     'Class component wrapping the whole tree in layout.tsx',
   'src/components/GlobalNav.tsx':
