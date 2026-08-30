@@ -424,11 +424,35 @@ function validateFile(filePath, type) {
 }
 
 /**
- * Validate index.tsx content
+ * Strip comments before matching source.
+ *
+ * Every content check below looks for code, and this repo has repeatedly shipped
+ * guards that matched their own explanatory prose instead (#1022 most recently).
+ */
+function stripComments(content) {
+  return content.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+}
+
+/**
+ * Validate index.tsx content — a barrel must RE-EXPORT something.
+ *
+ * This used to demand `export { default }` or `export default`, which is the same
+ * wrong assumption #1017 removed from the migration templates: a named-only
+ * component (`export const Foo`) has a perfectly correct barrel that says
+ * `export { Foo } from './Foo'`, and 57 of this repo's 139 components are that
+ * shape. The rule failed all of them, which is why --strict could never be turned
+ * on and why its content checks sat dead for so long.
+ *
+ * What actually makes a barrel wrong is re-exporting nothing at all.
  */
 function validateIndexFile(content) {
+  const code = stripComments(content);
+  // `export {` covers `export { default }` and `export { Foo }` alike;
+  // `export default` and `export *` are the other two legitimate forms.
   return (
-    content.includes('export { default }') || content.includes('export default')
+    /export\s*\{/.test(code) ||
+    /export\s+default\s/.test(code) ||
+    /export\s+\*/.test(code)
   );
 }
 
@@ -461,14 +485,19 @@ function validateStoryFile(content) {
  * Validate accessibility test file content
  */
 function validateAccessibilityFile(content) {
-  return (
-    (content.includes('jest-axe') ||
-      content.includes('axe') ||
-      content.includes('toHaveNoViolations')) &&
-    (content.includes('describe') ||
-      content.includes('test') ||
-      content.includes('it('))
-  );
+  // Comments stripped and syntax matched, for the reason validateTestFile spells
+  // out above: `includes('axe')` matches the word in a docblock and
+  // `includes('test')` matches any prose containing it, so a file could satisfy
+  // both halves while asserting nothing — which is what a placeholder stub did.
+  //
+  // An actual axe call is required rather than accepting a hand-rolled aria
+  // assertion instead. Every compliant file in the repo runs axe; allowing an
+  // alternative means writing a pattern that decides which hand-rolled assertions
+  // count, and that pattern is a liability of its own.
+  const code = stripComments(content);
+  const runsAxe = /\baxe\s*\(/.test(code) || /toHaveNoViolations/.test(code);
+  const hasCases = /\b(describe|test|it)\s*(\.\w+\s*)?\(/.test(code);
+  return runsAxe && hasCases;
 }
 
 /**
