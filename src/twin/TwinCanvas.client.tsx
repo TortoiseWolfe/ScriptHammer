@@ -86,6 +86,10 @@ import {
 } from '@/lib/collider-commit';
 import { deriveFraming, type Framing, type OrthoFrame } from '@/lib/framing';
 import { getInternalUrl } from '@/config/project.config';
+import { createLogger } from '@/lib/logger';
+
+/** #727: the walk handover is the only path here that can fail silently. */
+const log = createLogger('twin:walk');
 
 /** 'house' focuses the camera on the as-built parcel (the property view).
  *  Reached via the `?house` query param — a dedicated route can't exist under
@@ -767,6 +771,52 @@ function SceneInner({
     // all three inputs landed during the child-effect pass before this effect first ran.
     if (wantsWalkWorldRef.current) tryBuildWalkRef.current?.();
   }, [mode]);
+
+  /**
+   * SAY SOMETHING WHEN A WALK INTENT IS NEVER MET (#727).
+   *
+   * `tryBuildWalk` returns at its three-input gate when terrain, buildings or the ground
+   * sampler never arrives. That return is silent, so `?walk` on a slug whose world cannot
+   * produce all three just orbits forever: the controller is never built, `onWalkReady`
+   * never fires, the auto-walk effect's guard never passes, and `mode` stays 'orbit'.
+   * Nothing is logged and nothing in the UI says why.
+   *
+   * This does not fix the handover — it makes the failure legible, which is what the ticket
+   * asks for. The wait is generous because a cold load on a slow connection can legitimately
+   * take a while to produce all three.
+   *
+   * `warn` is dev-only for free: the shared logger sets minLevel to ERROR in production
+   * (src/lib/logger/logger.ts:74), so this costs a visitor nothing and needs no hand-rolled
+   * NODE_ENV check.
+   */
+  useEffect(() => {
+    if (!wantsWalkWorldRef.current || walkCtrl) return;
+    const timer = setTimeout(() => {
+      if (walkCtrlRef.current) return;
+      const missing = [
+        !terrainMeshRef.current && 'terrain mesh',
+        !buildingsMeshRef.current && 'buildings mesh',
+        !groundAtRef.current && 'ground sampler',
+      ].filter(Boolean);
+      // NO `if (!missing.length) return` HERE, deliberately. The three-input gate is the
+      // cause this ticket describes, but it is not the only way to reach "walk asked for,
+      // controller absent" — tryBuildWalk could also throw, or be starved of a render.
+      // Suppressing the warning whenever the predicted cause is absent would make the
+      // diagnostic silent in exactly the cases nobody has thought about yet. Caught by a
+      // mutation that forced the gate while leaving the inputs present: the warning
+      // vanished, which is the failure this comment exists to prevent.
+      log.warn(
+        'walk was requested but the collision world was never built — staying in orbit',
+        {
+          slug,
+          missing: missing.length
+            ? missing
+            : 'nothing — all three inputs arrived',
+        }
+      );
+    }, 10_000);
+    return () => clearTimeout(timer);
+  }, [walkCtrl, slug]);
 
   const handleBuildingsMesh = useCallback(
     (mesh: Mesh) => {
