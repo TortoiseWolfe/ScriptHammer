@@ -109,6 +109,52 @@ test.describe('Admin Dashboard E2E', () => {
     admin = null;
   });
 
+  /**
+   * On failure, say what the page actually contained (#1029).
+   *
+   * These specs failed for months as `element(s) not found`, which names the
+   * locator and nothing else — not whether the request was refused, not whether
+   * the page rendered an error, not whether it was gated out entirely. Three CI
+   * rounds could not distinguish those, and the answer only arrived when a
+   * throwaway branch printed this once.
+   *
+   * It runs ONLY on failure, so a green run is unchanged. Keeping it is the
+   * difference between a failure that names its cause and one that needs a
+   * bespoke branch to interrogate.
+   */
+  test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status === testInfo.expectedStatus) return;
+    const readout = await page
+      .evaluate(() => ({
+        url: location.pathname,
+        // Distinguishes "gated out" (no container) from "rendered but empty".
+        hasAdminNav: !!document.querySelector('[data-testid^="admin-"]'),
+        hasTable: !!document.querySelector('table'),
+        alerts: [...document.querySelectorAll('[role="alert"], .alert')]
+          .map((el) => (el.textContent || '').trim())
+          .filter(Boolean)
+          .slice(0, 4),
+        bodyStart: (document.body.innerText || '')
+          .replace(/\s+/g, ' ')
+          .slice(0, 300),
+      }))
+      .catch((e) => ({ evaluateFailed: String(e) }));
+    console.log('[admin readout]', JSON.stringify(readout));
+    const errs =
+      (page as unknown as { __adminErrs?: string[] }).__adminErrs ?? [];
+    if (errs.length)
+      console.log('[admin console]', JSON.stringify(errs.slice(0, 8)));
+  });
+
+  test.beforeEach(async ({ page }) => {
+    const errs: string[] = [];
+    (page as unknown as { __adminErrs: string[] }).__adminErrs = errs;
+    page.on('console', (m) => {
+      if (m.type() === 'error') errs.push(m.text());
+    });
+    page.on('pageerror', (e) => errs.push(`pageerror: ${e.message}`));
+  });
+
   test.beforeEach(async ({ page }) => {
     test.skip(!admin, 'Admin client unavailable to seed an admin');
     if (!admin) return;
