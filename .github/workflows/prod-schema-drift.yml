@@ -39,6 +39,10 @@ on:
       # daily cron covers everything this filter skips.
       - 'supabase/migrations/**'
       - 'scripts/ci/check-prod-schema-drift.mjs'
+      # The intent is PARSED from the migration now (#1038), so the parser is as
+      # load-bearing as the comparator: a regex that stops matching shrinks what the
+      # check asserts without failing anything.
+      - 'scripts/ci/derive-intended-schema.mjs'
       - '.github/workflows/prod-schema-drift.yml'
   workflow_dispatch:
 

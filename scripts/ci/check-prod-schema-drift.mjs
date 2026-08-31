@@ -28,31 +28,26 @@
  */
 
 /**
- * What production is supposed to look like.
+ * What production is supposed to look like — DERIVED from the migration, not restated.
  *
- * Deliberately NARROW — the security-relevant surface, not the whole schema. A diff of
- * everything is noise nobody reads, and a check nobody reads is not a check.
+ * This used to be a hand-written object literal listing ONE table, `payment_intents`, out
+ * of nineteen (#1038). The check around it was sound and ran daily; it was simply asked a
+ * much smaller question than its name implied, and answered it correctly while production
+ * carried a live privilege escalation on `user_profiles` — a table the list had never
+ * mentioned. A green result meant "one table matches the repo" and read as "production
+ * matches the repo".
  *
- * `grants` lists the privileges each client role may hold. Supabase's platform defaults
- * hand `anon` and `authenticated` ALL privileges on every table in `public`, so anything
- * not narrowed by an explicit REVOKE will show up here as drift — which is the point.
+ * Widening the list by hand would have reproduced the real defect one size larger: a
+ * second declaration of intent, kept in step with the migration by memory. #1039 is what
+ * that costs — the migration was hardened, no one updated the list, and a check asserting
+ * the OLD intent would have gone on passing precisely because production had not moved.
+ *
+ * See derive-intended-schema.mjs for what is and is not asserted, and why grants are
+ * claimed only for tables the migration explicitly REVOKEs from.
  */
-export const INTENDED = {
-  tables: {
-    payment_intents: {
-      rls: true,
-      grants: { anon: ['SELECT'], authenticated: ['INSERT', 'SELECT'] },
-      // #897 restored the admin policy production was missing.
-      policies: [
-        'Admin can view all payment intents',
-        'Payment intents are immutable',
-        'Payment intents cannot be deleted by users',
-        'Users can create own payment intents',
-        'Users can view own payment intents',
-      ],
-    },
-  },
-};
+export const INTENDED = loadIntended();
+
+import { loadIntended } from './derive-intended-schema.mjs';
 
 const API = 'https://api.supabase.com/v1/projects';
 
@@ -83,16 +78,35 @@ export async function observe(ref, token, intended = INTENDED) {
     query(
       ref,
       token,
+      // BOTH table-level and COLUMN-level grants. role_table_grants alone is blind to a
+      // column-scoped GRANT, and this repo uses those deliberately -- `user_profiles`
+      // narrows `authenticated` to named columns precisely so `is_admin` stays unreadable
+      // (#1029). Reading only the table view reported that table as holding NOTHING and
+      // called a correctly-hardened production "NARROWER, missing INSERT, SELECT, UPDATE".
+      // A column grant does confer the privilege; which columns it withholds is a separate
+      // question, asserted separately.
       `SELECT table_name, grantee, privilege_type FROM information_schema.role_table_grants
+        WHERE table_schema='public' AND table_name IN (${list})
+          AND grantee IN ('anon','authenticated')
+       UNION
+       SELECT table_name, grantee, privilege_type FROM information_schema.column_privileges
         WHERE table_schema='public' AND table_name IN (${list})
           AND grantee IN ('anon','authenticated')`
     ),
     query(
       ref,
       token,
-      `SELECT c.relname AS table_name, p.polname FROM pg_policy p
+      // polroles carries the TO clause. `{0}` is PUBLIC, which includes anon -- the
+      // distinction that let unauthenticated callers read encryption salts (#1039), and
+      // one a name-only comparison cannot see.
+      `SELECT c.relname AS table_name, p.polname,
+              COALESCE((SELECT array_agg(r.rolname ORDER BY r.rolname)
+                        FROM pg_roles r WHERE r.oid = ANY(p.polroles)),
+                       ARRAY['public']) AS roles
+         FROM pg_policy p
          JOIN pg_class c ON c.oid = p.polrelid
-        WHERE c.relname IN (${list})`
+        WHERE c.relname IN (${list})
+          AND c.relnamespace = 'public'::regnamespace`
     ),
     query(
       ref,
@@ -110,16 +124,103 @@ export async function observe(ref, token, intended = INTENDED) {
   for (const g of grants) {
     const t = out[g.table_name];
     if (!t) continue;
-    (t.grants[g.grantee] ??= []).push(g.privilege_type);
+    const list = (t.grants[g.grantee] ??= []);
+    if (!list.includes(g.privilege_type)) list.push(g.privilege_type);
   }
   for (const p of policies) {
-    if (out[p.table_name]) out[p.table_name].policies.push(p.polname);
+    if (out[p.table_name])
+      out[p.table_name].policies.push({
+        name: p.polname,
+        roles: pgArray(p.roles).sort(),
+      });
   }
   for (const t of Object.values(out)) {
-    t.policies.sort();
+    t.policies.sort((a, b) => a.name.localeCompare(b.name));
     for (const k of Object.keys(t.grants)) t.grants[k].sort();
   }
   return out;
+}
+
+/**
+ * Every function live in `public`, by name and arity.
+ *
+ * Arity, not just name, because the failure this catches is an OVERLOAD. Production carried
+ * a second `admin_audit_trends` whose four arguments were ALL defaulted, beside a
+ * two-argument version that was also fully defaulted -- so every call was ambiguous and the
+ * RPC was a total outage rather than a latent risk (#1032). The migration ordered that
+ * signature DROPped and nobody ran it. A name-only comparison sees two functions called
+ * admin_audit_trends and one declaration of that name, and reports nothing.
+ */
+export async function observeFunctions(ref, token) {
+  const rows = await query(
+    ref,
+    token,
+    `SELECT proname, pronargs FROM pg_proc
+      WHERE pronamespace = 'public'::regnamespace AND prokind = 'f'`
+  );
+  return rows
+    .map((r) => ({ name: r.proname, arity: Number(r.pronargs) }))
+    .sort((a, b) => a.name.localeCompare(b.name) || a.arity - b.arity);
+}
+
+/** Compare live functions against the migration's, both directions. Pure. */
+export function evaluateFunctions(observed, intended = INTENDED) {
+  const problems = [];
+  const key = (f) => `${f.name}(${f.arity})`;
+
+  // Anti-vacuity, same reasoning as the table loop below: an empty function list is a
+  // failed observation, never a clean bill of health.
+  if (!observed || observed.length === 0) {
+    return [
+      'no functions observed in public -- a failed observation, not "no drift". ' +
+        'Check the project ref and the token.',
+    ];
+  }
+
+  const live = new Set(observed.map(key));
+  const want = new Set(intended.functions.map(key));
+
+  for (const k of [...want].sort()) {
+    if (!live.has(k)) {
+      problems.push(
+        `${k}: declared in the migration, ABSENT from production -- the file was edited ` +
+          'and never executed against the live database.'
+      );
+    }
+  }
+  for (const k of [...live].sort()) {
+    if (want.has(k)) continue;
+    const base = k.slice(0, k.indexOf('('));
+    const siblings = [...live].filter((x) => x.startsWith(`${base}(`));
+    problems.push(
+      `${k}: live in production, NOT declared in the migration.` +
+        (siblings.length > 1
+          ? ` ${base} has ${siblings.length} live signatures (${siblings.join(', ')}); when ` +
+            'more than one is callable with the same arguments EVERY call is ambiguous and ' +
+            'the RPC fails outright (#1032).'
+          : ' An orphan from an older migration, or an out-of-band change.')
+    );
+  }
+  return problems;
+}
+
+/**
+ * A Postgres text[] as the Management API returns it.
+ *
+ * It arrives as the literal string `{authenticated}` -- not a JSON array -- so `.map()` on
+ * it throws, and a `?? []` fallback around that would have quietly produced an empty role
+ * list for EVERY policy, making the role comparison pass by comparing nothing.
+ */
+function pgArray(value) {
+  if (Array.isArray(value)) return value.map((r) => String(r).toLowerCase());
+  if (typeof value === 'string' && value.startsWith('{')) {
+    const inner = value.slice(1, -1).trim();
+    if (!inner) return [];
+    return inner
+      .split(',')
+      .map((r) => r.replace(/^"|"$/g, '').trim().toLowerCase());
+  }
+  return ['public'];
 }
 
 const same = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
@@ -157,7 +258,14 @@ export function evaluate(observed, intended = INTENDED) {
       );
     }
 
-    for (const [role, wantPrivs] of Object.entries(want.grants)) {
+    // GRANTS ARE ASSERTED ONLY WHERE THE FILE TOOK CONTROL. Supabase's pg_default_acl
+    // already grants anon and authenticated everything on every table in public, so for a
+    // table the migration never REVOKEs from, the live grant set IS the platform default
+    // and the file has expressed no opinion. Asserting one there invents an intent nobody
+    // wrote, fires on eighteen tables, and gets the check switched off -- which is how a
+    // check stops protecting anything. `grants: null` means "not asserted"; RLS and
+    // policies are still checked for those tables.
+    for (const [role, wantPrivs] of Object.entries(want.grants ?? {})) {
       const gotPrivs = got.grants[role] ?? [];
       if (same(gotPrivs, [...wantPrivs].sort())) continue;
       const extra = gotPrivs.filter((p) => !wantPrivs.includes(p));
@@ -173,10 +281,16 @@ export function evaluate(observed, intended = INTENDED) {
       );
     }
 
-    const wantPolicies = [...want.policies].sort();
-    if (!same(got.policies, wantPolicies)) {
-      const extra = got.policies.filter((p) => !wantPolicies.includes(p));
-      const missing = wantPolicies.filter((p) => !got.policies.includes(p));
+    // Policies, both directions, BY NAME -- then by the roles they apply to. A policy can
+    // keep its name and change meaning: production carried "Service creates profiles" as
+    // TO PUBLIC WITH CHECK (true) long after the migration narrowed it to
+    // TO authenticated WITH CHECK (auth.uid() = id). Same name, opposite effect, and a
+    // name-only comparison called that a match (#1038).
+    const wantNames = want.policies.map((p) => p.name).sort();
+    const gotNames = got.policies.map((p) => p.name).sort();
+    if (!same(gotNames, wantNames)) {
+      const extra = gotNames.filter((p) => !wantNames.includes(p));
+      const missing = wantNames.filter((p) => !gotNames.includes(p));
       problems.push(
         `${table}: policies differ` +
           (missing.length
@@ -186,6 +300,21 @@ export function evaluate(observed, intended = INTENDED) {
             ? ` — UNDECLARED ${extra.map((p) => `"${p}"`).join(', ')}`
             : '')
       );
+    }
+
+    for (const wp of want.policies) {
+      const gp = got.policies.find((x) => x.name === wp.name);
+      if (!gp || !gp.roles) continue; // absence is already reported above
+      if (!same(gp.roles, [...wp.roles].sort())) {
+        problems.push(
+          `${table}: policy "${wp.name}" applies TO [${gp.roles.join(', ')}] in production, ` +
+            `declared TO [${[...wp.roles].sort().join(', ')}]` +
+            (gp.roles.includes('public') && !wp.roles.includes('public')
+              ? ' — WIDER: `public` includes anon, so this is reachable with nothing but ' +
+                'the publishable key (#1039)'
+              : '')
+        );
+      }
     }
   }
   return problems;
@@ -202,10 +331,17 @@ async function main() {
     process.exit(1);
   }
 
-  const observed = await observe(ref, token);
-  const problems = evaluate(observed);
+  const [observed, liveFunctions] = await Promise.all([
+    observe(ref, token),
+    observeFunctions(ref, token),
+  ]);
+  const problems = [...evaluate(observed), ...evaluateFunctions(liveFunctions)];
 
-  console.log('Production security-schema drift');
+  console.log(
+    `Production security-schema drift — ${Object.keys(INTENDED.tables).length} tables, ` +
+      `${Object.values(INTENDED.tables).reduce((n, t) => n + t.policies.length, 0)} policies, ` +
+      `${INTENDED.functions.length} functions, all derived from the migration`
+  );
   for (const [table, got] of Object.entries(observed)) {
     console.log(
       `  ${table}: rls=${got.rls}, policies=${got.policies.length}, ` +
@@ -222,10 +358,11 @@ async function main() {
   console.error(`  verdict ....... ${problems.length} problem(s)`);
   for (const p of problems) console.error(`::error::[prod-schema-drift] ${p}`);
   console.error(
-    '\nProduction and this repo disagree. If the production state is correct, update ' +
-      'INTENDED in scripts/ci/check-prod-schema-drift.mjs so the intent is recorded. If the ' +
-      'repo is correct, EXECUTE the change against production — editing the migration alone ' +
-      'does nothing to a database that already exists (#565, #897).'
+    '\nProduction and this repo disagree. The intent above is READ FROM THE MIGRATION, so ' +
+      'there is no second list to update — if the repo is right, EXECUTE the change against ' +
+      'production, because editing the migration does nothing to a database that already ' +
+      'exists (#565, #897, #1038). If PRODUCTION is right, change the migration, which is ' +
+      'the only place the intent is written down.'
   );
   process.exit(1);
 }
