@@ -37,6 +37,28 @@ import {
 
 const logger = createLogger('messaging:keys');
 
+/**
+ * What `get_own_encryption_key()` returns (#1040).
+ *
+ * `authenticated` has no SELECT grant on `user_encryption_keys.encryption_salt`:
+ * beside the row's own public key it is an offline password oracle, because the
+ * keypair is Argon2id(password, salt). So the salt reaches the browser only
+ * through that SECURITY DEFINER accessor, which takes no argument and can
+ * therefore only ever describe `auth.uid()`.
+ *
+ * The counts ride along because `needsMigration()` used to ask
+ * `.not('encryption_salt','is',null)`, and a column named in a FILTER needs
+ * SELECT on it exactly as a select-list reference does — measured, not assumed.
+ */
+interface OwnEncryptionKey {
+  key_id: string | null;
+  public_key: unknown | null;
+  encryption_salt: string | null;
+  created_at: string | null;
+  active_key_count: number;
+  salted_key_count: number;
+}
+
 // Note: previously this module had an asNonExtractablePrivate() helper that
 // re-imported the in-memory private CryptoKey as non-extractable before
 // writing it to IndexedDB. That step was a workaround — KeyDerivationService
@@ -54,6 +76,35 @@ export class KeyManagementService {
 
   /** Key derivation service (Argon2id) */
   private keyDerivationService = new KeyDerivationService();
+
+  /**
+   * The caller's OWN newest active key row, via the #1040 accessor.
+   *
+   * THROWS on any failure rather than returning null, and that is the point. A
+   * missing salt in this app degrades to "no keys yet"; the UI reads that as a
+   * new user and offers to initialize; initializing OVERWRITES the keypair and
+   * permanently orphans every message already encrypted to the old one. If this
+   * RPC is missing — the migration edited but never executed against the live
+   * database, which is the #1038 shape — callers must see an error, never an
+   * empty user.
+   */
+  private async fetchOwnEncryptionKey(): Promise<OwnEncryptionKey> {
+    const supabase = createClient();
+    const { data, error } = await supabase.rpc('get_own_encryption_key');
+
+    if (error) {
+      throw new ConnectionError(
+        'Failed to read own encryption key: ' + error.message
+      );
+    }
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      throw new ConnectionError(
+        'get_own_encryption_key() returned no object — is the migration applied ' +
+          'to this database?'
+      );
+    }
+    return data as unknown as OwnEncryptionKey;
+  }
 
   /**
    * Initialize encryption keys for NEW user (first login after registration)
@@ -171,7 +222,6 @@ export class KeyManagementService {
    */
   async deriveKeys(password: string): Promise<DerivedKeyPair> {
     const supabase = createClient();
-    const msgClient = createMessagingClient(supabase);
 
     const {
       data: { session },
@@ -186,25 +236,14 @@ export class KeyManagementService {
     }
 
     try {
-      // Step 1: Fetch salt and public key from Supabase
-      // Use maybeSingle() instead of single() to handle case where user has no keys yet
-      const { data, error } = await msgClient
-        .from('user_encryption_keys')
-        .select('encryption_salt, public_key')
-        .eq('user_id', user.id)
-        .eq('revoked', false)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      // Step 1: salt + public key, through the #1040 accessor rather than off the
+      // table. `authenticated` cannot SELECT encryption_salt any more, and the
+      // accessor is scoped to auth.uid(), so this is still strictly own-row —
+      // the .eq('user_id', user.id) it replaces is now enforced in the database
+      // rather than asked for by the caller.
+      const data = await this.fetchOwnEncryptionKey();
 
-      // Only throw connection error for actual database errors, not "no rows" errors
-      if (error && error.code !== 'PGRST116') {
-        throw new ConnectionError(
-          'Failed to fetch user key data: ' + error.message
-        );
-      }
-
-      if (!data?.encryption_salt) {
+      if (!data.encryption_salt) {
         throw new KeyDerivationError(
           'No salt found. User may need migration or initialization.'
         );
@@ -298,21 +337,25 @@ export class KeyManagementService {
 
     // We have the private CryptoKey but need the public half + salt to fully
     // populate DerivedKeyPair. Both live on user_encryption_keys in Supabase.
-    const supabase = createClient();
-    const msgClient = createMessagingClient(supabase);
-    const { data, error } = await msgClient
-      .from('user_encryption_keys')
-      .select('encryption_salt, public_key')
-      .eq('user_id', currentUserId)
-      .eq('revoked', false)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // Through the #1040 accessor. This one KEEPS returning false rather than
+    // throwing: it is a cache-restore fast path with a real fallback — the
+    // caller re-derives from the password — so a failure here costs a prompt,
+    // not a lost keypair.
+    let data: OwnEncryptionKey;
+    try {
+      data = await this.fetchOwnEncryptionKey();
+    } catch (error) {
+      logger.warn('restoreKeysFromCache: could not read own key row', {
+        userId: currentUserId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return false;
+    }
 
-    if (error || !data?.encryption_salt || !data.public_key) {
+    if (!data.encryption_salt || !data.public_key) {
       logger.warn(
         'restoreKeysFromCache: have private key in IndexedDB but no public key/salt in Supabase',
-        { userId: currentUserId, errorCode: error?.code }
+        { userId: currentUserId }
       );
       return false;
     }
@@ -367,7 +410,6 @@ export class KeyManagementService {
    */
   async needsMigration(): Promise<boolean> {
     const supabase = createClient();
-    const msgClient = createMessagingClient(supabase);
 
     const {
       data: { user },
@@ -379,45 +421,17 @@ export class KeyManagementService {
     }
 
     try {
-      // Check if ANY active key has a valid salt
-      const { data: validKeys, error: validError } = await msgClient
-        .from('user_encryption_keys')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('revoked', false)
-        .not('encryption_salt', 'is', null)
-        .limit(1);
+      // ONE round trip now, not two. Both questions -- "any active key?" and "any
+      // active key WITH a salt?" -- are answered by the counts the #1040 accessor
+      // returns. The old first query filtered on `encryption_salt`, and a column
+      // named in a filter needs SELECT on it exactly as a select-list reference
+      // does, so it could not survive the column revoke in any form.
+      const own = await this.fetchOwnEncryptionKey();
 
-      if (validError) {
-        logger.error('needsMigration: Error checking valid keys', {
-          error: validError,
-        });
-        return false; // Safe default - don't block users on error
-      }
-
-      // If user has at least one valid key, no migration needed
-      if (validKeys && validKeys.length > 0) {
-        return false;
-      }
-
-      // Check if user has ANY keys at all (to distinguish new user from legacy user)
-      const { data: anyKeys, error: anyError } = await msgClient
-        .from('user_encryption_keys')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('revoked', false)
-        .limit(1);
-
-      if (anyError) {
-        logger.error('needsMigration: Error checking any keys', {
-          error: anyError,
-        });
-        return false;
-      }
-
-      // Needs migration only if has keys but none have salt
-      // (New users with no keys don't need migration - they need initialization)
-      return anyKeys && anyKeys.length > 0;
+      // Needs migration only if the user HAS keys and NONE of them carry a salt.
+      // A user with no keys at all needs initialization, which is a different
+      // thing and must not be reported as migration.
+      return own.active_key_count > 0 && own.salted_key_count === 0;
     } catch (error) {
       logger.error('needsMigration: Unexpected error', { error });
       return false;

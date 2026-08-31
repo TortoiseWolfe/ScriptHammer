@@ -128,10 +128,27 @@ test('the two tables this ticket is about are locked down specifically', () => {
     /REVOKE ALL ON edge_idempotency_keys FROM anon, authenticated;/,
     'edge_idempotency_keys must REVOKE the platform default; RLS alone leaves the grant'
   );
+  // #1040 widened this from `FROM anon` to `FROM anon, authenticated`, because
+  // withholding the salt COLUMN from signed-in users needs the table-wide grant
+  // gone first. Matching the role list loosely rather than pinning the exact
+  // literal, so tightening the revoke further does not read as a regression --
+  // but still requiring `anon`, which is the part that must never come back.
   assert.match(
     SQL,
-    /REVOKE ALL ON user_encryption_keys FROM anon;/,
+    /REVOKE ALL ON (?:public\.)?user_encryption_keys FROM [^;]*\banon\b/,
     'user_encryption_keys must REVOKE anon; a narrower GRANT does not undo a wider default'
+  );
+  assert.match(
+    SQL,
+    /REVOKE ALL ON (?:public\.)?user_encryption_keys FROM [^;]*\bauthenticated\b/,
+    'user_encryption_keys must REVOKE authenticated too (#1040) — otherwise the ' +
+      'column-scoped GRANTs below sit on top of a wider platform default and the ' +
+      'salt stays readable by every signed-in user'
+  );
+  assert.match(
+    SQL,
+    /GRANT SELECT \(\s*\n?\s*id, user_id, public_key, revoked, created_at\s*\n?\s*\) ON public\.user_encryption_keys TO authenticated;/,
+    'the SELECT column list must not include encryption_salt (#1040)'
   );
 });
 

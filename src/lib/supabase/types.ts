@@ -1044,6 +1044,15 @@ export type Database = {
         Args: { p_batch_size?: number; p_max_batches?: number };
         Returns: number;
       };
+      /**
+       * #1040. The caller's own newest active key row, salt included.
+       * Zero arguments on purpose: it can only ever describe auth.uid(), so
+       * there is no parameter through which to ask for someone else's.
+       */
+      get_own_encryption_key: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
       is_admin: {
         Args: { check_user_id?: string };
         Returns: boolean;
