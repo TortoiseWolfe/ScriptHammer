@@ -7,6 +7,7 @@ const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const path = require('node:path');
 const fs = require('node:fs');
+const os = require('node:os');
 
 // This will fail initially - module doesn't exist yet
 let auditComponents;
@@ -433,17 +434,20 @@ describe('the recorded bare-component baseline (#538)', () => {
     // now fails for the best possible reason and, worse, its message would send
     // the next reader looking for a regression that has not happened. The guard
     // has to prove the CAPABILITY instead of relying on debt being present.
-    const probe = path.join(
-      process.cwd(),
-      'src',
-      'components',
-      '__RateProbe.tsx'
+    // IN A SCRATCH DIRECTORY, not `src/components`. Writing the probe into the
+    // real tree raced strict-content-validation.test.js, which walks every
+    // component: node:test runs files in parallel, so the probe appeared and then
+    // vanished mid-scan and that suite died on ENOENT. A test that mutates the
+    // shared tree to prove something is a test that can break its neighbours.
+    const probeDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rate-probe-'));
+    fs.writeFileSync(
+      path.join(probeDir, 'RateProbe.tsx'),
+      'export const RateProbe = () => null;\n'
     );
-    fs.writeFileSync(probe, 'export const RateProbe = () => null;\n');
     try {
-      const result = auditComponents({ path: 'src/components' });
+      const result = auditComponents({ path: probeDir });
       assert.ok(
-        result.newBare.some((c) => c.path.endsWith('__RateProbe.tsx')),
+        result.newBare.some((c) => c.path.endsWith('RateProbe.tsx')),
         'bare-file discovery found nothing — it has regressed to directories only'
       );
       assert.ok(
@@ -452,7 +456,7 @@ describe('the recorded bare-component baseline (#538)', () => {
           `is present — bare files are being excluded from the denominator`
       );
     } finally {
-      fs.unlinkSync(probe);
+      fs.rmSync(probeDir, { recursive: true, force: true });
     }
   });
 
