@@ -183,6 +183,13 @@ test.describe('Admin Conversation List E2E', () => {
     test.skip(!admin, 'Admin client unavailable to seed an admin');
     if (!admin) return;
     await injectSessionIntoPage(page, admin.session);
+
+    // NAVIGATE. This file had no page.goto anywhere in it, and
+    // injectSessionIntoPage lands on `${basePath}/` because that is where it
+    // writes the auth key — so every test here asserted admin selectors against
+    // the HOME page and could only ever fail. It never showed, because the file
+    // skipped on `CI`, and a skipped spec is a green spec (#914).
+    await page.goto(`${BP}/admin/messaging`);
     await page.waitForLoadState('networkidle');
   });
 
