@@ -60,7 +60,7 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 //
 // fixme, NOT skip: it stays visible, and the afterEach prints the page state and
 // console on every failure so the next attempt does not cost a CI round to see.
-test.describe.fixme('Admin User Pagination E2E', () => {
+test.describe('Admin User Pagination E2E', () => {
   // SKIP ON THE CAPABILITY, NOT ON `CI` (#914).
   //
   // This read `test.skip(!!process.env.CI, 'requires local Docker Supabase')`, which
