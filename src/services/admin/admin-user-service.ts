@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { requireRpcData } from './admin-rpc-result';
 
 export interface AdminUserStats {
   total_users: number;
@@ -53,7 +54,9 @@ export class AdminUserService {
     this.ensureInitialized();
     const { data, error } = await this.supabase.rpc('admin_user_stats');
     if (error) throw error;
-    return data as AdminUserStats;
+    return requireRpcData<AdminUserStats>(data, 'admin_user_stats', [
+      'total_users',
+    ]);
   }
 
   async listUsers(opts: ListUsersParams = {}): Promise<AdminUserListResult> {
@@ -68,6 +71,9 @@ export class AdminUserService {
 
     const { data, error } = await this.supabase.rpc('admin_list_users', params);
     if (error) throw new Error(error.message);
-    return data as AdminUserListResult;
+    return requireRpcData<AdminUserListResult>(data, 'admin_list_users', [
+      'total',
+      'users',
+    ]);
   }
 }
