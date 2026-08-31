@@ -1510,6 +1510,20 @@ BEGIN
 END;
 $$;
 
+-- EXPLICIT, like the six admin functions that already do this (#1029).
+--
+-- These four relied on Postgres's default PUBLIC EXECUTE while their siblings
+-- revoked it and granted `authenticated` by name. That difference is invisible
+-- on a database old enough to predate the default changing, and fatal on a
+-- fresh one: admin_user_stats answered 403 on every newly created stack while
+-- production served it happily, and the page called it alongside
+-- admin_list_users in one Promise.all, so the whole users page went blank.
+--
+-- Depending on a default that differs between the database you develop on and
+-- the one you ship is the drift; naming the grant removes it.
+REVOKE ALL ON FUNCTION admin_payment_stats() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_payment_stats() TO authenticated;
+
 -- admin_auth_stats(): Auth/security metrics for admin dashboard
 CREATE OR REPLACE FUNCTION admin_auth_stats()
 RETURNS JSON
@@ -1554,6 +1568,20 @@ BEGIN
 END;
 $$;
 
+-- EXPLICIT, like the six admin functions that already do this (#1029).
+--
+-- These four relied on Postgres's default PUBLIC EXECUTE while their siblings
+-- revoked it and granted `authenticated` by name. That difference is invisible
+-- on a database old enough to predate the default changing, and fatal on a
+-- fresh one: admin_user_stats answered 403 on every newly created stack while
+-- production served it happily, and the page called it alongside
+-- admin_list_users in one Promise.all, so the whole users page went blank.
+--
+-- Depending on a default that differs between the database you develop on and
+-- the one you ship is the drift; naming the grant removes it.
+REVOKE ALL ON FUNCTION admin_auth_stats() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_auth_stats() TO authenticated;
+
 -- admin_user_stats(): User metrics for admin dashboard
 CREATE OR REPLACE FUNCTION admin_user_stats()
 RETURNS JSON
@@ -1583,6 +1611,20 @@ BEGIN
   );
 END;
 $$;
+
+-- EXPLICIT, like the six admin functions that already do this (#1029).
+--
+-- These four relied on Postgres's default PUBLIC EXECUTE while their siblings
+-- revoked it and granted `authenticated` by name. That difference is invisible
+-- on a database old enough to predate the default changing, and fatal on a
+-- fresh one: admin_user_stats answered 403 on every newly created stack while
+-- production served it happily, and the page called it alongside
+-- admin_list_users in one Promise.all, so the whole users page went blank.
+--
+-- Depending on a default that differs between the database you develop on and
+-- the one you ship is the drift; naming the grant removes it.
+REVOKE ALL ON FUNCTION admin_user_stats() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_user_stats() TO authenticated;
 
 -- admin_messaging_stats(): Messaging metrics for admin dashboard
 CREATE OR REPLACE FUNCTION admin_messaging_stats()
@@ -1626,6 +1668,20 @@ BEGIN
   );
 END;
 $$;
+
+-- EXPLICIT, like the six admin functions that already do this (#1029).
+--
+-- These four relied on Postgres's default PUBLIC EXECUTE while their siblings
+-- revoked it and granted `authenticated` by name. That difference is invisible
+-- on a database old enough to predate the default changing, and fatal on a
+-- fresh one: admin_user_stats answered 403 on every newly created stack while
+-- production served it happily, and the page called it alongside
+-- admin_list_users in one Promise.all, so the whole users page went blank.
+--
+-- Depending on a default that differs between the database you develop on and
+-- the one you ship is the drift; naming the grant removes it.
+REVOKE ALL ON FUNCTION admin_messaging_stats() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_messaging_stats() TO authenticated;
 
 -- admin_list_users(p_search, p_limit, p_offset): User listing for admin dashboard
 --
