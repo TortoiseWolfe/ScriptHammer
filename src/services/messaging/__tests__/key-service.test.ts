@@ -24,11 +24,41 @@ const OTHER_USER_ID = '00000000-0000-0000-0000-000000000002';
 // ---------------------------------------------------------------------------
 const mockSupabase = {
   from: vi.fn(),
+  // #1040: the salt is no longer selectable off the table by `authenticated`, so
+  // own-row reads go through the get_own_encryption_key() RPC. These tests mock
+  // the RPC for exactly the paths that read a salt; every other path still reads
+  // the table and still mocks `from`.
+  rpc: vi.fn(),
   auth: {
     getUser: vi.fn(),
     getSession: vi.fn(),
   },
 } as unknown as SupabaseClient;
+
+/**
+ * What get_own_encryption_key() returns, with sane defaults per field.
+ *
+ * Shaped as a full PostgrestSingleResponse (count/status/statusText included)
+ * because `supabase.rpc` is typed to return one, and vitest does not type-check —
+ * so a half-shaped fixture passes here and fails `pnpm run type-check` later.
+ */
+function ownKey(over: Record<string, unknown> = {}) {
+  return {
+    data: {
+      key_id: 'k1',
+      public_key: null,
+      encryption_salt: null,
+      created_at: '2026-01-01T00:00:00Z',
+      active_key_count: 0,
+      salted_key_count: 0,
+      ...over,
+    },
+    error: null,
+    count: null,
+    status: 200,
+    statusText: 'OK',
+  };
+}
 
 vi.mock('@/lib/supabase/client', () => ({
   createClient: () => mockSupabase,
@@ -220,11 +250,13 @@ describe('KeyManagementService', () => {
 
   describe('deriveKeys', () => {
     it('derives keys and verifies the stored public key (happy path)', async () => {
-      mockMessagingFrom.mockReturnValue(
-        createMockQueryBuilder(
-          { encryption_salt: 'YWJjZA==', public_key: PUBLIC_JWK },
-          null
-        )
+      vi.mocked(mockSupabase.rpc).mockResolvedValue(
+        ownKey({
+          encryption_salt: 'YWJjZA==',
+          public_key: PUBLIC_JWK,
+          active_key_count: 1,
+          salted_key_count: 1,
+        })
       );
 
       const result = await keyManagementService.deriveKeys('password');
@@ -260,7 +292,12 @@ describe('KeyManagementService', () => {
     });
 
     it('throws KeyDerivationError when no salt exists for the user', async () => {
-      mockMessagingFrom.mockReturnValue(createMockQueryBuilder(null, null));
+      // The accessor answers, but the row carries no salt — a legacy key. This
+      // must still be KeyDerivationError and NOT a connection error, because the
+      // UI distinguishes "needs migration" from "database is unreachable".
+      vi.mocked(mockSupabase.rpc).mockResolvedValue(
+        ownKey({ active_key_count: 1, salted_key_count: 0 })
+      );
 
       await expect(keyManagementService.deriveKeys('password')).rejects.toThrow(
         'No salt found. User may need migration or initialization.'
@@ -309,11 +346,13 @@ describe('KeyManagementService', () => {
 
     it('rebuilds the key pair from IndexedDB + Supabase (happy path)', async () => {
       mockGetPrivateKey.mockResolvedValue({} as CryptoKey);
-      mockMessagingFrom.mockReturnValue(
-        createMockQueryBuilder(
-          { encryption_salt: 'base64salt', public_key: PUBLIC_JWK },
-          null
-        )
+      vi.mocked(mockSupabase.rpc).mockResolvedValue(
+        ownKey({
+          encryption_salt: 'base64salt',
+          public_key: PUBLIC_JWK,
+          active_key_count: 1,
+          salted_key_count: 1,
+        })
       );
 
       const result =
@@ -329,12 +368,67 @@ describe('KeyManagementService', () => {
 
     it('returns false when private key exists but Supabase has no public key/salt', async () => {
       mockGetPrivateKey.mockResolvedValue({} as CryptoKey);
-      mockMessagingFrom.mockReturnValue(createMockQueryBuilder(null, null));
+      // The accessor answers with an empty row: no keys, so no salt and no public
+      // key. false, not a throw -- this path has a real fallback (re-derive from
+      // the password), so a failure costs a prompt rather than a keypair.
+      vi.mocked(mockSupabase.rpc).mockResolvedValue(ownKey());
 
       const result =
         await keyManagementService.restoreKeysFromCache(CURRENT_USER_ID);
 
       expect(result).toBe(false);
+    });
+
+    it('returns false, never throws, when the accessor itself fails (#1040)', async () => {
+      // If the RPC is missing -- the migration edited but never executed, the
+      // #1038 shape -- this path must still degrade to "re-derive from password"
+      // rather than propagating. deriveKeys() is the path that must throw
+      // instead, and it is asserted separately, because there a silent empty
+      // answer would let the UI offer to re-initialize and orphan every existing
+      // message.
+      mockGetPrivateKey.mockResolvedValue({} as CryptoKey);
+      vi.mocked(mockSupabase.rpc).mockResolvedValue({
+        data: null,
+        error: {
+          message: 'function get_own_encryption_key() does not exist',
+          details: '',
+          hint: '',
+          code: '42883',
+          name: 'PostgrestError',
+        },
+        count: null,
+        status: 404,
+        statusText: 'Not Found',
+      });
+
+      expect(
+        await keyManagementService.restoreKeysFromCache(CURRENT_USER_ID)
+      ).toBe(false);
+    });
+
+    it('deriveKeys THROWS when the accessor fails, rather than reporting no keys (#1040)', async () => {
+      // The asymmetry above, pinned from the other side. A missing salt here
+      // degrades to "no keys yet"; the UI reads that as a new user and offers to
+      // initialize; initializing OVERWRITES the keypair and permanently orphans
+      // every message encrypted to the old one. So this path must surface the
+      // error.
+      vi.mocked(mockSupabase.rpc).mockResolvedValue({
+        data: null,
+        error: {
+          message: 'function get_own_encryption_key() does not exist',
+          details: '',
+          hint: '',
+          code: '42883',
+          name: 'PostgrestError',
+        },
+        count: null,
+        status: 404,
+        statusText: 'Not Found',
+      });
+
+      await expect(keyManagementService.deriveKeys('password')).rejects.toThrow(
+        /Failed to read own encryption key/
+      );
     });
   });
 
@@ -371,14 +465,12 @@ describe('KeyManagementService', () => {
     });
 
     it('returns true when user has keys but none have a salt (legacy)', async () => {
-      // First query: no keys with salt. Second query: has some keys.
-      const noSaltKeys = createMockQueryBuilder([], null);
-      const anyKeys = createMockQueryBuilder([{ id: 'legacy' }], null);
-      let call = 0;
-      mockMessagingFrom.mockImplementation(() => {
-        call += 1;
-        return call === 1 ? noSaltKeys : anyKeys;
-      });
+      // ONE round trip now (#1040): the accessor returns both counts, so the
+      // two-query dance -- and its ordering-dependent mock -- is gone. Has keys,
+      // none salted => legacy => needs migration.
+      vi.mocked(mockSupabase.rpc).mockResolvedValue(
+        ownKey({ active_key_count: 1, salted_key_count: 0 })
+      );
 
       expect(await keyManagementService.needsMigration()).toBe(true);
     });

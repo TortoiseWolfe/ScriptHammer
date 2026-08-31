@@ -106,8 +106,91 @@ function readsColumn(body, col) {
 
 const RAW = fs.readFileSync(MIGRATION, 'utf8');
 const SQL = stripComments(RAW);
-const TABLE = 'user_profiles';
 const ROLE = 'authenticated';
+
+/**
+ * Every table the migration column-scopes, discovered rather than listed.
+ *
+ * This was `const TABLE = 'user_profiles'` when only one table was column-scoped.
+ * #1040 made `user_encryption_keys` the second, withholding `encryption_salt`
+ * from `authenticated` for the same reason `is_admin` is withheld -- and a guard
+ * hardcoded to the first table would not have looked at it. That is the #1038
+ * failure in miniature: a check whose coverage is a hand-written name.
+ */
+function columnScopedTables(sql) {
+  const re = new RegExp(
+    `GRANT\\s+SELECT\\s*\\(([^)]*)\\)\\s*ON\\s+(?:public\\.)?([a-z_][a-z0-9_]*)\\s+TO\\s+[^;]*\\b${ROLE}\\b`,
+    'gi'
+  );
+  return [...new Set([...sql.matchAll(re)].map((m) => m[2].toLowerCase()))];
+}
+
+const TABLES = columnScopedTables(SQL);
+const TABLE = 'user_profiles';
+
+test('both column-scoped tables are discovered, not hardcoded', () => {
+  assert.ok(
+    TABLES.includes('user_profiles'),
+    `user_profiles must be column-scoped; found: ${TABLES.join(', ')}`
+  );
+  assert.ok(
+    TABLES.includes('user_encryption_keys'),
+    `user_encryption_keys must be column-scoped (#1040); found: ${TABLES.join(', ')}`
+  );
+});
+
+test('every column-scoped table withholds something from authenticated', () => {
+  for (const table of TABLES) {
+    const granted = grantedColumns(SQL, table, ROLE);
+    const all = tableColumns(SQL, table);
+    const withheld = all.filter((c) => !granted.has(c));
+    assert.ok(granted.size > 0, `${table}: parsed no granted columns`);
+    assert.ok(
+      withheld.length > 0,
+      `${table}: nothing is withheld — is the REVOKE still there, or did the ` +
+        'column list quietly grow to cover everything?'
+    );
+  }
+});
+
+test('encryption_salt is withheld from authenticated (#1040)', () => {
+  const granted = grantedColumns(SQL, 'user_encryption_keys', ROLE);
+  assert.ok(
+    granted.size > 0,
+    'parsed no SELECT columns for user_encryption_keys — the parser is broken'
+  );
+  assert.ok(
+    !granted.has('encryption_salt'),
+    "encryption_salt must NOT be in the SELECT column list: beside the row's own " +
+      'public_key it is an offline password oracle (#1040)'
+  );
+  // It must keep INSERT, or signup and rotation cannot write a salt at all.
+  assert.match(
+    SQL,
+    /GRANT INSERT \([^)]*\bencryption_salt\b[^)]*\) ON public\.user_encryption_keys TO authenticated;/,
+    'encryption_salt must keep INSERT — column privileges are per-privilege-type, ' +
+      "and initializeKeys()/rotateKeys() write the caller's own salt"
+  );
+});
+
+test('no SECURITY INVOKER function reads a withheld column of ANY scoped table', () => {
+  const violations = [];
+  for (const table of TABLES) {
+    const granted = grantedColumns(SQL, table, ROLE);
+    const withheld = tableColumns(SQL, table).filter((c) => !granted.has(c));
+    const invokers = functions(SQL).filter(
+      (f) => !f.definer && new RegExp(`\\b${table}\\b`).test(f.body)
+    );
+    for (const fn of invokers) {
+      for (const col of withheld) {
+        if (readsColumn(fn.body, col)) {
+          violations.push(`${fn.name}() reads withheld column ${table}.${col}`);
+        }
+      }
+    }
+  }
+  assert.deepStrictEqual(violations, [], violations.join('\n  '));
+});
 
 test('the column-scoped grant on user_profiles actually withholds columns', () => {
   const granted = grantedColumns(SQL, TABLE, ROLE);

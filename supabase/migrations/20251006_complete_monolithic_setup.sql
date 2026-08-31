@@ -3098,13 +3098,139 @@ CREATE TRIGGER before_message_update_column_guard
 GRANT ALL ON user_connections TO authenticated, service_role;
 GRANT ALL ON conversations TO authenticated, service_role;
 GRANT ALL ON messages TO authenticated, service_role;
--- REVOKE FIRST. This GRANT never narrowed anything on its own: Supabase's platform
--- default had already given anon and authenticated everything, and a narrower GRANT
--- sits on top of a wider one and changes nothing (#1039, same trap as #897 on
--- payment_intents and the user_profiles block below). The policy above gates rows
--- for authenticated; this removes anon's privilege, which no policy can do.
-REVOKE ALL ON user_encryption_keys FROM anon;
-GRANT ALL ON user_encryption_keys TO authenticated, service_role;
+-- ── #1040: the salt is a per-user secret; the public key is not ─────────────
+--
+-- #1039 closed the ANONYMOUS half of this and said the rest was filed separately.
+-- This is the rest.
+--
+-- The SELECT policy above is `TO authenticated USING (true)` deliberately: ECDH
+-- needs the peer's public key, which is what a public key is for. But RLS gates
+-- ROWS, not COLUMNS, so every signed-in user could still read every other user's
+-- `encryption_salt` -- the same offline password oracle #1039 describes, with a
+-- sign-up in front of it. key-service.ts derives the keypair from
+-- Argon2id(password, salt), so the salt beside the row's own published public_key
+-- lets an attacker test password guesses OFFLINE, which is otherwise impossible.
+--
+-- NO ROW POLICY CAN FIX THIS. The only thing that can separate `public_key` (must
+-- be readable by peers) from `encryption_salt` (must not) ON THE SAME ROW is a
+-- column grant -- the `user_profiles`/`is_admin` pattern from #1029.
+--
+-- THE REVOKE IS THE LOAD-BEARING LINE (#897, #1039). pg_default_acl already handed
+-- both roles all seven privileges; a narrower GRANT on top of a wider one changes
+-- nothing, and everything below would be decoration.
+REVOKE ALL ON public.user_encryption_keys FROM anon, authenticated;
+
+-- Readable by any signed-in user, because a public-key directory has to be.
+-- `encryption_salt`, `device_id` and `expires_at` appear in NO select grant, and a
+-- column list is DENY BY DEFAULT for columns added later too.
+--
+-- Every column below is here because a query names it, and a column named in a
+-- WHERE or ORDER BY needs SELECT on it exactly as a select-list reference does --
+-- measured, not assumed: as `authenticated`, `WHERE is_admin = false`,
+-- `WHERE is_admin IS NOT NULL` and `ORDER BY is_admin` on the column-scoped
+-- user_profiles all fail with 42501 while `SELECT count(id)` succeeds.
+--   id          hasKeys / hasKeysForUser select it
+--   user_id     every .eq('user_id', ...), and the policies' own expressions
+--   public_key  getUserPublicKey / getUserPublicKeyAt / welcome-service / group-service
+--   revoked     every .eq('revoked', false)
+--   created_at  .order('created_at') and getUserPublicKeyAt's .lte()
+GRANT SELECT (
+  id, user_id, public_key, revoked, created_at
+) ON public.user_encryption_keys TO authenticated;
+
+-- INSERT SURVIVES ON THE SALT AND SELECT DOES NOT. Column privileges are
+-- per-privilege-type, so `GRANT INSERT (encryption_salt)` without
+-- `GRANT SELECT (encryption_salt)` is expressible, and is exactly what this needs:
+-- initializeKeys() and rotateKeys() write the caller's own salt, and nothing --
+-- not even its owner -- reads it back off the table. `id` and `created_at` are
+-- omitted so nothing backdates a key row.
+GRANT INSERT (
+  user_id, public_key, encryption_salt, device_id, expires_at, revoked
+) ON public.user_encryption_keys TO authenticated;
+
+-- Only the revocation flag. rotateKeys() and revokeKeys() set it; nothing else in
+-- the app updates this table. Deliberately NOT `encryption_salt`: a rotation
+-- writes a NEW row, so no path overwrites a salt in place, and withholding UPDATE
+-- there means a stolen session cannot silently re-point an account's KDF.
+GRANT UPDATE (revoked) ON public.user_encryption_keys TO authenticated;
+
+-- service_role bypasses RLS and needs the whole row: the E2E fixtures and seeders
+-- read the salt through it and are unaffected by everything above.
+GRANT ALL ON public.user_encryption_keys TO service_role;
+
+COMMENT ON COLUMN public.user_encryption_keys.encryption_salt IS
+  '#1040: per-user Argon2id salt. NOT selectable by `authenticated` -- beside the row''s own public_key it is an offline password oracle. Own-row reads go through get_own_encryption_key(); service_role reads the column directly.';
+
+-- ── #1040: the caller's OWN key row, salt included ──────────────────────────
+--
+-- IS THIS THE BANNED "SECURITY DEFINER TO BYPASS RLS" HACK? No, and the
+-- distinction is the design. This function reaches no ROW the caller could not
+-- already read -- the SELECT policy on this table is USING (true) for
+-- authenticated, so every row is already visible to them. What it supplies is the
+-- one thing a column ACL structurally cannot express: column privileges are
+-- TABLE-WIDE and have no "own row" dimension. The banned hack is a definer
+-- function standing in for a row policy nobody wanted to write correctly; here
+-- there is no row policy that could do this job, which is exactly why is_admin()
+-- exists for the withheld user_profiles.is_admin column (#1029).
+--
+-- ZERO ARGUMENTS, deliberately. The only user it can describe is auth.uid(), so
+-- there is no parameter to pass someone else's id to. #1029 is the cautionary
+-- tale: is_admin(check_user_id) had a caller passing the id explicitly, which
+-- silently skipped the DEFAULT auth.uid() the refusal depended on.
+--
+-- The counts ride along so needsMigration() need not filter on the withheld
+-- column: `.not('encryption_salt','is',null)` requires SELECT on it just as a
+-- select-list reference does (measured: WHERE, IS NOT NULL and ORDER BY on a
+-- withheld column all raise 42501).
+CREATE OR REPLACE FUNCTION public.get_own_encryption_key()
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  uid          UUID := auth.uid();
+  newest       public.user_encryption_keys%ROWTYPE;
+  active_count BIGINT;
+  salted_count BIGINT;
+BEGIN
+  -- RAISE, never return an empty object. A missing salt in this app degrades to
+  -- "no keys yet", the UI reads that as a new user and offers to initialize, and
+  -- initializing OVERWRITES the keypair and permanently orphans every message
+  -- already encrypted to the old one. Silence is the dangerous answer here.
+  IF uid IS NULL THEN
+    RAISE EXCEPTION 'get_own_encryption_key(): no authenticated caller'
+      USING ERRCODE = '28000';
+  END IF;
+
+  SELECT count(*), count(k.encryption_salt)
+    INTO active_count, salted_count
+    FROM public.user_encryption_keys k
+   WHERE k.user_id = uid AND k.revoked = false;
+
+  SELECT k.* INTO newest
+    FROM public.user_encryption_keys k
+   WHERE k.user_id = uid AND k.revoked = false
+   ORDER BY k.created_at DESC
+   LIMIT 1;
+
+  RETURN jsonb_build_object(
+    'key_id',           newest.id,
+    'public_key',       newest.public_key,
+    'encryption_salt',  newest.encryption_salt,
+    'created_at',       newest.created_at,
+    'active_key_count', active_count,
+    'salted_key_count', salted_count
+  );
+END;
+$$;
+
+-- CREATE FUNCTION grants EXECUTE to PUBLIC by default, and PUBLIC includes anon.
+-- The function RAISEs for an anonymous caller anyway, but defence in depth costs
+-- one line here and the six admin RPCs in this file already do it.
+REVOKE ALL ON FUNCTION public.get_own_encryption_key() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_own_encryption_key() TO authenticated;
 GRANT ALL ON conversation_keys TO authenticated, service_role;
 GRANT ALL ON typing_indicators TO authenticated, service_role;
 
