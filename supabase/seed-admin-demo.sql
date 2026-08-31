@@ -370,9 +370,64 @@ ON CONFLICT (id) DO NOTHING;
 -- verifies through that user's own session. admin-depth.spec.ts already does this
 -- and already runs in CI. See #914.
 
+-- ---------------------------------------------------------------------------
+-- FILLER PROFILES, so the users page actually paginates (#914).
+--
+-- admin-user-pagination.spec.ts asserts the pagination control is VISIBLE, and
+-- its header has always said this seed provides "50+ users". It provided 8.
+-- PAGE_SIZE is 50 (src/app/admin/users/page.tsx:14) and admin_list_users counts
+-- only `WHERE p.is_admin = FALSE` (migration:1605), so 8 rows render one page and
+-- the control the spec asserts on never appears.
+--
+-- Seeded here rather than through the admin API in the spec's own beforeAll: this
+-- is one statement against a stack that `e2e-local.yml` brings up PER SHARD and
+-- throws away, versus ~50 sequential HTTP calls on every run. The row count is
+-- deliberately just past the boundary — enough for a second page, few enough that
+-- the fixture stays legible.
+--
+-- The alternative was making PAGE_SIZE injectable, which is product code changed
+-- to suit a test. This keeps the test honest about the real page size.
+INSERT INTO auth.users (
+  id, instance_id, email, encrypted_password, email_confirmed_at,
+  created_at, updated_at, last_sign_in_at,
+  raw_app_meta_data, raw_user_meta_data, is_super_admin, role, aud,
+  confirmation_token, recovery_token, email_change_token_new, email_change
+)
+SELECT
+  ('22222222-2222-2222-2222-' || lpad(n::text, 12, '0'))::uuid,
+  '00000000-0000-0000-0000-000000000000',
+  'filler' || n || '@demo.test',
+  crypt('DemoPass123!', gen_salt('bf')),
+  now() - interval '30 days',
+  now() - (n || ' days')::interval,
+  now(),
+  now() - interval '2 days',
+  '{"provider":"email","providers":["email"]}', '{}', false,
+  'authenticated', 'authenticated', '', '', '', ''
+FROM generate_series(1, 50) AS n
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO user_profiles (
+  id, username, display_name, welcome_message_sent, is_admin, created_at, updated_at
+)
+SELECT
+  ('22222222-2222-2222-2222-' || lpad(n::text, 12, '0'))::uuid,
+  'filler' || n,
+  'Filler User ' || n,
+  TRUE,
+  -- FALSE is load-bearing: admin_list_users paginates the non-admin population,
+  -- so an admin filler row would not count toward the page it is here to create.
+  FALSE,
+  now() - (n || ' days')::interval,
+  now()
+FROM generate_series(1, 50) AS n
+ON CONFLICT (id) DO NOTHING;
+
 COMMIT;
 
 -- Verify counts
+-- 8 demo users + 50 filler = 58 auth.users; user_profiles is 11 + 50 = 61, of
+-- which 60 are non-admin — comfortably past PAGE_SIZE 50, so page 2 exists.
 SELECT 'auth.users' AS tbl, count(*) FROM auth.users
 UNION ALL SELECT 'user_profiles', count(*) FROM user_profiles
 UNION ALL SELECT 'payment_intents', count(*) FROM payment_intents

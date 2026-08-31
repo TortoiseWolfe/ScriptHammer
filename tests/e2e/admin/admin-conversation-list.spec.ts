@@ -26,6 +26,12 @@ import {
   assertLocalBackend,
   type IsolatedAdmin,
 } from '../utils/test-user-factory';
+// Straight from the guard module rather than via test-user-factory: local-backend
+// imports nothing, which is the property that lets anything use it (#944).
+import {
+  isLocalSupabaseUrl,
+  resolveBackendUrl,
+} from '../../utils/local-backend';
 import { STALE_THRESHOLD_MS } from '../../../src/components/organisms/AdminConversationList/AdminConversationList';
 
 // ADMIN_EMAIL / ADMIN_PASSWORD are gone with the shared-user sign-in they served (#914).
@@ -53,7 +59,21 @@ const STALE_LAST_MESSAGE = new Date(
 const STALE_CONV_ID = 'eeeeeeee-eeee-4eee-aeee-000000000e2e';
 
 test.describe('Admin Conversation List E2E', () => {
-  test.skip(!!process.env.CI, 'Skipped in CI: requires local Docker Supabase');
+  // SKIP ON THE CAPABILITY, NOT ON `CI` (#914).
+  //
+  // This read `test.skip(!!process.env.CI, 'requires local Docker Supabase')`, which
+  // outlived its own premise. When it was written, "CI" meant the shared hosted
+  // project. It now also means `e2e-local.yml`, which brings up a Supabase PER SHARD
+  // (`.env.local-supabase`) and sets `CI: 'true'` — so the spec skipped on the one
+  // lane that satisfies the very requirement the message names.
+  //
+  // The predicate is the requirement itself: a disposable backend this spec may seed
+  // and delete from. `assertLocalBackend()` below is the belt-and-braces that throws
+  // if anything slips past.
+  test.skip(
+    !isLocalSupabaseUrl(resolveBackendUrl()),
+    'needs a disposable local Supabase: this spec seeds and deletes data'
+  );
   test.describe.configure({ mode: 'serial' });
 
   let serviceClient: SupabaseClient;
@@ -94,10 +114,21 @@ test.describe('Admin Conversation List E2E', () => {
     }
     const [p1, p2] = [profiles[0].id, profiles[1].id].sort();
 
-    // Delete-then-insert: upsert would need a conflict target and there's no
-    // unique constraint on id alone to name. A prior run that crashed before
-    // afterAll would otherwise 23505 here.
+    // DELETE BY THE PAIR, NOT ONLY BY ID (#914).
+    //
+    // The constraint that can actually fire here is
+    // `unique_conversation UNIQUE (participant_1_id, participant_2_id)`
+    // (migration:2431) — NOT the primary key. Deleting `id = STALE_CONV_ID` and
+    // then inserting for a borrowed pair throws 23505 whenever a conversation
+    // already exists between whichever two profiles the query returned, which is
+    // ordinary once other specs have run against the same stack. Cleaning by id
+    // alone left that flake armed on a lane this spec is now un-skipped for.
     await serviceClient.from('conversations').delete().eq('id', STALE_CONV_ID);
+    await serviceClient
+      .from('conversations')
+      .delete()
+      .eq('participant_1_id', p1)
+      .eq('participant_2_id', p2);
     const { error: insertErr } = await serviceClient
       .from('conversations')
       .insert({
@@ -119,6 +150,8 @@ test.describe('Admin Conversation List E2E', () => {
   });
 
   test.afterAll(async () => {
+    // By id: this row is ours and carries STALE_CONV_ID. The pair-wise delete in
+    // beforeAll is for rows we did NOT create, so it does not belong here.
     await serviceClient?.from('conversations').delete().eq('id', STALE_CONV_ID);
   });
 
@@ -150,6 +183,13 @@ test.describe('Admin Conversation List E2E', () => {
     test.skip(!admin, 'Admin client unavailable to seed an admin');
     if (!admin) return;
     await injectSessionIntoPage(page, admin.session);
+
+    // NAVIGATE. This file had no page.goto anywhere in it, and
+    // injectSessionIntoPage lands on `${basePath}/` because that is where it
+    // writes the auth key — so every test here asserted admin selectors against
+    // the HOME page and could only ever fail. It never showed, because the file
+    // skipped on `CI`, and a skipped spec is a green spec (#914).
+    await page.goto(`${BP}/admin/messaging`);
     await page.waitForLoadState('networkidle');
   });
 

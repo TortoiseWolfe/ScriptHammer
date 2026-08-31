@@ -338,6 +338,34 @@ jobs:
       - name: Seed the E2E users
         run: pnpm tsx scripts/seed-test-users.ts
 
+      - name: Seed the admin demo data
+        # APPLIED NOWHERE UNTIL NOW (#914). seed-admin-demo.sql was fixed under #940
+        # and then never wired in — a repo-wide grep found it only in comments, and
+        # in the headers of the three admin specs that say they require it. Those
+        # specs also skipped on this lane, so nothing noticed.
+        #
+        # ON_ERROR_STOP=1 because psql otherwise reports success after a failed
+        # statement, which would hand the specs a half-seeded database and turn a
+        # seeding bug into a confusing assertion failure several minutes later.
+        run: |
+          set -euo pipefail
+          docker compose exec -T supabase-db \
+            psql -v ON_ERROR_STOP=1 -U postgres -d postgres \
+            < supabase/seed-admin-demo.sql
+
+          # NON-VACUITY. The seed is idempotent (ON CONFLICT DO NOTHING), so a
+          # no-op run and a successful run look identical. admin-user-pagination
+          # asserts a pagination control that only exists above PAGE_SIZE = 50, so
+          # assert the population it needs actually arrived rather than discovering
+          # it from a UI timeout inside a Playwright shard.
+          n=$(docker compose exec -T supabase-db psql -U postgres -d postgres -tAc \
+            "SELECT count(*) FROM user_profiles WHERE is_admin = FALSE;")
+          echo "non-admin profiles: $n"
+          if [ "$n" -le 50 ]; then
+            echo "::error::admin demo seed left $n non-admin profiles; admin-user-pagination needs >50 (PAGE_SIZE)"
+            exit 1
+          fi
+
       - name: Build (root-served, pointed at the local stack)
         run: pnpm build
         env:
