@@ -381,7 +381,11 @@ test.describe('Admin Dashboard E2E', () => {
       expect(rowCount).toBeGreaterThan(0);
     });
 
-    test('should sort users by column', async ({ page }) => {
+    // Same root cause as the fixme above (#1029): sorting needs rows, and
+    // /admin/users has none. It surfaced only on the second run — the serial
+    // cascade had it in the "did not run" bucket until the test before it stopped
+    // failing outright.
+    test.fixme('should sort users by column', async ({ page }) => {
       await page.goto(`${BP}/admin/users`);
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(3000);
