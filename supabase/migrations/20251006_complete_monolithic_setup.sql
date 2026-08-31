@@ -1472,8 +1472,15 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
-    RETURN '{}'::json;
+  IF NOT is_admin() THEN
+    -- RAISE, do not return an empty result (#1029). Returning '{}' made a
+    -- refusal indistinguishable from "no rows" — for the client, which
+    -- cast it straight to the success type, and for every consumer above.
+    -- Four E2E tests failed on that for months with nothing naming a cause.
+    --
+    -- 42501 is insufficient_privilege, which PostgREST returns as HTTP 403.
+    RAISE EXCEPTION 'admin_payment_stats: caller is not an admin'
+      USING ERRCODE = '42501';
   END IF;
 
   RETURN (
@@ -1511,8 +1518,15 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
-    RETURN '{}'::json;
+  IF NOT is_admin() THEN
+    -- RAISE, do not return an empty result (#1029). Returning '{}' made a
+    -- refusal indistinguishable from "no rows" — for the client, which
+    -- cast it straight to the success type, and for every consumer above.
+    -- Four E2E tests failed on that for months with nothing naming a cause.
+    --
+    -- 42501 is insufficient_privilege, which PostgREST returns as HTTP 403.
+    RAISE EXCEPTION 'admin_auth_stats: caller is not an admin'
+      USING ERRCODE = '42501';
   END IF;
 
   RETURN (
@@ -1548,8 +1562,15 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
-    RETURN '{}'::json;
+  IF NOT is_admin() THEN
+    -- RAISE, do not return an empty result (#1029). Returning '{}' made a
+    -- refusal indistinguishable from "no rows" — for the client, which
+    -- cast it straight to the success type, and for every consumer above.
+    -- Four E2E tests failed on that for months with nothing naming a cause.
+    --
+    -- 42501 is insufficient_privilege, which PostgREST returns as HTTP 403.
+    RAISE EXCEPTION 'admin_user_stats: caller is not an admin'
+      USING ERRCODE = '42501';
   END IF;
 
   RETURN (
@@ -1571,8 +1592,15 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
-    RETURN '{}'::json;
+  IF NOT is_admin() THEN
+    -- RAISE, do not return an empty result (#1029). Returning '{}' made a
+    -- refusal indistinguishable from "no rows" — for the client, which
+    -- cast it straight to the success type, and for every consumer above.
+    -- Four E2E tests failed on that for months with nothing naming a cause.
+    --
+    -- 42501 is insufficient_privilege, which PostgREST returns as HTTP 403.
+    RAISE EXCEPTION 'admin_messaging_stats: caller is not an admin'
+      USING ERRCODE = '42501';
   END IF;
 
   RETURN (
@@ -1628,8 +1656,15 @@ DECLARE
   v_pattern TEXT;
   v_total   BIGINT;
 BEGIN
-  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
-    RETURN '{}'::json;
+  IF NOT is_admin() THEN
+    -- RAISE, do not return an empty result (#1029). Returning '{}' made a
+    -- refusal indistinguishable from "no rows" — for the client, which
+    -- cast it straight to the success type, and for every consumer above.
+    -- Four E2E tests failed on that for months with nothing naming a cause.
+    --
+    -- 42501 is insufficient_privilege, which PostgREST returns as HTTP 403.
+    RAISE EXCEPTION 'admin_list_users: caller is not an admin'
+      USING ERRCODE = '42501';
   END IF;
 
   -- Build once, reuse twice. NULL pattern → no filter (short-circuited below).
@@ -1704,8 +1739,15 @@ DECLARE
   v_refunded      BIGINT;
   v_revenue_cents BIGINT;
 BEGIN
-  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
-    RETURN '{}'::json;
+  IF NOT is_admin() THEN
+    -- RAISE, do not return an empty result (#1029). Returning '{}' made a
+    -- refusal indistinguishable from "no rows" — for the client, which
+    -- cast it straight to the success type, and for every consumer above.
+    -- Four E2E tests failed on that for months with nothing naming a cause.
+    --
+    -- 42501 is insufficient_privilege, which PostgREST returns as HTTP 403.
+    RAISE EXCEPTION 'admin_payment_trends: caller is not an admin'
+      USING ERRCODE = '42501';
   END IF;
 
   -- Single pass over the range for totals. COUNT/SUM over a condition are
@@ -1809,8 +1851,15 @@ DECLARE
   v_failed    BIGINT;
   v_succeeded BIGINT;
 BEGIN
-  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
-    RETURN '{}'::json;
+  IF NOT is_admin() THEN
+    -- RAISE, do not return an empty result (#1029). Returning '{}' made a
+    -- refusal indistinguishable from "no rows" — for the client, which
+    -- cast it straight to the success type, and for every consumer above.
+    -- Four E2E tests failed on that for months with nothing naming a cause.
+    --
+    -- 42501 is insufficient_privilege, which PostgREST returns as HTTP 403.
+    RAISE EXCEPTION 'admin_audit_trends: caller is not an admin'
+      USING ERRCODE = '42501';
   END IF;
 
   -- Totals: single scan over the range, FILTER for multi-count
@@ -1892,8 +1941,15 @@ DECLARE
   v_active_senders BIGINT;
   v_convs_created  BIGINT;
 BEGIN
-  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
-    RETURN '{}'::json;
+  IF NOT is_admin() THEN
+    -- RAISE, do not return an empty result (#1029). Returning '{}' made a
+    -- refusal indistinguishable from "no rows" — for the client, which
+    -- cast it straight to the success type, and for every consumer above.
+    -- Four E2E tests failed on that for months with nothing naming a cause.
+    --
+    -- 42501 is insufficient_privilege, which PostgREST returns as HTTP 403.
+    RAISE EXCEPTION 'admin_messaging_trends: caller is not an admin'
+      USING ERRCODE = '42501';
   END IF;
 
   -- Message totals: one scan, two facts. Only sender_id/created_at/deleted
@@ -2005,8 +2061,15 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
-  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
-    RETURN '{}'::json;
+  IF NOT is_admin() THEN
+    -- RAISE, do not return an empty result (#1029). Returning '{}' made a
+    -- refusal indistinguishable from "no rows" — for the client, which
+    -- cast it straight to the success type, and for every consumer above.
+    -- Four E2E tests failed on that for months with nothing naming a cause.
+    --
+    -- 42501 is insufficient_privilege, which PostgREST returns as HTTP 403.
+    RAISE EXCEPTION 'admin_conversation_list: caller is not an admin'
+      USING ERRCODE = '42501';
   END IF;
 
   RETURN json_build_object(
@@ -2088,8 +2151,15 @@ DECLARE
   v_start TIMESTAMPTZ;
   v_end   TIMESTAMPTZ;
 BEGIN
-  IF NOT is_admin() THEN  -- #240: live column authority (was: JWT claim)
-    RETURN '{}'::json;
+  IF NOT is_admin() THEN
+    -- RAISE, do not return an empty result (#1029). Returning '{}' made a
+    -- refusal indistinguishable from "no rows" — for the client, which
+    -- cast it straight to the success type, and for every consumer above.
+    -- Four E2E tests failed on that for months with nothing naming a cause.
+    --
+    -- 42501 is insufficient_privilege, which PostgREST returns as HTTP 403.
+    RAISE EXCEPTION 'admin_overview: caller is not an admin'
+      USING ERRCODE = '42501';
   END IF;
 
   -- Day-truncate whatever bounds we got so the spine walks whole days.

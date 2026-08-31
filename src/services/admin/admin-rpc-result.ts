@@ -1,14 +1,14 @@
 /**
  * Refuse an admin RPC response that carries no data (#1029).
  *
- * WHY THIS EXISTS. Every admin RPC answers an authorisation refusal the same way:
+ * WHY THIS EXISTS. Every admin RPC used to answer an authorisation refusal the same way — ten
+ * functions in the monolithic migration:
  *
  *     IF NOT is_admin() THEN
  *       RETURN '{}'::json;
  *     END IF;
  *
- * — a SUCCESSFUL response containing nothing. Seven functions in the monolithic
- * migration do it. The services then `data as SomeType`, which is a compile-time
+ * — a SUCCESSFUL response containing nothing. The services then `data as SomeType`, which is a compile-time
  * assertion and no check at all, so `{}` becomes an object whose every field is
  * `undefined`. The page sets `users = undefined`, renders its empty state, leaves
  * `error` null, and the console stays clean.
@@ -18,10 +18,15 @@
  * outcome, at the database boundary and in every consumer above it — which is how
  * four E2E tests failed for months with nothing anywhere naming a cause (#914).
  *
- * This does not fix the SQL. Making those seven functions RAISE is the other half
- * and is deliberately not bundled here: it is production DDL that changes refusal
- * semantics on seven endpoints, and it deserves its own decision. Until then, this
- * is the layer that can tell the difference and say so.
+ * THE SQL IS FIXED TOO, as of the same issue: all ten admin RPCs now
+ * `RAISE EXCEPTION ... USING ERRCODE = '42501'` (insufficient_privilege, which
+ * PostgREST returns as 403) instead of answering with an empty object. So a
+ * refusal now arrives as an error and never reaches this function.
+ *
+ * This stays, and is not redundant. It catches the OTHER thing the blind cast
+ * absorbed: an RPC whose shape has drifted from the type the client asserts. That
+ * failure mode is unaffected by the SQL change, and `data as SomeType` is still a
+ * compile-time assertion that checks nothing at runtime.
  */
 
 /** Fields whose absence means the response carried nothing usable. */
