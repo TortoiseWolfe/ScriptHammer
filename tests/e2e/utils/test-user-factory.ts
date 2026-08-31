@@ -2898,16 +2898,38 @@ export async function seedIsolatedAdmin(): Promise<IsolatedAdmin | null> {
         headers: { Authorization: `Bearer ${created.session.access_token}` },
       },
     });
-    const { data: isAdmin, error: rpcErr } = await asUser.rpc('is_admin', {
-      check_user_id: created.user.id,
-    });
+    // NO ARGUMENT. This used to pass `check_user_id: created.user.id`, which
+    // only proved the COLUMN was set — the thing the UPDATE above had just
+    // done. Every admin RPC calls `is_admin()` bare, so it resolves the
+    // function's `DEFAULT auth.uid()`, and THAT is what decides whether they
+    // refuse. Passing the id explicitly skipped it, so this check could not
+    // fail the way its own message claimed (#1029).
+    //
+    // The cost of the weaker check: four E2E tests failed on an empty
+    // /admin/users for months. The fixture reported a healthy admin, and the
+    // refusal arrived silently as `{}` twenty minutes later.
+    const { data: isAdmin, error: rpcErr } = await asUser.rpc('is_admin');
     if (rpcErr || isAdmin !== true) {
+      // Read the column back, so the message can separate "the promotion did
+      // not stick" from "the session does not resolve to this user".
+      const { data: profile } = await admin
+        .from('user_profiles')
+        .select('is_admin')
+        .eq('id', created.user.id)
+        .maybeSingle();
+      const columnSet = profile?.is_admin === true;
       await deleteTestUser(created.user.id);
       throw new Error(
         `seedIsolatedAdmin: is_admin() returned ${JSON.stringify(isAdmin)} for ` +
           `${created.user.email} through the user's own session` +
           (rpcErr ? ` (${rpcErr.message})` : '') +
-          '. Refusing to hand back a fixture that would silently measure the ' +
+          `. user_profiles.is_admin is ${columnSet ? 'TRUE' : 'NOT set'}` +
+          (columnSet
+            ? ' — the promotion stuck, so auth.uid() is not resolving to this ' +
+              'user for its own token. Every admin RPC calls is_admin() bare ' +
+              'and will refuse with 403 (#1029).'
+            : ' — the promotion did not stick.') +
+          ' Refusing to hand back a fixture that would silently measure the ' +
           'redirect instead of the admin page.'
       );
     }

@@ -30,7 +30,15 @@ function makeClient(rpcImpl: (fn: string, args: unknown) => unknown) {
 describe('AdminAuthService.checkIsAdmin (#240 single source of truth)', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('calls the is_admin RPC with the user id — not a user_profiles column read', async () => {
+  it('asks is_admin() about the CALLER, with no user id — not about an id it was handed', async () => {
+    // This asserted `{ check_user_id: 'user-123' }` and so pinned the defect
+    // (#1029). `is_admin(uuid)` is SECURITY DEFINER and EXECUTE-able by `anon`,
+    // so passing an id asks "is this user an admin?" — a question anyone can ask
+    // about anyone. Every admin RPC asks `is_admin()` bare, which resolves
+    // `auth.uid()`: "am I an admin?".
+    //
+    // The two disagreeing is what let the admin UI render while every admin RPC
+    // refused with 403, showing a panel with no data and no stated reason.
     const { client, rpc, from } = makeClient(() => ({
       data: true,
       error: null,
@@ -40,8 +48,12 @@ describe('AdminAuthService.checkIsAdmin (#240 single source of truth)', () => {
     const result = await svc.checkIsAdmin('user-123');
 
     expect(result).toBe(true);
-    expect(rpc).toHaveBeenCalledWith('is_admin', { check_user_id: 'user-123' });
-    // The old divergent path read the column directly; that must be gone.
+    expect(rpc).toHaveBeenCalledWith('is_admin');
+    // Explicitly NOT the id form: that is the bypass this closes.
+    expect(rpc).not.toHaveBeenCalledWith('is_admin', {
+      check_user_id: 'user-123',
+    });
+    // The old divergent path read the column directly; that must stay gone.
     expect(from).not.toHaveBeenCalled();
   });
 
