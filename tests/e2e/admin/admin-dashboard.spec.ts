@@ -109,6 +109,52 @@ test.describe('Admin Dashboard E2E', () => {
     admin = null;
   });
 
+  /**
+   * On failure, say what the page actually contained (#1029).
+   *
+   * These specs failed for months as `element(s) not found`, which names the
+   * locator and nothing else — not whether the request was refused, not whether
+   * the page rendered an error, not whether it was gated out entirely. Three CI
+   * rounds could not distinguish those, and the answer only arrived when a
+   * throwaway branch printed this once.
+   *
+   * It runs ONLY on failure, so a green run is unchanged. Keeping it is the
+   * difference between a failure that names its cause and one that needs a
+   * bespoke branch to interrogate.
+   */
+  test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status === testInfo.expectedStatus) return;
+    const readout = await page
+      .evaluate(() => ({
+        url: location.pathname,
+        // Distinguishes "gated out" (no container) from "rendered but empty".
+        hasAdminNav: !!document.querySelector('[data-testid^="admin-"]'),
+        hasTable: !!document.querySelector('table'),
+        alerts: [...document.querySelectorAll('[role="alert"], .alert')]
+          .map((el) => (el.textContent || '').trim())
+          .filter(Boolean)
+          .slice(0, 4),
+        bodyStart: (document.body.innerText || '')
+          .replace(/\s+/g, ' ')
+          .slice(0, 300),
+      }))
+      .catch((e) => ({ evaluateFailed: String(e) }));
+    console.log('[admin readout]', JSON.stringify(readout));
+    const errs =
+      (page as unknown as { __adminErrs?: string[] }).__adminErrs ?? [];
+    if (errs.length)
+      console.log('[admin console]', JSON.stringify(errs.slice(0, 8)));
+  });
+
+  test.beforeEach(async ({ page }) => {
+    const errs: string[] = [];
+    (page as unknown as { __adminErrs: string[] }).__adminErrs = errs;
+    page.on('console', (m) => {
+      if (m.type() === 'error') errs.push(m.text());
+    });
+    page.on('pageerror', (e) => errs.push(`pageerror: ${e.message}`));
+  });
+
   test.beforeEach(async ({ page }) => {
     test.skip(!admin, 'Admin client unavailable to seed an admin');
     if (!admin) return;
@@ -361,20 +407,10 @@ test.describe('Admin Dashboard E2E', () => {
     });
   });
 
-  // WHOLE BLOCK KNOWN BROKEN (#1029). Every test in it needs rows in the users
-  // table, and /admin/users renders none for a freshly-seeded admin. Marked at
-  // the describe rather than per test: Playwright's serial mode surfaces only the
-  // first failure, so fixme-ing them individually revealed the next one on each
-  // CI round instead of all of them at once.
-  //
-  // The other five describes in this file pass and stay live.
+  // KNOWN BROKEN (#1029) — same cause as the pagination spec, and the same
+  // contradiction: admin nav renders, data call 403s. The other five describes in
+  // this file pass and stay live.
   test.describe.fixme('Users Page', () => {
-    // KNOWN BROKEN, not skipped (#1029). test.fixme reports as an expected
-    // failure and stays visible in the run; a plain skip would hide it behind a
-    // reason, which is the exact pattern #914 removed from this file.
-    // /admin/users renders no table for a freshly-seeded admin, because
-    // admin_list_users returns '{}' rather than refusing, so the page shows its
-    // empty state and nothing anywhere reports why.
     test('should display users table with data', async ({ page }) => {
       await page.goto(`${BP}/admin/users`);
       await page.waitForLoadState('networkidle');
@@ -387,11 +423,6 @@ test.describe('Admin Dashboard E2E', () => {
       const rowCount = await rows.count();
       expect(rowCount).toBeGreaterThan(0);
     });
-
-    // Same root cause as the fixme above (#1029): sorting needs rows, and
-    // /admin/users has none. It surfaced only on the second run — the serial
-    // cascade had it in the "did not run" bucket until the test before it stopped
-    // failing outright.
     test('should sort users by column', async ({ page }) => {
       await page.goto(`${BP}/admin/users`);
       await page.waitForLoadState('networkidle');

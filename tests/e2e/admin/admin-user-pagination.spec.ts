@@ -49,15 +49,17 @@ const SUPABASE_ADMIN_URL =
   process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-// ENTIRE FILE KNOWN BROKEN (#1029). Every test here needs rows in the users
-// table, and /admin/users renders none for a freshly-seeded admin —
-// admin_list_users answers with '{}' rather than refusing, so the page shows its
-// empty state. Marked at the describe so all five report together: fixme-ing them
-// one at a time just let Playwright's serial mode surface the next one on the
-// next CI round, three rounds running.
+// KNOWN BROKEN (#1029), and the readout below now says why on every failure.
 //
-// fixme, NOT skip. These must stay visible; a skip is what hid this file for
-// months (#914).
+// Measured: the admin nav RENDERS (so AdminGate's bare `is_admin()` returned
+// true for this session) while the data call gets a 403 (so the RPC's bare
+// `is_admin()` returned false) — in the same page load. AdminGate renders
+// children only after its own check resolves, so the session is attached by the
+// time this page fetches. Those two facts contradict each other and that
+// contradiction is the open question.
+//
+// fixme, NOT skip: it stays visible, and the afterEach prints the page state and
+// console on every failure so the next attempt does not cost a CI round to see.
 test.describe.fixme('Admin User Pagination E2E', () => {
   // SKIP ON THE CAPABILITY, NOT ON `CI` (#914).
   //
@@ -100,17 +102,58 @@ test.describe.fixme('Admin User Pagination E2E', () => {
     admin = null;
   });
 
+  /**
+   * On failure, say what the page actually contained (#1029).
+   *
+   * These specs failed for months as `element(s) not found`, which names the
+   * locator and nothing else — not whether the request was refused, not whether
+   * the page rendered an error, not whether it was gated out entirely. Three CI
+   * rounds could not distinguish those, and the answer only arrived when a
+   * throwaway branch printed this once.
+   *
+   * It runs ONLY on failure, so a green run is unchanged. Keeping it is the
+   * difference between a failure that names its cause and one that needs a
+   * bespoke branch to interrogate.
+   */
+  test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status === testInfo.expectedStatus) return;
+    const readout = await page
+      .evaluate(() => ({
+        url: location.pathname,
+        // Distinguishes "gated out" (no container) from "rendered but empty".
+        hasAdminNav: !!document.querySelector('[data-testid^="admin-"]'),
+        hasTable: !!document.querySelector('table'),
+        alerts: [...document.querySelectorAll('[role="alert"], .alert')]
+          .map((el) => (el.textContent || '').trim())
+          .filter(Boolean)
+          .slice(0, 4),
+        bodyStart: (document.body.innerText || '')
+          .replace(/\s+/g, ' ')
+          .slice(0, 300),
+      }))
+      .catch((e) => ({ evaluateFailed: String(e) }));
+    console.log('[admin readout]', JSON.stringify(readout));
+    const errs =
+      (page as unknown as { __adminErrs?: string[] }).__adminErrs ?? [];
+    if (errs.length)
+      console.log('[admin console]', JSON.stringify(errs.slice(0, 8)));
+  });
+
+  test.beforeEach(async ({ page }) => {
+    const errs: string[] = [];
+    (page as unknown as { __adminErrs: string[] }).__adminErrs = errs;
+    page.on('console', (m) => {
+      if (m.type() === 'error') errs.push(m.text());
+    });
+    page.on('pageerror', (e) => errs.push(`pageerror: ${e.message}`));
+  });
+
   test.beforeEach(async ({ page }) => {
     test.skip(!admin, 'Admin client unavailable to seed an admin');
     if (!admin) return;
     await injectSessionIntoPage(page, admin.session);
     await page.waitForLoadState('networkidle');
   });
-
-  // KNOWN BROKEN, not skipped (#1029). Not a data gap: the seed provides 61
-  // non-admin profiles and the lane asserts that count before any test runs.
-  // admin_list_users returns '{}' for a caller it does not accept as an admin, so
-  // the page renders empty. test.fixme keeps this visible instead of silent.
   test('should display pagination when more than PAGE_SIZE users exist', async ({
     page,
   }) => {
@@ -140,9 +183,6 @@ test.describe.fixme('Admin User Pagination E2E', () => {
     const nextBtn = pagination.locator('button[aria-label="Next page"]');
     await expect(nextBtn).toBeEnabled();
   });
-
-  // Same root cause as the fixme above (#1029): there is no page 2 to navigate
-  // to when the table is empty. Also previously masked by the serial cascade.
   test('should navigate to page 2 and update table rows', async ({ page }) => {
     await page.goto(`${BP}/admin/users`);
     await page.waitForLoadState('networkidle');
