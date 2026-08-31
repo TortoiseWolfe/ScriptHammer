@@ -11,8 +11,12 @@
  * - Messaging: conversation stats, top senders
  * - Email: provider health
  *
- * Requires: local Supabase with seed-admin-demo.sql applied,
- * admin user test@example.com with is_admin app_metadata.
+ * Requires a local Supabase; `e2e-local.yml` applies seed-admin-demo.sql (#914).
+ * This file's own assertions hold with or without that data — see the chart test —
+ * but its siblings depend on it.
+ *
+ * The admin is seeded per-run by seedIsolatedAdmin(); test@example.com is NOT an
+ * admin, and this file used to sign in as it and measure the home page.
  *
  * Run from inside the Docker container:
  *   docker exec -e SKIP_WEBSERVER=1 -e BASE_URL=http://localhost:3000 \
@@ -28,6 +32,12 @@ import {
   assertLocalBackend,
   type IsolatedAdmin,
 } from '../utils/test-user-factory';
+// Straight from the guard module rather than via test-user-factory: local-backend
+// imports nothing, which is the property that lets anything use it (#944).
+import {
+  isLocalSupabaseUrl,
+  resolveBackendUrl,
+} from '../../utils/local-backend';
 
 // ADMIN_EMAIL / ADMIN_PASSWORD are gone: this file no longer signs in as the shared
 // fixture user. See the beforeAll below (#914).
@@ -45,7 +55,21 @@ const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
 // side via NEXT_PUBLIC_SUPABASE_URL — so this file no longer restates that mapping (#121).
 
 test.describe('Admin Dashboard E2E', () => {
-  test.skip(!!process.env.CI, 'Skipped in CI: requires local Docker Supabase');
+  // SKIP ON THE CAPABILITY, NOT ON `CI` (#914).
+  //
+  // This read `test.skip(!!process.env.CI, 'requires local Docker Supabase')`, which
+  // outlived its own premise. When it was written, "CI" meant the shared hosted
+  // project. It now also means `e2e-local.yml`, which brings up a Supabase PER SHARD
+  // (`.env.local-supabase`) and sets `CI: 'true'` — so the spec skipped on the one
+  // lane that satisfies the very requirement the message names.
+  //
+  // The predicate is the requirement itself: a disposable backend this spec may seed
+  // and delete from. `assertLocalBackend()` below is the belt-and-braces that throws
+  // if anything slips past.
+  test.skip(
+    !isLocalSupabaseUrl(resolveBackendUrl()),
+    'needs a disposable local Supabase: this spec seeds and deletes data'
+  );
   test.describe.configure({ mode: 'serial' });
 
   // SEED A THROWAWAY ADMIN — never promote the shared fixture user (#914).
