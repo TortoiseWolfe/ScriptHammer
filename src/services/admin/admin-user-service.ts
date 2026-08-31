@@ -53,7 +53,17 @@ export class AdminUserService {
   async getStats(): Promise<AdminUserStats> {
     this.ensureInitialized();
     const { data, error } = await this.supabase.rpc('admin_user_stats');
-    if (error) throw error;
+    // `throw new Error(...)`, not `throw error`. A PostgrestError is a plain
+    // object, so anything catching it and stringifying gets "[object Object]" —
+    // its sibling listUsers() already wrapped, and the inconsistency is what hid
+    // the cause of #1029 for a round. Code and hint are kept: 42501 and "permission
+    // denied for function" are different diagnoses with the same HTTP status.
+    if (error)
+      throw new Error(
+        [error.message, error.code ? `code=${error.code}` : null, error.hint]
+          .filter(Boolean)
+          .join(' | ')
+      );
     return requireRpcData<AdminUserStats>(data, 'admin_user_stats', [
       'total_users',
     ]);

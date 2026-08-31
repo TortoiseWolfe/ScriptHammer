@@ -13,9 +13,33 @@ import type {
 const SEARCH_DEBOUNCE_MS = 300;
 const PAGE_SIZE = 50;
 
-/** A short reason string from an unknown rejection value. */
+/**
+ * A short reason string from an unknown rejection value.
+ *
+ * Supabase rejects with a PostgrestError, which is a PLAIN OBJECT and not an
+ * Error — so `String(reason)` yields "[object Object]" and the message, code and
+ * hint that name the actual cause are all thrown away. That is exactly what this
+ * diagnostic did on its first run: it reported `user statistics ([object
+ * Object])` and cost a CI round saying nothing.
+ */
 function reasonOf(reason: unknown): string {
-  return reason instanceof Error ? reason.message : String(reason);
+  if (reason instanceof Error) return reason.message;
+  if (reason && typeof reason === 'object') {
+    const e = reason as {
+      message?: string;
+      code?: string;
+      details?: string;
+      hint?: string;
+    };
+    const parts = [
+      e.message,
+      e.code ? `code=${e.code}` : null,
+      e.details,
+      e.hint,
+    ].filter(Boolean);
+    if (parts.length) return parts.join(' | ');
+  }
+  return String(reason);
 }
 
 /**
