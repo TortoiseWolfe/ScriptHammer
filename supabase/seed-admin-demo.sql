@@ -99,7 +99,24 @@ VALUES
   ('11111111-1111-1111-1111-111111111106', 'frank',   'Frank Wilson',   false, false, now() - interval '58 days', now()),
   ('11111111-1111-1111-1111-111111111107', 'grace',   'Grace Lee',      false, false, now() - interval '40 days', now()),
   ('11111111-1111-1111-1111-111111111108', 'hank',    'Hank Taylor',    true,  false, now() - interval '20 days', now())
-ON CONFLICT (id) DO NOTHING;
+-- DO UPDATE, not DO NOTHING. The rows ALWAYS conflict: `on_auth_user_created`
+-- fires on the auth.users insert above and `create_user_profile()` has already
+-- written (id, created_at, updated_at) for every one of these ids. So DO NOTHING
+-- discarded every name here and left the profiles with NULL username and NULL
+-- display_name -- which looks like a seeded database right up until something
+-- searches it, because `NULL ILIKE '%alice%'` is NULL, not false.
+--
+-- That is what failed `should search/filter users` (#1029): the search was
+-- correct, the RPC was correct, and there was simply no user called alice to
+-- find. A seed whose values never land is worse than no seed, because the row
+-- COUNT looks right.
+ON CONFLICT (id) DO UPDATE SET
+  username             = EXCLUDED.username,
+  display_name         = EXCLUDED.display_name,
+  welcome_message_sent = EXCLUDED.welcome_message_sent,
+  is_admin             = EXCLUDED.is_admin,
+  created_at           = EXCLUDED.created_at,
+  updated_at           = EXCLUDED.updated_at;
 
 -- ============================================================================
 -- 2. PAYMENT INTENTS + RESULTS (~30 transactions over 14 days)
@@ -421,7 +438,16 @@ SELECT
   now() - (n || ' days')::interval,
   now()
 FROM generate_series(1, 50) AS n
-ON CONFLICT (id) DO NOTHING;
+-- DO UPDATE for the same reason as the eight named profiles above: the
+-- auth.users insert directly overhead has already fired `on_auth_user_created`,
+-- so every one of these ids conflicts and DO NOTHING would drop all 50 names.
+ON CONFLICT (id) DO UPDATE SET
+  username             = EXCLUDED.username,
+  display_name         = EXCLUDED.display_name,
+  welcome_message_sent = EXCLUDED.welcome_message_sent,
+  is_admin             = EXCLUDED.is_admin,
+  created_at           = EXCLUDED.created_at,
+  updated_at           = EXCLUDED.updated_at;
 
 COMMIT;
 
