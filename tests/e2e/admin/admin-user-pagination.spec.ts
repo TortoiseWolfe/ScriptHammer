@@ -58,7 +58,7 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 //
 // fixme, NOT skip. These must stay visible; a skip is what hid this file for
 // months (#914).
-test.describe.fixme('Admin User Pagination E2E', () => {
+test.describe('Admin User Pagination E2E', () => {
   // SKIP ON THE CAPABILITY, NOT ON `CI` (#914).
   //
   // This read `test.skip(!!process.env.CI, 'requires local Docker Supabase')`, which
@@ -98,6 +98,47 @@ test.describe.fixme('Admin User Pagination E2E', () => {
   test.afterAll(async () => {
     if (admin) await deleteTestUser(admin.user.id);
     admin = null;
+  });
+
+  // DIAGNOSTIC (#1029), not for merge. The failure has always been "element not
+  // found", which says nothing about why. Print what the page actually contains:
+  // the console errors, any rendered error banner, and whether the container and
+  // table exist at all.
+  test.beforeEach(async ({ page }) => {
+    const consoleErrors: string[] = [];
+    page.on('console', (m) => {
+      if (m.type() === 'error') consoleErrors.push(m.text());
+    });
+    page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e.message}`));
+    (page as unknown as { __errs: string[] }).__errs = consoleErrors;
+  });
+
+  test.afterEach(async ({ page }, testInfo) => {
+    if (testInfo.status === testInfo.expectedStatus) return;
+    const errs = (page as unknown as { __errs?: string[] }).__errs ?? [];
+    const readout = await page
+      .evaluate(() => ({
+        url: location.pathname,
+        hasContainer: !!document.querySelector('[data-testid="admin-users"]'),
+        hasTable: !!document.querySelector('table'),
+        hasPagination: !!document.querySelector(
+          '[data-testid="user-pagination"]'
+        ),
+        // The page renders `error` into an alert; capture whatever text is there.
+        alerts: [...document.querySelectorAll('[role="alert"], .alert')]
+          .map((el) => (el.textContent || '').trim())
+          .filter(Boolean)
+          .slice(0, 4),
+        bodyStart: (document.body.innerText || '')
+          .replace(/\s+/g, ' ')
+          .slice(0, 400),
+      }))
+      .catch((e) => ({ evaluateFailed: String(e) }));
+    console.log('[#1029 readout]', JSON.stringify(readout, null, 2));
+    console.log(
+      '[#1029 console errors]',
+      JSON.stringify(errs.slice(0, 10), null, 2)
+    );
   });
 
   test.beforeEach(async ({ page }) => {
