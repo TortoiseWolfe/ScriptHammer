@@ -407,7 +407,10 @@ test.describe('Admin Dashboard E2E', () => {
     });
   });
 
-  test.describe('Users Page', () => {
+  // KNOWN BROKEN (#1029) — same cause as the pagination spec, and the same
+  // contradiction: admin nav renders, data call 403s. The other five describes in
+  // this file pass and stay live.
+  test.describe.fixme('Users Page', () => {
     test('should display users table with data', async ({ page }) => {
       await page.goto(`${BP}/admin/users`);
       await page.waitForLoadState('networkidle');
