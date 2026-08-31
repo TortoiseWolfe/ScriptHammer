@@ -366,6 +366,24 @@ jobs:
             exit 1
           fi
 
+          # A COUNT CANNOT SEE THE FAILURE THIS SEED ACTUALLY HAD (#1029). Every
+          # row above existed, and every one of them had a NULL username: the
+          # `on_auth_user_created` trigger creates the profile the moment the
+          # auth.users row lands, so the seed's own INSERT always conflicted, and
+          # `ON CONFLICT DO NOTHING` discarded all 58 names. The population was
+          # right, the profiles were anonymous, and the only symptom was that
+          # searching found nothing -- `NULL ILIKE '%alice%'` is NULL, not false.
+          # So assert the VALUES arrived, not just the rows.
+          named=$(docker compose exec -T supabase-db psql -U postgres -d postgres -tAc \
+            "SELECT count(*) FROM user_profiles WHERE username IS NOT NULL;")
+          alice=$(docker compose exec -T supabase-db psql -U postgres -d postgres -tAc \
+            "SELECT count(*) FROM user_profiles WHERE username = 'alice' AND display_name = 'Alice Johnson';")
+          echo "named profiles: $named (alice: $alice)"
+          if [ "$alice" -ne 1 ] || [ "$named" -le 50 ]; then
+            echo "::error::admin demo seed produced $named named profiles and $alice alice; the names did not land (ON CONFLICT DO NOTHING against the signup trigger?)"
+            exit 1
+          fi
+
       - name: Build (root-served, pointed at the local stack)
         run: pnpm build
         env:

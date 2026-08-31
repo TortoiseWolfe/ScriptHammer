@@ -1510,6 +1510,20 @@ BEGIN
 END;
 $$;
 
+-- EXPLICIT, like the six admin functions that already do this (#1029).
+--
+-- These four relied on Postgres's default PUBLIC EXECUTE while their siblings
+-- revoked it and granted `authenticated` by name. That difference is invisible
+-- on a database old enough to predate the default changing, and fatal on a
+-- fresh one: admin_user_stats answered 403 on every newly created stack while
+-- production served it happily, and the page called it alongside
+-- admin_list_users in one Promise.all, so the whole users page went blank.
+--
+-- Depending on a default that differs between the database you develop on and
+-- the one you ship is the drift; naming the grant removes it.
+REVOKE ALL ON FUNCTION admin_payment_stats() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_payment_stats() TO authenticated;
+
 -- admin_auth_stats(): Auth/security metrics for admin dashboard
 CREATE OR REPLACE FUNCTION admin_auth_stats()
 RETURNS JSON
@@ -1554,6 +1568,20 @@ BEGIN
 END;
 $$;
 
+-- EXPLICIT, like the six admin functions that already do this (#1029).
+--
+-- These four relied on Postgres's default PUBLIC EXECUTE while their siblings
+-- revoked it and granted `authenticated` by name. That difference is invisible
+-- on a database old enough to predate the default changing, and fatal on a
+-- fresh one: admin_user_stats answered 403 on every newly created stack while
+-- production served it happily, and the page called it alongside
+-- admin_list_users in one Promise.all, so the whole users page went blank.
+--
+-- Depending on a default that differs between the database you develop on and
+-- the one you ship is the drift; naming the grant removes it.
+REVOKE ALL ON FUNCTION admin_auth_stats() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_auth_stats() TO authenticated;
+
 -- admin_user_stats(): User metrics for admin dashboard
 CREATE OR REPLACE FUNCTION admin_user_stats()
 RETURNS JSON
@@ -1573,16 +1601,44 @@ BEGIN
       USING ERRCODE = '42501';
   END IF;
 
+  -- `NOT is_admin(id)`, never `is_admin = FALSE` (#1029). This function is
+  -- SECURITY INVOKER, so it reads user_profiles with the CALLER's privileges —
+  -- and the column-scoped grant block below deliberately excludes `is_admin`
+  -- from every column list. Referencing the column here therefore raised
+  -- `permission denied`, ERRCODE 42501, which PostgREST returns as HTTP 403:
+  -- the SAME status as this function's own refusal three lines up. An admin got
+  -- a 403 that read exactly like "you are not an admin" while is_admin() was
+  -- returning true. Four E2E specs sat fixme'd behind it.
+  --
+  -- is_admin(uuid) is SECURITY DEFINER and granted to authenticated, and the
+  -- grant block names it as the ONLY sanctioned way to read admin-ness. Going
+  -- through it needs no new privilege and keeps RLS in force for the caller,
+  -- which making this function SECURITY DEFINER would have quietly discarded to
+  -- solve a COLUMN problem with a ROW-level tool.
   RETURN (
     SELECT json_build_object(
-      'total_users', (SELECT count(*) FROM user_profiles WHERE is_admin = FALSE),
-      'active_this_week', (SELECT count(*) FROM user_profiles WHERE updated_at > now() - interval '7 days' AND is_admin = FALSE),
+      'total_users', (SELECT count(*) FROM user_profiles WHERE NOT public.is_admin(id)),
+      'active_this_week', (SELECT count(*) FROM user_profiles WHERE updated_at > now() - interval '7 days' AND NOT public.is_admin(id)),
       'pending_connections', (SELECT count(*) FROM user_connections WHERE status = 'pending'),
       'total_connections', (SELECT count(*) FROM user_connections WHERE status = 'accepted')
     )
   );
 END;
 $$;
+
+-- EXPLICIT, like the six admin functions that already do this (#1029).
+--
+-- These four relied on Postgres's default PUBLIC EXECUTE while their siblings
+-- revoked it and granted `authenticated` by name. That difference is invisible
+-- on a database old enough to predate the default changing, and fatal on a
+-- fresh one: admin_user_stats answered 403 on every newly created stack while
+-- production served it happily, and the page called it alongside
+-- admin_list_users in one Promise.all, so the whole users page went blank.
+--
+-- Depending on a default that differs between the database you develop on and
+-- the one you ship is the drift; naming the grant removes it.
+REVOKE ALL ON FUNCTION admin_user_stats() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_user_stats() TO authenticated;
 
 -- admin_messaging_stats(): Messaging metrics for admin dashboard
 CREATE OR REPLACE FUNCTION admin_messaging_stats()
@@ -1626,6 +1682,20 @@ BEGIN
   );
 END;
 $$;
+
+-- EXPLICIT, like the six admin functions that already do this (#1029).
+--
+-- These four relied on Postgres's default PUBLIC EXECUTE while their siblings
+-- revoked it and granted `authenticated` by name. That difference is invisible
+-- on a database old enough to predate the default changing, and fatal on a
+-- fresh one: admin_user_stats answered 403 on every newly created stack while
+-- production served it happily, and the page called it alongside
+-- admin_list_users in one Promise.all, so the whole users page went blank.
+--
+-- Depending on a default that differs between the database you develop on and
+-- the one you ship is the drift; naming the grant removes it.
+REVOKE ALL ON FUNCTION admin_messaging_stats() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION admin_messaging_stats() TO authenticated;
 
 -- admin_list_users(p_search, p_limit, p_offset): User listing for admin dashboard
 --
@@ -2300,6 +2370,15 @@ REVOKE ALL ON public.user_profiles FROM anon, authenticated;
 -- the SECURITY DEFINER `is_admin()` RPC, which no grant here can reach —
 -- `admin-auth-service.checkIsAdmin` already calls that RPC rather than the
 -- column, so nothing in the client loses a capability it was using.
+--
+-- THAT AUDIT SWEPT THE CLIENT AND MISSED THIS FILE (#1029). `admin_user_stats()`
+-- (:1586) is SECURITY INVOKER and read the column directly, so the revoke above
+-- 403'd it for admins too — a status identical to its own refusal, which is why
+-- it took a live diagnostic to tell the two apart. It now goes through
+-- `is_admin(id)`. The six SECURITY DEFINER admin functions that read the column
+-- are unaffected: they run as the owner, whom no grant here constrains.
+-- `scripts/__tests__/invoker-fns-respect-column-grants.test.js` fails if another
+-- SECURITY INVOKER function ever reads a column this block withholds.
 --
 -- Column lists are also DENY BY DEFAULT for columns that do not exist yet. A
 -- `last_seen_cell` added to this table later is not readable by anyone until

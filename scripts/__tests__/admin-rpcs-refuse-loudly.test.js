@@ -103,6 +103,47 @@ describe('admin RPCs refuse loudly (#1029)', () => {
     );
   });
 
+  it('every admin function names its own EXECUTE grant', () => {
+    // #1029, and this is the one that actually broke the users page. Six admin
+    // functions revoked PUBLIC and granted `authenticated` by name; the four
+    // *_stats ones relied on Postgres's default PUBLIC EXECUTE instead.
+    //
+    // That difference is invisible on a database old enough to predate the
+    // default changing, and fatal on a fresh one — admin_user_stats answered 403
+    // on every newly created stack while production served it happily. Depending
+    // on a default that differs between the database you develop on and the one
+    // you ship is the drift; naming the grant removes it.
+    const sql = sqlOnly();
+    const defined = [
+      ...sql.matchAll(/CREATE OR REPLACE FUNCTION (admin_[a-z_]+)/g),
+    ].map((m) => m[1]);
+    const revoked = new Set(
+      [...sql.matchAll(/REVOKE ALL ON FUNCTION (admin_[a-z_]+)/g)].map(
+        (m) => m[1]
+      )
+    );
+    const granted = new Set(
+      [...sql.matchAll(/GRANT EXECUTE ON FUNCTION (admin_[a-z_]+)/g)].map(
+        (m) => m[1]
+      )
+    );
+    assert.ok(
+      defined.length >= 10,
+      `expected >=10 admin functions, found ${defined.length}`
+    );
+    const asymmetric = [...new Set(defined)].filter(
+      (f) => !revoked.has(f) || !granted.has(f)
+    );
+    assert.deepStrictEqual(
+      asymmetric,
+      [],
+      'admin function(s) without an explicit REVOKE FROM PUBLIC + GRANT TO ' +
+        'authenticated. Inheriting the PUBLIC default works until the database ' +
+        'is created somewhere whose default differs, and then it is a 403 on one ' +
+        'environment only.'
+    );
+  });
+
   it('the matchers can actually fail', () => {
     // The control, including the comment-stripping that makes the checks honest.
     const strip = (sql) =>

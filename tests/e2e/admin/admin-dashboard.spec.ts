@@ -410,7 +410,7 @@ test.describe('Admin Dashboard E2E', () => {
   // KNOWN BROKEN (#1029) — same cause as the pagination spec, and the same
   // contradiction: admin nav renders, data call 403s. The other five describes in
   // this file pass and stay live.
-  test.describe.fixme('Users Page', () => {
+  test.describe('Users Page', () => {
     test('should display users table with data', async ({ page }) => {
       await page.goto(`${BP}/admin/users`);
       await page.waitForLoadState('networkidle');
@@ -455,12 +455,25 @@ test.describe('Admin Dashboard E2E', () => {
       // test in this file and the only one not named in #914; a static sweep found it (#914).
       await expect(searchInput).toBeVisible({ timeout: 10000 });
 
+      // `alice` is seeded by supabase/seed-admin-demo.sql and the lane asserts the
+      // name actually landed before any shard runs, so this term MUST match.
       await searchInput.fill('alice');
-      await page.waitForTimeout(1000);
 
-      // Filtered results may be empty or non-empty — both valid. What must hold is that
-      // searching did not crash the view.
-      await expect(page.locator('table').first()).toBeVisible();
+      // Assert the search FILTERED, not merely that a table survived. The old
+      // assertion was `expect(page.locator('table')).toBeVisible()` under a comment
+      // saying empty results were equally valid — two claims that cannot both hold,
+      // since the empty state replaces the table rather than emptying it. It passed
+      // for the wrong reason while every seeded profile had a NULL username, and
+      // failed the moment the data was real enough to filter (#1029).
+      const table = page.locator('table').first();
+      await expect(table).toBeVisible({ timeout: 10000 });
+      await expect(table.getByText(/alice/i).first()).toBeVisible({
+        timeout: 10000,
+      });
+
+      // And that it EXCLUDED the rest: filler users are the bulk of the population,
+      // so their absence is what distinguishes filtering from rendering everything.
+      await expect(table.getByText(/filler/i)).toHaveCount(0);
     });
 
     test('should display activity badges', async ({ page }) => {
