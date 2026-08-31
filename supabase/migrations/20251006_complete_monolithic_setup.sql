@@ -239,6 +239,23 @@ ALTER TABLE edge_idempotency_keys
 
 COMMENT ON TABLE edge_idempotency_keys IS 'Idempotency cache for outbound payment Edge Functions (#106)';
 
+-- "not client-facing" IS NOW ACTUALLY ENFORCED (#1039). The comment above has
+-- said that since #106, and nothing made it true. On Supabase, saying NOTHING
+-- about a table in `public` is not neutral: `pg_default_acl` has already granted
+-- anon and authenticated arwdDxtm on it, and PostgREST exposes the whole schema.
+-- This was the ONLY one of 19 public tables with no RLS, so that default grant
+-- had nothing behind it. An anonymous caller holding just the publishable key
+-- could read, overwrite and delete the payment idempotency cache -- defeating
+-- the #558 replay guard that `request_fingerprint` exists to provide. Confirmed
+-- live over the REST API before this landed: HTTP 200 and three full rows.
+--
+-- Both lines are needed and they do different jobs: RLS with no policy denies
+-- every ordinary role, and the REVOKE removes the privilege that RLS is not
+-- responsible for. service_role has rolbypassrls (verified), so the Edge
+-- Functions that own this table are unaffected.
+ALTER TABLE edge_idempotency_keys ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON edge_idempotency_keys FROM anon, authenticated;
+
 -- Webhook events (with retry fields from Feature 017)
 CREATE TABLE IF NOT EXISTS webhook_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1029,9 +1046,17 @@ CREATE POLICY "Service updates webhook events" ON webhook_events
   FOR UPDATE TO service_role WITH CHECK (true);
 
 -- Payment provider config
+-- TO authenticated (#1039). Without a TO clause a policy applies to PUBLIC, which
+-- includes anon -- so this row-gate disagreed with the file's own
+-- `GRANT SELECT ON payment_provider_config TO authenticated` and let anyone
+-- holding the publishable key enumerate which payment providers are enabled and
+-- configured. No secret is stored here, so this is disclosure rather than a
+-- credential leak, and nothing in src/ reads the table at all, so restricting it
+-- costs nothing. Aligning the two is the point: a GRANT and a policy that
+-- disagree mean the narrower one is decorative.
 DROP POLICY IF EXISTS "Users view provider config" ON payment_provider_config;
 CREATE POLICY "Users view provider config" ON payment_provider_config
-  FOR SELECT USING (true);
+  FOR SELECT TO authenticated USING (true);
 
 -- Commerce catalog (#557).
 --
@@ -2802,9 +2827,28 @@ CREATE INDEX IF NOT EXISTS idx_user_encryption_keys_salt ON user_encryption_keys
 
 ALTER TABLE user_encryption_keys ENABLE ROW LEVEL SECURITY;
 
+-- TO authenticated, and renamed to stop saying "Anyone" (#1039). This policy was
+-- written when the table held nothing but public ECDH keys, which are meant to be
+-- readable -- that is what a public key is for. `encryption_salt` was added to the
+-- same table later, and the policy was never revisited, so `USING (true)` with no
+-- role kept handing out every user's Argon2 KDF salt beside their public key to
+-- UNAUTHENTICATED callers. Confirmed live over the REST API with the publishable
+-- key before this landed: HTTP 200, four rows, three non-null salts.
+--
+-- Why the pair together is worse than either alone: key-service.ts derives the
+-- keypair from password + salt, so salt + public key is an offline oracle -- guess
+-- a password, re-derive, compare to the published public key. Normally an attacker
+-- cannot test a password guess offline at all.
+--
+-- This closes the anonymous half. Any AUTHENTICATED user can still read every
+-- other user's salt, which is the same oracle with a sign-up in front of it; that
+-- needs column-scoped grants plus an own-row accessor and a client change, and is
+-- filed separately rather than bundled into a security fix that must stay small
+-- and obviously correct.
 DROP POLICY IF EXISTS "Anyone can view public keys" ON user_encryption_keys;
-CREATE POLICY "Anyone can view public keys" ON user_encryption_keys
-  FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Authenticated users can view public keys" ON user_encryption_keys;
+CREATE POLICY "Authenticated users can view public keys" ON user_encryption_keys
+  FOR SELECT TO authenticated USING (true);
 
 DROP POLICY IF EXISTS "Users can create own keys" ON user_encryption_keys;
 CREATE POLICY "Users can create own keys" ON user_encryption_keys
@@ -3054,6 +3098,12 @@ CREATE TRIGGER before_message_update_column_guard
 GRANT ALL ON user_connections TO authenticated, service_role;
 GRANT ALL ON conversations TO authenticated, service_role;
 GRANT ALL ON messages TO authenticated, service_role;
+-- REVOKE FIRST. This GRANT never narrowed anything on its own: Supabase's platform
+-- default had already given anon and authenticated everything, and a narrower GRANT
+-- sits on top of a wider one and changes nothing (#1039, same trap as #897 on
+-- payment_intents and the user_profiles block below). The policy above gates rows
+-- for authenticated; this removes anon's privilege, which no policy can do.
+REVOKE ALL ON user_encryption_keys FROM anon;
 GRANT ALL ON user_encryption_keys TO authenticated, service_role;
 GRANT ALL ON conversation_keys TO authenticated, service_role;
 GRANT ALL ON typing_indicators TO authenticated, service_role;
