@@ -38,6 +38,9 @@ import {
   buildIntentRow,
   buildOrderRow,
   type ProductRow,
+  buildRetryIntentRow,
+  decideRetry,
+  type ParentIntentRow,
 } from './resolve.ts';
 
 const supabaseUrl =
@@ -51,6 +54,120 @@ interface RequestBody {
   amount?: unknown;
   buyer_email?: string;
   intake?: Record<string, unknown>;
+  /**
+   * `'retry'` re-attempts an existing intent instead of buying something (#559 T025).
+   * Absent means the purchase branch, which is every existing caller.
+   */
+  op?: string;
+  /** The intent being retried. Required when op === 'retry'. */
+  intent_id?: string;
+}
+
+/**
+ * Re-attempt an existing payment intent (#559 T025, #1046).
+ *
+ * NOT A PURCHASE, and the differences are load-bearing:
+ *   - it writes NO `orders` row. `orders.product_id` is NOT NULL REFERENCES products,
+ *     and an order follows the purchase, not the attempt.
+ *   - it does not re-price. A retry is a second go at ONE agreement; re-resolving the
+ *     catalog would charge today's price for yesterday's deal.
+ *   - both idempotency keys derive from the parent's server-minted id, never from the
+ *     caller's `Idempotency-Key` header.
+ *
+ * WHY .insert() AND NOT .upsert(). supabase-js speaks PostgREST here exactly as the
+ * browser does, and PostgREST emits a bare `ON CONFLICT (idempotency_key)`. The index
+ * is PARTIAL (`WHERE idempotency_key IS NOT NULL`), which Postgres refuses to infer
+ * without its predicate — HTTP 400, SQLSTATE 42P10, nothing written, for every call
+ * including ones with no possible conflict. That is #1046, and moving the same
+ * `.upsert()` server-side would have carried the bug across unchanged. A plain insert
+ * plus an explicit 23505 branch needs no inference and says what it means.
+ */
+async function handleRetry(
+  req: Request,
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  body: RequestBody
+): Promise<Response> {
+  const intentId = body.intent_id?.trim();
+  if (!intentId) {
+    return jsonResponse(req, { error: 'intent_id is required' }, 400);
+  }
+
+  const { data: parent, error: parentError } = await supabase
+    .from('payment_intents')
+    .select(
+      'id, template_user_id, amount, currency, type, interval, customer_email, ' +
+        'description, metadata, idempotency_key, retry_count, created_at, expires_at'
+    )
+    .eq('id', intentId)
+    .maybeSingle();
+
+  if (parentError) {
+    console.error(`${FN}: parent lookup failed`, parentError);
+    return jsonResponse(req, { error: 'Internal server error' }, 500);
+  }
+
+  const decision = decideRetry(
+    (parent as ParentIntentRow | null) ?? null,
+    userId,
+    Date.now()
+  );
+  if (decision.kind === 'refuse') {
+    return jsonResponse(
+      req,
+      { error: decision.error, code: decision.code, wait_ms: decision.waitMs },
+      decision.status
+    );
+  }
+
+  const { data: child, error: insertError } = await supabase
+    .from('payment_intents')
+    .insert(
+      buildRetryIntentRow(
+        parent as ParentIntentRow,
+        userId,
+        decision.retryCount,
+        decision.rowKey
+      )
+    )
+    .select('id')
+    .maybeSingle();
+
+  if (insertError) {
+    // 23505 is the deterministic key doing its job: this exact attempt already
+    // exists, so a double-submitted Retry is a no-op rather than a second charge.
+    // Report the row that already won, which the caller treats as authoritative.
+    if (insertError.code === '23505') {
+      const { data: existing } = await supabase
+        .from('payment_intents')
+        .select('id')
+        .eq('idempotency_key', decision.rowKey)
+        .maybeSingle();
+      return jsonResponse(
+        req,
+        {
+          intent_id: existing?.id ?? null,
+          parent_intent_id: intentId,
+          retry_count: decision.retryCount,
+          deduped: true,
+        },
+        200
+      );
+    }
+    console.error(`${FN}: retry insert failed`, insertError);
+    return jsonResponse(req, { error: 'Could not create retry' }, 500);
+  }
+
+  return jsonResponse(
+    req,
+    {
+      intent_id: child?.id ?? null,
+      parent_intent_id: intentId,
+      retry_count: decision.retryCount,
+      deduped: false,
+    },
+    200
+  );
 }
 
 serve(async (req) => {
@@ -74,6 +191,18 @@ serve(async (req) => {
       return jsonResponse(req, { error: 'Invalid JSON body' }, 400);
     }
 
+    // The service-role client is needed by BOTH branches, so it is created before
+    // the purchase-only validation below. It bypasses RLS, which is why every
+    // ownership check in the retry branch is explicit.
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // RETRY BRANCH (#559 T025, #1046). A retry is not a purchase: it writes no order
+    // row, re-prices nothing, and derives both idempotency keys from the parent's
+    // server-minted id rather than from anything the caller sent.
+    if (body.op === 'retry') {
+      return await handleRetry(req, supabase, userId, body);
+    }
+
     const productId = body.product_id?.trim();
     if (!productId) {
       return jsonResponse(req, { error: 'product_id is required' }, 400);
@@ -86,8 +215,6 @@ serve(async (req) => {
         400
       );
     }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const idempotencyKey = req.headers.get('Idempotency-Key');
     const fingerprint = fingerprintRequest({
