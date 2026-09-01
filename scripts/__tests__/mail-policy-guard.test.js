@@ -33,13 +33,27 @@ const ROOT = path.resolve(__dirname, '..', '..');
 const CHECKER = path.join(ROOT, 'scripts', 'ci', 'check-mail-policy.mjs');
 const SMOKE = path.join(ROOT, '.github', 'workflows', 'smoke.yml');
 
-/** A zone in the state this repo intends. Each case below breaks exactly one thing. */
+/**
+ * A zone in the state this repo intends, for a FIXTURE domain. Each case below breaks
+ * exactly one thing.
+ *
+ * The domain here is deliberately not scripthammer.com. `evaluate()` is handed the intent it
+ * enforces (#822), so if a literal ever creeps back into the module these cases stop passing
+ * — which is the property that makes a fork's run about the fork's own zone.
+ */
+const DOMAIN = 'fixture.example';
 const HEALTHY = {
-  dmarc: ['v=DMARC1; p=none; rua=mailto:admin@scripthammer.com'],
+  dmarc: [`v=DMARC1; p=none; rua=mailto:admin@${DOMAIN}`],
   spf: ['v=spf1 include:_spf.mx.cloudflare.net ~all'],
   dkim: ['v=DKIM1; k=rsa; p=MIIBIjAN'],
   mx: ['10 route1.mx.cloudflare.net.'],
 };
+
+/** The intent for the fixture domain, rebuilt from the module under test. */
+async function fixtureIntent() {
+  const { intendedFor } = await import(`file://${CHECKER}`);
+  return intendedFor(DOMAIN);
+}
 
 describe('the mail-policy guard (#822)', () => {
   it('exists and is wired into the post-deploy smoke run', () => {
@@ -54,12 +68,12 @@ describe('the mail-policy guard (#822)', () => {
 
   it('passes a zone that matches the declared intent', async () => {
     const { evaluate } = await import(`file://${CHECKER}`);
-    assert.deepStrictEqual(evaluate(HEALTHY), []);
+    assert.deepStrictEqual(evaluate(HEALTHY, await fixtureIntent()), []);
   });
 
   it('fails when the DMARC record is gone', async () => {
     const { evaluate } = await import(`file://${CHECKER}`);
-    const f = evaluate({ ...HEALTHY, dmarc: [] });
+    const f = evaluate({ ...HEALTHY, dmarc: [] }, await fixtureIntent());
     assert.equal(f.length, 1);
     assert.match(f[0], /NO DMARC RECORD/);
   });
@@ -68,10 +82,13 @@ describe('the mail-policy guard (#822)', () => {
     // This is the point of declaring `p` in the repo: a dashboard edit nobody recorded
     // shows up here, and a DELIBERATE change is a one-line reviewable diff.
     const { evaluate } = await import(`file://${CHECKER}`);
-    const f = evaluate({
-      ...HEALTHY,
-      dmarc: ['v=DMARC1; p=reject; rua=mailto:admin@scripthammer.com'],
-    });
+    const f = evaluate(
+      {
+        ...HEALTHY,
+        dmarc: [`v=DMARC1; p=reject; rua=mailto:admin@${DOMAIN}`],
+      },
+      await fixtureIntent()
+    );
     assert.equal(f.length, 1);
     assert.match(f[0], /intends p=none/);
   });
@@ -79,26 +96,35 @@ describe('the mail-policy guard (#822)', () => {
   it('fails when aggregate reports have nowhere to go', async () => {
     // Without `rua` there is no evidence, and #822 cannot ever be finished.
     const { evaluate } = await import(`file://${CHECKER}`);
-    const f = evaluate({ ...HEALTHY, dmarc: ['v=DMARC1; p=none'] });
+    const f = evaluate(
+      { ...HEALTHY, dmarc: ['v=DMARC1; p=none'] },
+      await fixtureIntent()
+    );
     assert.equal(f.length, 1);
     assert.match(f[0], /does not report to/);
   });
 
   it('fails when DKIM or MX disappear — the two silent ones', async () => {
     const { evaluate } = await import(`file://${CHECKER}`);
-    assert.match(evaluate({ ...HEALTHY, dkim: [] })[0], /no DKIM public key/);
     assert.match(
-      evaluate({ ...HEALTHY, mx: [] })[0],
+      evaluate({ ...HEALTHY, dkim: [] }, await fixtureIntent())[0],
+      /no usable DKIM public key/
+    );
+    assert.match(
+      evaluate({ ...HEALTHY, mx: [] }, await fixtureIntent())[0],
       /inbound mail is not being routed/
     );
   });
 
   it('treats duplicate DMARC records as broken, because receivers do', async () => {
     const { evaluate } = await import(`file://${CHECKER}`);
-    const f = evaluate({
-      ...HEALTHY,
-      dmarc: [HEALTHY.dmarc[0], 'v=DMARC1; p=reject'],
-    });
+    const f = evaluate(
+      {
+        ...HEALTHY,
+        dmarc: [HEALTHY.dmarc[0], 'v=DMARC1; p=reject'],
+      },
+      await fixtureIntent()
+    );
     assert.match(f[0], /receivers ignore all of them/);
   });
 
@@ -106,7 +132,11 @@ describe('the mail-policy guard (#822)', () => {
     // A guard that reports one problem per run turns a broken zone into several
     // round-trips, and the later faults get discovered one deploy at a time.
     const { evaluate } = await import(`file://${CHECKER}`);
-    assert.equal(evaluate({ dmarc: [], spf: [], dkim: [], mx: [] }).length, 4);
+    assert.equal(
+      evaluate({ dmarc: [], spf: [], dkim: [], mx: [] }, await fixtureIntent())
+        .length,
+      4
+    );
   });
 
   it('declares the intent it is enforcing', async () => {
@@ -116,10 +146,112 @@ describe('the mail-policy guard (#822)', () => {
       'none',
       'the intended policy is no longer `none`'
     );
-    assert.equal(
-      INTENDED.dmarcRua,
-      'admin@scripthammer.com',
-      'aggregate reports must go to an address that receives — see #881'
+  });
+
+  it('addresses aggregate reports to the domain being checked, not a literal', async () => {
+    // #881: reports must reach an address that RECEIVES. For a fork that address is on the
+    // fork's own domain, so a hardcoded `admin@scripthammer.com` pointed every fork's
+    // evidence at this repo's inbox.
+    const { intendedFor } = await import(`file://${CHECKER}`);
+    assert.equal(intendedFor('example.test').dmarcRua, 'admin@example.test');
+    assert.equal(intendedFor('another.test').dmarcRua, 'admin@another.test');
+  });
+
+  it('refuses to evaluate without being told whose policy it is', async () => {
+    // The failure mode being closed: a default intent means a fork's run silently asserts
+    // the template's domain. There is no literal left to fall back to, and a missing intent
+    // must not read as a clean zone.
+    const { evaluate } = await import(`file://${CHECKER}`);
+    assert.throws(() => evaluate(HEALTHY), /needs an intent with a domain/);
+  });
+
+  it('rejects a REVOKED DKIM key, not merely a missing one', async () => {
+    // `v=DKIM1; p=` is a revoked key (RFC 6376 §3.6.1), which is what a provider publishes
+    // when a key is withdrawn. A substring test for `p=` called that healthy — so the one
+    // state this checker exists to catch read as fine. Found against example.com, which
+    // publishes exactly this record.
+    const { evaluate } = await import(`file://${CHECKER}`);
+    const f = evaluate(
+      { ...HEALTHY, dkim: ['v=DKIM1; p='] },
+      await fixtureIntent()
+    );
+    assert.equal(f.length, 1, 'a revoked key must fail');
+    assert.match(f[0], /revoked key/);
+    assert.deepStrictEqual(
+      evaluate(
+        { ...HEALTHY, dkim: ['v=DKIM1; k=rsa; p=MIIBIjAN'] },
+        await fixtureIntent()
+      ),
+      [],
+      'a real key must still pass — otherwise the rule is just always-fail'
+    );
+  });
+});
+
+describe('whose domain the mail check asserts (#822 fork safety)', () => {
+  it('derives the domain from the deploy URL when none is given', async () => {
+    const { resolveDomain } = await import(`file://${CHECKER}`);
+    const r = resolveDomain([], {
+      NEXT_PUBLIC_DEPLOY_URL: 'https://example.test/path',
+    });
+    assert.equal(r.domain, 'example.test');
+    assert.equal(r.source, 'NEXT_PUBLIC_DEPLOY_URL');
+  });
+
+  it('SKIPS rather than falling back to a literal when nothing is configured', async () => {
+    // This is the whole defect. A fork used to run this against scripthammer.com and report
+    // green about a zone it does not control — the #1014 / #987 shape.
+    const { resolveDomain } = await import(`file://${CHECKER}`);
+    for (const env of [{}, { NEXT_PUBLIC_DEPLOY_URL: '' }]) {
+      const r = resolveDomain([], env);
+      assert.equal(r.domain, null, 'must not resolve to any domain');
+      assert.match(r.reason, /MAIL_DOMAIN|NEXT_PUBLIC_DEPLOY_URL/);
+    }
+  });
+
+  it('skips a hosting subdomain, whose mail DNS belongs to the platform', async () => {
+    const { resolveDomain } = await import(`file://${CHECKER}`);
+    for (const host of [
+      'https://someone.github.io/proj',
+      'https://x.pages.dev',
+      'https://x.vercel.app',
+      'https://x.netlify.app',
+    ]) {
+      assert.equal(
+        resolveDomain([], { NEXT_PUBLIC_DEPLOY_URL: host }).domain,
+        null,
+        `${host} must skip — a fork cannot publish DMARC for it`
+      );
+    }
+  });
+
+  it("never names this repo's domain in the module source", async () => {
+    // The assertion that makes the rest non-vacuous: any reintroduced literal fails here,
+    // including in a default parameter a behavioural test would not reach.
+    const src = fs.readFileSync(CHECKER, 'utf8');
+    const code = src
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    assert.doesNotMatch(
+      code,
+      /scripthammer\.com/i,
+      'a hardcoded domain is the bug #822 fixed — declare it via MAIL_DOMAIN instead'
+    );
+  });
+
+  it('smoke.yml passes no literal domain either', async () => {
+    // The script can be perfectly parameterised and still be pinned to one domain by the
+    // workflow that calls it, which is where the literal actually lived.
+    const yml = fs.readFileSync(SMOKE, 'utf8');
+    const step = yml.slice(
+      yml.indexOf('check-mail-policy') - 900,
+      yml.indexOf('check-mail-policy') + 200
+    );
+    const code = step.replace(/^\s*#.*$/gm, '');
+    assert.doesNotMatch(
+      code,
+      /MAIL_DOMAIN:\s*['"]?scripthammer\.com/i,
+      'the workflow must pass vars.MAIL_DOMAIN, not a literal'
     );
   });
 });
