@@ -77,6 +77,8 @@ import { createProjection } from '@/lib/enu';
 import {
   markerBlock,
   nearestLandmark,
+  addressAt,
+  type IndexedAddress,
   osmUrl,
   parseAtParam,
 } from '@/lib/twin-location';
@@ -197,6 +199,13 @@ export interface TwinLocus {
   x: number;
   z: number;
   near: string | null;
+  /** The addressed building you are standing in, or standing beside (#708).
+   *
+   *  Distinct from `near`, which is the closest 3D-Warehouse LANDMARK — one of 129 sampled
+   *  models, and frequently hundreds of metres away in a city of 13,877 buildings. This is
+   *  OSM's own answer for the footprint under your feet. Null where OSM has no address, which
+   *  is most of the extent. */
+  address: { label: string; inside: boolean } | null;
 }
 
 function SceneInner({
@@ -944,6 +953,13 @@ function SceneInner({
   // models.json anchors are in the NARROW frame; the wide city reprojects them the same
   // offset-exact way (narrow enu -> lon/lat -> wide enu). The readout must match, or the
   // "near" line names a building 5 km from where you stand.
+  // Built once by WideCity when buildings-wide.json parses; a ref rather than state because
+  // the readout interval reads it and nothing renders from it, so a re-render would be waste.
+  const addressIndex = useRef<IndexedAddress[]>([]);
+  const handleAddressIndex = useCallback((index: IndexedAddress[]) => {
+    addressIndex.current = index;
+  }, []);
+
   const hudLandmarks = useMemo(() => {
     const models = warehouseModels?.models ?? [];
     if (!models.length) return [];
@@ -980,7 +996,15 @@ function SceneInner({
       const p = walkCtrl.position;
       const [lon, lat] = proj.enuToLonLat(p.x, p.z);
       const n = nearestLandmark(hudLandmarks, p.x, p.z);
-      onLocus({ lat, lon, x: p.x, z: p.z, near: n ? n.entry.title : null });
+      const a = addressAt(addressIndex.current, p.x, p.z);
+      onLocus({
+        lat,
+        lon,
+        x: p.x,
+        z: p.z,
+        near: n ? n.entry.title : null,
+        address: a ? { label: a.label, inside: a.inside } : null,
+      });
     };
     sample();
     const id = window.setInterval(sample, 250);
@@ -1083,6 +1107,7 @@ function SceneInner({
         onError={onWorldError}
         onTwinPlaced={handleTwinPlaced}
         onBuildingsMesh={handleBuildingsMesh}
+        onAddressIndex={handleAddressIndex}
         onTerrainMesh={handleTerrainMesh}
       />
       {gizmoTarget && gizmoBase && patchOverride ? (
@@ -1751,6 +1776,7 @@ function TwinCanvasInner({
           x={locus.x}
           z={locus.z}
           near={locus.near}
+          address={locus.address}
           osmHref={osmUrl(locus.lat, locus.lon)}
           onCopy={copySpot}
           copied={copied}

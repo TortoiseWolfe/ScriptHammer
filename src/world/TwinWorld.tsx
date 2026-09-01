@@ -20,6 +20,7 @@ import WarehouseModels, {
   type ModelColliderRegistry,
 } from './WarehouseModels';
 import Terrain from './Terrain';
+import type { IndexedAddress } from '@/lib/twin-location';
 import WideCity from './WideCity';
 import Streets from './Streets';
 import Heroes from './Heroes';
@@ -52,6 +53,7 @@ export default function TwinWorld({
   onError,
   onTwinPlaced,
   onBuildingsMesh,
+  onAddressIndex,
   onTerrainMesh,
 }: {
   slug: string;
@@ -87,6 +89,8 @@ export default function TwinWorld({
   /** Wide sites only: hands over the merged buildings mesh for Walk-mode BVH
    *  collision (#226). */
   onBuildingsMesh?: (mesh: Mesh) => void;
+  /** Forwarded to WideCity; only the wide path has tags to index (#708). */
+  onAddressIndex?: (index: IndexedAddress[]) => void;
   /** Wide sites only: hands over the ground mesh for the Walk-mode physics floor. */
   onTerrainMesh?: (mesh: Mesh) => void;
 }) {
@@ -165,6 +169,7 @@ export default function TwinWorld({
         onTwinPlaced={onTwinPlaced}
         onGroundReady={onGroundReady}
         onBuildingsMesh={onBuildingsMesh}
+        onAddressIndex={onAddressIndex}
         onTerrainMesh={onTerrainMesh}
         registerCollider={registerCollider}
         selectedModel={selectedModel}

@@ -21,6 +21,8 @@ interface Props {
   x: number;
   z: number;
   near: string | null;
+  /** OSM's answer for the footprint you are on, distinct from the nearest landmark (#708). */
+  address?: { label: string; inside: boolean } | null;
   osmHref: string;
   /** Copies the marker block; resolves true when the clipboard accepted it. */
   onCopy: () => void;
@@ -37,6 +39,7 @@ export default function LocationHud({
   x,
   z,
   near,
+  address,
   osmHref,
   onCopy,
   copied,
@@ -66,6 +69,14 @@ export default function LocationHud({
       <div style={{ fontSize: 13, marginTop: 2 }}>
         {lat.toFixed(6)}, {lon.toFixed(6)}
       </div>
+      {address ? (
+        // "at" vs "near" is not decoration. Standing inside a footprint and standing on the
+        // pavement beside it are different claims, and stating the second as the first is
+        // wrong on every street in the city.
+        <div style={{ color: VALUE, marginTop: 2 }}>
+          {address.inside ? 'at' : 'near'} {address.label}
+        </div>
+      ) : null}
       {near ? (
         <div style={{ color: LABEL, marginTop: 2 }}>near {near}</div>
       ) : null}
