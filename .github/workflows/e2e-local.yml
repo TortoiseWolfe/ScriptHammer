@@ -728,13 +728,20 @@ jobs:
           python3 - <<'EOF'
           import json, os, pathlib, sys
 
-          # STALE SINCE THE @hosted SPLIT (#725), and only tier 2 reads it. On the cloud
-          # run these numbers describe, all 21 oauth-csrf executions passed; this lane now
-          # excludes 18 of them, so a re-run on de0f7f0 would total 1789 passed, not 1807.
-          # Tier 2 fires only on that SHA, so this is a note rather than a code change —
-          # but anyone who does run that comparison needs the corrected number, and the
-          # baseline itself cannot be regenerated (artifacts expired; quota until 09-02).
-          BASE = {"passed": 1807, "skipped": 194, "flaky": 0}
+          # CORRECTED FOR THE @hosted SPLIT (#725, fixed under #575). On the cloud run these
+          # numbers describe, all 21 oauth-csrf executions passed; this lane excludes 18 of
+          # them via `--grep-invert='@hosted'`, so a re-run on de0f7f0 totals 1789, not 1807.
+          #
+          # The comment that used to sit here explained the discrepancy and then left the
+          # wrong number in the code, on the grounds that tier 2 only fires on that SHA. That
+          # is precisely the shape of defect this lane exists to catch: a stale constant with
+          # a correct explanation beside it is still a stale constant, and the next person to
+          # trip tier 2 reads the number, not the paragraph.
+          #
+          # The baseline itself still cannot be regenerated (artifacts expired 2026-08-12;
+          # cloud quota refills 2026-09-02), which is why this is an arithmetic correction
+          # rather than a re-measurement. 1807 - 18 = 1789.
+          BASE = {"passed": 1789, "skipped": 194, "flaky": 0}
           BASE_SHA = "de0f7f080c8d75949e4e6c89fdf66ab7d3da8029"
           browser_mode = os.environ.get("BROWSER_MODE", "")
           try:

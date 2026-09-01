@@ -85,11 +85,36 @@ function readTests(source) {
  * `@hosted` also matches `@hosted-only` — comparing raw strings would call those equal
  * when they select different sets.
  */
+/**
+ * Strip `#` comments from YAML before matching.
+ *
+ * Without this the count includes the flag as it appears in PROSE. A comment added under
+ * #575 explained that the lane excludes `@hosted` — and quoting the flag to explain it
+ * pushed the count from 1 to 2, failing this guard with "found 2" while the workflow had
+ * exactly one real occurrence. That is the repo's recurring "a guard matches its own
+ * documentation" trap, arriving from the other side: here the prose was innocent and the
+ * guard was too literal.
+ *
+ * Naive on purpose — a `#` inside a quoted YAML scalar would be stripped too. That is
+ * acceptable for counting a command-line flag, and the alternative is a YAML parser for a
+ * regex count.
+ */
+function stripYamlComments(yamlText) {
+  return yamlText
+    .split('\n')
+    .map((line) => {
+      const i = line.indexOf('#');
+      return i === -1 ? line : line.slice(0, i);
+    })
+    .join('\n');
+}
+
 function readGrepFlags(yamlText, flag) {
   const re = new RegExp(`--${flag}=(['"]?)([^'"\\s\\\\]+)\\1`, 'g');
   const found = [];
   let m;
-  while ((m = re.exec(yamlText)) !== null) {
+  const src = stripYamlComments(yamlText);
+  while ((m = re.exec(src)) !== null) {
     found.push(m[2].match(/@[\w-]+/g) || []);
   }
   return found;

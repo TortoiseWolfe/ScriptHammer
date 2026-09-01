@@ -44,17 +44,96 @@ export function extractTests(report) {
   return out;
 }
 
+/**
+ * Identities the LOCAL lane deliberately does not run (#575, #725).
+ *
+ * `e2e-local.yml` passes `--grep-invert='@hosted'`, and `--grep-invert` removes tests from
+ * the report ENTIRELY — unlike `test.skip()`, which would record them as `skipped`. So a
+ * local report diffed against a hosted baseline shows them as `missing`, which is a
+ * COVERAGE LOSS and correctly exits 1. Correct behaviour for the tool, wrong verdict for
+ * this situation: the coverage moved to the hosted lane rather than vanishing.
+ *
+ * Matched on file + title, WITHOUT the project, because the same six tests are absent from
+ * chromium-gen, firefox-gen and webkit-gen alike — six entries rather than eighteen, and
+ * adding a browser to the matrix does not require touching this list.
+ *
+ * A STALE ENTRY IS A HOLE, so `compare` fails when an entry here matches nothing. Otherwise
+ * un-tagging a test, or renaming it, would silently hand this list a permanent excuse for a
+ * test nobody runs anywhere — which is exactly the failure this differ exists to catch, one
+ * level up.
+ */
+export const EXPECTED_ABSENT = [
+  {
+    file: 'tests/e2e/security/oauth-csrf.spec.ts',
+    title: 'OAuth redirect should include state parameter for CSRF protection',
+    reason:
+      '@hosted: waits for a redirect to a real OAuth provider, which a local Supabase never performs',
+  },
+  {
+    file: 'tests/e2e/security/oauth-csrf.spec.ts',
+    title: 'OAuth state parameter should be unique per request',
+    reason:
+      '@hosted: needs two real provider redirects to compare state across them',
+  },
+  {
+    file: 'tests/e2e/security/oauth-csrf.spec.ts',
+    title: 'OAuth redirect should go to correct provider',
+    reason: '@hosted: asserts the provider host in the redirect URL',
+  },
+  {
+    file: 'tests/e2e/security/oauth-csrf.spec.ts',
+    title: 'OAuth flow should include required OAuth parameters',
+    reason: '@hosted: reads query parameters off a real provider redirect',
+  },
+  {
+    file: 'tests/e2e/security/oauth-csrf.spec.ts',
+    title: 'different browser sessions should have isolated OAuth state',
+    reason: '@hosted: two contexts, each needing a real provider redirect',
+  },
+  {
+    file: 'tests/e2e/security/oauth-csrf.spec.ts',
+    title: 'OAuth redirect_uri should point to Supabase callback',
+    reason: '@hosted: asserts the callback URL a hosted project issues',
+  },
+];
+
+/**
+ * Compare two spec paths that may or may not carry the `tests/e2e/` prefix.
+ *
+ * The baseline stores `security/oauth-csrf.spec.ts` while the repo path is
+ * `tests/e2e/security/oauth-csrf.spec.ts`. A one-directional `endsWith` silently matched
+ * NOTHING and reported a clean run — the allowlist looked correct and excused zero tests.
+ * Caught only by simulating the real baseline instead of trusting the unit fixtures.
+ */
+function sameFile(a, b) {
+  const norm = (f) => f.replace(/^tests\/e2e\//, '');
+  return norm(a) === norm(b);
+}
+
+/** Does this baseline key name an identity the local lane deliberately skips? */
+function isExpectedAbsent(key, allow) {
+  const [, file = '', title = ''] = key.split('|');
+  return allow.some((a) => sameFile(file, a.file) && title === a.title);
+}
+
 /** Directional comparison. Returns {lost, missing, added, gained, changed, ok}. */
-export function compare(baselineTests, actualTests) {
+export function compare(baselineTests, actualTests, allow = EXPECTED_ABSENT) {
   const lost = []; // expected -> skipped: COVERAGE LOSS
   const missing = []; // present in baseline, absent entirely: COVERAGE LOSS
   const added = []; // absent from baseline, present now: report only
   const gained = []; // skipped -> expected: report only
   const changed = []; // any other status transition
 
+  const expectedAbsent = []; // allowlisted: ran on the hosted lane instead
+
   for (const [k, was] of Object.entries(baselineTests)) {
     if (!(k in actualTests)) {
-      missing.push(k);
+      if (isExpectedAbsent(k, allow)) {
+        expectedAbsent.push(k);
+        const [, file = '', title = ''] = k.split('|');
+      } else {
+        missing.push(k);
+      }
       continue;
     }
     const now = actualTests[k];
@@ -70,13 +149,43 @@ export function compare(baselineTests, actualTests) {
   // `changed` includes transitions to `unexpected` (a real failure) and `flaky`.
   // Both must fail the gate — a parity run that goes red on a test the cloud passed
   // is precisely the signal this exists to surface.
+  // A stale allowlist entry is a hole: if the test it excuses was renamed, re-tagged or
+  // deleted, the entry stays behind and silently excuses whatever later takes that name.
+  //
+  // Staleness is judged against the BASELINE's identities, not against what happened to be
+  // missing. An entry whose test the baseline still knows about is fine even when nothing
+  // was excused this run — that is simply a lane which ran everything, and the first
+  // version of this check failed the hosted lane for it. An entry naming a file the
+  // baseline never covered is also not stale: the differ is not looking at that area, and
+  // firing there would make the guard noisy enough to get deleted.
+  const baselineIdentities = Object.keys(baselineTests).map((k) =>
+    k.split('|')
+  );
+  const baselineFiles = new Set(baselineIdentities.map(([, f = '']) => f));
+  const fileIsCovered = (f) => [...baselineFiles].some((bf) => sameFile(bf, f));
+  const staleAllow = allow
+    .map((a) => {
+      if (!fileIsCovered(a.file)) return null;
+      const known = baselineIdentities.some(
+        ([, f = '', t = '']) => sameFile(f, a.file) && t === a.title
+      );
+      return known ? null : `${a.file} :: ${a.title}`;
+    })
+    .filter(Boolean);
+
   return {
     lost,
     missing,
     added,
     gained,
     changed,
-    ok: lost.length === 0 && missing.length === 0 && changed.length === 0,
+    expectedAbsent,
+    staleAllow,
+    ok:
+      lost.length === 0 &&
+      missing.length === 0 &&
+      changed.length === 0 &&
+      staleAllow.length === 0,
   };
 }
 
