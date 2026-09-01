@@ -3,12 +3,20 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createProjection } from '@/lib/enu';
 import {
+  addressAt,
+  buildAddressIndex,
   formatLatLon,
   markerBlock,
   nearestLandmark,
   osmUrl,
   parseAtParam,
+  pointInRing,
 } from '@/lib/twin-location';
+import { addressOf, buildingLabelOf } from '@/lib/osm-tags';
+import {
+  projectWideBuildings,
+  type WideLiveBuilding,
+} from '@/lib/wide-buildings';
 
 /**
  * The location readout and the `?at=` return trip (#706).
@@ -155,6 +163,224 @@ describe('twin location (#706)', () => {
     expect(parseAtParam(block.slice(block.indexOf('?diorama')))).toEqual({
       lat: 1,
       lon: 2,
+    });
+  });
+});
+
+/**
+ * Naming the building you are standing in (#708).
+ *
+ * WHY THIS IS TESTED AGAINST THE REAL ARTIFACT AND NOT ONLY FIXTURES. The defect being fixed
+ * was not a wrong algorithm — it was a TYPE that omitted a field, so a `.map()` silently
+ * dropped tags that were already in the browser. Fixtures I write carry tags by construction
+ * and therefore cannot fail that way. Only reading the shipped
+ * `public/twins/chatt/buildings-wide.json` proves the data this feature claims to use is
+ * actually there, in the shape claimed.
+ */
+describe('the address readout (#708)', () => {
+  describe('reading tags', () => {
+    it('requires BOTH a house number and a street', () => {
+      // A bare street names a whole road. In the wide extent that is the gap between 1,341
+      // buildings with addr:street and 913 with a real address — 428 chances to print a
+      // street name under a building that never claimed one.
+      expect(
+        addressOf({ 'addr:housenumber': '100', 'addr:street': 'Broad St' })
+      ).toBe('100 Broad St');
+      expect(addressOf({ 'addr:street': 'Broad St' })).toBeNull();
+      expect(addressOf({ 'addr:housenumber': '100' })).toBeNull();
+      expect(addressOf(undefined)).toBeNull();
+      expect(addressOf({})).toBeNull();
+    });
+
+    it('prefers a name over an address, and never falls back to the building type', () => {
+      expect(
+        buildingLabelOf({ name: 'Tivoli Theatre', 'addr:housenumber': '709' })
+      ).toBe('Tivoli Theatre');
+      expect(
+        buildingLabelOf({
+          'addr:housenumber': '100',
+          'addr:street': 'Broad St',
+        })
+      ).toBe('100 Broad St');
+      // `building=yes` is 85% of the extent; "Yes" is worse than saying nothing.
+      expect(buildingLabelOf({ building: 'yes' })).toBeNull();
+      expect(buildingLabelOf({ name: '   ' })).toBeNull();
+    });
+  });
+
+  describe('point in footprint', () => {
+    // A unit square from (0,0) to (10,10).
+    const square = [0, 0, 10, 0, 10, 10, 0, 10];
+
+    it('says yes inside and no outside', () => {
+      expect(pointInRing(square, 5, 5)).toBe(true);
+      expect(pointInRing(square, 15, 5)).toBe(false);
+      expect(pointInRing(square, -1, 5)).toBe(false);
+      expect(pointInRing(square, 5, 20)).toBe(false);
+    });
+
+    it('handles a concave ring, where a bounding box would be wrong', () => {
+      // An L: the notch at (8,8) is inside the BOX and outside the SHAPE. If containment ever
+      // degrades to a box test, this is the case that catches it.
+      const L = [0, 0, 10, 0, 10, 5, 5, 5, 5, 10, 0, 10];
+      expect(pointInRing(L, 2, 2)).toBe(true);
+      expect(pointInRing(L, 8, 8)).toBe(false);
+    });
+  });
+
+  describe('the index', () => {
+    const ring = [0, 0, 10, 0, 10, 10, 0, 10];
+
+    it('drops buildings that could never be an answer', () => {
+      const index = buildAddressIndex(
+        [
+          { ring, tags: { name: 'Named' } },
+          { ring, tags: { building: 'yes' } }, // no label
+          { ring }, // no tags at all
+          { ring: [0, 0, 1, 1], tags: { name: 'Degenerate' } }, // 2 points cannot enclose
+        ],
+        buildingLabelOf
+      );
+      expect(index.map((b) => b.label)).toEqual(['Named']);
+    });
+
+    it('computes a bounding box, which is what makes the scan affordable', () => {
+      const [b] = buildAddressIndex(
+        [{ ring, tags: { name: 'X' } }],
+        buildingLabelOf
+      );
+      expect([b.minX, b.maxX, b.minZ, b.maxZ]).toEqual([0, 10, 0, 10]);
+    });
+  });
+
+  describe('answering at a point', () => {
+    const index = buildAddressIndex(
+      [
+        { ring: [0, 0, 10, 0, 10, 10, 0, 10], tags: { name: 'Inside Me' } },
+        {
+          ring: [100, 100, 110, 100, 110, 110, 100, 110],
+          tags: { name: 'Far Away' },
+        },
+      ],
+      buildingLabelOf
+    );
+
+    it('reports containment as `inside`, at zero distance', () => {
+      const hit = addressAt(index, 5, 5);
+      expect(hit).toEqual({ label: 'Inside Me', inside: true, distance: 0 });
+    });
+
+    it('distinguishes standing IN a building from standing beside one', () => {
+      // The distinction the HUD renders as "at" vs "near". Collapsing them would make the
+      // readout confidently wrong on every pavement in the city.
+      const beside = addressAt(index, 15, 5);
+      expect(beside?.label).toBe('Inside Me');
+      expect(beside?.inside).toBe(false);
+      expect(beside!.distance).toBeGreaterThan(0);
+    });
+
+    it('returns null rather than naming a building far away', () => {
+      // Between the two, outside both radii. The honest answer is nothing — a nearest-match
+      // with no bound would name a building hundreds of metres off in the sparse extent.
+      expect(addressAt(index, 60, 60)).toBeNull();
+      expect(addressAt([], 0, 0)).toBeNull();
+    });
+
+    it('honours the radius bound', () => {
+      expect(addressAt(index, 15, 5, 1)).toBeNull();
+      expect(addressAt(index, 15, 5, 40)).not.toBeNull();
+    });
+  });
+
+  describe('against the shipped chatt artifact', () => {
+    // The chain this proves: buildings-wide.json really carries tags -> the projection to ENU
+    // keeps them -> the index finds them -> a point inside a footprint gets its address.
+    const wide = JSON.parse(
+      readFileSync(
+        join(process.cwd(), 'public/twins/chatt/buildings-wide.json'),
+        'utf8'
+      )
+    ) as WideLiveBuilding[];
+    const manifest = JSON.parse(
+      readFileSync(
+        join(process.cwd(), 'public/twins/chatt/manifest.json'),
+        'utf8'
+      )
+    );
+
+    it('ships tags on every entry, which is the premise of this feature', () => {
+      expect(wide.length).toBeGreaterThan(13_000);
+      expect(wide.every((b) => b.tags !== undefined)).toBe(true);
+    });
+
+    it('carries enough real addresses to be worth showing', () => {
+      const addressed = wide.filter((b) => addressOf(b.tags)).length;
+      const labelled = wide.filter((b) => buildingLabelOf(b.tags)).length;
+      // Measured 2026-09-01 against the shipped artifact: 913 full addresses, 400 names,
+      // 1,108 labelled. Asserted as floors, not equalities, so a rebake that ADDS coverage
+      // does not fail the suite — but high enough that losing the tag threading would.
+      expect(addressed).toBe(913);
+      expect(labelled).toBe(1108);
+    });
+
+    it('preserves tags through the projection — the step that used to drop them', () => {
+      const proj = createProjection(
+        manifest.atlasBox ?? manifest.box,
+        manifest.vectorOffsetM
+      );
+      const projected = projectWideBuildings(wide, proj.lonLatToEnu);
+      expect(projected.length).toBe(wide.length);
+      expect(projected.every((b) => b.tags !== undefined)).toBe(true);
+      // And the ring survived: a projection that produced empty rings would still pass the
+      // assertion above.
+      expect(projected.every((b) => b.ring.length >= 6)).toBe(true);
+    });
+
+    it('honours hideBuildingIds, so the embedded scan is not double-drawn', () => {
+      const proj = createProjection(
+        manifest.atlasBox ?? manifest.box,
+        manifest.vectorOffsetM
+      );
+      const hide = new Set([wide[0].id, wide[1].id]);
+      const projected = projectWideBuildings(wide, proj.lonLatToEnu, hide);
+      expect(projected.length).toBe(wide.length - 2);
+      expect(projected.some((b) => hide.has(b.id))).toBe(false);
+    });
+
+    it('answers with the right address at a real building centroid', () => {
+      const proj = createProjection(
+        manifest.atlasBox ?? manifest.box,
+        manifest.vectorOffsetM
+      );
+      // THE function WideCity calls, not a copy of it. A copy here would pass while the
+      // real projection dropped tags — which is exactly the defect being fixed.
+      const buildings = projectWideBuildings(wide, proj.lonLatToEnu);
+      const index = buildAddressIndex(buildings, buildingLabelOf);
+      expect(index.length).toBeGreaterThan(1000);
+
+      // Take addressed buildings and probe the centre of each bounding box. Convexity is not
+      // guaranteed, so not every centre lands inside its own footprint — but the great
+      // majority must, or the projection or the ring order is wrong.
+      const probes = index.slice(0, 200);
+      const resolved = probes.filter((b) => {
+        const hit = addressAt(
+          index,
+          (b.minX + b.maxX) / 2,
+          (b.minZ + b.maxZ) / 2
+        );
+        return hit !== null;
+      });
+      expect(resolved.length).toBe(probes.length);
+
+      const inside = probes.filter((b) => {
+        const hit = addressAt(
+          index,
+          (b.minX + b.maxX) / 2,
+          (b.minZ + b.maxZ) / 2
+        );
+        return hit?.inside === true;
+      });
+      expect(inside.length).toBeGreaterThan(probes.length * 0.8);
     });
   });
 });

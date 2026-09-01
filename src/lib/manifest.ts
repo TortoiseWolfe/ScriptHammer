@@ -104,6 +104,15 @@ export interface Building {
   height: number;
   rule: string;
   swap?: string;
+  /** OSM tags, when the source carried them.
+   *
+   *  Present on the WIDE path: `buildings-wide.json` ships a `tags` object on all 13,877
+   *  entries (1,341 with `addr:street`, 913 with a full address, 400 with a name). Absent on
+   *  the narrow `buildings.json`, which deliberately carries geometry and height only — the
+   *  same split `AtlasBuilding` documents in `src/twin/cesium/buildings.ts` (#292). Optional
+   *  for exactly that reason; a consumer must handle its absence rather than assume the wide
+   *  path. */
+  tags?: Record<string, string>;
 }
 
 export interface Street {

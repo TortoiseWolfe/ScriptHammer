@@ -1,4 +1,5 @@
 import { RULE_LABELS, RULE_COLORS } from './buildings';
+import { addressOf } from '@/lib/osm-tags';
 
 // The ONE card that describes a building in the atlas (#303).
 //
@@ -27,13 +28,7 @@ export function prettyType(tags?: Record<string, string>): string | null {
   return b.replace(/_/g, ' ');
 }
 
-export function addressOf(tags?: Record<string, string>): string | null {
-  if (!tags) return null;
-  const a = [tags['addr:housenumber'], tags['addr:street']]
-    .filter(Boolean)
-    .join(' ');
-  return a || null;
-}
+export { addressOf } from '@/lib/osm-tags';
 
 export interface BuildingCardModel {
   /** The heading: a tour stop's curated name ("Chattanooga Choo Choo"), or a

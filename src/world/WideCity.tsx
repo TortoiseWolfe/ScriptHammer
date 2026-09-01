@@ -19,15 +19,12 @@ import Roads from './Roads';
 import CityProps from './CityProps';
 import WarehouseModels, { type ModelColliderRegistry } from './WarehouseModels';
 import { elevationAt, minElevation } from './terrainSample';
-
-/** buildings-wide.json entry — raw WGS84 footprints (src/twin/cesium/overpass.ts
- *  `LiveBuilding`). `lonLat` is a FLAT [lon,lat,lon,lat,…] ring. */
-interface WideLiveBuilding {
-  id: number;
-  lonLat: number[];
-  heightM: number;
-  rule: string;
-}
+import { buildAddressIndex, type IndexedAddress } from '@/lib/twin-location';
+import { buildingLabelOf } from '@/lib/osm-tags';
+import {
+  projectWideBuildings,
+  type WideLiveBuilding,
+} from '@/lib/wide-buildings';
 
 interface WideData {
   grid: TerrainGrid;
@@ -63,6 +60,7 @@ export default function WideCity({
   onSelectModel,
   onBuildingsMesh,
   onTerrainMesh,
+  onAddressIndex,
 }: {
   slug: string;
   manifest: Manifest;
@@ -74,6 +72,11 @@ export default function WideCity({
   /** Reports the embedded twin's wide-frame position + label once placed, so
    *  the HUD can offer an in-diorama fly-to instead of a separate page (#332). */
   onTwinPlaced?: (t: { x: number; z: number; label: string }) => void;
+  /** Hands the composition root a prebuilt address index once buildings-wide.json is
+   *  parsed, so the location readout can name the building you are standing in (#708).
+   *  Reported rather than re-derived: the tags arrive here and nowhere else, and the
+   *  alternative is a second 5.4 MB fetch of a file already in memory. */
+  onAddressIndex?: (index: IndexedAddress[]) => void;
   /** Hands the composition root a terrain sampler (runtime Y at ENU x/z) once
    *  the wide grid loads — so Walk-mode ground-follow (and the trolley) ride ON
    *  the hills. The narrow TwinWorld path wires this too; the wide path did not
@@ -137,16 +140,11 @@ export default function WideCity({
 
       // Massing box under the scan steps aside so the two never z-fight (OSM ids
       // are global, so the exhibit's hideBuildingIds match in buildings-wide).
-      const buildings: Building[] = wide
-        .filter((b) => !hide.has(b.id))
-        .map((b) => {
-          const ring: number[] = [];
-          for (let i = 0; i + 1 < b.lonLat.length; i += 2) {
-            const [x, z] = proj.lonLatToEnu(b.lonLat[i], b.lonLat[i + 1]);
-            ring.push(x, z);
-          }
-          return { id: b.id, ring, height: b.heightM, rule: b.rule };
-        });
+      const buildings: Building[] = projectWideBuildings(
+        wide,
+        proj.lonLatToEnu,
+        hide
+      );
       // Roads: streets.json is baked in the NARROW box frame. Reproject each
       // polyline into the wide/atlasBox frame the SAME offset-exact way buildings
       // are — narrow ENU → lon/lat (narrowProj.enuToLonLat) → wide ENU
@@ -177,6 +175,9 @@ export default function WideCity({
 
       if (!alive) return;
       setData({ grid, buildings, streets, drape, wideManifest, twin });
+      // Built once here, not per readout sample: see buildAddressIndex for why the
+      // filter-and-box step is what makes a 13,877-building scan affordable at 4 Hz.
+      onAddressIndex?.(buildAddressIndex(buildings, buildingLabelOf));
       if (twin && embed)
         onTwinPlaced?.({
           x: twin.house.x,
@@ -190,7 +191,7 @@ export default function WideCity({
     return () => {
       alive = false;
     };
-  }, [slug, manifest, onError, onTwinPlaced]);
+  }, [slug, manifest, onError, onTwinPlaced, onAddressIndex]);
 
   // Publish the wide terrain sampler once the grid loads — same normalization
   // (elevationAt − minE) the mesh uses, so Walk-mode feet ride ON the terrain
