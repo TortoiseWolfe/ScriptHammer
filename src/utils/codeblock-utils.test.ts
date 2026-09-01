@@ -446,10 +446,19 @@ describe('detectLanguage', () => {
       expect(detectLanguage(content)).toBe('css');
     });
 
-    it('claims a destructuring import before the JS branch can see it', () => {
-      // Documented surprise, tested as-is: "import" + space + "{" satisfies
-      // /^[.#]?\w+\s*{/, so the most common TS import line renders as CSS.
-      expect(detectLanguage('import { a } from "b";')).toBe('css');
+    it('no longer claims a destructuring import (#1044)', () => {
+      // This asserted 'css' until #1044. "import" + space + "{" satisfies
+      // /^[.#]?\w+\s*{/ — the CSS probe read the keyword as a selector and the
+      // DESTRUCTURING BRACE as a rule opening — and the cascade asked it before the
+      // JS branch. An ES-module check now answers first.
+      expect(detectLanguage('import { a } from "b";')).toBe('typescript');
+    });
+
+    it('still claims a genuine CSS rule that happens to start with a word', () => {
+      // The CSS probe was not weakened, only asked later. If this ever returns
+      // something else, the fix went too far.
+      expect(detectLanguage('body { margin: 0; }')).toBe('css');
+      expect(detectLanguage('.btn { color: red; }')).toBe('css');
     });
   });
 
@@ -495,10 +504,18 @@ describe('detectLanguage', () => {
       expect(detectLanguage(content)).toBe('python');
     });
 
-    it('claims a default JS import before the JS branch can see it', () => {
-      // Documented surprise, tested as-is: /import\s+\w+/ is checked in the
-      // python branch, which runs before the JavaScript fallback.
-      expect(detectLanguage('import foo from "bar";')).toBe('python');
+    it('no longer claims a default JS import (#1044)', () => {
+      // This asserted 'python' until #1044: /import\s+\w+/ is satisfied by any
+      // `import` followed by a word, and the python branch ran before the JS one.
+      // The probe now describes PYTHON's import forms specifically.
+      expect(detectLanguage('import foo from "bar";')).toBe('typescript');
+    });
+
+    it('still claims both real Python import forms', () => {
+      // Narrowing the probe must not cost it the language it is actually for.
+      expect(detectLanguage('import os')).toBe('python');
+      expect(detectLanguage('from pathlib import Path')).toBe('python');
+      expect(detectLanguage('import os\nprint(os.getcwd())')).toBe('python');
     });
   });
 

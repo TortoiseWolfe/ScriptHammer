@@ -451,8 +451,16 @@ export async function buildScene(
     // `site.water` is a bake RESULT (did the carve find water?), filled in
     // below — the runtime uses it to gate the water mesh, so a waterless site
     // never renders a spurious pond at its terrain minimum.
-    site: siteManifestBlock(site) as ReturnType<typeof siteManifestBlock> & {
+    // `site.hasHouse` is a bake RESULT like `site.water` below: did this bake produce an
+    // as-built capture? The runtime uses it to skip a request that would 404 (#831), and a
+    // 404 in the console is indistinguishable from a real failure to anyone but the test
+    // suite, which carries an allowlist a human does not.
+    site: {
+      ...siteManifestBlock(site),
+      hasHouse: existsSync(join(outDir, 'house', 'house.json')),
+    } as ReturnType<typeof siteManifestBlock> & {
       water?: boolean;
+      hasHouse?: boolean;
     },
   };
 

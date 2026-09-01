@@ -1815,14 +1815,23 @@ export default function TwinCanvas({
     setLocalLinks([]);
     setWarehouseModels(null);
     setError(null);
+    // The house load CHAINS off the manifest; everything else stays parallel (#831).
+    // The manifest carries `site.hasHouse`, so a twin without a capture can skip a
+    // request that would 404 — and a 404 prints to the console before JS sees it, which
+    // is indistinguishable from a real failure to anyone reading DevTools. Only the house
+    // waits; links and warehouse models still start immediately, so the cost is one round
+    // trip on twins that DO have a capture rather than on every load.
+    const manifestPromise = loadManifest(slug);
     Promise.all([
-      loadManifest(slug),
+      manifestPromise,
       // Optional per twin (404 → null is the normal case), but a PRESENT-and-
       // broken capture must stay diagnosable — warn, don't swallow silently.
-      loadHouse(slug).catch((e: unknown) => {
-        console.warn('[twin] as-built capture ignored:', e);
-        return null;
-      }),
+      manifestPromise
+        .then((m) => loadHouse(slug, { hasHouse: m?.site?.hasHouse }))
+        .catch((e: unknown) => {
+          console.warn('[twin] as-built capture ignored:', e);
+          return null;
+        }),
       loadLocalLinks(slug),
       // Optional sampled-buildings layer (#259) — same warn-don't-break rule.
       loadWarehouseModels(slug).catch((e: unknown) => {

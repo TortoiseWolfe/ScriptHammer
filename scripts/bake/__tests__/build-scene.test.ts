@@ -115,13 +115,16 @@ describe('build-scene per-site behavior (synthetic fixture)', () => {
       );
       expect(terrain).toEqual({ cols: 2, rows: 2, heights: [5, 6, 7, 8] });
 
-      // manifest carries the site block + basename drape path; water is a bake
-      // RESULT (nothing carved here → false)
+      // manifest carries the site block + basename drape path. `water` and `hasHouse`
+      // are both bake RESULTS: nothing carved here → water false, and this fixture bakes
+      // no as-built capture → hasHouse false (#831, which uses the flag to skip a request
+      // that would 404 and read as a real failure in the console).
       expect(manifest.drape.path).toBe('drape.jpg');
       expect(manifest.site).toEqual({
         slug: 'tiny',
         name: 'Tiny Test Site',
         water: false,
+        hasHouse: false,
       });
       expect(manifest.box).toEqual(tinySite.box);
       expect(existsSync(join(outDir, 'drape.jpg'))).toBe(false);
