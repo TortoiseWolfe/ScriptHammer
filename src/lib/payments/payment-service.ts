@@ -304,85 +304,91 @@ export async function retryFailedPayment(
 ): Promise<PaymentIntent> {
   const userId = await getAuthenticatedUserId();
 
-  const { data: parent, error: fetchError } = await supabase
-    .from('payment_intents')
-    .select('*')
-    .eq('id', intentId)
-    .single();
-
-  if (fetchError) throw fetchError;
-  if (!parent) {
-    throw new Error('Cannot retry — original payment intent not found.');
+  // SERVER-SIDE NOW (#559 T025, #1046). This used to fetch the parent, check the
+  // cap/cooling/expiry guards here, and upsert the child straight into
+  // payment_intents. It could not work, in two independent ways:
+  //
+  //   1. `{ onConflict: 'idempotency_key' }` becomes a bare ON CONFLICT
+  //      (idempotency_key) at PostgREST. The index is PARTIAL
+  //      (WHERE idempotency_key IS NOT NULL) and Postgres will not infer a partial
+  //      index without its predicate, so EVERY call returned HTTP 400 / 42P10 and
+  //      wrote nothing — not just conflicting ones.
+  //   2. The child was given the PARENT's idempotency_key, so once inference was
+  //      fixed it collided with its own parent and DO NOTHING swallowed it.
+  //
+  // Neither is expressible from the browser, because PostgREST has no syntax for the
+  // index predicate. The guards also belonged on the server regardless: a cap the
+  // client checks is a cap the client can skip.
+  const { data: session } = await supabase.auth.getSession();
+  const token = session.session?.access_token;
+  if (!token) {
+    throw new Error('You must be signed in to retry a payment');
   }
 
-  // FR-009: cap retry attempts on this chain.
-  if (parent.retry_count >= RETRY_LIMIT) {
-    throw new PaymentRetryLimitError(parent.retry_count, RETRY_LIMIT);
-  }
-
-  // Expiry guard: a same-key retry against a stale provider session is
-  // worse UX than refusing here.
-  const now = Date.now();
-  if (new Date(parent.expires_at).getTime() < now) {
-    throw new PaymentRetryExpiredError();
-  }
-
-  // FR-010: cooling period since the parent was created.
-  const elapsedMs = now - new Date(parent.created_at).getTime();
-  if (elapsedMs < COOLING_PERIOD_MS) {
-    throw new PaymentRetryCoolingError(COOLING_PERIOD_MS - elapsedMs);
-  }
-
-  // Reuse parent's idempotency_key if present; if absent (legacy intents
-  // pre-PR #59), generate a fresh one so this retry chain still dedupes
-  // with itself. Same fallback pattern as payment-adapter.ts:155-163.
-  const idempotencyKey = parent.idempotency_key ?? crypto.randomUUID();
-  const newRetryCount = parent.retry_count + 1;
-
-  // Upsert with ignoreDuplicates: a doubled click on the retry button (same
-  // idempotency_key reaching the server twice) returns a null row from the
-  // ON CONFLICT path instead of a 23505. We surface that as "the retry is
-  // a no-op, the original is still authoritative" by returning the parent.
-  const { data: child, error: insertError } = await supabase
-    .from('payment_intents')
-    .upsert(
-      {
-        amount: parent.amount,
-        currency: parent.currency,
-        type: parent.type,
-        interval: parent.interval,
-        customer_email: parent.customer_email,
-        description: parent.description,
-        metadata: parent.metadata,
-        template_user_id: userId, // RLS WITH CHECK enforces this anyway
-        idempotency_key: idempotencyKey,
-        parent_intent_id: parent.id,
-        retry_count: newRetryCount,
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-order`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
       },
-      { onConflict: 'idempotency_key', ignoreDuplicates: true }
-    )
-    .select()
-    .maybeSingle();
+      body: JSON.stringify({ op: 'retry', intent_id: intentId }),
+    }
+  );
 
-  if (insertError) throw insertError;
+  const payload = (await res.json().catch(() => ({}))) as {
+    intent_id?: string;
+    retry_count?: number;
+    deduped?: boolean;
+    error?: string;
+    code?: string;
+    wait_ms?: number;
+  };
 
-  const deduped = !child;
+  if (!res.ok) {
+    // The typed errors are part of this function's contract — PaymentStatusDisplay
+    // branches on them to choose the message it shows — so the server's refusal codes
+    // are mapped back rather than collapsed into one generic failure.
+    if (payload.code === 'retry_limit') {
+      throw new PaymentRetryLimitError(
+        payload.retry_count ?? RETRY_LIMIT,
+        RETRY_LIMIT
+      );
+    }
+    if (payload.code === 'retry_cooling') {
+      throw new PaymentRetryCoolingError(payload.wait_ms ?? 0);
+    }
+    if (payload.code === 'retry_expired') {
+      throw new PaymentRetryExpiredError();
+    }
+    throw new Error(payload.error || 'Could not retry this payment');
+  }
 
-  // NFR-007: audit. Non-throwing — never break the user flow over an
-  // audit-log write failure.
+  // NFR-007: audit. Non-throwing — never break the user flow over an audit write.
   await logPaymentRetryEvent({
     userId,
-    originalIntentId: parent.id,
-    newIntentId: deduped ? null : (child as PaymentIntent).id,
-    retryCount: newRetryCount,
-    deduped,
+    originalIntentId: intentId,
+    newIntentId: payload.deduped ? null : (payload.intent_id ?? null),
+    retryCount: payload.retry_count ?? 0,
+    deduped: Boolean(payload.deduped),
   });
 
-  // ON CONFLICT fired — the prior attempt's row is the truth.
-  if (deduped) {
-    return parent as PaymentIntent;
+  // The caller wants the intent row. SELECT is still granted to the browser; only
+  // INSERT is being removed (#559 T027).
+  const id = payload.intent_id ?? intentId;
+  const { data: intent, error } = await supabase
+    .from('payment_intents')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error || !intent) {
+    throw new Error(
+      'Retry succeeded but the new payment could not be read back'
+    );
   }
-  return child as PaymentIntent;
+  return intent as PaymentIntent;
 }
 
 /**

@@ -17,7 +17,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 //   supabase.from('payment_intents').upsert(payload, options).select('id').maybeSingle()
 const mockMaybeSingle = vi.fn();
 const mockSelect = vi.fn();
-const mockUpsert = vi.fn();
+const mockInsert = vi.fn();
 const mockFrom = vi.fn();
 
 // Reconfigure the chain in beforeEach so each test starts from a known
@@ -44,14 +44,14 @@ describe('PaymentQueueAdapter (idempotent INSERT path, #52)', () => {
   beforeEach(async () => {
     mockMaybeSingle.mockReset();
     mockSelect.mockReset().mockReturnValue({ maybeSingle: mockMaybeSingle });
-    mockUpsert.mockReset().mockReturnValue({ select: mockSelect });
-    mockFrom.mockReset().mockReturnValue({ upsert: mockUpsert });
+    mockInsert.mockReset().mockReturnValue({ select: mockSelect });
+    mockFrom.mockReset().mockReturnValue({ insert: mockInsert });
 
     adapter = new PaymentQueueAdapter();
     await adapter.clear();
   });
 
-  it('flows the queued idempotency_key into upsert with correct options', async () => {
+  it('flows the queued idempotency_key into a plain INSERT (#1046)', async () => {
     mockMaybeSingle.mockResolvedValueOnce({
       data: { id: 'intent-1' },
       error: null,
@@ -73,21 +73,23 @@ describe('PaymentQueueAdapter (idempotent INSERT path, #52)', () => {
     expect(result.conflicted).toBe(0);
     expect(mockFrom).toHaveBeenCalledWith('payment_intents');
 
-    // The upsert must have received the queued idempotency_key and the
-    // ignoreDuplicates option.
-    const [payload, options] = mockUpsert.mock.calls[0];
+    // The insert must carry the queued key. It is a plain INSERT with NO conflict
+    // target: PostgREST turns `onConflict` into a bare ON CONFLICT (col), which cannot
+    // infer the PARTIAL unique index and made every drain fail with 42P10 (#1046).
+    const [payload, ...rest] = mockInsert.mock.calls[0];
     expect(payload.idempotency_key).toBe('fixed-key-1');
     expect(payload.amount).toBe(1000);
     expect(payload.template_user_id).toBe('test-user-1');
-    expect(options).toEqual({
-      onConflict: 'idempotency_key',
-      ignoreDuplicates: true,
-    });
+    expect(rest).toEqual([]);
   });
 
-  it('treats a zero-row upsert response as conflicted (work was already done)', async () => {
-    // Server already had this row → upsert returns null data.
-    mockMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
+  it('treats a 23505 as conflicted — a previous drain already did this work', async () => {
+    // The unique index refuses the duplicate key. That is the dedupe the old
+    // ignoreDuplicates was asking for, arriving as an error instead of a null row.
+    mockMaybeSingle.mockResolvedValueOnce({
+      data: null,
+      error: { code: '23505', message: 'duplicate key value' },
+    });
 
     await adapter.queuePaymentIntent(
       {

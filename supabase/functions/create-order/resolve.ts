@@ -510,3 +510,175 @@ export function buildOrderRow(input: {
     intake_data: intake,
   };
 }
+
+// ─── #559 T025 / #1046: the retry branch ─────────────────────────────────────
+//
+// Retrying a payment used to be a CLIENT write: payment-service.ts upserted a child
+// row straight into payment_intents. It was broken in two independent ways, both
+// measured against production on 2026-08-31 and neither visible to its unit tests,
+// which stubbed the upsert's return value:
+//
+//   1. `{ onConflict: 'idempotency_key' }` through PostgREST emits a bare
+//      ON CONFLICT (idempotency_key). idx_payment_intents_idempotency_key is a
+//      PARTIAL unique index (WHERE idempotency_key IS NOT NULL), and Postgres will
+//      not infer a partial index without its predicate — so every call failed at
+//      plan time with 42501's cousin 42P10, HTTP 400, writing nothing. Not
+//      conflict-dependent: it failed for brand-new keys too.
+//   2. The child was given the PARENT's own idempotency_key, so once inference was
+//      fixed it collided with its own parent and DO NOTHING swallowed it.
+//
+// Both are unfixable from the browser — PostgREST cannot express the index
+// predicate — which is the same conclusion #559 reached from the security side.
+
+export const RETRY_LIMIT = 3; // FR-009
+export const COOLING_PERIOD_MS = 30_000; // FR-010, measured from parent.created_at
+
+export interface ParentIntentRow {
+  id: string;
+  template_user_id: string | null;
+  amount: number;
+  currency: string;
+  type: string;
+  interval: string | null;
+  customer_email: string;
+  description: string | null;
+  metadata: Record<string, unknown> | null;
+  idempotency_key: string | null;
+  retry_count: number;
+  created_at: string;
+  expires_at: string;
+}
+
+export type RetryRefusalCode =
+  | 'retry_not_found'
+  | 'retry_limit'
+  | 'retry_expired'
+  | 'retry_cooling';
+
+export type RetryDecision =
+  | {
+      kind: 'refuse';
+      status: number;
+      error: string;
+      code: RetryRefusalCode;
+      waitMs?: number;
+      retryCount?: number;
+    }
+  | { kind: 'proceed'; retryCount: number; rowKey: string };
+
+/**
+ * The child's row key, derived ONLY from the server-minted parent id.
+ *
+ * NOT from parent.idempotency_key. That value can originate in a client-supplied
+ * `Idempotency-Key` header on the original purchase, so deriving from it would let a
+ * buyer choose the namespace their own retries land in — and, by sending
+ * `Idempotency-Key: rty:<some intent id>:1` on a PURCHASE, plant a row that a later
+ * genuine retry of that intent would collide with, silently converting it into a
+ * no-op. parent.id is a uuid this database minted and no client can choose.
+ *
+ * Deterministic rather than random, so the one property the old client code did have
+ * survives: two clicks on Retry derive the same key, one wins the row, the other is a
+ * no-op and the caller is told the parent is still authoritative.
+ *
+ * This row-level key is the ONLY dedupe layer the retry branch uses. It deliberately
+ * does not claim a key in `edge_idempotency_keys` the way the purchase branch does:
+ * that store answers `unavailable` as distinct from `miss` and makes the caller choose
+ * between a 503 and a double charge, which is a real decision worth having for a
+ * purchase and pure cost for a retry whose uniqueness a UNIQUE index already
+ * guarantees. Both branches run as function_name='create-order', so a retry that DID
+ * claim the parent's checkout key would read as a HIT on the original purchase and
+ * replay that order's response — retrying nothing.
+ */
+export function childIdempotencyKey(
+  parentId: string,
+  retryCount: number
+): string {
+  return `rty:${parentId}:${retryCount}`;
+}
+
+/**
+ * Whether this retry may proceed. Pure, so CI can drive every branch — `index.ts` is
+ * unreachable from vitest (supabase/functions/** is excluded and no workflow runs
+ * `deno test`), so anything decided inline in the handler is decided where CI cannot
+ * see it. That is exactly how both defects above shipped.
+ */
+export function decideRetry(
+  parent: ParentIntentRow | null,
+  callerUserId: string,
+  nowMs: number
+): RetryDecision {
+  // Ownership is checked HERE or nowhere: the service-role client bypasses RLS. The
+  // same 404 as "no such intent", because distinguishing them lets anyone probe which
+  // ids exist — the same reasoning resolveOrder uses for a missing product.
+  if (!parent || parent.template_user_id !== callerUserId) {
+    return {
+      kind: 'refuse',
+      status: 404,
+      code: 'retry_not_found',
+      error: 'Cannot retry — original payment intent not found.',
+    };
+  }
+  if (parent.retry_count >= RETRY_LIMIT) {
+    return {
+      kind: 'refuse',
+      status: 429,
+      code: 'retry_limit',
+      retryCount: parent.retry_count,
+      error: `This payment has reached the maximum of ${RETRY_LIMIT} retry attempts.`,
+    };
+  }
+  if (new Date(parent.expires_at).getTime() < nowMs) {
+    return {
+      kind: 'refuse',
+      status: 410,
+      code: 'retry_expired',
+      error: 'This payment session has expired. Please start a new payment.',
+    };
+  }
+  const elapsed = nowMs - new Date(parent.created_at).getTime();
+  if (elapsed < COOLING_PERIOD_MS) {
+    const waitMs = COOLING_PERIOD_MS - elapsed;
+    return {
+      kind: 'refuse',
+      status: 429,
+      code: 'retry_cooling',
+      waitMs,
+      error: `Please wait ${Math.ceil(waitMs / 1000)}s before retrying.`,
+    };
+  }
+  const retryCount = parent.retry_count + 1;
+  return {
+    kind: 'proceed',
+    retryCount,
+    rowKey: childIdempotencyKey(parent.id, retryCount),
+  };
+}
+
+/**
+ * The child row. NOT re-priced from the catalog, deliberately: a retry is a second
+ * attempt at ONE purchase, and re-resolving would charge today's price for yesterday's
+ * agreement. Copying is safe precisely because of T027 — once the client INSERT grant
+ * is gone every parent was written by this function, so parent.amount is already a
+ * server-authored number that passed payment_intents_amount_check.
+ */
+export function buildRetryIntentRow(
+  parent: ParentIntentRow,
+  userId: string,
+  retryCount: number,
+  rowKey: string
+): Record<string, unknown> {
+  if (!userId) throw new Error('buildRetryIntentRow: userId is required');
+  return {
+    template_user_id: userId,
+    amount: parent.amount,
+    currency: parent.currency,
+    type: parent.type,
+    interval: parent.interval,
+    customer_email: parent.customer_email,
+    description: parent.description,
+    metadata: parent.metadata ?? {},
+    idempotency_key: rowKey,
+    parent_intent_id: parent.id,
+    retry_count: retryCount,
+  };
+}

@@ -162,27 +162,41 @@ export class PaymentQueueAdapter extends BaseOfflineQueue<PaymentQueueItem> {
       );
     }
 
+    // PLAIN INSERT, NOT UPSERT (#1046). This was
+    // `.upsert(..., { onConflict: 'idempotency_key', ignoreDuplicates: true })`, which
+    // PostgREST turns into a bare `ON CONFLICT (idempotency_key)`. The index is PARTIAL
+    // (`WHERE idempotency_key IS NOT NULL`) and Postgres will not infer a partial index
+    // without restating its predicate, which PostgREST has no syntax for. So every
+    // drain failed at plan time with SQLSTATE 42P10 / HTTP 400 and wrote nothing —
+    // including the first attempt, with nothing to conflict with. The whole offline
+    // payment queue has never drained.
+    //
+    // The dedupe it was reaching for still holds, from the other side: the unique index
+    // rejects a duplicate key with 23505, and that is handled below as "a previous
+    // attempt already created this row", which is exactly what ignoreDuplicates meant.
     const { data: inserted, error } = await supabase
       .from('payment_intents')
-      .upsert(
-        {
-          amount: data.amount as number,
-          currency: data.currency as string,
-          type: data.type as string,
-          interval: (data.interval as string) || null,
-          customer_email: data.customer_email as string,
-          description: (data.description as string) || null,
-          metadata: (data.metadata || {}) as Json,
-          template_user_id: userId,
-          idempotency_key: idempotencyKey,
-        },
-        { onConflict: 'idempotency_key', ignoreDuplicates: true }
-      )
+      .insert({
+        amount: data.amount as number,
+        currency: data.currency as string,
+        type: data.type as string,
+        interval: (data.interval as string) || null,
+        customer_email: data.customer_email as string,
+        description: (data.description as string) || null,
+        metadata: (data.metadata || {}) as Json,
+        template_user_id: userId,
+        idempotency_key: idempotencyKey,
+      })
       .select('id')
       .maybeSingle();
 
     if (error) {
-      throw new Error(`Failed to create payment intent: ${error.message}`);
+      // 23505 is the unique index doing the job the upsert was asking for: this
+      // queued operation already landed on a previous drain. Fall through to the
+      // not-inserted branch below, which marks the queue row completed.
+      if (error.code !== '23505') {
+        throw new Error(`Failed to create payment intent: ${error.message}`);
+      }
     }
 
     if (!inserted) {
