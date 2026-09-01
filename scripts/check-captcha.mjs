@@ -49,7 +49,34 @@ function arg(name, fallback) {
   return i !== -1 && process.argv[i + 1] ? process.argv[i + 1] : fallback;
 }
 
-const BASE = arg('base', process.env.CHECK_BASE || 'https://scripthammer.com');
+/**
+ * WHOSE SITE (#1054). This defaulted to `https://scripthammer.com`, so a fork running the
+ * preflight probed THIS repo's deployed bundle and reported on a site it does not own — and
+ * this script's exit 0 is an AUTHORIZATION ("safe to enable") for a change that is global to
+ * Supabase auth. It locked every user out once already, per the header above.
+ *
+ * There is no literal any more, and unlike the post-deploy checks this one REFUSES rather than
+ * skipping: the fitting precedent is `check-cache-headers.mjs` (#970), not `check-csp-header.mjs`.
+ * A skip here would print a reassuring line at the exact moment an operator is deciding whether
+ * to flip a destructive switch. Nothing may read this script's silence as consent.
+ *
+ * Code 2, not 1, matching the convention above and the sibling SITE_KEY guard below: this is
+ * "could not run the check", not "a link is broken".
+ */
+const BASE = (arg('base', process.env.CHECK_BASE) || '')
+  .trim()
+  .replace(/\/$/, '');
+
+if (!BASE) {
+  console.error(
+    'check-captcha: no site to check.\n' +
+      '  Pass --base https://your-site, or set CHECK_BASE in the environment.\n' +
+      '  Refusing rather than defaulting: exit 0 from this script authorises enabling a\n' +
+      '  captcha globally across sign-in, recovery and resend, so it must never be reported\n' +
+      '  against a site you did not name.'
+  );
+  process.exit(2);
+}
 const SITE_KEY = arg('site-key', process.env.NEXT_PUBLIC_CAPTCHA_SITE_KEY);
 const SECRET = process.env.TURNSTILE_SECRET;
 
@@ -78,8 +105,12 @@ try {
       .map((m) => m[1])
       .slice(0, 40);
     for (const c of chunks) {
-      const url = c.startsWith('http') ? c : `${BASE}${c.startsWith('/') ? '' : '/'}${c}`;
-      const body = await fetch(url).then((r) => r.text()).catch(() => '');
+      const url = c.startsWith('http')
+        ? c
+        : `${BASE}${c.startsWith('/') ? '' : '/'}${c}`;
+      const body = await fetch(url)
+        .then((r) => r.text())
+        .catch(() => '');
       if (body.includes(SITE_KEY)) {
         found = true;
         break;
@@ -92,11 +123,15 @@ try {
     found
       ? `${SITE_KEY} is served by ${BASE}`
       : `${SITE_KEY} is NOT in the deployed bundle — the build did not receive ` +
-        `NEXT_PUBLIC_CAPTCHA_SITE_KEY. A repo variable alone does nothing; the ` +
-        `workflow must pass it into the build step.`
+          `NEXT_PUBLIC_CAPTCHA_SITE_KEY. A repo variable alone does nothing; the ` +
+          `workflow must pass it into the build step.`
   );
 } catch (err) {
-  record('site key is in the deployed build', false, `could not fetch ${BASE}: ${err.message}`);
+  record(
+    'site key is in the deployed build',
+    false,
+    `could not fetch ${BASE}: ${err.message}`
+  );
 }
 
 // --- 2. secret is a real Turnstile secret ----------------------------------
@@ -115,8 +150,13 @@ if (!SECRET) {
   );
 } else {
   try {
-    const body = new URLSearchParams({ secret: SECRET, response: 'dummy-token' });
-    const res = await fetch(VERIFY, { method: 'POST', body }).then((r) => r.json());
+    const body = new URLSearchParams({
+      secret: SECRET,
+      response: 'dummy-token',
+    });
+    const res = await fetch(VERIFY, { method: 'POST', body }).then((r) =>
+      r.json()
+    );
     const codes = res['error-codes'] ?? [];
     const secretOk = !codes.includes('invalid-input-secret');
     record(
@@ -125,10 +165,14 @@ if (!SECRET) {
       secretOk
         ? `Cloudflare accepted the secret (rejected only the dummy token: ${JSON.stringify(codes)})`
         : `Cloudflare rejected the SECRET itself (${JSON.stringify(codes)}). Enabling ` +
-          `CAPTCHA with this secret refuses EVERY auth request, even with a valid token.`
+            `CAPTCHA with this secret refuses EVERY auth request, even with a valid token.`
     );
   } catch (err) {
-    record('secret is a valid Turnstile secret', false, `siteverify unreachable: ${err.message}`);
+    record(
+      'secret is a valid Turnstile secret',
+      false,
+      `siteverify unreachable: ${err.message}`
+    );
   }
 }
 
@@ -136,7 +180,9 @@ if (!SECRET) {
 const failed = results.filter((r) => !r.ok);
 console.log();
 if (failed.length) {
-  console.log(`❌ ${failed.length}/${results.length} check(s) failed — DO NOT enable CAPTCHA.`);
+  console.log(
+    `❌ ${failed.length}/${results.length} check(s) failed — DO NOT enable CAPTCHA.`
+  );
   process.exit(1);
 }
 console.log(

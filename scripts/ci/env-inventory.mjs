@@ -60,11 +60,11 @@ export const GROUPS = [
     [
       [
         'NEXT_PUBLIC_DEPLOY_URL',
-        "Canonicals, sitemap, robots.txt and og:image fall back to a github.io origin. retain-previous-assets.mjs crawls the TEMPLATE's site instead of yours.",
+        'Canonicals, sitemap, robots.txt and og:image fall back to a github.io origin. Also used as a fallback for asset retention when NEXT_PUBLIC_SITE_URL is unset.',
       ],
       [
         'NEXT_PUBLIC_SITE_URL',
-        'Same family: the origin the app reports as its own.',
+        'Same family: the origin the app reports as its own. This is the one retain-previous-assets.mjs reads for asset retention; unset (and with no NEXT_PUBLIC_DEPLOY_URL either) each deploy carries nothing forward.',
       ],
       ['NEXT_PUBLIC_BASE_URL', 'Same family.'],
       [

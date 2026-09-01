@@ -45,14 +45,30 @@ import { mkdir, writeFile, access, readdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 const [outDir, liveBase] = process.argv.slice(2);
-if (!outDir || !liveBase) {
+if (!outDir) {
   console.error(
     'usage: node scripts/retain-previous-assets.mjs <output-dir> <live-base-url>'
   );
   process.exit(2);
 }
 
-const BASE = liveBase.replace(/\/$/, '');
+/**
+ * An ABSENT base is handled further down, not here (#1054).
+ *
+ * `deploy.yml` used to pass `"${SITE_URL:-https://scripthammer.com}"`, so a fork with
+ * `NEXT_PUBLIC_SITE_URL` unset crawled THIS repo's live site and copied its hashed assets into
+ * the fork's own deploy — not merely a green check about someone else's host, but foreign files
+ * shipped in the artifact. CLAUDE.md names this one directly: "falls back to crawling
+ * scripthammer.com rather than your own site — printing 'retained N asset(s)' as though it
+ * worked."
+ *
+ * Refusing here would be wrong for a reason specific to this script: the skip must still
+ * publish a manifest, and `publishManifest()` closes over `ages`, `firstSeen` and `NOW`, none of
+ * which exist yet at this point in the file. Exiting here — as the old `!liveBase` branch did —
+ * ships a manifest-less build, which is exactly the two-degraded-deploys failure the function's
+ * own header describes. So the check lives below those declarations.
+ */
+const BASE = (liveBase ?? '').trim().replace(/\/$/, '');
 const ASSET_RE = /(?:href|src)="([^"]*\/_next\/static\/[^"]+)"/g;
 /** Chunk paths appear as bare strings inside the runtime, not as attributes. */
 const CHUNK_RE =
@@ -191,6 +207,19 @@ const RETAIN_MAX_FILES = Number(process.env.RETAIN_MAX_FILES ?? 800);
 
 const DAY_MS = 86_400_000;
 const NOW = Date.now();
+
+if (!BASE) {
+  // Nothing to retain FROM, which is not the same as nothing to publish. The build's own
+  // output is always knowable, so the ledger is still written — a fork's first deploy then has
+  // a valid, empty-of-carried-assets manifest instead of none at all.
+  console.log(
+    '[retain] no live site to retain from — set NEXT_PUBLIC_SITE_URL (Settings → Secrets and ' +
+      "variables → Actions → Variables) to the site you deploy. Publishing this build's own " +
+      'manifest and continuing.'
+  );
+  await publishManifest();
+  process.exit(0);
+}
 
 /**
  * Publish `ASSET_MANIFEST.txt` + `ASSET_AGES.txt` describing what is on disk.

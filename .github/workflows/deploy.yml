@@ -272,10 +272,19 @@ jobs:
       - name: Retain previous builds' assets and write the manifest (#476, #548)
         continue-on-error: true
         run: |
-          node scripts/retain-previous-assets.mjs merged-output \
-            "${SITE_URL:-https://scripthammer.com}"
+          # No `:-` fallback (#1054): a fork with NEXT_PUBLIC_SITE_URL unset used to crawl
+          # ScriptHammer's live site and copy ITS hashed assets into the fork's own deploy.
+          # The script now skips, still publishing this build's own manifest.
+          node scripts/retain-previous-assets.mjs merged-output "$SITE_URL"
         env:
-          SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
+          # Either variable, because the fork docs named the WRONG one for years (#1054):
+          # this is the only consumer that reads NEXT_PUBLIC_SITE_URL for retention, while the
+          # checklist and the deck both attributed the consequence to NEXT_PUBLIC_DEPLOY_URL.
+          # A fork that followed the checklist would otherwise get an unexplained skip.
+          # The KEY stays `SITE_URL`: `deploy-passes-what-code-reads.test.js` greps this file
+          # for `NEXT_PUBLIC_*: ${{ ... }}` with no notion of step boundaries, so naming it
+          # NEXT_PUBLIC_SITE_URL here would satisfy that guard falsely (see :210-213).
+          SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || vars.NEXT_PUBLIC_DEPLOY_URL }}
           # HOW LONG an asset is carried. Stated in days because the exposure is a
           # duration: how long a visitor may still be holding a document.
           #

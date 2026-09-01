@@ -197,14 +197,14 @@ whole list is here rather than the four that usually matter.
 
 #### Makes the site advertise the wrong address
 
-| Value                                  | Tab      | Without it                                                                                                                                            |
-| -------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_DEPLOY_URL`               | Variable | Canonicals, sitemap, robots.txt and og:image fall back to a github.io origin. retain-previous-assets.mjs crawls the TEMPLATE's site instead of yours. |
-| `NEXT_PUBLIC_SITE_URL`                 | Variable | Same family: the origin the app reports as its own.                                                                                                   |
-| `NEXT_PUBLIC_BASE_URL`                 | Variable | Same family.                                                                                                                                          |
-| `NEXT_PUBLIC_PROJECT_NAME`             | Variable | Overrides the name detect-project.js derives from the git remote. Usually unnecessary.                                                                |
-| `NEXT_PUBLIC_PROJECT_OWNER`            | Variable | Overrides the owner detect-project.js derives from the git remote.                                                                                    |
-| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Variable | The Search Console meta tag is skipped, so verification never ships and nothing says so (#917).                                                       |
+| Value                                  | Tab      | Without it                                                                                                                                                                                                       |
+| -------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `NEXT_PUBLIC_DEPLOY_URL`               | Variable | Canonicals, sitemap, robots.txt and og:image fall back to a github.io origin. Also used as a fallback for asset retention when NEXT_PUBLIC_SITE_URL is unset.                                                    |
+| `NEXT_PUBLIC_SITE_URL`                 | Variable | Same family: the origin the app reports as its own. This is the one retain-previous-assets.mjs reads for asset retention; unset (and with no NEXT_PUBLIC_DEPLOY_URL either) each deploy carries nothing forward. |
+| `NEXT_PUBLIC_BASE_URL`                 | Variable | Same family.                                                                                                                                                                                                     |
+| `NEXT_PUBLIC_PROJECT_NAME`             | Variable | Overrides the name detect-project.js derives from the git remote. Usually unnecessary.                                                                                                                           |
+| `NEXT_PUBLIC_PROJECT_OWNER`            | Variable | Overrides the owner detect-project.js derives from the git remote.                                                                                                                                               |
+| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Variable | The Search Console meta tag is skipped, so verification never ships and nothing says so (#917).                                                                                                                  |
 
 #### Author identity on posts and the about surface
 

@@ -28,17 +28,58 @@
  * degrades a feature while a missing stylesheet destroys the entire page.
  *
  * Usage:
- *   node scripts/ci/check-retained-assets.mjs [base-url]
- *   BASE=https://scripthammer.com node scripts/ci/check-retained-assets.mjs
+ *   node scripts/ci/check-retained-assets.mjs <base-url>
+ *   BASE=https://example.com node scripts/ci/check-retained-assets.mjs
+ *
+ * With no base it SKIPS (exit 0) rather than probing a hardcoded site (#1054).
  *
  * Exits 1 if any retained asset is gone.
  */
 
-const BASE = (
-  process.argv[2] ||
-  process.env.BASE ||
-  'https://scripthammer.com'
-).replace(/\/$/, '');
+/**
+ * WHOSE SITE (#1054). This used to fall back to `https://scripthammer.com`, and so did the
+ * `${SITE:-…}` in `smoke.yml` that calls it — TWO stacked literals, so removing either alone
+ * changed nothing. A fork with `NEXT_PUBLIC_DEPLOY_URL` unset therefore probed THIS repo and
+ * reported `MISSING 0 … OK — every asset the deploy promised to retain is still served`.
+ *
+ * That is the worst possible shape for this particular check. Its whole job is to be the
+ * unstyled-production detector, so a fork's detector was permanently green while measuring a
+ * different host entirely. CLAUDE.md already documented the sibling case for
+ * `retain-previous-assets.mjs`; this is the verification half of the same pair.
+ *
+ * There is no literal any more. An empty base means there is nothing to check, and that is a
+ * SKIP — see below for why skip rather than refuse.
+ */
+const BASE = (process.argv[2] || process.env.BASE || '')
+  .trim()
+  .replace(/\/$/, '');
+
+if (!BASE) {
+  /**
+   * SKIP, not refuse — the opposite of the choice `check-cache-headers.mjs` makes (#970), and
+   * deliberately so.
+   *
+   * Refusing would be defensible: unlike a Cloudflare rule or a DMARC record, every fork that
+   * runs `deploy.yml` really does publish a ledger, so an empty base here is pure
+   * misconfiguration rather than a thing a fork legitimately lacks.
+   *
+   * What decides it is that a fork would then be red in BOTH configurations. `RETIMED_AT`
+   * below is a hardcoded absolute date from THIS repo's history, so a fork that configures the
+   * variable CORRECTLY still exits 1 with "retention covers only 0.0 day(s)" for roughly its
+   * first two weeks (tracked separately). Handing a fork a red check whether or not it follows
+   * the instructions teaches it to ignore the check.
+   *
+   * Operationally refusal buys nothing here either: `smoke.yml` has no `pull_request` trigger,
+   * so exit 1 gates no merge — it only reds an Actions tab. The harm #1054 names is a false
+   * MEASUREMENT of someone else's host, and a printed skip cannot be mistaken for coverage the
+   * way `MISSING 0` against scripthammer.com can.
+   */
+  console.log(
+    '[retained-assets] skipped — no site to check. Set NEXT_PUBLIC_DEPLOY_URL (Settings → ' +
+      'Secrets and variables → Actions → Variables) to the site you deploy.'
+  );
+  process.exit(0);
+}
 const MANIFEST = `${BASE}/_next/static/ASSET_MANIFEST.txt`;
 const AGES = `${BASE}/_next/static/ASSET_AGES.txt`;
 const CONCURRENCY = 12;
