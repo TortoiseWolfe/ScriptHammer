@@ -37,11 +37,20 @@ jobs:
   smoke:
     name: Production @smoke (live origin)
     # Post-deploy runs proceed only if the deploy succeeded; other triggers always run.
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    #
+    # AND a production URL must be configured (#1054). `BASE_URL` below was the flat literal
+    # `https://scripthammer.com` with no variable at all — worse than the `:-` fallbacks
+    # elsewhere in this file, because a fork could not override it without editing the workflow.
+    # Every @smoke test in a fork therefore ran against THIS site. Left empty instead, Playwright
+    # falls back to `http://localhost:3000` (playwright.config.ts:105) and the whole suite fails
+    # against nothing, so not running is the honest outcome: there is no production to smoke.
+    # Safe to gate this way — smoke.yml has no `pull_request` trigger and is not a required
+    # check, so a skipped job blocks no merge.
+    if: ${{ (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success') && vars.NEXT_PUBLIC_DEPLOY_URL != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      BASE_URL: https://scripthammer.com
+      BASE_URL: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
@@ -85,7 +94,11 @@ jobs:
       - name: Retained assets are still served (unstyled-production detector)
         env:
           SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
-        run: node scripts/ci/check-retained-assets.mjs "${SITE:-https://scripthammer.com}"
+        # No `:-` fallback (#1054). This and the script's own literal were STACKED, so
+        # removing either alone changed nothing: a fork probed scripthammer.com and printed
+        # "MISSING 0 … OK", i.e. its unstyled-production detector was green about someone
+        # else's assets. The script now skips on an empty base.
+        run: node scripts/ci/check-retained-assets.mjs "$SITE"
 
       # The step above guards the MITIGATION; this one guards the CURE (#635).
       #
