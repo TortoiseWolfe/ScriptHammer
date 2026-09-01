@@ -117,7 +117,11 @@ describe('payment ceiling', () => {
     // Guards the guard. If the seed format drifts, seededProducts() throws — but
     // only if something calls it, and only if the count check is real.
     const rows = seededProducts();
-    expect(rows).toHaveLength(11);
+    // EXACT, not a floor: this catches a parser that finds too few AND a catalog that
+    // grew without anyone noticing. 11 -> 12 when `demo-checkout` was added for
+    // #559 T025, so /payment-demo could price from the catalog once the browser lost
+    // its INSERT grant. Bump this deliberately, and name the SKU when you do.
+    expect(rows).toHaveLength(12);
     expect(rows.map((r) => r.sku)).toContain('svc-site');
     expect(rows.find((r) => r.sku === 'svc-site')?.amount).toBe(350000);
     // The three recurring SKUs ship inactive until they have provider ids.

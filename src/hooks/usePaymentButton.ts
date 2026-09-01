@@ -34,9 +34,10 @@ export interface UsePaymentButtonOptions {
   /**
    * Catalog SKU (`products.id`, e.g. `svc-care-pro`).
    *
-   * REQUIRED when `type === 'recurring'` — the server resolves the Stripe Price
-   * from this row, so the browser never names a price (#772/#559). Optional for
-   * one-time payments, which price through `create-order` instead.
+   * REQUIRED for every payment now (#559 T025), not just recurring ones. It was
+   * optional for one-time payments while the browser INSERTed its own intent and
+   * named its own amount; that write is gone, so the price resolves from this row.
+   * A one-time button without it throws before any request is made.
    */
   productId?: string;
   description?: string;
@@ -146,6 +147,10 @@ export function usePaymentButton(
         description: options.description,
         metadata: options.metadata,
         parent_intent_id: options.parentIntentId,
+        // REQUIRED now (#559 T025). The browser no longer writes payment_intents, so
+        // create-order prices the intent from this SKU; `amount` above is a request
+        // honoured only for a variable-amount row, within its bounds.
+        product_id: options.productId,
       }
     );
 

@@ -501,7 +501,28 @@ VALUES
   ('tip-jar', 'product', 'Tip Jar', 'The template is free and stays free. This is only if you want to.',
    1500, 'variable', 100, 50000, 'one_time', NULL,
    '["Suggested $5 / $15 / $50","Nothing is gated","Any amount, once"]'::jsonb,
-   '{"presets":[500,1500,5000],"whole_dollars_only":true}'::jsonb, 50, true)
+   '{"presets":[500,1500,5000],"whole_dollars_only":true}'::jsonb, 50, true),
+
+  -- /payment-demo's two one-time buttons ($20.00 Stripe, $15.00 PayPal), #559 T025.
+  --
+  -- They exist so a fork can drive a real Stripe and a real PayPal leg end to end, and
+  -- until now they did it by naming their own amount in the browser: PaymentButton took
+  -- `amount={2000}` and the client INSERTed an intent for it. Once the client INSERT
+  -- grant goes (T027) every intent must price from this table like any other purchase,
+  -- so the demo needs a row.
+  --
+  -- Variable because one SKU serves two different amounts, and capped at $50 so a
+  -- misconfigured fork's blast radius is a rounding error. This is STRICTLY NARROWER
+  -- than what it replaces: today the browser can name any amount at all.
+  --
+  -- It does not appear in the storefront. /pricing renders hardcoded BUSINESS and
+  -- DEVELOPERS arrays rather than querying products, so adding a row here lists it
+  -- nowhere; it is reachable only by naming the id, which is what /payment-demo does.
+  ('demo-checkout', 'product', 'Demo Payment',
+   'A real charge against the template''s payment demo.',
+   2000, 'variable', 100, 5000, 'one_time', NULL,
+   '["Exercises the full Stripe and PayPal legs","Any amount from $1 to $50"]'::jsonb,
+   '{"demo":true}'::jsonb, 90, true)
 ON CONFLICT (id) DO UPDATE SET
   lane = EXCLUDED.lane, name = EXCLUDED.name, tagline = EXCLUDED.tagline,
   amount = EXCLUDED.amount, amount_mode = EXCLUDED.amount_mode,

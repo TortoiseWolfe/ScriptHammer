@@ -53,6 +53,13 @@ export interface CreatePaymentIntentInput {
   customer_email: string;
   description?: string;
   metadata?: Record<string, unknown>;
+  /**
+   * Catalog SKU. Carried into the offline queue so a drain can replay the payment
+   * through `create-order` rather than writing payment_intents itself (#559 T025).
+   * A queue row written before this shipped has none, which the drain reports rather
+   * than guessing a product.
+   */
+  product_id?: string;
 }
 
 // ============================================================================
