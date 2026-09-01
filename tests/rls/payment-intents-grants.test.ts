@@ -43,13 +43,18 @@ const DB = {
 /**
  * What each client role is allowed to hold.
  *
- * `authenticated` keeps INSERT until #559 T025 moves the three client write sites behind
- * an Edge Function; removing it before then breaks payments silently rather than loudly,
- * which is why #559 calls its own ordering load-bearing.
+ * SELECT ONLY, both roles, as of #559 T027. The three client write sites moved behind
+ * the create-order Edge Function (T025, #1047 and #1048), T026 confirmed none remained,
+ * and only then was INSERT revoked — in that order, because dropping the grant while an
+ * unmigrated write site existed would have broken payments silently rather than loudly.
+ *
+ * Reading stays: /payment-result shows a buyer their own intent. Writing is create-order's
+ * job, because it is the only place that can price a purchase from the catalog or
+ * authorise a retry.
  */
 const ALLOWED: Record<string, string[]> = {
   anon: ['SELECT'],
-  authenticated: ['INSERT', 'SELECT'],
+  authenticated: ['SELECT'],
 };
 
 describe.skipIf(!hasRlsTestEnvironment())(

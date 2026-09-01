@@ -81,6 +81,47 @@ test('no client code writes payment_intents (#559 T026)', () => {
   );
 });
 
+test('the migration matches: no INSERT grant, and a false INSERT policy (#559 T027)', () => {
+  // The source half of what was applied to production. Both lines matter and they do
+  // different jobs: the REVOKE takes the privilege back on an already-provisioned
+  // database (narrowing the GRANT alone changes nothing there -- #565/#897), and the
+  // false policy states the intent out loud where the next reader will find it.
+  const sql = fs
+    .readFileSync(
+      path.join(
+        __dirname,
+        '../../supabase/migrations/20251006_complete_monolithic_setup.sql'
+      ),
+      'utf8'
+    )
+    .split('\n')
+    .map((l) => {
+      const i = l.indexOf('--');
+      return i === -1 ? l : l.slice(0, i);
+    })
+    .join('\n');
+
+  assert.match(
+    sql,
+    /GRANT SELECT ON payment_intents TO authenticated;/,
+    'authenticated must hold SELECT only on payment_intents'
+  );
+  assert.ok(
+    !/GRANT SELECT, INSERT ON payment_intents TO authenticated/.test(sql),
+    'the INSERT grant must be gone (#559 T027)'
+  );
+  assert.match(
+    sql,
+    /REVOKE INSERT[^;]*ON payment_intents FROM authenticated;/,
+    'INSERT must be REVOKEd from authenticated, not merely omitted from the GRANT'
+  );
+  assert.match(
+    sql,
+    /CREATE POLICY "Payment intents are server-written" ON payment_intents\s*\n\s*FOR INSERT WITH CHECK \(false\);/,
+    'the INSERT policy must state the refusal rather than be absent'
+  );
+});
+
 test('the detector can actually fail (control)', () => {
   // Without this, deleting the regex body would leave the test above green.
   const synthetic = `

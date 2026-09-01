@@ -150,9 +150,9 @@ describe('production schema-drift comparator (#903)', () => {
     // INTENDED here was not updated. Opposite meaning, so it must read differently.
     const { evaluate, INTENDED } = await load();
     const obs = healthy(INTENDED);
-    obs.payment_intents.grants.authenticated = ['SELECT'];
+    obs.payment_intents.grants.authenticated = [];
     const problems = evaluate(obs, INTENDED).join('\n');
-    assert.match(problems, /NARROWER, missing INSERT/);
+    assert.match(problems, /NARROWER, missing SELECT/);
     assert.doesNotMatch(problems, /WIDER/);
   });
 
@@ -329,7 +329,7 @@ describe('production schema-drift comparator (#903)', () => {
     );
     assert.deepStrictEqual(
       INTENDED.tables.payment_intents.grants,
-      { anon: ['SELECT'], authenticated: ['INSERT', 'SELECT'] },
+      { anon: ['SELECT'], authenticated: ['SELECT'] },
       'the partial-revoke arithmetic must subtract from the platform default, not from {}'
     );
   });

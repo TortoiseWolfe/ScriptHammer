@@ -1009,9 +1009,23 @@ DROP POLICY IF EXISTS "Users can view own payment intents" ON payment_intents;
 CREATE POLICY "Users can view own payment intents" ON payment_intents
   FOR SELECT USING (auth.uid() = template_user_id);
 
+-- #559 T027. The browser is not a writer of payment_intents any more.
+--
+-- Every row is written by the create-order Edge Function under service_role, which is
+-- the only place that can price a purchase from the catalog or authorise a retry
+-- (cap, cooling period, expiry, lineage). The policy this replaces read
+-- `WITH CHECK (auth.uid() = template_user_id)`, and that only ever checked WHOSE row
+-- it was -- RLS restricts ROWS, never COLUMNS -- so the buyer still chose `amount`,
+-- `currency`, `type` and `parent_intent_id` and nothing had an opinion about any of it.
+--
+-- Kept as a FALSE policy rather than deleted, for the same reason "Payment intents are
+-- immutable" is a policy rather than an absence: an absent policy and a false policy
+-- behave identically, and only one of them says so out loud to the next reader and to
+-- tests/rls. The grant below is what actually removes the privilege.
 DROP POLICY IF EXISTS "Users can create own payment intents" ON payment_intents;
-CREATE POLICY "Users can create own payment intents" ON payment_intents
-  FOR INSERT WITH CHECK (auth.uid() = template_user_id);
+DROP POLICY IF EXISTS "Payment intents are server-written" ON payment_intents;
+CREATE POLICY "Payment intents are server-written" ON payment_intents
+  FOR INSERT WITH CHECK (false);
 
 DROP POLICY IF EXISTS "Payment intents are immutable" ON payment_intents;
 CREATE POLICY "Payment intents are immutable" ON payment_intents
@@ -2362,7 +2376,12 @@ GRANT EXECUTE ON FUNCTION admin_overview(TIMESTAMPTZ, TIMESTAMPTZ) TO authentica
 -- leave the privilege in place on every database that already ran the old line.
 -- Correcting the file without correcting the databases it already provisioned is
 -- the "a migration file is not a migration" trap CLAUDE.md records.
-GRANT SELECT, INSERT ON payment_intents TO authenticated;
+-- SELECT only (#559 T027). Reading your own intents is how /payment-result works;
+-- writing them is create-order's job. INSERT moved to the REVOKE below, because on an
+-- already-provisioned database narrowing this GRANT changes nothing -- the wider
+-- privilege is already held, and only a REVOKE takes it back. That is the trap #565
+-- fell into and #897 documented.
+GRANT SELECT ON payment_intents TO authenticated;
 -- #897: the GRANT above describes the INTENT, never the effective state. Supabase's
 -- platform defaults hand `anon` and `authenticated` ALL privileges on every table in
 -- `public`, granted by the platform rather than by this file, so a narrower GRANT here
@@ -2381,7 +2400,7 @@ GRANT SELECT, INSERT ON payment_intents TO authenticated;
 -- via the Management API on 2026-08-21; these lines are what a FRESH database gets.
 -- `tests/rls/payment-intents-grants.test.ts` asserts the effective grants rather than
 -- trusting these lines, since trusting the file is what hid this for so long.
-REVOKE UPDATE, DELETE, TRUNCATE, TRIGGER, REFERENCES ON payment_intents FROM authenticated;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE, TRIGGER, REFERENCES ON payment_intents FROM authenticated;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE, TRIGGER, REFERENCES ON payment_intents FROM anon;
 GRANT SELECT ON payment_results TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON subscriptions TO authenticated;

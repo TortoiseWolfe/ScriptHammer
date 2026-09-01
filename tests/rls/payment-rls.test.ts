@@ -43,12 +43,13 @@ describe.skipIf(!hasRlsTestEnvironment())(
         TEST_USERS.userB.password
       );
 
-      // Seed an intent for userA via authenticated client
-      const clientA = await createAuthenticatedClient(
-        TEST_USERS.userA.email,
-        TEST_USERS.userA.password
-      );
-      const { data, error } = await clientA
+      // Seed via the SERVICE ROLE. It used to seed through an authenticated client,
+      // which stopped working when #559 T027 revoked the browser's INSERT — every row
+      // is written by the create-order Edge Function under service_role now. A fixture
+      // that seeds the way the product no longer writes is testing a path that does
+      // not exist.
+      const svcSeed = createServiceClient();
+      const { data, error } = await svcSeed
         .from('payment_intents')
         .insert({
           template_user_id: userA.id,
@@ -101,32 +102,31 @@ describe.skipIf(!hasRlsTestEnvironment())(
       expect(data).toHaveLength(0);
     });
 
-    it('user can INSERT own payment intent', async () => {
+    it('user CANNOT insert even their own payment intent (#559 T027)', async () => {
+      // This asserted the opposite until T027. The browser is not a writer of
+      // payment_intents any more: create-order is the only place that can price a
+      // purchase from the catalog or authorise a retry, so a row the browser composed
+      // is a price the buyer chose. Refused at the GRANT, before RLS is consulted —
+      // which is why it reads 42501 rather than a policy violation.
       const clientA = await createAuthenticatedClient(
         TEST_USERS.userA.email,
         TEST_USERS.userA.password
       );
-      const { data, error } = await clientA
-        .from('payment_intents')
-        .insert({
-          template_user_id: userA.id,
-          amount: 500,
-          currency: 'eur',
-          type: 'one_time',
-          customer_email: TEST_USERS.userA.email,
-        })
-        .select()
-        .single();
+      const { error } = await clientA.from('payment_intents').insert({
+        template_user_id: userA.id,
+        amount: 500,
+        currency: 'eur',
+        type: 'one_time',
+        customer_email: TEST_USERS.userA.email,
+      });
 
-      expect(error).toBeNull();
-      expect(data?.amount).toBe(500);
-
-      // Clean up
-      const svc = createServiceClient();
-      await svc.from('payment_intents').delete().eq('id', data!.id);
+      expect(error).not.toBeNull();
+      expect(error?.code).toBe('42501');
     });
 
     it('user cannot INSERT intent for another user', async () => {
+      // Still refused, and now at the grant rather than the policy — so it holds even
+      // for a row whose template_user_id would have satisfied WITH CHECK.
       const clientA = await createAuthenticatedClient(
         TEST_USERS.userA.email,
         TEST_USERS.userA.password
@@ -269,12 +269,12 @@ describe.skipIf(!hasRlsTestEnvironment())(
         TEST_USERS.userB.password
       );
 
-      // Create intent for userA, then result via service role
-      const clientA = await createAuthenticatedClient(
-        TEST_USERS.userA.email,
-        TEST_USERS.userA.password
-      );
-      const { data: intent } = await clientA
+      // Intent AND result both via service role. The intent used to be seeded through
+      // an authenticated client; #559 T027 revoked the browser's INSERT, and this
+      // failed as `Cannot read properties of null (reading 'id')` — a null row from a
+      // refused insert, one describe block downstream of where the refusal happened.
+      const svc0 = createServiceClient();
+      const { data: intent, error: intentError } = await svc0
         .from('payment_intents')
         .insert({
           template_user_id: userA.id,
@@ -285,7 +285,13 @@ describe.skipIf(!hasRlsTestEnvironment())(
         })
         .select()
         .single();
-      intentIdA = intent!.id;
+      if (intentError || !intent) {
+        // Fail where the seed failed, not three assertions later on a null id.
+        throw new Error(
+          `Seed intent failed: ${intentError?.message ?? 'no row'}`
+        );
+      }
+      intentIdA = intent.id;
 
       // Results can only be inserted by service_role
       const svc = createServiceClient();
