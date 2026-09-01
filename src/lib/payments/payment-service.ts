@@ -125,6 +125,16 @@ export async function createPaymentIntent(
      * path. Optional; omitted for normal first-attempt payments.
      */
     parent_intent_id?: string;
+    /**
+     * Catalog SKU. REQUIRED (#559 T025).
+     *
+     * The browser no longer writes payment_intents, so the price has to resolve from
+     * `products` server-side. `amount` above is now a REQUEST, honoured only for a
+     * SKU whose `amount_mode` is 'variable' and only inside its min/max — a fixed SKU
+     * ignores it entirely. That is the whole point: an amount the browser names is an
+     * amount the buyer can choose.
+     */
+    product_id?: string;
   }
 ): Promise<PaymentIntent> {
   // Require authentication (REQ-SEC-001)
@@ -133,6 +143,15 @@ export async function createPaymentIntent(
   // Validate inputs
   validatePaymentAmount(amount);
   validateCurrency(currency);
+
+  // The catalog SKU is how the server prices this (#559 T025). Refusing here, loudly,
+  // beats letting the request reach create-order and come back as a generic 400.
+  const productId = options?.product_id?.trim();
+  if (!productId) {
+    throw new Error(
+      'A product_id is required to start a payment — the price resolves from the catalog'
+    );
+  }
 
   // Sanitize email (prevent injection, normalize for deduplication)
   const sanitizedEmail = customerEmail.trim().toLowerCase();
@@ -161,13 +180,15 @@ export async function createPaymentIntent(
     interval: options?.interval,
     description: options?.description,
     metadata: sanitizedMetadata,
+    product_id: productId,
   };
 
   // Check if online
   const isOnline = await isSupabaseOnline();
 
   if (!isOnline) {
-    // Queue for later
+    // Queue for later. product_id rides along so the drain can replay this through
+    // create-order rather than writing the row itself (#559 T025).
     await queueOperation('payment_intent', intentData, userId);
     throw new Error(
       'You are offline. Payment has been queued and will be processed when connection returns.'
@@ -175,22 +196,45 @@ export async function createPaymentIntent(
   }
 
   try {
+    // SERVER-SIDE (#559 T025). This was a direct .insert() into payment_intents, which
+    // meant the browser chose `amount`, `currency`, `type` and `parent_intent_id` and
+    // RLS had nothing to say about any of them — RLS restricts ROWS, never COLUMNS, so
+    // `WITH CHECK (auth.uid() = template_user_id)` only ever checked whose row it was,
+    // never what was in it. create-order resolves the price from the catalog instead.
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    if (!token) throw new Error('You must be signed in to start a payment');
+
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-order`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          product_id: productId,
+          buyer_email: sanitizedEmail,
+          // A REQUEST, not an instruction. create-order honours it only for a
+          // variable-amount SKU and only within that row's min/max bounds.
+          amount,
+        }),
+      }
+    );
+    const payload = (await res.json().catch(() => ({}))) as {
+      intent_id?: string;
+      error?: string;
+    };
+    if (!res.ok || !payload.intent_id) {
+      throw new Error(payload.error || 'Could not start this payment');
+    }
+
+    // SELECT is still granted to the browser; only INSERT is going away (T027).
     const { data, error } = await supabase
       .from('payment_intents')
-      .insert({
-        amount: intentData.amount,
-        currency: intentData.currency,
-        type: intentData.type,
-        interval: intentData.interval || null,
-        customer_email: intentData.customer_email,
-        description: intentData.description || null,
-        metadata: (intentData.metadata || {}) as Json,
-        template_user_id: userId, // REQ-SEC-001: Use authenticated user ID
-        ...(options?.parent_intent_id && {
-          parent_intent_id: options.parent_intent_id,
-        }),
-      })
-      .select()
+      .select('*')
+      .eq('id', payload.intent_id)
       .single();
 
     if (error) throw error;

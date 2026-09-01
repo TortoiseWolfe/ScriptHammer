@@ -31,8 +31,13 @@ vi.mock('@/lib/supabase/client', () => ({
       ),
     },
     from: vi.fn(() => ({
-      insert: vi.fn(() => ({
-        select: vi.fn(() => ({
+      // ONE `select` key. There used to be two in this literal — a later duplicate
+      // silently overwrote the earlier one, because in an object literal the last key
+      // wins. The chain therefore has to serve both shapes createPaymentIntent and the
+      // history queries use: .eq().single() reads one row back after create-order
+      // wrote it (#559 T025), .eq().order().limit() lists.
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
           single: vi.fn(() => ({
             data: {
               id: 'test-intent-123',
@@ -46,15 +51,8 @@ vi.mock('@/lib/supabase/client', () => ({
             },
             error: null,
           })),
-        })),
-      })),
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
           order: vi.fn(() => ({
-            limit: vi.fn(() => ({
-              data: [],
-              error: null,
-            })),
+            limit: vi.fn(() => ({ data: [], error: null })),
           })),
         })),
       })),
@@ -73,23 +71,53 @@ describe('Payment Service', () => {
   });
 
   describe('createPaymentIntent', () => {
-    it('should create a payment intent with correct parameters', async () => {
+    beforeEach(() => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: true,
+          status: 200,
+          json: async () => ({ intent_id: 'test-intent-123' }),
+        }))
+      );
+    });
+
+    it('prices through create-order and returns the row it wrote', async () => {
       const intent = await createPaymentIntent(
         2000,
         'usd',
         'one_time',
-        'test@example.com'
+        'test@example.com',
+        { product_id: 'demo-checkout' }
       );
 
       expect(intent).toBeDefined();
       expect(intent.id).toBe('test-intent-123');
       expect(intent.amount).toBe(2000);
       expect(intent.currency).toBe('usd');
+
+      // The catalog SKU is what the server prices from; `amount` is only a request.
+      const body = JSON.parse(
+        (vi.mocked(fetch).mock.calls[0][1] as RequestInit).body as string
+      );
+      expect(body.product_id).toBe('demo-checkout');
+      expect(body.buyer_email).toBe('test@example.com');
+    });
+
+    it('refuses without a product_id, before making any request (#559 T025)', async () => {
+      // The browser cannot name a price any more. Failing here is louder than
+      // letting create-order return a generic 400.
+      await expect(
+        createPaymentIntent(2000, 'usd', 'one_time', 'test@example.com')
+      ).rejects.toThrow(/product_id is required/);
+      expect(fetch).not.toHaveBeenCalled();
     });
 
     it('should throw error for invalid email', async () => {
       await expect(
-        createPaymentIntent(2000, 'usd', 'one_time', 'invalid-email')
+        createPaymentIntent(2000, 'usd', 'one_time', 'invalid-email', {
+          product_id: 'demo-checkout',
+        })
       ).rejects.toThrow('Invalid email address');
     });
 
@@ -103,6 +131,7 @@ describe('Payment Service', () => {
           interval: 'month',
           description: 'Test subscription',
           metadata: { plan: 'premium' },
+          product_id: 'svc-care',
         }
       );
 

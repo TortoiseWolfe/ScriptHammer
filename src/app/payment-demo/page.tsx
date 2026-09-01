@@ -195,6 +195,7 @@ function PaymentDemoContent() {
                   amount={2000}
                   currency="usd"
                   type="one_time"
+                  productId="demo-checkout"
                   customerEmail={user?.email || 'demo@example.com'}
                   description="Demo Product - $20.00"
                   buttonText="Pay $20.00 (One-Time)"
@@ -237,6 +238,7 @@ function PaymentDemoContent() {
                   amount={1500}
                   currency="usd"
                   type="one_time"
+                  productId="demo-checkout"
                   customerEmail={user?.email || 'demo@example.com'}
                   description="Demo PayPal Payment - $15.00"
                   buttonText="PayPal $15.00"

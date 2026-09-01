@@ -19,6 +19,7 @@ const mockMaybeSingle = vi.fn();
 const mockSelect = vi.fn();
 const mockInsert = vi.fn();
 const mockFrom = vi.fn();
+const fetchMock = vi.fn();
 
 // Reconfigure the chain in beforeEach so each test starts from a known
 // state. mockReturnValue calls happen there.
@@ -29,6 +30,10 @@ vi.mock('@/lib/supabase/client', () => ({
     auth: {
       getUser: vi.fn(async () => ({
         data: { user: { id: 'test-user-1' } },
+        error: null,
+      })),
+      getSession: vi.fn(async () => ({
+        data: { session: { user: { id: 'test-user-1' }, access_token: 't' } },
         error: null,
       })),
     },
@@ -46,16 +51,19 @@ describe('PaymentQueueAdapter (idempotent INSERT path, #52)', () => {
     mockSelect.mockReset().mockReturnValue({ maybeSingle: mockMaybeSingle });
     mockInsert.mockReset().mockReturnValue({ select: mockSelect });
     mockFrom.mockReset().mockReturnValue({ insert: mockInsert });
+    fetchMock.mockReset();
+    vi.stubGlobal('fetch', fetchMock);
 
     adapter = new PaymentQueueAdapter();
     await adapter.clear();
   });
 
-  it('flows the queued idempotency_key into a plain INSERT (#1046)', async () => {
-    mockMaybeSingle.mockResolvedValueOnce({
-      data: { id: 'intent-1' },
-      error: null,
-    });
+  it('replays through create-order, sending the SKU and the queued key (#559 T025)', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ intent_id: 'intent-1' }),
+    } as Response);
 
     await adapter.queuePaymentIntent(
       {
@@ -64,32 +72,51 @@ describe('PaymentQueueAdapter (idempotent INSERT path, #52)', () => {
         type: 'one_time',
         customer_email: 'a@example.com',
         idempotency_key: 'fixed-key-1',
+        product_id: 'demo-checkout',
       },
       'test-user-1'
     );
     const result = await adapter.sync();
 
     expect(result.success).toBe(1);
-    expect(result.conflicted).toBe(0);
-    expect(mockFrom).toHaveBeenCalledWith('payment_intents');
+    // The browser writes nothing: no table call at all on the drain path.
+    expect(mockInsert).not.toHaveBeenCalled();
 
-    // The insert must carry the queued key. It is a plain INSERT with NO conflict
-    // target: PostgREST turns `onConflict` into a bare ON CONFLICT (col), which cannot
-    // infer the PARTIAL unique index and made every drain fail with 42P10 (#1046).
-    const [payload, ...rest] = mockInsert.mock.calls[0];
-    expect(payload.idempotency_key).toBe('fixed-key-1');
-    expect(payload.amount).toBe(1000);
-    expect(payload.template_user_id).toBe('test-user-1');
-    expect(rest).toEqual([]);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toMatch(/\/functions\/v1\/create-order$/);
+    const headers = (init as RequestInit).headers as Record<string, string>;
+    // The queued key becomes the REQUEST key, so a drain that runs twice replays
+    // create-order's stored result instead of charging again.
+    expect(headers['Idempotency-Key']).toBe('fixed-key-1');
+    const body = JSON.parse((init as RequestInit).body as string);
+    expect(body.product_id).toBe('demo-checkout');
+    expect(body.buyer_email).toBe('a@example.com');
   });
 
-  it('treats a 23505 as conflicted — a previous drain already did this work', async () => {
-    // The unique index refuses the duplicate key. That is the dedupe the old
-    // ignoreDuplicates was asking for, arriving as an error instead of a null row.
-    mockMaybeSingle.mockResolvedValueOnce({
-      data: null,
-      error: { code: '23505', message: 'duplicate key value' },
-    });
+  it('refuses a queue row with no product_id rather than guessing a SKU', async () => {
+    // Rows queued before catalog pricing shipped. Charging for a guessed product is
+    // worse than leaving the row in the queue and saying so.
+    await adapter.queuePaymentIntent(
+      {
+        amount: 1000,
+        currency: 'usd',
+        type: 'one_time',
+        customer_email: 'a@example.com',
+        idempotency_key: 'legacy-row',
+      },
+      'test-user-1'
+    );
+    const result = await adapter.sync();
+    expect(result.success).toBe(0);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('a create-order refusal leaves the row unsynced rather than reporting success', async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: async () => ({ error: 'Product not found' }),
+    } as Response);
 
     await adapter.queuePaymentIntent(
       {
@@ -97,19 +124,12 @@ describe('PaymentQueueAdapter (idempotent INSERT path, #52)', () => {
         currency: 'usd',
         type: 'one_time',
         customer_email: 'a@example.com',
-        idempotency_key: 'already-inserted-key',
+        idempotency_key: 'rejected-key',
+        product_id: 'no-such-sku',
       },
       'test-user-1'
     );
     const result = await adapter.sync();
-
     expect(result.success).toBe(0);
-    expect(result.conflicted).toBe(1);
-    expect(result.failed).toBe(0);
-
-    // The queue row is marked completed even though the dedupe path
-    // fired — the user's work is done from their perspective.
-    const all = await adapter.getQueue();
-    expect(all[0].status).toBe('completed');
   });
 });

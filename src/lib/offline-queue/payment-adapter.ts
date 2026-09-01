@@ -70,6 +70,9 @@ export class PaymentQueueAdapter extends BaseOfflineQueue<PaymentQueueItem> {
       description?: string;
       metadata?: Record<string, unknown>;
       idempotency_key?: string;
+
+      /** Catalog SKU, so the drain can replay through create-order (#559 T025). */
+      product_id?: string;
     },
     userId?: string
   ): Promise<PaymentQueueItem> {
@@ -162,42 +165,57 @@ export class PaymentQueueAdapter extends BaseOfflineQueue<PaymentQueueItem> {
       );
     }
 
-    // PLAIN INSERT, NOT UPSERT (#1046). This was
-    // `.upsert(..., { onConflict: 'idempotency_key', ignoreDuplicates: true })`, which
-    // PostgREST turns into a bare `ON CONFLICT (idempotency_key)`. The index is PARTIAL
-    // (`WHERE idempotency_key IS NOT NULL`) and Postgres will not infer a partial index
-    // without restating its predicate, which PostgREST has no syntax for. So every
-    // drain failed at plan time with SQLSTATE 42P10 / HTTP 400 and wrote nothing —
-    // including the first attempt, with nothing to conflict with. The whole offline
-    // payment queue has never drained.
+    // THROUGH create-order, NOT A DIRECT WRITE (#559 T025). The drain replays a
+    // payment the buyer authorised while offline; it must price from the catalog like
+    // any other purchase, because the browser no longer writes payment_intents at all.
     //
-    // The dedupe it was reaching for still holds, from the other side: the unique index
-    // rejects a duplicate key with 23505, and that is handled below as "a previous
-    // attempt already created this row", which is exactly what ignoreDuplicates meant.
-    const { data: inserted, error } = await supabase
-      .from('payment_intents')
-      .insert({
-        amount: data.amount as number,
-        currency: data.currency as string,
-        type: data.type as string,
-        interval: (data.interval as string) || null,
-        customer_email: data.customer_email as string,
-        description: (data.description as string) || null,
-        metadata: (data.metadata || {}) as Json,
-        template_user_id: userId,
-        idempotency_key: idempotencyKey,
-      })
-      .select('id')
-      .maybeSingle();
-
-    if (error) {
-      // 23505 is the unique index doing the job the upsert was asking for: this
-      // queued operation already landed on a previous drain. Fall through to the
-      // not-inserted branch below, which marks the queue row completed.
-      if (error.code !== '23505') {
-        throw new Error(`Failed to create payment intent: ${error.message}`);
-      }
+    // The queued idempotency_key becomes the REQUEST key, so a drain that runs twice —
+    // two tabs, a reload mid-sync — claims the same key and create-order replays its
+    // stored result instead of charging again. That is the same guarantee the old
+    // `ignoreDuplicates` upsert was reaching for, from a layer that actually works:
+    // that upsert could never execute (#1046), because PostgREST emits a bare
+    // ON CONFLICT the partial unique index cannot be inferred from.
+    const productId = data.product_id as string | undefined;
+    if (!productId) {
+      // A row queued before product_id shipped. Guessing a SKU would charge for
+      // something nobody chose, so this fails loudly and stays in the queue.
+      throw new Error(
+        'Queued payment has no product_id — it predates catalog pricing and cannot be replayed'
+      );
     }
+
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    if (!token) {
+      throw new Error('Must be authenticated to execute payment intent');
+    }
+
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-order`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          'Idempotency-Key': idempotencyKey,
+        },
+        body: JSON.stringify({
+          product_id: productId,
+          buyer_email: data.customer_email as string,
+          amount: data.amount as number,
+        }),
+      }
+    );
+    const payload = (await res.json().catch(() => ({}))) as {
+      intent_id?: string;
+      error?: string;
+    };
+    if (!res.ok) {
+      throw new Error(
+        `Failed to create payment intent: ${payload.error || res.status}`
+      );
+    }
+    const inserted = payload.intent_id ? { id: payload.intent_id } : null;
 
     if (!inserted) {
       // ON CONFLICT DO NOTHING fired — a prior attempt already created
