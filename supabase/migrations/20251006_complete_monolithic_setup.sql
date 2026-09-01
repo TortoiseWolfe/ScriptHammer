@@ -3605,15 +3605,68 @@ CREATE POLICY "Members can view conversation members" ON conversation_members
 -- SECURITY (#34): the self-join branch was `user_id = auth.uid()`, which let
 -- ANY authenticated user insert a membership row for themselves into ANY
 -- group — a privilege escalation, since conversation_members / group_keys /
--- messages all gate reads through is_conversation_member(). Scoping the
--- second branch to the conversation's creator closes that: only the creator
--- can seed a group (covers createGroup's owner + member batch insert), while
--- an outsider self-insert now fails both branches.
+-- messages all gate reads through is_conversation_member(). Scoping that
+-- branch to the conversation's creator closed it: an outsider self-insert
+-- fails both branches. That part still holds and is pinned by
+-- tests/rls/group-isolation.test.ts.
+--
+-- SECURITY (#1059): the two branches above were INDEPENDENT, and a creator
+-- could walk from one into the other. Confirmed by executing it against
+-- production (in a rolled-back transaction) before this fix:
+--
+--   1. POST /conversations           -> create a group; legitimate, I am created_by
+--   2. POST /conversation_members    -> seat MYSELF as owner; is_conversation_creator
+--   3. POST /conversation_members    -> seat ANYONE; step 2 made
+--                                       is_conversation_member() true, so branch 1
+--                                       authorises it and no connection is consulted
+--
+-- The connection requirement — the product's entire consent mechanism for
+-- messaging — lived only in the client (`group-service.ts`), so those three
+-- ordinary PostgREST calls walked around it. The shipped client was safe only
+-- INCIDENTALLY: it seats the whole roster in one multi-row INSERT, and a
+-- STABLE SECURITY DEFINER helper cannot see rows the same statement is
+-- inserting. An attacker is under no obligation to batch.
+--
+-- The fix gates BOTH branches on the connection, exempting only the creator's
+-- own owner row. Gating just the creator branch would leave the bypass open
+-- while reading as closed.
+--
+-- THIS ALSO CONSTRAINS addMembers, deliberately: an existing member may seat
+-- only people THEY are connected to, which is what the service layer already
+-- required and the database did not. Stated here rather than deferred.
+--
+-- No SECURITY DEFINER helper is needed for the connection lookup, and none may
+-- be added: "Users can view own connections" is
+-- `auth.uid() = requester_id OR auth.uid() = addressee_id`, and the actor is
+-- always one of the two, so the row is visible to this check. Same argument as
+-- the C30 block rule below. Both orderings are tested because
+-- `unique_connection` is (requester_id, addressee_id) and is not symmetric.
 DROP POLICY IF EXISTS "Members can add to their conversations" ON conversation_members;
 CREATE POLICY "Members can add to their conversations" ON conversation_members
   FOR INSERT WITH CHECK (
-    is_conversation_member(conversation_id)
-    OR is_conversation_creator(conversation_id)
+    (
+      is_conversation_member(conversation_id)
+      OR is_conversation_creator(conversation_id)
+    )
+    AND (
+      -- The creator seating their own owner row: there is nobody to be
+      -- connected to, and this is the first row of every group.
+      (
+        conversation_members.user_id = auth.uid()
+        AND is_conversation_creator(conversation_id)
+      )
+      -- Anyone else must be someone the ACTOR has an accepted connection with,
+      -- in either direction.
+      OR EXISTS (
+        SELECT 1
+        FROM user_connections uc
+        WHERE uc.status = 'accepted'
+          AND (
+            (uc.requester_id = auth.uid() AND uc.addressee_id = conversation_members.user_id)
+            OR (uc.requester_id = conversation_members.user_id AND uc.addressee_id = auth.uid())
+          )
+      )
+    )
   );
 
 -- UPDATE: Members can update own preferences, owners can update others
