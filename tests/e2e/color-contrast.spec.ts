@@ -113,24 +113,25 @@ const EXCLUDED: Record<string, string> = {
   // question that actually matters here.
   '/chatt':
     'Cesium error panel is vendor markup; headless Firefox has no WebGL',
-  // #715/#719. This route runs a continuous WebGL render loop, and on a runner with no GPU
-  // Chromium composites the canvas through a SYNCHRONOUS GPU readback — a CDP category
-  // trace of the sibling twin route measured `GLES2::ReadPixels` at 10.7 s inside a 13 s
-  // window. The sweep's readiness wait never settles, so this fails by 30 s TIMEOUT and
-  // reports no contrast violations at all. It failed identically on all three retries
-  // across eight-plus consecutive `main` runs — deterministic, not flaky.
+  // `/game/cod-skeleton` WAS excluded here, with this reason: "continuous WebGL render loop;
+  // the readiness wait cannot settle under software rendering (synchronous GPU readback,
+  // #719)". That was true when it was written and stopped being true when #757 landed.
   //
-  // NOTE WHAT THIS COSTS: the page's contrast is now genuinely unmeasured. That is a real
-  // gap, tracked in #715, and the fix is a component-level contrast test that does not need
-  // the live canvas — not a re-enable of this sweep, which cannot settle here at any timeout.
-  // Coverage is NOT lost: tests/e2e/cod-skeleton-hud-contrast.spec.ts measures the HUD
-  // chrome against a bracketed black/white scene without ever constructing a renderer —
-  // the same move /chatt makes toward twin-glass-contrast.spec.ts. It found the chips at
-  // 5.00:1 (light) and 4.51:1 (dark) and drove the fix to bg-base-300/90.
-  '/game/cod-skeleton':
-    'continuous WebGL render loop; the readiness wait cannot settle under software ' +
-    'rendering (synchronous GPU readback, #719) — HUD chrome measured instead by ' +
-    'cod-skeleton-hud-contrast.spec.ts',
+  // #757 put the scene behind a click. `CodSkeleton.tsx:484` early-returns a start
+  // placeholder while `started` is false, which is its initial state, so at PAGE LOAD there
+  // is no `<Canvas>`, no `WebGLRenderer` and no render loop to composite. Measured in a real
+  // browser on the dev server rather than reasoned about: `document.querySelectorAll('canvas')`
+  // is EMPTY, the wrapper reports `data-scene-started="false"`, and `document.readyState` is
+  // `complete`. The readiness wait has nothing left to wait for.
+  //
+  // So the route is swept again, and what it sweeps is the pre-start page — heading, body
+  // copy, the start button, and the page chrome around them. That is real coverage this file
+  // lost for a reason that has expired (#793).
+  //
+  // `cod-skeleton-hud-contrast.spec.ts` STAYS, and is not redundant with this. It measures the
+  // HUD chips against a bracketed black/white scene, and the HUD only exists AFTER the click —
+  // a state this sweep still cannot reach, and reaching it would reintroduce the #719 freeze
+  // exactly as that spec's header describes. The two cover different halves of the route.
 };
 
 /** Dynamic segments need a real instance — the template alone proves nothing. */
