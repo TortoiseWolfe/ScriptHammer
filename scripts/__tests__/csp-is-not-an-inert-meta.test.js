@@ -113,3 +113,50 @@ describe('the CSP is not delivered as an inert meta tag (#393)', () => {
     assert.equal(metadataOtherBlock('no metadata here'), null);
   });
 });
+
+describe('whose site the CSP check probes (#393 fork safety)', () => {
+  const CHECKER = path.join(ROOT, 'scripts', 'ci', 'check-csp-header.mjs');
+
+  it('has no hardcoded fallback site in the script', () => {
+    // It used to default to `https://scripthammer.com`, so a fork with no
+    // NEXT_PUBLIC_DEPLOY_URL probed THIS repo's production and reported green about a
+    // header it does not serve — the same shape as #1014 and #987.
+    const code = fs
+      .readFileSync(CHECKER, 'utf8')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    assert.doesNotMatch(
+      code,
+      /scripthammer\.com/i,
+      'no literal site: an unset base must skip, not silently probe the template'
+    );
+  });
+
+  it('smoke.yml passes the deploy URL with no `:-` fallback', () => {
+    const yml = fs.readFileSync(SMOKE, 'utf8');
+    const i = yml.indexOf('check-csp-header.mjs');
+    assert.ok(i > 0, 'smoke.yml must still run the CSP check');
+    const line = yml.slice(i, yml.indexOf('\n', i));
+    assert.doesNotMatch(
+      line,
+      /:-/,
+      'a `${SITE:-https://…}` fallback is exactly the fork bug this closed'
+    );
+  });
+
+  it('REQUIRE_CSP is set for this repo, so a lost Cloudflare rule still fails', () => {
+    // The knob defaults OFF so a fork without a Cloudflare edge is not failed for lacking
+    // one. That makes the explicit `true` here load-bearing: without it, losing the
+    // Transform Rule would downgrade to a printed note and #393 would regress in silence.
+    // Same reasoning as REQUIRE_EDGE in check-cache-headers (#970).
+    const yml = fs.readFileSync(SMOKE, 'utf8');
+    const i = yml.indexOf('check-csp-header.mjs');
+    const step = yml.slice(Math.max(0, i - 1200), i);
+    const code = step.replace(/^\s*#.*$/gm, '');
+    assert.match(
+      code,
+      /REQUIRE_CSP:\s*['"]?true/i,
+      'smoke.yml must declare REQUIRE_CSP: true for this deployment'
+    );
+  });
+});

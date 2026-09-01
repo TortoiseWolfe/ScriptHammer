@@ -124,7 +124,15 @@ jobs:
       - name: CSP is still delivered as a real header (Cloudflare rule still in place)
         env:
           SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
-        run: node scripts/ci/check-csp-header.mjs "${SITE:-https://scripthammer.com}"
+          # Explicit and load-bearing, exactly as REQUIRE_EDGE is above (#970). The script
+          # defaults this OFF so a fork is not failed for lacking a Cloudflare edge it never
+          # had; this repo DOES set the CSP at that edge, and losing the rule silently is the
+          # #393 regression. csp-is-not-an-inert-meta.test.js fails if this line disappears.
+          REQUIRE_CSP: 'true'
+        # No `:-` fallback: it used to be `${SITE:-https://scripthammer.com}`, so a fork with
+        # NEXT_PUBLIC_DEPLOY_URL unset probed THIS site and reported green about a header it
+        # does not serve. The script now skips on an empty base.
+        run: node scripts/ci/check-csp-header.mjs "$SITE"
 
       # The FOURTH dashboard-resident control (#822), and the one whose failure is
       # silent in both directions.
@@ -140,8 +148,14 @@ jobs:
       # one-line reviewable change this check then enforces against live DNS.
       - name: Mail policy still matches the intent declared in the repo (#822)
         env:
-          MAIL_DOMAIN: scripthammer.com
-        run: node scripts/ci/check-mail-policy.mjs "$MAIL_DOMAIN"
+          # Was the literal `scripthammer.com`, which made a fork assert THIS repo's mail
+          # policy. The domain now comes from MAIL_DOMAIN if set, else the host of the deploy
+          # URL — so this repo still checks scripthammer.com, and a fork checks its own or
+          # skips. Provider-shaped fields (SPF include, DKIM selector, MX suffix, rua) are
+          # declarable the same way; a failing run names the variable for each.
+          MAIL_DOMAIN: ${{ vars.MAIL_DOMAIN }}
+          NEXT_PUBLIC_DEPLOY_URL: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
+        run: node scripts/ci/check-mail-policy.mjs
 
       # Runs BEFORE the browser suite: it is cheap, and if production is pointed at
       # the wrong backend every test below is meaningless.
