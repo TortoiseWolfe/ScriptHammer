@@ -6,12 +6,22 @@ import { join } from 'node:path';
 /**
  * AAA contrast for the cod-skeleton HUD chrome (#715).
  *
- * WHY THIS SPEC EXISTS. `/game/cod-skeleton` is excluded from the route-sweeping
- * `color-contrast.spec.ts` because it runs a continuous WebGL loop and, on a GPU-less
- * runner, compositing that canvas goes through a synchronous GPU readback — traced at
- * `GLES2::ReadPixels` 10.7s inside a 13s window (#719). The sweep's readiness wait cannot
- * settle there at any timeout. That exclusion left the page's contrast genuinely unmeasured,
- * and this pays the debt. It is the same move `/chatt` made toward
+ * WHY THIS SPEC EXISTS. The HUD only exists AFTER the scene starts, and the route sweep in
+ * `color-contrast.spec.ts` measures the page as loaded — where #757's click-to-start
+ * placeholder is showing and no HUD has been built. So the two specs cover different halves
+ * of this route and neither replaces the other.
+ *
+ * HISTORY, because the reason changed underneath this file (#793). `/game/cod-skeleton` used
+ * to be EXCLUDED from that sweep entirely: it ran a continuous WebGL loop from load, and on a
+ * GPU-less runner compositing the canvas went through a synchronous GPU readback — traced at
+ * `GLES2::ReadPixels` 10.7s inside a 13s window (#719) — so the sweep's readiness wait could
+ * not settle at any timeout. #757 put the scene behind a click, which removed the render loop
+ * from page load, and the exclusion was lifted in #793 after measuring a real browser: zero
+ * `<canvas>` elements at load, `data-scene-started="false"`, `readyState: complete`.
+ *
+ * What that history does NOT change is this spec's job. Reaching the HUD still means starting
+ * the scene, which still reintroduces the #719 freeze on a GPU-less runner — which is why this
+ * measures the chips against a bracketed scene instead, the same move `/chatt` made toward
  * `twin-glass-contrast.spec.ts`, whose technique this borrows wholesale.
  *
  * THE ONE QUESTION. The HUD is three chips — the stance badge, the quality `<select>` and
@@ -26,8 +36,9 @@ import { join } from 'node:path';
  *    tokens resolve to nothing and the node lands in `incomplete`, which
  *    `toHaveNoViolations()` ignores. Three tests in this repo already ship green having
  *    never measured a ratio.
- *  - **Loading the real route** — reintroduces the #719 freeze this exclusion exists to
- *    avoid.
+ *  - **Loading the real route AND STARTING IT** — reintroduces the #719 freeze. Loading it
+ *    without starting is now fine and is what the route sweep does, but a page with no HUD
+ *    on it cannot answer the question this spec asks.
  *  - **Disabling WebGL for a cheap DOM** — `CodSkeleton.tsx:395` then returns
  *    `FallbackPanel` and you would measure `bg-base-200` while reporting HUD coverage.
  *  - **Hand-computing the alpha blend** — Tailwind v4 emits `bg-base-300/70` as
