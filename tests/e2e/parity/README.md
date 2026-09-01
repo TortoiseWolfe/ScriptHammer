@@ -83,11 +83,19 @@ would record them as `skipped`. So a local-lane report diffed against this basel
 treats as `COVERAGE LOST` and exits 1 on. That is correct behaviour for the tool and the
 wrong verdict for this situation — the coverage moved rather than vanished.
 
-**So do not wire `e2e-parity-diff.mjs` into the local lane until it grows an allowlist**
-carrying a written reason per excluded identity. The three baseline blocks are at lines
-373-379 (chromium-gen), 1040-1046 (firefox-gen) and 1707-1713 (webkit-gen); the seventh
-entry in each block — `OAuth buttons should be visible and enabled on sign-in page` — is
-deliberately **not** excluded and must keep matching.
+**RESOLVED (#575).** `e2e-parity-diff.mjs` now carries that allowlist: `EXPECTED_ABSENT`,
+six entries with a written reason each, matched on file + title so one entry covers all
+three gen projects. Verified against this baseline — 18 identities excused, 0 counted as
+coverage loss, `ok: true`. Two guards keep it honest: a **stale** entry (its test renamed,
+re-tagged or deleted from the baseline) fails the gate, and matching is on file **and**
+title so the seventh test below is never swallowed. The original instruction, kept because
+it explains the shape of the problem, was:
+
+> do not wire `e2e-parity-diff.mjs` into the local lane until it grows an allowlist
+> carrying a written reason per excluded identity. The three baseline blocks are at lines
+> 373-379 (chromium-gen), 1040-1046 (firefox-gen) and 1707-1713 (webkit-gen); the seventh
+> entry in each block — `OAuth buttons should be visible and enabled on sign-in page` — is
+> deliberately **not** excluded and must keep matching.
 
 The baseline cannot simply be regenerated to absorb this: its source artifacts expired
 2026-08-12 and the cloud quota does not refill until 2026-09-02.

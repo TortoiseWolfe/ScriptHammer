@@ -188,3 +188,139 @@ test('report() shape: extract on a synthetic report matches compare expectations
   );
   assert.strictEqual(compare(base, now).ok, false);
 });
+
+// ── the @hosted allowlist (#575, #725) ──────────────────────────────────────
+
+test('an allowlisted absence is reported, not counted as coverage loss', async () => {
+  const { compare } = await import(MOD);
+  const allow = [
+    {
+      file: 'security/oauth-csrf.spec.ts',
+      title: 'needs a real provider',
+      reason: 'x',
+    },
+  ];
+  const baseline = {
+    'chromium-gen|security/oauth-csrf.spec.ts|needs a real provider':
+      'expected',
+    'chromium-gen|security/oauth-csrf.spec.ts|runs anywhere': 'expected',
+  };
+  const actual = {
+    'chromium-gen|security/oauth-csrf.spec.ts|runs anywhere': 'expected',
+  };
+  const res = compare(baseline, actual, allow);
+  assert.strictEqual(res.missing.length, 0);
+  assert.strictEqual(res.expectedAbsent.length, 1);
+  assert.strictEqual(res.ok, true);
+});
+
+test('a NON-allowlisted absence in the same file still fails', async () => {
+  // The seventh oauth-csrf test is deliberately not tagged @hosted. If the allowlist
+  // matched by file it would swallow that too, and the differ would stop guarding the
+  // one test in this file that a local lane genuinely must run.
+  const { compare } = await import(MOD);
+  const allow = [
+    {
+      file: 'security/oauth-csrf.spec.ts',
+      title: 'needs a real provider',
+      reason: 'x',
+    },
+  ];
+  const baseline = {
+    'chromium-gen|security/oauth-csrf.spec.ts|runs anywhere': 'expected',
+  };
+  const res = compare(baseline, {}, allow);
+  assert.strictEqual(res.missing.length, 1);
+  assert.strictEqual(res.ok, false);
+});
+
+test('a STALE allowlist entry fails the gate', async () => {
+  // An entry whose test was renamed or re-tagged would otherwise sit here forever,
+  // silently excusing whatever later takes that name.
+  const { compare } = await import(MOD);
+  const allow = [
+    { file: 'security/oauth-csrf.spec.ts', title: 'gone', reason: 'x' },
+  ];
+  const baseline = {
+    'chromium-gen|security/oauth-csrf.spec.ts|still here': 'expected',
+  };
+  const res = compare(baseline, { ...baseline }, allow);
+  assert.deepStrictEqual(res.staleAllow, [
+    'security/oauth-csrf.spec.ts :: gone',
+  ]);
+  assert.strictEqual(res.ok, false);
+});
+
+test('an entry for a file the baseline does not cover is NOT stale', async () => {
+  // Otherwise the guard fires on every narrow report and gets deleted for being noisy.
+  const { compare } = await import(MOD);
+  const allow = [
+    { file: 'security/oauth-csrf.spec.ts', title: 'gone', reason: 'x' },
+  ];
+  const baseline = { 'chromium-gen|other/thing.spec.ts|t': 'expected' };
+  const res = compare(baseline, { ...baseline }, allow);
+  assert.deepStrictEqual(res.staleAllow, []);
+  assert.strictEqual(res.ok, true);
+});
+
+test('the allowlist matches the REAL baseline: 18 absences, 0 lost', async () => {
+  // The check that mattered. A one-directional endsWith matched NOTHING against the real
+  // baseline — which stores `security/...` while the repo path is `tests/e2e/security/...` —
+  // and reported a clean run while excusing zero tests. The unit fixtures above could not
+  // have caught that, because they use whatever shape the test author chose.
+  const { compare, EXPECTED_ABSENT } = await import(MOD);
+  const fs = require('node:fs');
+  const baseline = JSON.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../../tests/e2e/parity/baseline-de0f7f0.json'),
+      'utf8'
+    )
+  ).tests;
+  const norm = (f) => f.replace(/^tests\/e2e\//, '');
+  const hosted = Object.keys(baseline).filter((k) => {
+    const [, file = '', title = ''] = k.split('|');
+    return EXPECTED_ABSENT.some(
+      (a) => norm(file) === norm(a.file) && title === a.title
+    );
+  });
+  assert.strictEqual(
+    hosted.length,
+    18,
+    'six @hosted tests across three gen projects'
+  );
+
+  const local = Object.fromEntries(
+    Object.keys(baseline)
+      .filter((k) => !hosted.includes(k))
+      .map((k) => [k, baseline[k]])
+  );
+  const res = compare(baseline, local);
+  assert.strictEqual(res.missing.length, 0);
+  assert.strictEqual(res.expectedAbsent.length, 18);
+  assert.deepStrictEqual(res.staleAllow, []);
+  assert.strictEqual(res.ok, true, 'step 3 of #575 must be able to pass');
+});
+
+test('the seventh oauth-csrf test is NOT excused by the allowlist', async () => {
+  const { compare } = await import(MOD);
+  const fs = require('node:fs');
+  const baseline = JSON.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../../tests/e2e/parity/baseline-de0f7f0.json'),
+      'utf8'
+    )
+  ).tests;
+  const SEVENTH = 'OAuth buttons should be visible and enabled on sign-in page';
+  const seventh = Object.keys(baseline).filter((k) =>
+    k.endsWith('|' + SEVENTH)
+  );
+  assert.strictEqual(seventh.length, 3, 'one per gen project');
+  const local = Object.fromEntries(
+    Object.keys(baseline)
+      .filter((k) => !seventh.includes(k))
+      .map((k) => [k, baseline[k]])
+  );
+  const res = compare(baseline, local);
+  assert.strictEqual(res.missing.length, 3);
+  assert.strictEqual(res.ok, false);
+});
