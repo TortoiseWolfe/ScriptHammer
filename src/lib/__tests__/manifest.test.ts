@@ -253,6 +253,31 @@ describe('as-built house assets (#234)', () => {
       /keyed by GLB group/
     );
   });
+  it('loadLocalLinks does NOT request in production (#831)', async () => {
+    // *.local.json is gitignored so a private demo link never touches git, which means it
+    // can only 404 in a deployed build. Requesting it there is guaranteed console noise,
+    // and a 404 prints before JS can handle it — indistinguishable from a real failure.
+    process.env.NEXT_PUBLIC_BASE_PATH = '';
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubEnv('NODE_ENV', 'production');
+    try {
+      await expect(loadLocalLinks('chatt')).resolves.toEqual([]);
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('loadLocalLinks DOES request outside production — the dev convenience still works', async () => {
+    // The guard's direction matters: this is a dev-only convenience, so dev must keep it.
+    process.env.NEXT_PUBLIC_BASE_PATH = '';
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(loadLocalLinks('chatt')).resolves.toEqual([]);
+    expect(fetchMock).toHaveBeenCalled();
+  });
+
   it('loadHouse resolves null when the twin has no capture (404)', async () => {
     process.env.NEXT_PUBLIC_BASE_PATH = '';
     vi.stubGlobal(
@@ -261,6 +286,35 @@ describe('as-built house assets (#234)', () => {
     );
     await expect(loadHouse('chatt')).resolves.toBeNull();
   });
+  it('loadHouse does NOT request when the manifest says there is no house (#831)', async () => {
+    // The whole point: a 404 prints to the console before JS can handle it, so a
+    // deliberate absence looks exactly like a real failure in DevTools. Returning null
+    // is not enough — the request must not happen.
+    process.env.NEXT_PUBLIC_BASE_PATH = '';
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(loadHouse('chatt', { hasHouse: false })).resolves.toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('loadHouse still requests when the flag is absent — an older manifest means ASK', async () => {
+    // A manifest baked before the flag existed must not be read as "no house", or a twin
+    // that genuinely has a capture silently stops loading it.
+    process.env.NEXT_PUBLIC_BASE_PATH = '';
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(loadHouse('chatt', {})).resolves.toBeNull();
+    expect(fetchMock).toHaveBeenCalled();
+  });
+
+  it('loadHouse still requests when the manifest says there IS one', async () => {
+    process.env.NEXT_PUBLIC_BASE_PATH = '';
+    const fetchMock = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+    vi.stubGlobal('fetch', fetchMock);
+    await loadHouse('main-st', { hasHouse: true });
+    expect(fetchMock).toHaveBeenCalled();
+  });
+
   it('loadHouse validates house.json AND probes model.glb (HEAD)', async () => {
     process.env.NEXT_PUBLIC_BASE_PATH = '';
     const fetchMock = vi

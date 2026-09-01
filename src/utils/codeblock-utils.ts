@@ -138,6 +138,27 @@ export function detectLanguage(content: string): string {
     return 'typescript';
   }
 
+  // ES MODULE SYNTAX, DECIDED BEFORE CSS AND PYTHON (#1044).
+  //
+  // Both of the probes below used to claim an ES import first, and this cascade is
+  // ordered, so whichever ran first won:
+  //   `import { a } from 'b';`  -> CSS, because /^[.#]?\w+\s*{/ reads "import" as a
+  //                                selector and the DESTRUCTURING BRACE as a rule opening
+  //   `import foo from 'bar';`  -> Python, because /import\s+\w+/ is satisfied by any
+  //                                `import` followed by a word
+  // Neither probe is wrong about its own language; they were simply asked first. The fix
+  // is to answer the unambiguous question -- does this have a module specifier? -- before
+  // either gets a turn, rather than to make their patterns cleverer.
+  if (
+    /^\s*import\s[\s\S]*?\bfrom\s*['"]/m.test(content) ||
+    /^\s*import\s*\{[^}]*\}\s*from\b/m.test(content) ||
+    /^\s*export\s+(default|const|let|var|function|class|interface|type|\{)/m.test(
+      content
+    )
+  ) {
+    return 'typescript';
+  }
+
   // Check for CSS patterns
   if (
     /^[.#]?\w+\s*{/.test(trimmed) ||
@@ -167,9 +188,17 @@ export function detectLanguage(content: string): string {
   }
 
   // Check for Python patterns
+  //
+  // The import test is shaped like PYTHON's two forms rather than the word "import"
+  // (#1044): `import os` on its own line, or `from x import y`. The old
+  // /import\s+\w+/ matched `import foo from 'bar'` too, which is how a TypeScript
+  // default import came back as Python. The ES-module branch above now answers first
+  // regardless, so this is defence in depth -- but a probe that claims another
+  // language's syntax is worth narrowing even when something else catches it.
   if (
     /def\s+\w+\s*\(/.test(content) ||
-    /import\s+\w+/.test(content) ||
+    /^\s*import\s+[\w.]+\s*$/m.test(content) ||
+    /^\s*from\s+[\w.]+\s+import\s/m.test(content) ||
     /if\s+__name__\s*==/.test(content)
   ) {
     return 'python';

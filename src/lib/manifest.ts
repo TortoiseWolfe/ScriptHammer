@@ -39,6 +39,14 @@ export interface SiteInfo {
   trolley?: number[]; // flat ENU [x,z,...]; absent => no trolley agent
   framing?: SiteFraming;
   water?: boolean; // bake result: the carve found water => render the water mesh
+  /**
+   * Bake result: did this bake produce `house/house.json`? (#831)
+   *
+   * Lets the client skip a request it knows will 404. Absent on manifests baked before
+   * the flag existed, which must mean "ask" rather than "no" — otherwise a twin that
+   * genuinely has a capture would silently stop loading it.
+   */
+  hasHouse?: boolean;
   /** Committed HUD nav buttons (app-internal hrefs; basePath applied at
    *  runtime). Private demo links use links.local.json instead. */
   links?: { label: string; href: string }[];
@@ -337,7 +345,16 @@ export function validateHouse(h: unknown, slug: string): HouseInfo {
 /** Load a twin's as-built descriptor; null when the twin has none (404).
  *  Throws (loudly) on a malformed descriptor or a descriptor whose model.glb
  *  is missing — a half-installed capture must not degrade silently. */
-export async function loadHouse(slug: string): Promise<HouseInfo | null> {
+export async function loadHouse(
+  slug: string,
+  opts?: { hasHouse?: boolean }
+): Promise<HouseInfo | null> {
+  // The manifest knows (#831). `site.hasHouse` is a bake RESULT, like `site.water`: the
+  // baker sees whether house/house.json was produced and records it, so the client can
+  // skip a request it knows will 404. Undefined means an older manifest that predates the
+  // flag — fetch as before rather than assume absence, or a twin WITH a house would
+  // silently lose it.
+  if (opts?.hasHouse === false) return null;
   const res = await fetch(siteAssetUrl(slug, 'house/house.json'));
   if (!res.ok) return null;
   const house = validateHouse(await res.json(), slug);
@@ -445,6 +462,19 @@ export interface TwinLink {
 }
 
 export async function loadLocalLinks(slug: string): Promise<TwinLink[]> {
+  // NOT REQUESTED IN PRODUCTION (#831). `*.local.json` is gitignored (.gitignore) so that
+  // a private demo link can be wired "without the target address ever touching git" — it
+  // must never exist in a deployed build. Fetching it there guarantees a 404, and a 404
+  // prints `Failed to load resource` to the console BEFORE JS can handle it, so a
+  // deliberate absence is indistinguishable from a real failure to anyone reading DevTools.
+  // That cost real time during an incident where these were the only two console errors on
+  // the page and read exactly like the cause.
+  //
+  // The guard's direction is deliberate and matches the repo's rule: this is a DEV-ONLY
+  // CONVENIENCE, so limiting it to development removes a request that could only ever fail
+  // in production. It is not a protection being narrowed to dev, which would be the
+  // backwards case.
+  if (process.env.NODE_ENV === 'production') return [];
   try {
     const res = await fetch(siteAssetUrl(slug, 'links.local.json'));
     if (!res.ok) return [];

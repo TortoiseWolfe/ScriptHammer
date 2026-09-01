@@ -1,19 +1,9 @@
 {
-  "box": {
-    "swLat": 35.0078,
-    "swLon": -85.316,
-    "neLat": 35.06,
-    "neLon": -85.3
-  },
+  "box": { "swLat": 35.0078, "swLon": -85.316, "neLat": 35.06, "neLon": -85.3 },
   "groundWm": 1460,
   "groundHm": 5791.1,
   "cosLat": 0.8197131890928896,
-  "drape": {
-    "path": "drape.jpg",
-    "width": 2433,
-    "height": 7938,
-    "mpp": 0.6
-  },
+  "drape": { "path": "drape.jpg", "width": 2433, "height": 7938, "mpp": 0.6 },
   "provenance": "\u00a9 OpenStreetMap \u00b7 USGS 3DEP 1m \u00b7 TDOT Aerial Surveys \u00b7 Microsoft Buildings \u00b7 USGS 3DEP Lidar \u00b7 3D models \u00a9 their authors via 3D Warehouse",
   "fetchedAt": "2026-07-19T16:28:11.529Z",
   "ruleHistogram": {
@@ -24,10 +14,7 @@
     "ms": 43,
     "fallback": 43
   },
-  "vectorOffsetM": {
-    "x": 0.5,
-    "z": 0
-  },
+  "vectorOffsetM": { "x": 0.5, "z": 0 },
   "geoidOffsetM": -29.657,
   "atlasBox": {
     "swLat": 35.0078,
@@ -36,10 +23,7 @@
     "neLon": -85.255
   },
   "registration": {
-    "offsetM": {
-      "x": 0,
-      "z": 0
-    },
+    "offsetM": { "x": 0, "z": 0 },
     "score": 141,
     "score0": 141,
     "confidence": 1.9,
@@ -107,15 +91,14 @@
       -180, -2180, -220, -2320, -180, -2460, 10, -2600, 60, -2860, 60, -2700,
       -60, -2400, -180, -2180
     ],
-    "framing": {
-      "homeFocus": [-100, 0, -2000]
-    },
+    "framing": { "homeFocus": [-100, 0, -2000] },
     "embeddedTwin": {
       "slug": "east-main-street-chattanooga",
       "lat": 35.0212761,
       "lon": -85.2672533,
       "label": "1887 Victorian \u2014 As-Built"
     },
-    "water": true
+    "water": true,
+    "hasHouse": false
   }
 }
