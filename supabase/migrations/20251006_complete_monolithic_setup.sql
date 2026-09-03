@@ -3160,8 +3160,23 @@ CREATE TRIGGER before_message_update_column_guard
 -- anything. Measured on production: `anon` held DELETE, INSERT, REFERENCES,
 -- SELECT, TRIGGER, TRUNCATE and UPDATE on this table. Nothing anonymous has any
 -- business writing a social graph.
-REVOKE ALL ON user_connections FROM anon;
-GRANT ALL ON user_connections TO authenticated, service_role;
+-- #1059 residual, third route. Closing the INSERT path above was not enough: the
+-- UPDATE policy "Addressee can update connection status" checks only that the
+-- addressee is still you. It pins neither `requester_id` nor `status`, and with
+-- UPDATE held on every column the addressee of ANY row could rewrite
+-- `requester_id` to a victim and set `status` to 'accepted' — regenerating the
+-- exact consent record the INSERT rule was just taught to demand. Getting a row
+-- to own costs one throwaway account sending you an ordinary friend request.
+-- Demonstrated against a local stack built from this file, then closed here.
+--
+-- Same instrument as conversation_members: a COLUMN GRANT. `status` is the only
+-- column any legitimate flow writes (connection-service.ts builds `updateData`
+-- with `status` alone), so withholding the rest costs the product nothing and
+-- makes the identities in a connection row immutable once written.
+REVOKE ALL ON user_connections FROM anon, authenticated;
+GRANT SELECT, INSERT, DELETE ON user_connections TO authenticated;
+GRANT UPDATE (status) ON user_connections TO authenticated;
+GRANT ALL ON user_connections TO service_role;
 GRANT ALL ON conversations TO authenticated, service_role;
 GRANT ALL ON messages TO authenticated, service_role;
 -- ── #1040: the salt is a per-user secret; the public key is not ─────────────
