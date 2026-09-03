@@ -484,6 +484,25 @@ git cherry-pick <commit-hash>
 1. Rebuild Docker: `docker compose down && docker compose up --build`
 2. Run tests: `docker compose exec <project> pnpm test`
 3. Check for new environment variables in `.env.example`
+4. **If `supabase/migrations/` changed, re-apply the migration to your Supabase
+   project.** Merging upstream updates the file on disk; it does **not** touch your
+   database. Check with:
+
+   ```bash
+   git diff HEAD@{1} --stat -- supabase/migrations/
+   ```
+
+   If that prints anything, paste
+   `supabase/migrations/20251006_complete_monolithic_setup.sql` into your project's
+   SQL Editor again, exactly as you did at setup. Every statement is idempotent, so
+   re-running it is safe.
+
+> **Why this step exists.** Steps 1–3 all pass with a database that is still on the
+> old schema, so a fork can merge a **security** fix, see a green test suite, and
+> remain vulnerable — with every signal saying otherwise. That happened: #1059 and
+> its follow-ups changed RLS policies and table grants, and none of that reaches a
+> running database by merging. Schema fixes are the one class of upstream change
+> where a green suite tells you nothing about your own deployment.
 
 ### If Merge Conflicts Are Too Complex
 

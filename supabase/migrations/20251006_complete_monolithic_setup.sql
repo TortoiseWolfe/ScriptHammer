@@ -3178,6 +3178,10 @@ GRANT SELECT, INSERT, DELETE ON user_connections TO authenticated;
 GRANT UPDATE (status) ON user_connections TO authenticated;
 GRANT ALL ON user_connections TO service_role;
 GRANT ALL ON conversations TO authenticated, service_role;
+-- #1039 pattern: `anon` held all seven privileges here by platform default and
+-- the file never said otherwise. Nothing anonymous writes messages; RLS refuses
+-- it anyway, and a grant it does not need is a grant nobody audits.
+REVOKE ALL ON messages FROM anon;
 GRANT ALL ON messages TO authenticated, service_role;
 -- ── #1040: the salt is a per-user secret; the public key is not ─────────────
 --
@@ -3844,6 +3848,40 @@ CREATE POLICY "Users can send messages to own conversations" ON messages
 --
 -- `anon` is removed for the #1039 reason: silence in this file left it holding
 -- everything by default.
+-- #1059 residual, fourth route — the 1:1 path, and the only one that does not
+-- involve groups at all.
+--
+-- "Users can update own conversation archive status" pins that YOU are a
+-- participant. It says nothing about the OTHER participant, and `conversations`
+-- carried GRANT ALL with no REVOKE. So a participant could swap
+-- `participant_2_id` for someone who never consented: the post-image still
+-- contains the attacker, so the WITH CHECK passes, and the victim lands in a
+-- direct-message thread they never agreed to. Demonstrated against a local stack
+-- built from this file, then closed here.
+--
+-- Same instrument as the two above: a COLUMN GRANT. The identity columns
+-- (participant_1_id, participant_2_id, is_group, created_by) become immutable
+-- once written; archiving, renaming a group and rotating the key version all
+-- still work, which is everything `src/` writes.
+--
+-- PLACEMENT IS LOAD-BEARING. This names `group_name` and `current_key_version`,
+-- which the group-chat ALTER further up adds to `conversations`. Written beside
+-- the other messaging grants it fails a fresh initdb with 'column "group_name" of
+-- relation "conversations" does not exist' — and a fresh build is the only place
+-- that shows, which is why verification rebuilds rather than patching a running
+-- database.
+--
+-- NOTE: this makes `upgradeToGroup` fail at the database rather than silently. It
+-- has zero callers and zero tests, and its first statement was already refused by
+-- this same policy (it nulls both participant columns, so the WITH CHECK
+-- evaluates NULL). Closing the hole does not break a working path.
+REVOKE ALL ON conversations FROM anon, authenticated;
+GRANT SELECT, INSERT, DELETE ON conversations TO authenticated;
+GRANT UPDATE (archived_by_participant_1, archived_by_participant_2, group_name,
+              current_key_version, last_message_at)
+  ON conversations TO authenticated;
+GRANT ALL ON conversations TO service_role;
+
 REVOKE ALL ON conversation_members FROM anon, authenticated;
 GRANT SELECT, INSERT ON conversation_members TO authenticated;
 GRANT UPDATE (left_at, role, key_status, archived, muted)
