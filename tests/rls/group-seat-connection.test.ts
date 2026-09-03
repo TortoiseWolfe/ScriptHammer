@@ -338,5 +338,58 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
       await clearConnection();
     });
+
+    it('refuses an addressee rewriting who a connection is with', async () => {
+      // RESIDUAL BYPASS B, SECOND ROUTE. Pinning `status` on INSERT was not
+      // enough. "Addressee can update connection status" checks only that the
+      // addressee is still you — it pins neither `requester_id` nor `status`.
+      // So the addressee of ANY row could rewrite `requester_id` to a victim and
+      // set `status` to 'accepted', regenerating the consent record the INSERT
+      // rule had just been taught to demand. Owning such a row costs one
+      // throwaway account sending you an ordinary friend request.
+      //
+      // Closed with a column grant: `status` is the only column any legitimate
+      // flow writes, so the identities in a connection row are immutable once
+      // written.
+      await clearConnection();
+
+      // The stranger sends the creator an ordinary friend request. Legitimate.
+      const strangerClient = await createAuthenticatedClient(
+        TEST_USERS.userB.email,
+        TEST_USERS.userB.password
+      );
+      const asked = await strangerClient.from('user_connections').insert({
+        requester_id: stranger.id,
+        addressee_id: creator.id,
+        status: 'pending',
+      });
+      expect(
+        asked.error,
+        'sending a request is the positive control'
+      ).toBeNull();
+
+      // The creator is now the addressee. Try to rewrite who it is with.
+      const rewritten = await creatorClient
+        .from('user_connections')
+        .update({ requester_id: creator.id })
+        .eq('addressee_id', creator.id)
+        .eq('requester_id', stranger.id);
+      expect(
+        rewritten.error,
+        'rewriting requester_id must be refused'
+      ).not.toBeNull();
+      expect(rewritten.error?.code).toBe('42501');
+
+      // The counterweight: responding to the request must still work, or the
+      // whole friend-request flow is dead and no other test would say so.
+      const accepted = await creatorClient
+        .from('user_connections')
+        .update({ status: 'accepted' })
+        .eq('addressee_id', creator.id)
+        .eq('requester_id', stranger.id);
+      expect(accepted.error, 'accepting a request must still work').toBeNull();
+
+      await clearConnection();
+    });
   }
 );
