@@ -3177,7 +3177,13 @@ REVOKE ALL ON user_connections FROM anon, authenticated;
 GRANT SELECT, INSERT, DELETE ON user_connections TO authenticated;
 GRANT UPDATE (status) ON user_connections TO authenticated;
 GRANT ALL ON user_connections TO service_role;
-GRANT ALL ON conversations TO authenticated, service_role;
+-- `authenticated` is granted further down, narrowed to columns, once
+-- `group_name` and `current_key_version` exist (#1059 route 4). Granting ALL here
+-- too made this file declare two different intents for the same role: the runtime
+-- order still produced the narrow grant, but `derive-intended-schema.mjs` reads the
+-- file statically and expected ALL, so the drift gate reported production as
+-- NARROWER than intent. It was right — the file was the thing that was wrong.
+GRANT ALL ON conversations TO service_role;
 -- #1039 pattern: `anon` held all seven privileges here by platform default and
 -- the file never said otherwise. Nothing anonymous writes messages; RLS refuses
 -- it anyway, and a grant it does not need is a grant nobody audits.
