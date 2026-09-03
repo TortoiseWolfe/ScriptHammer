@@ -92,6 +92,8 @@ jobs:
       # file is actually served. A 404 there means someone holding that HTML is
       # looking at an unstyled page right now.
       - name: Retained assets are still served (unstyled-production detector)
+        id: retained
+        if: ${{ !cancelled() }}
         env:
           SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
         # No `:-` fallback (#1054). This and the script's own literal were STACKED, so
@@ -112,6 +114,8 @@ jobs:
       # Note `check-stale-html.mjs` canNOT cover this: it serves itself over
       # 127.0.0.1 with a hardcoded `max-age=600` and never touches the live site.
       - name: Cache contract is still served (Cloudflare rules still in place)
+        id: cache
+        if: ${{ !cancelled() }}
         env:
           SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
           # Explicit, and load-bearing (#970). The script defaults this OFF so a fork
@@ -135,6 +139,8 @@ jobs:
       # Nothing else can see it: the CSP is not in the built output any more, so
       # no unit test or build check can tell whether production has one.
       - name: CSP is still delivered as a real header (Cloudflare rule still in place)
+        id: csp
+        if: ${{ !cancelled() }}
         env:
           SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
           # Explicit and load-bearing, exactly as REQUIRE_EDGE is above (#970). The script
@@ -160,6 +166,8 @@ jobs:
       # The intended policy is declared IN the script, so raising enforcement is a
       # one-line reviewable change this check then enforces against live DNS.
       - name: Mail policy still matches the intent declared in the repo (#822)
+        id: mail
+        if: ${{ !cancelled() }}
         env:
           # Was the literal `scripthammer.com`, which made a fork assert THIS repo's mail
           # policy. The domain now comes from MAIL_DOMAIN if set, else the host of the deploy
@@ -184,6 +192,8 @@ jobs:
       # have caught it is this one: what the deployed JavaScript actually points at,
       # compared against what we intended to deploy.
       - name: Deployed bundle points at the intended Supabase project
+        id: supabase
+        if: ${{ !cancelled() }}
         env:
           SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
           WANT: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
@@ -229,6 +239,8 @@ jobs:
       #
       # Set it to `live` as part of going live. That is the whole ceremony.
       - name: Deployed bundle ships the expected Stripe key mode
+        id: stripe
+        if: ${{ !cancelled() }}
         env:
           SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
           EXPECTED: ${{ vars.PAYMENT_MODE_EXPECTED || 'test' }}
@@ -274,6 +286,8 @@ jobs:
       # via next/dynamic with ssr:false, so its calendar chunk is not referenced in that
       # page's HTML, while /checkout reaches the same config through BookingStep.tsx:36.
       - name: Deployed bundle books at the intended calendar
+        id: calendar
+        if: ${{ !cancelled() }}
         env:
           SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
           WANT: ${{ vars.NEXT_PUBLIC_CALENDAR_URL }}
@@ -283,4 +297,41 @@ jobs:
       # apt-install chromium on the runner, which is how a post-deploy monitor could
       # fail for reasons having nothing to do with the deploy it was monitoring.
       - name: Run the production @smoke suite
+        id: smoke_suite
+        if: ${{ !cancelled() }}
         run: scripts/ci/playwright-in-container.sh test --config playwright.smoke.config.ts
+
+      # WHY EVERY DETECTOR ABOVE CARRIES `if: !cancelled()` (#1061).
+      #
+      # These eight are INDEPENDENT assertions about production. They were plain
+      # sequential steps, so the first failure aborted the job and the other seven
+      # never ran. That is what happened from 2026-09-01: a real retention
+      # shortfall in step one hid the Cloudflare cache-rule detector, the CSP
+      # header check, the mail policy, which Supabase project the bundle points
+      # at, the Stripe key mode, the calendar target and the whole @smoke suite —
+      # for three days. Several of those watch dashboard-resident configuration
+      # that nothing else in this repo can see, so "red" meant "blind", not
+      # "one thing is broken".
+      #
+      # `!cancelled()` rather than `always()`: a cancelled run should stop, not
+      # grind through eight network probes. The job still fails if any detector
+      # fails — the masking is what is fixed here, not the reporting.
+      - name: Which detectors passed
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo "### Production detectors"
+            echo ""
+            echo "| detector | outcome |"
+            echo "| --- | --- |"
+            echo "| Retained assets | ${{ steps.retained.outcome }} |"
+            echo "| Cache contract | ${{ steps.cache.outcome }} |"
+            echo "| CSP header | ${{ steps.csp.outcome }} |"
+            echo "| Mail policy | ${{ steps.mail.outcome }} |"
+            echo "| Supabase project | ${{ steps.supabase.outcome }} |"
+            echo "| Stripe key mode | ${{ steps.stripe.outcome }} |"
+            echo "| Calendar target | ${{ steps.calendar.outcome }} |"
+            echo "| @smoke suite | ${{ steps.smoke_suite.outcome }} |"
+            echo ""
+            echo "A skipped row means the step did not run at all — report that as a gap, not a pass."
+          } >> "$GITHUB_STEP_SUMMARY"
