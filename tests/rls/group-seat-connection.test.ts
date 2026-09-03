@@ -391,5 +391,41 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
       await clearConnection();
     });
+
+    it('refuses swapping the other participant of a 1:1 conversation', async () => {
+      // RESIDUAL, FOURTH ROUTE — and the one that reaches direct messages rather
+      // than groups. "Users can update own conversation archive status" pins that
+      // YOU are a participant and says nothing about the OTHER one. With UPDATE
+      // held on every column, a participant could swap `participant_2_id` for
+      // someone who never consented: the post-image still contains the attacker,
+      // so the WITH CHECK passes and the victim lands in a DM they never agreed
+      // to. Closed by the same column grant; archiving still works below.
+      const { data: convo, error: createErr } = await service
+        .from('conversations')
+        .insert({ participant_1_id: creator.id, participant_2_id: stranger.id })
+        .select('id')
+        .single();
+      expect(createErr, 'seeding a 1:1 conversation').toBeNull();
+      const convoId = convo!.id as string;
+
+      const swapped = await creatorClient
+        .from('conversations')
+        .update({ participant_2_id: creator.id })
+        .eq('id', convoId);
+      expect(
+        swapped.error,
+        'rewriting the other participant must be refused'
+      ).not.toBeNull();
+      expect(swapped.error?.code).toBe('42501');
+
+      // Counterweight: archiving is what this policy exists for.
+      const archived = await creatorClient
+        .from('conversations')
+        .update({ archived_by_participant_1: true })
+        .eq('id', convoId);
+      expect(archived.error, 'archiving must still work').toBeNull();
+
+      await service.from('conversations').delete().eq('id', convoId);
+    });
   }
 );
