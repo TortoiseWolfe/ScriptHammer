@@ -2617,9 +2617,27 @@ DROP POLICY IF EXISTS "Users can view own connections" ON user_connections;
 CREATE POLICY "Users can view own connections" ON user_connections
   FOR SELECT USING (auth.uid() = requester_id OR auth.uid() = addressee_id);
 
+-- #1059 residual: a connection you grant YOURSELF is not consent.
+--
+-- This used to constrain `requester_id` and nothing else, so `status` was free and
+-- the column CHECK below permits 'accepted' directly. Any authenticated user could
+-- therefore insert their own ACCEPTED connection to a stranger. That matters far
+-- beyond this table: the group-seat rule, "Users can create conversations with
+-- connections", and the C30 block rule all read an accepted row here and treat it
+-- as proof that two people agreed. One of them agreeing to themselves defeats all
+-- three. Demonstrated against a local stack built from this file, then closed here.
+--
+-- A user may only ever ASK. Moving to 'accepted' is the addressee's privilege, and
+-- that is already the only thing "Addressee can update connection status" permits.
+--
+-- WHY A POLICY AND NOT A TABLE CHECK. `service_role` bypasses RLS but NOT a table
+-- constraint, and ten test files seat `status: 'accepted'` directly through the
+-- service client to build fixtures. A CHECK would break every one of them while
+-- buying nothing an RLS policy does not already give against a real caller.
 DROP POLICY IF EXISTS "Users can create friend requests" ON user_connections;
 CREATE POLICY "Users can create friend requests" ON user_connections
-  FOR INSERT WITH CHECK (auth.uid() = requester_id);
+  FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = requester_id AND status = 'pending');
 
 DROP POLICY IF EXISTS "Addressee can update connection status" ON user_connections;
 CREATE POLICY "Addressee can update connection status" ON user_connections
@@ -3135,6 +3153,14 @@ CREATE TRIGGER before_message_update_column_guard
   FOR EACH ROW EXECUTE FUNCTION enforce_message_update_columns();
 
 -- Grant permissions for messaging tables
+--
+-- THE REVOKE IS THE LOAD-BEARING LINE (#1039 pattern). `pg_default_acl` already
+-- handed `anon` all seven privileges on every table in `public`, and PostgREST
+-- serves the schema — so a GRANT naming only `authenticated` never narrowed
+-- anything. Measured on production: `anon` held DELETE, INSERT, REFERENCES,
+-- SELECT, TRIGGER, TRUNCATE and UPDATE on this table. Nothing anonymous has any
+-- business writing a social graph.
+REVOKE ALL ON user_connections FROM anon;
 GRANT ALL ON user_connections TO authenticated, service_role;
 GRANT ALL ON conversations TO authenticated, service_role;
 GRANT ALL ON messages TO authenticated, service_role;
@@ -3782,7 +3808,32 @@ CREATE POLICY "Users can send messages to own conversations" ON messages
   );
 
 -- Grant permissions for new tables
-GRANT ALL ON conversation_members TO authenticated, service_role;
+--
+-- #1059 residual: RLS gates ROWS, and the seat rule above is a row rule. It says
+-- nothing about which COLUMNS of an existing row may be rewritten, and
+-- "Members can update membership" declares no WITH CHECK — so Postgres reuses its
+-- USING expression, which `is_conversation_owner` satisfies from the pre-statement
+-- snapshot. With UPDATE held on every column, a group owner could therefore move
+-- their own member row into another group they own and rewrite `user_id` to a
+-- stranger: the same outcome as the INSERT hole, reached without an INSERT.
+-- Demonstrated against a local stack built from this file, then closed here.
+--
+-- The fix is a COLUMN GRANT, not another predicate. Column privilege is checked
+-- independently of RLS and refuses before any policy is consulted, and — unlike a
+-- WITH CHECK on the UPDATE policy — it cannot strand anyone: DELETE is
+-- `USING (false)`, so leaving a group is an UPDATE of `left_at`, and `left_at`
+-- stays granted. The five granted columns are exactly the ones `src/` actually
+-- writes (archived, key_status, left_at, role, plus the muted preference). The
+-- withheld ones — id, conversation_id, user_id, joined_at, key_version_joined —
+-- are the ones that say WHICH row this is and WHO it is about.
+--
+-- `anon` is removed for the #1039 reason: silence in this file left it holding
+-- everything by default.
+REVOKE ALL ON conversation_members FROM anon, authenticated;
+GRANT SELECT, INSERT ON conversation_members TO authenticated;
+GRANT UPDATE (left_at, role, key_status, archived, muted)
+  ON conversation_members TO authenticated;
+GRANT ALL ON conversation_members TO service_role;
 GRANT ALL ON group_keys TO authenticated, service_role;
 
 -- Enable realtime for group tables

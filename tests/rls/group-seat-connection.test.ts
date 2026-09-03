@@ -17,15 +17,26 @@
  * messaging — lived only in `group-service.ts`. Three ordinary PostgREST calls
  * walked around it.
  *
- * WHY THE ORDER OF THIS TEST IS LOAD-BEARING. The shipped client was safe only
+ * WHY THE ORDER OF THIS TEST IS DELIBERATE. The shipped client was safe only
  * INCIDENTALLY: `createGroup` seats the entire roster in ONE multi-row INSERT,
  * and a STABLE SECURITY DEFINER helper cannot see rows the same statement is
- * inserting. So a test that attempts the stranger BEFORE the actor is a member
- * passes against the vulnerable policy too — it only proves the pre-membership
- * window, which was never the hole. This test therefore seats the owner row
- * FIRST and attempts the stranger SECOND, which is the state an attacker
- * actually occupies. Reordering these two inserts silently destroys the
- * coverage.
+ * inserting. So this test seats the owner row FIRST and attempts the stranger
+ * SECOND, which is the state an attacker actually occupies.
+ *
+ * CORRECTION (2026-09-03): an earlier version of this comment claimed a
+ * stranger-first ordering "passes against the vulnerable policy too" and that
+ * reordering "silently destroys the coverage". That is FALSE for this file's
+ * own fixture — `seedGroup` sets `created_by: creator.id`, so
+ * `is_conversation_creator` alone satisfied the old policy and a stranger-first
+ * insert would have been discriminating as well. The ordering is the more
+ * faithful attacker model and is strictly no weaker, which is reason enough to
+ * keep it; it is not the load-bearing thing the comment asserted.
+ *
+ * WHAT THIS FILE DOES AND DOES NOT PROVE. The cases below prove the INSERT path
+ * consults an accepted connection. Two further routes reached the same outcome
+ * and are pinned at the bottom of this file: rewriting an existing row via
+ * UPDATE, and forging the connection the rule trusts. Without those two, a
+ * green run here would assert a consent guarantee the system did not have.
  *
  * These run against a live Supabase instance (real Postgres RLS) and skip —
  * visibly — when the service-role key and URL are absent.
@@ -226,6 +237,106 @@ describe.skipIf(!hasRlsTestEnvironment())(
         });
       expect(error).not.toBeNull();
       expect(error?.code).toBe('42501');
+    });
+
+    it('refuses rewriting an existing member row onto another user or group', async () => {
+      // RESIDUAL BYPASS A. RLS gates ROWS; the seat rule above is a row rule and
+      // says nothing about which COLUMNS of an existing row may change. The
+      // UPDATE policy declares no WITH CHECK, so Postgres reuses its USING
+      // expression, which `is_conversation_owner` satisfies from the
+      // pre-statement snapshot. Holding UPDATE on every column, an owner could
+      // move their own row into another group they own and rewrite `user_id`.
+      // Demonstrated against a local stack before the fix; the fix is a column
+      // grant, so this is refused before any policy is consulted.
+      const groupA = await seedGroup('patch source');
+      const groupB = await seedGroup('patch target');
+
+      for (const id of [groupA, groupB]) {
+        const seat = await creatorClient.from('conversation_members').insert({
+          conversation_id: id,
+          user_id: creator.id,
+          role: 'owner',
+          key_version_joined: 1,
+        });
+        expect(seat.error, 'owner seating is the positive control').toBeNull();
+      }
+
+      const { error } = await creatorClient
+        .from('conversation_members')
+        .update({ conversation_id: groupB, user_id: stranger.id })
+        .eq('conversation_id', groupA)
+        .eq('user_id', creator.id);
+
+      expect(
+        error,
+        'rewriting user_id/conversation_id must be refused'
+      ).not.toBeNull();
+      expect(error?.code).toBe('42501');
+
+      // The row state, not just the error — a refusal that still wrote would be
+      // the worst possible pass.
+      const { data: seated } = await service
+        .from('conversation_members')
+        .select('id')
+        .eq('conversation_id', groupB)
+        .eq('user_id', stranger.id);
+      expect(seated ?? []).toHaveLength(0);
+    });
+
+    it('still lets a member leave, which is the UPDATE that must survive', async () => {
+      // The counterweight to the case above. DELETE is `USING (false)`, so
+      // leaving a group is an UPDATE of `left_at`. If the column grant were
+      // drawn one column too tight, members would be trapped with no exit and
+      // nothing else in the suite would say so.
+      const groupId = await seedGroup('leaving still works');
+      await creatorClient.from('conversation_members').insert({
+        conversation_id: groupId,
+        user_id: creator.id,
+        role: 'owner',
+        key_version_joined: 1,
+      });
+
+      const { error } = await creatorClient
+        .from('conversation_members')
+        .update({ left_at: new Date().toISOString() })
+        .eq('conversation_id', groupId)
+        .eq('user_id', creator.id);
+
+      expect(error, 'leaving a group must remain possible').toBeNull();
+    });
+
+    it('refuses a self-issued ACCEPTED connection, and still permits a request', async () => {
+      // RESIDUAL BYPASS B. The seat rule trusts an accepted `user_connections`
+      // row. The INSERT policy constrained only `requester_id`, so a user could
+      // grant themselves the consent the rule reads — defeating not just this
+      // rule but conversation creation and the block rule, all of which treat an
+      // accepted row as proof that two people agreed.
+      await clearConnection();
+
+      const forged = await creatorClient.from('user_connections').insert({
+        requester_id: creator.id,
+        addressee_id: stranger.id,
+        status: 'accepted',
+      });
+      expect(
+        forged.error,
+        'self-issued acceptance must be refused'
+      ).not.toBeNull();
+      expect(forged.error?.code).toBe('42501');
+
+      // Positive control: asking is still allowed. Without this, a policy that
+      // refused every insert would pass the assertion above.
+      const asked = await creatorClient.from('user_connections').insert({
+        requester_id: creator.id,
+        addressee_id: stranger.id,
+        status: 'pending',
+      });
+      expect(
+        asked.error,
+        'sending a friend request must still work'
+      ).toBeNull();
+
+      await clearConnection();
     });
   }
 );

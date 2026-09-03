@@ -192,9 +192,15 @@ method + both providers + .NET endpoint + conformance case):
 
 - **Group management.** `createGroup`, `addMembers`, `removeMember`, `leaveGroup`,
   `transferOwnership`, `renameGroup` live only in `src/services/messaging/group-service.ts`.
-  Backing RLS: `conversation_members` INSERT `:2649` (creator-or-member — the #34
-  self-insert-escalation fix), UPDATE `:2657`, DELETE blocked (`:2665`, soft-leave via
-  `left_at`), owner-reassign trigger `reassign_group_owner_on_member_removal` `:2438`.
+  Backing RLS, by policy NAME rather than line number (those had rotted by ~1000 lines):
+  `conversation_members` INSERT "Members can add to their conversations" — creator-or-member
+  AND an accepted `user_connections` row with the actor, exempting only the creator's own
+  owner row (#34 self-insert escalation, then #1059 consent); UPDATE "Members can update
+  membership", narrowed by COLUMN GRANT so `user_id` and `conversation_id` cannot be
+  rewritten (#1059 residual); DELETE blocked by "No direct member deletes", soft-leave via
+  `left_at`; owner-reassign trigger `reassign_group_owner_on_member_removal`.
+  `user_connections` INSERT "Users can create friend requests" pins `status = 'pending'`, so
+  a caller cannot grant themselves the consent the seat rule reads (#1059 residual).
 - **Key rotation.** Conversation key-version lifecycle — direct Supabase.
 - **GDPR export / delete.** Account data export and erasure paths — direct Supabase.
 
