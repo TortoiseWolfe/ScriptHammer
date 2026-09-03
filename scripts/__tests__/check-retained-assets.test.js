@@ -35,6 +35,24 @@ function agesFor(entries, spanDays) {
     .join('\n');
 }
 
+/**
+ * Does this request ask for one of the ledger files?
+ *
+ * The ledger MOVED out of `/_next/static/` (#1061): that prefix is pinned
+ * `max-age=31536000` by a Cloudflare rule written for content-hashed assets, and
+ * these two files are mutable and at fixed names, so every reader was served an
+ * arbitrarily old cached generation. The probe now asks for the new location
+ * first and falls back to the legacy one, and it cache-busts with a query string.
+ *
+ * Real static hosts ignore an unknown query string and serve the file; these
+ * fixtures now do the same, which makes them a closer model of production than
+ * the exact-match they replace.
+ */
+function isLedger(url, name) {
+  const path = (url ?? '').split('?')[0];
+  return path === `/asset-ledger/${name}` || path === `/_next/static/${name}`;
+}
+
 function runProbe(baseUrl, env = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [SCRIPT, baseUrl], {
@@ -67,11 +85,11 @@ async function startServer(handler) {
 test('accepts a CDN-style 206 ranged GET when HEAD is unavailable', async (t) => {
   const entries = retainedEntries(['/_next/static/css/app.css']);
   const server = await startServer((request, response) => {
-    if (request.url === '/_next/static/ASSET_MANIFEST.txt') {
+    if (isLedger(request.url, 'ASSET_MANIFEST.txt')) {
       response.end(entries.join('\n'));
       return;
     }
-    if (request.url === '/_next/static/ASSET_AGES.txt') {
+    if (isLedger(request.url, 'ASSET_AGES.txt')) {
       response.end(agesFor(entries, 20));
       return;
     }
@@ -94,11 +112,11 @@ test('fails and names a missing retained stylesheet', async (t) => {
   const missing = '/_next/static/css/removed.css';
   const entries = retainedEntries([missing]);
   const server = await startServer((request, response) => {
-    if (request.url === '/_next/static/ASSET_MANIFEST.txt') {
+    if (isLedger(request.url, 'ASSET_MANIFEST.txt')) {
       response.end(entries.join('\n'));
       return;
     }
-    if (request.url === '/_next/static/ASSET_AGES.txt') {
+    if (isLedger(request.url, 'ASSET_AGES.txt')) {
       response.end(agesFor(entries, 20));
       return;
     }
@@ -136,11 +154,11 @@ const PAST_RAMP = {
 };
 
 const serveLedger = (entries, spanDays) => (request, response) => {
-  if (request.url === '/_next/static/ASSET_MANIFEST.txt') {
+  if (isLedger(request.url, 'ASSET_MANIFEST.txt')) {
     response.end(entries.join('\n'));
     return;
   }
-  if (request.url === '/_next/static/ASSET_AGES.txt') {
+  if (isLedger(request.url, 'ASSET_AGES.txt')) {
     response.end(agesFor(entries, spanDays));
     return;
   }
@@ -192,11 +210,11 @@ test('stays quiet during the ramp, when a narrow window is correct', async (t) =
 test('fails when the age ledger is missing entirely', async (t) => {
   const entries = retainedEntries(['/_next/static/css/app.css']);
   const server = await startServer((request, response) => {
-    if (request.url === '/_next/static/ASSET_MANIFEST.txt') {
+    if (isLedger(request.url, 'ASSET_MANIFEST.txt')) {
       response.end(entries.join('\n'));
       return;
     }
-    if (request.url === '/_next/static/ASSET_AGES.txt') {
+    if (isLedger(request.url, 'ASSET_AGES.txt')) {
       response.writeHead(404).end();
       return;
     }

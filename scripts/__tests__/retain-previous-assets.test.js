@@ -108,7 +108,7 @@ async function retain(outDir, liveDir, days = 14) {
 
 const manifestOf = (dir) =>
   fs
-    .readFileSync(path.join(dir, '_next/static/ASSET_MANIFEST.txt'), 'utf8')
+    .readFileSync(path.join(dir, 'asset-ledger/ASSET_MANIFEST.txt'), 'utf8')
     .split('\n')
     .filter(Boolean);
 
@@ -116,7 +116,7 @@ const manifestOf = (dir) =>
 const agesOf = (dir) =>
   new Map(
     fs
-      .readFileSync(path.join(dir, '_next/static/ASSET_AGES.txt'), 'utf8')
+      .readFileSync(path.join(dir, 'asset-ledger/ASSET_AGES.txt'), 'utf8')
       .split('\n')
       .filter(Boolean)
       .map((l) => {
@@ -129,7 +129,7 @@ const agesOf = (dir) =>
 const bornOf = (dir) =>
   new Map(
     fs
-      .readFileSync(path.join(dir, '_next/static/ASSET_AGES.txt'), 'utf8')
+      .readFileSync(path.join(dir, 'asset-ledger/ASSET_AGES.txt'), 'utf8')
       .split('\n')
       .filter(Boolean)
       .map((l) => {
@@ -146,7 +146,7 @@ const bornOf = (dir) =>
  * read a genuinely old one.
  */
 function backdate(dir, rel, days) {
-  const p = path.join(dir, '_next/static/ASSET_AGES.txt');
+  const p = path.join(dir, 'asset-ledger/ASSET_AGES.txt');
   const when = new Date(Date.now() - days * 86400000).toISOString();
   const out = fs
     .readFileSync(p, 'utf8')
@@ -303,7 +303,7 @@ describe('retain-previous-assets: chaining across a burst (#548)', () => {
       'an unreachable live site must exit non-zero'
     );
     assert.ok(
-      fs.existsSync(path.join(b, '_next/static/ASSET_MANIFEST.txt')),
+      fs.existsSync(path.join(b, 'asset-ledger/ASSET_MANIFEST.txt')),
       'the manifest must be published even when retention could not run'
     );
     const m = manifestOf(b);
@@ -384,6 +384,35 @@ describe('retain-previous-assets: chaining across a burst (#548)', () => {
       before,
       'the first-seen timestamp must survive a deploy unchanged'
     );
+  });
+
+  it('writes the ledger OUTSIDE the immutable-cache prefix, and nowhere inside it', async () => {
+    // THE WHOLE POINT OF #1061. `_next/static/*` is pinned `max-age=31536000` by a
+    // Cloudflare rule written for content-hashed assets. These two files are
+    // mutable and at fixed names, so living there meant every deploy read an
+    // arbitrarily old cached generation and trusted it as the complete list.
+    // Measured on production: 269, 479, 229 and 212 entries returned from four
+    // vantage points after ONE deploy, and across 29 sampled deploys the value read
+    // never once equalled the value the previous deploy had written. Retention fell
+    // from 346 carried files to 52 in three days.
+    //
+    // A second copy under the old path would resurrect the bug, because a reader
+    // that prefers the stale one is back where it started. So this asserts BOTH
+    // halves: present at the new path, absent from the old.
+    const a = makeGeneration(path.join(WORK, 'a8'), 'gen-a');
+    const b = makeGeneration(path.join(WORK, 'b8'), 'gen-b');
+    await retain(b, a);
+
+    for (const name of ['ASSET_MANIFEST.txt', 'ASSET_AGES.txt']) {
+      assert.ok(
+        fs.existsSync(path.join(b, 'asset-ledger', name)),
+        `${name} must be published outside _next/static`
+      );
+      assert.ok(
+        !fs.existsSync(path.join(b, '_next/static', name)),
+        `${name} must NOT be published under _next/static — that prefix is cached for a year`
+      );
+    }
   });
 
   it('reads the pre-#751 two-field ledger and stamps those entries now', async () => {

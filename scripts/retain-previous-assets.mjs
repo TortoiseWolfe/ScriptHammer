@@ -85,6 +85,87 @@ async function get(url) {
 }
 
 /**
+ * WHERE THE LEDGER LIVES, AND WHY IT MOVED (#1061).
+ *
+ * `ASSET_MANIFEST.txt` and `ASSET_AGES.txt` used to be written into
+ * `_next/static/`. Every other file under that prefix is content-hashed, so
+ * Cloudflare's cache rule pins the whole prefix at `max-age=31536000` — correct
+ * for hashed assets and catastrophic for the two MUTABLE files at FIXED names
+ * that happened to share it.
+ *
+ * The consequence was not theoretical. Every deploy fetched the ledger, got some
+ * arbitrarily old cached generation, and trusted it as the complete list. Reads
+ * of 269, 479, 229 and 212 entries were measured from four vantage points after a
+ * SINGLE deploy, and across 29 sampled deploys the value read never once equalled
+ * the value the immediately preceding deploy had written. The 14-day rule then
+ * executed correctly against frozen birth dates: on 2026-08-29 the entire 08-15
+ * cohort inside one frozen snapshot turned 14 days old at once and 220 files were
+ * evicted in a single step, with nothing to replace them. Retention fell from 346
+ * carried files to 52 in three days.
+ *
+ * So the ledger now lives OUTSIDE that prefix, where no cache rule matches it. The
+ * legacy path is still written and still read for one transition, because the
+ * ledger currently live is at the old location and refusing to read it would reset
+ * retention to zero on the very deploy that fixes it.
+ */
+const LEDGER_DIR = 'asset-ledger';
+const LEGACY_LEDGER_DIR = '_next/static';
+
+/**
+ * A cache-busting read. The query string is not part of the cache key for the
+ * `/_next/static/` prefix — measured, `?cb=` still returned `cf-cache-status: HIT`
+ * — so this only bites at the new location. That is fine: at the new location it
+ * is the whole point, and at the old one the fallback is a transition measure.
+ */
+async function getFresh(url) {
+  const bust = `${url.includes('?') ? '&' : '?'}fresh=${Date.now()}`;
+  try {
+    const res = await fetch(url + bust, {
+      redirect: 'follow',
+      cache: 'no-store',
+      headers: { 'cache-control': 'no-cache', pragma: 'no-cache' },
+    });
+    if (!res.ok) return null;
+    return res;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * New location first; the legacy one only until the next deploy has published.
+ *
+ * A 200 IS NOT ENOUGH, and assuming it was is a bug this very change introduced
+ * before its own tests caught it. A host that answers an unknown path with a
+ * SPA fallback — or any 200-for-everything rule — hands back a page, and treating
+ * that as the age table restamps every asset to `now`, silently resetting
+ * retention to zero. So the BODY has to look like the ledger it claims to be.
+ */
+async function getLedgerText(name, looksRight) {
+  for (const dir of [LEDGER_DIR, LEGACY_LEDGER_DIR]) {
+    const res = await getFresh(`${BASE}/${dir}/${name}`);
+    if (!res) continue;
+    const text = await res.text();
+    if (looksRight(text)) return text;
+  }
+  return null;
+}
+
+/** A manifest lists published asset paths, one per line. */
+const looksLikeManifest = (t) =>
+  t.split('\n').some((l) => l.trim().startsWith('_next/static/'));
+
+/**
+ * An age table is `<generations> <ISO timestamp> <path>` — or the pre-#751
+ * `<generations> <path>`, which this script still reads for one transition. Both
+ * shapes are accepted; an HTML fallback page matches neither.
+ */
+const looksLikeAges = (t) =>
+  t
+    .split('\n')
+    .some((l) => /^\s*\d+\s+(\S+T\S+Z\s+\S|_next\/static\/\S)/.test(l));
+
+/**
  * Routes to read. The live sitemap is authoritative; `/` is the fallback.
  *
  * REACHABILITY IS CHECKED FIRST AND SEPARATELY. The first version of this
@@ -261,25 +342,36 @@ async function publishManifest() {
   }
   published.sort();
 
-  await writeFile(
-    join(staticRoot, 'ASSET_MANIFEST.txt'),
-    published.join('\n') + '\n'
-  );
-  await writeFile(
-    join(staticRoot, 'ASSET_AGES.txt'),
-    // `<generations> <first-seen ISO> <path>`. The timestamp is what decides
-    // retention (#751); the generation count is kept as a diagnostic, because it is
-    // what makes a runaway merge rate legible in the logs.
-    //
-    // Anything not carried in by the retain loop is this build's own output: age 0,
-    // first seen now.
+  // ONE writer, one location (#1061). The ledger is written only to the new path,
+  // outside the prefix Cloudflare pins immutable.
+  //
+  // It is deliberately NOT also written to the legacy path. Two copies of one
+  // ledger is the same failure in miniature: anything that updates one and not the
+  // other makes the answer depend on which a reader happens to prefer. Readers
+  // instead FALL BACK to the legacy path, which covers the only case that needs
+  // it — a site whose currently-live deploy predates this change.
+  const ledgerRoot = join(outDir, LEDGER_DIR);
+  await mkdir(ledgerRoot, { recursive: true });
+  const manifestBody = published.join('\n') + '\n';
+  await writeFile(join(ledgerRoot, 'ASSET_MANIFEST.txt'), manifestBody);
+  // `<generations> <first-seen ISO> <path>`. The timestamp is what decides
+  // retention (#751); the generation count is kept as a diagnostic, because it is
+  // what makes a runaway merge rate legible in the logs.
+  //
+  // Anything not carried in by the retain loop is this build's own output: age 0,
+  // first seen now.
+  //
+  // Written from the SAME `published` array as the manifest, which is what makes
+  // the entry counts equal by construction — and therefore makes a mismatch on the
+  // read side proof that the two came from different generations (#1061).
+  const agesBody =
     published
       .map(
         (rel) =>
           `${ages.get(rel) ?? 0} ${new Date(firstSeen.get(rel) ?? NOW).toISOString()} ${rel}`
       )
-      .join('\n') + '\n'
-  );
+      .join('\n') + '\n';
+  await writeFile(join(ledgerRoot, 'ASSET_AGES.txt'), agesBody);
   const oldest = [...firstSeen.values()].reduce((a, b) => Math.min(a, b), NOW);
   console.log(
     `manifest lists ${published.length} file(s) — this build's output plus ` +
@@ -304,9 +396,47 @@ async function publishManifest() {
  * deploy after this lands falls back to crawling and writes the first manifest.
  * The deploy after that gets complete retention.
  */
-const manifest = await get(`${BASE}/_next/static/ASSET_MANIFEST.txt`);
+const manifestText = await getLedgerText(
+  'ASSET_MANIFEST.txt',
+  looksLikeManifest
+);
+const ledgerAgesText = await getLedgerText('ASSET_AGES.txt', looksLikeAges);
+
+/**
+ * COHERENCE: the two ledger files are written from the same `published` array, so
+ * a healthy pair has the same number of entries. A mismatch proves they came from
+ * different generations — i.e. at least one is a stale cached copy — and that is
+ * exactly the condition that silently destroyed retention (#1061). Reads of
+ * 479 manifest entries against 481 ages entries were observed in production.
+ *
+ * The response is to DISTRUST the pair and fall back to crawling the live HTML,
+ * which is the independent source of truth. Trusting a stale manifest is worse
+ * than having none: `pages` below is skipped whenever a manifest is present, so a
+ * stale 200 silences the only thing that could contradict it.
+ */
+const manifestCount = manifestText
+  ? manifestText
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l.startsWith('_next/static/')).length
+  : 0;
+const agesCount = ledgerAgesText
+  ? ledgerAgesText.split('\n').filter((l) => l.trim()).length
+  : 0;
+let ledgerIncoherent = false;
+if (manifestText && ledgerAgesText && manifestCount !== agesCount) {
+  ledgerIncoherent = true;
+  console.log(
+    `::warning::ledger is incoherent — manifest has ${manifestCount} entries but the ` +
+      `age table has ${agesCount}. A current pair is written from one array, so this ` +
+      `is either a stale cached copy or a pre-#751 partial ledger. Crawling the live ` +
+      `site IN ADDITION to the manifest so nothing is lost either way (#1061).`
+  );
+}
+
+const manifest = manifestText;
 if (manifest) {
-  const lines = (await manifest.text())
+  const lines = manifestText
     .split('\n')
     .map((l) => l.trim())
     .filter((l) => l.startsWith('_next/static/'));
@@ -316,7 +446,10 @@ if (manifest) {
   );
 }
 
-const pages = manifest ? [] : await livePages();
+// An incoherent ledger is still USED — a partial age table is a legitimate
+// pre-#751 state — but it stops being trusted as the complete list, so the live
+// crawl runs alongside it and the two are unioned.
+const pages = manifest && !ledgerIncoherent ? [] : await livePages();
 if (!manifest)
   console.log(
     'no manifest on the live build — falling back to crawling its HTML'
@@ -387,9 +520,9 @@ console.log(`after one transitive pass: ${wanted.size} reference(s)`);
 const liveAges = new Map();
 const liveFirstSeen = new Map();
 let undated = 0;
-const agesRes = await get(`${BASE}/_next/static/ASSET_AGES.txt`);
-if (agesRes) {
-  for (const line of (await agesRes.text()).split('\n')) {
+const usableAges = ledgerAgesText;
+if (usableAges) {
+  for (const line of usableAges.split('\n')) {
     // New format `<age> <ISO> <path>`, and the OLD `<age> <path>` it replaces.
     // Both are parsed for exactly one deploy — the currently-live ledger predates
     // the timestamp, and refusing to read it would reset retention to zero on the

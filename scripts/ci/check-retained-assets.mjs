@@ -80,8 +80,36 @@ if (!BASE) {
   );
   process.exit(0);
 }
-const MANIFEST = `${BASE}/_next/static/ASSET_MANIFEST.txt`;
-const AGES = `${BASE}/_next/static/ASSET_AGES.txt`;
+/**
+ * WHERE THE LEDGER LIVES (#1061). It moved out of `/_next/static/`, because that
+ * prefix is pinned `max-age=31536000` by a Cloudflare cache rule written for
+ * content-hashed assets — and these two files are mutable and at fixed names.
+ * This checker was reading whatever cached generation its runner's edge node
+ * happened to hold: 269, 479, 229 and 212 entries were measured after ONE deploy.
+ * That made this gate's verdict a lottery in both directions.
+ *
+ * The legacy path is still tried, so this keeps working against a site whose last
+ * deploy predates the move.
+ */
+const LEDGER_PATHS = ['asset-ledger', '_next/static'];
+
+/** Cache-busting fetch — the whole point of the move is defeated by a cached read. */
+async function fetchLedger(name) {
+  for (const dir of LEDGER_PATHS) {
+    const url = `${BASE}/${dir}/${name}?fresh=${Date.now()}`;
+    try {
+      const res = await fetch(url, {
+        redirect: 'follow',
+        cache: 'no-store',
+        headers: { 'cache-control': 'no-cache', pragma: 'no-cache' },
+      });
+      if (res.ok) return { res, url };
+    } catch {
+      // try the next location
+    }
+  }
+  return { res: null, url: `${BASE}/${LEDGER_PATHS[0]}/${name}` };
+}
 const CONCURRENCY = 12;
 
 /** Must match `RETAIN_DAYS` in .github/workflows/deploy.yml (#751). */
@@ -148,12 +176,12 @@ async function pool(items, worker, size) {
   return out;
 }
 
-const res = await fetch(MANIFEST, { redirect: 'follow' });
-if (!res.ok) {
+const { res, url: MANIFEST } = await fetchLedger('ASSET_MANIFEST.txt');
+if (!res || !res.ok) {
   // A missing manifest is itself the bug: retention has no memory, so the NEXT
   // deploy carries nothing forward and the failure recurs.
   console.error(
-    `::error::${MANIFEST} returned ${res.status}. The retention ledger is not ` +
+    `::error::${MANIFEST} returned ${res ? res.status : 'no response'}. The retention ledger is not ` +
       `published, so nothing is being carried forward and the next deploy will ` +
       `strand every visitor holding current HTML.`
   );
@@ -224,10 +252,10 @@ if (missing.length) {
  * day per day. Failing during that would be crying wolf on a correct deploy, so the
  * floor only applies once the ledger is old enough to have reached full width.
  */
-const agesRes = await fetch(AGES, { redirect: 'follow' });
-if (!agesRes.ok) {
+const { res: agesRes, url: AGES } = await fetchLedger('ASSET_AGES.txt');
+if (!agesRes || !agesRes.ok) {
   console.error(
-    `::error::${AGES} returned ${agesRes.status}. Without the age ledger the next ` +
+    `::error::${AGES} returned ${agesRes ? agesRes.status : 'no response'}. Without the age ledger the next ` +
       `deploy cannot date what it carries, so retention silently restarts.`
   );
   process.exit(1);
