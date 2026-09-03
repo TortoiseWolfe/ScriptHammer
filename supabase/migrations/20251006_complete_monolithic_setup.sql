@@ -1313,4 +1313,69 @@ ALTER TABLE messages REPLICA IDENTITY FULL;
 -- Or enable via Supabase Dashboard: Database > Replication
 
 -- Commit the transaction - everything succeeded
+-- ===========================================================================
+-- SECURITY (upstream TortoiseWolfe/ScriptHammer#1059): RLS gates ROWS, not
+-- COLUMNS. Four policies pinned WHO YOU ARE while GRANT ALL left writable the
+-- columns saying WHO THE ROW IS ABOUT, so any signed-up user could place a
+-- non-consenting person into a conversation.
+--
+-- Every statement below is idempotent and changes no data.
+-- ===========================================================================
+
+-- A user may only ever ASK for a connection. `status` was unconstrained, so a
+-- user could self-issue the accepted row every consent check reads.
+DROP POLICY IF EXISTS "Users can create friend requests" ON user_connections;
+CREATE POLICY "Users can create friend requests" ON user_connections
+  FOR INSERT TO authenticated
+  WITH CHECK (auth.uid() = requester_id AND status = 'pending');
+
+-- Seating requires an accepted connection with the actor. Written without
+-- is_conversation_creator() so it applies to older forks that lack it.
+DROP POLICY IF EXISTS "Members can add to their conversations" ON conversation_members;
+CREATE POLICY "Members can add to their conversations" ON conversation_members
+  FOR INSERT WITH CHECK (
+    (
+      conversation_members.user_id = auth.uid()
+      AND EXISTS (
+        SELECT 1 FROM conversations c
+        WHERE c.id = conversation_members.conversation_id
+          AND c.created_by = auth.uid()
+      )
+    )
+    OR (
+      is_conversation_member(conversation_members.conversation_id)
+      AND EXISTS (
+        SELECT 1 FROM user_connections uc
+        WHERE uc.status = 'accepted'
+          AND (
+            (uc.requester_id = auth.uid() AND uc.addressee_id = conversation_members.user_id)
+            OR (uc.requester_id = conversation_members.user_id AND uc.addressee_id = auth.uid())
+          )
+      )
+    )
+  );
+
+-- Column grants. These are what actually close the rewrite routes: column
+-- privilege is checked independently of RLS and refuses before any policy runs.
+-- left_at stays granted because DELETE is USING(false) and leaving a group is
+-- an UPDATE of left_at.
+REVOKE ALL ON conversation_members FROM anon, authenticated;
+GRANT SELECT, INSERT ON conversation_members TO authenticated;
+GRANT UPDATE (left_at, role, key_status, archived, muted) ON conversation_members TO authenticated;
+GRANT ALL ON conversation_members TO service_role;
+
+REVOKE ALL ON user_connections FROM anon, authenticated;
+GRANT SELECT, INSERT, DELETE ON user_connections TO authenticated;
+GRANT UPDATE (status) ON user_connections TO authenticated;
+GRANT ALL ON user_connections TO service_role;
+
+REVOKE ALL ON conversations FROM anon, authenticated;
+GRANT SELECT, INSERT, DELETE ON conversations TO authenticated;
+GRANT UPDATE (archived_by_participant_1, archived_by_participant_2, group_name,
+              current_key_version, last_message_at) ON conversations TO authenticated;
+GRANT ALL ON conversations TO service_role;
+
+REVOKE ALL ON messages FROM anon;
+GRANT ALL ON messages TO authenticated, service_role;
+
 COMMIT;
