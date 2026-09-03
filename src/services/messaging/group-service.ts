@@ -682,8 +682,21 @@ export class GroupService {
     const newIds = Array.from(new Set(member_ids ?? [])).filter(
       (id) => id !== user.id && id !== otherParticipant
     );
-    const connected = await this.getConnectedUserIds(user.id, newIds);
-    if (newIds.some((id) => !connected.has(id))) {
+    // The former 1:1 partner is SEATED by this upgrade, so they must be
+    // validated like anyone else (#1059). They used to be filtered out of this
+    // check on the assumption that sharing a conversation implied a live
+    // connection — but a connection can be removed or blocked while the
+    // conversation persists, and the database now enforces the rule the
+    // service layer always claimed. Without this, a disconnected partner would
+    // be refused by RLS with a raw 42501 instead of this named error.
+    //
+    // Refusing is also the right behaviour: having disconnected from someone,
+    // you should not be able to pull them into a group.
+    const seatIds = otherParticipant
+      ? [...newIds, otherParticipant]
+      : [...newIds];
+    const connected = await this.getConnectedUserIds(user.id, seatIds);
+    if (seatIds.some((id) => !connected.has(id))) {
       throw new MembershipError(
         'All members must be connected to you',
         'NOT_CONNECTED'
