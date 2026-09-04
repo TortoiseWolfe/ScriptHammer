@@ -49,18 +49,51 @@ function healthy(INTENDED) {
             Object.entries(want.grants).map(([r, p]) => [r, [...p].sort()])
           )
         : {},
+      // The SCOPE of each grant, which is what `role_table_grants` and `column_privileges`
+      // answer separately (#1062). A healthy production holds exactly what the migration
+      // grants table-wide, and exactly the named columns where it grants column-scoped.
+      tableGrants: want.tableGrants
+        ? Object.fromEntries(
+            Object.entries(want.tableGrants).map(([r, p]) => [r, [...p].sort()])
+          )
+        : {},
+      columnGrants: want.columnGrants
+        ? Object.fromEntries(
+            Object.entries(want.columnGrants).map(([r, byPriv]) => [
+              r,
+              Object.fromEntries(
+                Object.entries(byPriv).map(([pr, c]) => [pr, [...c].sort()])
+              ),
+            ])
+          )
+        : {},
       policies: want.policies
-        .map((p) => ({ name: p.name, roles: [...p.roles].sort() }))
+        .map((p) => ({
+          name: p.name,
+          roles: [...p.roles].sort(),
+          cmd: p.cmd,
+          permissive: p.permissive,
+        }))
         .sort((a, b) => a.name.localeCompare(b.name)),
+      triggers: [...(want.triggers ?? [])].sort(),
     };
   }
   return out;
 }
 
-/** A live function list matching the migration exactly. */
+/** A live function list matching the migration exactly, bodies included. */
 function healthyFunctions(INTENDED) {
-  return INTENDED.functions.map((f) => ({ name: f.name, arity: f.arity }));
+  return INTENDED.functions.map((f) => ({
+    name: f.name,
+    arity: f.arity,
+    body: f.body,
+    securityDefiner: f.securityDefiner,
+    config: [...f.config],
+  }));
 }
+
+/** A deep copy, so a mutation in one case cannot leak into the next. */
+const clone = (x) => JSON.parse(JSON.stringify(x));
 
 describe('production schema-drift comparator (#903)', () => {
   it('reports nothing when production matches INTENDED', async () => {
@@ -274,6 +307,242 @@ describe('production schema-drift comparator (#903)', () => {
       evaluateFunctions(healthyFunctions(INTENDED), INTENDED),
       []
     );
+  });
+
+  // ---------------------------------------------------------------------------------
+  // #1062 STEP 1 — the four properties the gate used to compare by NAME only.
+  //
+  // Each pair is deliberate: a mutation that must go red, and the healthy control that
+  // must stay green. Without the second, a comparator that always returns problems passes
+  // every red test in this file.
+  // ---------------------------------------------------------------------------------
+
+  it('WOULD HAVE CAUGHT #1059 — a column grant widened to the whole table', async () => {
+    // `GRANT UPDATE (status) ON user_connections` is the instrument of #1059's fix: column
+    // privilege is checked independently of RLS and refuses before any policy is consulted.
+    // `GRANT UPDATE ON user_connections` reopens it. Both produce the SAME row in
+    // information_schema.column_privileges, and until now the gate read only that union —
+    // so the two were byte-identical to it.
+    const { evaluate, INTENDED } = await load();
+    const got = clone(healthy(INTENDED));
+    const t = got.user_connections;
+    t.tableGrants.authenticated = [
+      ...t.tableGrants.authenticated,
+      'UPDATE',
+    ].sort();
+    delete t.columnGrants.authenticated.UPDATE;
+
+    const problems = evaluate(got, INTENDED);
+    assert.match(
+      problems.join('\n'),
+      /user_connections.*WHOLE TABLE.*WIDER by UPDATE/s,
+      `expected the table-wide UPDATE to be reported; got: ${problems.join(' | ')}`
+    );
+  });
+
+  it('WOULD HAVE CAUGHT #1029 — user_profiles SELECT widened past is_admin', async () => {
+    // The column list on user_profiles exists so `is_admin` stays unreadable. Widening
+    // SELECT to the whole table re-exposes it while every policy still reads correctly.
+    const { evaluate, INTENDED } = await load();
+    const got = clone(healthy(INTENDED));
+    got.user_profiles.tableGrants.authenticated = ['SELECT'];
+    delete got.user_profiles.columnGrants.authenticated.SELECT;
+
+    assert.match(
+      evaluate(got, INTENDED).join('\n'),
+      /user_profiles.*WHOLE TABLE/s
+    );
+  });
+
+  it('catches a column ADDED to a column-scoped grant', async () => {
+    // The direction that matters most: production granting a column the migration withholds.
+    // `user_id` on conversation_members is exactly the column #1059 was about.
+    const { evaluate, INTENDED } = await load();
+    const got = clone(healthy(INTENDED));
+    got.conversation_members.columnGrants.authenticated.UPDATE.push('user_id');
+
+    assert.match(
+      evaluate(got, INTENDED).join('\n'),
+      /conversation_members.*UPDATE.*WIDER by user_id/s
+    );
+  });
+
+  it('catches a privilege held at column scope that the migration grants nowhere', async () => {
+    const { evaluate, INTENDED } = await load();
+    const got = clone(healthy(INTENDED));
+    got.user_profiles.columnGrants.authenticated.DELETE = ['id'];
+
+    assert.match(
+      evaluate(got, INTENDED).join('\n'),
+      /user_profiles.*DELETE.*grants it nowhere/s
+    );
+  });
+
+  it('catches a policy whose command was widened to ALL', async () => {
+    // FOR SELECT flipped to FOR ALL hands the role INSERT, UPDATE and DELETE under one
+    // predicate, with the name, the roles and the expression all byte-identical.
+    const { evaluate, INTENDED } = await load();
+    const got = clone(healthy(INTENDED));
+    const p = got.messages.policies.find((x) => x.cmd === 'INSERT');
+    assert.ok(p, 'fixture must contain an INSERT policy on messages');
+    p.cmd = 'ALL';
+
+    assert.match(
+      evaluate(got, INTENDED).join('\n'),
+      /messages.*is FOR ALL in production.*WIDER/s
+    );
+  });
+
+  it('catches a policy flipped from RESTRICTIVE to PERMISSIVE', async () => {
+    // A restrictive policy is ANDed with its siblings; a permissive one is ORed. Same
+    // expression, opposite meaning for access.
+    const { evaluate, INTENDED } = await load();
+    const got = clone(healthy(INTENDED));
+    got.conversation_members.policies[0].permissive =
+      !got.conversation_members.policies[0].permissive;
+
+    assert.match(
+      evaluate(got, INTENDED).join('\n'),
+      /conversation_members.*policy .* (PERMISSIVE|RESTRICTIVE) in production/s
+    );
+  });
+
+  it('catches a trigger that never reached production', async () => {
+    // `before_message_update_column_guard` is #281's fix for OR-combined UPDATE policies
+    // gating rows rather than columns. Nothing asserted any trigger before this.
+    const { evaluate, INTENDED } = await load();
+    const got = clone(healthy(INTENDED));
+    const table = Object.keys(INTENDED.tables).find(
+      (t) => (INTENDED.tables[t].triggers ?? []).length > 0
+    );
+    assert.ok(table, 'the migration must declare at least one trigger');
+    got[table].triggers = [];
+
+    assert.match(
+      evaluate(got, INTENDED).join('\n'),
+      /triggers differ.*MISSING/s
+    );
+  });
+
+  it('the migration declares the triggers this asserts — the floor for the above', async () => {
+    const { INTENDED } = await load();
+    const total = Object.values(INTENDED.tables).reduce(
+      (n, t) => n + (t.triggers?.length ?? 0),
+      0
+    );
+    // Lowering this to make a run pass is the move never to make (#396). If the trigger
+    // parser silently stops matching, this is the only thing that notices.
+    assert.ok(total >= 3, `parsed only ${total} triggers from the migration`);
+  });
+
+  it('WOULD HAVE CAUGHT a SECURITY DEFINER helper rewritten on production', async () => {
+    // 22 of 26 public functions are SECURITY DEFINER and every serious predicate delegates
+    // to four of them. `is_conversation_member` rewritten to `SELECT true` leaves all 83
+    // policy expressions matching their declarations — the gate compared name and arity.
+    const { evaluateFunctions, INTENDED } = await load();
+    const live = clone(healthyFunctions(INTENDED));
+    const f = live.find((x) => x.name === 'is_conversation_member');
+    assert.ok(f, 'is_conversation_member must be declared');
+    f.body = ' SELECT true; ';
+
+    assert.match(
+      evaluateFunctions(live, INTENDED).join('\n'),
+      /is_conversation_member.*BODY in production differs/s
+    );
+  });
+
+  it('catches SECURITY DEFINER lost, and says which direction', async () => {
+    const { evaluateFunctions, INTENDED } = await load();
+    const live = clone(healthyFunctions(INTENDED));
+    const f = live.find((x) => x.securityDefiner);
+    f.securityDefiner = false;
+
+    assert.match(
+      evaluateFunctions(live, INTENDED).join('\n'),
+      /production is SECURITY INVOKER.*NARROWER/s
+    );
+  });
+
+  it('catches a SECURITY DEFINER function that lost its pinned search_path', async () => {
+    const { evaluateFunctions, INTENDED } = await load();
+    const live = clone(healthyFunctions(INTENDED));
+    const f = live.find(
+      (x) =>
+        x.securityDefiner && x.config.some((c) => c.startsWith('search_path='))
+    );
+    assert.ok(f, 'at least one SECURITY DEFINER function must pin search_path');
+    f.config = [];
+
+    assert.match(
+      evaluateFunctions(live, INTENDED).join('\n'),
+      /settings are \[none\] in production.*CALLER/s
+    );
+  });
+
+  it('the migration parses function bodies at all — the floor for the three above', async () => {
+    // Every assertion above is satisfied vacuously if `body` comes back null: the
+    // comparator skips a function whose body it could not read, by design, because a
+    // parser that guesses at a body would report drift on every function it misread.
+    const { INTENDED } = await load();
+    const withBody = INTENDED.functions.filter(
+      (f) => typeof f.body === 'string' && f.body.length > 0
+    );
+    assert.strictEqual(
+      withBody.length,
+      INTENDED.functions.length,
+      `${INTENDED.functions.length - withBody.length} function(s) parsed with no body; ` +
+        'the body comparison silently skips those'
+    );
+    assert.ok(
+      INTENDED.functions.filter((f) => f.securityDefiner).length >= 20,
+      'expected at least 20 SECURITY DEFINER functions'
+    );
+  });
+
+  it('a comment-only edit to the migration is NOT drift', async () => {
+    // The counterweight for every red test above. A comparator that always reports
+    // problems passes all of them; this is what it cannot pass. `--` comments are blanked
+    // before parsing, and function bodies are read from the RAW text so that a comment
+    // INSIDE a body still compares equal.
+    const { deriveIntended } = await import(
+      `file://${path.resolve(__dirname, '..', 'ci', 'derive-intended-schema.mjs')}`
+    );
+    const fs = require('fs');
+    const migration = path.resolve(
+      __dirname,
+      '..',
+      '..',
+      'supabase',
+      'migrations',
+      '20251006_complete_monolithic_setup.sql'
+    );
+    const raw = fs.readFileSync(migration, 'utf8');
+    const reworded = raw.replace(
+      /^-- Enable realtime for group tables$/m,
+      '-- Enable realtime for the group tables (reworded, same schema)'
+    );
+    assert.notStrictEqual(reworded, raw, 'the reword anchor must exist');
+
+    assert.deepStrictEqual(
+      deriveIntended(reworded),
+      deriveIntended(raw),
+      'rewording a comment changed the derived intent'
+    );
+  });
+
+  it('blanking comments preserves length — function bodies depend on it', async () => {
+    // `prosrc` stores a body byte-for-byte, `--` comments included. Bodies are therefore
+    // read from the RAW migration at indices found in the masked copy, which only works
+    // while masking preserves length. Removing comments instead would offset every index
+    // and silently truncate bodies.
+    const { stripComments } = await import(
+      `file://${path.resolve(__dirname, '..', 'ci', 'derive-intended-schema.mjs')}`
+    );
+    const sql = 'SELECT 1; -- a trailing comment\nSELECT 2;';
+    const masked = stripComments(sql);
+    assert.strictEqual(masked.length, sql.length);
+    assert.ok(!masked.includes('trailing comment'));
+    assert.strictEqual(masked.indexOf('SELECT 2'), sql.indexOf('SELECT 2'));
   });
 
   it('INTENDED actually declares something', async () => {
