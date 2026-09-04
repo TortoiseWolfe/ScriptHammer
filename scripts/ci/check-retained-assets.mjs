@@ -112,6 +112,34 @@ async function fetchLedger(name) {
 }
 const CONCURRENCY = 12;
 
+/**
+ * WHICH QUESTION TO ANSWER (#1061).
+ *
+ * This file asks two INDEPENDENT things, and they used to share one exit code:
+ *
+ *   reachability — is every asset the deploy promised still served? This is the
+ *                  unstyled-production detector proper.
+ *   window       — does the ledger span RETAIN_DAYS? This is the #751 assertion,
+ *                  added because all 13 stylesheets were reachable on the night
+ *                  production went unstyled for the eighth time.
+ *
+ * Sharing a verdict meant a short window hid a healthy reachability result and
+ * vice versa — the same masking that hid seven detectors behind this one step.
+ * Splitting them lets "nothing is stranded, but coverage is still rebuilding"
+ * read as what it is, instead of collapsing to a single red.
+ *
+ * Unset means BOTH, so every existing caller keeps its current behaviour.
+ */
+const CHECK = (process.env.RETAINED_CHECK ?? 'both').trim();
+if (!['both', 'reachability', 'window'].includes(CHECK)) {
+  console.error(
+    `::error::RETAINED_CHECK must be 'both', 'reachability' or 'window' — got '${CHECK}'.`
+  );
+  process.exit(2);
+}
+const doReach = CHECK !== 'window';
+const doWindow = CHECK !== 'reachability';
+
 /** Must match `RETAIN_DAYS` in .github/workflows/deploy.yml (#751). */
 const RETAIN_DAYS = Number(process.env.RETAIN_DAYS ?? 14);
 
@@ -176,64 +204,67 @@ async function pool(items, worker, size) {
   return out;
 }
 
-const { res, url: MANIFEST } = await fetchLedger('ASSET_MANIFEST.txt');
-if (!res || !res.ok) {
-  // A missing manifest is itself the bug: retention has no memory, so the NEXT
-  // deploy carries nothing forward and the failure recurs.
-  console.error(
-    `::error::${MANIFEST} returned ${res ? res.status : 'no response'}. The retention ledger is not ` +
-      `published, so nothing is being carried forward and the next deploy will ` +
-      `strand every visitor holding current HTML.`
+if (doReach) {
+  const { res, url: MANIFEST } = await fetchLedger('ASSET_MANIFEST.txt');
+  if (!res || !res.ok) {
+    // A missing manifest is itself the bug: retention has no memory, so the NEXT
+    // deploy carries nothing forward and the failure recurs.
+    console.error(
+      `::error::${MANIFEST} returned ${res ? res.status : 'no response'}. The retention ledger is not ` +
+        `published, so nothing is being carried forward and the next deploy will ` +
+        `strand every visitor holding current HTML.`
+    );
+    process.exit(1);
+  }
+
+  const entries = (await res.text())
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  // A manifest that parsed to nothing would make every assertion below vacuous —
+  // the shape this repo keeps getting bitten by (#396).
+  if (entries.length < 20) {
+    console.error(
+      `::error::manifest parsed to only ${entries.length} entries. Expected the ` +
+        `full published set; a near-empty manifest makes this check meaningless.`
+    );
+    process.exit(1);
+  }
+
+  const results = await pool(
+    entries,
+    async (rel) => {
+      const url = `${BASE}/${rel.replace(/^\/+/, '')}`;
+      return { rel, url, ...(await status(url)) };
+    },
+    CONCURRENCY
   );
-  process.exit(1);
-}
 
-const entries = (await res.text())
-  .split('\n')
-  .map((l) => l.trim())
-  .filter(Boolean);
+  const missing = results.filter((r) => !r.ok);
+  const missingCss = missing.filter((r) => r.rel.endsWith('.css'));
 
-// A manifest that parsed to nothing would make every assertion below vacuous —
-// the shape this repo keeps getting bitten by (#396).
-if (entries.length < 20) {
-  console.error(
-    `::error::manifest parsed to only ${entries.length} entries. Expected the ` +
-      `full published set; a near-empty manifest makes this check meaningless.`
+  console.log(`  base      ${BASE}`);
+  console.log(`  manifest  ${entries.length} entries`);
+  console.log(`  reachable ${results.length - missing.length}`);
+  console.log(
+    `  MISSING   ${missing.length}  (of which CSS: ${missingCss.length})`
   );
-  process.exit(1);
-}
 
-const results = await pool(
-  entries,
-  async (rel) => {
-    const url = `${BASE}/${rel.replace(/^\/+/, '')}`;
-    return { rel, url, ...(await status(url)) };
-  },
-  CONCURRENCY
-);
-
-const missing = results.filter((r) => !r.ok);
-const missingCss = missing.filter((r) => r.rel.endsWith('.css'));
-
-console.log(`  base      ${BASE}`);
-console.log(`  manifest  ${entries.length} entries`);
-console.log(`  reachable ${results.length - missing.length}`);
-console.log(
-  `  MISSING   ${missing.length}  (of which CSS: ${missingCss.length})`
-);
-
-if (missing.length) {
-  console.log('');
-  for (const m of missing.slice(0, 40)) console.log(`   ${m.code}  ${m.rel}`);
-  if (missing.length > 40) console.log(`   … and ${missing.length - 40} more`);
-  console.error(
-    `\n::error::${missing.length} retained asset(s) are gone from ${BASE}` +
-      (missingCss.length
-        ? ` — ${missingCss.length} of them STYLESHEETS. Anyone holding HTML that ` +
-          `references them is seeing an unstyled page right now.`
-        : '.')
-  );
-  process.exit(1);
+  if (missing.length) {
+    console.log('');
+    for (const m of missing.slice(0, 40)) console.log(`   ${m.code}  ${m.rel}`);
+    if (missing.length > 40)
+      console.log(`   … and ${missing.length - 40} more`);
+    console.error(
+      `\n::error::${missing.length} retained asset(s) are gone from ${BASE}` +
+        (missingCss.length
+          ? ` — ${missingCss.length} of them STYLESHEETS. Anyone holding HTML that ` +
+            `references them is seeing an unstyled page right now.`
+          : '.')
+    );
+    process.exit(1);
+  }
 }
 
 /**
@@ -252,57 +283,64 @@ if (missing.length) {
  * day per day. Failing during that would be crying wolf on a correct deploy, so the
  * floor only applies once the ledger is old enough to have reached full width.
  */
-const { res: agesRes, url: AGES } = await fetchLedger('ASSET_AGES.txt');
-if (!agesRes || !agesRes.ok) {
-  console.error(
-    `::error::${AGES} returned ${agesRes ? agesRes.status : 'no response'}. Without the age ledger the next ` +
-      `deploy cannot date what it carries, so retention silently restarts.`
-  );
-  process.exit(1);
-}
-
-const dated = [];
-for (const line of (await agesRes.text()).split('\n')) {
-  const m = line.trim().match(/^(\d+)\s+(\S+T\S+Z)\s+(.+)$/);
-  if (m) {
-    const t = Date.parse(m[2]);
-    if (Number.isFinite(t)) dated.push(t);
-  }
-}
-
-if (!dated.length) {
-  console.log(
-    `\n  age ledger carries no timestamps yet — pre-#751 format, still ramping. ` +
-      `Window unverifiable until the next deploy.`
-  );
-} else {
-  const now = Date.now();
-  const spanDays = (now - Math.min(...dated)) / 86_400_000;
-  const rampDaysElapsed = (now - RETIMED_AT) / 86_400_000;
-  console.log(
-    `\n  window    ${spanDays.toFixed(1)} day(s) of coverage, target ${RETAIN_DAYS}`
-  );
-
-  // A day of slack: the oldest asset ages out mid-window, so a healthy ledger
-  // oscillates just under the target rather than sitting exactly on it.
-  if (spanDays + 1 >= RETAIN_DAYS) {
-    console.log(`  window is at full width.`);
-  } else if (rampDaysElapsed < RETAIN_DAYS) {
-    console.log(
-      `  still ramping (day ${rampDaysElapsed.toFixed(1)} of ${RETAIN_DAYS} since ` +
-        `the ledger was retimed) — the floor is not asserted yet.`
-    );
-  } else {
+if (doWindow) {
+  const { res: agesRes, url: AGES } = await fetchLedger('ASSET_AGES.txt');
+  if (!agesRes || !agesRes.ok) {
     console.error(
-      `\n::error::retention covers only ${spanDays.toFixed(1)} day(s), but ` +
-        `RETAIN_DAYS is ${RETAIN_DAYS}. A visitor returning after ` +
-        `${spanDays.toFixed(1)} days gets an unstyled page. This is the failure ` +
-        `mode of #635 and the exact shortfall that shipped it an 8th time.`
+      `::error::${AGES} returned ${agesRes ? agesRes.status : 'no response'}. Without the age ledger the next ` +
+        `deploy cannot date what it carries, so retention silently restarts.`
     );
     process.exit(1);
+  }
+
+  const dated = [];
+  for (const line of (await agesRes.text()).split('\n')) {
+    const m = line.trim().match(/^(\d+)\s+(\S+T\S+Z)\s+(.+)$/);
+    if (m) {
+      const t = Date.parse(m[2]);
+      if (Number.isFinite(t)) dated.push(t);
+    }
+  }
+
+  if (!dated.length) {
+    console.log(
+      `\n  age ledger carries no timestamps yet — pre-#751 format, still ramping. ` +
+        `Window unverifiable until the next deploy.`
+    );
+  } else {
+    const now = Date.now();
+    const spanDays = (now - Math.min(...dated)) / 86_400_000;
+    const rampDaysElapsed = (now - RETIMED_AT) / 86_400_000;
+    console.log(
+      `\n  window    ${spanDays.toFixed(1)} day(s) of coverage, target ${RETAIN_DAYS}`
+    );
+
+    // A day of slack: the oldest asset ages out mid-window, so a healthy ledger
+    // oscillates just under the target rather than sitting exactly on it.
+    if (spanDays + 1 >= RETAIN_DAYS) {
+      console.log(`  window is at full width.`);
+    } else if (rampDaysElapsed < RETAIN_DAYS) {
+      console.log(
+        `  still ramping (day ${rampDaysElapsed.toFixed(1)} of ${RETAIN_DAYS} since ` +
+          `the ledger was retimed) — the floor is not asserted yet.`
+      );
+    } else {
+      console.error(
+        `\n::error::retention covers only ${spanDays.toFixed(1)} day(s), but ` +
+          `RETAIN_DAYS is ${RETAIN_DAYS}. A visitor returning after ` +
+          `${spanDays.toFixed(1)} days gets an unstyled page. This is the failure ` +
+          `mode of #635 and the exact shortfall that shipped it an 8th time.`
+      );
+      process.exit(1);
+    }
   }
 }
 
 console.log(
-  '\n  OK — every asset the deploy promised to retain is still served.'
+  '\n  OK — ' +
+    (CHECK === 'window'
+      ? `the ledger spans at least ${RETAIN_DAYS} day(s).`
+      : CHECK === 'reachability'
+        ? 'every asset the deploy promised to retain is still served.'
+        : 'every asset the deploy promised to retain is still served, and the window is wide enough.')
 );

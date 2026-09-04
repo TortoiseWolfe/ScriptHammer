@@ -96,10 +96,34 @@ jobs:
         if: ${{ !cancelled() }}
         env:
           SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
+          RETAINED_CHECK: reachability
         # No `:-` fallback (#1054). This and the script's own literal were STACKED, so
         # removing either alone changed nothing: a fork probed scripthammer.com and printed
         # "MISSING 0 … OK", i.e. its unstyled-production detector was green about someone
         # else's assets. The script now skips on an empty base.
+        run: node scripts/ci/check-retained-assets.mjs "$SITE"
+
+      # THE SECOND QUESTION, SPLIT OUT (#1061). This used to share an exit code with
+      # the step above, and they answer different things:
+      #
+      #   above — are the promised assets still SERVED? the unstyled-production detector
+      #   here  — does the ledger SPAN RetainDays? the #751 assertion, added because all
+      #           13 stylesheets were reachable on the night production went unstyled for
+      #           the eighth time
+      #
+      # Sharing a verdict meant a short window hid a healthy reachability result and vice
+      # versa — the same masking that hid seven detectors behind this one step. Split, a
+      # rebuilding window reads as what it is instead of collapsing to one red.
+      #
+      # This one stays RED while coverage rebuilds after the #1061 cache fix, and that is
+      # correct: a visitor returning inside the window would still be stranded. Do NOT
+      # widen the slack or move RETIMED_AT to silence it.
+      - name: Retention window is as wide as it claims (#751)
+        id: window
+        if: ${{ !cancelled() }}
+        env:
+          SITE: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
+          RETAINED_CHECK: window
         run: node scripts/ci/check-retained-assets.mjs "$SITE"
 
       # The step above guards the MITIGATION; this one guards the CURE (#635).
@@ -324,7 +348,8 @@ jobs:
             echo ""
             echo "| detector | outcome |"
             echo "| --- | --- |"
-            echo "| Retained assets | ${{ steps.retained.outcome }} |"
+            echo "| Retained assets served | ${{ steps.retained.outcome }} |"
+            echo "| Retention window width | ${{ steps.window.outcome }} |"
             echo "| Cache contract | ${{ steps.cache.outcome }} |"
             echo "| CSP header | ${{ steps.csp.outcome }} |"
             echo "| Mail policy | ${{ steps.mail.outcome }} |"
