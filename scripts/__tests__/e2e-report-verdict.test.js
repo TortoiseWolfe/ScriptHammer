@@ -28,8 +28,17 @@ const load = () => import(`file://${SCRIPT}`);
 
 const ESC = String.fromCharCode(27);
 
-/** One spec in Playwright's merged-JSON shape. */
-const spec = (title, line, status, error) => ({
+/**
+ * One spec in Playwright's merged-JSON shape.
+ *
+ * `errors: [...]` is the REAL shape — verified by generating a merged report from an actual
+ * Playwright run on 2026-09-04, whose result objects carry
+ * `workerIndex, parallelIndex, status, duration, errors, stdout, stderr, retry, …` and NO
+ * singular `error` key. The first version of these fixtures used `error: {message}`, so every
+ * test passed while exercising a branch that never fires in CI. `shape` lets each case say
+ * which form it means; the default is the one production actually produces.
+ */
+const spec = (title, line, status, error, shape = 'errors') => ({
   title,
   file: 'tests/e2e/commerce/pricing-links.spec.ts',
   line,
@@ -37,7 +46,13 @@ const spec = (title, line, status, error) => ({
     {
       status,
       projectName: 'chromium-gen',
-      results: [error ? { error: { message: error } } : {}],
+      results: [
+        error
+          ? shape === 'errors'
+            ? { errors: [{ message: error }] }
+            : { error: { message: error } }
+          : {},
+      ],
     },
   ],
 });
@@ -143,6 +158,25 @@ describe('the E2E test-report verdict (#1069)', () => {
     assert.doesNotMatch(r.summary, /\[/);
     // Newlines collapsed too — a multi-line diff would destroy the markdown table.
     assert.match(r.summary, /\| Expected a value, got none \|/);
+  });
+
+  it('reads the error from `errors[]`, the shape real reports use', () => {
+    // Generated from a real Playwright run: result objects have `errors: [...]` and no
+    // singular `error`. Both forms are accepted, but this is the one that fires in CI.
+    for (const shape of ['errors', 'error']) {
+      const r = run(
+        report(
+          [spec('boom', 39, 'unexpected', 'checkout returned 400', shape)],
+          { unexpected: 1 }
+        )
+      );
+      assert.strictEqual(r.code, 1, `${shape} shape must still fail`);
+      assert.match(
+        r.summary,
+        /checkout returned 400/,
+        `the error text was lost for the "${shape}" shape`
+      );
+    }
   });
 
   it('reports flaky tests without failing on them', () => {
