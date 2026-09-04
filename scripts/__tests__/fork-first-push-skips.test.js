@@ -147,11 +147,35 @@ describe('a fresh fork skips what it has not configured (#985)', () => {
       );
     });
 
-    it('the comparison step is gated on the preflight', () => {
-      assert.match(
-        step(src(), 'Compare production against INTENDED'),
-        /if:\s*steps\.configured\.outputs\.configured\s*==\s*'true'/
+    it('EVERY step that reaches production is gated on the preflight', () => {
+      // This asserted ONE named step. A list of one, kept in step with the workflow by
+      // memory -- and it went stale the moment #1062 added a second detector, which is the
+      // #1038 defect in miniature. Derived from the workflow now: any step carrying the
+      // production token must carry the gate, so a third cannot be added ungated.
+      const text = src();
+      const named = [...text.matchAll(/^\s*- name:\s*(.+)$/gm)].map((m) =>
+        m[1].trim()
       );
+      const reaching = named.filter((n) => {
+        const body_ = step(text, n);
+        // The preflight reads the token too -- that is how it decides. It DEFINES the gate,
+        // so it cannot consume it; excluded by the id it sets rather than by its name.
+        return (
+          /SUPABASE_ACCESS_TOKEN/.test(body_) &&
+          !/id:\s*configured\b/.test(body_)
+        );
+      });
+      assert.ok(
+        reaching.length >= 2,
+        `expected at least two steps reading production, found ${reaching.length}`
+      );
+      for (const n of reaching) {
+        assert.match(
+          step(text, n),
+          /if:.*steps\.configured\.outputs\.configured\s*==\s*'true'/,
+          `"${n}" reads production but is not gated on the preflight`
+        );
+      }
     });
 
     it('half-configured FAILS rather than skipping', () => {
