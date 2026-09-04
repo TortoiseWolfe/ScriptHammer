@@ -178,21 +178,48 @@ jobs:
   # workflow quietly do nothing, which is a different bad signal from the red one it
   # replaces — and this repo would lose its hosted lane in silence if the variable were
   # ever unset.
+  #
+  # IT USED TO ANSWER A DIFFERENT QUESTION THAN ITS NAME ASKS (#1069). It read only
+  # `vars.SUPABASE_PROJECT_REF`, so it reported PASS whenever a backend was CONFIGURED —
+  # including on 2026-09-04, when the daily budget was exhausted and not one test ran.
+  # A check called "Hosted E2E lane" reporting green while the lane is blocked is the
+  # same failure as a green `Test Report` over three failed tests: the name promises a
+  # verdict about the lane and delivers one about its plumbing.
+  #
+  # Now it depends on the budget job and reports the lane's ACTUAL availability. It is
+  # deliberately never RED — being blocked is the guard working, and `Cloud-quota budget`
+  # is already red for that — but it warns, so a blocked lane cannot read as a healthy one.
   hosted-lane-status:
     name: Hosted E2E lane
+    needs: budget
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Say whether the hosted lane can run
+      - name: Say whether the hosted lane actually ran
         env:
           PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+          BUDGET: ${{ needs.budget.result }}
         run: |
           set -euo pipefail
-          if [ -n "$PROJECT_REF" ]; then
-            echo "  hosted backend configured — the metered lane runs"
+          if [ -z "$PROJECT_REF" ]; then
+            echo "::notice::Hosted E2E skipped: no SUPABASE_PROJECT_REF repository variable, so there is no backend to run against or meter. Your PR coverage comes from the E2E (local Supabase) lane, which needs no secrets. Set SUPABASE_PROJECT_REF to enable this one."
+            echo "  lane ........... NOT CONFIGURED (no backend to meter)"
             exit 0
           fi
-          echo "::notice::Hosted E2E skipped: no SUPABASE_PROJECT_REF repository variable, so there is no backend to run against or meter. Your PR coverage comes from the E2E (local Supabase) lane, which needs no secrets. Set SUPABASE_PROJECT_REF to enable this one."
+          case "$BUDGET" in
+            success)
+              echo "  lane ........... RAN — see 'Test Report' for whether the tests passed"
+              ;;
+            failure)
+              echo "::warning::Hosted E2E did NOT run: the cloud-quota guard blocked it. Read the 'Cloud-quota budget' job — DAY_EXCEEDED is a daily rate limiter that ordinary work trips, and is NOT the same as exhausting the monthly quota. This PR's E2E coverage came from the local lane only."
+              echo "  lane ........... BLOCKED by the cloud-quota guard — no tests ran"
+              ;;
+            *)
+              echo "::warning::Hosted E2E lane state is '$BUDGET' — the budget job did not reach a verdict, so whether the lane ran is unknown."
+              echo "  lane ........... UNKNOWN (budget job: $BUDGET)"
+              ;;
+          esac
 
   # ============================================
   # STEP 1: Build once, cache for all shards
@@ -860,7 +887,7 @@ jobs:
           scripts/ci/playwright-in-container.sh test \
             --project="$PROJECT" \
             --shard="$SHARD" \
-            --reporter=blob,./tests/e2e/reporters/assertion-count-reporter.ts \
+            --reporter=blob,list,./tests/e2e/reporters/assertion-count-reporter.ts \
             --trace=on-first-retry \
             --no-deps \
             $WORKERS_FLAG
@@ -1037,7 +1064,7 @@ jobs:
           scripts/ci/playwright-in-container.sh test \
             --project="$PROJECT" \
             --shard="$SHARD" \
-            --reporter=blob,./tests/e2e/reporters/assertion-count-reporter.ts \
+            --reporter=blob,list,./tests/e2e/reporters/assertion-count-reporter.ts \
             --trace=on-first-retry \
             --no-deps \
             $WORKERS_FLAG
@@ -1194,7 +1221,7 @@ jobs:
           scripts/ci/playwright-in-container.sh test \
             --project="$PROJECT" \
             --shard="$SHARD" \
-            --reporter=blob,./tests/e2e/reporters/assertion-count-reporter.ts \
+            --reporter=blob,list,./tests/e2e/reporters/assertion-count-reporter.ts \
             --trace=on-first-retry \
             --no-deps \
             $WORKERS_FLAG
@@ -1312,4 +1339,17 @@ jobs:
             echo "**Full Mode**: Chromium + Firefox + WebKit (24 jobs total)" >> "$GITHUB_STEP_SUMMARY"
           fi
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "Download the **playwright-report** artifact for detailed results." >> "$GITHUB_STEP_SUMMARY"
+          echo "Download the **playwright-report** artifact for traces and screenshots." >> "$GITHUB_STEP_SUMMARY"
+
+      # THE VERDICT, AND THE REASON THIS JOB CAN NOW GO RED (#1069).
+      #
+      # Everything above reports on whether MERGING worked. Merging worked on run
+      # 33830200821 while three tests failed, so this job was GREEN and carried ten
+      # annotations naming them -- while the two red shard jobs said only "Process
+      # completed with exit code 1" and their logs ended in artifact-upload noise.
+      # The eye goes to the red check, finds nothing, and the job that knows sits green.
+      #
+      # `always()`, because a failing shard is exactly when this matters most.
+      - name: Did the tests actually pass?
+        if: always()
+        run: node scripts/ci/e2e-report-verdict.mjs flaky-report.json

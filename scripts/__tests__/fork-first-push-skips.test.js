@@ -215,19 +215,44 @@ describe('a fresh fork skips what it has not configured (#985)', () => {
     });
 
     it('says out loud that it skipped, rather than doing nothing quietly', () => {
+      // THE RULE HERE IS "IT ALWAYS RUNS", AND THAT HAS NOT CHANGED.
+      //
+      // It used to be enforced structurally — no `needs:`, no `if:`, so the job was
+      // unskippable by construction. That also made it blind: with no dependency it could
+      // only read `vars.SUPABASE_PROJECT_REF`, so it reported PASS whenever a backend was
+      // CONFIGURED, including on 2026-09-04 when the daily budget was exhausted and not one
+      // test ran. A check named "Hosted E2E lane" reporting green over a blocked lane is the
+      // defect #1069 is about.
+      //
+      // So it now depends on `budget` and is held unskippable by the ONE expression that
+      // survives a dependency which was skipped (fork, no backend) or failed (over budget).
+      // That expression is pinned exactly, because this is the weaker form of the guarantee
+      // and a wrong condition here restores the silence the rule exists to prevent.
       const status = job(src(), 'hosted-lane-status');
-      assert.doesNotMatch(
+      assert.match(
         status,
-        /^\s{4}needs:/m,
-        'the status job must not depend on the gate it reports on'
+        /^\s{4}needs:\s*budget\s*$/m,
+        'it must depend on the budget job, or it cannot report whether the lane ran'
       );
-      assert.doesNotMatch(
-        status,
-        /^\s{4}if:/m,
-        'the status job must always run'
+      const cond = status.match(/^\s{4}if:\s*(.+)$/m);
+      assert.ok(
+        cond,
+        'the status job needs an explicit condition to survive `needs:`'
+      );
+      assert.match(
+        cond[1].trim(),
+        /^\$\{\{\s*!cancelled\(\)\s*\}\}$/,
+        'only `!cancelled()` runs when the dependency was skipped OR failed; `success()` ' +
+          'and a bare `needs.*` comparison both reintroduce the silent skip'
       );
       assert.match(status, /::notice::/);
       assert.match(status, /SUPABASE_PROJECT_REF/);
+      // And it must actually consult the gate's outcome, not just depend on it.
+      assert.match(
+        status,
+        /needs\.budget\.result/,
+        'it depends on the budget job but never reads its result'
+      );
     });
   });
 
