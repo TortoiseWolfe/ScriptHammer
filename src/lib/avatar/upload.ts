@@ -39,12 +39,24 @@ export async function uploadAvatar(
     }
 
     const user = session.user;
+    const userId = user.id;
 
-    // Store old avatar URL for cleanup
-    const oldAvatarUrl = user.user_metadata?.avatar_url as string | undefined;
+    // Store old avatar URL for cleanup.
+    //
+    // The auth-metadata mirror is the cheap source, but it is written best-effort
+    // (#1068), so it can legitimately be missing or stale. `user_profiles` is the
+    // source of truth, so fall back to it rather than orphaning the old file.
+    let oldAvatarUrl = user.user_metadata?.avatar_url as string | undefined;
+    if (!oldAvatarUrl) {
+      const { data: priorProfile } = await supabase
+        .from('user_profiles')
+        .select('avatar_url')
+        .eq('id', userId)
+        .maybeSingle();
+      oldAvatarUrl = priorProfile?.avatar_url ?? undefined;
+    }
 
     // Step 2: Generate unique file path
-    const userId = user.id;
     const timestamp = Date.now();
     const filePath = `${userId}/${timestamp}.webp`;
 
@@ -71,25 +83,49 @@ export async function uploadAvatar(
 
     const publicUrl = urlData.publicUrl;
 
-    // Step 5: Update user profile (both auth metadata and user_profiles table)
-    const { error: updateError } = await supabase.auth.updateUser({
-      data: { avatar_url: publicUrl },
-    });
-
-    if (updateError) {
-      // Rollback: Delete uploaded file
-      await supabase.storage.from('avatars').remove([uploadData.path]);
-      return {
-        url: '',
-        error: `Profile update failed: ${updateError.message}`,
-      };
-    }
-
-    // Also update user_profiles table for consistency
-    await supabase
+    // Step 5: Record the new avatar.
+    //
+    // ORDER MATTERS, AND IT USED TO BE WRONG (#1068). `user_profiles.avatar_url`
+    // is what the product actually reads — `useUserProfile.ts` selects it and
+    // `AccountSettings.tsx` renders from it. The auth-metadata copy is a MIRROR,
+    // read only by this file to find the previous avatar for cleanup.
+    //
+    // The mirror used to be written FIRST and treated as fatal: if
+    // `auth.updateUser` failed, a file that had already uploaded successfully was
+    // deleted by the rollback below and the user was told the upload failed.
+    // Observed on the hosted E2E lane as
+    // `Profile update failed: Auth session missing!` — `getSession()` had
+    // succeeded at step 1 and the storage upload at step 3 (which itself requires
+    // an authenticated session), so the session was real; `updateUser` needs the
+    // full session and may attempt a refresh, which is the fragile part.
+    //
+    // So the source of truth is written first and is the only fatal one.
+    const { error: profileError } = await supabase
       .from('user_profiles')
       .update({ avatar_url: publicUrl })
       .eq('id', userId);
+
+    if (profileError) {
+      // Rollback: the avatar is not recorded anywhere the product reads, so the
+      // uploaded file would be orphaned.
+      await supabase.storage.from('avatars').remove([uploadData.path]);
+      return {
+        url: '',
+        error: `Profile update failed: ${profileError.message}`,
+      };
+    }
+
+    // The mirror, best-effort. A failure here costs the old-avatar cleanup below
+    // one fallback lookup, not the upload. Deliberately NOT rolled back.
+    const { error: mirrorError } = await supabase.auth.updateUser({
+      data: { avatar_url: publicUrl },
+    });
+    if (mirrorError) {
+      console.warn(
+        `[avatar] auth metadata mirror not updated: ${mirrorError.message}. ` +
+          'The avatar is saved; only the previous-avatar cleanup hint is missing.'
+      );
+    }
 
     // Step 6: Delete old avatar if exists
     if (oldAvatarUrl) {
