@@ -27,8 +27,17 @@ const mockFrom = vi.fn(() => ({
 const mockDbUpdate = vi.fn().mockReturnValue({
   eq: vi.fn().mockResolvedValue({ data: null, error: null }),
 });
+// `select(...).eq(...).maybeSingle()` is the previous-avatar fallback added with
+// #1068: the auth-metadata mirror is best-effort now, so it can legitimately be
+// missing and `user_profiles` is consulted instead. Resolves to no prior avatar
+// by default; individual tests override it.
+const mockDbMaybeSingle = vi.fn(async () => ({ data: null, error: null }));
+const mockDbSelect = vi.fn(() => ({
+  eq: vi.fn(() => ({ maybeSingle: mockDbMaybeSingle })),
+}));
 const mockDbFrom = vi.fn(() => ({
   update: mockDbUpdate,
+  select: mockDbSelect,
 }));
 
 // Mock Supabase client with persistent mocks
@@ -115,32 +124,24 @@ describe('uploadAvatar', () => {
     expect(result.error).toBeTruthy();
   });
 
-  it('should rollback upload if profile update fails', async () => {
+  it('rolls back when the SOURCE OF TRUTH write fails', async () => {
+    // `user_profiles.avatar_url` is what the product reads (useUserProfile.ts).
+    // If it cannot be written, the uploaded file is unreachable and must not be
+    // left orphaned in the bucket.
     mockGetSession.mockResolvedValue({
-      data: {
-        session: { user: { id: 'user-123', user_metadata: {} } },
-      },
+      data: { session: { user: { id: 'user-123', user_metadata: {} } } },
       error: null,
     });
-
     mockUpload.mockResolvedValue({
       data: { path: 'user-123/123.webp' },
       error: null,
     });
-
     mockGetPublicUrl.mockReturnValue({
       data: { publicUrl: 'https://example.com/avatar.webp' },
     });
-
     mockRemove.mockResolvedValue({ data: null, error: null });
-
-    mockUpdateUser.mockResolvedValue({
-      data: { user: null },
-      error: {
-        message: 'Update failed',
-        name: 'AuthError',
-        status: 500,
-      },
+    mockDbUpdate.mockReturnValue({
+      eq: vi.fn(async () => ({ error: { message: 'row-level security' } })),
     });
 
     const blob = new Blob(['test'], { type: 'image/webp' });
@@ -149,6 +150,43 @@ describe('uploadAvatar', () => {
     expect(result.url).toBe('');
     expect(result.error).toContain('Profile update failed');
     expect(mockRemove).toHaveBeenCalledWith(['user-123/123.webp']);
+  });
+
+  it('does NOT roll back when only the auth-metadata mirror fails (#1068)', async () => {
+    // THE REGRESSION THIS PINS. The mirror used to be written first and treated as
+    // fatal, so `Auth session missing!` from `auth.updateUser` deleted a file that
+    // had already uploaded successfully and told the user the upload failed —
+    // observed on the hosted E2E lane. Nothing in the product reads the mirror
+    // except this module's own previous-avatar cleanup.
+    mockGetSession.mockResolvedValue({
+      data: { session: { user: { id: 'user-123', user_metadata: {} } } },
+      error: null,
+    });
+    mockUpload.mockResolvedValue({
+      data: { path: 'user-123/123.webp' },
+      error: null,
+    });
+    mockGetPublicUrl.mockReturnValue({
+      data: { publicUrl: 'https://example.com/avatar.webp' },
+    });
+    mockRemove.mockResolvedValue({ data: null, error: null });
+    mockDbUpdate.mockReturnValue({ eq: vi.fn(async () => ({ error: null })) });
+    mockUpdateUser.mockResolvedValue({
+      data: { user: null },
+      error: {
+        message: 'Auth session missing!',
+        name: 'AuthError',
+        status: 400,
+      },
+    });
+
+    const blob = new Blob(['test'], { type: 'image/webp' });
+    const result = await uploadAvatar(blob);
+
+    expect(result.error).toBeUndefined();
+    expect(result.url).toBe('https://example.com/avatar.webp');
+    // The counterweight that matters: the file must survive.
+    expect(mockRemove).not.toHaveBeenCalledWith(['user-123/123.webp']);
   });
 });
 
