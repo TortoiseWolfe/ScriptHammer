@@ -33,6 +33,7 @@
  *   GITHUB_RUN_ID        set by Actions; the run excludes ITSELF from the count
  */
 
+import { appendFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
 /**
@@ -440,6 +441,22 @@ function limitsFromEnv(env) {
   };
 }
 
+/**
+ * Append to the GitHub job summary; a no-op anywhere else.
+ *
+ * The job LOG already carried the day/cycle split, and it was still misread for weeks —
+ * a log is something you open after you have already decided a red check matters.
+ */
+function writeJobSummary(markdown) {
+  const file = process.env.GITHUB_STEP_SUMMARY;
+  if (!file) return;
+  try {
+    appendFileSync(file, `${markdown}\n`);
+  } catch {
+    // A summary is a courtesy, never a gate. Losing it must not change the verdict.
+  }
+}
+
 async function main() {
   const argv = process.argv.slice(2);
   // Modes (env E2E_BUDGET_MODE, default "block"):
@@ -546,6 +563,26 @@ async function main() {
   console.log(`  mode ........... ${mode}`);
   console.log(`  verdict ........ ${verdict.code}`);
   console.log(`  ${verdict.message}`);
+
+  // A JOB SUMMARY, BECAUSE THE TWO BLOCK REASONS MEAN OPPOSITE THINGS (#1069).
+  //
+  // `DAY_EXCEEDED` is a rate limiter that ordinary work trips -- two PRs, each pushed and
+  // then merged, is four runs against a ceiling of ten -- and it says nothing about how much
+  // monthly quota is left. `MONTH_EXCEEDED` is actual exhaustion. Both rendered as one red
+  // check called "Cloud-quota budget", and the repo's own notes read every red as the second
+  // kind for weeks, which is how the lane's real findings went unread.
+  writeJobSummary(
+    [
+      `## E2E cloud-quota budget — ${verdict.code}`,
+      '',
+      '| window | used | limit | what it means |',
+      '| --- | ---: | ---: | --- |',
+      `| last 24h | ${apiFailed ? '?' : dayCount} | ${limits.day} | a rate limiter — ordinary work trips it, and it says nothing about the month |`,
+      `| this cycle | ${apiFailed ? '?' : monthCount} | ${limits.month} | actual quota consumption |`,
+      '',
+      `${verdict.message}`,
+    ].join('\n')
+  );
 
   if (verdict.code === 'OVERRIDDEN') {
     console.log(

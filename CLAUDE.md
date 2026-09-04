@@ -421,14 +421,14 @@ The E2E suite ran against a single shared Supabase project for months and accumu
 
 Most of the pain below traces to one fact — every job shared one cloud Supabase project. That is no longer where PRs run.
 
-|                 | `e2e-local.yml`                              | `e2e.yml`                                      |
-| --------------- | -------------------------------------------- | ---------------------------------------------- |
-| backend         | a Supabase per runner, brought up in the job | the shared hosted project                      |
-| runs on         | **every PR and every push to main**          | push/PR, currently blocked by the budget guard |
-| browsers        | PR: Chromium; push/dispatch/`full-e2e`: all  | Chromium normally; cross-browser is opt-in     |
-| secrets         | **none** — uses the tracked public demo keys | 32 `secrets.*` references                      |
-| mutex           | none needed; nothing is shared               | repo-wide, `max-parallel: 2`                   |
-| `@hosted` tests | excluded via `--grep-invert`                 | runs everything                                |
+|                 | `e2e-local.yml`                              | `e2e.yml`                                     |
+| --------------- | -------------------------------------------- | --------------------------------------------- |
+| backend         | a Supabase per runner, brought up in the job | the shared hosted project                     |
+| runs on         | **every PR and every push to main**          | push/PR, subject to a run-rate budget (below) |
+| browsers        | PR: Chromium; push/dispatch/`full-e2e`: all  | Chromium normally; cross-browser is opt-in    |
+| secrets         | **none** — uses the tracked public demo keys | 32 `secrets.*` references                     |
+| mutex           | none needed; nothing is shared               | repo-wide, `max-parallel: 2`                  |
+| `@hosted` tests | excluded via `--grep-invert`                 | runs everything                               |
 
 **A PR gets its E2E coverage from the local lane.** Consequences worth knowing before you debug anything:
 
@@ -437,6 +437,27 @@ Most of the pain below traces to one fact — every job shared one cloud Supabas
 - **Its ignore list is derived from `e2e.yml`**, not duplicated (`scripts/ci/e2e-local-changes.mjs`). Two lists would drift silently, in the worst direction.
 - **Six `oauth-csrf` tests are tagged `@hosted`** and skipped locally — they wait for a redirect to a real OAuth provider, which a local stack never performs. The #287 detector they carried is now covered on every PR by `auth-config-drift.yml` plus `tests/unit/auth-config-validity.test.ts` instead.
 - **The lane is REQUIRED.** `E2E (local) result` became a required context once #739 closed (2026-08-15) — the `waitForUIStability` helper that waited three animation frames rather than for anything, duplicated across five messaging specs, was the thing gating it. A PR now cannot merge without this lane green.
+
+**THE HOSTED LANE IS NOT DEAD, AND HAS NOT BEEN SINCE 2026-09-02 (#1069).** This section used
+to say it was "currently blocked by the budget guard", which was true for weeks and then quietly
+stopped being true. Nobody looked at it for a day after that, and in that day it caught two real
+user-facing defects the local lane cannot see by construction — #1068's avatar-upload rollback, and
+a $99 SKU advertised on `/pricing` that was absent from the production `products` table. **A red
+there now means something.**
+
+Before concluding anything from a red `E2E Tests`, read WHICH job failed — they mean opposite
+things:
+
+| failing job                                    | what it means                                                                                                                                                                                                    |
+| ---------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Cloud-quota budget`, verdict `DAY_EXCEEDED`   | a **rate limiter**, not exhaustion. Ten runs per 24h; two PRs each pushed and then merged is four. Says nothing about the month, and the job summary now prints both windows side by side.                       |
+| `Cloud-quota budget`, verdict `MONTH_EXCEEDED` | actual quota consumption against the cycle.                                                                                                                                                                      |
+| `Test Report`                                  | **tests failed.** Since #1069 this job goes red on a failing test and its summary names each one with file, line and error. It used to report only on whether merging worked, and was green over three failures. |
+| an `E2E (chromium-… n/6)` shard                | that shard failed; its log now carries the `list` reporter's output rather than ending in artifact-upload noise.                                                                                                 |
+
+`Hosted E2E lane` reports **availability**, not test health: RAN, BLOCKED, or NOT CONFIGURED. It is
+never red — being blocked is the guard working — so read it for whether the lane ran at all, and
+`Test Report` for whether it was happy.
 
 The rules below still describe `e2e.yml` and remain correct for it.
 
