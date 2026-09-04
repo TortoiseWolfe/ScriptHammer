@@ -43,6 +43,8 @@ on:
       # load-bearing as the comparator: a regex that stops matching shrinks what the
       # check asserts without failing anything.
       - 'scripts/ci/derive-intended-schema.mjs'
+      # The predicate comparator and its scratch-database harness (#1062 step 2).
+      - 'scripts/ci/policy-predicates.mjs'
       - '.github/workflows/prod-schema-drift.yml'
   workflow_dispatch:
 
@@ -54,7 +56,10 @@ jobs:
   drift:
     name: Production schema matches the repo
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # 25, not 10: the predicate step pulls a ~1GB Postgres image and builds a database
+    # from the migration. Measured at ~90s locally with the image cached, so the ceiling is
+    # dominated by the pull on a cold runner.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -99,10 +104,37 @@ jobs:
           [ -n "$SUPABASE_ACCESS_TOKEN" ] || echo "::error::  missing repository SECRET    SUPABASE_ACCESS_TOKEN"
           exit 1
 
+      # TWO INDEPENDENT DETECTORS, TWO INDEPENDENT VERDICTS.
+      #
+      # They ask different questions with different instruments -- one compares production
+      # against an intent PARSED from the migration, the other against a scratch database
+      # BUILT from it -- so neither may hide the other behind a shared exit code. `id:` plus
+      # `if: !cancelled()` is the pattern smoke.yml adopted in #1066, after a single failing
+      # detector masked seven passing ones for three days and nobody could tell which was
+      # which (#1061).
+
       # No install step: the checker uses built-in fetch and imports nothing.
       - name: Compare production against INTENDED
-        if: steps.configured.outputs.configured == 'true'
+        id: intended
+        if: ${{ !cancelled() && steps.configured.outputs.configured == 'true' }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
         run: node scripts/ci/check-prod-schema-drift.mjs
+
+      # Docker is preinstalled on ubuntu-latest; this step needs it, and nothing else.
+      - name: Compare what the policies SAY (#1062)
+        id: predicates
+        if: ${{ !cancelled() && steps.configured.outputs.configured == 'true' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: node scripts/ci/policy-predicates.mjs
+
+      - name: Which detectors passed
+        if: ${{ !cancelled() && steps.configured.outputs.configured == 'true' }}
+        run: |
+          printf '%-10s %s\n' \
+            "${{ steps.intended.outcome }}" "Production matches the intent parsed from the migration" \
+            "${{ steps.predicates.outcome }}" "Every policy SAYS the same thing on both sides (#1062)"
+        shell: bash
