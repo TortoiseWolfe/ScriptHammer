@@ -339,7 +339,9 @@ if (doWindow) {
 console.log(
   '\n  OK — ' +
     (CHECK === 'window'
-      ? `the ledger spans at least ${RETAIN_DAYS} day(s).`
+      ? `the ledger spans at least ${RETAIN_DAYS - 1} day(s). The target is ` +
+        `${RETAIN_DAYS}; the check allows one day of slack because the oldest asset ` +
+        `ages out mid-window, so this line must not claim the target was met.`
       : CHECK === 'reachability'
         ? 'every asset the deploy promised to retain is still served.'
         : 'every asset the deploy promised to retain is still served, and the window is wide enough.')
