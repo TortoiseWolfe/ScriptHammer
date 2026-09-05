@@ -272,6 +272,36 @@ test('passes when the window is at full width — the harness can reach success'
   assert.match(output, /full width/);
 });
 
+test('RETAINED_CHECK=window passes ON the tolerance boundary, and does not overstate it', async (t) => {
+  // 13 days against RETAIN_DAYS=14. The pass condition is `spanDays + 1 >= RETAIN_DAYS`
+  // (check-retained-assets.mjs:320) -- a deliberate day of slack, because the oldest asset
+  // ages out mid-window and a healthy ledger oscillates just under the target. Nothing
+  // tested that boundary, and nothing tested what the success line CLAIMS at it.
+  //
+  // It used to claim the target: "the ledger spans at least 14 day(s)" while spanDays was
+  // 13.0. That sentence is exactly what would persuade a reader the retention window had
+  // recovered when it is a day short and still resting on pre-fix history -- the misreading
+  // #1061 exists to prevent, printed by the check itself.
+  const entries = retainedEntries(['/_next/static/css/app.css']);
+  const server = await startServer(serveLedger(entries, 13));
+  t.after(() => server.close());
+
+  const result = await runProbe(server.baseUrl, {
+    ...PAST_RAMP,
+    RETAINED_CHECK: 'window',
+  });
+  const output = result.stdout + result.stderr;
+
+  assert.equal(result.code, 0, output);
+  assert.match(output, /full width/);
+  assert.doesNotMatch(
+    output,
+    /spans at least 14 day\(s\)/,
+    'the success line claims the target was met when only target - 1 was verified'
+  );
+  assert.match(output, /spans at least 13 day\(s\)/);
+});
+
 test('stays quiet during the ramp, when a narrow window is correct', async (t) => {
   const entries = retainedEntries(['/_next/static/css/app.css']);
   const server = await startServer(serveLedger(entries, 2));
