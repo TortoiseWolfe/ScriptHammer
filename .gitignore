@@ -27,7 +27,17 @@
 
 # misc
 .DS_Store
+
+# Private keys and signing material. `*.pem` has always been here; the four below were
+# not, and an App Store Connect API key is a `.p8` (#1084). gitleaks scans CONTENT and
+# would likely flag a pasted PKCS#8 body, but nothing stopped `git add -A` from staging
+# the FILE, and a rule that arrives with the workflow that needs it is cheaper than one
+# added after an incident. Pinned by scripts/__tests__/gitignore-signing-keys.test.js.
 *.pem
+*.p8
+*.p12
+*.cer
+*.mobileprovision
 
 # debug
 npm-debug.log*
