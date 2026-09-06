@@ -390,13 +390,18 @@ describe.skipIf(!hasRlsTestEnvironment())(
         TEST_USERS.userA.email,
         TEST_USERS.userA.password
       );
-      const { data } = await clientA
+      const { data, error } = await clientA
         .from('payment_results')
         .update({ status: 'refunded' })
         .eq('id', resultIdA)
         .select();
 
-      expect(data).toHaveLength(0);
+      // Refused by the GRANT, before the `Payment results are immutable` policy is
+      // reached (#1073). The old assertion — an empty array — is what that policy
+      // produces on its own, and is equally true while `authenticated` holds all
+      // seven privileges including TRUNCATE. Only this form excludes that.
+      expect(error?.code).toBe('42501');
+      expect(data).toBeNull();
     });
 
     it('payment results cannot be deleted by users', async () => {
@@ -404,13 +409,17 @@ describe.skipIf(!hasRlsTestEnvironment())(
         TEST_USERS.userA.email,
         TEST_USERS.userA.password
       );
-      const { data } = await clientA
+      const { data, error } = await clientA
         .from('payment_results')
         .delete()
         .eq('id', resultIdA)
         .select();
 
-      expect(data).toHaveLength(0);
+      // As above: refused outright rather than matching no rows (#1073). The
+      // service-role check below stays — it is the counterweight proving the row is
+      // still there, so a refusal cannot be confused with a successful delete.
+      expect(error?.code).toBe('42501');
+      expect(data).toBeNull();
 
       // Verify still exists
       const svc = createServiceClient();
