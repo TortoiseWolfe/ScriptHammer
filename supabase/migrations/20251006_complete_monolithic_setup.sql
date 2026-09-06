@@ -3240,7 +3240,47 @@ GRANT ALL ON conversations TO service_role;
 -- the file never said otherwise. Nothing anonymous writes messages; RLS refuses
 -- it anyway, and a grant it does not need is a grant nobody audits.
 REVOKE ALL ON messages FROM anon;
-GRANT ALL ON messages TO authenticated, service_role;
+-- #1073, and the most exposed table in the schema. #1059 revoked `anon` here
+-- correctly and then handed `authenticated` everything, which includes TRUNCATE --
+-- and **RLS DOES NOT APPLY TO TRUNCATE**. Any account that can sign up could empty
+-- every encrypted message in the product, and none of the seven policies below, nor
+-- the #281 trigger, participates in that statement.
+--
+-- DELETE GOES because "Users cannot delete messages" already says so and the client
+-- performs zero deletes -- removal is the `deleted` flag, a soft delete. A privilege
+-- the policy then refuses is a second answer to the same question.
+--
+-- UPDATE IS COLUMN-SCOPED, AND THAT IS #281 MADE STRUCTURAL. That ticket exists
+-- because OR-combined UPDATE policies gate ROWS and not COLUMNS, so
+-- `enforce_message_update_columns` was added to raise when an immutable column moved.
+-- A column grant refuses BEFORE any policy or trigger runs, which is the stronger
+-- instrument -- and the two lists turn out to be exact complements:
+--
+--   trigger declares immutable   id, conversation_id, sender_id, created_at,
+--                                sequence_number, client_generated_id,
+--                                is_system_message, system_message_type
+--   granted here                 encrypted_content, initialization_vector,
+--                                key_version, edited, edited_at, deleted,
+--                                delivered_at, read_at
+--
+-- Sixteen columns, no overlap and no gap. The granted eight are exactly what
+-- `supabase-provider.ts` writes: the five-column edit at :463, plus `deleted` (:485),
+-- `read_at` (:504) and `delivered_at` (:523).
+--
+-- THE TRIGGER STAYS. It is not redundant: it also constrains `service_role`, which
+-- keeps ALL below and which a column grant therefore cannot reach, and it names the
+-- offending column instead of returning a bare 42501.
+--
+-- INSERT stays table-wide on purpose. Its WITH CHECK policies are the strong ones --
+-- including #352's blocked-connection clause -- and narrowing the column list would
+-- risk the admin welcome-message path for no privilege actually withheld.
+REVOKE ALL ON messages FROM anon, authenticated;
+GRANT SELECT, INSERT ON messages TO authenticated;
+GRANT UPDATE (
+  encrypted_content, initialization_vector, key_version, edited, edited_at,
+  deleted, delivered_at, read_at
+) ON messages TO authenticated;
+GRANT ALL ON messages TO service_role;
 -- ── #1040: the salt is a per-user secret; the public key is not ─────────────
 --
 -- #1039 closed the ANONYMOUS half of this and said the rest was filed separately.
