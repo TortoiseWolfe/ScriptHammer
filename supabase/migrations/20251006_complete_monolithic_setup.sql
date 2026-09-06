@@ -3374,7 +3374,30 @@ $$;
 -- one line here and the six admin RPCs in this file already do it.
 REVOKE ALL ON FUNCTION public.get_own_encryption_key() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_own_encryption_key() TO authenticated;
-GRANT ALL ON conversation_keys TO authenticated, service_role;
+-- #1073, table 3 of 10 -- and the first one that was NOT latent.
+--
+-- This table is documented 'Immutable encrypted shared secrets' and carries
+-- `FOR UPDATE USING (false)` and `FOR DELETE USING (false)`. It was then granted
+-- ALL, which includes TRUNCATE -- and **RLS DOES NOT APPLY TO TRUNCATE**. Proven on
+-- production in a rolled-back transaction: an ordinary signed-in user ran
+-- `TRUNCATE conversation_keys` and it SUCCEEDED. The two `USING (false)` policies
+-- that look like the protection here do not participate in that statement at all.
+--
+-- So the immutability was policy-deep and one statement from being undone. It is
+-- structural now: the privilege simply is not held, and a grant is checked before
+-- any policy runs.
+--
+-- WHAT authenticated ACTUALLY NEEDS is exactly the two permissive policies, no more:
+-- `Users can view own conversation keys` (SELECT) and `Users can create conversation
+-- keys` (INSERT). There is no client query against this table at all today -- only a
+-- generated row type -- so this is the narrowest grant that keeps the declared policy
+-- surface reachable rather than the narrowest that keeps current code working.
+--
+-- anon gets nothing: every policy here is scoped to a participant, which an anonymous
+-- session can never be.
+REVOKE ALL ON conversation_keys FROM anon, authenticated;
+GRANT SELECT, INSERT ON conversation_keys TO authenticated;
+GRANT ALL ON conversation_keys TO service_role;
 GRANT ALL ON typing_indicators TO authenticated, service_role;
 
 -- ── Least-privilege role for the .NET messaging backend (#321) ──────────────
