@@ -76,9 +76,17 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .from('auth_audit_logs')
         .select('*');
 
-      // RLS returns empty set for anon
-      expect(error).toBeNull();
-      expect(data).toHaveLength(0);
+      // REFUSED AT THE GRANT, NOT BY RLS (#1073). This used to assert
+      // `error === null` and an empty set, because `anon` held SELECT and RLS
+      // returned no rows. `anon` now holds nothing on this table, so the refusal
+      // happens BEFORE any policy is consulted -- which is the stronger property:
+      // a policy mistake can restore rows to an empty-set answer, and cannot
+      // restore them past a missing grant.
+      //
+      // Asserting the SQLSTATE rather than merely `error !== null`: any typo in
+      // the table name also produces an error, and would pass a looser check.
+      expect(error?.code).toBe('42501');
+      expect(data).toBeNull();
     });
 
     // T042: Anon user enumeration attempt returns zero results
