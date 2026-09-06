@@ -338,7 +338,17 @@ async function main() {
 
   const storeName = process.argv[2];
   const bundleId = arg('bundle-id');
-  const sku = arg('sku', bundleId?.split('.').pop());
+  // The SKU must be unique across the whole account, so it CANNOT default to
+  // the bundle id's last segment: `com.geolarp.app` and `com.scripthammer.app`
+  // both end in "app", and the second claim would collide. Derive it from the
+  // store name instead, which is the thing that is actually distinct.
+  const sku = arg(
+    'sku',
+    storeName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+  );
   const locale = arg('locale', 'en-US');
   const easPath = arg('eas-json', 'eas.json');
   const appPath = arg('app-json', 'app.json');

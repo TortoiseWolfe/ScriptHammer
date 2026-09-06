@@ -67,6 +67,17 @@ grep -q 'appleId' "$WORK/proj/eas.json" && no "appleId must never be written" "$
 grep -q '"ITSAppUsesNonExemptEncryption": false' "$WORK/proj/app.json" && ok "app.json got the compliance flag" || no "compliance flag" "$(cat "$WORK/proj/app.json")"
 grep -q '"bundleIdentifier": "com.example.app"' "$WORK/proj/app.json" && ok "app.json got bundleIdentifier" || no "bundleIdentifier" "$(cat "$WORK/proj/app.json")"
 
+# SKU must come from the NAME, not the bundle id's last segment. Two apps whose
+# identifiers both end in ".app" would otherwise get the SAME sku, and a sku must
+# be unique per account — the second claim would fail. Caught by a real dry run.
+mkfixture; start_stub fresh
+SKU_A=$( cd "$WORK/proj" && node "$TOOL" "geoLARP" --bundle-id com.geolarp.app --force --json 2>/dev/null | sed -n 's/.*"sku": "\([^"]*\)".*/\1/p' )
+stop_stub
+mkfixture; start_stub fresh
+SKU_B=$( cd "$WORK/proj" && node "$TOOL" "ScriptHammer" --bundle-id com.scripthammer.app --force --json 2>/dev/null | sed -n 's/.*"sku": "\([^"]*\)".*/\1/p' )
+stop_stub
+if [ -n "$SKU_A" ] && [ "$SKU_A" != "$SKU_B" ]; then ok "sku differs per app ($SKU_A vs $SKU_B)"; else no "sku must differ per app" "got '$SKU_A' and '$SKU_B'"; fi
+
 # --dry-run must not write
 mkfixture; BEFORE=$(cat "$WORK/proj/eas.json"); start_stub resume
 ( cd "$WORK/proj" && node "$TOOL" "geoLARP" --bundle-id com.example.app --dry-run ) >/dev/null 2>&1
