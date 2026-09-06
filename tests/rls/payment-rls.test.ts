@@ -614,14 +614,18 @@ describe.skipIf(!hasRlsTestEnvironment())(
         TEST_USERS.userA.email,
         TEST_USERS.userA.password
       );
-      const { data } = await clientA
+      const { data, error } = await clientA
         .from('webhook_events')
         .update({ processed: true })
         .eq('id', webhookId)
         .select();
 
-      // No rows affected — no UPDATE policy for authenticated
-      expect(data).toHaveLength(0);
+      // Refused by the GRANT, before any policy is consulted (#1073). This used to
+      // assert an empty array — "no rows matched" — which passes for a much weaker
+      // reason than the test's name claims, and coexisted with `authenticated`
+      // holding TRUNCATE on the table.
+      expect(error?.code).toBe('42501');
+      expect(data).toBeNull();
     });
 
     it('authenticated user cannot SELECT webhook events', async () => {
@@ -631,9 +635,11 @@ describe.skipIf(!hasRlsTestEnvironment())(
       );
       const { data, error } = await clientA.from('webhook_events').select('*');
 
-      // No SELECT policy for authenticated users on webhook_events
-      expect(error).toBeNull();
-      expect(data).toHaveLength(0);
+      // Refused by the GRANT, not merely filtered to zero rows by RLS (#1073).
+      // "No SELECT policy" and "no SELECT privilege" produce identical-looking
+      // passes here, and only the second of them also withholds TRUNCATE.
+      expect(error?.code).toBe('42501');
+      expect(data).toBeNull();
     });
 
     it('service role CAN insert webhook events', async () => {

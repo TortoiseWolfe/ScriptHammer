@@ -2532,6 +2532,19 @@ GRANT SELECT ON products TO anon;
 GRANT ALL ON payment_intents TO service_role;
 GRANT ALL ON payment_results TO service_role;
 GRANT ALL ON subscriptions TO service_role;
+-- #1073, table 6 of 10 -- and the first where neither client role needs ANYTHING.
+--
+-- Both policies are explicitly `TO service_role`, and there is **no SELECT policy at
+-- all**, so no user could ever read a row here. Yet `anon` and `authenticated` held
+-- all seven privileges by default silence, which meant both could TRUNCATE it --
+-- 76 rows of payment-provider webhook history -- because RLS does not gate TRUNCATE.
+-- A table nobody may read was one statement from being erased by anybody.
+--
+-- The writers are the `stripe-webhook` and `paypal-webhook` edge functions, which
+-- authenticate with SERVICE_ROLE_KEY, and no SQL function reads this table. So unlike
+-- rate_limit_attempts -- where a SECURITY INVOKER admin RPC forced us to keep SELECT
+-- for `authenticated` -- there is nothing to preserve. Revoke everything.
+REVOKE ALL ON webhook_events FROM anon, authenticated;
 GRANT ALL ON webhook_events TO service_role;
 GRANT ALL ON payment_provider_config TO service_role;
 GRANT ALL ON user_profiles TO service_role;
