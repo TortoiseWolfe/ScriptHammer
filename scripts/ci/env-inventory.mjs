@@ -138,6 +138,7 @@ export const GROUPS = [
       ['NEXT_PUBLIC_DISQUS_SHORTNAME', 'Blog comments disabled.'],
       ['NEXT_PUBLIC_CALENDAR_PROVIDER', 'Scheduling embed disabled.'],
       ['NEXT_PUBLIC_CALENDAR_URL', 'Scheduling embed disabled.'],
+      ['NEXT_PUBLIC_CALENDAR_URL_OFFICE_HOURS', 'Office-hours bookings fall back to the general call.'],
       ['NEXT_PUBLIC_CAPTCHA_SITE_KEY', 'Sign-up captcha disabled.'],
       ['NEXT_PUBLIC_SITE_TWITTER_HANDLE', 'twitter:site omitted from cards.'],
       ['NEXT_PUBLIC_SOCIAL_PLATFORMS', 'Share buttons fall back to defaults.'],
