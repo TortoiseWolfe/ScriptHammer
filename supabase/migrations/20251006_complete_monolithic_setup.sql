@@ -4015,7 +4015,24 @@ GRANT UPDATE (
   deleted, delivered_at, read_at
 ) ON messages TO authenticated;
 GRANT ALL ON messages TO service_role;
-GRANT ALL ON group_keys TO authenticated, service_role;
+-- #1073, table 5 of 10 -- the twin of conversation_keys, and exposed the same way.
+-- `GRANT ALL` here included TRUNCATE, and **RLS DOES NOT APPLY TO TRUNCATE**: proven
+-- on production, an ordinary signed-in user could empty this table outright, and
+-- `anon` held the privilege too. `Keys are immutable` (UPDATE false) and `No direct
+-- key deletes` (DELETE false) read as the protection and do not participate in that
+-- statement at all.
+--
+-- authenticated gets exactly the two permissive policies: `Users can view their own
+-- keys` (SELECT) and `Members can distribute keys` (INSERT). That also matches the
+-- client precisely -- two inserts and one select, no update or delete anywhere -- so
+-- for once "what the policies declare" and "what the code needs" agree, and the grant
+-- can satisfy both without choosing.
+--
+-- Immutability is structural now rather than policy-deep: the privilege is not held,
+-- and a grant is checked before any policy runs.
+REVOKE ALL ON group_keys FROM anon, authenticated;
+GRANT SELECT, INSERT ON group_keys TO authenticated;
+GRANT ALL ON group_keys TO service_role;
 
 -- Enable realtime for group tables
 ALTER TABLE conversation_members REPLICA IDENTITY FULL;
