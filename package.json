@@ -105,7 +105,9 @@
     "bake": "tsx scripts/bake/run.ts",
     "warehouse:inventory": "node scripts/warehouse/inventory.mjs",
     "warehouse:sync": "tsx scripts/warehouse/fetch-glbs.ts && node scripts/warehouse/abstract-glb.mjs && tsx scripts/warehouse/emit-models.ts",
-    "warehouse:qc": "node scripts/warehouse/qc-sheet.mjs"
+    "warehouse:qc": "node scripts/warehouse/qc-sheet.mjs",
+    "claim:appstore": "node scripts/claim-app-store.mjs",
+    "test:appstore": "./tests/appstore/test-claim-app-store.sh"
   },
   "dependencies": {
     "@calcom/embed-react": "^1.5.3",
