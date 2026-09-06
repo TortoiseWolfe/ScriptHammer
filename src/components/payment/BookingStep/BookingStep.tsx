@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { calendarConfig } from '@/config/calendar.config';
+import { calendarConfig, resolveCalendarUrl } from '@/config/calendar.config';
 
 export interface BookingStepProps {
   /** Shown on the receipt so the buyer has something to quote. */
@@ -10,6 +10,11 @@ export interface BookingStepProps {
   buyerEmail?: string;
   /** What they bought, for the confirmation line. */
   productName?: string;
+  /**
+   * The SKU (`Product.id`), so a product with its own scheduler books it (#1092).
+   * Omitted or unmapped falls back to the general call.
+   */
+  sku?: string;
   className?: string;
 }
 
@@ -31,9 +36,13 @@ export function buildBookingUrl(params: {
   orderId: string;
   name?: string;
   email?: string;
+  /** `Product.id`. Resolves a per-SKU scheduler when one is configured (#1092). */
+  sku?: string;
   baseUrl?: string;
 }): string | null {
-  const base = params.baseUrl ?? calendarConfig.url;
+  // An explicit baseUrl still wins — it is how the tests pin a URL without touching
+  // process.env. Otherwise the SKU decides, and an unmapped SKU gets the default.
+  const base = params.baseUrl ?? resolveCalendarUrl(params.sku);
   if (!base) return null;
 
   let url: URL;
@@ -75,12 +84,14 @@ export default function BookingStep({
   buyerName,
   buyerEmail,
   productName,
+  sku,
   className = '',
 }: BookingStepProps) {
   const href = buildBookingUrl({
     orderId,
     name: buyerName,
     email: buyerEmail,
+    sku,
   });
 
   return (
@@ -107,9 +118,16 @@ export default function BookingStep({
       >
         Book your kickoff call
       </h2>
+      {/*
+        NO DURATION HERE, DELIBERATELY (#1092). This said "Thirty minutes" for seven
+        months while linking to a 15-minute event, because the length is not data
+        anywhere in this repo — it is an opaque slug inside a Calendly URL that an
+        operator can change without touching code. Any number written here is a
+        promise the product cannot keep. The scheduler states the real length on the
+        page the buyer lands on.
+      */}
       <p className="text-base-content mb-6">
-        Thirty minutes to go through what you need. Your name and email are
-        already filled in.
+        Pick a time that suits you — your name and email are already filled in.
       </p>
 
       {href ? (
@@ -119,7 +137,7 @@ export default function BookingStep({
           rel="noreferrer"
           className="btn btn-primary min-h-11 min-w-11"
         >
-          Book your kickoff — 30 min
+          Choose a time
         </a>
       ) : (
         // Every screen must render usefully with nothing configured (SC-008).

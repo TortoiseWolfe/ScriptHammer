@@ -349,6 +349,7 @@ function CheckoutContent() {
         buyerName={buyer.name}
         buyerEmail={buyer.email}
         productName={stage.product?.name}
+        sku={stage.product?.id}
       />
     );
   }
