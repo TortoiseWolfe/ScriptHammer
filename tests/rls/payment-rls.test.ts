@@ -562,6 +562,39 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
       expect(error).not.toBeNull();
     });
+
+    it('user cannot DELETE own subscription — revoked, not merely unpoliced', async () => {
+      // Nothing covered DELETE or TRUNCATE on this table before #1073, so the suite
+      // could not tell whether the privileges were held: handing DELETE back to
+      // `authenticated` left all 118 tests green. The destructive half of the fix was
+      // unprotected against a future re-widening.
+      //
+      // The two outcomes are distinguishable, and that is what makes this test work:
+      //   privilege revoked         -> 42501, refused outright
+      //   privilege held, no policy -> [] and no error, RLS matched nothing
+      // Only the first also excludes TRUNCATE, which consults no policy at all.
+      const clientA = await createAuthenticatedClient(
+        TEST_USERS.userA.email,
+        TEST_USERS.userA.password
+      );
+      const { data, error } = await clientA
+        .from('subscriptions')
+        .delete()
+        .eq('id', subIdA)
+        .select();
+
+      expect(error?.code).toBe('42501');
+      expect(data).toBeNull();
+
+      // Counterweight: the row survives, so a refusal cannot be mistaken for a
+      // delete that worked.
+      const svc = createServiceClient();
+      const { data: check } = await svc
+        .from('subscriptions')
+        .select('id')
+        .eq('id', subIdA);
+      expect(check).toHaveLength(1);
+    });
   }
 );
 

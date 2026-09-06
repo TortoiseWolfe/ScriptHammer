@@ -2448,6 +2448,26 @@ REVOKE INSERT, UPDATE, DELETE, TRUNCATE, TRIGGER, REFERENCES ON payment_intents 
 -- already says `TO service_role`, which is how the webhook writes. `anon` gets nothing.
 REVOKE ALL ON payment_results FROM anon, authenticated;
 GRANT SELECT ON payment_results TO authenticated;
+
+-- #1073, table 9 of 10. Same GRANT-cannot-narrow trap: the line below named three
+-- privileges and withheld none of the other four, TRUNCATE among them, so either
+-- client role could empty the table. RLS does not gate TRUNCATE.
+--
+-- The three named privileges are KEPT, because the policies deliberately grant them
+-- and `payment-rls.test.ts` asserts them ("user can UPDATE own subscription"). That
+-- is a narrower decision than the call sites alone would justify -- every real
+-- mutation goes through an edge function holding SERVICE_ROLE_KEY (cancel-, resume-,
+-- retry-, create-stripe-, create-paypal-subscription), and the only client write path,
+-- `queueSubscriptionUpdate`, has no callers.
+--
+-- Removing them is therefore possible but is a PRODUCT decision, not a privilege
+-- cleanup, and it is filed separately: `Users update own subscriptions` is
+-- USING (auth.uid() = template_user_id) with no column scoping, so a row owner may
+-- write `status` and `current_period_end` -- the same grant that lets them cancel
+-- lets them award themselves free service. Filed as #1089; do not widen
+-- this block to fix it, because a column grant cannot separate the two (both write
+-- `status`).
+REVOKE ALL ON subscriptions FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE ON subscriptions TO authenticated;
 GRANT SELECT ON payment_provider_config TO authenticated;
 -- ============================================================================
