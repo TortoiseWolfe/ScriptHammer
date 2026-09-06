@@ -2520,6 +2520,27 @@ GRANT INSERT (
 REVOKE ALL ON auth_audit_logs FROM anon, authenticated;
 GRANT SELECT ON auth_audit_logs TO authenticated;
 GRANT SELECT ON products TO authenticated;
+
+-- #1073, table 7 of 10. The line below already said SELECT, and it did nothing.
+--
+-- That is the whole shape of this bug in one statement. A GRANT never NARROWS: the
+-- default ACL had already handed `anon` and `authenticated` all seven privileges on
+-- this table, so naming SELECT here added a privilege they held twice over and
+-- withheld none of the other six. The file stated the intended rule and the database
+-- ignored it, which is why nobody reading this migration would have found the hole.
+--
+-- What they actually held included TRUNCATE, and RLS does not gate TRUNCATE. So the
+-- policy named `Orders cannot be deleted by users` -- a real policy, with a genuine
+-- `USING (false)` -- was true and irrelevant: it refuses every DELETE while the same
+-- role empties the table in one statement that consults no policy at all. Three live
+-- orders, the records a disputed charge is reconstructed from.
+--
+-- `anon` gets nothing. A real account is required to buy (#611, checkout/page.tsx:30)
+-- -- the anonymous-session flow was removed precisely so no guest order can exist --
+-- and `getPaymentStatus` calls `getAuthenticatedUserId()`, which throws, before the
+-- only other client read is reached. Writes stay with service_role, whose INSERT and
+-- UPDATE policies already say `TO service_role`.
+REVOKE ALL ON orders FROM anon, authenticated;
 GRANT SELECT ON orders TO authenticated;
 
 -- Anonymous visitors browsing /pricing before any sign-in. RLS alone is not
