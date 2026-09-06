@@ -2495,7 +2495,30 @@ GRANT UPDATE (
 GRANT INSERT (
   id, username, display_name, avatar_url, bio
 ) ON public.user_profiles TO authenticated;
-GRANT SELECT, INSERT ON auth_audit_logs TO authenticated;
+-- #1073, table 2 of 10. Same silence-is-a-grant default as the rest: `anon` held
+-- all seven privileges on 7,440 audit rows, kept out only by RLS.
+--
+-- WHY anon NEEDS NOTHING. The sole writer is `log_auth_event` (:1182), SECURITY
+-- DEFINER with `SET search_path = public`, so it needs nothing from the caller --
+-- and the insert POLICY is service-role only. Both read policies require either
+-- owning the row (`Users can view own audit logs`) or `is_admin()`, neither of
+-- which an anonymous session can satisfy.
+--
+-- WHY THE `INSERT` GRANT GOES. It was vestigial and actively misleading: #241 found
+-- that a client-side `.from('auth_audit_logs').insert()` was silently RLS-rejected,
+-- which is why `src/lib/auth/audit-logger.ts:78` writes through the RPC instead. A
+-- privilege that RLS then refuses is not defence, it is a second answer to the same
+-- question -- and the one that reads as permission.
+--
+-- WHY SELECT IS NOT COLUMN-NARROWED, unlike user_profiles. Three client sites read
+-- this table directly, and `getUserAuditLogs` (audit-logger.ts:119) uses
+-- `select('*')`. A column list would therefore have to name every column to keep
+-- that working, which is identical to a table grant except that a column added
+-- later becomes silently invisible. On `user_profiles` the narrowing earns its
+-- keep because it withholds `is_admin` (#1029); here it would withhold nothing and
+-- break a working read. Table-wide SELECT is the honest choice.
+REVOKE ALL ON auth_audit_logs FROM anon, authenticated;
+GRANT SELECT ON auth_audit_logs TO authenticated;
 GRANT SELECT ON products TO authenticated;
 GRANT SELECT ON orders TO authenticated;
 
