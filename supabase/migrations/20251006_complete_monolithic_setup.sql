@@ -2431,6 +2431,22 @@ GRANT SELECT ON payment_intents TO authenticated;
 -- trusting these lines, since trusting the file is what hid this for so long.
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE, TRIGGER, REFERENCES ON payment_intents FROM authenticated;
 REVOKE INSERT, UPDATE, DELETE, TRUNCATE, TRIGGER, REFERENCES ON payment_intents FROM anon;
+
+-- #1073, table 8 of 10. Same trap as `orders`, one table over: the line below already
+-- named SELECT and withheld nothing, because a GRANT cannot narrow what the default
+-- ACL has already given. Both client roles held all seven privileges, TRUNCATE among
+-- them, and RLS does not gate TRUNCATE.
+--
+-- So BOTH of this table's `USING (false)` policies were true and unreachable:
+-- `Payment results are immutable` refuses every UPDATE, and `Payment results cannot be
+-- deleted by users` refuses every DELETE, while either role empties the table with one
+-- statement that consults no policy. The table is empty today, which makes this latent
+-- rather than live -- but it is where every payment outcome lands.
+--
+-- `authenticated` keeps SELECT: all four client sites are reads (usePaymentRealtime,
+-- getPaymentStatus, getPaymentHistory, admin-payment-service), and the INSERT policy
+-- already says `TO service_role`, which is how the webhook writes. `anon` gets nothing.
+REVOKE ALL ON payment_results FROM anon, authenticated;
 GRANT SELECT ON payment_results TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON subscriptions TO authenticated;
 GRANT SELECT ON payment_provider_config TO authenticated;
