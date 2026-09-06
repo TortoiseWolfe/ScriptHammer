@@ -2460,15 +2460,32 @@ GRANT SELECT ON payment_results TO authenticated;
 -- retry-, create-stripe-, create-paypal-subscription), and the only client write path,
 -- `queueSubscriptionUpdate`, has no callers.
 --
--- Removing them is therefore possible but is a PRODUCT decision, not a privilege
--- cleanup, and it is filed separately: `Users update own subscriptions` is
--- USING (auth.uid() = template_user_id) with no column scoping, so a row owner may
--- write `status` and `current_period_end` -- the same grant that lets them cancel
--- lets them award themselves free service. Filed as #1089; do not widen
--- this block to fix it, because a column grant cannot separate the two (both write
--- `status`).
+-- #1089 THEN NARROWED THE UPDATE TO THREE COLUMNS. The paragraph that stood here said
+-- "do not widen this block to fix it, because a column grant cannot separate the two
+-- (both write `status`)". That is true of `status` and WRONG as a conclusion about the
+-- rest: `Users update own subscriptions` is USING (auth.uid() = template_user_id) with
+-- no column scoping, so a table-wide UPDATE also let a row owner rewrite plan_amount,
+-- current_period_start/end, next_billing_date, grace_period_expires,
+-- failed_payment_count, retry_schedule, provider, provider_subscription_id and
+-- customer_email. A column grant closes every one of those. It cannot close the last
+-- one -- flipping `status` back to 'active' -- but "cannot fix all of it" was never a
+-- reason to fix none of it.
+--
+-- The kept three are the cancellation surface, which is what the tested capability
+-- actually needs: `payment-rls.test.ts` asserts "user can UPDATE own subscription" by
+-- setting status='canceled'. Nothing in src/ writes this table at all -- every real
+-- mutation goes through an edge function holding SERVICE_ROLE_KEY (cancel-, resume-,
+-- retry-, create-stripe-, create-paypal-subscription), and `queueSubscriptionUpdate`
+-- has no callers -- so this is still wider than the call sites require.
+--
+-- A column grant is checked BEFORE any policy or trigger runs, the same instrument and
+-- the same reasoning as `messages` (#1059) and `user_connections`. What it does NOT
+-- reach stays on #1089: the status flip, and the INSERT path, where `Users create own
+-- subscriptions` plus a table-wide INSERT lets a signed-in user mint a row with
+-- status='active' and any plan_amount. Both need a predicate, not a privilege.
 REVOKE ALL ON subscriptions FROM anon, authenticated;
-GRANT SELECT, INSERT, UPDATE ON subscriptions TO authenticated;
+GRANT SELECT, INSERT ON subscriptions TO authenticated;
+GRANT UPDATE (status, canceled_at, cancellation_reason) ON subscriptions TO authenticated;
 GRANT SELECT ON payment_provider_config TO authenticated;
 -- ============================================================================
 -- user_profiles: COLUMN-SCOPED privileges 

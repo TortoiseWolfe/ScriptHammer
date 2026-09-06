@@ -65,10 +65,10 @@ const ALLOWED: Record<string, string[]> = {
   webhook_events: [],
   orders: ['SELECT'],
   payment_results: ['SELECT'],
-  // Kept because the policies grant them and a test asserts "user can UPDATE own
-  // subscription". That grant's cost is filed as #1089 — a row owner may write `status`
-  // and `current_period_end`. Narrowing it is a product decision, not a privilege sweep.
-  subscriptions: ['INSERT', 'SELECT', 'UPDATE'],
+  // Table-wide UPDATE is deliberately ABSENT — narrowed to three columns by #1089,
+  // checked below. It used to be table-wide, which let a row owner rewrite plan_amount
+  // and current_period_end as well as cancel.
+  subscriptions: ['INSERT', 'SELECT'],
   // Three user-scoped policies; the DELETE policy says `TO service_role`. The migration
   // previously said GRANT ALL, which handed users a DELETE the policy set withholds.
   typing_indicators: ['INSERT', 'SELECT', 'UPDATE'],
@@ -223,6 +223,39 @@ describe.skipIf(!hasRlsTestEnvironment())(
         'key_version',
         'read_at',
       ]);
+    });
+
+    it('subscriptions keeps a COLUMN-scoped UPDATE covering only the cancellation surface', async () => {
+      // #1089. A table-wide UPDATE here let a row owner rewrite their own plan_amount,
+      // current_period_end, next_billing_date, grace_period_expires and the dunning
+      // counters — the policy is USING (auth.uid() = template_user_id) with no column
+      // scoping, so it gates rows and not columns.
+      //
+      // The three columns below are the cancellation surface, which is what the tested
+      // capability actually needs ("user can UPDATE own subscription" sets
+      // status='canceled'). Asserting only that table-wide UPDATE is gone would let the
+      // replacement be widened one column at a time without any test noticing.
+      //
+      // This does NOT close the status flip itself — a row owner can still set
+      // status='active' — nor the INSERT path. Both stay on #1089; they need a
+      // predicate, which is a trigger's job, not a privilege's.
+      const { rows } = await db.query(
+        `SELECT column_name
+           FROM information_schema.column_privileges
+          WHERE table_schema = 'public'
+            AND table_name = 'subscriptions'
+            AND grantee = 'authenticated'
+            AND privilege_type = 'UPDATE'
+          ORDER BY column_name`
+      );
+      const columns = rows.map((r) => r.column_name);
+      expect(
+        columns.length,
+        'authenticated has no column-level UPDATE on subscriptions — cancelling is ' +
+          'broken, or the column grant was replaced by a table grant (which would also ' +
+          'restore write access to plan_amount and current_period_end).'
+      ).toBeGreaterThan(0);
+      expect(columns).toEqual(['canceled_at', 'cancellation_reason', 'status']);
     });
   }
 );
