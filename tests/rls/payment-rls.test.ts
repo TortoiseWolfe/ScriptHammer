@@ -531,6 +531,49 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .eq('id', subIdA);
     });
 
+    it('user cannot UPDATE the money columns of their own subscription', async () => {
+      // #1089. The policy is USING (auth.uid() = template_user_id) with no column
+      // scoping, so it gates ROWS and not COLUMNS: with a table-wide UPDATE grant the
+      // test above — cancelling your own subscription — was the same privilege as
+      // rewriting your own price and period end. That is free perpetual service.
+      //
+      // The grant is now column-scoped to the cancellation surface, so these are
+      // refused before any policy runs. Both directions matter: the test above proves
+      // cancelling still works, and this proves it is no longer a general write.
+      const clientA = await createAuthenticatedClient(
+        TEST_USERS.userA.email,
+        TEST_USERS.userA.password
+      );
+
+      for (const patch of [
+        { plan_amount: 1 },
+        { current_period_end: '2099-01-01T00:00:00.000Z' },
+        { next_billing_date: '2099-01-01T00:00:00.000Z' },
+        { failed_payment_count: 0 },
+      ]) {
+        const column = Object.keys(patch)[0];
+        const { data, error } = await clientA
+          .from('subscriptions')
+          .update(patch)
+          .eq('id', subIdA)
+          .select();
+
+        expect(error?.code, `${column} was not refused`).toBe('42501');
+        expect(data, `${column} returned rows`).toBeNull();
+      }
+
+      // Counterweight: the row is untouched, so a refusal cannot be confused with a
+      // write that happened to change nothing.
+      const svc = createServiceClient();
+      const { data: check } = await svc
+        .from('subscriptions')
+        .select('plan_amount, status')
+        .eq('id', subIdA)
+        .single();
+      expect(check?.plan_amount).toBe(999);
+      expect(check?.status).toBe('active');
+    });
+
     it('user cannot UPDATE other user subscription', async () => {
       const clientB = await createAuthenticatedClient(
         TEST_USERS.userB.email,
