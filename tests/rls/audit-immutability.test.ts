@@ -105,8 +105,16 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .eq('id', testAuditLogId)
         .select();
 
-      // Should return empty - no UPDATE policy exists
-      expect(data).toHaveLength(0);
+      // REFUSED AT THE GRANT NOW (#1073). This asserted an empty result, which is
+      // what a denied UPDATE looks like when the privilege is held and RLS matches
+      // no rows -- the silent shape. `authenticated` now holds only SELECT here, so
+      // the statement is refused outright and `data` is null rather than [].
+      //
+      // The upgrade matters for this table specifically: a silently-zero UPDATE and
+      // a successful one are indistinguishable without re-reading, which is the
+      // whole reason `assertWrote` exists elsewhere in this repo.
+      expect(error?.code).toBe('42501');
+      expect(data).toBeNull();
     });
 
     // T049: Authenticated user cannot DELETE from audit_logs
@@ -123,8 +131,9 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .eq('id', testAuditLogId)
         .select();
 
-      // Should return empty - no DELETE policy exists
-      expect(data).toHaveLength(0);
+      // Same upgrade as the UPDATE case above: refused by the grant, not by RLS.
+      expect(error?.code).toBe('42501');
+      expect(data).toBeNull();
 
       // Verify the log still exists (check via service role)
       const serviceClient = createServiceClient();

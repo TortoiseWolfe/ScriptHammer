@@ -1512,6 +1512,35 @@ CREATE POLICY "Admin can view all rate limits" ON rate_limit_attempts
     is_admin()  -- #240: live column authority (was: JWT claim, which could drift/linger)
   );
 
+-- #1073, table 1 of 10. `anon` held all seven privileges here, and on nine other
+-- tables, because this file never said otherwise -- Supabase's `pg_default_acl`
+-- grants anon and authenticated everything in `public`, so SILENCE IS A GRANT.
+-- Nothing was exposed: RLS held, and a rolled-back probe as `anon` on production
+-- read zero of the 7,440 audit rows and zero here. But that left RLS as the only
+-- layer, and one policy written without a `TO` clause is #1039 again.
+--
+-- WHY anon NEEDS NOTHING AT ALL. Both writers are SECURITY DEFINER and run as the
+-- owner, so they need no privilege from the caller: `check_rate_limit` and
+-- `record_failed_attempt` (both `SET search_path = public`). The only reader is
+-- gated on `is_admin()`, which an anonymous session can never satisfy.
+--
+-- WHY authenticated KEEPS SELECT, AND ONLY SELECT. `admin_auth_stats()` is
+-- SECURITY INVOKER and counts locked-out users straight off this table, so it
+-- runs with the CALLER's grants -- revoke SELECT and the admin dashboard's
+-- `rate_limited_users` metric fails with 42501 rather than returning zero, which
+-- is the failure mode that reads as "not an admin" (#1029). INSERT/UPDATE/DELETE
+-- are not granted back: every write goes through the two DEFINER functions above,
+-- and the `USING (false)` service-role policy means a direct write would affect
+-- no rows anyway. The grant is the layer that refuses BEFORE any policy runs.
+--
+-- Adding a REVOKE here also brings this table under `Prod Schema Drift` for the
+-- first time -- derive-intended-schema.mjs asserts grants only where the file has
+-- taken control. That is the point: one table at a time, each with its own
+-- decision, so the gate never goes red on ten at once and get switched off.
+REVOKE ALL ON rate_limit_attempts FROM anon, authenticated;
+GRANT SELECT ON rate_limit_attempts TO authenticated;
+GRANT ALL ON rate_limit_attempts TO service_role;
+
 -- The three admin-read policies for user_connections / conversations / messages
 -- belong with this block semantically but live ~400 lines down, right after
 -- the messages section finishes. Those tables are created in PART 8; placing
@@ -2466,7 +2495,30 @@ GRANT UPDATE (
 GRANT INSERT (
   id, username, display_name, avatar_url, bio
 ) ON public.user_profiles TO authenticated;
-GRANT SELECT, INSERT ON auth_audit_logs TO authenticated;
+-- #1073, table 2 of 10. Same silence-is-a-grant default as the rest: `anon` held
+-- all seven privileges on 7,440 audit rows, kept out only by RLS.
+--
+-- WHY anon NEEDS NOTHING. The sole writer is `log_auth_event` (:1182), SECURITY
+-- DEFINER with `SET search_path = public`, so it needs nothing from the caller --
+-- and the insert POLICY is service-role only. Both read policies require either
+-- owning the row (`Users can view own audit logs`) or `is_admin()`, neither of
+-- which an anonymous session can satisfy.
+--
+-- WHY THE `INSERT` GRANT GOES. It was vestigial and actively misleading: #241 found
+-- that a client-side `.from('auth_audit_logs').insert()` was silently RLS-rejected,
+-- which is why `src/lib/auth/audit-logger.ts:78` writes through the RPC instead. A
+-- privilege that RLS then refuses is not defence, it is a second answer to the same
+-- question -- and the one that reads as permission.
+--
+-- WHY SELECT IS NOT COLUMN-NARROWED, unlike user_profiles. Three client sites read
+-- this table directly, and `getUserAuditLogs` (audit-logger.ts:119) uses
+-- `select('*')`. A column list would therefore have to name every column to keep
+-- that working, which is identical to a table grant except that a column added
+-- later becomes silently invisible. On `user_profiles` the narrowing earns its
+-- keep because it withholds `is_admin` (#1029); here it would withhold nothing and
+-- break a working read. Table-wide SELECT is the honest choice.
+REVOKE ALL ON auth_audit_logs FROM anon, authenticated;
+GRANT SELECT ON auth_audit_logs TO authenticated;
 GRANT SELECT ON products TO authenticated;
 GRANT SELECT ON orders TO authenticated;
 
