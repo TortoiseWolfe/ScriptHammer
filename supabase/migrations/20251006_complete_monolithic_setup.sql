@@ -3467,7 +3467,25 @@ GRANT EXECUTE ON FUNCTION public.get_own_encryption_key() TO authenticated;
 REVOKE ALL ON conversation_keys FROM anon, authenticated;
 GRANT SELECT, INSERT ON conversation_keys TO authenticated;
 GRANT ALL ON conversation_keys TO service_role;
-GRANT ALL ON typing_indicators TO authenticated, service_role;
+
+-- #1073, table 10 of 10. Unlike the other nine this line is not silence -- it is an
+-- explicit `GRANT ALL`, which is wider than this table's own policies. Three policies
+-- are scoped to a user (`view typing in own conversations`, `insert own typing status`,
+-- `update own typing status`) and the fourth, `System can clean up old indicators`, is
+-- DELETE and says `TO service_role`. So GRANT ALL handed `authenticated` a DELETE the
+-- policy set deliberately withholds, plus TRUNCATE -- which RLS does not gate at all,
+-- making the table emptiable by any signed-in user, and by `anon` through the default
+-- ACL on top.
+--
+-- The kept set follows the rule the conversation_keys block above states: the narrowest
+-- grant that keeps the DECLARED POLICY SURFACE reachable, not the narrowest that keeps
+-- current code working. Nothing in src/ touches this table -- MessageThread.tsx:438
+-- drives the indicator from a prop, and the only writers are the seed and reset scripts,
+-- which hold the service-role key -- so a full revoke would also have worked today and
+-- would have quietly deleted the feature's declared surface.
+REVOKE ALL ON typing_indicators FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE ON typing_indicators TO authenticated;
+GRANT ALL ON typing_indicators TO service_role;
 
 -- ── Least-privilege role for the .NET messaging backend (#321) ──────────────
 -- The ASP.NET Core backend (dotnet-messaging/) must connect as a NON-superuser,
