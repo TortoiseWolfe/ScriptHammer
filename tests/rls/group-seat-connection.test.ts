@@ -400,9 +400,22 @@ describe.skipIf(!hasRlsTestEnvironment())(
       // someone who never consented: the post-image still contains the attacker,
       // so the WITH CHECK passes and the victim lands in a DM they never agreed
       // to. Closed by the same column grant; archiving still works below.
+      // `canonical_ordering` is CHECK (participant_1_id < participant_2_id), and both
+      // ids are random UUIDs -- so seeding them in creator/stranger order raises 23514
+      // on roughly half of all runs. That is what made this a coin flip on a REQUIRED
+      // check rather than a test, and it is why Conformance had been failing
+      // intermittently on main. Every other conversation seed in tests/rls sorts first
+      // (blocked-cannot-send.test.ts:156, messages-update-guard.test.ts:62); this one,
+      // added with #1059, did not.
+      const [p1, p2] =
+        creator.id < stranger.id
+          ? [creator.id, stranger.id]
+          : [stranger.id, creator.id];
+      const creatorIsFirst = p1 === creator.id;
+
       const { data: convo, error: createErr } = await service
         .from('conversations')
-        .insert({ participant_1_id: creator.id, participant_2_id: stranger.id })
+        .insert({ participant_1_id: p1, participant_2_id: p2 })
         .select('id')
         .single();
       expect(createErr, 'seeding a 1:1 conversation').toBeNull();
@@ -419,9 +432,17 @@ describe.skipIf(!hasRlsTestEnvironment())(
       expect(swapped.error?.code).toBe('42501');
 
       // Counterweight: archiving is what this policy exists for.
+      // Archive the seat the creator actually occupies. Hardcoding participant_1
+      // only looked right while the seed happened to put them there; once the pair
+      // is sorted the creator lands in either seat, and asserting on the wrong
+      // column would still pass -- both are granted -- while testing nothing.
       const archived = await creatorClient
         .from('conversations')
-        .update({ archived_by_participant_1: true })
+        .update(
+          creatorIsFirst
+            ? { archived_by_participant_1: true }
+            : { archived_by_participant_2: true }
+        )
         .eq('id', convoId);
       expect(archived.error, 'archiving must still work').toBeNull();
 
