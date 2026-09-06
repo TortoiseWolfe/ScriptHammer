@@ -102,7 +102,34 @@ The contact form uses Web3Forms as primary with EmailJS as backup:
 
 - **Google Analytics 4** — create a property at [analytics.google.com](https://analytics.google.com/) → copy the Measurement ID (format `G-XXXXXXXXXX`) into `NEXT_PUBLIC_GA_MEASUREMENT_ID`. Code is already shipped, theme-change events fire automatically. Issue #31 closed.
 
-### 9. Final verification
+### 9. Claim your App Store name (optional — iOS only)
+
+**Skip this entirely if you are not shipping an iOS app.** A web fork never needs
+an Apple Developer account, and this template does not require one.
+
+If you are: app names are **globally unique** and permanent-ish, so claim yours
+before you build, not after. Bundle identifiers are worse — Apple never re-issues
+one, so a typo is forever.
+
+```bash
+export ASC_ISSUER_ID=<uuid>        # App Store Connect → Users and Access → Integrations
+pnpm claim:appstore "My App" --bundle-id com.myapp.app --dry-run
+```
+
+`--dry-run` prints the whole plan and makes no writes, so run that first. Then
+drop the flag. The tool registers the identifier, waits while you create the app
+record in a browser — **Apple forbids `POST /v1/apps`, so that one dialog cannot
+be automated** — then sets the listing name, writes `ascAppId` and `appleTeamId`
+into `eas.json`, and sets `ITSAppUsesNonExemptEncryption` in `app.json`.
+
+That last one matters more than it looks: without it every TestFlight upload
+stops in "Missing Compliance" and stays invisible to testers. It is not an error,
+nothing emails you, the build simply never appears.
+
+Exit `4` means "your turn" — the identifier is registered and the dialog is
+printed, but the record does not exist yet. Re-run to resume.
+
+### 10. Final verification
 
 - Run the [verification checklist in `docs/FORKING.md`](FORKING.md#verification-checklist) (12 items)
 - All E2E tests pass: `docker compose exec scripthammer pnpm exec playwright test`
@@ -113,6 +140,8 @@ The contact form uses Web3Forms as primary with EmailJS as backup:
 ## Service matrix
 
 Every external service this template integrates with, in one table:
+
+(Apple Developer Program — **optional, iOS only**, $99/yr, `ASC_ISSUER_ID` / `ASC_KEY_ID`; see step 9.)
 
 | Service                          | Required?   | Env vars                                                                                                       | Setup doc / signup link                                                                                                                                                      |
 | -------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

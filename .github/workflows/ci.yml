@@ -96,6 +96,15 @@ jobs:
       - name: Run rebrand harness
         run: ./tests/rebrand/test-rebrand.sh
 
+      # Same reasoning as #539 above, applied on the day the harness was written
+      # rather than years later: the claim tool touches PERMANENT Apple state
+      # (a bundle identifier is never re-issued), so a regression in it is
+      # discovered by a stranger, on their Apple account, unrecoverably. Runs
+      # the real tool against a stub App Store Connect via the ASC_API_BASE
+      # seam with a generated throwaway key — no network, no Apple, ~2s.
+      - name: Run App Store claim harness
+        run: ./tests/appstore/test-claim-app-store.sh
+
       # #659: the icons are committed output generated from public/favicon.svg.
       # This fails if any is missing or was hand-edited away from the mark —
       # which is how CRUDkit's monogram survived in 13 files long enough to
