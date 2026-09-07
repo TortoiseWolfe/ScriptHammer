@@ -3,7 +3,7 @@
 import { FC } from 'react';
 import dynamic from 'next/dynamic';
 import { useConsent } from '@/contexts/ConsentContext';
-import { calendarConfig } from '@/config/calendar.config';
+import { calendarConfig, toCalLink } from '@/config/calendar.config';
 import CalendarConsent from '../../calendar/CalendarConsent';
 
 export interface CalendarEmbedProps {
@@ -73,7 +73,11 @@ const CalendarEmbed: FC<CalendarEmbedProps> = ({
     );
   }
 
-  if (!url) {
+  // Derived BEFORE the guard so a URL that parses to an empty path (`https://cal.com/`)
+  // takes the "not configured" branch rather than mounting an embed with no event.
+  const calLink = provider === 'calcom' ? toCalLink(url) : '';
+
+  if (!url || (provider === 'calcom' && !calLink)) {
     return (
       <div className="alert alert-warning">
         <span>
@@ -101,7 +105,7 @@ const CalendarEmbed: FC<CalendarEmbedProps> = ({
         />
       ) : (
         <CalComProvider
-          calLink={url}
+          calLink={calLink}
           mode={mode}
           config={prefill}
           styles={calendarConfig.styles}
