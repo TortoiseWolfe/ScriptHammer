@@ -680,6 +680,23 @@ Nearly every defect found in the 2026-07-28 visual-refresh session had the same 
 
 **A probe that cannot report failure proves nothing.** Four written in one session were wrong: one parsed `oklch()` from `getComputedStyle` as RGB (it returns `oklch()` unchanged — read colours back through a `<canvas>`), one printed its success line unconditionally, one was piped through `tail` and silently lost rows, one let Playwright's evaluate-retry double-fire `axe.run()`. Each was caught by a number that looked impossible, not by the tool saying so. **Make it fail on purpose before trusting a pass.**
 
+**THE SEARCH ITSELF CAN BE BLIND, AND IT LOOKS THOROUGH.** On this machine `grep` is
+**`ugrep`**, not GNU grep, and a recursive `grep -r` from a repo root **silently skips
+`.env` files** — `--no-ignore-files` does not change it. Verified with a control on
+2026-09-07: `grep -c SUPABASE_ACCESS_TOKEN .env` finds it, `grep -rl SUPABASE_ACCESS_TOKEN .`
+does not list `.env` at all. Every "did we leak a secret?" sweep run here was therefore
+systematically blind to exactly the files that hold secrets, while producing clean output.
+Use `command grep -r`, or name the file directly, and never conclude "nothing found" from a
+recursive grep alone.
+
+**A secret that was rotated may still be on disk.** Editing a file archived a copy of it,
+so `.env` contents accumulated outside every repo — outside `.gitignore`, outside `gitleaks`,
+which only ever runs inside a repository. Measured 2026-09-07 across `~/.claude`: live
+values for `STRIPE_SECRET_KEY_LIVE`, both Supabase service-role keys, the database password,
+management tokens, PayPal, Cloudflare and Resend. Rotation alone does not clear an archive,
+and the archive is not somewhere any existing check looks. If a credential has ever been in
+a file you edited, treat "rotated" and "gone" as different claims.
+
 ### Gates are only as wide as what they point at
 
 A green check means "the thing the gate looks at is fine", which is rarely what people read it as.
