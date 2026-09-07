@@ -41,7 +41,7 @@ const PRODUCT = {
   price_amount: 9900,
   pricing_mode: 'fixed',
   billing_interval: 'one_time',
-  features: ['90-minute live 1:1 session'],
+  features: ['Two 40-minute working sessions with a break'],
   active: true,
 };
 
