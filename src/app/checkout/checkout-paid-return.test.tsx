@@ -38,10 +38,10 @@ const PRODUCT = {
   id: 'prd-office-hours',
   name: 'Office Hours',
   type: 'product',
-  price_amount: 9900,
-  pricing_mode: 'fixed',
+  amount: 7900,
+  amount_mode: 'fixed',
   billing_interval: 'one_time',
-  features: ['Two 40-minute working sessions with a break'],
+  features: ['One focused 40-minute working session'],
   active: true,
 };
 
@@ -129,7 +129,7 @@ describe('the paid return leg carries the SKU (#1092)', () => {
     expect(
       step.getAttribute('data-sku'),
       'BookingStep got no SKU on the hosted-Stripe return leg, so resolveCalendarUrl ' +
-        'falls through to the general call and a $99 buyer books the 15-minute session'
+        'falls through to the general call and a paying buyer books the free intro call'
     ).toBe('prd-office-hours');
   });
 

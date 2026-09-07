@@ -121,11 +121,11 @@ describe('resolveCalendarUrl — per-SKU scheduling (#1092)', () => {
     return await import('@/config/calendar.config');
   }
 
-  const GENERAL = 'https://calendly.com/acme/15min';
-  const OFFICE = 'https://calendly.com/acme/90min';
+  const GENERAL = 'https://cal.com/acme/15min';
+  const OFFICE = 'https://cal.com/acme/office-hours';
 
-  it('sends the $99 office-hours SKU to its own event', async () => {
-    // The defect: prd-office-hours advertises a "90-minute live 1:1 session" and
+  it('sends the paid office-hours SKU to its own event', async () => {
+    // The defect: prd-office-hours advertises its own paid session and
     // booked the 15-minute general call, because one global URL served every SKU.
     const { resolveCalendarUrl } = await load({
       NEXT_PUBLIC_CALENDAR_URL: GENERAL,
@@ -139,8 +139,8 @@ describe('resolveCalendarUrl — per-SKU scheduling (#1092)', () => {
   });
 
   it('falls back to the general call when the override is unset', async () => {
-    // This is the state on the day this shipped: the 90-minute Calendly event does
-    // not exist yet. An unset variable must degrade to a working booking, never to
+    // This was the state on the day this shipped: the paid event did not exist
+    // yet. An unset variable must degrade to a working booking, never to
     // an empty href.
     const { resolveCalendarUrl } = await load({
       NEXT_PUBLIC_CALENDAR_URL: GENERAL,
@@ -159,7 +159,7 @@ describe('resolveCalendarUrl — per-SKU scheduling (#1092)', () => {
       sku: 'prd-office-hours',
     });
     expect(href).not.toBeNull();
-    expect(new URL(href!).pathname).toBe('/acme/90min');
+    expect(new URL(href!).pathname).toBe('/acme/office-hours');
     // An explicit baseUrl still wins over the SKU — the tests above rely on it.
     const pinned = mod.buildBookingUrl({
       orderId: 'o_1',
