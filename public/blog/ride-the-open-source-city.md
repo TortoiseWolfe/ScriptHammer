@@ -111,7 +111,7 @@ The cheapest way in is also the best one. [Clone ScriptHammer](https://github.co
 
 Short on cash? **Trade instead.** Playtest this and file a good bug. Fork it and prototype your idea. Build one of those missing layers — a save system, a third-person camera, an enemy. Every playtester is another set of eyes, every fork is street cred you earn in public, and more people in the project make the engine better for everyone.
 
-If you'd rather have hands-on help on _your_ game, there's a paid lane too: live **Office Hours** (bring a goal, leave with something running, the recording is yours to keep), and [Field Study](https://scripthammer.com/pricing) for a bigger build done with you. Prices are on the [pricing page](https://scripthammer.com/pricing), and if cash is tight, see two paragraphs up — trade instead. The paid tiers exist to fund the free ones, not to gate them.
+If you'd rather have hands-on help on _your_ game, there's a paid lane too: live **Office Hours** (two 40-minute working sessions with a break; bring a goal, leave with something running, the recording is yours to keep), and [Field Study](https://scripthammer.com/pricing) for a bigger build done with you. Prices are on the [pricing page](https://scripthammer.com/pricing), and if cash is tight, see two paragraphs up — trade instead. The paid tiers exist to fund the free ones, not to gate them.
 
 ## 💬 Come build it
 
@@ -120,7 +120,7 @@ If you'd rather have hands-on help on _your_ game, there's a paid lane too: live
 - 📦 **[Clone the engine](https://github.com/TortoiseWolfe/ScriptHammer)** — MIT, asset-free, `@/lib/cod`.
 - 📺 **[Watch me build it live](https://twitch.tv/TurtleWolfe)** — on Twitch, with the replays on [YouTube](https://youtube.com/@JonathanPohlner).
 - 💳 **[See what help costs](https://scripthammer.com/pricing)** — free to Office Hours to done-for-you.
-- 📅 **[Book 15 minutes](https://calendly.com/turtlewolfe/15min-1)** — bring a screenshot of what you have in mind.
+- 📅 **[Book 15 minutes](https://cal.com/turtle-wolfe/15min)** — bring a screenshot of what you have in mind.
 - 🗺️ **[Read the brainstorm that started this](https://scripthammer.com/blog/playable-city-chattanooga)**.
 
 Find me everywhere: [scripthammer.com](https://scripthammer.com) · [Twitch](https://twitch.tv/TurtleWolfe) · [YouTube](https://youtube.com/@JonathanPohlner) · [X](https://twitter.com/JonPohlner) · [LinkedIn](https://linkedin.com/in/pohlner) · [GitHub](https://github.com/TortoiseWolfe)

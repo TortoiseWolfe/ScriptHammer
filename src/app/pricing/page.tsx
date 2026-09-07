@@ -236,7 +236,7 @@ const DEVELOPERS: Product[] = [
     price: '$99',
     billing: 'One-time',
     features: [
-      '90-minute live 1:1 session',
+      'Two 40-minute working sessions with a break',
       'Bring a goal, leave with something running',
       'Screen-share, real code, your questions',
       'Recording is yours to keep',

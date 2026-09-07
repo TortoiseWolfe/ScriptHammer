@@ -16,8 +16,8 @@ export interface CalendarConfig {
    * its own event gets a line here.
    *
    * An unset variable is not an error. The entry is dropped and that SKU falls back
-   * to `url`, which is what happens today for office hours until the 90-minute event
-   * exists in Calendly.
+   * to `url`, which is what happened for office hours until the paid event
+   * existed at the provider.
    */
   eventTypes?: Record<string, string>;
   utm?: {
@@ -38,8 +38,9 @@ export const calendarConfig: CalendarConfig = {
     'calendly',
   url: process.env.NEXT_PUBLIC_CALENDAR_URL || '',
   eventTypes: {
-    // `prd-office-hours` — the $99 SKU. Unset until the 90-minute Calendly event
-    // exists; see #1092. `resolveCalendarUrl` drops empty entries.
+    // `prd-office-hours` — the $99 SKU, pointing at the Cal.com office-hours
+    // event (#1092). `resolveCalendarUrl` drops empty entries, so an unset
+    // variable degrades to the general call rather than a dead link.
     'prd-office-hours': process.env.NEXT_PUBLIC_CALENDAR_URL_OFFICE_HOURS || '',
   },
   utm: {
