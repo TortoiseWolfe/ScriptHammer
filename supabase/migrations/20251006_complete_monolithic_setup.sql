@@ -2483,8 +2483,26 @@ GRANT SELECT ON payment_results TO authenticated;
 -- reach stays on #1089: the status flip, and the INSERT path, where `Users create own
 -- subscriptions` plus a table-wide INSERT lets a signed-in user mint a row with
 -- status='active' and any plan_amount. Both need a predicate, not a privilege.
+-- #1089, second half: INSERT IS GONE TOO, and it was the larger hole.
+--
+-- `Users create own subscriptions` is WITH CHECK (auth.uid() = template_user_id) and
+-- `authenticated` held table-wide INSERT, so any signed-in user could mint their OWN
+-- subscription row with status='active' and any plan_amount -- free service, no
+-- payment, no edge function involved. The column grant below cannot reach it: the row
+-- is NEW, so there is nothing to compare a changed column against.
+--
+-- Nothing in src/ inserts here. Every real subscription is created by an edge function
+-- holding SERVICE_ROLE_KEY (create-stripe-subscription, create-paypal-subscription)
+-- or by a webhook, and the only client write path, `queueSubscriptionUpdate`, has no
+-- callers. The RLS suite's own seed WAS this exploit, performed by an authenticated
+-- client; it now seeds with the service client, which is both the fix and the proof
+-- that the capability was never needed.
+--
+-- The policy stays. A policy with no privilege behind it is inert, and leaving it
+-- documents the intent if a real client-side create is ever built -- at which point
+-- this grant comes back deliberately rather than by silence.
 REVOKE ALL ON subscriptions FROM anon, authenticated;
-GRANT SELECT, INSERT ON subscriptions TO authenticated;
+GRANT SELECT ON subscriptions TO authenticated;
 GRANT UPDATE (status, canceled_at, cancellation_reason) ON subscriptions TO authenticated;
 GRANT SELECT ON payment_provider_config TO authenticated;
 -- ============================================================================
