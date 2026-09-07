@@ -31,7 +31,7 @@ export default function PrivacyPolicyPage() {
             no account, no network, no permissions — and Apple's Guideline
             5.1.1(i) wants a policy describing THAT app. Saying so here stops a
             reader assuming this page covers both. */}
-        <p className="text-base-content/70 mb-6 text-sm sm:mb-8">
+        <p className="text-base-content mb-6 text-sm sm:mb-8">
           This covers the ScriptHammer website. The{' '}
           <Link href="/app-privacy/" className="link link-primary">
             iOS app has its own policy

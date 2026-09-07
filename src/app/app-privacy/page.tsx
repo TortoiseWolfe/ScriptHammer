@@ -40,7 +40,7 @@ export default function AppPrivacyPage() {
         <h1 className="mb-2 !text-2xl font-bold sm:!text-4xl md:!text-5xl">
           iOS App Privacy
         </h1>
-        <p className="text-base-content/70 mb-6 text-sm sm:mb-8">
+        <p className="text-base-content mb-6 text-sm sm:mb-8">
           For <strong>ScriptHammer</strong>, the reading app for iPhone and
           iPad. The website has its own{' '}
           <Link href="/privacy/" className="link link-primary">
