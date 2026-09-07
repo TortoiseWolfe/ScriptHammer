@@ -351,6 +351,38 @@ export function evaluateFunctions(observed, intended = INTENDED) {
  * it throws, and a `?? []` fallback around that would have quietly produced an empty role
  * list for EVERY policy, making the role comparison pass by comparing nothing.
  */
+
+/**
+ * Render one table's grants for the human summary, KEEPING TABLE AND COLUMN SCOPE APART.
+ *
+ * WHY THIS IS NOT `Object.entries(got.grants)` (#1099). `got.grants` is a merged list built
+ * from both the table-level and column-level queries, so a table whose only UPDATE is scoped
+ * to three columns printed as `authenticated=[INSERT,SELECT,UPDATE]` — indistinguishable
+ * from a table-wide UPDATE, which is exactly the thing #1073 and #1089 spent a day removing.
+ * The COMPARISON was always correct (it reads tableGrants and columnGrants separately); only
+ * this line lied, and it lied in the direction that hides a privilege escalation.
+ *
+ * Reads as:  authenticated=[INSERT,SELECT] +UPDATE(canceled_at,cancellation_reason,status)
+ */
+export function renderGrants(got) {
+  const roles = new Set([
+    ...Object.keys(got.tableGrants ?? {}),
+    ...Object.keys(got.columnGrants ?? {}),
+  ]);
+  if (!roles.size) return '(no client-role grants)';
+  return [...roles]
+    .sort()
+    .map((role) => {
+      const table = [...(got.tableGrants?.[role] ?? [])].sort();
+      const byPriv = got.columnGrants?.[role] ?? {};
+      const cols = Object.keys(byPriv)
+        .sort()
+        .map((priv) => `+${priv}(${[...byPriv[priv]].sort().join(',')})`);
+      return [`${role}=[${table.join(',')}]`, ...cols].join(' ');
+    })
+    .join('  ');
+}
+
 function pgArray(value, fallback = ['public']) {
   if (Array.isArray(value)) return value.map((r) => String(r).toLowerCase());
   if (typeof value === 'string' && value.startsWith('{')) {
@@ -604,9 +636,7 @@ async function main() {
   for (const [table, got] of Object.entries(observed)) {
     console.log(
       `  ${table}: rls=${got.rls}, policies=${got.policies.length}, ` +
-        Object.entries(got.grants)
-          .map(([r, p]) => `${r}=[${p.join(',')}]`)
-          .join(' ')
+        renderGrants(got)
     );
   }
 
