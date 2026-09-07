@@ -38,7 +38,7 @@ export const calendarConfig: CalendarConfig = {
     'calendly',
   url: process.env.NEXT_PUBLIC_CALENDAR_URL || '',
   eventTypes: {
-    // `prd-office-hours` — the $99 SKU, pointing at the Cal.com office-hours
+    // `prd-office-hours` — the paid SKU, pointing at the Cal.com office-hours
     // event (#1092). `resolveCalendarUrl` drops empty entries, so an unset
     // variable degrades to the general call rather than a dead link.
     'prd-office-hours': process.env.NEXT_PUBLIC_CALENDAR_URL_OFFICE_HOURS || '',
@@ -70,7 +70,7 @@ export const calendarConfig: CalendarConfig = {
  *
  *   - `buildBookingUrl` (checkout confirmation) does `new URL(base)` to attach UTM
  *     parameters and returns `null` when that throws. Hand it a bare `user/slug` and a
- *     buyer who has just paid $99 gets NO booking link at all — strictly worse than the
+ *     buyer who has just paid gets NO booking link at all — strictly worse than the
  *     wrong-length link #1092 was filed for.
  *   - `CalendarConsent` offers the value as a plain `href` to anyone declining
  *     third-party cookies (#919).

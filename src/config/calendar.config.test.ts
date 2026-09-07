@@ -11,7 +11,7 @@
  * THE ASYMMETRY THAT DECIDES THE DIRECTION. The same configured value also reaches
  * `buildBookingUrl`, which does `new URL(base)` and returns `null` on failure — so storing
  * the bare form instead would silently remove the booking link from the checkout
- * confirmation of a $99 purchase. Narrowing at the embed is the only direction that keeps
+ * confirmation of a paid purchase. Narrowing at the embed is the only direction that keeps
  * both consumers working, and these tests pin that direction rather than just the string
  * transformation.
  */
