@@ -5,6 +5,11 @@ import BookingStep, { buildBookingUrl } from './BookingStep';
 const BASE = 'https://calendly.com/turtlewolfe/30min';
 
 describe('BookingStep', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
   it('confirms the order and offers the booking link', () => {
     render(
       <BookingStep
@@ -18,7 +23,7 @@ describe('BookingStep', () => {
     expect(screen.getByText('o_7fd2c1a4')).toBeInTheDocument();
   });
 
-  it('promises no meeting length, because the repo cannot know one (#1092)', () => {
+  it('promises no meeting length, because the repo cannot know one (#1092)', async () => {
     // This screen said "Thirty minutes to go through what you need" and offered a
     // button reading "Book your kickoff — 30 min" for seven months, while
     // NEXT_PUBLIC_CALENDAR_URL pointed at a 15-minute Calendly event. The length
@@ -27,8 +32,17 @@ describe('BookingStep', () => {
     //
     // Asserted as an absence on purpose: the failure mode is someone adding a
     // friendly, specific number back.
+    // The URL is STUBBED rather than inherited, because the duration used to live in
+    // the link's own label ("Book your kickoff — 30 min"). With no calendar
+    // configured the component renders its "not configured" branch and there is no
+    // link at all, so an absence assertion would pass by having nothing to read.
+    // That is exactly how the first version of this test passed locally (where .env
+    // supplies a URL) and failed in CI (where nothing does).
+    vi.resetModules();
+    vi.stubEnv('NEXT_PUBLIC_CALENDAR_URL', 'https://calendly.com/acme/intro');
+    const { default: Configured } = await import('./BookingStep');
     const { container } = render(
-      <BookingStep orderId="o_1" productName="Landing Page" />
+      <Configured orderId="o_1" productName="Landing Page" />
     );
     const text = container.textContent ?? '';
     expect(text).not.toMatch(/\b\d+\s*min/i);
