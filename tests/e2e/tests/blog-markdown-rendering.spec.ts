@@ -255,15 +255,17 @@ async function assertExistingBlogBehaviors(
   await expect(
     content.getByRole('heading', {
       level: 2,
-      name: /A Token Is an Identity: Let Cursor Commit as Themselves/,
+      name: /Handing an Agent the Keys/,
     })
   ).toBeVisible();
+  // Anchored on the thesis section rather than a topic section: this heading is the
+  // load-bearing idea of the post and the least likely to be renamed. The previous
+  // target, "Fine-Grained Tokens and Least Privilege", became a list when the post
+  // broadened past GitHub, which failed here rather than in the fixture above.
   const anchoredHeading = content.locator(
-    'h3#fine-grained-tokens-and-least-privilege'
+    'h3#a-token-is-an-identity-not-a-password'
   );
-  await expect(anchoredHeading).toContainText(
-    'Fine-Grained Tokens and Least Privilege'
-  );
+  await expect(anchoredHeading).toContainText('A Token Is an Identity');
 
   const tocDetails = viewer
     .locator('details')
@@ -274,7 +276,7 @@ async function assertExistingBlogBehaviors(
   await tocSummary.click();
 
   const tocLink = tocDetails.locator(
-    'a[href="#fine-grained-tokens-and-least-privilege"]'
+    'a[href="#a-token-is-an-identity-not-a-password"]'
   );
   await expect(tocLink).toBeVisible();
   await tocLink.click();
@@ -295,7 +297,13 @@ async function assertExistingBlogBehaviors(
   await expect(externalLink).toHaveAttribute('rel', /\bnoopener\b/);
   await expect(externalLink).toHaveAttribute('rel', /\bnoreferrer\b/);
 
-  const firstCodePanel = content.locator('.mockup-code').first();
+  // BY CONTENT, NOT BY POSITION. This was `.first()`, which silently became the wrong
+  // panel the moment the post gained an earlier bash block — a positional locator that
+  // breaks on an unrelated edit somewhere above it.
+  const firstCodePanel = content
+    .locator('.mockup-code')
+    .filter({ hasText: 'gh auth status' })
+    .first();
   const bashCode = firstCodePanel.locator('code.language-bash');
   await expect(bashCode).toContainText('gh auth status');
   await expect(bashCode.locator('.token.comment').first()).toBeVisible();
