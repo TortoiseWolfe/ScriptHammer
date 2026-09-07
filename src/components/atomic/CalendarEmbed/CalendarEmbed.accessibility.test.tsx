@@ -28,7 +28,11 @@ vi.mock('../../calendar/CalendarConsent', () => ({
 }));
 
 // Mock config
-vi.mock('@/config/calendar.config', () => ({
+// `calendarConfig` is stubbed so these tests do not depend on the environment, but
+// `toCalLink` is imported for real (#1100): mocking it would make the Cal.com assertions
+// verify a stub rather than the narrowing they exist to pin.
+vi.mock('@/config/calendar.config', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/config/calendar.config')>()),
   calendarConfig: {
     provider: 'calendly',
     url: 'https://calendly.com/default',

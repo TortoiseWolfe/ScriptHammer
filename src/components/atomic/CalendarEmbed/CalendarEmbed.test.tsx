@@ -70,7 +70,11 @@ vi.mock('../../calendar/CalendarConsent', () => ({
 }));
 
 // Mock config
-vi.mock('@/config/calendar.config', () => ({
+// `calendarConfig` is stubbed so these tests do not depend on the environment, but
+// `toCalLink` is imported for real (#1100): mocking it would make the Cal.com assertions
+// verify a stub rather than the narrowing they exist to pin.
+vi.mock('@/config/calendar.config', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/config/calendar.config')>()),
   calendarConfig: {
     provider: 'calendly',
     url: 'https://calendly.com/default',
@@ -99,6 +103,41 @@ describe('CalendarEmbed', () => {
     render(<CalendarEmbed provider="calcom" url="test/meeting" />);
     expect(screen.getByTestId('calcom-provider')).toBeInTheDocument();
     expect(screen.getByText(/URL: test\/meeting/)).toBeInTheDocument();
+  });
+
+  it('narrows a configured Cal.com URL to the bare link the embed needs (#1100)', () => {
+    // THE CASE THE SUITE WAS MISSING. The test above passes `test/meeting` — already bare,
+    // and a shape `calendar.config.ts` never produces, because the same value has to be an
+    // absolute URL for `buildBookingUrl` and `CalendarConsent`. So the Cal.com branch was
+    // green while being unusable with any real configuration.
+    render(
+      <CalendarEmbed
+        provider="calcom"
+        url="https://cal.com/turtle-wolfe/office-hours"
+      />
+    );
+    const embed = screen.getByTestId('calcom-provider');
+    expect(embed).toHaveTextContent('URL: turtle-wolfe/office-hours');
+    // Stated as the failure too: `data-cal-link` silently resolves nothing when handed an
+    // absolute URL, and the breakage is invisible because it happens inside the iframe.
+    expect(embed).not.toHaveTextContent('https://');
+  });
+
+  it('shows the not-configured warning for a Cal.com origin with no event path', () => {
+    render(<CalendarEmbed provider="calcom" url="https://cal.com/" />);
+    expect(screen.queryByTestId('calcom-provider')).not.toBeInTheDocument();
+    expect(screen.getByText(/not configured/i)).toBeInTheDocument();
+  });
+
+  it('leaves the Calendly branch on absolute URLs', () => {
+    // Counterweight: the narrowing must apply to Cal.com ONLY. Calendly's widget takes a
+    // full URL, so stripping the origin there would break the provider that works today.
+    render(
+      <CalendarEmbed provider="calendly" url="https://calendly.com/you/30min" />
+    );
+    expect(screen.getByTestId('calendly-provider')).toHaveTextContent(
+      'URL: https://calendly.com/you/30min'
+    );
   });
 
   it('shows consent component when functional consent is not granted', () => {

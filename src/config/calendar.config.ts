@@ -61,6 +61,47 @@ export const calendarConfig: CalendarConfig = {
  * dead link. Callers still have to handle `''` — nothing is configured at all is a
  * separate case, and `buildBookingUrl` returns null for it.
  */
+/**
+ * The bare `user/event-slug` a Cal.com embed needs, derived from a full booking URL.
+ *
+ * WHY THE CONFIG STORES A URL AND NOT THIS SHAPE. Three consumers read the same
+ * configured value and two of them need an absolute URL:
+ *
+ *   - `buildBookingUrl` (checkout confirmation) does `new URL(base)` to attach UTM
+ *     parameters and returns `null` when that throws. Hand it a bare `user/slug` and a
+ *     buyer who has just paid $99 gets NO booking link at all — strictly worse than the
+ *     wrong-length link #1092 was filed for.
+ *   - `CalendarConsent` offers the value as a plain `href` to anyone declining
+ *     third-party cookies (#919).
+ *   - The embed is the ONLY consumer wanting a path.
+ *
+ * So the URL is canonical and this narrows it at the one call site that needs narrowing.
+ * Doing it the other way round — storing `user/slug` and reconstructing an origin — puts
+ * a hardcoded `https://cal.com` in the source and breaks self-hosted Cal.com instances.
+ *
+ * It also keeps `scripts/ci/check-calendar-configured.mjs` worth having: that check
+ * asserts the CONFIGURED value reached the bundle verbatim, and `turtle-wolfe/office-hours`
+ * is a far weaker string to match than an absolute URL.
+ *
+ * A value that is already bare passes through unchanged, so a fork configuring
+ * `user/slug` directly still embeds correctly.
+ */
+export function toCalLink(url: string): string {
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+
+  let path: string;
+  try {
+    // `pathname` drops the query and hash for free — `data-cal-link` takes neither.
+    path = new URL(trimmed).pathname;
+  } catch {
+    // Not absolute: assume it is already `user/slug`.
+    path = trimmed;
+  }
+
+  return path.replace(/^\/+/, '').replace(/\/+$/, '');
+}
+
 export function resolveCalendarUrl(sku?: string | null): string {
   if (sku) {
     const override = calendarConfig.eventTypes?.[sku];
