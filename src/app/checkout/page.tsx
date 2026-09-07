@@ -144,13 +144,42 @@ function CheckoutContent() {
       if (cancelled) return;
       const { data: order } = await supabase
         .from('orders')
-        .select('id, buyer_email')
+        .select('id, buyer_email, product_id')
         .eq('intent_id', intentId)
         .maybeSingle();
 
       if (result && order) {
         setBuyer((b) => ({ ...b, email: order.buyer_email ?? b.email }));
-        setStage({ kind: 'paid', orderId: order.id, product: null });
+
+        // THE SKU MUST COME FROM THE ORDER, NOT THE URL (#1092). Hosted Stripe
+        // Checkout returns to `?session_id=…` with no `sku`, and this effect owns
+        // the stage from then on — the catalog effect below returns early on
+        // `sessionId`. `product: null` therefore reached `BookingStep` as
+        // `sku={undefined}`, `resolveCalendarUrl` fell through to the general
+        // call, and a buyer who paid $99 for the 90-minute session booked the
+        // 15-minute one. Per-SKU booking worked everywhere EXCEPT the one path a
+        // paying customer walks.
+        //
+        // `active` is deliberately NOT filtered here, unlike the catalog effect
+        // below: that one is a storefront and must hide retired packages, but this
+        // is a receipt. Someone who bought a package the day before it was retired
+        // still needs the booking link they paid for.
+        //
+        // A failed lookup must not block the confirmation. Degrading to the general
+        // call is bad; showing no confirmation at all after a successful payment is
+        // worse. So `product` stays null on any error and behaviour is as before.
+        let product: Product | null = null;
+        if (order.product_id) {
+          const { data: row } = await supabase
+            .from('products')
+            .select('*')
+            .eq('id', order.product_id)
+            .maybeSingle();
+          if (cancelled) return;
+          product = (row as Product | null) ?? null;
+        }
+
+        setStage({ kind: 'paid', orderId: order.id, product });
       } else {
         setStage({
           kind: 'error',
