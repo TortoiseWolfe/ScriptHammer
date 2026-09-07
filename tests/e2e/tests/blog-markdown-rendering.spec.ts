@@ -21,10 +21,15 @@ const TABLE_POSTS = [
     mustScroll: true,
   },
   {
+    // Updated when the post broadened from GitHub tokens to the whole access
+    // surface. Its single table is now the access inventory rather than the
+    // GitHub permission set; that set became a list, because this spec asserts
+    // exactly ONE table per post — a second would fail toHaveCount(1) above
+    // rather than anything about the prose.
     slug: 'cursor-github-identity',
-    headers: ['Permission', 'Access', 'Why the agent needs it'],
-    rowCount: 5,
-    quoteCount: 6,
+    headers: ['Service', 'What the agent may do', 'What it must never do'],
+    rowCount: 10,
+    quoteCount: 5,
     firstQuote: 'The core idea',
     mustScroll: false,
   },

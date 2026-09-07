@@ -1,139 +1,167 @@
 ---
-title: 'A Token Is an Identity: Let Cursor Commit as Themselves'
+title: 'Handing an Agent the Keys: What I Let AI Touch, and What It Cost Me'
 author: TortoiseWolfe
 date: 2026-07-05
+updatedAt: 2026-09-07
 slug: cursor-github-identity
 tags:
-  - cursor
-  - github
-  - security
-  - collaboration
   - ai-agents
   - tokens
+  - security
+  - automation
+  - workflow
+  - github
 categories:
   - security
-  - tutorials
-excerpt: When a teammate's AI agent touches your repo, whose name ends up on the commit? A guide to fine-grained tokens, least privilege, and letting Cursor act as the collaborator — not you.
+  - workflow
+excerpt: An agent with credentials can file your App Store paperwork, migrate your database and fix your booking system. It can also store a setting that does nothing, empty a table nobody may read, and lose access mid-task. Here is every key I hand over, what each one buys, and the failures that taught me the difference.
 featuredImage: /blog-images/cursor-github-identity/featured-og.svg
-featuredImageAlt: A Token Is an Identity - letting a collaborator's AI agent commit as themselves with fine-grained GitHub tokens
+featuredImageAlt: Handing an Agent the Keys - what an AI agent is given access to, and the failure modes that scoping mistakes produce
 ogImage: /blog-images/cursor-github-identity/featured-og.png
-ogTitle: A Token Is an Identity - Let Cursor Commit as Themselves
-ogDescription: Fine-grained GitHub tokens, least privilege, and how to let a collaborator's AI coding agent open issues and pull requests in their own name instead of yours.
+ogTitle: Handing an Agent the Keys - What I Let AI Touch, and What It Cost Me
+ogDescription: The full inventory of credentials I give AI agents, what each one buys, and six real failure modes - including a token that authenticated perfectly while doing nothing at all.
 twitterCard: summary_large_image
 ---
 
-# 🔑 A Token Is an Identity: Let Cursor Commit as Themselves
+# 🔑 Handing an Agent the Keys: What I Let AI Touch, and What It Cost Me
 
-A collaborator joins your project. They work in [Cursor](https://cursor.com/), the Artificial Intelligence (AI) code editor, and they want its agent to do the mechanical parts of collaboration for them — open an issue, push a branch, file a pull request. Reasonable. So they message you: _"What token should I use?"_
+A collaborator joins your project. They work in [Cursor](https://cursor.com/), the Artificial Intelligence (AI) code editor, and they want its agent to do the mechanical parts of collaboration — open an issue, push a branch, file a pull request. Reasonable. So they message you: _"What token should I use?"_
 
-That single question hides a trap. The lazy answer — hand them a copy of yours — quietly breaks three things at once: attribution, security, and your ability to ever cleanly revoke access. The correct answer costs five minutes of setup and gets all three right.
+That question has a good answer, and this post used to be just that answer. But the question does not stay put. It comes back at the database, then at the payment provider, then at the App Store, then at the scheduling system — and by the tenth time you are no longer answering a question, you are running a practice.
 
-This post is the long version of a conversation we actually had while building [RescueDogs](https://github.com/TortoiseWolfe/RescueDogs), a pet-adoption tracker forked from ScriptHammer. A collaborator (GitHub handle `schlajo`) needed Cursor to open issues and pull requests **in his name**, on a repository **we** own. Getting that right is a small masterclass in how GitHub authentication actually works — and it generalizes to any template fork where more than one human, and more than one agent, touch the same code.
+This is the expanded version, written after a year of that practice. It covers every key I actually hand over, what each one buys in real work, and six failures that taught me the difference between an agent that has access and an agent that has _useful_ access. Some of those failures are embarrassing. They are the most valuable part.
 
 ## 🤔 The Problem: An AI Agent Needs Hands, but Whose?
 
-Cursor's agent can run shell commands and call the GitHub Application Programming Interface (API) on your behalf — usually through the [GitHub Command Line Interface (CLI)](https://cli.github.com), the `gh` tool. To do that, it needs credentials. Those credentials decide **who GitHub thinks is acting** every time the agent opens an issue or pushes a commit.
+Cursor's agent can run shell commands and call the GitHub Application Programming Interface (API) on your behalf — usually through the [GitHub Command Line Interface (CLI)](https://cli.github.com), the `gh` tool. To do that, it needs credentials. Those credentials decide **who the service thinks is acting** every time the agent opens an issue or pushes a commit.
 
 There are really only two ways to give an agent those hands:
 
-1. **Share an existing token.** Someone emails or pastes their Personal Access Token (PAT) to the collaborator, who drops it into Cursor. Fast. Also wrong, for reasons we'll unpack.
-2. **Let the collaborator authenticate as themselves.** They connect their own GitHub account, and everything the agent does is stamped with _their_ identity.
+1. **Share an existing token.** Someone pastes their Personal Access Token (PAT) to the collaborator, who drops it into Cursor. Fast. Also wrong.
+2. **Let the collaborator authenticate as themselves.** They connect their own account, and everything the agent does is stamped with _their_ identity.
 
-The whole post is an argument for option 2, plus the exact steps to do it. But to see _why_ option 1 is a trap, you first have to internalize one idea that trips up even experienced developers.
+The whole argument is for option 2. But to see _why_ option 1 is a trap, you have to internalize one idea that trips up even experienced developers.
 
 ## 🔒 A Token Is an Identity, Not a Password
 
 Here is the mental model that makes everything else click:
 
-> ⚠️ **The core idea**: A GitHub token does not grant access to a _repository_. It grants access **as a person**. Whoever created the token, that is who GitHub believes is acting — no matter whose repo the token can reach.
+> ⚠️ **The core idea**: A token does not grant access to a _repository_. It grants access **as a person**. Whoever created the token, that is who the service believes is acting — no matter whose resources the token can reach.
 
-Read that twice, because it inverts the way most people think about tokens. We tend to picture a token as a key to a _door_ (the repository). It is really a key to an _identity_ (the account). The repositories it can open are just a consequence of who that identity is and what you scoped the token to.
+Read that twice, because it inverts the way most people think about tokens. We picture a token as a key to a _door_ (the repository). It is really a key to an _identity_ (the account). The doors it opens are just a consequence of who that identity is.
 
-This distinction became concrete on RescueDogs. Our collaborator's token had two properties that sound contradictory until you hold the model in your head:
+This became concrete while building [RescueDogs](https://github.com/TortoiseWolfe/RescueDogs), a pet-adoption tracker forked from ScriptHammer. A collaborator (GitHub handle `schlajo`) needed Cursor to open issues and pull requests **in his name**, on a repository **we** own. His token had two properties that sound contradictory until you hold the model in your head:
 
-- **Resource owner**: `TortoiseWolfe` — because that is the account that _owns the RescueDogs repository_. Fine-grained tokens are scoped under the owner of the resources they touch.
-- **Authenticated identity**: `schlajo` — because that is the account that _created the token_. Every issue, commit, and pull request the token produces is attributed to `schlajo`.
+- **Resource owner**: `TortoiseWolfe` — the account that _owns the repository_. Fine-grained tokens are scoped under the owner of the resources they touch.
+- **Authenticated identity**: `schlajo` — the account that _created the token_. Every issue, commit and pull request it produces is attributed to `schlajo`.
 
-So the token reaches into a repo owned by one person, while acting as a completely different person. That is not a bug or a loophole — it is exactly how GitHub is designed to work, and it is precisely what you want. The collaborator gets to operate inside your repository, but the history correctly records that _they_ did the work.
+The token reaches into a repo owned by one person while acting as a completely different person. That is not a loophole — it is exactly what you want. The collaborator operates inside your repository, and the history correctly records that _they_ did the work.
 
-### 🗄️ Where Attribution Actually Lives
-
-It helps to know that "who did this" is recorded in more than one place, and the token drives all of them:
-
-- **Git author and committer.** Every commit carries an _author_ (who wrote the change) and a _committer_ (who applied it). Locally these come from your `git config user.name` and `user.email`. But when the agent pushes through the API, GitHub also links the commit to an _account_ by matching the commit email to a verified email on that account. Get the email wrong and the commit shows up as an anonymous gravatar with no account behind it — technically present in history, but disconnected from the person.
-- **The actor on issues and pull requests.** Issues, comments, reviews, and pull-request actions have no "author email" to match — they are attributed purely to **whichever account the token authenticates as**. There is no ambiguity here: the token _is_ the byline.
-- **The Verified badge.** Commits signed with a matching key show a green "Verified" badge. That is a separate layer, but it rests on the same foundation — an identity GitHub can tie to a real account.
-
-The practical upshot: for the collaborator's work to be _fully_ theirs, two things must line up — the token authenticates as their account (drives issues, pull requests, and pushes), and their local `git config user.email` is an email verified on that same account (drives commit-to-account linking). Cursor's built-in sign-in handles both for you; the manual token path is where people occasionally get the email half wrong.
-
-Now watch what happens if you take the lazy path and share a token instead.
-
-### ❌ Why Sharing a Token Breaks Everything
-
-Say you hand the collaborator a copy of _your_ token. Three failures cascade:
-
-- **Attribution collapses.** Because the token authenticates as _you_, every issue the collaborator's agent opens, every commit it pushes, shows up under _your_ name. Your `git blame` lies. Your contributor graph lies. Six months later nobody can tell who actually wrote what.
-- **Two-Factor Authentication (2FA) is bypassed.** You almost certainly protect your account with 2FA — a second factor beyond your password. A token skips it entirely; that is the point of tokens. So the moment your token leaves your machine, anyone holding it acts as you _without_ ever facing your second factor. You have effectively handed out a 2FA-exempt copy of yourself.
-- **Revocation becomes all-or-nothing.** Tokens are not per-person. If you shared one token with a collaborator and later need to cut off _just them_, you can't — revoking that token also breaks your own automation that used it. Your only options are "trust them forever" or "break your own setup." Neither is acceptable.
-
-Every one of those problems evaporates when the collaborator uses **their own** credentials. Their name lands on their work. Their 2FA protects their account. And if they ever leave the project, you revoke _their_ access without touching anyone else's.
+Take the lazy path instead, and three failures cascade. **Attribution collapses**, because every action shows up under your name and `git blame` starts lying. **Two-Factor Authentication (2FA) is bypassed**, because a token skips it by design — so a copy of your token is a 2FA-exempt copy of you. And **revocation becomes all-or-nothing**, because tokens are not per-person: cutting off one collaborator also breaks your own automation.
 
 > 💡 **The rule**: Never send a token, and never accept one. Credentials are personal. The maintainer never hands one over; the collaborator generates their own.
 
-## 🔧 Fine-Grained Tokens and Least Privilege
+That rule is where this post used to end. Everything below is what happens when you apply it to more than GitHub.
 
-If the collaborator is going to make their own credentials, the next question is: _how much power should those credentials carry?_ The answer is **as little as possible while still doing the job** — the principle of least privilege.
+## 🗄️ The Access Inventory: What I Actually Hand Over
 
-GitHub offers two kinds of Personal Access Token, and the difference matters:
+Here is the honest list. Not "what an agent could theoretically use" — what mine holds today, and the reasoning for each.
 
-- **Classic PATs** are coarse. A single classic token tends to grant broad scopes across **all** your repositories at once. If it leaks, the blast radius is your entire account.
-- **[Fine-grained PATs](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)** are surgical. You pick exactly which repository (or repositories) the token can touch, and exactly which permissions it has on them. If it leaks, the damage is bounded to that one repo and those few permissions.
+| Service                     | What the agent may do                                                    | What it must never do                                                      |
+| --------------------------- | ------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
+| **GitHub**                  | Open issues and pull requests, push branches, read Actions results       | Change repository settings, read Actions secrets, touch other repositories |
+| **Supabase (management)**   | Apply schema migrations, read grants and policies to verify them         | Delete projects, rotate keys, change billing                               |
+| **Supabase (service role)** | Seed and clean test fixtures, run verification probes                    | Ever appear in client-side code or a committed file                        |
+| **App Store Connect**       | Register a bundle identifier, set listing metadata, read back the app id | Submit for review — that stays a human decision                            |
+| **Calendly**                | Read and update event types, attach conferencing                         | Delete invitee data, touch webhooks                                        |
+| **Cloudflare**              | Apply cache and transform rules that live in version control             | Change Domain Name System (DNS) records or zone ownership                  |
+| **Stripe and PayPal**       | Read payment and subscription state to reconcile it                      | Move money, or refund anything                                             |
+| **Email and captcha**       | Send transactional mail, verify captcha tokens                           | Read anyone's inbox                                                        |
+| **Expo build service**      | Build and submit binaries                                                | Publish an over-the-air update unreviewed                                  |
 
-For letting an AI agent do collaboration chores, fine-grained is the only sane choice. Here is the complete permission set our RescueDogs collaborator needed — and nothing more:
+Two patterns hold across every row.
 
-| Permission        | Access           | Why the agent needs it                 |
-| ----------------- | ---------------- | -------------------------------------- |
-| **Issues**        | Read and write   | Open and comment on issues             |
-| **Contents**      | Read and write   | Push commits to branches               |
-| **Pull requests** | Read and write   | Open and update pull requests          |
-| **Metadata**      | Read (automatic) | Required baseline for everything above |
+**The right-hand column is the real design.** It is easy to list what an agent should do; the scoping decision lives in what you deliberately withhold. When I granted the Calendly token, the task needed exactly two permissions — read event types, write event types. The interface offered a dozen, including one called `data_compliance:write`, described plainly as _"delete invitee or event data."_ Nothing in the task wanted that. Granting it anyway would have been free, invisible, and completely unnecessary.
 
-Notice what is **absent**: no **Administration** (can't change repo settings, add collaborators, or delete the repo), no **Secrets** (can't read your Continuous Integration secrets), and **no access to any other repository**. Scope the token to the single repo, set those four rows, and leave everything else at "No access."
+**Read access is not the safe default people assume.** A management credential that can only read is still a credential that can enumerate your entire schema, your users' email addresses and your billing state. Least privilege applies to reads.
 
-> ✅ **Best practice**: Give the token an expiration — 90 days is a sane default. A token that expires on its own is one you can never forget to clean up. You can always regenerate it.
+For GitHub specifically, the permission set an agent needs to do collaboration chores is small: **Issues** read and write, **Contents** read and write, **Pull requests** read and write, and **Metadata** read, which GitHub adds automatically. Notice what is absent — no Administration, so it cannot change settings or add collaborators; no Secrets, so it cannot read your Continuous Integration credentials; and no access to any other repository. Scope the token to the single repo, set those four, and leave everything else at "No access."
 
-## 🔨 Setup, Two Ways
+> ✅ **Best practice**: Give every token an expiration — 90 days is a sane default. A token that expires on its own is one you can never forget to clean up.
 
-There are two ways for the collaborator to connect their own GitHub identity to Cursor. Recommend the first; keep the second in your back pocket.
+## 🚀 What This Actually Buys
 
-### Option A: Cursor's Built-In GitHub Sign-In (Recommended)
+Access is a cost. Here is the return, from real work rather than a feature list.
 
-This is the least error-prone path because Cursor manages the token and its scopes for the collaborator. No copying secrets, no choosing permission checkboxes.
+**Paperwork that is pure mechanism.** Setting an app up in App Store Connect is roughly twenty fields across two websites. Four of them are permanent. One silently swallows every TestFlight build if you miss it — no error, no email, the build simply never appears. An agent with a signing key registers the bundle identifier, patches the listing name, reads back the app id and wires the configuration files, then stops at the one dialog Apple reserves for a human. It exits with a distinct code meaning _"I did everything permitted; now a person must open a browser."_ That is a genuinely new category of automation: not "do the task", but "do all of the task that is legally doable, and be precise about the boundary."
 
-1. Open **Cursor → Settings** (the gear icon, or `Ctrl+,`).
-2. Find the **GitHub** or **Integrations** section.
-3. Click **Sign in with GitHub** — this opens the browser to authorize the collaborator's account.
-4. Approve the authorization. Cursor now acts as the collaborator for GitHub operations.
+**Schema changes that are verified, not just applied.** With a database management credential, an agent can apply a migration and then _prove_ it worked — running the destructive operation as an unprivileged role inside a transaction that cannot commit, and reporting what was refused. That is a check no human runs by hand, because it is tedious and requires care to do safely. An agent will run it every single time.
 
-For most people, that is the entire setup. Skip Option B unless they specifically want to hold and scope the token themselves.
+**Whole systems repaired end to end.** In one session an agent traced a booking system that had been quietly broken for seven months, found the cause was a missing conferencing setting rather than any code, fixed it through the scheduling provider's API, and verified the fix on the public booking page a customer would actually see.
 
-### Option B: A Fine-Grained Token by Hand (Explicit Control)
+That last one is the shape of the business case. The work was not hard. It was _fiddly, cross-system, and nobody had time to trace it._ Which is exactly the work that never gets done, and exactly what an agent with credentials is good at.
 
-Use this when the collaborator prefers to manage the credential directly, or when the built-in sign-in isn't available.
+## 🐛 What It Costs When the Scoping Is Wrong
 
-1. Go to **[github.com/settings/personal-access-tokens/new](https://github.com/settings/personal-access-tokens/new)** (the path through the UI: Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token).
-2. **Token name**: something descriptive, like `cursor-rescuedogs`.
-3. **Expiration**: a limited window, e.g. 90 days.
-4. **Resource owner**: the account that owns the target repo (for us, `TortoiseWolfe`).
-5. **Repository access** → **Only select repositories** → pick the single target repo. Do **not** grant all repositories.
-6. **Repository permissions**: set exactly the four rows from the table above (Issues, Contents, Pull requests each Read and write; Metadata is auto-selected). Everything else stays "No access."
-7. **Generate token**, copy it, and paste it into Cursor or into `gh auth login`.
+Now the other side. Every failure below is mine, most from a single session, and each one taught a distinct lesson.
 
-> ⚠️ **Handle with care**: The token is shown once. Store it in Cursor's credential settings or your password manager. Never paste it into a file in the repo, never commit it, and never send it to anyone — including the maintainer.
+**I pasted an over-scoped token into a chat transcript.** I had asked for two permissions and been given all twelve, including the one that deletes customer data. Then, rather than putting it in an ignored environment file, I pasted it straight into the conversation — where it is now permanently logged. Two ordinary mistakes, thirty seconds apart. The lesson is not "be careful"; it is that the interface offered "select all" and the safe path required deliberate effort, so build the deliberate effort into your process instead of your willpower.
+
+**A credential stored a setting that did nothing.** I set a video-conferencing location on a scheduling event. The API returned `200`. A fresh read returned exactly what I had written. Both were true, and both were useless — the booking page still showed no location, because the underlying integration was not connected. The service accepted an unusable configuration silently, twice.
+
+> ⚠️ **The lesson that generalizes**: An API's acknowledgement is not evidence of an outcome. A write that reads back correctly has proven the write, not the effect. Verify at the surface a user actually sees.
+
+**A stale token silently shadowed a working one.** An old credential sat in an environment file. The `gh` CLI prefers an environment variable over its own stored login, so every shell that loaded that file lost GitHub authentication and reported a bare `401 Bad credentials` — while `gh auth status` in a clean shell insisted everything was fine. Loading that file is the documented way to do database work in this project, so the two collided constantly.
+
+**A token quietly lost access mid-task.** A management credential that had applied four migrations successfully began returning `403` for the one project it administered. It still authenticated — listing projects returned `200`. The project had simply moved to an organization the account could no longer reach. Nothing local had changed; the environment file was three weeks old.
+
+**An agent action had an invisible side effect.** Creating a new scheduling event type silently deactivated a different one, because the plan permits exactly one active event at a time. The one deactivated was the live booking link on the site. No warning, no error — just a working system quietly switched off by a successful operation.
+
+**And sometimes the platform simply says no.** An attempt to verify a booking end to end was refused as bot traffic: _"This booking cannot be completed. For security reasons, we are not able to finalize this booking from your current session."_ That is the honest boundary of automating everything, and it is worth knowing where it sits.
+
+**And then the one that reframes all the others.** While researching this post, an agent audited its own environment and found a directory holding thousands of snapshots of files it had edited. When one of those files was a `.env`, the snapshot preserved its contents. Sitting there were **live** values: a production payment key, two database service-role keys that bypass row-level security entirely, database passwords, management tokens, and half a dozen third-party credentials — across a dozen projects.
+
+Nothing had been breached. No attacker was involved. The directory belonged to the tool, sat outside every repository, and had therefore never been seen by the secret scanner — which only ever runs inside a repository. Every one of those keys had been rotated at some point, and every rotation had left the old copy exactly where it was, because **rotation replaces a credential; it does not delete the copies.**
+
+The part that should worry you is why it went unnoticed for months. Every "did we leak anything?" sweep had been run with a recursive `grep`. On that machine `grep` is [ugrep](https://ugrep.com/), and a recursive search from a project root **silently skips exactly the files that hold secrets**. The check ran, found nothing, and printed a clean result. Proving it took one control:
+
+```bash
+# The value IS in the file:
+grep -c SUPABASE_ACCESS_TOKEN .env      # -> 1
+
+# The recursive sweep does not list that file at all:
+grep -rl SUPABASE_ACCESS_TOKEN .        # -> .env absent from the output
+```
+
+> ⚠️ **The uncomfortable version**: the exposure and the blindness to it had the same root. A tool wrote secrets somewhere nothing looked, and the thing that would have looked was broken in a way that produced reassuring output. Neither half announced itself.
+
+## 🎯 The Rules That Fall Out
+
+Six failures, five rules.
+
+**Scope to the task, not to the service.** The question is never "what does this tool do?" but "what does this job need?" Grant that, and nothing else. Where an interface offers a convenient superset, treat the convenience as the hazard.
+
+**Verify at the surface that matters, not the one that answers fastest.** The `200` is not the outcome. The read-back is not the outcome. The customer-facing page is the outcome. This is the same instinct as checking `gh api user --jq .login` before trusting an identity — confirm who is really acting and what really happened, not what the system reports about itself.
+
+**Expect silent success.** The most expensive failures here were not errors. They were operations that succeeded and accomplished nothing, or succeeded and broke something adjacent. Design your checks to catch a working call with a useless result.
+
+**Make revocation a first-class step, not a cleanup task.** Every credential needs a documented answer to "how do I turn this off, and what breaks when I do?" — decided before it is issued, not during an incident.
+
+**Assume access is temporary.** Tokens expire, organizations move, memberships change, and none of it announces itself. An automation that assumes stable access will fail in a way that looks like a bug in your code.
+
+Here is the whole discipline as a checklist:
+
+- ✅ Each human uses **their own** credentials — never a shared token
+- ✅ Tokens are **fine-grained**, scoped to the narrowest resource that works
+- ✅ Permissions match the **task**, with destructive scopes deliberately withheld
+- ✅ Secrets live in **ignored files**, never in a transcript or a commit
+- ✅ Every credential has an **expiration**
+- ✅ Every change is **verified at the user-facing surface**
+- ✅ Off-boarding is a **single per-person revocation**
 
 ## 🧪 Verify It's Really Them
 
-Setup that you don't verify is setup you don't have. Before trusting the agent with real work, confirm three things: who GitHub thinks the collaborator is, that they can actually push, and that issue creation works end to end. The `gh` CLI makes all three quick.
+Setup you do not verify is setup you do not have. Before trusting an agent with real work, confirm who the service thinks it is, that it can do the thing, and that the loop closes.
 
 ```bash
 # 1. Who am I authenticated as? Must print the collaborator's handle.
@@ -148,96 +176,32 @@ gh api repos/TortoiseWolfe/RescueDogs --jq '.permissions'
 gh issue create -R TortoiseWolfe/RescueDogs \
   --title "cursor auth smoke test (delete me)" \
   --body "verifying Cursor can open issues as schlajo"
-# then immediately close the throwaway:
 gh issue close <the-number-it-printed> -R TortoiseWolfe/RescueDogs \
   --comment "smoke test passed, closing"
 ```
 
-If `gh api user --jq .login` prints the collaborator's handle (not the maintainer's), `push` is `true`, and the throwaway issue opens under _their_ name, the identity is wired correctly. The self-closing smoke test proves the full loop without leaving litter behind.
+A few failure modes come up often enough to name. If `gh api user --jq .login` prints the **maintainer** rather than the collaborator, an old or shared credential has crept in — log out and back in, and never "just proceed", because every action would be misattributed. If `push` is `false`, the token lacks **Contents: Read and write** or was scoped to the wrong repository. If commits land as an anonymous avatar with no account behind them, the token is fine but the local `git config user.email` is not an address verified on that account. And if `gh` returns a **404 on a repository that clearly exists**, that is how fine-grained tokens hide resources they cannot see — the repo was not selected in the token's access list.
 
-> 💡 **Tip**: The single most important check is `gh api user --jq .login`. If that ever prints the _wrong_ account, stop — a shared or mis-configured credential has crept in, and every action from here would be misattributed.
-
-### 🐛 When Verification Goes Sideways
-
-A few failure modes come up often enough to name:
-
-- **`gh api user --jq .login` prints the maintainer, not the collaborator.** The machine is still authenticated with an old or shared credential. Run `gh auth logout`, then `gh auth login` again with the collaborator's own account or token. Never "just proceed" — every action would be misattributed.
-- **`push` is `false` in the permissions object.** The token was created without **Contents: Read and write**, or it was scoped to the wrong repository. Regenerate it with the correct permission table, or, on the built-in path, re-authorize and confirm the repo is in scope.
-- **Commits land as an anonymous gravatar with no account link.** The token is correct, but the local `git config user.email` is an email that isn't verified on the collaborator's GitHub account. Fix it with `git config user.email "verified-address@example.com"` using an email listed under their account's email settings.
-- **The agent's `gh` calls fail with a 404 on a repo that clearly exists.** For fine-grained tokens, a 404 (rather than a 403) is GitHub's way of hiding resources the token can't see. It almost always means the repository wasn't selected in the token's **Repository access** — not that the repo is missing.
-
-Catching these at the smoke-test stage costs seconds. Catching them after fifty misattributed commits costs an afternoon of `git` history archaeology.
-
-## 📝 The Paste-Ready Prompt: A House Rule
-
-Wiring up identity is half the story. The other half is how you _hand work_ to a collaborator who implements in Cursor. On RescueDogs this became a written house rule, and it is worth stealing.
-
-The rule: **every issue that asks for a code change, and every pull-request review that requests changes, must include a fenced code block the collaborator can paste straight into Cursor's chat** — not just a prose description of the fix.
-
-Why bother? Because a collaborator working in Cursor doesn't want to _translate_ your prose into edits — they want to hand their agent something executable. A ready prompt with byte-exact targets removes the two things that waste the most time: re-deriving what you meant, and whitespace mismatches when the agent tries to find the code you described.
-
-Here is the shape of a good hand-off prompt:
-
-```text
-Fix the mobile-responsive auth-form layout. Context: issue #15
-(github.com/TortoiseWolfe/RescueDogs/issues/15), PR #13.
-
-The horizontal label rows have no responsive breakpoint, so on phones
-the inputs collapse. Make the rows stack on mobile and go horizontal
-at sm+, following docs/MOBILE-FIRST.md.
-
-=== src/components/auth/SignUpForm/SignUpForm.tsx ===
-Replace:
-  <div className="flex flex-row items-center gap-x-6">
-with:
-  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-x-6">
-
-After editing, verify in-container:
-  docker compose exec rescuedogs pnpm run type-check
-  docker compose exec rescuedogs pnpm run lint
-Then check /sign-up at 360px width in the device toolbar.
-```
-
-A few details make these prompts reliable:
-
-- **Wrap the prompt in a four-backtick fence** on the GitHub side, not three. The prompt itself often contains triple-backtick code fences or nested class strings; four backticks guarantee GitHub renders the whole thing as one copyable block with a working Copy button.
-- **Open with a context line** — the issue or pull-request number and the repo Uniform Resource Locator (URL) — so the agent can pull surrounding context.
-- **Give byte-exact find/replace targets**, pulled verbatim from the branch, not paraphrased. Agents match on whitespace.
-- **End with verify commands** (type-check, lint) and one concrete manual check.
-
-This paid off immediately. On RescueDogs pull request #13, we reviewed a design change, found a mobile regression, and sent back a request-for-changes review with exactly this kind of block. The collaborator pasted it into Cursor, and his agent applied the suggested fix essentially verbatim. The round trip was one comment and one push.
-
-> ✅ **Bonus discipline**: When you reject a pull request, use GitHub's request-changes review (`gh pr review <n> --request-changes`) rather than pushing fixup commits onto the collaborator's branch. Pushing to their branch erases their authorship — the very thing this whole exercise is about protecting.
+Catching these at the smoke-test stage costs seconds. Catching them after fifty misattributed commits costs an afternoon of history archaeology.
 
 ## 🔒 Revoke, Rotate, Expire
 
-Credentials are not "set and forget." The same properties that make fine-grained, per-person tokens safe only hold if you maintain them.
+Credentials are not "set and forget."
 
-- **Expire by default.** We set 90-day expirations above precisely so nobody has to remember to clean up. When a token lapses, the collaborator regenerates it in two minutes — a small tax that beats an eternal credential drifting around.
-- **Rotate on any suspicion.** If a token might have leaked — pasted in the wrong window, committed by accident, shown on a screen-share — revoke it and mint a new one. Because it is fine-grained and per-repo, rotation is cheap and the blast radius was already tiny.
-- **Revoke cleanly when someone leaves.** This is the payoff for doing it right. Because the collaborator authenticated as themselves, off-boarding is a single revocation of _their_ token, from _their_ account, touching nobody else. Compare that to the shared-token world, where "removing one person" means breaking everyone.
+- **Expire by default.** A 90-day expiration means nobody has to remember to clean up. Regenerating takes two minutes; an eternal credential drifting around costs much more.
+- **Rotate on any suspicion.** Pasted in the wrong window, committed by accident, shown on a screen-share — revoke and mint a new one. Because it was fine-grained, the blast radius was already small and rotation is cheap.
+- **Revoke cleanly when someone leaves.** This is the payoff for doing it right: off-boarding is a single revocation of _their_ credential, touching nobody else.
 
-Manage or revoke fine-grained tokens any time at **[github.com/settings/tokens?type=beta](https://github.com/settings/tokens?type=beta)**.
+Manage or revoke GitHub fine-grained tokens at **[github.com/settings/tokens?type=beta](https://github.com/settings/tokens?type=beta)**.
 
-Here is the whole discipline as a checklist:
+## 📌 Takeaways
 
-- ✅ Collaborator uses **their own** credentials — never a shared token
-- ✅ Token is **fine-grained**, scoped to **one repository**
-- ✅ Permissions limited to **Issues, Contents, Pull requests** (write) + Metadata (read)
-- ✅ **No** Administration, Secrets, or other-repo access
-- ✅ A sensible **expiration** is set
-- ✅ Identity **verified** with `gh api user --jq .login`
-- ✅ Work handed off via **paste-ready Cursor prompts**
-- ✅ Off-boarding is a **single per-person revocation**
+1. **A token is an identity.** Sharing one erases attribution, bypasses 2FA and makes clean revocation impossible.
+2. **Scope to the task.** The permissions you withhold are the design; the ones you grant are just the requirements.
+3. **An acknowledgement is not an outcome.** Verify where a user would look, not where the API answers.
+4. **Expect silent success and invisible side effects.** The costly failures are rarely errors.
+5. **Access is temporary.** Build for the day the credential stops working, because it will.
 
-## 🎯 Takeaways for Template Forkers
+The return on all of this is real: paperwork that fills itself, migrations that verify their own effects, and systems that get traced end to end because tracing them stopped being tedious. But the return only holds while the scoping does. An agent with the right keys is a genuinely new kind of colleague. An agent with all the keys is an incident with good intentions.
 
-If you fork ScriptHammer — or any template — and bring on a collaborator who works with an AI agent, the pattern is the same every time:
-
-1. **Never share credentials.** A token is an identity; sharing one erases attribution, bypasses 2FA, and makes clean revocation impossible.
-2. **Let each person authenticate as themselves**, ideally through Cursor's built-in GitHub sign-in, or with a fine-grained, single-repo token if they want explicit control.
-3. **Grant least privilege** — the four permissions the job needs, scoped to the one repo, with an expiration.
-4. **Verify the identity** before trusting the agent with real work.
-5. **Hand off work as paste-ready prompts**, and reject via request-changes rather than rewriting someone's branch.
-
-None of this is exotic. It is the difference between a repository whose history tells the truth about who built it, and one where every AI-assisted action collapses into a single misattributed blob. When your collaborator's agent opens its first issue and their name — not yours — is on it, you'll know the setup is right.
+If you are handing off work to a collaborator's agent, the companion piece is **[Send It Back Without Taking It Over](/blog/reject-without-taking-over/)** — how to reject a pull request without erasing the author's name from it. For giving an agent read access to something as messy as a client's inbox, see **[Your Client's Email Is Not a Spec](/blog/client-email-not-a-spec/)**. And for what happens when a credential is merely _wrong_ rather than over-scoped, **[The Storefront That Could Not Take Money](/blog/storefront-that-cannot-take-money/)** is a postmortem on a test-mode payment key that reached production.
