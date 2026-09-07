@@ -438,12 +438,20 @@ Most of the pain below traces to one fact — every job shared one cloud Supabas
 - **Six `oauth-csrf` tests are tagged `@hosted`** and skipped locally — they wait for a redirect to a real OAuth provider, which a local stack never performs. The #287 detector they carried is now covered on every PR by `auth-config-drift.yml` plus `tests/unit/auth-config-validity.test.ts` instead.
 - **The lane is REQUIRED.** `E2E (local) result` became a required context once #739 closed (2026-08-15) — the `waitForUIStability` helper that waited three animation frames rather than for anything, duplicated across five messaging specs, was the thing gating it. A PR now cannot merge without this lane green.
 
-**THE HOSTED LANE IS NOT DEAD, AND HAS NOT BEEN SINCE 2026-09-02 (#1069).** This section used
-to say it was "currently blocked by the budget guard", which was true for weeks and then quietly
-stopped being true. Nobody looked at it for a day after that, and in that day it caught two real
-user-facing defects the local lane cannot see by construction — #1068's avatar-upload rollback, and
-a $99 SKU advertised on `/pricing` that was absent from the production `products` table. **A red
-there now means something.**
+**THE HOSTED LANE FLIPS BETWEEN BLOCKED AND LIVE, SO CHECK BEFORE CONCLUDING (#1069, #1119).**
+This section has now been wrong in both directions. It said "currently blocked by the budget
+guard", which stopped being true on 2026-09-02 and went unnoticed for a day — during which the
+lane caught two real user-facing defects the local lane cannot see by construction (#1068's
+avatar-upload rollback, and a $99 SKU advertised on `/pricing` that was absent from the
+production `products` table). It was then rewritten to say the lane was live, and **that became
+false on 2026-09-07**, when the lane hit `MONTH_EXCEEDED` at 30/30 five days into the cycle and
+went dark for the rest of it.
+
+**Do not read this paragraph for the lane's current state — read the run.** `Cloud-quota budget`
+prints both windows side by side, and `Hosted E2E lane` reports RAN / BLOCKED / NOT CONFIGURED.
+The month resets on the 2nd. #1119 covers the underlying cause: the lane still triggers on every
+push and PR even though `E2E (local) result` became required, so it spends a month's quota in
+days.
 
 Before concluding anything from a red `E2E Tests`, read WHICH job failed — they mean opposite
 things:
