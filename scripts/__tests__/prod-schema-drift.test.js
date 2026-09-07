@@ -654,3 +654,66 @@ describe('the drift workflow keeps the production token out of PR jobs (#903)', 
     assert.match(triggers(), /^\s{2}schedule:/m, 'the daily cron was removed');
   });
 });
+
+describe('the human summary keeps table and column scope apart (#1099)', () => {
+  // The COMPARISON was always correct — it reads tableGrants and columnGrants
+  // separately (#1062). Only the printed line merged them, and it merged them in the
+  // direction that hides a privilege escalation: a table whose sole UPDATE is scoped
+  // to three columns rendered as `authenticated=[INSERT,SELECT,UPDATE]`, which is
+  // indistinguishable from the table-wide UPDATE that #1073 and #1089 removed.
+  //
+  // It cost real time: the gate printed that line while reporting "no drift", and
+  // reconciling the two took a direct query against the live database.
+
+  const subscriptions = {
+    tableGrants: { authenticated: ['INSERT', 'SELECT'] },
+    columnGrants: {
+      authenticated: {
+        UPDATE: ['status', 'canceled_at', 'cancellation_reason'],
+      },
+    },
+  };
+
+  it('shows a column-scoped UPDATE as column-scoped', async () => {
+    const { renderGrants } = await load();
+    const out = renderGrants(subscriptions);
+    assert.match(out, /authenticated=\[INSERT,SELECT\]/);
+    assert.match(out, /\+UPDATE\(canceled_at,cancellation_reason,status\)/);
+  });
+
+  it('never renders a column-only privilege inside the table-level list', async () => {
+    // The regression, stated as the thing that must not happen. Without this the fix
+    // above could be reverted to the merged form and the first test could still be
+    // made to pass by appending the column detail after a merged list.
+    const { renderGrants } = await load();
+    const out = renderGrants(subscriptions);
+    assert.doesNotMatch(
+      out,
+      /authenticated=\[[^\]]*UPDATE/,
+      `UPDATE is column-scoped here and must not appear in the table-level brackets: ${out}`
+    );
+  });
+
+  it('says so plainly when a role holds nothing', async () => {
+    // webhook_events after #1073 — both client roles hold zero privileges. An empty
+    // string here would read as "not measured" rather than "measured, holds nothing".
+    const { renderGrants } = await load();
+    assert.strictEqual(
+      renderGrants({ tableGrants: {}, columnGrants: {} }),
+      '(no client-role grants)'
+    );
+  });
+
+  it('renders a plain table grant without column noise', async () => {
+    // Counterweight: the common case must stay readable, or the fix trades one
+    // unreadable summary for another.
+    const { renderGrants } = await load();
+    assert.strictEqual(
+      renderGrants({
+        tableGrants: { authenticated: ['SELECT'] },
+        columnGrants: {},
+      }),
+      'authenticated=[SELECT]'
+    );
+  });
+});
