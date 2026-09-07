@@ -1,6 +1,7 @@
 import React from 'react';
 import { Metadata } from 'next';
 import { PrivacyActions } from '@/components/privacy/PrivacyActions';
+import Link from 'next/link';
 import { routeMetadata } from '@/utils/metadata';
 
 export const metadata: Metadata = {
@@ -23,9 +24,20 @@ export default function PrivacyPolicyPage() {
   return (
     <main className="mx-auto w-full max-w-4xl px-4 py-6 sm:py-8 md:py-12">
       <header>
-        <h1 className="mb-6 !text-2xl font-bold sm:mb-8 sm:!text-4xl md:!text-5xl">
+        <h1 className="mb-2 !text-2xl font-bold sm:!text-4xl md:!text-5xl">
           Privacy Policy
         </h1>
+        {/* The iOS app is a different product with much shorter data practices —
+            no account, no network, no permissions — and Apple's Guideline
+            5.1.1(i) wants a policy describing THAT app. Saying so here stops a
+            reader assuming this page covers both. */}
+        <p className="text-base-content/70 mb-6 text-sm sm:mb-8">
+          This covers the ScriptHammer website. The{' '}
+          <Link href="/app-privacy/" className="link link-primary">
+            iOS app has its own policy
+          </Link>
+          , and it collects nothing.
+        </p>
       </header>
 
       {/* Quick Actions - Client Component */}
