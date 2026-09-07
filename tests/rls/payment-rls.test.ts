@@ -452,11 +452,20 @@ describe.skipIf(!hasRlsTestEnvironment())(
         TEST_USERS.userB.password
       );
 
-      const clientA = await createAuthenticatedClient(
-        TEST_USERS.userA.email,
-        TEST_USERS.userA.password
-      );
-      const { data, error } = await clientA
+      // SEEDED WITH THE SERVICE CLIENT, and the change is the point (#1089).
+      //
+      // This used to seed with an AUTHENTICATED client, which meant the fixture was
+      // performing the exact exploit the suite exists to prevent: minting your own
+      // subscription with status='active' and any plan_amount, no payment and no edge
+      // function. That capability is now revoked, so this seed could not work — and a
+      // fixture that can only be built by abusing a privilege is evidence the
+      // privilege was wrong, not that the fixture was right.
+      //
+      // Real subscriptions are created by create-stripe-subscription /
+      // create-paypal-subscription and the webhooks, all on the service-role key.
+      // Seeding the same way makes the fixture match production.
+      const svcSeed = createServiceClient();
+      const { data, error } = await svcSeed
         .from('subscriptions')
         .insert({
           template_user_id: userA.id,
@@ -588,6 +597,43 @@ describe.skipIf(!hasRlsTestEnvironment())(
       expect(data).toHaveLength(0);
     });
 
+    it('user cannot INSERT a subscription for THEMSELVES either (#1089)', async () => {
+      // The bigger half of #1089. `Users create own subscriptions` is
+      // WITH CHECK (auth.uid() = template_user_id), so the policy positively PERMITS
+      // this — a user minting their own row with status='active' and any plan_amount
+      // satisfies it perfectly. Only the missing privilege stops it now.
+      //
+      // The neighbouring "for another user" test could never catch this: it is blocked
+      // by the policy predicate, so it passed just as happily while this hole was open.
+      const clientA = await createAuthenticatedClient(
+        TEST_USERS.userA.email,
+        TEST_USERS.userA.password
+      );
+      const { data, error } = await clientA
+        .from('subscriptions')
+        .insert({
+          template_user_id: userA.id,
+          provider: 'stripe',
+          provider_subscription_id: `sub_selfmint_${Date.now()}`,
+          customer_email: TEST_USERS.userA.email,
+          plan_amount: 0,
+          plan_interval: 'month',
+          status: 'active',
+        })
+        .select();
+
+      expect(error?.code).toBe('42501');
+      expect(data).toBeNull();
+
+      // Counterweight: only the seeded row exists, so the refusal was a refusal and
+      // not an insert that silently matched nothing.
+      const svc = createServiceClient();
+      const { data: rows } = await svc
+        .from('subscriptions')
+        .select('id')
+        .eq('template_user_id', userA.id);
+      expect(rows).toHaveLength(1);
+    });
     it('user cannot INSERT subscription for another user', async () => {
       const clientA = await createAuthenticatedClient(
         TEST_USERS.userA.email,

@@ -65,10 +65,11 @@ const ALLOWED: Record<string, string[]> = {
   webhook_events: [],
   orders: ['SELECT'],
   payment_results: ['SELECT'],
-  // Table-wide UPDATE is deliberately ABSENT — narrowed to three columns by #1089,
-  // checked below. It used to be table-wide, which let a row owner rewrite plan_amount
-  // and current_period_end as well as cancel.
-  subscriptions: ['INSERT', 'SELECT'],
+  // SELECT only. UPDATE is column-scoped to the cancellation surface (checked below),
+  // and INSERT is gone entirely — #1089, where a table-wide INSERT plus
+  // `Users create own subscriptions` let any signed-in user mint their own active
+  // subscription. Every real create runs on the service-role key.
+  subscriptions: ['SELECT'],
   // Three user-scoped policies; the DELETE policy says `TO service_role`. The migration
   // previously said GRANT ALL, which handed users a DELETE the policy set withholds.
   typing_indicators: ['INSERT', 'SELECT', 'UPDATE'],
