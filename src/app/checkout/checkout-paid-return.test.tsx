@@ -38,7 +38,7 @@ const PRODUCT = {
   id: 'prd-office-hours',
   name: 'Office Hours',
   type: 'product',
-  amount: 7900,
+  amount: 3900,
   amount_mode: 'fixed',
   billing_interval: 'one_time',
   features: ['One focused 40-minute working session'],

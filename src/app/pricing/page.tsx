@@ -233,7 +233,7 @@ const DEVELOPERS: Product[] = [
     sku: 'prd-office-hours',
     name: 'Office Hours',
     tagline: 'Bring a goal. Leave with something running.',
-    price: '$79',
+    price: '$39',
     billing: 'One-time',
     features: [
       'One focused 40-minute working session',
