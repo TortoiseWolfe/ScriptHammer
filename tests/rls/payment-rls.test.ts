@@ -533,8 +533,76 @@ describe.skipIf(!hasRlsTestEnvironment())(
       expect(error).toBeNull();
       expect(data?.status).toBe('canceled');
 
-      // Restore for other tests
-      await clientA
+      // Restore with the SERVICE client, not the user's (#1089).
+      //
+      // This used to restore as clientA and never check the error. Once the UPDATE
+      // policy carries WITH CHECK (status IN ('canceled','canceling')), a user writing
+      // status='active' is refused — so the restore would have silently stopped
+      // restoring, leaving a canceled row for every test after it. An unchecked write
+      // is a decent way to lose an afternoon.
+      //
+      // Restoring as service_role is also the honest fixture: reactivation is the
+      // system's job, done by the resume-subscription edge function.
+      const svcRestore = createServiceClient();
+      const { error: restoreErr } = await svcRestore
+        .from('subscriptions')
+        .update({ status: 'active', canceled_at: null })
+        .eq('id', subIdA);
+      expect(restoreErr).toBeNull();
+    });
+
+    it('user cannot reactivate their own canceled subscription (#1089)', async () => {
+      // The last of #1089's three holes. USING gates the ROW — "is this yours" — and
+      // said nothing about what you may turn it into, so a row owner could flip a
+      // canceled, past_due or expired subscription back to 'active' and have it count
+      // as live. WITH CHECK constrains the NEW row, which is exactly the shape this
+      // needs, and unlike the money columns it does not require comparing to the old
+      // row (a policy cannot do that at all).
+      const clientA = await createAuthenticatedClient(
+        TEST_USERS.userA.email,
+        TEST_USERS.userA.password
+      );
+      const svc = createServiceClient();
+
+      // Put the row in the state a real cancelled subscriber is in.
+      await svc
+        .from('subscriptions')
+        .update({ status: 'canceled', canceled_at: new Date().toISOString() })
+        .eq('id', subIdA);
+
+      for (const status of ['active', 'grace_period', 'past_due']) {
+        const { data, error } = await clientA
+          .from('subscriptions')
+          .update({ status })
+          .eq('id', subIdA)
+          .select();
+
+        // RLS refuses a WITH CHECK violation with 42501, same code as a missing
+        // privilege — the distinction is invisible here and does not need to be.
+        expect(error?.code, `status='${status}' was not refused`).toBe('42501');
+        expect(data, `status='${status}' returned rows`).toBeNull();
+      }
+
+      // Counterweight one: the row really is still canceled, so the refusals above
+      // were refusals and not writes that matched nothing.
+      const { data: after } = await svc
+        .from('subscriptions')
+        .select('status')
+        .eq('id', subIdA)
+        .single();
+      expect(after?.status).toBe('canceled');
+
+      // Counterweight two: cancelling is still permitted, so the clause narrows rather
+      // than forbids. Without this the test would pass on a policy that blocked every
+      // user write.
+      const { error: cancelErr } = await clientA
+        .from('subscriptions')
+        .update({ status: 'canceled' })
+        .eq('id', subIdA)
+        .select();
+      expect(cancelErr).toBeNull();
+
+      await svc
         .from('subscriptions')
         .update({ status: 'active', canceled_at: null })
         .eq('id', subIdA);

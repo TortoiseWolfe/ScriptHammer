@@ -1067,9 +1067,29 @@ DROP POLICY IF EXISTS "Users create own subscriptions" ON subscriptions;
 CREATE POLICY "Users create own subscriptions" ON subscriptions
   FOR INSERT WITH CHECK (auth.uid() = template_user_id);
 
+-- #1089, third and last hole: the STATUS FLIP.
+--
+-- USING alone gates the ROW -- "is this yours" -- and said nothing about what you may
+-- turn it into. A row owner could set status='active' on their own canceled, past_due
+-- or expired subscription and have it count as live again, inflating
+-- admin_user_stats().active_subscriptions and anything gated on status.
+--
+-- WITH CHECK constrains the NEW row, so it CAN express this. What it cannot express is
+-- "you did not change plan_amount" -- a policy has no binding for the old row, which is
+-- why the money columns were closed with a COLUMN GRANT instead (#1093) and why #281
+-- needed a trigger for the equivalent job on `messages`. Three holes, three different
+-- instruments, and picking the wrong one is what kept this open.
+--
+-- The cancellation surface is all a user ever needs: `canceled` is what the tested
+-- capability writes, `canceling` is its pending form in the CHECK constraint at :150.
+-- `active`, `past_due`, `grace_period` and `expired` belong to the system and are set by
+-- the cancel-, resume-, retry- and webhook edge functions, which hold SERVICE_ROLE_KEY.
+-- service_role has rolbypassrls=true, so this clause cannot reach them -- verified on
+-- production rather than assumed.
 DROP POLICY IF EXISTS "Users update own subscriptions" ON subscriptions;
 CREATE POLICY "Users update own subscriptions" ON subscriptions
-  FOR UPDATE USING (auth.uid() = template_user_id);
+  FOR UPDATE USING (auth.uid() = template_user_id)
+  WITH CHECK (status IN ('canceled', 'canceling'));
 
 -- Webhook events
 DROP POLICY IF EXISTS "Service creates webhook events" ON webhook_events;
