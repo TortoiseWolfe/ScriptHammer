@@ -488,7 +488,7 @@ VALUES
 
   ('prd-office-hours', 'product', 'Office Hours', 'Bring a goal. Leave with something running.',
    9900, 'fixed', NULL, NULL, 'one_time', NULL,
-   '["Two 40-minute working sessions with a break","Bring a goal, leave with something running","Screen-share, real code, your questions","Recording is yours to keep"]'::jsonb,
+   '["Two 40-minute working sessions with a break","Bring a goal, leave with something running","Screen-share, real code, your questions","Recordings are yours to keep"]'::jsonb,
    '{}'::jsonb, 35, true),
 
   ('prd-field-study', 'product', 'Field Study', 'Your first client site, built with you, on stream.',

@@ -111,7 +111,7 @@ The cheapest way in is also the best one. [Clone ScriptHammer](https://github.co
 
 Short on cash? **Trade instead.** Playtest this and file a good bug. Fork it and prototype your idea. Build one of those missing layers — a save system, a third-person camera, an enemy. Every playtester is another set of eyes, every fork is street cred you earn in public, and more people in the project make the engine better for everyone.
 
-If you'd rather have hands-on help on _your_ game, there's a paid lane too: live **Office Hours** (two 40-minute working sessions with a break; bring a goal, leave with something running, the recording is yours to keep), and [Field Study](https://scripthammer.com/pricing) for a bigger build done with you. Prices are on the [pricing page](https://scripthammer.com/pricing), and if cash is tight, see two paragraphs up — trade instead. The paid tiers exist to fund the free ones, not to gate them.
+If you'd rather have hands-on help on _your_ game, there's a paid lane too: live **Office Hours** (two 40-minute working sessions with a break; bring a goal, leave with something running, the recordings are yours to keep), and [Field Study](https://scripthammer.com/pricing) for a bigger build done with you. Prices are on the [pricing page](https://scripthammer.com/pricing), and if cash is tight, see two paragraphs up — trade instead. The paid tiers exist to fund the free ones, not to gate them.
 
 ## 💬 Come build it
 

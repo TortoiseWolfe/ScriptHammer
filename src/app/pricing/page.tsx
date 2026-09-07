@@ -239,7 +239,7 @@ const DEVELOPERS: Product[] = [
       'Two 40-minute working sessions with a break',
       'Bring a goal, leave with something running',
       'Screen-share, real code, your questions',
-      'Recording is yours to keep',
+      'Recordings are yours to keep',
     ],
     cta: 'Select',
     href: '',
