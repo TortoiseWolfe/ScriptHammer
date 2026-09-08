@@ -7,6 +7,10 @@
 
 const fs = require('fs');
 const path = require('path');
+const {
+  deployedBasePath,
+  normaliseBasePath,
+} = require('./lib/deployed-base-path');
 
 // Load project configuration
 const projectConfigPath = path.join(
@@ -234,10 +238,43 @@ const manifest = {
 // `git checkout -- public/manifest.json`. That restore resets to HEAD, so running
 // the suite silently DISCARDED any uncommitted change to that file -- it destroyed
 // a fix in progress, which is how this was found.
+//
+// A BUILD MUST NEVER LEAVE THE TRACKED ARTIFACT WRONG FOR PRODUCTION (#1114).
+//
+// `public/manifest.json` is tracked on purpose (#392) so its paths are reviewable. But any
+// LOCAL build whose base path differs from the deployed one rewrites it — `start_url`,
+// `scope` and every icon — to a value that breaks PWA install and offline in production if
+// committed. The pre-push gate runs exactly such a build on every push
+// (`.husky/pre-push:106` -> `scripts/validate-ci.sh:139`), so the tree was left dirty
+// constantly; it was observed five times in one session, each time one `git add -A` away
+// from shipping.
+//
+// So on divergence the generated file goes somewhere gitignored and the tracked artifact is
+// left alone. The build then uses the COMMITTED manifest, which is correct for production
+// and merely approximate for a local base-path preview — a trade `pwa-installation.spec.ts`
+// already tolerates, since it accepts either path shape.
+//
+// This does NOT fire for a fork: their deployed base path and their build's base path agree,
+// so there is no divergence and the write happens normally.
+const deployed = normaliseBasePath(deployedBasePath());
+const building = normaliseBasePath(projectConfig.basePath);
+const diverges = !process.env.MANIFEST_OUTPUT_DIR && deployed !== building;
+
 const outputPath = process.env.MANIFEST_OUTPUT_DIR
   ? path.join(path.resolve(process.env.MANIFEST_OUTPUT_DIR), 'manifest.json')
-  : path.join(__dirname, '../public/manifest.json');
+  : diverges
+    ? path.join(__dirname, '..', '.manifest-divergent.json')
+    : path.join(__dirname, '../public/manifest.json');
 fs.writeFileSync(outputPath, JSON.stringify(manifest, null, 2));
+
+if (diverges) {
+  console.log(
+    `\n⚠️  Base path diverges: this build uses "${building || '/'}" but the deployed site ` +
+      `serves from "${deployed || '/'}".\n` +
+      `   public/manifest.json was NOT rewritten — it stays correct for production (#1114).\n` +
+      `   The generated file went to .manifest-divergent.json instead.`
+  );
+}
 
 console.log(`✅ Generated manifest.json for ${projectConfig.projectName}`);
 console.log(`   Base path: ${projectConfig.basePath || '/'}`);

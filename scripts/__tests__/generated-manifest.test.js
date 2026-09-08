@@ -30,6 +30,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const { deployedBasePath } = require('../lib/deployed-base-path');
 const { execFileSync } = require('node:child_process');
 const { spawnSync } = require('node:child_process');
 
@@ -84,41 +85,10 @@ const PROJECT_CONFIG_PATH = path.join(
  * manifest, which reads `start_url: "/grand-daze/"`. Reading the same source is the
  * only way this expectation can be right for a repo it was not written in (#985).
  */
-function defaultBasePath() {
-  // A custom domain serves from the apex, so there is no base path to add.
-  //
-  // READ FROM CONFIGURATION, not from `fs.existsSync(public/CNAME)` (#980). That file is
-  // generated now and gitignored, so it is absent on the clean checkout CI runs on — and
-  // keying off it would have flipped this expectation to `/ScriptHammer/` while the
-  // committed manifest correctly says `/`, deadlocking the required Test (20.x) check on
-  // every PR. The header above records this exact loop happening once already (#931).
-  try {
-    const deployment = JSON.parse(
-      fs.readFileSync(path.join(ROOT, 'config', 'deployment.json'), 'utf8')
-    );
-    if (deployment.customDomain) return '';
-  } catch {
-    /* no deployment config: fall through to the project-site rules below */
-  }
-
-  // The env override wins in detect-project.js:74, so it wins here too.
-  const override = process.env.NEXT_PUBLIC_PROJECT_NAME;
-  if (override) return `/${override}`;
-
-  const remote = execFileSync('git', ['remote', 'get-url', 'origin'], {
-    cwd: ROOT,
-    encoding: 'utf8',
-  }).trim();
-  const slug = remote
-    .replace(/\.git$/, '')
-    .split(/[/:]/)
-    .pop();
-  assert.ok(
-    slug,
-    `could not read a repository name from the git remote: ${remote}`
-  );
-  return `/${slug}`;
-}
+// The rule lives in one place now (#1114): `generate-manifest.js` needs the same answer to
+// decide whether writing would corrupt the tracked artifact, and two copies of a rule that
+// must agree is the drift this repo keeps getting bitten by.
+const defaultBasePath = () => deployedBasePath(ROOT);
 
 const readManifest = () => JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf8'));
 
@@ -294,5 +264,51 @@ test('the description is not a hardcoded sentence with the name pasted in', () =
   assert.ok(
     !manifest.description.startsWith(`${name} - A production Next.js`),
     'the manifest description is the template boilerplate with this project name pasted on'
+  );
+});
+
+test('a divergent-base-path build does not touch the tracked artifact (#1114)', () => {
+  // THE REGRESSION THIS FILE EXISTED TO CATCH, now prevented rather than detected.
+  //
+  // Every `git push` runs a production build through the pre-push gate
+  // (.husky/pre-push:106 -> scripts/validate-ci.sh:139) in the `builder` container, which
+  // takes `env_file: .env` and therefore inherits a base path that differs from the deployed
+  // one. That rewrote start_url, scope and every icon in a TRACKED file, leaving the tree
+  // dirty on every push — observed five times in one session, each a single `git add -A`
+  // away from breaking PWA install in production.
+  //
+  // Driven end to end rather than asserted from the source, because the bug is entirely in
+  // which path gets written.
+  const before = fs.readFileSync(MANIFEST_PATH, 'utf8');
+  const divergent = defaultBasePath() === '/probe' ? '/other-probe' : '/probe';
+
+  const res = spawnSync(
+    process.execPath,
+    [path.join(ROOT, 'scripts', 'generate-manifest.js')],
+    {
+      cwd: ROOT,
+      encoding: 'utf8',
+      env: {
+        ...process.env,
+        NEXT_PUBLIC_BASE_PATH: divergent,
+        MANIFEST_OUTPUT_DIR: '',
+      },
+    }
+  );
+
+  assert.strictEqual(
+    fs.readFileSync(MANIFEST_PATH, 'utf8'),
+    before,
+    'A build with a base path that does not match the deployed site rewrote the TRACKED ' +
+      'manifest. That is #1114: committing it ships start_url, scope and every icon path ' +
+      'pointing at the wrong root, which breaks PWA install and offline.\n\n' +
+      `generator output:\n${res.stdout}${res.stderr}`
+  );
+
+  assert.match(
+    `${res.stdout}${res.stderr}`,
+    /diverge/i,
+    'the generator redirected silently — an operator needs to be told why public/manifest.json ' +
+      'did not change, or they will assume the generator is broken'
   );
 });
