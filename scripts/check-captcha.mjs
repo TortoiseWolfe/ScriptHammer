@@ -17,16 +17,21 @@
 // WHAT IT CHECKS
 //   1. The site key is actually in the deployed HTML/JS (NEXT_PUBLIC_* is
 //      inlined at BUILD time — a repo variable alone changes nothing).
-//   2. The deployed origin is on the widget's allowed-domains list, proven
-//      DIFFERENTIALLY: a bogus origin must be rejected with 110200 while the
-//      real origin must not be. Without the bogus control, "no error" is
-//      unfalsifiable — it also happens when the check itself is broken.
-//   3. The secret is a real Turnstile secret, via Cloudflare's siteverify.
+//   2. The secret is a real Turnstile secret, via Cloudflare's siteverify.
 //      Supabase returns write-only secrets as SHA-256 HASHES on read-back
 //      (`smtp_pass` and the OAuth secrets look identical), so the stored value
 //      CANNOT be validated by reading it. The plaintext must be supplied.
 //
 // WHAT IT DELIBERATELY DOES NOT CHECK
+// Domain allowlisting. It was listed above as a third check for a long time and
+// was NEVER RUN — the only two `110200` mentions in this file are that claim and
+// the closing message telling the operator to run the probe by hand. Proving it
+// requires a browser and a DIFFERENTIAL: load the widget from a bogus origin and
+// confirm error 110200, then from the real origin and confirm none. Without the
+// bogus control "no error" is unfalsifiable, because a broken check reports
+// exactly the same thing — which is why it cannot be bolted on here. See
+// docs/AUTH-SETUP.md, which has described this correctly all along.
+//
 // Whether Cloudflare issues a token to THIS client. Turnstile exists to
 // withhold tokens from automated browsers, so a headless run in a datacenter
 // legitimately gets none. Treating that as failure would make the gate
@@ -105,9 +110,13 @@ try {
       .map((m) => m[1])
       .slice(0, 40);
     for (const c of chunks) {
-      const url = c.startsWith('http')
-        ? c
-        : `${BASE}${c.startsWith('/') ? '' : '/'}${c}`;
+      // Resolve against the DOCUMENT, not the origin (#1058). On a project-Pages
+      // deploy the HTML lives at `${BASE}/sign-in/` and its chunk hrefs already
+      // carry the base path, so concatenating BASE produced `/myfork/myfork/...`
+      // — a 404 the script then reported as "the site key is NOT in the deployed
+      // bundle", blaming deploy.yml for a build that was perfectly correct.
+      // Same fix and same reasoning as check-cache-headers.mjs:202.
+      const url = new URL(c, `${BASE}/sign-in/`).href;
       const body = await fetch(url)
         .then((r) => r.text())
         .catch(() => '');
