@@ -30,17 +30,30 @@ The CRUDkit template includes built-in calendar scheduling integration supportin
 
 ### 2. Configure Environment Variables
 
-Add the following to your `.env.local` file:
+For local development, add the following to your `.env.local`:
 
 ```bash
 # For Calendly
 NEXT_PUBLIC_CALENDAR_PROVIDER=calendly
 NEXT_PUBLIC_CALENDAR_URL=https://calendly.com/your-username/30min
 
-# OR for Cal.com
+# OR for Cal.com — note this is a FULL URL, not a bare user/event slug
 NEXT_PUBLIC_CALENDAR_PROVIDER=calcom
-NEXT_PUBLIC_CALENDAR_URL=your-username/meeting
+NEXT_PUBLIC_CALENDAR_URL=https://cal.com/your-username/meeting
 ```
+
+**Always a full URL, for both providers.** The embed wants a bare `user/event` path and gets
+one — `toCalLink` derives it (#1100). But the same configured value is also used to build the
+outbound booking link shown after a purchase, and that builder calls `new URL()` and returns
+`null` when it throws. Configure the bare form and `/schedule` still works, so the page you
+check looks fine while the link a paying customer needs silently disappears.
+
+**For a deployed site, `.env.local` is not enough.** `NEXT_PUBLIC_*` is inlined at build time,
+so the value has to reach the build — which means a repository **Variable**
+(Settings → Secrets and variables → Actions → _Variables_), not a Secret and not a local file.
+`deploy.yml` reads `vars.NEXT_PUBLIC_CALENDAR_PROVIDER`, `vars.NEXT_PUBLIC_CALENDAR_URL` and
+`vars.NEXT_PUBLIC_CALENDAR_URL_OFFICE_HOURS`. Put them in Secrets and they arrive as empty
+strings, the deploy goes green, and the site ships with no scheduler.
 
 ### 3. Access the Calendar
 

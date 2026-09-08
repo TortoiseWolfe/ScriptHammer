@@ -76,7 +76,7 @@ GID=1000  # Replace if your 'id -g' shows different
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX        # Google Analytics
 NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY=your-key-here    # Contact form
 NEXT_PUBLIC_EMAILJS_SERVICE_ID=service_xxx        # Email service
-NEXT_PUBLIC_CALENDAR_URL=your-calendly-url        # Scheduling
+NEXT_PUBLIC_CALENDAR_URL=https://calendly.com/your-username/30min        # Scheduling
 
 # Optional - Customize author info:
 NEXT_PUBLIC_AUTHOR_NAME=Your Name

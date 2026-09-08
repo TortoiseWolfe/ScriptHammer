@@ -511,7 +511,7 @@ NEXT_PUBLIC_CALENDAR_URL=https://calendly.com/your-username/event
 
 ```bash
 NEXT_PUBLIC_CALENDAR_PROVIDER=calcom
-NEXT_PUBLIC_CALENDAR_URL=your-username/meeting
+NEXT_PUBLIC_CALENDAR_URL=https://cal.com/your-username/meeting
 ```
 
 ### Step 2: Install Dependencies
