@@ -314,3 +314,6 @@ docs/talks/*.pdf
 # repository's .git at an absolute path so a worktree's `gitdir:` pointer resolves
 # inside the container (#932). Committing one would break every other checkout.
 docker-compose.override.yml
+
+# Scratch output of a base-path-divergent local build (#1114). Never committed.
+.manifest-divergent.json
