@@ -65,6 +65,50 @@ describe('pre-push validation build writes its manifest to scratch (#1114)', () 
     );
   });
 
+  it('the in-container build applies the variable, not merely mentions it (#1127)', () => {
+    // THE DEFECT THIS REPLACES. The first version asserted only that the string
+    // MANIFEST_OUTPUT_DIR appeared on each build line. It did — on a line reading
+    // `MANIFEST_OUTPUT_DIR=/tmp pnpm build`, handed to run_check, which executes its
+    // argument as `$command` UNQUOTED. Word-splitting does not perform assignments, so bash
+    // tries to run a program literally named `MANIFEST_OUTPUT_DIR=/tmp`. The guard was green
+    // over a line that could not work.
+    //
+    // It went unnoticed because the branch exercised on this machine is the OTHER one —
+    // `docker compose run -e`, which is correct. A guard has to cover the branch nobody runs.
+    const line = buildLines().find((l) => !l.includes('docker compose'));
+    assert.ok(
+      line,
+      'the in-container build line is gone — re-point this guard'
+    );
+    assert.match(
+      line,
+      /\benv\s+MANIFEST_OUTPUT_DIR=/,
+      'The in-container build sets MANIFEST_OUTPUT_DIR as a bare `VAR=value` prefix. ' +
+        'run_check runs `$command` unquoted, and word-splitting does not perform ' +
+        'assignments — bash would try to execute a command named `MANIFEST_OUTPUT_DIR=...`. ' +
+        'Use `env MANIFEST_OUTPUT_DIR=... <cmd>`, which is a real program and survives ' +
+        `word-splitting.\n\nLine: ${line.trim()}`
+    );
+  });
+
+  it('demonstrates WHY: word-splitting drops a bare assignment but honours env', () => {
+    // The mechanism, driven rather than asserted. If this ever fails, bash changed and the
+    // rule above needs revisiting — better that than the rule quietly becoming folklore.
+    const { spawnSync } = require('node:child_process');
+    const run = (cmd) =>
+      spawnSync('bash', ['-c', `c="${cmd}"; $c`], { encoding: 'utf8' });
+
+    const bare = run('PROBE_1127=applied printenv PROBE_1127');
+    assert.notStrictEqual(
+      bare.status,
+      0,
+      'a bare VAR=value prefix survived word-splitting — the premise of this guard is wrong'
+    );
+
+    const viaEnv = run('env PROBE_1127=applied printenv PROBE_1127');
+    assert.strictEqual(viaEnv.stdout.trim(), 'applied');
+  });
+
   it('the generator still honours the seam it depends on', () => {
     // The guard above is worthless if MANIFEST_OUTPUT_DIR stops being read. Asserting the
     // generator still implements it keeps the two halves from drifting apart silently —

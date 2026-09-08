@@ -137,7 +137,10 @@ describe('check-captcha honesty (#1058)', () => {
     // Comparing the counts is what makes a fourth claim impossible to add silently.
     const src = fs.readFileSync(SCRIPT, 'utf8');
 
-    const checksBlock = /\/\/ WHAT IT CHECKS\n([\s\S]*?)\n\/\/\n/.exec(src);
+    const checksBlock =
+      /\/\/ WHAT IT CHECKS\n([\s\S]*?)\n\/\/ WHAT IT DELIBERATELY DOES NOT CHECK/.exec(
+        src
+      );
     assert.ok(
       checksBlock,
       'the WHAT IT CHECKS block is gone — this guard is now vacuous'
@@ -160,7 +163,10 @@ describe('check-captcha honesty (#1058)', () => {
 
   it('does not claim to verify domain allowlisting', () => {
     const src = fs.readFileSync(SCRIPT, 'utf8');
-    const checksBlock = /\/\/ WHAT IT CHECKS\n([\s\S]*?)\n\/\/\n/.exec(src);
+    const checksBlock =
+      /\/\/ WHAT IT CHECKS\n([\s\S]*?)\n\/\/ WHAT IT DELIBERATELY DOES NOT CHECK/.exec(
+        src
+      );
     assert.ok(checksBlock, 'the WHAT IT CHECKS block is gone');
     assert.ok(
       !/110200|allowed-domains|allowlist/i.test(checksBlock[1]),
