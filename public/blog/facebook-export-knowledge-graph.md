@@ -218,17 +218,22 @@ And don't automate any of this against Facebook itself. There's been no write AP
 
 ## Do it yourself
 
-The parser is stdlib-only Python, no dependencies to install:
+My own copy of the parser stays private — it is entangled with my export, which is
+exactly the data this post argues you should not hand around. So rather than send you to a
+repository you cannot open, here is the pipeline itself. It is stdlib-only Python, no
+dependencies, and the whole thing is a few hundred lines.
 
-```bash
-git clone https://github.com/TortoiseWolfe/fb-digital-twin
-cd fb-digital-twin
-mkdir -p raw && unzip ~/Downloads/your-export.zip -d raw/export-2026-08-05
-$EDITOR config/paths.json          # point export_root at it
-python3 bin/build_vocab.py
-python3 bin/parse_all.py
-python3 bin/ingest_extras.py
+```text
+1. build a vocabulary   scan the export's HTML for the labels Facebook actually uses
+                        — they differ by export age and locale, so do not hardcode them
+2. parse                walk each file, emit one JSON object per record, and keep the
+                        byte range it came from so every row stays traceable
+3. ingest the extras    the parts that are not in the main tree — off-Facebook activity,
+                        ad interests, the group lists
 ```
+
+Point step 1 at your unzipped export before you start; the label scan is what makes the
+parser survive an export from a different year than mine.
 
 That gets you `json/records.jsonl`, one JSON object per record, every field flattened, every row traceable back to a byte range in the original HTML. Mine is 31,030 rows going back to 2011.. query it with `jq` and you don't even need the graph.
 
