@@ -7,6 +7,22 @@ const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const path = require('node:path');
 const fs = require('node:fs');
+const os = require('node:os');
+
+/**
+ * Fixtures live under os.tmpdir(), NOT under scripts/ (#1109).
+ *
+ * `no-upstream-domain-fallbacks.test.js` walks all of `scripts/` recursively to prove the
+ * #1054 sweep is not vacuous, and `node --test` runs files concurrently. A fixture tree
+ * created and torn down inside `scripts/` therefore races that walk: `readdirSync` sees a
+ * directory, recurses, and the directory is gone — ENOENT, and the whole file fails with a
+ * path that has nothing to do with the test that actually failed.
+ *
+ * This fixes the CLASS rather than the instance, the same way migrate-components.test.js
+ * already does: whatever the code under test writes to its parent directory now lands in a
+ * scratch root the walk never sees.
+ */
+const SCRATCH = fs.mkdtempSync(path.join(os.tmpdir(), 'plop-generator-'));
 
 // This will fail initially - plop config doesn't exist yet
 let plopfile;
@@ -169,10 +185,7 @@ describe('plop component generator', () => {
   });
 
   describe('component generation', () => {
-    const testOutputDir = path.join(
-      __dirname,
-      '../fixtures/generated-components'
-    );
+    const testOutputDir = path.join(SCRATCH, 'generated-components');
 
     beforeEach(() => {
       fs.mkdirSync(testOutputDir, { recursive: true });

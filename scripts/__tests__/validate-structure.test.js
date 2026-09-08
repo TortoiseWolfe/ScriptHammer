@@ -7,6 +7,22 @@ const { describe, it, beforeEach, afterEach } = require('node:test');
 const assert = require('node:assert');
 const path = require('node:path');
 const fs = require('node:fs');
+const os = require('node:os');
+
+/**
+ * Fixtures live under os.tmpdir(), NOT under scripts/ (#1109).
+ *
+ * `no-upstream-domain-fallbacks.test.js` walks all of `scripts/` recursively to prove the
+ * #1054 sweep is not vacuous, and `node --test` runs files concurrently. A fixture tree
+ * created and torn down inside `scripts/` therefore races that walk: `readdirSync` sees a
+ * directory, recurses, and the directory is gone — ENOENT, and the whole file fails with a
+ * path that has nothing to do with the test that actually failed.
+ *
+ * This fixes the CLASS rather than the instance, the same way migrate-components.test.js
+ * already does: whatever the code under test writes to its parent directory now lands in a
+ * scratch root the walk never sees.
+ */
+const SCRATCH = fs.mkdtempSync(path.join(os.tmpdir(), 'validate-structure-'));
 
 // Load the module — may fail if dependencies (e.g. glob) aren't installed locally
 let validateStructure;
@@ -45,7 +61,7 @@ describe('validate-structure', () => {
   });
 
   describe('validation process', () => {
-    const testDir = path.join(__dirname, 'test-validation');
+    const testDir = path.join(SCRATCH, 'test-validation');
 
     beforeEach(() => {
       fs.mkdirSync(testDir, { recursive: true });
@@ -186,7 +202,7 @@ describe('validate-structure', () => {
         return; // Module unavailable outside Docker
       }
 
-      const testDir = path.join(__dirname, 'test-failfast');
+      const testDir = path.join(SCRATCH, 'test-failfast');
       fs.mkdirSync(testDir, { recursive: true });
 
       // Create multiple non-compliant components
@@ -221,7 +237,7 @@ describe('validate-structure', () => {
         return; // Module unavailable outside Docker
       }
 
-      const testDir = path.join(__dirname, 'test-strict');
+      const testDir = path.join(SCRATCH, 'test-strict');
       fs.mkdirSync(testDir, { recursive: true });
 
       // Create component with warnings (valid but not ideal)
@@ -344,7 +360,7 @@ describe('validate-structure', () => {
         return; // Module unavailable outside Docker
       }
 
-      const testDir = path.join(__dirname, 'test-naming');
+      const testDir = path.join(SCRATCH, 'test-naming');
       fs.mkdirSync(testDir, { recursive: true });
 
       // Create component with wrong file names
@@ -436,7 +452,7 @@ describe('validate-structure', () => {
         return; // Module unavailable outside Docker
       }
 
-      const testDir = path.join(__dirname, 'test-performance');
+      const testDir = path.join(SCRATCH, 'test-performance');
       fs.mkdirSync(testDir, { recursive: true });
 
       // Create 100 components
