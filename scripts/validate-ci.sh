@@ -134,9 +134,24 @@ if [ "$IN_DOCKER" = true ]; then
         echo -e "     ${YELLOW}./scripts/validate-ci.sh $*${NC}"
         exit 1
     fi
-    run_check "Production build" "pnpm build"
+    # MANIFEST_OUTPUT_DIR keeps this VALIDATION build from rewriting the tracked
+    # public/manifest.json (#1114). The builder inherits NEXT_PUBLIC_BASE_PATH from .env,
+    # which for a custom-domain deploy differs from what the deployed site serves — so the
+    # generator rewrote start_url, scope and every icon in a TRACKED file, leaving the tree
+    # dirty on EVERY push. Observed five times in one session, each one `git add -A` away
+    # from shipping a manifest that breaks PWA install and offline in production.
+    #
+    # The seam already existed for exactly this (#931). This build only needs to prove the
+    # build succeeds; it does not need its manifest kept, so it writes to a scratch path and
+    # the committed artifact is left alone.
+    #
+    # Deliberately scoped to the pre-push gate rather than taught to the generator: a rebrand
+    # LEGITIMATELY regenerates this file with a diverging base path (#985,
+    # tests/rebrand/test-rebrand.sh), and a generator-side rule cannot tell that apart from
+    # this accidental case.
+    run_check "Production build" "MANIFEST_OUTPUT_DIR=/tmp pnpm build"
 else
-    run_host_check "Production build" "docker compose run --rm builder pnpm build"
+    run_host_check "Production build" "docker compose run --rm -e MANIFEST_OUTPUT_DIR=/tmp builder pnpm build"
 fi
 
 # 5b. Browser-parseability of emitted chunks (#294). `next build` succeeds even
