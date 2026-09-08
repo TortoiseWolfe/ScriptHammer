@@ -149,7 +149,7 @@ if [ "$IN_DOCKER" = true ]; then
     # LEGITIMATELY regenerates this file with a diverging base path (#985,
     # tests/rebrand/test-rebrand.sh), and a generator-side rule cannot tell that apart from
     # this accidental case.
-    run_check "Production build" "MANIFEST_OUTPUT_DIR=/tmp pnpm build"
+    run_check "Production build" "env MANIFEST_OUTPUT_DIR=/tmp pnpm build"
 else
     run_host_check "Production build" "docker compose run --rm -e MANIFEST_OUTPUT_DIR=/tmp builder pnpm build"
 fi
