@@ -21,6 +21,7 @@ import CheckoutSummary, {
   previewAmountDue,
 } from '@/components/payment/CheckoutSummary';
 import BookingStep from '@/components/payment/BookingStep';
+import { usePaymentReturn } from '@/hooks/usePaymentReturn';
 import IntakeForm, { type IntakeFormData } from '@/components/forms/IntakeForm';
 import type { IntakeAttachment, Product } from '@/types/commerce';
 
@@ -125,74 +126,31 @@ function CheckoutContent() {
     !featureFlags.stripeEnabled && !featureFlags.paypalEnabled;
 
   // ---- returning from Stripe -------------------------------------------
+  //
+  // The resolution lives in `usePaymentReturn` because /payment-result needs the identical
+  // four steps (#1126). It used to live here alone, which is how the two pages drifted far
+  // enough apart that Stripe's own success_url landed on the one WITHOUT a booking link.
+  //
+  // Behaviour is unchanged: same seams, same degradations, same messages.
+  const paymentReturn = usePaymentReturn(sessionId);
+
   useEffect(() => {
-    if (!sessionId) return;
-    let cancelled = false;
-
-    (async () => {
-      const { intentId, error } = await handleStripeRedirect(sessionId);
-      if (cancelled) return;
-      if (!intentId || !UUID_RE.test(intentId)) {
-        setStage({
-          kind: 'error',
-          message: error ?? 'Could not verify that session',
-        });
-        return;
-      }
-      // Ask OUR records, not the redirect.
-      const result = await getPaymentStatus(intentId);
-      if (cancelled) return;
-      const { data: order } = await supabase
-        .from('orders')
-        .select('id, buyer_email, product_id')
-        .eq('intent_id', intentId)
-        .maybeSingle();
-
-      if (result && order) {
-        setBuyer((b) => ({ ...b, email: order.buyer_email ?? b.email }));
-
-        // THE SKU MUST COME FROM THE ORDER, NOT THE URL (#1092). Hosted Stripe
-        // Checkout returns to `?session_id=…` with no `sku`, and this effect owns
-        // the stage from then on — the catalog effect below returns early on
-        // `sessionId`. `product: null` therefore reached `BookingStep` as
-        // `sku={undefined}`, `resolveCalendarUrl` fell through to the general
-        // call, and a buyer who paid $99 for the 90-minute session booked the
-        // 15-minute one. Per-SKU booking worked everywhere EXCEPT the one path a
-        // paying customer walks.
-        //
-        // `active` is deliberately NOT filtered here, unlike the catalog effect
-        // below: that one is a storefront and must hide retired packages, but this
-        // is a receipt. Someone who bought a package the day before it was retired
-        // still needs the booking link they paid for.
-        //
-        // A failed lookup must not block the confirmation. Degrading to the general
-        // call is bad; showing no confirmation at all after a successful payment is
-        // worse. So `product` stays null on any error and behaviour is as before.
-        let product: Product | null = null;
-        if (order.product_id) {
-          const { data: row } = await supabase
-            .from('products')
-            .select('*')
-            .eq('id', order.product_id)
-            .maybeSingle();
-          if (cancelled) return;
-          product = (row as Product | null) ?? null;
-        }
-
-        setStage({ kind: 'paid', orderId: order.id, product });
-      } else {
-        setStage({
-          kind: 'error',
-          message:
-            'Your payment is still being confirmed. Refresh in a moment — nothing is lost.',
-        });
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionId]);
+    if (paymentReturn.kind === 'idle') return;
+    if (paymentReturn.kind === 'loading') {
+      setStage({ kind: 'loading' });
+      return;
+    }
+    if (paymentReturn.kind === 'error') {
+      setStage({ kind: 'error', message: paymentReturn.message });
+      return;
+    }
+    setBuyer((b) => ({ ...b, email: paymentReturn.buyerEmail ?? b.email }));
+    setStage({
+      kind: 'paid',
+      orderId: paymentReturn.orderId,
+      product: paymentReturn.product,
+    });
+  }, [paymentReturn]);
 
   // ---- loading the catalog row -----------------------------------------
   useEffect(() => {

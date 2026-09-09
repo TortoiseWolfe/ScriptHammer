@@ -18,6 +18,8 @@ import { getInternalUrl } from '@/config/project.config';
 import { getPaymentStatus } from '@/lib/payments/payment-service';
 import { handleStripeRedirect } from '@/lib/payments/stripe';
 import { classifyReturn, UUID_RE } from '@/lib/payments/payment-return';
+import BookingStep from '@/components/payment/BookingStep';
+import { usePaymentReturn } from '@/hooks/usePaymentReturn';
 
 type ResultState =
   | { kind: 'loading' }
@@ -44,6 +46,19 @@ function PaymentResultContent() {
   // an intent id — had zero callers anywhere in the repo.
   const intentId = searchParams?.get('id') ?? null;
   const sessionId = searchParams?.get('session_id') ?? null;
+
+  /**
+   * The order behind this return, so a paying buyer gets their booking link (#1126).
+   *
+   * `PaymentStatusDisplay` below reports the PAYMENT. It reads `payment_results` and knows
+   * nothing about the order, the SKU or what was bought — so on its own this page confirmed a
+   * charge and then offered "Back to Payment Demo" to someone who had just bought a scheduled
+   * session. The booking step lived on /checkout, which Stripe never sends anyone to.
+   *
+   * Deliberately additive: this resolves in parallel and never gates the status display. A
+   * failure here must not stop someone seeing that their payment succeeded.
+   */
+  const paymentReturn = usePaymentReturn(sessionId);
   const status = searchParams?.get('status') ?? null;
 
   const [state, setState] = useState<ResultState>({ kind: 'loading' });
@@ -360,6 +375,24 @@ function PaymentResultContent() {
           }}
         />
       </div>
+
+      {/*
+        The booking link, for a purchase that has one (#1126).
+
+        Rendered only on `paid`: a retried intent has no `orders` row by design —
+        `create-order`'s retry path skips the insert — and that must degrade to a receipt
+        without a booking link, never to an error.
+      */}
+      {paymentReturn.kind === 'paid' && (
+        <div className="mt-8 max-w-lg">
+          <BookingStep
+            orderId={paymentReturn.orderId}
+            buyerEmail={paymentReturn.buyerEmail ?? undefined}
+            productName={paymentReturn.product?.name}
+            sku={paymentReturn.product?.id}
+          />
+        </div>
+      )}
 
       <div className="mt-8 flex gap-4">
         <Link href="/payment-demo" className="sh-btn sh-btn-ghost">
