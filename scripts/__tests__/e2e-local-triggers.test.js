@@ -43,13 +43,23 @@ function triggerBlock(text) {
   return end === -1 ? rest : rest.slice(0, end);
 }
 
+/** The matrix job's own block: `e2e-local:` up to `parity:`. */
+function matrixSlice(text) {
+  const start = text.indexOf('  e2e-local:');
+  if (start === -1) return '';
+  const end = text.indexOf('  parity:', start);
+  return text.slice(start, end === -1 ? undefined : end);
+}
+
 function matrixGateErrors(text) {
   const errors = [];
-  const start = text.indexOf('  e2e-local:');
-  const end = text.indexOf('  parity:', start);
-  const matrix =
-    start === -1 ? '' : text.slice(start, end === -1 ? undefined : end);
-  if (!/^    needs:\s*changes$/m.test(matrix)) {
+  const matrix = matrixSlice(text);
+  // ACCEPTS A LIST. #1137 added a `build` job the matrix also depends on, so this is
+  // `needs: [changes, build]` now. What must survive is `changes` being among them —
+  // and that is not cosmetic: the job's `if:` reads `needs.changes.outputs.run`, which
+  // resolves to nothing at all unless `changes` is declared here.
+  const needs = matrix.match(/^    needs:\s*(.+)$/m);
+  if (!needs || !/\bchanges\b/.test(needs[1])) {
     errors.push('matrix no longer depends on changes');
   }
   if (
@@ -98,10 +108,33 @@ describe('e2e-local.yml runs on every PR without trapping docs-only ones (#575)'
       'the e2e-local matrix itself must carry the changes dependency and gate'
     );
 
-    const ungated = yaml.replace(`    if: ${GATE}\n`, '');
+    // THE MUTATION MUST LAND ON THE MATRIX, NOT THE FIRST MATCH IN THE FILE (#1137).
+    //
+    // This used to be `yaml.replace(...)`, and `String.replace` takes the FIRST occurrence.
+    // The `build` job added in #1137 sits above `e2e-local` and carries the identical gate,
+    // so the mutation would have hit that instead: the matrix would keep its gate,
+    // `matrixGateErrors` would return `[]`, and this control would assert `0 > 0` and go red
+    // over code nobody touched. Mutating the slice — and asserting the mutation applied —
+    // makes both failure modes impossible.
+    const matrix = matrixSlice(yaml);
+    const ungatedMatrix = matrix.replace(`    if: ${GATE}\n`, '');
+    assert.notStrictEqual(
+      ungatedMatrix,
+      matrix,
+      'the gate line was not found in the matrix job, so this control mutates nothing'
+    );
     assert.ok(
-      matrixGateErrors(ungated).length > 0,
+      matrixGateErrors(yaml.replace(matrix, ungatedMatrix)).length > 0,
       'CONTROL: removing the matrix job gate was accepted'
+    );
+
+    // And the complementary one: dropping `changes` from the needs list must be caught, or
+    // the `if:` above silently references a job that is not a dependency.
+    const noChanges = matrix.replace(/^    needs:.*$/m, '    needs: [build]');
+    assert.notStrictEqual(noChanges, matrix, 'the needs line was not found');
+    assert.ok(
+      matrixGateErrors(yaml.replace(matrix, noChanges)).length > 0,
+      'CONTROL: dropping `changes` from the matrix needs was accepted'
     );
   });
 
