@@ -38,6 +38,29 @@ function between(text, startNeedle, endNeedle) {
   return end === -1 ? rest : rest.slice(0, end);
 }
 
+/**
+ * Apply a mutation and PROVE it applied.
+ *
+ * `String.prototype.replace` with a needle that is not present returns the input unchanged and
+ * says nothing. Every CONTROL below then asserts against unmutated source, finds no errors, and
+ * reports the guard as broken — or, worse, the assertion is `.length > 0` on something that was
+ * never mutated and the control silently stops controlling anything.
+ *
+ * That is not hypothetical. #1135 changed the selector expression, which turned the `noPush`
+ * mutation below into a no-op; the control failed with "Chromium-only push was accepted" while
+ * the real defect was that nothing had been replaced. The same shape cost two other guards in
+ * this repo on 2026-09-09 alone.
+ */
+function mutate(text, from, to) {
+  const out = text.replace(from, to);
+  assert.notStrictEqual(
+    out,
+    text,
+    `mutation did not apply — the needle is gone, so this control tests nothing: ${String(from).slice(0, 70)}`
+  );
+  return out;
+}
+
 function normalizedLines(text) {
   return text
     .split('\n')
@@ -82,7 +105,7 @@ function selectionErrors(changes) {
   );
   const expression = env?.[1].replace(/\s+/g, ' ').trim();
   const expectedExpression =
-    "${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-e2e') }}";
+    "${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'full-e2e') }}";
   if (expression !== expectedExpression) {
     errors.push(`browser event expression changed: ${expression || 'missing'}`);
   }
@@ -158,6 +181,54 @@ function selectionErrors(changes) {
   }
   if (!/^          \} >> "\$GITHUB_OUTPUT"$/m.test(selector)) {
     errors.push('selector output group is not appended to GITHUB_OUTPUT');
+  }
+  return errors;
+}
+
+/**
+ * The three things #1135 newly made breakable.
+ *
+ * Moving cross-browser off every merge onto a nightly creates a failure mode that did not exist
+ * before: coverage can now vanish ENTIRELY and silently. Previously `event_name != 'pull_request'`
+ * meant any merge ran all three browsers, so a mistake here cost minutes. Now, delete the cron and
+ * firefox/webkit run NOWHERE — every PR is chromium-8 and every merge is chromium-8, all green,
+ * with two browsers untested indefinitely. Nothing else in the repo would notice.
+ */
+function nightlyErrors(text) {
+  const errors = [];
+  const trigger = between(text, 'on:\n', 'jobs:\n');
+
+  // 1. The nightly must exist. This is the load-bearing one.
+  if (!/^  schedule:\n    - cron: '[^']+'$/m.test(trigger)) {
+    errors.push(
+      'the nightly cron is gone — with cross-browser off merges (#1135), firefox and webkit ' +
+        'then run nowhere at all, and every check stays green while two browsers go untested'
+    );
+  }
+
+  // 2. A plain push must NOT buy the full matrix — that is the thing being removed.
+  const selector = between(
+    text,
+    '      - name: Select browser coverage',
+    '      - uses: actions/checkout@v5'
+  );
+  if (/github\.event_name\s*!=\s*'pull_request'/.test(selector)) {
+    errors.push(
+      "the selector is back to `event_name != 'pull_request'`, which gives every merge the " +
+        '24-shard matrix its own PR deliberately ran at 8 (#1135)'
+    );
+  }
+
+  // 3. A schedule event must short-circuit Decide. It has no `github.event.before`, so the
+  //    push branch would diff against HEAD^1 and skip the suite on most nights — a nightly
+  //    that silently does nothing is worse than no nightly, because the cron looks healthy.
+  const decide = between(text, '      - name: Decide', '\n  e2e-local:');
+  if (!/=\s*"schedule"\s*\]\s*;?\s*then/.test(decide.replace(/\n/g, ' '))) {
+    errors.push(
+      'Decide no longer short-circuits on `schedule`. A schedule event carries no ' +
+        '`github.event.before`, so it falls into the push branch, diffs against HEAD^1, and ' +
+        'the nightly cross-browser run skips itself while reporting success (#1135)'
+    );
   }
   return errors;
 }
@@ -319,6 +390,10 @@ describe('e2e-local browser selection (#950)', () => {
     assert.deepStrictEqual(selectionErrors(changes), []);
   });
 
+  it('keeps cross-browser running somewhere, now that merges no longer do it (#1135)', () => {
+    assert.deepStrictEqual(nightlyErrors(code), []);
+  });
+
   it('builds only the selected browser × eight slices', () => {
     assert.deepStrictEqual(matrixErrors(matrix), []);
   });
@@ -352,11 +427,22 @@ describe('e2e-local browser selection (#950)', () => {
   it('documents the 8-shard PR path for future maintainers', () => {
     const claude = fs.readFileSync(CLAUDE, 'utf8');
     assert.match(claude, /8 Chromium shards on an ordinary PR/);
-    assert.match(claude, /24 shards on push, dispatch, or a `full-e2e` PR/);
+    assert.match(
+      claude,
+      /24 shards on the nightly cron, dispatch, or a `full-e2e` PR/,
+      'CLAUDE.md still says merges run 24 shards; #1135 moved that to the nightly'
+    );
+    assert.doesNotMatch(
+      claude,
+      /24 shards on push, dispatch/,
+      'the pre-#1135 sentence survived — it tells the next maintainer to check a post-merge ' +
+        'cross-browser run that no longer happens'
+    );
   });
 
   it('CONTROL: selector checks reject both load-saving regressions', () => {
-    const collapsed = changes.replace(
+    const collapsed = mutate(
+      changes,
       '["chromium","firefox","webkit"]',
       '["chromium"]'
     );
@@ -365,16 +451,21 @@ describe('e2e-local browser selection (#950)', () => {
       'collapsed full mode was accepted'
     );
 
-    const noPush = changes.replace(
-      "github.event_name != 'pull_request' ||",
-      ''
+    // #1135 replaced the old "chromium-only push" regression: a chromium-only push is now the
+    // INTENDED behaviour. The regression that matters here is the opposite one — putting the
+    // full matrix back on every merge.
+    const pushIsFullAgain = mutate(
+      changes,
+      "github.event_name == 'schedule' ||",
+      "github.event_name != 'pull_request' ||"
     );
     assert.ok(
-      selectionErrors(noPush).length > 0,
-      'Chromium-only push was accepted'
+      selectionErrors(pushIsFullAgain).length > 0,
+      'the 24-shard-on-every-merge expression was accepted (#1135)'
     );
 
-    const inverted = changes.replace(
+    const inverted = mutate(
+      changes,
       'if [ "$E2E_FULL_BROWSERS" = "true" ]; then',
       'if [ "$E2E_FULL_BROWSERS" != "true" ]; then'
     );
@@ -383,7 +474,8 @@ describe('e2e-local browser selection (#950)', () => {
       'inverted full/ordinary branches were accepted'
     );
 
-    const missingOutput = changes.replace(
+    const missingOutput = mutate(
+      changes,
       '            echo "browsers=$browsers"\n',
       ''
     );
@@ -392,13 +484,35 @@ describe('e2e-local browser selection (#950)', () => {
       'selector with an un-emitted browser plan was accepted'
     );
 
-    const overwrittenPlan = changes.replace(
+    const overwrittenPlan = mutate(
+      changes,
       '          {\n',
       '          browsers=\'["chromium"]\'\n          expected_shards=8\n          browser_mode=chromium\n          {\n'
     );
     assert.ok(
       selectionErrors(overwrittenPlan).length > 0,
       'selector outputs overwritten after the branch were accepted'
+    );
+  });
+
+  it('CONTROL: the nightly checks reject losing cross-browser entirely (#1135)', () => {
+    // The failure mode this change introduced, driven rather than asserted. Each of these
+    // leaves every check green while firefox and webkit stop running anywhere.
+    const noCron = mutate(code, /^  schedule:\n    - cron: '[^']+'$/m, '');
+    assert.ok(
+      nightlyErrors(noCron).length > 0,
+      'deleting the nightly cron was accepted — cross-browser would run nowhere'
+    );
+
+    const scheduleNotShortCircuited = mutate(
+      code,
+      '[ "${{ github.event_name }}" = "schedule" ]; then',
+      '[ "${{ github.event_name }}" = "never-fires" ]; then'
+    );
+    assert.ok(
+      nightlyErrors(scheduleNotShortCircuited).length > 0,
+      'a schedule that falls into the push diff branch was accepted — the nightly would ' +
+        'skip itself on most nights while the cron looks healthy'
     );
   });
 

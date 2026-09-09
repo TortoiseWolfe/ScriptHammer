@@ -421,14 +421,26 @@ The E2E suite ran against a single shared Supabase project for months and accumu
 
 Most of the pain below traces to one fact — every job shared one cloud Supabase project. That is no longer where PRs run.
 
-|                 | `e2e-local.yml`                              | `e2e.yml`                                               |
-| --------------- | -------------------------------------------- | ------------------------------------------------------- |
-| backend         | a Supabase per runner, brought up in the job | the shared hosted project                               |
-| runs on         | **every PR and every push to main**          | push to main, a weekly cron, `full-e2e` label, dispatch |
-| browsers        | PR: Chromium; push/dispatch/`full-e2e`: all  | Chromium normally; cross-browser is opt-in              |
-| secrets         | **none** — uses the tracked public demo keys | 32 `secrets.*` references                               |
-| mutex           | per-PR cancel only; nothing is shared        | repo-wide, `max-parallel: 2`                            |
-| `@hosted` tests | excluded via `--grep-invert`                 | runs everything                                         |
+|                 | `e2e-local.yml`                                                                         | `e2e.yml`                                               |
+| --------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| backend         | a Supabase per runner, brought up in the job                                            | the shared hosted project                               |
+| runs on         | **every PR and every push to main**                                                     | push to main, a weekly cron, `full-e2e` label, dispatch |
+| browsers        | Chromium on PRs AND merges; all three on the 08:00 UTC nightly, dispatch, or `full-e2e` | Chromium normally; cross-browser is opt-in              |
+| secrets         | **none** — uses the tracked public demo keys                                            | 32 `secrets.*` references                               |
+| mutex           | per-PR cancel only; nothing is shared                                                   | repo-wide, `max-parallel: 2`                            |
+| `@hosted` tests | excluded via `--grep-invert`                                                            | runs everything                                         |
+
+**CROSS-BROWSER MOVED OFF MERGES ONTO A NIGHTLY (#1135, 2026-09-09).** Every merge used to run
+the full 24-shard matrix that its own PR had just run at 8 — the longest jobs in the repo, each
+building the app _and_ standing up its own Supabase stack. It now runs at **08:00 UTC daily**, on
+`workflow_dispatch`, or on a PR labelled `full-e2e`.
+
+So **"always check the post-merge run" for firefox/webkit is now "check the nightly"** — a merge
+tells you nothing about those two browsers. Label a PR `full-e2e` to get the full matrix _before_
+merging when a change warrants it. The trade is up to ~24h to notice a webkit-only regression, and
+it was taken deliberately; `scripts/__tests__/e2e-local-browser-gate.test.js` fails if the cron is
+removed, because with merges no longer doing it, deleting the nightly means firefox and webkit run
+**nowhere** while every check stays green.
 
 **A PR gets its E2E coverage from the local lane.** Consequences worth knowing before you debug anything:
 
@@ -777,7 +789,7 @@ To lift it: `gh api -X DELETE repos/TortoiseWolfe/ScriptHammer/branches/main/pro
 
 - Never create components manually - use the generator
 - All PRs must pass component structure validation
-- **E2E runs in CI on TWO lanes** — `e2e-local.yml` (a Supabase per runner, every PR, no secrets) and `e2e.yml` (the shared hosted project). The local lane runs 8 Chromium shards on an ordinary PR and 24 shards on push, dispatch, or a `full-e2e` PR. See "THERE ARE NOW TWO E2E LANES" above before debugging either
+- **E2E runs in CI on TWO lanes** — `e2e-local.yml` (a Supabase per runner, every PR, no secrets) and `e2e.yml` (the shared hosted project). The local lane runs 8 Chromium shards on an ordinary PR **and on every merge**, and 24 shards on the nightly cron, dispatch, or a `full-e2e` PR (#1135). See "THERE ARE NOW TWO E2E LANES" above before debugging either
 - Docker-first development is mandatory
 - Use `min-h-11 min-w-11` for 44px touch targets (mobile-first)
 

@@ -88,6 +88,23 @@ on:
     types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main]
+  # THE NIGHTLY IS WHERE CROSS-BROWSER LIVES NOW (#1135).
+  #
+  # It used to run on every merge, because `E2E_FULL_BROWSERS` was `event_name !=
+  # 'pull_request'`. That made a merge 26 jobs where its own PR had just run 10 — and these are
+  # the longest jobs in the repo (`timeout-minutes: 45`), each building the app AND standing up
+  # its own Supabase stack. ScriptHammer spent 458 runner-hours in nine days, 62% of the whole
+  # account, and 26-job runs queued up to 1,811s for a machine while 10-job runs waited two.
+  #
+  # 08:00 UTC deliberately: no other cron in this repo fires then, and it is ~4am ET, so the
+  # 24-shard run is not competing with the owner's working day for a shared runner pool.
+  #
+  # THE TRADE, STATED SO NOBODY REDISCOVERS IT: a webkit- or firefox-only regression is now
+  # found by the next nightly rather than by the merge that caused it. Up to ~24h, against a
+  # repo that merges several times a day. `full-e2e` on a PR still buys the full matrix on
+  # demand, before merging, for a change that warrants it.
+  schedule:
+    - cron: '0 8 * * *'
 
 # NO REPO-WIDE MUTEX HERE — but superseded PR runs are cancelled (#1119).
 #
@@ -130,7 +147,8 @@ jobs:
         id: browsers
         env:
           E2E_FULL_BROWSERS: >-
-            ${{ github.event_name != 'pull_request' ||
+            ${{ github.event_name == 'schedule' ||
+                github.event_name == 'workflow_dispatch' ||
                 contains(github.event.pull_request.labels.*.name, 'full-e2e') }}
         run: |
           if [ "$E2E_FULL_BROWSERS" = "true" ]; then
@@ -160,10 +178,17 @@ jobs:
         id: decide
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] ||
+             [ "${{ github.event_name }}" = "schedule" ]; then
             # An explicit dispatch is a deliberate request — never second-guess it.
+            #
+            # A SCHEDULE MUST TAKE THIS PATH TOO (#1135), and the reason is a real trap: the
+            # `else` branch below reads `github.event.before`, which does not exist on a
+            # schedule event. It would arrive empty, fall back to `HEAD^1`, and diff the single
+            # most recent commit — so the nightly cross-browser run would decide "nothing
+            # relevant changed" and skip the entire suite, silently, on most nights.
             echo "run=true" >> "$GITHUB_OUTPUT"
-            echo "  workflow_dispatch — running unconditionally"
+            echo "  ${{ github.event_name }} — running unconditionally"
             exit 0
           fi
           if [ "${{ github.event_name }}" = "pull_request" ]; then
