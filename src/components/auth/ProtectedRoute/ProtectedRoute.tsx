@@ -38,6 +38,18 @@ export default function ProtectedRoute({
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname() || '/';
+  /**
+   * The query string is part of where the user was (#1126).
+   *
+   * `returnUrl` was built from `pathname` alone, so a buyer bounced to sign-in from
+   * `/payment-result?session_id=cs_…` came back to a bare `/payment-result`, which classifies
+   * as `missing-id`. Their receipt — and now their booking link — became unreachable, with
+   * nothing on screen explaining why.
+   *
+   * Reachable whenever a session lapses while the buyer is on Stripe's hosted page, which is
+   * exactly the moment they are least able to guess what went wrong.
+   */
+
   const wasAuthenticated = useRef(false);
 
   useEffect(() => {
@@ -54,7 +66,12 @@ export default function ProtectedRoute({
     // to abort the pending navigation with NS_BINDING_ABORTED.
     if (wasAuthenticated.current) return;
 
-    const returnUrl = encodeURIComponent(pathname);
+    // READ window.location, NOT useSearchParams(). This component wraps whole pages from
+    // OUTSIDE their own Suspense boundary, and `useSearchParams()` forces one — it fails the
+    // static export with "should be wrapped in a suspense boundary" on every protected route.
+    // This runs inside an effect, so `window` is always defined and no boundary is needed.
+    const search = typeof window === 'undefined' ? '' : window.location.search;
+    const returnUrl = encodeURIComponent(`${pathname}${search}`);
     const timer = setTimeout(() => {
       router.push(`${redirectTo}?returnUrl=${returnUrl}`);
     }, AUTH_FLIP_DEBOUNCE_MS);
