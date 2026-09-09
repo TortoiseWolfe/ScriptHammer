@@ -206,9 +206,106 @@ jobs:
           echo "  base=$BASE head=$HEAD"
           node scripts/ci/e2e-local-changes.mjs "$BASE" "$HEAD"
 
+  # BUILD ONCE, NOT ONCE PER SHARD (#1137).
+  #
+  # WHY THIS IS SAFE, and it is measured rather than assumed. The issue's own caution is
+  # "prove the consumers want the same build":
+  #
+  #   - Every input to the build step below is a hardcoded literal or a value from the TRACKED
+  #     `.env.local-supabase`. There is no `matrix.*`, no `vars.*`, no `secrets.*` — this
+  #     workflow holds zero secrets by design (#574).
+  #   - Nothing derives from the per-shard Supabase stack. The one value that looks
+  #     runtime-derived is the Kong URL, and it is fixed on both ends: docker-compose.yml binds
+  #     `${SH_SUPABASE_API_PORT:-54321}` and no workflow ever sets that variable. The anon and
+  #     service-role keys are static committed JWTs.
+  #   - So the two values Next inlines at build time are identical on all 8 (or 24) shards, and
+  #     knowable before any container starts.
+  #
+  # AND IT NEEDS NO STACK. None of `prebuild`'s seven scripts touches Supabase, and there is no
+  # server-side `createClient` — the export is static and Supabase is client-side only. Hence no
+  # Docker, no compose, no seeding here. Those stay in the shard, which needs them at RUN time.
+  #
+  # GATED EXACTLY LIKE THE MATRIX, so a docs-only PR skips this, skips the shards behind it, and
+  # `parity` still reports success. A required check that never reports is pending forever.
+  build:
+    name: Build the app once for every shard
+    needs: changes
+    if: needs.changes.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout the code under test
+        uses: actions/checkout@v5
+        with:
+          # `ref`, NOT a bare checkout. e2e.yml's build job uses a bare one; copying that here
+          # would build the BRANCH while the shards test `inputs.ref` — a mixed tree, and that
+          # dispatch input exists precisely for the de0f7f0 parity baseline.
+          ref: ${{ inputs.ref || github.sha }}
+
+      - name: Local demo env (compose + build + tests share one set of creds)
+        run: |
+          # .env.local-supabase is TRACKED and holds the well-known PUBLIC
+          # Supabase demo keys. No repository secret is used anywhere in this
+          # workflow — which is the point: CI stops holding a production
+          # service-role key at all (see #574).
+          cp .env.local-supabase .env
+          sed -i 's|host\.docker\.internal|localhost|g' .env
+          grep -E '^(NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY|TEST_USER_)' .env.local-supabase >> "$GITHUB_ENV"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321"
+            echo "SUPABASE_ADMIN_URL=http://localhost:54321"
+          } >> "$GITHUB_ENV"
+
+      - name: Setup Node + pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.16.1
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build (root-served, pointed at the local stack)
+        run: pnpm build
+        env:
+          DISABLE_BASE_PATH: 'true'
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_e2e_dummy_not_a_real_key
+          NEXT_PUBLIC_PAYPAL_CLIENT_ID: e2e_dummy_paypal_client_id
+          # Dummy, and never reached: submitToWeb3Forms() THROWS when the key is
+          # empty (web3forms.ts:95), so without this the contact form never gets
+          # as far as fetch() and its submitting state cannot be observed (#850).
+          # form-submission.spec.ts fulfils api.web3forms.com locally in
+          # beforeEach, so no request leaves the runner either way.
+          NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY: e2e_dummy_web3forms_key
+          # NEXT_PUBLIC_CAPTCHA_SITE_KEY is deliberately ABSENT — do not copy it
+          # from e2e.yml.
+          #
+          # `captcha.config.ts:62` derives `enabled: Boolean(siteKey)`, so setting
+          # the key is what makes the CLIENT demand a token. The local GoTrue never
+          # asked for one (docker-compose.yml sets no GOTRUE captcha vars). The
+          # first run of this workflow set it anyway, copied from e2e.yml, and
+          # every auth test failed with "Please complete the verification
+          # challenge" — a challenge nothing on the server side wanted.
+          #
+          # e2e.yml sets it for an unrelated reason: #488's 320px width gate needs
+          # the widget to actually render against the cloud stack. That reason does
+          # not apply here. `signup-mailer.yml`, which drives real auth forms
+          # against this same local stack, also omits it — follow that precedent.
+
+      # `build-output`, NOT `e2e-local-*`: `parity` downloads that pattern into `shards/` and
+      # would pull 165 MB of static site into a job that only counts results.json files.
+      - name: Upload the build for the shards
+        uses: actions/upload-artifact@v6
+        with:
+          name: build-output
+          path: out/
+          retention-days: 1
+
   e2e-local:
     name: ${{ matrix.browser }}-${{ matrix.slice.project }} ${{ matrix.slice.shard }}
-    needs: changes
+    needs: [changes, build]
     if: needs.changes.outputs.run == 'true'
     runs-on: ubuntu-latest
     # 45, not 30 (#801) — and this cap BOUNDS DAMAGE, it does not guarantee completion.
@@ -423,33 +520,20 @@ jobs:
             exit 1
           fi
 
-      - name: Build (root-served, pointed at the local stack)
-        run: pnpm build
-        env:
-          DISABLE_BASE_PATH: 'true'
-          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_e2e_dummy_not_a_real_key
-          NEXT_PUBLIC_PAYPAL_CLIENT_ID: e2e_dummy_paypal_client_id
-          # Dummy, and never reached: submitToWeb3Forms() THROWS when the key is
-          # empty (web3forms.ts:95), so without this the contact form never gets
-          # as far as fetch() and its submitting state cannot be observed (#850).
-          # form-submission.spec.ts fulfils api.web3forms.com locally in
-          # beforeEach, so no request leaves the runner either way.
-          NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY: e2e_dummy_web3forms_key
-          # NEXT_PUBLIC_CAPTCHA_SITE_KEY is deliberately ABSENT — do not copy it
-          # from e2e.yml.
-          #
-          # `captcha.config.ts:62` derives `enabled: Boolean(siteKey)`, so setting
-          # the key is what makes the CLIENT demand a token. The local GoTrue never
-          # asked for one (docker-compose.yml sets no GOTRUE captcha vars). The
-          # first run of this workflow set it anyway, copied from e2e.yml, and
-          # every auth test failed with "Please complete the verification
-          # challenge" — a challenge nothing on the server side wanted.
-          #
-          # e2e.yml sets it for an unrelated reason: #488's 320px width gate needs
-          # the widget to actually render against the cloud stack. That reason does
-          # not apply here. `signup-mailer.yml`, which drives real auth forms
-          # against this same local stack, also omits it — follow that precedent.
-
+      # THE BUILD MOVED TO ITS OWN JOB (#1137).
+      #
+      # This step used to be `pnpm build`, run once per shard — 8 identical builds on a PR and
+      # 24 on the nightly, of byte-identical source. Every input to that build was a hardcoded
+      # literal or a tracked demo key, so no shard could ever produce a different artifact.
+      #
+      # `e2e.yml:260` has always done it this way. The saving is `pnpm build` × 8 or × 24; the
+      # cost is one upload and N downloads of `out/`, which e2e.yml already proves workable at
+      # 24 shards.
+      - name: Download the build every shard shares
+        uses: actions/download-artifact@v8
+        with:
+          name: build-output
+          path: out/
       # NO PLAYWRIGHT INSTALL STEP, deliberately (#829).
       #
       # This job used to spend a median 11.6 minutes per shard installing Chromium,
@@ -1034,6 +1118,11 @@ jobs:
             );
 
             const changes = jobs.find((job) => job.name === 'Does this change need E2E?');
+            // SHARDS NOW WAIT ON THE BUILD, NOT ON `changes` (#1137). Left measuring from
+            // `changes`, this figure would silently absorb the build's duration and report it
+            // as queue time — wrong, and never red, because the step is continue-on-error.
+            // Falls back to `changes` so a re-run of an older attempt still reports something.
+            const build = jobs.find((job) => job.name === 'Build the app once for every shard');
             const shards = jobs.filter(
               (job) => /^(chromium|firefox|webkit)-(msg|gen)/.test(job.name) &&
                 job.started_at && job.completed_at
@@ -1048,7 +1137,9 @@ jobs:
             }
 
             const workflowStartedAt = new Date(run.run_started_at).getTime();
-            const readyAt = new Date(changes.completed_at).getTime();
+            const readyAt = new Date(
+              build?.completed_at || changes.completed_at
+            ).getTime();
             const minutes = (milliseconds) => milliseconds / 60000;
             const queue = shards.map((job) =>
               minutes(Math.max(0, new Date(job.started_at).getTime() - readyAt))
@@ -1090,7 +1181,7 @@ jobs:
                   { data: 'median', header: true },
                   { data: 'max', header: true },
                 ],
-                ['shard queue after changes', queueMin, queueMedian, queueMax],
+                ['shard queue after build', queueMin, queueMedian, queueMax],
                 ['shard execution', runMin, runMedian, runMax],
               ])
               .write();
