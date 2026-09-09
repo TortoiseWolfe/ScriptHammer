@@ -1,0 +1,56 @@
+name: Actions Usage Report
+
+# A REPORT, NOT A GATE (#1138).
+#
+# This repo had a careful circuit breaker on Supabase quota — whose invoices read $0.00 — and no
+# instrument at all on the resource it was really spending: 27,462 Actions minutes in nine days,
+# 62% of the whole account, with 26-job runs queuing 30 minutes for a machine. Three changes
+# shipped to reduce that (#1134, #1140, #1143) and none of them could be shown to have worked.
+#
+# It is deliberately NOT a required check and deliberately cannot fail on a number. Net cost is
+# $0.00 — public repo, all `ubuntu-latest` — so a threshold that reddens a merge would be worse
+# than the problem. The scarce thing is runner concurrency and the symptom is latency; latency is
+# something you look at, not something you block a merge on.
+#
+# Weekly, because the trend is the point and a daily run would be noise that also costs minutes —
+# which would be a self-defeating way to measure minutes. 13:00 UTC Monday: no other cron in this
+# repo fires then.
+on:
+  schedule:
+    - cron: '0 13 * * 1'
+  workflow_dispatch:
+    inputs:
+      sample:
+        description: 'How many recent runs to sample (max 100 — one API page).'
+        required: false
+        default: '100'
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  # The whole job. It reads run and job timings; it writes nothing anywhere.
+  actions: read
+
+jobs:
+  report:
+    name: Actions usage
+    runs-on: ubuntu-latest
+    # Generous for ~100 sequential API calls, and a cap so a hung fetch cannot run to the
+    # 360-minute default (#1119).
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+      - name: Measure minutes and queue wait
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USAGE_SAMPLE_RUNS: ${{ inputs.sample || '100' }}
+        # No `exit 1` anywhere, on purpose. The script swallows its own errors and skips, so a
+        # rate limit or a missing scope reports nothing rather than reddening the Actions tab.
+        run: node scripts/ci/actions-usage-report.mjs
