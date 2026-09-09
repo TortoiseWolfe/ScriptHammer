@@ -167,11 +167,18 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # Node only, and no `cache: 'pnpm'` — there are no dependencies to install. The one
-      # thing node is needed for is parsing the manifest below.
+      # Node only — there are no dependencies to install; the one thing node is needed for
+      # is parsing the manifest below.
+      #
+      # DROPPING `cache: 'pnpm'` WAS NOT ENOUGH, and this job was red for four runs
+      # because of it (#1134 removed the build here, and setup-node@v5 defaults
+      # `package-manager-cache: true`). It then detects pnpm from `packageManager` and
+      # fails with `Unable to locate executable file: pnpm`. It must be turned OFF, not
+      # merely left unspecified. v4 did not behave this way.
       - uses: actions/setup-node@v5
         with:
           node-version: '20'
+          package-manager-cache: false
 
       # Test PWA features
       - name: Test Service Worker
