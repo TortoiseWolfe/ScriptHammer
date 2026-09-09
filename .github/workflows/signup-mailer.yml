@@ -183,6 +183,8 @@ jobs:
   result:
     name: Signup Mailer result
     runs-on: ubuntu-latest
+    # Cap: aggregate only; observed max 0.1 min. Uncapped, a hung job runs to the 360-minute default (#1119).
+    timeout-minutes: 5
     needs: [changes, signup-mailer]
     if: always()
     steps:

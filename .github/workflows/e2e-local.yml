@@ -89,10 +89,24 @@ on:
   push:
     branches: [main]
 
-# DELIBERATELY NO `concurrency:` BLOCK.
-# e2e.yml serializes every run repo-wide because they contend for one cloud
-# project. Nothing is shared here, so runs may go in parallel. Re-adding a mutex
-# would reintroduce the bottleneck this workflow exists to remove.
+# NO REPO-WIDE MUTEX HERE — but superseded PR runs are cancelled (#1119).
+#
+# The original rule stands: e2e.yml serializes every run repo-wide because they contend for
+# one cloud project, nothing is shared here, and re-adding a mutex would reintroduce the
+# bottleneck this workflow exists to remove. The group below is NOT that mutex. It is keyed
+# per PR, so independent PRs still run fully in parallel and nothing queues behind anything.
+#
+# What it does stop: a force-push used to leave all 10 (or 26) jobs of the previous run
+# running to completion, and branch protection then discarded their verdict anyway, because
+# a required context is evaluated against the HEAD sha. Those were the most expensive
+# no-op jobs in the repo — each shard builds the app AND brings up its own Supabase stack.
+#
+# Push events are keyed on `github.sha`, giving every commit on main its own group, so a
+# merge never cancels the previous commit's run. That preserves the post-merge cross-browser
+# run that `lesson_crossbrowser_e2e_webplatform` says to check.
+concurrency:
+  group: e2e-local-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   # Does this change need the suite at all? (#575 Phase 3)
@@ -684,6 +698,8 @@ jobs:
     needs: [changes, e2e-local]
     if: always()
     runs-on: ubuntu-latest
+    # Cap: aggregate over shard artifacts. Uncapped, a hung job runs to the 360-minute default (#1119).
+    timeout-minutes: 10
     steps:
       # MUST REPORT SUCCESS WHEN THERE WAS NOTHING TO RUN (#575 Phase 3).
       #

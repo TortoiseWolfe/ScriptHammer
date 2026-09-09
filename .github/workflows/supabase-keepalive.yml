@@ -41,6 +41,8 @@ on:
 jobs:
   keepalive:
     runs-on: ubuntu-latest
+    # Cap: observed max 0.1 min. Uncapped, a hung job runs to the 360-minute default (#1119).
+    timeout-minutes: 10
     steps:
       - name: Ping every project
         env:

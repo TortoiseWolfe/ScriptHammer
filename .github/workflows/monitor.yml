@@ -17,9 +17,33 @@ env:
   # redirect chain) — hence deriving the real origin here.
   SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || format('https://{0}.github.io/{1}', github.repository_owner, github.event.repository.name) }}
 
+# Cancel a PR run that a newer push has already superseded (#1119).
+#
+# WHY. This workflow had no `concurrency:` block at all, so a force-push left every job of
+# the previous run alive to completion. Nothing consumed the result: branch protection
+# evaluates a required context against the HEAD sha, so the superseded run's verdict is
+# discarded whether it finishes or not. ScriptHammer spent 458 runner-hours in the first
+# nine days of September — 62% of the account — and queue waits on E2E reached 30 minutes,
+# which is time every other repo on the account also waits.
+#
+# WHY PUSH IS KEYED ON THE SHA AND NOT THE BRANCH. Grouping pushes by ref would let a merge
+# cancel the run of the commit before it, and the post-merge run is the one that carries
+# cross-browser coverage — CLAUDE.md's "always check the post-merge run". Keying on
+# `github.sha` gives every commit on main its own group, so no post-merge run is ever
+# cancelled; only PR runs are, and only by a newer push to the same PR.
+#
+# THIS IS NOT THE REPO-WIDE MUTEX e2e.yml USES. That one serializes runs against one shared
+# Supabase project (`cancel-in-progress: false`) and deliberately does not cap anything. This
+# groups per PR, so independent PRs never queue behind each other.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   lighthouse:
     runs-on: ubuntu-latest
+    # Cap: observed max 10.3 min; builds then audits. Uncapped, a hung job runs to the 360-minute default (#1119).
+    timeout-minutes: 25
     permissions:
       contents: write # Allow bot to commit lighthouse scores
     steps:
@@ -117,23 +141,37 @@ jobs:
           path: lighthouse-results.md
           overwrite: true
 
+  # WHAT THIS JOB IS, NOW THAT IT IS HONEST ABOUT IT (#1119).
+  #
+  # It asserts that two TRACKED files are present and that one of them parses. That is a
+  # cheap tripwire against someone deleting `public/sw.js` or committing a malformed
+  # `public/manifest.json` — both are real, both have happened to this repo's PWA — and it
+  # is worth keeping.
+  #
+  # IT USED TO RUN `pnpm install` + `pnpm run build` FIRST, on every push to main and again
+  # daily. The build could not affect the outcome: `public/sw.js` and `public/manifest.json`
+  # are tracked (`git ls-files` lists both), so they are on disk the moment checkout
+  # finishes, and the assertions passed or failed identically with no build at all. A third
+  # step then checked that `out/` or `.next/` existed — that is, that the build this job had
+  # just run had run. Several minutes of a runner, per firing, to confirm a tautology.
+  #
+  # WHAT THIS DELIBERATELY DOES NOT COVER, so nobody reads it as more than it is: whether
+  # the BUILT app is a working PWA. Nothing here installs a service worker, fetches the
+  # manifest over HTTP, or checks that the paths inside it resolve on the deployed site.
+  # That belongs to `smoke.yml`, which runs against the live deploy and can actually see it,
+  # and to `scripts/__tests__/generated-manifest.test.js`, which fails when a build rewrites
+  # the tracked manifest with a diverging base path (#392, #1114).
   pwa-tests:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 10.16.1
-
+      # Node only, and no `cache: 'pnpm'` — there are no dependencies to install. The one
+      # thing node is needed for is parsing the manifest below.
       - uses: actions/setup-node@v5
         with:
           node-version: '20'
-          cache: 'pnpm'
-
-      - run: pnpm install
-
-      - run: pnpm run build
 
       # Test PWA features
       - name: Test Service Worker
@@ -159,18 +197,10 @@ jobs:
             exit 1
           fi
 
-      - name: Check Build Output
-        run: |
-          # Verify build output exists
-          if [ -d "out" ] || [ -d ".next" ]; then
-            echo "✅ Build output exists"
-          else
-            echo "❌ Build output missing"
-            exit 1
-          fi
-
   deployment-check:
     runs-on: ubuntu-latest
+    # Cap: observed max 0.1 min. Uncapped, a hung job runs to the 360-minute default (#1119).
+    timeout-minutes: 10
     steps:
       - name: Check Main Site
         run: |
@@ -202,6 +232,8 @@ jobs:
   update-status:
     needs: [lighthouse, pwa-tests, deployment-check]
     runs-on: ubuntu-latest
+    # Cap: observed max 0.2 min. Uncapped, a hung job runs to the 360-minute default (#1119).
+    timeout-minutes: 10
     if: always()
     steps:
       - uses: actions/checkout@v5
