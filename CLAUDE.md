@@ -529,6 +529,17 @@ written, and does nothing. Measured on this zone against the origin's 600: `0`, 
 **Response Header Transform Rule** (`http_response_headers_transform`, action `rewrite`),
 which needs `Zone / Transform Rules / Edit` on the token.
 
+**MEASURING ACTIONS MINUTES: two traps, both of which produce a plausible wrong number (#1138).**
+`Actions Usage Report` (`.github/workflows/actions-usage.yml`, weekly) runs
+`scripts/ci/actions-usage-report.mjs`. It is a REPORT and deliberately cannot fail — net cost is
+$0.00, so a threshold reddening a check would be worse than the problem. The traps:
+**(1)** `/actions/runs/{id}/timing` and `/actions/workflows/{id}/timing` report BILLABLE time, and
+a public repo is not billed — they answer `{"billable":{}}` and `duration_ms: 0` for every job,
+so a report built on them is a wall of zeros that reads as success. **(2)** GitHub bills each JOB
+rounded UP to the whole minute; summing raw seconds under-reports by ~13%. Validated against the
+billing API for 2026-09-08 (157 runs, 677 jobs): raw 2,636 min = 87.0%, ceil-per-job 2,974 min =
+98.2%, billed 3,028 min. Dollars need a user-scoped token that CI does not have.
+
 **The CSP's TEXT now lives in this repo (#1110).** `scripts/ci/cloudflare-intent.mjs` declares
 `CSP_DIRECTIVES` and `SCHEDULER_ORIGINS`; `cloudflare-apply.mjs --only=csp` prints the token
 diff and `--apply` writes it; `check-csp-header.mjs` verifies live production **per directive**
