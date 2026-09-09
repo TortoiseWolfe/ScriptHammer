@@ -49,6 +49,8 @@ import {
   CSP_MODE,
   CSP_HEADER_NAMES,
   intendedCspHeader,
+  cspPolicy,
+  calendarProvider,
 } from './cloudflare-intent.mjs';
 
 const API = 'https://api.cloudflare.com/client/v4';
@@ -163,7 +165,7 @@ export function planDmarc(records, intended) {
 }
 
 /** What, if anything, the CSP transform rule needs. */
-export function planCsp(rules, mode = CSP_MODE) {
+export function planCsp(rules, mode = CSP_MODE, policy = cspPolicy()) {
   const want = intendedCspHeader(mode);
   const matches = (rules ?? []).filter((r) => {
     const headers = r.action_parameters?.headers ?? {};
@@ -191,26 +193,49 @@ export function planCsp(rules, mode = CSP_MODE) {
   const currentName = Object.keys(headers).find((h) =>
     CSP_HEADER_NAMES.some((n) => n.toLowerCase() === h.toLowerCase())
   );
-  if (currentName === want) {
+  const currentValue = headers[currentName]?.value;
+
+  // THE POLICY VALUE IS NOW PART OF THE PLAN (#1110).
+  //
+  // This function used to compare the header NAME only and copy the value across untouched —
+  // it printed "policy value unchanged" and meant it. So the one copy of the live policy was
+  // the dashboard, and adding an origin was a human editing a text box: unreviewable,
+  // unversioned, and invisible to `git log`. `cloudflare-intent.mjs` always promised "the same
+  // value can drive both the check and the change"; it only held the mode.
+  const wantValue = policy ?? currentValue;
+
+  if (currentName === want && currentValue === wantValue) {
     return {
       kind: 'csp',
       action: 'none',
       current: currentName,
-      note: `already ${mode}`,
+      note: `already ${mode}, policy matches intent`,
     };
   }
-  // Rename the header key, keeping the policy value and every other header on the rule.
+
+  // Rename the key and/or set the value, keeping every other header on the rule.
   const next = {};
   for (const [k, v] of Object.entries(headers))
-    next[k === currentName ? want : k] = v;
+    next[k === currentName ? want : k] = k === currentName ? { ...v, value: wantValue } : v;
   return {
     kind: 'csp',
     action: 'update',
     id: rule.id,
     from: currentName,
     to: want,
-    value: headers[currentName]?.value,
+    value: currentValue,
+    nextValue: wantValue,
+    valueChanged: currentValue !== wantValue,
     headers: next,
+    // The rule's OWN Cloudflare fields, carried through because the PATCH is rejected
+    // without them — see the call site. Named `rule` so `action` here cannot be confused
+    // with `action` above, which is this planner's verdict.
+    rule: {
+      action: rule.action,
+      expression: rule.expression,
+      description: rule.description,
+      enabled: rule.enabled,
+    },
   };
 }
 
@@ -224,7 +249,21 @@ function describe(plan) {
   if (plan.kind === 'dmarc') {
     return `  DMARC: ${plan.name}\n    from: ${plan.from}\n    to:   ${plan.to}`;
   }
-  return `  CSP: rule ${plan.id}\n    from: ${plan.from}\n    to:   ${plan.to}\n    (policy value unchanged, ${String(plan.value ?? '').length} chars)`;
+  const head = `  CSP: rule ${plan.id}\n    from: ${plan.from}\n    to:   ${plan.to}`;
+  if (!plan.valueChanged)
+    return `${head}\n    (policy value unchanged, ${String(plan.value ?? '').length} chars)`;
+  // Print the DIFFERENCE, not the two 950-character strings. An operator approving a policy
+  // change has to be able to see what it is; two walls of text are not a diff.
+  const toks = (v) => new Set(String(v ?? '').split(/[;\s]+/).filter(Boolean));
+  const before = toks(plan.value);
+  const after = toks(plan.nextValue);
+  const added = [...after].filter((t) => !before.has(t));
+  const removed = [...before].filter((t) => !after.has(t));
+  return (
+    `${head}\n    policy: ${String(plan.value ?? '').length} -> ${String(plan.nextValue ?? '').length} chars` +
+    `\n      + ${added.join(' ') || '(nothing)'}` +
+    `\n      - ${removed.join(' ') || '(nothing)'}`
+  );
 }
 
 async function main(argv) {
@@ -233,6 +272,32 @@ async function main(argv) {
   const apply = argv.includes('--apply');
   const only =
     (argv.find((a) => a.startsWith('--only=')) ?? '').split('=')[1] || null;
+  // WHICH SCHEDULER'S ORIGINS GO IN THE POLICY IS DECIDED BY AN ENV VAR, SO IT MUST BE
+  // EXPLICIT BEFORE WE WRITE (#1110).
+  //
+  // `calendarProvider()` defaults to 'calendly' to match `calendar.config.ts`. That default
+  // is right for reading and WRONG for writing: run `--apply` on a machine that has not set
+  // the variable and this would push Calendly's origins into the policy of a site that
+  // embeds Cal.com — silently, because both are valid-looking policies. That is the #1054
+  // family, where a template default quietly points tooling at the wrong thing.
+  //
+  // Reading stays unguarded: a dry run with the default still shows a useful diff. This
+  // sits before the token lookup so it refuses without making a single network call.
+  if (
+    apply &&
+    (!only || only === 'csp') &&
+    !process.env.NEXT_PUBLIC_CALENDAR_PROVIDER
+  ) {
+    console.error(
+      '[cf-apply] refusing to write the CSP: NEXT_PUBLIC_CALENDAR_PROVIDER is not set.\n' +
+        '  The policy embeds the scheduler origins for ONE provider, and the default is\n' +
+        "  'calendly' — applying that to a Cal.com deployment would block its own embed.\n" +
+        '  Set it to the value this site deploys with (gh variable list) and re-run.'
+    );
+    process.exitCode = 1;
+    return;
+  }
+
   const token = process.env.CLOUDFLARE_API_TOKEN;
 
   if (!token) {
@@ -262,6 +327,10 @@ async function main(argv) {
   );
   console.log(
     `[cf-apply] mode: ${apply ? 'APPLY' : 'dry run — pass --apply to write'}`
+  );
+  console.log(
+    `[cf-apply] scheduler: ${calendarProvider()}` +
+      (process.env.NEXT_PUBLIC_CALENDAR_PROVIDER ? '' : ' (DEFAULT — not set in this env)')
   );
 
   const intended = intendedFor(domain, process.env);
@@ -324,7 +393,18 @@ async function main(argv) {
         `/zones/${zone.id}/rulesets/${p.rulesetId}/rules/${p.id}`,
         {
           method: 'PATCH',
-          body: JSON.stringify({ action_parameters: { headers: p.headers } }),
+          // A RULE PATCH REPLACES THE RULE, so it must carry the rule's own fields back.
+          // Sending only `action_parameters` is rejected twice over — first
+          // `400 action is required for action parameters`, then
+          // `400 20125 '' is not a valid value for expression because the expression cannot
+          // be blank`. So this write has NEVER once succeeded, which also means #393's
+          // documented flip procedure ("change CSP_MODE, run --apply") would have failed the
+          // first time anyone tried it. Only the DMARC path, a different endpoint, was ever
+          // exercised. Found by running it (#1110).
+          body: JSON.stringify({
+            ...p.rule,
+            action_parameters: { headers: p.headers },
+          }),
         }
       );
       console.log(`[cf-apply] wrote CSP rule ${p.id}`);
@@ -446,19 +526,41 @@ function selftest() {
       },
     },
   ];
+  // The fixture's value is `default-src 'self'`, so these pass the INTENDED policy explicitly.
+  // Passing none would compare that stub against the real 950-character policy and every case
+  // below would read "update" for a reason unrelated to what it is testing.
+  const FIXTURE_POLICY = "default-src 'self'";
   check(
     'finds the CSP rule among unrelated header rules',
-    planCsp([...other, ...ro], 'enforcing').id,
+    planCsp([...other, ...ro], 'enforcing', FIXTURE_POLICY).id,
     'r1'
   );
   check(
-    'plans no CSP change when the mode matches',
-    planCsp(ro, 'report-only').action,
+    'plans no CSP change when the mode AND the policy match',
+    planCsp(ro, 'report-only', FIXTURE_POLICY).action,
     'none'
   );
   check(
+    'plans an update when only the POLICY differs (#1110)',
+    planCsp(ro, 'report-only', "default-src 'self'; frame-src https://app.cal.com")
+      .action,
+    'update'
+  );
+  check(
+    'and reports that the value is what changed, so the dry run can show a diff',
+    planCsp(ro, 'report-only', "default-src 'self'; frame-src https://app.cal.com")
+      .valueChanged,
+    true
+  );
+  check(
+    'writes the intended policy, not the one already there (#1110)',
+    planCsp(ro, 'report-only', 'default-src NEW')
+      .headers['Content-Security-Policy-Report-Only'].value,
+    'default-src NEW'
+  );
+  check(
     'plans the flip to enforcing',
-    planCsp(ro, 'enforcing').to,
+    planCsp(ro, 'enforcing', FIXTURE_POLICY).to,
     'Content-Security-Policy'
   );
   check(
@@ -474,13 +576,15 @@ function selftest() {
           },
         },
       ],
-      'report-only'
+      'report-only',
+      FIXTURE_POLICY
     ).to,
     'Content-Security-Policy-Report-Only'
   );
   check(
-    'keeps the policy value across the rename',
-    planCsp(ro, 'enforcing').headers['Content-Security-Policy'].value,
+    'keeps the policy value across a rename when intent matches it',
+    planCsp(ro, 'enforcing', FIXTURE_POLICY).headers['Content-Security-Policy']
+      .value,
     "default-src 'self'"
   );
   check(

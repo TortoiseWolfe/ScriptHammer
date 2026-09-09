@@ -41,7 +41,11 @@
  *     is collecting; a header can be perfectly delivered and still wrong. This is the
  *     evidence the flip waits on, and no check here can supply it.
  */
-import { CSP_MODE, intendedCspHeader } from './cloudflare-intent.mjs';
+import { CSP_MODE, intendedCspHeader,
+  SCHEDULER_ORIGINS,
+  SCHEDULER_DIRECTIVES,
+  calendarProvider,
+} from './cloudflare-intent.mjs';
 
 /**
  * WHOSE SITE. This used to default to `https://scripthammer.com`, so a fork that had not set
@@ -149,6 +153,68 @@ if (missing.length) {
       `toward \`default-src\` alone passes a presence check while permitting what the full ` +
       `policy forbids.`
   );
+}
+
+/*
+ * THE SCHEDULER MUST BE PERMITTED IN EVERY DIRECTIVE IT IS READ FROM (#1110).
+ *
+ * The check above is a substring match, so `policy.includes('frame-src')` is true whether the
+ * origin sits in `frame-src`, in `script-src`, or nowhere near either. That is not a nitpick:
+ * #1110 was filed as a `frame-src` problem and production was violating BOTH directives, so a
+ * frame-src-shaped assertion would have been satisfied by a fix that still blanked the booker.
+ *
+ * The origins come from `cloudflare-intent.mjs`, the same module `cloudflare-apply.mjs` writes
+ * from — one source, so the checker and the change cannot disagree. A second hand-maintained
+ * list here is the drift this repo keeps paying for.
+ *
+ * Report-only means a violation costs nothing today; it costs an outage the moment #393 flips.
+ * So this fails on the missing origin NOW, while the failure is free.
+ */
+const parsed = new Map(
+  policy
+    .split(';')
+    .map((d) => d.trim())
+    .filter(Boolean)
+    .map((d) => {
+      const [name, ...sources] = d.split(/\s+/);
+      return [name.toLowerCase(), sources];
+    })
+);
+
+const provider = calendarProvider();
+const origins = SCHEDULER_ORIGINS[provider] ?? [];
+if (!origins.length) {
+  console.log(`scheduler       : ${provider} (no origins declared — not checked)`);
+} else {
+  const gaps = [];
+  for (const directive of SCHEDULER_DIRECTIVES) {
+    const sources = parsed.get(directive) ?? [];
+    for (const origin of origins) {
+      if (!sources.includes(origin)) gaps.push(`${directive} is missing ${origin}`);
+    }
+  }
+  if (gaps.length && !REQUIRE_CSP) {
+    // Same gating as the presence check above, and for the same reason: a fork that has not
+    // opted into a managed CSP must not be failed for a policy it did not author. It still
+    // gets told, because the consequence — booking blocked the moment they enforce — is
+    // exactly what they would otherwise discover in production.
+    console.log(
+      `scheduler       : ${provider} NOT permitted (${gaps.join('; ')})\n` +
+        `[csp] not failing: REQUIRE_CSP is not set for this deployment.`
+    );
+  } else if (gaps.length) {
+    fail(
+      `the CSP does not permit the ${provider} scheduler: ${gaps.join('; ')}. ` +
+        `Enforcing this policy would break booking — the embed loads a SCRIPT and opens an ` +
+        `IFRAME, so it must appear in both directives (#1110). Run ` +
+        `\`NEXT_PUBLIC_CALENDAR_PROVIDER=${provider} node scripts/ci/cloudflare-apply.mjs --only=csp\` ` +
+        `to see the diff, then re-run with --apply.`
+    );
+  } else {
+    console.log(
+      `scheduler       : ${provider} permitted in ${SCHEDULER_DIRECTIVES.join(' + ')}`
+    );
+  }
 }
 
 console.log(`directives      : ${policy.split(';').length}`);

@@ -78,12 +78,19 @@ describe('the Cloudflare writer is fork-safe (#393, #822)', () => {
         },
       },
     ];
+    // The fixture's policy value is the stub 'x'. Since #1110 `planCsp` also diffs the VALUE,
+    // so it is passed explicitly here — otherwise every case below reports "update" because
+    // 'x' differs from the real 990-character policy, which is not what this test is about.
+    const FIXTURE_POLICY = 'x';
     assert.equal(
-      planCsp(enforcing, 'report-only').id,
+      planCsp(enforcing, 'report-only', FIXTURE_POLICY).id,
       'r1',
       'must still find the rule after a flip'
     );
-    assert.equal(planCsp(enforcing, 'enforcing').action, 'none');
+    assert.equal(
+      planCsp(enforcing, 'enforcing', FIXTURE_POLICY).action,
+      'none'
+    );
   });
 
   it('preserves DMARC tags it was not asked to change', async () => {

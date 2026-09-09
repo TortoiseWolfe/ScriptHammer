@@ -529,6 +529,15 @@ written, and does nothing. Measured on this zone against the origin's 600: `0`, 
 **Response Header Transform Rule** (`http_response_headers_transform`, action `rewrite`),
 which needs `Zone / Transform Rules / Edit` on the token.
 
+**The CSP's TEXT now lives in this repo (#1110).** `scripts/ci/cloudflare-intent.mjs` declares
+`CSP_DIRECTIVES` and `SCHEDULER_ORIGINS`; `cloudflare-apply.mjs --only=csp` prints the token
+diff and `--apply` writes it; `check-csp-header.mjs` verifies live production **per directive**
+and fails if the configured scheduler is missing from `script-src` or `frame-src`. Changing the
+policy is a one-line diff, not a dashboard edit. Two traps found doing this: a rule PATCH
+**replaces** the rule, so it must replay `action` and `expression` or Cloudflare rejects it —
+that write had never once succeeded — and `--apply` refuses without an explicit
+`NEXT_PUBLIC_CALENDAR_PROVIDER`, because the default would push the wrong scheduler's origins.
+
 **Cloudflare ruleset edits take ~45 seconds to propagate.** A probe fired straight after
 a `PUT` reads the _previous_ rule and produces confident, wrong conclusions — three of
 them in one session. Wait, then measure, and keep a control you know works.

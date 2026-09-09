@@ -71,23 +71,34 @@ When using ScriptHammer in production, we recommend:
 
 ### 5. Content Security Policy (CSP)
 
-The application implements a strict CSP in `src/app/layout.tsx` (via meta tag for static export compatibility):
+**The CSP is a Cloudflare Response Header Transform Rule. It is not in this repository's built
+output, and it is not a `<meta>` tag.**
 
-**Current CSP Directives:**
+This section used to say it lived in `src/app/layout.tsx` "via meta tag for static export
+compatibility", and then listed eleven directives. Both halves were wrong, and each in a way
+worth naming:
 
-- `default-src 'self'` - Only allow resources from same origin
-- `script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://*.google-analytics.com` - Scripts from self, inline (for theme init), and Google Analytics
-- `style-src 'self' 'unsafe-inline' https://unpkg.com` - Styles from self, inline, and unpkg (Leaflet)
-- `img-src 'self' data: https: blob:` - Images from self, data URIs, HTTPS, and blob URLs
-- `font-src 'self' data:` - Fonts from self and data URIs
-- `connect-src 'self' https://www.googleapis.com https://*.google-analytics.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org` - API connections
-- `frame-src 'self' https://www.google.com` - Frames from self and Google (reCAPTCHA)
-- `object-src 'none'` - No plugins (Flash, Java, etc.)
-- `base-uri 'self'` - Prevent base tag hijacking
-- `form-action 'self' https://api.web3forms.com` - Form submissions to self and Web3Forms
-- `upgrade-insecure-requests` - Upgrade HTTP to HTTPS
+- A `<meta name="Content-Security-Policy">` is **inert** — browsers honour only
+  `<meta http-equiv>` or the real header. The policy was maintained for months and enforced
+  never (#393). `scripts/__tests__/csp-is-not-an-inert-meta.test.js` now fails if it comes back.
+- The directive list here drifted from the live policy and could not do otherwise, because it
+  was a hand-copied duplicate. It omitted Stripe, Supabase, Sentry and Cloudflare, and
+  advertised `upgrade-insecure-requests`, which production does not send.
 
-**Security Note:** The `'unsafe-eval'` directive has been intentionally removed to prevent eval-based XSS attacks. This is a critical security improvement.
+**Where the policy actually lives, and how to change it:**
+
+|          |                                                                                        |
+| -------- | -------------------------------------------------------------------------------------- |
+| declared | `scripts/ci/cloudflare-intent.mjs` — `CSP_DIRECTIVES`, `SCHEDULER_ORIGINS`, `CSP_MODE` |
+| applied  | `node scripts/ci/cloudflare-apply.mjs --only=csp` (dry run) then `--apply`             |
+| verified | `scripts/ci/check-csp-header.mjs`, run against LIVE production by `smoke.yml`          |
+
+Changing the policy is a one-line diff in `CSP_DIRECTIVES` plus one apply — reviewable in a
+commit, which is the whole point of the intent module. **Do not restate the directives here**;
+that duplication is what rotted this section.
+
+**Current mode: `report-only`.** Every origin the site needs is not yet proven present, and an
+untested enforcing policy breaks sign-up and checkout silently. Flipping it is tracked in #393.
 
 ### 6. HTTPS & Security Headers
 
