@@ -1,7 +1,34 @@
 import Cal, { getCalApi } from '@calcom/embed-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { createLogger } from '@/lib/logger';
 import { useEmbedThemeColor } from '@/hooks/useEmbedThemeColor';
+
+/**
+ * A NON-EMPTY namespace, and it is load-bearing (#1111).
+ *
+ * `getCalApi()` with no argument defaults `namespace` to `""`, and the two halves of the embed
+ * disagree about what `""` means:
+ *
+ *   - `<Cal>` tests it as FALSY, so it takes the non-namespaced branch and mounts the iframe on
+ *     the root instance (`Cal.es.mjs:53-68`).
+ *   - the loader stub tests `typeof c == "string"`, which is TRUE for `""`, so it takes the
+ *     namespace branch, creates `Cal.ns[""]`, and the boot loop then constructs a SECOND
+ *     instance for that key. The constructor does `actionsManagers[ns] = this.actionManager`,
+ *     so the second one overwrites the first.
+ *
+ * Inbound iframe messages then dispatch on the instance that has no iframe, and its
+ * `__iframeReady` handler calls `doInIframe`, which throws:
+ *
+ *     Uncaught Error: iframe doesn't exist. `createIframe` must be called before `doInIframe`
+ *
+ * A 50ms `setInterval` pushing `("ui", {colorScheme})` at every initialised namespace re-fires
+ * it continuously, so it is one error per load plus a stream after it.
+ *
+ * Any non-empty string fixes it, because both halves then agree. It must be passed to
+ * `getCalApi`, to `<Cal>`, AND to the popup button's `data-cal-namespace`, or they diverge
+ * again — the click handler reads that attribute to pick an instance.
+ */
+const NAMESPACE = 'scripthammer';
 
 interface CalComProviderProps {
   calLink: string;
@@ -24,9 +51,21 @@ export function CalComProvider({
   config,
   styles,
 }: CalComProviderProps) {
+  // Theme-aware brand color (issue #39). brandColor is the active DaisyUI theme's
+  // --color-primary, applied to the embed when the iframe reports ready; the binary
+  // light/dark `theme` prop is unchanged. (The Cal.com iframe initializes once, so an
+  // already-rendered embed keeps its color until it re-initializes.)
+  const { hexWithHash: brandColor, isDark } = useEmbedThemeColor('p');
+
+  // A ref, not a dependency. The effect below subscribes event handlers exactly once; adding
+  // `brandColor` to its dep array would re-run it on every theme change and stack duplicate
+  // subscriptions. The ref lets the ready-callback read the current colour without that.
+  const brandColorRef = useRef(brandColor);
+  brandColorRef.current = brandColor;
+
   useEffect(() => {
     (async function () {
-      const cal = await getCalApi();
+      const cal = await getCalApi({ namespace: NAMESPACE });
 
       // Listen for Cal.com events
       cal('on', {
@@ -44,22 +83,39 @@ export function CalComProvider({
         action: 'linkReady',
         callback: () => {
           logger.info('Calendar viewed', { provider: 'Cal.com' });
+
+          // THE BRAND COLOUR GOES THROUGH `ui`, NOT THROUGH `config` (#1111).
+          //
+          // `config` becomes the iframe's QUERY STRING: embed-core's
+          // `buildFilteredQueryParams` does `URLSearchParams.set(key, value)` on each entry,
+          // so any nested object stringifies. This component used to pass
+          // `branding: { brandColor }` inside `config`, which produced a live URL reading
+          // `…&branding=%5Bobject+Object%5D&…` — the colour has never once reached the embed,
+          // and the unit test was green because it asserted the object we computed rather
+          // than the URL that was built from it.
+          //
+          // `ui` is the sanctioned home. The hosted embed validates it as
+          // `{ theme?: string, styles?: Object }` and delivers it by `postMessage`
+          // (`doInIframe`) rather than in a URL, so a nested object is correct HERE and only
+          // here.
+          //
+          // AND IT MUST BE CALLED FROM `linkReady`: `ui` routes through `doInIframe`, which
+          // throws if the iframe does not exist yet. That is the same throw the namespace fix
+          // above removes — calling this at mount would reintroduce it by a different route.
+          cal('ui', {
+            styles: { branding: { brandColor: brandColorRef.current } },
+          });
         },
       });
     })();
   }, []);
-
-  // Theme-aware brand color (issue #39). brandColor is the active DaisyUI
-  // theme's --color-primary, applied to the embed on mount; the binary
-  // light/dark `theme` prop is unchanged. (The Cal.com iframe initializes once,
-  // so an already-rendered embed keeps its color until it re-initializes.)
-  const { hexWithHash: brandColor, isDark } = useEmbedThemeColor('p');
 
   if (mode === 'popup') {
     return (
       <button
         className="btn btn-primary"
         data-cal-link={calLink}
+        data-cal-namespace={NAMESPACE}
         data-cal-config={JSON.stringify({
           ...config,
           theme: isDark ? 'dark' : 'light',
@@ -72,6 +128,7 @@ export function CalComProvider({
 
   return (
     <Cal
+      namespace={NAMESPACE}
       calLink={calLink}
       style={{
         width: '100%',
@@ -83,9 +140,6 @@ export function CalComProvider({
       config={{
         ...config,
         theme: isDark ? 'dark' : 'light',
-        branding: {
-          brandColor,
-        },
       }}
     />
   );
