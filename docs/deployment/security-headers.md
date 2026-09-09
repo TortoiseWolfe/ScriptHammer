@@ -1,5 +1,20 @@
 # Security Headers Configuration
 
+> **THIS FILE IS GENERIC GUIDANCE FOR FORKS ON OTHER HOSTS. IT IS NOT WHAT scripthammer.com
+> SERVES, AND EDITING IT CHANGES NOTHING IN PRODUCTION.**
+>
+> It reads like the answer and is not — the sample policy below already lists
+> `https://app.cal.com`, which production did **not** permit until #1110 applied it. Nothing in
+> this repository reads this file; no script consumes it and no check asserts against it.
+>
+> This site's real policy is a **Cloudflare Response Header Transform Rule**, declared in
+> `scripts/ci/cloudflare-intent.mjs`, written by `scripts/ci/cloudflare-apply.mjs`, and verified
+> against live production by `scripts/ci/check-csp-header.mjs`. Change it there.
+>
+> Note also that the sample below includes **`'unsafe-eval'`**, which this project deliberately
+> does not use — `.github/SECURITY.md` calls its removal a critical improvement. Do not copy the
+> sample without reading it.
+
 Since Next.js static export (`output: 'export'`) doesn't support the `headers()` function in `next.config.ts`, security headers must be configured at the hosting/server level.
 
 ## Why Security Headers Matter

@@ -57,3 +57,122 @@ export function intendedCspHeader(mode = CSP_MODE) {
     );
   return name;
 }
+
+/* ------------------------------------------------------------------ the policy itself ---- */
+
+/**
+ * THE POLICY, AS DIRECTIVES RATHER THAN A STRING (#1110).
+ *
+ * Until now the only copy of the live policy was the Cloudflare rule value. `planCsp` could
+ * rename the header key and nothing more, so adding an origin meant a human editing a
+ * dashboard — unreviewable, unversioned, and invisible to `git log`. That is the gap this
+ * module's header promises to close: "the same value can drive both the check and the change".
+ *
+ * Captured VERBATIM from production on 2026-09-09 before anything was added, and
+ * `scripts/__tests__/csp-intent-round-trips.test.js` pins that `cspPolicy(null)` still
+ * serialises to exactly that 951-character string. So this restructuring provably changed
+ * nothing; the scheduler origins below are the only intended difference.
+ *
+ * Order is load-bearing for that byte-comparison — object key order is insertion order.
+ */
+export const CSP_DIRECTIVES = {
+  'default-src': ["'self'"],
+  'script-src': [
+    "'self'",
+    "'unsafe-inline'",
+    'https://www.googletagmanager.com',
+    'https://*.google-analytics.com',
+    'https://challenges.cloudflare.com',
+    'https://static.cloudflareinsights.com',
+    'https://js.stripe.com',
+  ],
+  'style-src': [
+    "'self'",
+    "'unsafe-inline'",
+    'https://unpkg.com',
+    'https://fonts.googleapis.com',
+  ],
+  'img-src': ["'self'", 'data:', 'https:', 'blob:'],
+  'font-src': ["'self'", 'data:', 'https://fonts.gstatic.com'],
+  'connect-src': [
+    "'self'",
+    'https://www.googleapis.com',
+    'https://*.google-analytics.com',
+    'https://tile.openstreetmap.org',
+    'https://*.tile.openstreetmap.org',
+    'https://*.supabase.co',
+    'wss://*.supabase.co',
+    'https://*.basemaps.cartocdn.com',
+    'https://api.web3forms.com',
+    'https://*.ingest.sentry.io',
+    'https://*.ingest.us.sentry.io',
+    'https://challenges.cloudflare.com',
+    'https://static.cloudflareinsights.com',
+  ],
+  'frame-src': [
+    "'self'",
+    'https://www.google.com',
+    'https://challenges.cloudflare.com',
+    'https://js.stripe.com',
+  ],
+  'object-src': ["'none'"],
+  'base-uri': ["'self'"],
+  'form-action': ["'self'", 'https://api.web3forms.com'],
+  'frame-ancestors': ["'none'"],
+};
+
+/**
+ * Where each scheduler is actually served from — and it is NOT the configured booking URL.
+ *
+ * `NEXT_PUBLIC_CALENDAR_URL` is `https://cal.com/<user>/<event>`, so deriving the origin from
+ * it yields `https://cal.com` — which is WRONG and would leave the policy still blocking the
+ * embed. `@calcom/embed-react` hardcodes `https://app.cal.com/embed/embed.js` (`Cal.es.mjs:3`)
+ * and the booker iframe is served from that same host, so `app.cal.com` is the origin whatever
+ * the configured link says. Measured on production 2026-09-09: the browser reported violations
+ * for `https://app.cal.com/embed/embed.js` (script-src) and `Framing 'https://app.cal.com/'`
+ * (frame-src), and for nothing else.
+ *
+ * TWO DIRECTIVES, NOT ONE. #1110 was filed as a `frame-src` problem. Adding only that would
+ * permit the iframe and still block the script that creates it — the same shape as
+ * `js.stripe.com`, which loads a script AND an iframe on `/checkout/` and appeared in neither
+ * directive before #393. `connect-src` deliberately gets nothing: the embed's tRPC traffic is
+ * issued by the iframe document under Cal.com's own policy, and no `connect-src` violation is
+ * reported.
+ */
+export const SCHEDULER_ORIGINS = {
+  calcom: ['https://app.cal.com'],
+  calendly: ['https://calendly.com', 'https://assets.calendly.com'],
+};
+
+/** The directives the scheduler needs to be listed in. */
+export const SCHEDULER_DIRECTIVES = ['script-src', 'frame-src'];
+
+/**
+ * The provider this deployment actually uses.
+ *
+ * Defaults to `calendly` to match `src/config/calendar.config.ts:36-38`, so a fork that sets
+ * nothing gets the same answer from both. Only the CONFIGURED provider's origins are added —
+ * permitting both would widen a live policy for a scheduler the site does not embed.
+ */
+export function calendarProvider(env = process.env) {
+  return env.NEXT_PUBLIC_CALENDAR_PROVIDER || 'calendly';
+}
+
+/** The directives, with the configured scheduler's origins merged in. `null` = base only. */
+export function cspDirectives(provider = calendarProvider()) {
+  const origins = provider === null ? [] : (SCHEDULER_ORIGINS[provider] ?? []);
+  const out = {};
+  for (const [name, sources] of Object.entries(CSP_DIRECTIVES)) {
+    out[name] = SCHEDULER_DIRECTIVES.includes(name)
+      ? [...sources, ...origins.filter((o) => !sources.includes(o))]
+      : [...sources];
+  }
+  return out;
+}
+
+/** The policy as a header value. */
+export function cspPolicy(provider = calendarProvider()) {
+  return Object.entries(cspDirectives(provider))
+    .map(([name, sources]) => `${name} ${sources.join(' ')}`)
+    .join('; ');
+}

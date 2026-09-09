@@ -119,14 +119,22 @@ describe('the PageSpeed key is load-bearing, and does not block the deploy (#987
     );
   });
 
-  it('the documented CSP allows the endpoint the browser now calls', () => {
+  it('the REAL CSP allows the endpoint the browser now calls', async () => {
     // The call is client-side, so connect-src decides whether it happens at all.
-    const security = read('.github/SECURITY.md');
-    const connect = security.split('\n').find((l) => l.includes('connect-src'));
-    assert.ok(connect, 'SECURITY.md documents no connect-src');
+    //
+    // THIS USED TO READ `.github/SECURITY.md`, which duplicated the directive list in prose.
+    // That duplicate had already drifted — it listed neither Stripe nor Supabase nor Sentry —
+    // so the assertion was about a document, not about the policy the browser is handed. The
+    // list was removed in #1110 for exactly that reason, and this now reads the declaration
+    // that `cloudflare-apply.mjs` actually writes and `check-csp-header.mjs` actually verifies.
+    const { CSP_DIRECTIVES } = await import(
+      `file://${path.resolve(__dirname, '..', 'ci', 'cloudflare-intent.mjs')}`
+    );
+    const connect = CSP_DIRECTIVES['connect-src'];
+    assert.ok(connect, 'the declared policy has no connect-src');
     assert.ok(
-      connect.includes(ENDPOINT_HOST),
-      `connect-src must allow ${ENDPOINT_HOST}`
+      connect.some((src) => src.includes(ENDPOINT_HOST)),
+      `connect-src must allow ${ENDPOINT_HOST}, or /status silently reports nothing`
     );
   });
 

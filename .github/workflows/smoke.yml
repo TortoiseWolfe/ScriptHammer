@@ -172,6 +172,12 @@ jobs:
           # had; this repo DOES set the CSP at that edge, and losing the rule silently is the
           # #393 regression. csp-is-not-an-inert-meta.test.js fails if this line disappears.
           REQUIRE_CSP: 'true'
+          # WITHOUT THIS THE CHECK FAILS ON A CORRECT POLICY (#1110). The scheduler origins
+          # the policy must contain depend on which provider the site embeds, and
+          # `calendarProvider()` defaults to 'calendly' to match `calendar.config.ts`. This
+          # repo deploys Cal.com, so an unset variable would send the checker looking for
+          # Calendly's origins in a policy that correctly carries Cal.com's.
+          NEXT_PUBLIC_CALENDAR_PROVIDER: ${{ vars.NEXT_PUBLIC_CALENDAR_PROVIDER }}
         # No `:-` fallback: it used to be `${SITE:-https://scripthammer.com}`, so a fork with
         # NEXT_PUBLIC_DEPLOY_URL unset probed THIS site and reported green about a header it
         # does not serve. The script now skips on an empty base.
