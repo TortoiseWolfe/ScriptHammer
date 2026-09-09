@@ -28,10 +28,28 @@ on:
   workflow_run:
     workflows: ['E2E Tests']
     types: [completed]
-  # Safety net. Catches losses this repo has not seen yet — a run that never
-  # started, a runner outage, a cancel that happened while nothing else ran.
+  # Safety net, TWICE A DAY — it was every three hours (#1136).
+  #
+  # The `workflow_run` trigger above is the primary detector and the precise one: it fires
+  # exactly when a pending sibling may have just been superseded, which is the #444 loss. The
+  # cron only covers what that cannot see — a trigger that never produced a run at all.
+  #
+  # WHY THE CADENCE WAS WRONG. It was sized against a lane that triggered on every push and
+  # every PR. #1119 narrowed `e2e.yml` to push-to-main, a weekly cron, dispatch, and a
+  # `full-e2e` label, so both the thing being watched and the `workflow_run` firings above
+  # dropped sharply — while this cron kept polling eight times a day regardless. Measured
+  # 2026-09-09: 30 of the last 40 firings were `workflow_run`, and those were themselves
+  # inflated by the blocked-lane triggers #1119 removed.
+  #
+  # WHY TWICE IS ENOUGH, and why this is not urgent work. `main` moves a few times a day at
+  # most, and the gap this catches is a MISSING hosted run — not a broken one. The hosted lane
+  # is supplementary; `E2E (local) result` is the required check and is unaffected. So the
+  # cost of a 12-hour worst-case detection delay is a coverage gap noticed later, not a merge
+  # blocked or a defect shipped.
+  #
+  # 02:17 and 14:17 UTC: no other cron in this repo fires in either hour.
   schedule:
-    - cron: '17 */3 * * *'
+    - cron: '17 2,14 * * *'
   workflow_dispatch:
     inputs:
       sha:
