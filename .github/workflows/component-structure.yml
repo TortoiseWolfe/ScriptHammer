@@ -16,6 +16,28 @@ on:
   pull_request:
     branches: [main, develop]
 
+# Cancel a PR run that a newer push has already superseded (#1119).
+#
+# WHY. This workflow had no `concurrency:` block at all, so a force-push left every job of
+# the previous run alive to completion. Nothing consumed the result: branch protection
+# evaluates a required context against the HEAD sha, so the superseded run's verdict is
+# discarded whether it finishes or not. ScriptHammer spent 458 runner-hours in the first
+# nine days of September — 62% of the account — and queue waits on E2E reached 30 minutes,
+# which is time every other repo on the account also waits.
+#
+# WHY PUSH IS KEYED ON THE SHA AND NOT THE BRANCH. Grouping pushes by ref would let a merge
+# cancel the run of the commit before it, and the post-merge run is the one that carries
+# cross-browser coverage — CLAUDE.md's "always check the post-merge run". Keying on
+# `github.sha` gives every commit on main its own group, so no post-merge run is ever
+# cancelled; only PR runs are, and only by a newer push to the same PR.
+#
+# THIS IS NOT THE REPO-WIDE MUTEX e2e.yml USES. That one serializes runs against one shared
+# Supabase project (`cancel-in-progress: false`) and deliberately does not cap anything. This
+# groups per PR, so independent PRs never queue behind each other.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   changes:
     name: Does this change need structure validation?
@@ -46,6 +68,8 @@ jobs:
   validate:
     name: Validate Component Structure
     runs-on: ubuntu-latest
+    # Cap: observed max 0.5 min. Uncapped, a hung job runs to the 360-minute default (#1119).
+    timeout-minutes: 10
     needs: changes
     if: needs.changes.outputs.run == 'true'
 
@@ -119,6 +143,8 @@ jobs:
   result:
     name: Component Structure result
     runs-on: ubuntu-latest
+    # Cap: aggregate only; observed max 0.1 min. Uncapped, a hung job runs to the 360-minute default (#1119).
+    timeout-minutes: 5
     needs: [changes, validate]
     if: always()
     steps:

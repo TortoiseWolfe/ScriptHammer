@@ -50,6 +50,36 @@ function body(name) {
   return stripComments(fs.readFileSync(path.join(WORKFLOWS, name), 'utf8'));
 }
 
+/**
+ * The full `if:` condition of a job, flattened.
+ *
+ * Needed since #1119, when both conditions below became block scalars (`if: >-`). A
+ * single-line regex against the raw job body silently stops matching the moment a
+ * condition wraps — it reports the gate as MISSING, which is the same false alarm shape
+ * this file exists to prevent.
+ */
+function condition(jobSrc) {
+  const lines = jobSrc.split('\n');
+  const i = lines.findIndex((l) => /^\s{4}if:/.test(l));
+  if (i === -1) return null;
+  const first = lines[i].replace(/^\s{4}if:\s*/, '').trim();
+  if (!/^[|>][-+]?$/.test(first)) return first;
+  const out = [];
+  // `\s{5,}` — ANY line indented deeper than the 4-space `if:` key, not exactly six.
+  // Written as `{6}` first, which silently truncated the capture at the third line
+  // (`       contains(...)` is indented seven to sit inside the paren). Both gates then
+  // compared as "no label clause" and the cross-gate assertion below passed on a mutation
+  // it was written to catch. Caught by running that mutation, never by the suite going red.
+  for (let j = i + 1; j < lines.length && /^\s{5,}\S/.test(lines[j]); j++) {
+    out.push(lines[j].trim());
+  }
+  return out.join(' ');
+}
+
+/** The PR-label opt-in added in #1119. Both lane gates must agree about it. */
+const LABEL_GATE =
+  /github\.event_name\s*!=\s*'pull_request'\s*\|\|\s*contains\(github\.event\.pull_request\.labels\.\*\.name,\s*'full-e2e'\)/;
+
 /** The lines of one job, from its key to the next key at the same indent. */
 function job(src, name) {
   const start = src.search(new RegExp(`^  ${name}:$`, 'm'));
@@ -202,9 +232,15 @@ describe('a fresh fork skips what it has not configured (#985)', () => {
     const src = () => body('e2e.yml');
 
     it('skips when there is no backend to meter, which is stronger than #949 blocking', () => {
+      // Asserted as a CLAUSE, not as the whole condition. #1119 added a PR-label gate
+      // alongside it; what must survive is that an unconfigured fork still skips, which
+      // is this clause, wherever else the expression grows.
+      const budgetCond = condition(job(src(), 'budget'));
+      assert.ok(budgetCond, 'the budget job lost its condition entirely');
       assert.match(
-        job(src(), 'budget'),
-        /if:\s*vars\.SUPABASE_PROJECT_REF\s*!=\s*''/
+        budgetCond,
+        /vars\.SUPABASE_PROJECT_REF\s*!=\s*''/,
+        'a fork with no backend to meter must SKIP this job, not run it and fail'
       );
     });
 
@@ -234,16 +270,44 @@ describe('a fresh fork skips what it has not configured (#985)', () => {
         /^\s{4}needs:\s*budget\s*$/m,
         'it must depend on the budget job, or it cannot report whether the lane ran'
       );
-      const cond = status.match(/^\s{4}if:\s*(.+)$/m);
+      //
+      // #1119 RELAXED THE EXACT PIN, AND REPLACED IT WITH THE THING THE PIN WAS FOR.
+      // The condition is no longer literally `${{ !cancelled() }}` — it also carries the
+      // PR-label gate, so that adding an unrelated label to a PR does not boot a runner to
+      // announce a lane nobody asked for. Pinning the whole string would now forbid any
+      // future clause regardless of whether it is safe, so instead the two ACTUAL failure
+      // modes named in the original message are forbidden by name, and the label gate is
+      // required to be identical to the one on `budget` (asserted below). A condition that
+      // is stricter than budget's would skip the status job while the lane really ran,
+      // which is exactly the silence this rule exists to prevent.
+      const cond = condition(status);
       assert.ok(
         cond,
         'the status job needs an explicit condition to survive `needs:`'
       );
       assert.match(
-        cond[1].trim(),
-        /^\$\{\{\s*!cancelled\(\)\s*\}\}$/,
-        'only `!cancelled()` runs when the dependency was skipped OR failed; `success()` ' +
-          'and a bare `needs.*` comparison both reintroduce the silent skip'
+        cond,
+        /!cancelled\(\)/,
+        'only `!cancelled()` runs when the dependency was skipped OR failed'
+      );
+      assert.doesNotMatch(
+        cond,
+        /\bsuccess\(\)/,
+        '`success()` does not run when the budget job FAILED — which is precisely the ' +
+          'over-budget case the lane must report, and how #1069 stayed green over a dark lane'
+      );
+      assert.doesNotMatch(
+        cond,
+        /needs\.\w+\.result\s*==/,
+        'a bare `needs.*.result` comparison in the CONDITION reintroduces the silent skip; ' +
+          'read the result in the step body instead'
+      );
+      assert.strictEqual(
+        LABEL_GATE.test(cond),
+        LABEL_GATE.test(condition(job(src(), 'budget'))),
+        'the lane-status gate and the budget gate disagree about the `full-e2e` label. ' +
+          'Stricter here means a lane that ran with nothing reporting it; looser means a ' +
+          'runner booted on every label to announce a lane that was never attempted (#1119).'
       );
       assert.match(status, /::notice::/);
       assert.match(status, /SUPABASE_PROJECT_REF/);

@@ -39,6 +39,28 @@ on:
       - 'tests/rebrand/**'
   pull_request:
     branches: [main]
+    # ONLY on `labeled`, not on every push to the PR (#1119).
+    #
+    # This lane is SUPPLEMENTARY — `E2E (local) result` is the required check, and the local
+    # lane covers every PR with no secrets and no shared backend. Meanwhile the budget guard
+    # below caps this one at 30 runs a billing cycle, and it reached that on 2026-09-07,
+    # five days into the cycle. From then until the 2nd it is dark.
+    #
+    # A blocked trigger is NOT free. `budget` and `hosted-lane-status` are ordinary jobs on
+    # ordinary runners; each blocked trigger booted two of them, checked out the repo, and
+    # produced a red X. Measured over 2026-09-02..07: 91 triggers, 30 of which ran tests —
+    # about 122 runner boots that tested nothing, and because MONTH_EXCEEDED persists ~25
+    # days, that is the steady state rather than the exception.
+    #
+    # PR events were the largest share and the least informative: this lane's whole value is
+    # running against the REAL production backend, and a PR has not changed production. The
+    # post-merge `push` above still does, which is where it caught #1068's avatar-upload
+    # rollback and a $99 SKU missing from the production `products` table.
+    #
+    # `labeled` keeps the advertised opt-in working. `budget` is additionally gated on the
+    # label being `full-e2e`, so adding any OTHER label starts the workflow but skips every
+    # job — a false job-level `if:` allocates no runner, unlike a step-level skip.
+    types: [labeled]
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
@@ -131,7 +153,14 @@ jobs:
   # lane is visible rather than silent.
   budget:
     name: Cloud-quota budget
-    if: vars.SUPABASE_PROJECT_REF != ''
+    # The `labeled` trigger (#1119) starts this workflow for ANY label added to a PR. Only
+    # `full-e2e` should spend one of the 30 monthly quota runs. A job-level `if:` that
+    # evaluates false allocates NO RUNNER — unlike a skipped step, which has already paid for
+    # the machine — so every other label stops here at zero cost.
+    if: >-
+      vars.SUPABASE_PROJECT_REF != '' &&
+      (github.event_name != 'pull_request' ||
+       contains(github.event.pull_request.labels.*.name, 'full-e2e'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -192,7 +221,14 @@ jobs:
   hosted-lane-status:
     name: Hosted E2E lane
     needs: budget
-    if: ${{ !cancelled() }}
+    # Mirrors the label gate on `budget`. `!cancelled()` alone would run this even when
+    # `budget` was skipped, which would boot a runner to announce a lane nobody asked for.
+    # The project-ref check is deliberately NOT repeated here: reporting NOT CONFIGURED to a
+    # fork that has set no backend is this job's whole purpose.
+    if: >-
+      !cancelled() &&
+      (github.event_name != 'pull_request' ||
+       contains(github.event.pull_request.labels.*.name, 'full-e2e'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -1239,6 +1275,8 @@ jobs:
   report:
     name: Test Report
     runs-on: ubuntu-latest
+    # Cap: downloads and merges shard artifacts. Uncapped, a hung job runs to the 360-minute default (#1119).
+    timeout-minutes: 15
     needs: [e2e, e2e-firefox, e2e-webkit]
     # Run only if at least one shard actually RAN — success or failure (#663).
     #

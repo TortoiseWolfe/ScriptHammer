@@ -421,14 +421,14 @@ The E2E suite ran against a single shared Supabase project for months and accumu
 
 Most of the pain below traces to one fact — every job shared one cloud Supabase project. That is no longer where PRs run.
 
-|                 | `e2e-local.yml`                              | `e2e.yml`                                     |
-| --------------- | -------------------------------------------- | --------------------------------------------- |
-| backend         | a Supabase per runner, brought up in the job | the shared hosted project                     |
-| runs on         | **every PR and every push to main**          | push/PR, subject to a run-rate budget (below) |
-| browsers        | PR: Chromium; push/dispatch/`full-e2e`: all  | Chromium normally; cross-browser is opt-in    |
-| secrets         | **none** — uses the tracked public demo keys | 32 `secrets.*` references                     |
-| mutex           | none needed; nothing is shared               | repo-wide, `max-parallel: 2`                  |
-| `@hosted` tests | excluded via `--grep-invert`                 | runs everything                               |
+|                 | `e2e-local.yml`                              | `e2e.yml`                                               |
+| --------------- | -------------------------------------------- | ------------------------------------------------------- |
+| backend         | a Supabase per runner, brought up in the job | the shared hosted project                               |
+| runs on         | **every PR and every push to main**          | push to main, a weekly cron, `full-e2e` label, dispatch |
+| browsers        | PR: Chromium; push/dispatch/`full-e2e`: all  | Chromium normally; cross-browser is opt-in              |
+| secrets         | **none** — uses the tracked public demo keys | 32 `secrets.*` references                               |
+| mutex           | per-PR cancel only; nothing is shared        | repo-wide, `max-parallel: 2`                            |
+| `@hosted` tests | excluded via `--grep-invert`                 | runs everything                                         |
 
 **A PR gets its E2E coverage from the local lane.** Consequences worth knowing before you debug anything:
 
@@ -449,9 +449,21 @@ went dark for the rest of it.
 
 **Do not read this paragraph for the lane's current state — read the run.** `Cloud-quota budget`
 prints both windows side by side, and `Hosted E2E lane` reports RAN / BLOCKED / NOT CONFIGURED.
-The month resets on the 2nd. #1119 covers the underlying cause: the lane still triggers on every
-push and PR even though `E2E (local) result` became required, so it spends a month's quota in
-days.
+The month resets on the 2nd.
+
+**#1119 CLOSED THE UNDERLYING CAUSE ON 2026-09-09: the lane no longer triggers on ordinary PR
+events.** It ran on every push and every PR while capped at 30 runs a cycle, so it spent the
+month in five days and then booted two runners per trigger — `budget` and `hosted-lane-status` —
+for the ~25 days it was dark, purely to render a red X. Measured 2026-09-02..07: 91 triggers, 30
+of which ran tests. It now triggers on **push to main, the Monday cron, `workflow_dispatch`, and
+a PR labelled `full-e2e`** — the label starts the workflow, and `budget`'s `if:` stops any other
+label before a runner is allocated. Post-merge coverage against real production data is
+unchanged, which is where this lane earns its keep (#1068's avatar-upload rollback, the $99 SKU
+missing from the production `products` table).
+
+**A PR gets NO hosted-lane run unless you label it.** That is deliberate — the local lane is the
+required check and covers every PR — but it means `Hosted E2E lane` reporting nothing on a PR is
+now normal rather than a symptom.
 
 Before concluding anything from a red `E2E Tests`, read WHICH job failed — they mean opposite
 things:

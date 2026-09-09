@@ -51,6 +51,8 @@ jobs:
   check:
     name: main has E2E coverage
     runs-on: ubuntu-latest
+    # Cap: observed max 0.1 min; it dispatches, it does not test. Uncapped, a hung job runs to the 360-minute default (#1119).
+    timeout-minutes: 10
     steps:
       - name: Check for a completed E2E run on main@HEAD, re-dispatch if missing
         env:
