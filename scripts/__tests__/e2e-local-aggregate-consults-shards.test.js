@@ -107,20 +107,31 @@ describe('the required aggregate consults its shards (#934)', () => {
   it('and can actually fail on it', () => {
     // Reading the value and printing it would satisfy the assertion above while gating
     // nothing. The job must exit non-zero.
+    //
+    // SCANS EVERY READ, NOT THE FIRST ONE. This used to take `search(...)` and inspect the
+    // following 1200 characters, which silently assumed the gating read was the earliest
+    // read in the job. #1130 added a second, earlier one — an env key handing the same value
+    // to the aggregate for its error MESSAGE — and the window moved onto that instead. The
+    // guard went red while the code it guards was untouched, which is a false alarm and
+    // costs exactly the trust a guard exists to earn.
     const block = parityBlock();
-    const start = block.search(/needs\.e2e-local\.result|needs\[/);
-    const region = block.slice(start, start + 1200);
-    assert.match(
-      region,
-      /exit 1/,
-      'the shard result is read but nothing exits non-zero on it — the check reports the ' +
-        'failure and passes anyway'
-    );
-    assert.match(
-      region,
-      /!=\s*["']?success/,
-      'the comparison is not against `success`. Any other conclusion — failure, ' +
-        'cancelled, timed_out — must fail this check.'
+    const reads = [
+      ...block.matchAll(
+        /needs\.e2e-local\.result|needs\[\s*['"]e2e-local['"]\s*\]\.result/g
+      ),
+    ];
+    assert.ok(reads.length, 'no read of the shard matrix result at all');
+    const gated = reads.some((m) => {
+      const region = block.slice(m.index, m.index + 1200);
+      return /exit 1/.test(region) && /!=\s*["']?success/.test(region);
+    });
+    assert.ok(
+      gated,
+      'the shard result is read ' +
+        `${reads.length} time(s) and NONE of them gates anything: no read is followed by a ` +
+        'comparison against `success` and an `exit 1`. The check would report the failure ' +
+        'and pass anyway — #934. Any conclusion other than success (failure, cancelled, ' +
+        'timed_out) must fail this check.'
     );
   });
 
@@ -167,10 +178,14 @@ describe('the required aggregate consults its shards (#934)', () => {
   it('CONTROL: the matcher reports absence when the call is removed', () => {
     // Without this, an always-true matcher would satisfy every assertion above. This is
     // the mutation the reviewer cannot perform by reading.
-    const mutated = parityBlock().replace(
-      /\$\{\{\s*needs\.e2e-local\.result\s*\}\}/g,
-      "'success'"
-    );
+    // Both spellings, because #1130 introduced the bracket form alongside the dot form.
+    // Removing only one would leave the other and the control would prove nothing.
+    const mutated = parityBlock()
+      .replace(/\$\{\{\s*needs\.e2e-local\.result\s*\}\}/g, "'success'")
+      .replace(
+        /\$\{\{\s*needs\[\s*['"]e2e-local['"]\s*\]\.result\s*\}\}/g,
+        "'success'"
+      );
     assert.ok(
       !consultsShards(mutated),
       'the matcher still reports the call present after it was removed — it is matching ' +

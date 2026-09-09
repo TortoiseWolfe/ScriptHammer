@@ -764,6 +764,15 @@ jobs:
           TESTED_SHA: ${{ steps.tested.outputs.sha }}
           EXPECTED_SHARDS: ${{ needs.changes.outputs.expected_shards }}
           BROWSER_MODE: ${{ needs.changes.outputs.browser_mode }}
+          # THE VERDICT OF THE SHARD MATRIX ITSELF (#1130). Bracket syntax because the job id
+          # carries a hyphen and `needs.e2e-local.result` does not parse as an expression.
+          #
+          # This is what tells a missing artifact apart from a failing test. Without it the
+          # aggregate can only count files, so a shard whose `actions/upload-artifact` step
+          # 403s is indistinguishable from a shard whose tests failed — and the operator is
+          # sent to read Playwright output for a failure that happened after Playwright was
+          # finished.
+          SHARDS_RESULT: ${{ needs['e2e-local'].result }}
         run: |
           set -uo pipefail
           python3 - <<'EOF'
@@ -868,8 +877,35 @@ jobs:
           # "did anything fail" down with it. Those are separate questions, so
           # they are now separate tiers.
           problems = []
+          shards_result = os.environ.get("SHARDS_RESULT", "")
           if len(files) != expected_shards:
-              problems.append(f"only {len(files)} of {expected_shards} shards reported")
+              missing = expected_shards - len(files)
+              if shards_result == "success":
+                  # EVERY SHARD JOB SUCCEEDED AND AN ARTIFACT IS STILL MISSING (#1130).
+                  #
+                  # Then the tests ran, and passed, and what failed happened afterwards — in
+                  # `actions/upload-artifact`. Observed on run 34249189076: shards 2/6 and 5/6
+                  # uploaded their bytes and were refused at FinalizeArtifact with a 403, on a
+                  # 9.5 KB payload. Both shard jobs were green. The aggregate said "only 22 of
+                  # 24 shards reported" and a required check went red, which is correct — and
+                  # it sent the reader to Playwright output for a failure that was not there.
+                  #
+                  # This still FAILS, deliberately: a verdict assembled from an incomplete set
+                  # is not a verdict, and #934 is exactly what happens when an aggregate
+                  # reconstructs one anyway. What changes is that it names the right thing.
+                  problems.append(
+                      f"{missing} of {expected_shards} shard artifact(s) are missing, but every "
+                      f"shard job SUCCEEDED — so the tests ran and passed, and the UPLOAD is what "
+                      f"failed. Look at the `Upload results` step of the shards, not at Playwright "
+                      f"output: `actions/upload-artifact` can finish sending bytes and still be "
+                      f"refused at FinalizeArtifact (403). Re-running the failed jobs has cleared "
+                      f"it every time so far (#1130)."
+                  )
+              else:
+                  problems.append(
+                      f"only {len(files)} of {expected_shards} shards reported "
+                      f"(shard matrix result: {shards_result or 'unknown'})"
+                  )
           if tot["failed"]:
               problems.append(f"{tot['failed']} test(s) failed")
           # A floor, not an equality: the test set legitimately grows. It catches
