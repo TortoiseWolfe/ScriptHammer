@@ -451,6 +451,45 @@ export type Database = {
         };
         Relationships: [];
       };
+      leads: {
+        Row: {
+          id: string;
+          status: string;
+          source: string;
+          product_id: string | null;
+          name: string | null;
+          email: string | null;
+          scheduled_at: string | null;
+          booking_ref: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          status?: string;
+          source: string;
+          product_id?: string | null;
+          name?: string | null;
+          email?: string | null;
+          scheduled_at?: string | null;
+          booking_ref?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          status?: string;
+          source?: string;
+          product_id?: string | null;
+          name?: string | null;
+          email?: string | null;
+          scheduled_at?: string | null;
+          booking_ref?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       orders: {
         Row: {
           id: string;

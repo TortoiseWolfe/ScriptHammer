@@ -1,6 +1,7 @@
 import React from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
+import BookingCta from '@/components/payment/BookingCta';
 import styles from './pricing.module.css';
 import { routeMetadata } from '@/utils/metadata';
 
@@ -414,12 +415,19 @@ export default function PricingPage() {
           <p className={`${styles.laneNote} mb-6`}>
             Book 15 minutes. Bring a screenshot of what you have in mind.
           </p>
-          <Link
-            href="/schedule"
+          {/*
+            Records that somebody asked, then goes to the booking surface (#562 T035).
+
+            It stays a real link to /schedule rather than an outbound scheduler URL. The
+            spec asked for an outbound anchor so a webhook could fill in the visitor's name
+            and email later; Cal.com does not deliver the identifier that join needs, so
+            leaving the site would buy a click and nothing more while making /schedule a
+            second booking surface that records nothing — the split that produced #1092.
+          */}
+          <BookingCta
+            source="pricing"
             className={`${styles.btn} ${mono.className} mx-auto max-w-xs`}
-          >
-            Book a call
-          </Link>
+          />
         </section>
 
         {/* The demo carried this three-column note and it is the most honest thing
