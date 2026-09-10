@@ -1,3 +1,4 @@
+import { type SupabaseLike } from './webhook-types.ts';
 /**
  * Idempotency for money-moving Edge Functions (#106, reworked for #558).
  *
@@ -28,33 +29,18 @@
  * Stripe does on its own Idempotency-Key, may reasonably proceed.
  */
 
-/** Structural type covering exactly the chains used below. */
-interface MinimalSupabase {
-  from(table: string): {
-    insert(row: Record<string, unknown>): Promise<{ error: unknown }>;
-    select(cols: string): {
-      eq(
-        col: string,
-        val: string
-      ): {
-        eq(
-          col: string,
-          val: string
-        ): {
-          maybeSingle(): Promise<{ data: unknown; error: unknown }>;
-        };
-      };
-    };
-    update(row: Record<string, unknown>): {
-      eq(
-        col: string,
-        val: string
-      ): {
-        eq(col: string, val: string): Promise<{ error: unknown }>;
-      };
-    };
-  };
-}
+/**
+ * The client type these helpers accept.
+ *
+ * IT USED TO BE A HAND-WRITTEN CHAIN, and that was worse than no type at all (#1153). It
+ * described `from().insert()` and `from().select().eq().eq().maybeSingle()` exactly — and the
+ * real `SupabaseClient` does not structurally match those narrowed overloads, so every call site
+ * was a TS2345 that nobody saw, because nothing ever ran `deno check` on this directory.
+ *
+ * `SupabaseLike` types the CLIENT without claiming the chains are checked. They cannot be
+ * without generated database types, which this project does not produce — see webhook-types.ts.
+ */
+type MinimalSupabase = SupabaseLike;
 
 const TABLE = 'edge_idempotency_keys';
 

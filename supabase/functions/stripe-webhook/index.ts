@@ -4,6 +4,10 @@
  */
 
 import { advanceOrderAndNotify } from '../_shared/advance-order.ts';
+import {
+  errorMessage,
+  type WebhookHandlerResult,
+} from '../_shared/webhook-types.ts';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
@@ -47,10 +51,10 @@ serve(async (req) => {
         webhookSecret
       );
     } catch (err) {
-      console.error('Signature verification failed:', err.message);
+      console.error('Signature verification failed:', errorMessage(err));
       return new Response(
         JSON.stringify({
-          error: `Webhook signature verification failed: ${err.message}`,
+          error: `Webhook signature verification failed: ${errorMessage(err)}`,
         }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
@@ -161,7 +165,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Webhook processing error:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
+      JSON.stringify({ error: errorMessage(error) || 'Internal server error' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
@@ -174,7 +178,7 @@ async function handlePaymentIntentSucceeded(
   supabase: any,
   event: Stripe.Event,
   webhookEventId: string
-) {
+): Promise<WebhookHandlerResult> {
   const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
   // Find corresponding payment_intent in database
@@ -235,7 +239,7 @@ async function handleCheckoutSessionCompleted(
   supabase: any,
   event: Stripe.Event,
   webhookEventId: string
-) {
+): Promise<WebhookHandlerResult> {
   const session = event.data.object as Stripe.Checkout.Session;
 
   if (session.mode === 'subscription') {
@@ -254,7 +258,7 @@ async function handlePaymentCheckout(
   supabase: any,
   session: Stripe.Checkout.Session,
   webhookEventId: string
-) {
+): Promise<WebhookHandlerResult> {
   const { data: intent } = await supabase
     .from('payment_intents')
     .select('*')
@@ -314,7 +318,7 @@ async function handleSubscriptionCheckout(
   supabase: any,
   session: Stripe.Checkout.Session,
   webhookEventId: string
-) {
+): Promise<WebhookHandlerResult> {
   const subscription = session.subscription as string;
 
   // Subscription details will come via customer.subscription.created event
@@ -331,7 +335,7 @@ async function handleSubscriptionEvent(
   supabase: any,
   event: Stripe.Event,
   webhookEventId: string
-) {
+): Promise<WebhookHandlerResult> {
   const subscription = event.data.object as Stripe.Subscription;
 
   // template_user_id and customer_email come from the metadata that
@@ -457,7 +461,7 @@ async function handleSubscriptionDeleted(
   supabase: any,
   event: Stripe.Event,
   webhookEventId: string
-) {
+): Promise<WebhookHandlerResult> {
   const subscription = event.data.object as Stripe.Subscription;
 
   const { data: sub, error } = await supabase
@@ -489,7 +493,7 @@ async function handleInvoicePaymentFailed(
   supabase: any,
   event: Stripe.Event,
   webhookEventId: string
-) {
+): Promise<WebhookHandlerResult> {
   const invoice = event.data.object as Stripe.Invoice;
 
   if (!invoice.subscription) {

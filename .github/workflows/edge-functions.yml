@@ -1,0 +1,58 @@
+name: Edge Functions
+
+# TYPE-CHECK THE ONE DIRECTORY NOTHING CHECKED (#1153).
+#
+# Three exclusions stacked to leave the most security-sensitive code in the repo — signature
+# verification, service-role auth, money — with no static checking of any kind:
+#   - `vitest.config.ts` excludes `supabase/functions/**`
+#   - no workflow ran `deno check` or `deno test`
+#   - `tsconfig.json` excludes it, correctly: these are Deno and the app is Node
+# So `pnpm type-check` passing said nothing about them. The first run found 21 errors, and two
+# were real defects: a CORS helper spread instead of called, and a base64 call that worked only
+# because `new Uint8Array(u8)` happens to copy.
+#
+# DELIBERATELY NOT A REQUIRED CHECK, and this is a judgement rather than an oversight.
+# `deno check` resolves imports over the network (esm.sh, deno.land, jsr.io). Making it required
+# would put third-party availability in front of every merge — which is exactly #819/#829, where
+# a Playwright CDN failed 17 of 25 shards and had nothing to do with the code. It reports on the
+# PRs that touch these files, where someone will see it, without holding merges hostage to a CDN.
+#
+# A `paths:` filter is safe HERE for the same reason it is forbidden on `e2e-local.yml`: that
+# workflow's aggregate is a required context, and a required check that never reports is pending
+# forever. This one is not required, so filtering is correct.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - 'scripts/ci/check-edge-functions.sh'
+      - '.github/workflows/edge-functions.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - 'scripts/ci/check-edge-functions.sh'
+      - '.github/workflows/edge-functions.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck:
+    name: Edge Functions type-check
+    runs-on: ubuntu-latest
+    # Generous: a cold run downloads the Supabase and Stripe type graphs over the network.
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      # The script prefers a local `deno` and falls back to the official image, so this runs the
+      # identical command a developer runs — Docker-first locally, native here.
+      - run: ./scripts/ci/check-edge-functions.sh

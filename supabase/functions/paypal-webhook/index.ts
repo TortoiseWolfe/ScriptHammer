@@ -4,6 +4,10 @@
  */
 
 import { advanceOrderAndNotify } from '../_shared/advance-order.ts';
+import {
+  errorMessage,
+  type WebhookHandlerResult,
+} from '../_shared/webhook-types.ts';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { encode as base64Encode } from 'https://deno.land/std@0.168.0/encoding/base64.ts';
@@ -166,7 +170,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('PayPal webhook error:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
+      JSON.stringify({ error: errorMessage(error) || 'Internal server error' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
@@ -174,9 +178,11 @@ serve(async (req) => {
 
 async function verifyPayPalSignature(params: any): Promise<boolean> {
   try {
-    const credentials = base64Encode(
-      new TextEncoder().encode(paypalClientId + ':' + paypalClientSecret)
-    );
+    // `encode` from std@0.168 takes `ArrayBuffer | string` and, given a string, does
+    // `new TextEncoder().encode(data)` itself — so this produces byte-identical output to the
+    // previous `base64Encode(new TextEncoder().encode(...))` while satisfying the signature.
+    // The old form worked only because `new Uint8Array(u8)` happens to copy (#1153).
+    const credentials = base64Encode(paypalClientId + ':' + paypalClientSecret);
 
     const authResponse = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
       method: 'POST',
@@ -222,7 +228,7 @@ async function handlePaymentCompleted(
   supabase: any,
   event: any,
   webhookEventId: string
-) {
+): Promise<WebhookHandlerResult> {
   const resource = event.resource;
   const { data: intent } = await supabase
     .from('payment_intents')
@@ -329,7 +335,7 @@ async function handleSubscriptionEvent(
   supabase: any,
   event: any,
   webhookEventId: string
-) {
+): Promise<WebhookHandlerResult> {
   const resource = event.resource;
 
   // create-paypal-subscription stamps the caller's user_id into the PayPal
@@ -403,7 +409,7 @@ async function handleSubscriptionCancelled(
   supabase: any,
   event: any,
   webhookEventId: string
-) {
+): Promise<WebhookHandlerResult> {
   const resource = event.resource;
   const { data: sub, error } = await supabase
     .from('subscriptions')
@@ -431,7 +437,7 @@ async function handleSubscriptionPaymentFailed(
   supabase: any,
   event: any,
   _webhookEventId: string
-) {
+): Promise<WebhookHandlerResult> {
   const resource = event.resource;
   const providerSubId = resource.id;
 
