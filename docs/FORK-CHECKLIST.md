@@ -169,6 +169,32 @@ Every external service this template integrates with, in one table:
 
 Things that have actually bitten contributors. Reading these saves you time.
 
+### Expect a red `Production Smoke` for your first two weeks — it is not your fault (#1057)
+
+Your first deploy will fail the retention-window check with something like:
+
+```
+::error::retention covers only 0.0 day(s), but RETAIN_DAYS is 14
+```
+
+**Nothing is wrong.** That check asks whether the site still serves assets from builds up to 14
+days old, so a visitor holding cached HTML does not get an unstyled page. A brand-new deploy has
+no history yet, so the honest answer is "0 days" — and the check has a grace period for exactly
+that, but the grace is measured from a date in the upstream repo's history rather than from your
+first deploy.
+
+**It clears on its own after about 13 days of deploying**, with no action from you. Every other
+check is meaningful in the meantime; this is the one to ignore.
+
+If you would rather it be quiet now, set `RETENTION_RETIMED_AT` to your first deploy's date
+(ISO 8601, e.g. `2026-09-09T00:00:00Z`) as a repository **variable**. That is the same knob the
+check already reads.
+
+Tracked as #1057. It is documented rather than fixed on purpose: the obvious fix — deriving the
+grace period from the asset ledger — would make the check compare a number against itself and
+render it permanently incapable of failing, and that check is the one that caught a real
+retention collapse (#1061).
+
 ### OAuth: don't leave `placeholder_*` strings in your Supabase config
 
 This caused issue #85. When you create a Supabase project and don't fully configure OAuth, the Client ID field can end up containing the literal string `placeholder_google_client_id` or `placeholder_github_client_id`. The OAuth buttons surface a confusing `Error 401: invalid_client` instead of a useful error message.
