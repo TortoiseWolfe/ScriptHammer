@@ -3,6 +3,7 @@
  * Processes Stripe webhook events for payments and subscriptions
  */
 
+import { advanceOrderAndNotify } from '../_shared/advance-order.ts';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
@@ -210,6 +211,17 @@ async function handlePaymentIntentSucceeded(
     throw error;
   }
 
+  // THE ORDER TRANSITION LIVES HERE (#1151), and nowhere earlier: payment is proven at this
+  // line — `webhook_verified: true` was just written — and `intent.id` is the join key to
+  // `orders.intent_id`. Never throws; see advance-order.ts for why a retry storm is the worse
+  // failure.
+  await advanceOrderAndNotify(supabase, {
+    intentId: intent.id,
+    amount: paymentIntent.amount ?? null,
+    currency: paymentIntent.currency ?? null,
+    provider: 'stripe',
+  });
+
   return {
     handled: true,
     related_payment_id: paymentResult.id,
@@ -272,6 +284,21 @@ async function handlePaymentCheckout(
   if (error) {
     console.error('Failed to create payment_result:', error);
     throw error;
+  }
+
+  // THIS IS THE PATH PRODUCTION ACTUALLY TAKES (#1151). `/checkout` sends buyers to hosted
+  // Stripe Checkout, so `checkout.session.completed` is the event a real purchase produces —
+  // `payment_intent.succeeded` is the inline path. Both advance the order; the compare-and-swap
+  // in advance-order.ts is what stops two events for one order emailing the buyer twice.
+  //
+  // Gated on the session actually being paid: an unpaid session is not a completed purchase.
+  if (session.payment_status === 'paid') {
+    await advanceOrderAndNotify(supabase, {
+      intentId: intent.id,
+      amount: session.amount_total ?? null,
+      currency: session.currency ?? null,
+      provider: 'stripe',
+    });
   }
 
   return {
