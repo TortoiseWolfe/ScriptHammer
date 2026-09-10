@@ -3,6 +3,7 @@
  * Processes PayPal webhook events for payments and subscriptions
  */
 
+import { advanceOrderAndNotify } from '../_shared/advance-order.ts';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { encode as base64Encode } from 'https://deno.land/std@0.168.0/encoding/base64.ts';
@@ -277,6 +278,17 @@ async function handlePaymentCompleted(
       .single();
 
     if (updateError) throw updateError;
+
+    // Same transition as the Stripe path (#1151). Both PayPal exits below mean the capture
+    // completed, and advance-order.ts compare-and-swaps on `status = 'pending'`, so reaching it
+    // twice for one order is harmless — which matters here, because the buyer-redirect capture
+    // (capture-paypal-order) and this webhook can both describe the same payment.
+    await advanceOrderAndNotify(supabase, {
+      intentId: intent.id,
+      amount: chargedAmount,
+      currency: chargedCurrency,
+      provider: 'paypal',
+    });
     return { handled: true, related_payment_id: updated.id };
   }
 
@@ -299,6 +311,17 @@ async function handlePaymentCompleted(
     .single();
 
   if (insertError) throw insertError;
+
+  // Same transition as the Stripe path (#1151). Both PayPal exits below mean the capture
+  // completed, and advance-order.ts compare-and-swaps on `status = 'pending'`, so reaching it
+  // twice for one order is harmless — which matters here, because the buyer-redirect capture
+  // (capture-paypal-order) and this webhook can both describe the same payment.
+  await advanceOrderAndNotify(supabase, {
+    intentId: intent.id,
+    amount: chargedAmount,
+    currency: chargedCurrency,
+    provider: 'paypal',
+  });
   return { handled: true, related_payment_id: inserted.id };
 }
 
