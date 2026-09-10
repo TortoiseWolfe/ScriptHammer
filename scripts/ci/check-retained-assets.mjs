@@ -143,6 +143,9 @@ const doWindow = CHECK !== 'reachability';
 /** Must match `RETAIN_DAYS` in .github/workflows/deploy.yml (#751). */
 const RETAIN_DAYS = Number(process.env.RETAIN_DAYS ?? 14);
 
+/** Set when the ledger has stopped being written, so the run must not claim a verdict. */
+let windowUnverified = false;
+
 /**
  * When the day-based ledger shipped (#751).
  *
@@ -310,14 +313,71 @@ if (doWindow) {
   } else {
     const now = Date.now();
     const spanDays = (now - Math.min(...dated)) / 86_400_000;
+    const newestAgeDays = (now - Math.max(...dated)) / 86_400_000;
     const rampDaysElapsed = (now - RETIMED_AT) / 86_400_000;
     console.log(
       `\n  window    ${spanDays.toFixed(1)} day(s) of coverage, target ${RETAIN_DAYS}`
     );
+    console.log(
+      `  newest    ${newestAgeDays.toFixed(1)} day(s) old — is the ledger still being written?`
+    );
 
-    // A day of slack: the oldest asset ages out mid-window, so a healthy ledger
-    // oscillates just under the target rather than sitting exactly on it.
-    if (spanDays + 1 >= RETAIN_DAYS) {
+    /*
+     * A FROZEN LEDGER MAKES THIS CHECK INCAPABLE OF FAILING (#1139).
+     *
+     * `spanDays` is `now - oldest`, and that is the right question — it measures how far back
+     * a returning visitor is still protected, which is why #1061 is emphatic that it must not
+     * be rewritten as `newest - oldest`. But it has one blind spot, and it is arithmetic
+     * rather than opinion:
+     *
+     *     once  newestAge > RETAIN_DAYS,  then  spanDays >= newestAge > RETAIN_DAYS
+     *
+     * so the `spanDays + 1 >= RETAIN_DAYS` branch below passes UNCONDITIONALLY. Past that
+     * point the assertion is a tautology: it reports "window is at full width" for any ledger
+     * whatsoever, including one that stopped being written months ago. `now` keeps advancing
+     * on one side of a subtraction whose other side has stopped.
+     *
+     * THIS IS NOT HYPOTHETICAL. It is what #1061 was: the ledger was served from a
+     * year-long cache, froze, and this check reported "window is at full width. OK." while
+     * real retention collapsed from 346 carried files to 52.
+     *
+     * WHAT IT IS NOT. The earlier framing — that protection "decays to nothing" on an
+     * abandoned site — is wrong, and worth correcting rather than repeating: eviction happens
+     * only inside `retain-previous-assets.mjs`, which runs at DEPLOY time. A site that stops
+     * deploying evicts nothing and keeps serving its last deploy's assets indefinitely. The
+     * defect is that the NUMBER stops meaning anything, not that the site breaks.
+     *
+     * SO THE VERDICT DEPENDS ON WHY WE ARE RUNNING, and the two answers are opposite:
+     *
+     *   - post-deploy (`workflow_run`): a deploy just finished and did not write the ledger.
+     *     That is a real fault and the #1061 class exactly. FAIL.
+     *   - the daily cron, a dispatch, or a fork: nobody has deployed lately. Normal, and not
+     *     this check's business. Say so, and — the load-bearing half — do NOT let the run
+     *     claim a verified window it cannot have verified.
+     */
+    const postDeploy = process.env.GITHUB_EVENT_NAME === 'workflow_run';
+    if (newestAgeDays > RETAIN_DAYS) {
+      const detail =
+        `the age ledger's NEWEST entry is ${newestAgeDays.toFixed(1)} day(s) old, older than ` +
+        `RETAIN_DAYS (${RETAIN_DAYS}). Every entry therefore predates the window, so the ` +
+        `${spanDays.toFixed(1)}-day "coverage" figure above is arithmetic about a chain that ` +
+        `has stopped moving, not a measurement of protection (#1139).`;
+      if (postDeploy) {
+        console.error(
+          `\n::error::${detail} A deploy has just completed, so the ledger should have been ` +
+            `rewritten seconds ago. It was not — which is how #1061 stayed green while ` +
+            `retention collapsed from 346 carried files to 52.`
+        );
+        process.exit(1);
+      }
+      console.log(
+        `::warning::${detail} Not failing: this run was not triggered by a deploy, so a quiet ` +
+          `period is the ordinary explanation. The window is UNVERIFIED, not verified.`
+      );
+      windowUnverified = true;
+    } else if (spanDays + 1 >= RETAIN_DAYS) {
+      // A day of slack: the oldest asset ages out mid-window, so a healthy ledger
+      // oscillates just under the target rather than sitting exactly on it.
       console.log(`  window is at full width.`);
     } else if (rampDaysElapsed < RETAIN_DAYS) {
       console.log(
@@ -334,6 +394,16 @@ if (doWindow) {
       process.exit(1);
     }
   }
+}
+
+if (windowUnverified) {
+  // NOT "OK". A check that cannot fail must not report success — that is the whole defect
+  // this branch exists for, and printing the usual line here would restore it verbatim.
+  console.log(
+    '\n  UNVERIFIED — the age ledger has stopped being written, so the window could not be ' +
+      'checked. Nothing here says the site is broken; it says this gate learned nothing.'
+  );
+  process.exit(0);
 }
 
 console.log(
