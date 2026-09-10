@@ -130,11 +130,25 @@ export function CalComProvider({
     <Cal
       namespace={NAMESPACE}
       calLink={calLink}
+      /*
+       * HEIGHT IS 'auto', AND OVERFLOW IS NOT HIDDEN (#1162).
+       *
+       * This style lands on `.cal-inline-container`, the element embed-react wraps around
+       * `<cal-inline>`. Cal.com's embed sizes ITSELF: the iframe measures its content and reports
+       * a height by postMessage, which is why the iframe on production measured 1786px. Pinning
+       * this element to 700px with `overflow: hidden` threw 1086px of that away — the month grid
+       * cut off mid-row, inside a panel already reserving 1250px.
+       *
+       * `minHeight` is the floor that keeps the layout from collapsing before the iframe reports,
+       * and it is the only size this component should assert. Do not reintroduce a fixed height
+       * to "fix" spacing: whatever number you choose is wrong for a different event type, a
+       * different month, or a narrower viewport, and the failure is silent — a clipped calendar
+       * looks like a Cal.com quirk rather than our CSS.
+       */
       style={{
         width: '100%',
-        height: styles?.height || '700px',
+        height: styles?.height || 'auto',
         minHeight: styles?.minHeight || '500px',
-        overflow: 'hidden',
         ...styles,
       }}
       config={{

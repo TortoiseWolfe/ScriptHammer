@@ -137,13 +137,25 @@ describe('CalComProvider', () => {
     expect(calProps.mock.calls[0][0].config.theme).toBe('dark');
   });
 
-  it('sizes the embed, since an iframe has no intrinsic height', () => {
+  it('lets Cal.com size itself, and only floors the height (#1162)', () => {
+    // Cal.com's embed measures its own content and reports a height by postMessage. A fixed
+    // height on our side overrides that and clips whatever does not fit — measured on live
+    // production: the iframe had grown to 1786px while our container stayed at 700, cutting
+    // 1086px off the month grid inside a panel already reserving 1250px for it.
     render(<CalComProvider calLink={LINK} mode="inline" />);
     expect(calProps.mock.calls[0][0].style).toMatchObject({
       width: '100%',
-      height: '700px',
+      height: 'auto',
       minHeight: '500px',
     });
+  });
+
+  it('does not hide the overflow it no longer needs to clip', () => {
+    // `overflow: hidden` was the second half of the same defect: with the height pinned, it is
+    // what made the cut-off invisible rather than merely ugly. Reintroducing it would re-clip
+    // the moment anything sets a height again.
+    render(<CalComProvider calLink={LINK} mode="inline" />);
+    expect(calProps.mock.calls[0][0].style.overflow).toBeUndefined();
   });
 
   it('lets a caller override the height', () => {

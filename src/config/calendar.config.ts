@@ -48,10 +48,22 @@ export const calendarConfig: CalendarConfig = {
     medium: 'embed',
     campaign: 'website',
   },
-  styles: {
-    height: '700px',
-    minHeight: '500px',
-  },
+  // NO HEIGHT HERE, AND THAT IS THE FIX FOR THE CLIPPED CALENDAR (#1162).
+  //
+  // This block used to read `{ height: '700px', minHeight: '500px' }`, and it is passed to BOTH
+  // providers — so one number decided the size of two embeds that size themselves in opposite
+  // ways. Cal.com's embed auto-resizes: it measures its own content and sets the iframe height by
+  // postMessage. Calendly's does not, and needs to be told.
+  //
+  // 700px was right for neither. Measured on live production: the Cal.com iframe had correctly
+  // grown itself to 1786px while `.cal-inline-container` stayed pinned at 700 with
+  // `overflow: hidden`, so 1086px of the month grid — most of it — was simply cut off, inside a
+  // panel that was already reserving 1250px for it.
+  //
+  // With this empty, each provider applies its own default: 'auto' for Cal.com so its own
+  // resizing wins, 1200px for Calendly which has no resizing of its own. A caller can still pass
+  // `styles` to override either.
+  styles: {},
 };
 
 /**
