@@ -31,3 +31,20 @@ export const discovery: Product = {
   amount: 25000,
   metadata: {},
 };
+
+/**
+ * A monthly Care Plan. Seeded `active=false` in production (migration:467), so nobody
+ * can buy one today — which is precisely why it needs a fixture: the recurring branch of
+ * `cancellationTerms` is otherwise unreachable by any test or any human.
+ */
+export const carePlan: Product = {
+  ...landingPage,
+  id: 'svc-care',
+  name: 'Care Plan',
+  tagline: 'Hosting, SSL, daily backups, and someone who answers.',
+  amount: 9900,
+  type: 'recurring',
+  interval: 'month',
+  metadata: {},
+  active: false,
+};

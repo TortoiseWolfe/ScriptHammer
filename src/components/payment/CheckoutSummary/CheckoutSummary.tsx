@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import type { Product } from '@/types/commerce';
 
 export interface CheckoutSummaryProps {
@@ -42,6 +43,46 @@ export function previewAmountDue(product: Product): number {
   if (pct === null) return product.amount;
   const deposit = Math.floor((product.amount * pct) / 100);
   return deposit < 100 ? product.amount : deposit;
+}
+
+/**
+ * What the buyer is told about cancellation BEFORE they pay (T034, #561).
+ *
+ * WHY THIS LIVES HERE. `/checkout` has promised "Terms are shown before payment" since
+ * before #613, on a path that showed none. This component, `IntakeForm` and `BookingStep`
+ * between them contained zero occurrences of terms, cancel or refund, and the app's only
+ * link to `/terms` sat inside `PaymentConsentModal` — a GDPR script-consent gate that
+ * renders only until consent is granted, and never on the signed-out branch at all. So the
+ * sentence was true of nothing a buyer could see, on the one page where being wrong costs
+ * money. This component is the right home because it is the only thing rendered on BOTH
+ * branches of checkout, above the fold, beside the amount.
+ *
+ * The lines are derived from `/terms` §3–§5 rather than invented, so the card and the
+ * linked page cannot drift into saying different things.
+ *
+ * THE RECURRING BRANCH IS DELIBERATELY NARROW. The plan stops; the site is not torn down.
+ * What it does NOT promise is uptime, because that depends on things the seller does not
+ * control — the domain registration, the account the site is hosted under, and whether the
+ * buyer holds their own copy. Promising "your site stays up" would replace one false
+ * assurance with another, which is the failure T034 exists to correct.
+ */
+export function cancellationTerms(product: Product): string[] {
+  if (product.type === 'recurring') {
+    const every = product.interval === 'year' ? 'year' : 'month';
+    return [
+      `Renews automatically every ${every} until you cancel.`,
+      'Cancel any time. It takes effect at the end of the period you have already paid for, and you are not charged again.',
+      'Cancelling stops maintenance and updates — it does not take your site down. Keeping it online is then yours to manage: the domain, the account it is hosted under, and your own copy of the site.',
+    ];
+  }
+
+  const lines = ['Cancel before work begins for a full refund.'];
+  lines.push(
+    depositPercent(product) === null
+      ? 'Once work has begun we refund the portion not yet performed.'
+      : 'Once work has begun we refund the portion not yet performed. A deposit covering work already carried out is not refundable.'
+  );
+  return lines;
 }
 
 /**
@@ -120,6 +161,41 @@ export default function CheckoutSummary({
             {depositPercent(product)}% now, the rest when the work is delivered.
           </p>
         )}
+
+        {/*
+          The terms the page has always claimed were "shown before payment" (#561 T034).
+          `aria-labelledby` rather than a bare heading so the list is reachable as a named
+          region: this is the one part of the summary a buyer may be looking FOR.
+        */}
+        <section
+          className="border-base-300 mt-4 border-t pt-3"
+          aria-labelledby="checkout-terms-heading"
+        >
+          <h3
+            id="checkout-terms-heading"
+            className="text-base-content text-sm font-semibold"
+          >
+            Before you pay
+          </h3>
+          <ul className="text-base-content mt-2 space-y-1 text-xs">
+            {cancellationTerms(product).map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+            <li>The price shown here is the price charged.</li>
+          </ul>
+          {/*
+            BARE href, never `getInternalUrl()`. next/link prepends the runtime basePath
+            itself, so routing it through the helper double-prefixes — the trap pinned by
+            PaymentConsentModal.test.tsx:247-256 (#159), and one that checkout/page.tsx:322
+            still falls into for /pricing.
+          */}
+          <Link
+            href="/terms"
+            className="link-hover link mt-2 inline-block text-xs"
+          >
+            Full terms, including refunds and renewals
+          </Link>
+        </section>
       </div>
     </div>
   );
