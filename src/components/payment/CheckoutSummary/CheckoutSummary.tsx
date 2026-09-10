@@ -184,10 +184,16 @@ export default function CheckoutSummary({
             <li>The price shown here is the price charged.</li>
           </ul>
           {/*
-            BARE href, never `getInternalUrl()`. next/link prepends the runtime basePath
-            itself, so routing it through the helper double-prefixes — the trap pinned by
-            PaymentConsentModal.test.tsx:247-256 (#159), and one that checkout/page.tsx:322
-            still falls into for /pricing.
+            Bare href. `next/link` prepends the runtime basePath, so this resolves to
+            `/ScriptHammer/terms/` on a base-path deployment and `/terms/` without one.
+
+            An earlier version of this comment claimed `getInternalUrl('/terms')` would
+            double-prefix here. It does not: `next/link` skips an href that already carries
+            the basePath, and a real build proves it — zero occurrences of
+            `/ScriptHammer/ScriptHammer/` in `out/`, with GlobalNav using the helper inside a
+            Link at three sites. Both forms work; bare is preferred only because it does not
+            depend on that normalisation, and because a unit test can assert it directly,
+            which is what PaymentConsentModal.test.tsx:247-256 pins for /privacy (#159).
           */}
           <Link
             href="/terms"

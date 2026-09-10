@@ -6,9 +6,12 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { PaymentButton } from '@/components/payment/PaymentButton/PaymentButton';
 import { PaymentConsentModal } from '@/components/payment/PaymentConsentModal/PaymentConsentModal';
 import { PaymentHistory } from '@/components/payment/PaymentHistory/PaymentHistory';
+import OrderList from '@/components/payment/OrderList';
+import { buyerOrders } from '@/components/payment/__fixtures__/orders';
 import { PaymentStatusDisplay } from '@/components/payment/PaymentStatusDisplay/PaymentStatusDisplay';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import EmailVerificationNotice from '@/components/auth/EmailVerificationNotice';
@@ -323,6 +326,43 @@ function PaymentDemoContent() {
           </div>
         </div>
       )}
+
+      {/*
+        THE ORDER CARD, WITH EXAMPLE DATA, AND DELIBERATELY UNGATED (#1157).
+
+        `/orders` renders this same component against the signed-in buyer's own rows. Nothing
+        in this repository ever writes an `orders` row — no seed, no fixture, no spec — and the
+        three route sweeps run as the primary test user, who owns none. So every automated gate
+        that appears to cover `/orders` renders its EMPTY state and passes, and the populated
+        card would first be seen by a paying customer.
+
+        This section is what those gates measure instead. It carries no consent gate and no
+        `user?.id` gate ON PURPOSE: the block above it has both, and the sweeps grant no consent,
+        so they never reach it. A gated example would be a section that exists only for humans —
+        which is the failure mode, not the fix.
+
+        The rows are the same fixtures the unit tests and stories use, so the three cannot drift:
+        a deposit with an outstanding balance, a retired SKU whose catalog row is unreadable
+        through RLS, a delivered order, and one still unconfirmed.
+      */}
+      <div className="mb-8">
+        <div className="card bg-base-100 rounded-box">
+          <div className="card-body">
+            <h2 className="card-title">Order list</h2>
+            <p className="text-base-content mb-4">
+              How a buyer sees their orders at{' '}
+              <Link href="/orders" className="link-hover link">
+                /orders
+              </Link>
+              . <strong>The four below are examples, not your orders</strong> —
+              they are the same fixtures the tests use, shown here so the card
+              itself is measured for contrast, landmarks and overflow in a real
+              browser.
+            </p>
+            <OrderList orders={buyerOrders} />
+          </div>
+        </div>
+      </div>
 
       {/* Feature Documentation */}
       <div className="card sh-well bg-base-100 rounded-box">

@@ -76,10 +76,12 @@ function backing(summarySrc) {
     refund: /refund/i.test(flat),
     cancel: /cancel/i.test(flat),
     renew: /renew/i.test(flat),
-    // BARE href. next/link prepends the basePath itself, so `getInternalUrl('/terms')`
-    // would double-prefix it — the trap PaymentConsentModal.test.tsx pins for /privacy (#159).
+    // Bare href — `next/link` prepends the runtime basePath, and skips an href that
+    // already carries it, so both this and `getInternalUrl('/terms')` resolve correctly
+    // (measured on a basePath build: zero `/ScriptHammer/ScriptHammer/` in out/). Bare is
+    // required here only so the assertion has one exact string to match, the same reason
+    // PaymentConsentModal.test.tsx:247-256 pins it for /privacy (#159).
     termsLink: /href="\/terms"/.test(flat),
-    helperLink: /getInternalUrl\(\s*['"]\/terms['"]\s*\)/.test(flat),
   };
 }
 
@@ -127,13 +129,6 @@ describe('checkout shows the terms it promises (#561 T034)', () => {
         'home — do not delete it. The promise sat unbacked from before #613 until #561 T034 ' +
         'precisely because nothing connected the sentence to the content.\n\n' +
         `Missing: ${missing.join(', ')}`
-    );
-
-    assert.strictEqual(
-      b.helperLink,
-      false,
-      'The /terms link must be a bare href. next/link prepends the runtime basePath, so ' +
-        'getInternalUrl() prepends it a second time (#159).'
     );
   });
 

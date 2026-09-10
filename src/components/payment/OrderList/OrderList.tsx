@@ -199,15 +199,15 @@ export default function OrderList({
               </div>
 
               <dl className="mt-3 space-y-1 text-sm">
-                <div className="flex justify-between gap-4">
+                <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
                   <dt className="text-base-content">Charged</dt>
                   <dd className="text-base-content font-semibold">
                     {money(o.amount_charged)}
                   </dd>
                 </div>
                 {balance !== null && (
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-base-content">
+                  <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
+                    <dt className="text-base-content min-w-0">
                       Balance{' '}
                       <span className="text-base-content">
                         (invoiced separately)
@@ -216,7 +216,7 @@ export default function OrderList({
                     <dd className="text-base-content">{money(balance)}</dd>
                   </div>
                 )}
-                <div className="flex justify-between gap-4">
+                <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
                   <dt className="text-base-content">Placed</dt>
                   <dd className="text-base-content">
                     {new Date(o.created_at).toLocaleDateString()}
