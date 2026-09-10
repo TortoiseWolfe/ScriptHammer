@@ -4400,6 +4400,86 @@ END $$;
 -- on an existing (prod) DB.
 DROP TABLE IF EXISTS public.audit_logs CASCADE;
 DROP TABLE IF EXISTS public.profiles CASCADE;
+-- ============================================================================
+-- LEADS -- pre-sale booking intent (#562 T038, T040)
+-- ============================================================================
+-- A visitor who asks to book a call before buying anything. Feature 050 calls this a
+-- "conversation record" (US-6); this is the table behind it.
+--
+-- NO CLIENT WRITE PATH AT ALL, which is T038's actual requirement and not a default.
+-- The only writer is the `create-lead` Edge Function under the service role. There is
+-- deliberately no `SECURITY DEFINER` RPC: the Edge Function is the reason none is needed,
+-- and this repo's standing position is that SECURITY DEFINER to bypass RLS is a hack.
+--
+-- AND THE REVOKE IS LOAD-BEARING, not tidiness. Silence here would leave `anon` and
+-- `authenticated` holding all seven privileges through `pg_default_acl` (#1039), which
+-- means TRUNCATE -- and RLS does not gate TRUNCATE. That is exactly what #1073 found on
+-- ten tables, `webhook_events` among them. A table nobody may read was one statement from
+-- being erased by anybody. It also has a second effect worth knowing: `derive-intended-schema.mjs`
+-- asserts grants only for tables this file has REVOKEd from, so a table without one is
+-- invisible to the prod drift gate.
+--
+-- NO utm_* COLUMNS, BY REQUIREMENT (FR-024a). The outbound link may carry campaign
+-- parameters; this table may not store them. The identifier that locates a row is not
+-- retained as attribution.
+CREATE TABLE IF NOT EXISTS leads (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  -- `link_opened` is the only status anything can set today. `scheduled` waits on a
+  -- booking webhook that cannot currently attribute a booking to a lead at all -- Cal.com
+  -- does not deliver the join identifier in its payload (see #562). It is defined here so
+  -- the vocabulary is fixed, not because anything writes it yet.
+  status       TEXT NOT NULL DEFAULT 'link_opened'
+                 CHECK (status IN ('link_opened', 'scheduled', 'converted', 'abandoned')),
+  -- Which surface the visitor asked from. Constrained rather than free text so a typo in a
+  -- new caller fails loudly instead of quietly creating a category nobody aggregates.
+  source       TEXT NOT NULL CHECK (source IN ('pricing', 'schedule', 'checkout')),
+  -- The SKU they were looking at, when there was one. A general "book a call" has none.
+  product_id   TEXT REFERENCES products(id),
+  -- Both stay NULL until something can backfill them from a confirmed booking. Nothing
+  -- can today, and a form in front of the click is precisely what US-6 avoids.
+  name         TEXT,
+  email        TEXT,
+  scheduled_at TIMESTAMPTZ,
+  booking_ref  TEXT,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_leads_created_at ON leads(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
+
+ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
+
+-- The operator reads them; nobody writes them from a browser.
+DROP POLICY IF EXISTS "Admin can view leads" ON leads;
+CREATE POLICY "Admin can view leads" ON leads
+  FOR SELECT
+  USING (is_admin());
+
+DROP POLICY IF EXISTS "Leads are not client-writable" ON leads;
+CREATE POLICY "Leads are not client-writable" ON leads
+  FOR ALL
+  USING (false)
+  WITH CHECK (false);
+
+REVOKE ALL ON leads FROM anon, authenticated;
+-- SELECT only, and only so the admin policy above has something to gate. Without a
+-- column-level or table-level grant the policy can never grant anything: RLS narrows a
+-- privilege that has to exist first (#1029, #1059).
+GRANT SELECT ON leads TO authenticated;
+GRANT ALL ON leads TO service_role;
+
+-- `create-lead` rate-limits through the same helper the auth forms use, so its
+-- attempt_type must be a permitted literal. AN INLINE EDIT TO THE CREATE TABLE ABOVE
+-- WOULD BE A SILENT NO-OP ON AN EXISTING DATABASE -- this DROP+ADD is the only form that
+-- reaches production, which is why `contact_form` was added the same way at :635 after
+-- #784 hit a 23514 on its first live call.
+ALTER TABLE rate_limit_attempts
+  DROP CONSTRAINT IF EXISTS rate_limit_attempts_attempt_type_check;
+ALTER TABLE rate_limit_attempts
+  ADD CONSTRAINT rate_limit_attempts_attempt_type_check
+  CHECK (attempt_type IN ('sign_in', 'sign_up', 'password_reset', 'contact_form', 'booking_lead'));
+
 DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
 DROP FUNCTION IF EXISTS public.handle_updated_at() CASCADE;
 
