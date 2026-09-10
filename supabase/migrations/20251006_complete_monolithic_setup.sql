@@ -4480,6 +4480,31 @@ ALTER TABLE rate_limit_attempts
   ADD CONSTRAINT rate_limit_attempts_attempt_type_check
   CHECK (attempt_type IN ('sign_in', 'sign_up', 'password_reset', 'contact_form', 'booking_lead'));
 
+-- ============================================================================
+-- WEBHOOK_EVENTS ACCEPTS SCHEDULERS, NOT JUST PAYMENT PROVIDERS (#562 T036)
+-- ============================================================================
+-- `webhook_events` is the idempotency ledger: a (provider, provider_event_id) pair that has
+-- been seen is not processed twice. Booking confirmations need the same protection as
+-- payment events, and the CHECK permitted only 'stripe' and 'paypal'.
+--
+-- BOTH SCHEDULERS ARE ADMITTED, not just the one this deployment runs. `calendar.config.ts`
+-- types the provider as 'calendly' | 'calcom' and supports both by design (#1100 moved THIS
+-- site to Cal.com because Calendly's free plan allows one active event type and two were
+-- needed). A fork on Calendly must not hit a CHECK violation for using a supported provider.
+--
+-- DROP+ADD, because an inline edit to the CREATE TABLE at :262 is a silent no-op on a
+-- provisioned database — the file says so itself at :365-366 and :591-593, and #784 paid for
+-- the lesson with a 23514 on its first live call.
+--
+-- The other three provider CHECKs are deliberately left alone. They already disagree with
+-- each other (payment_results and payment_provider_config admit cashapp/chime; subscriptions
+-- does not), and harmonising them is a separate decision with its own blast radius.
+ALTER TABLE webhook_events
+  DROP CONSTRAINT IF EXISTS webhook_events_provider_check;
+ALTER TABLE webhook_events
+  ADD CONSTRAINT webhook_events_provider_check
+  CHECK (provider IN ('stripe', 'paypal', 'calcom', 'calendly'));
+
 DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
 DROP FUNCTION IF EXISTS public.handle_updated_at() CASCADE;
 

@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import BookingCta from './BookingCta';
+
+const push = vi.fn();
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
 
 vi.mock('@/config/calendar.config', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/config/calendar.config')>()),
@@ -13,13 +16,18 @@ vi.mock('@/config/calendar.config', async (importOriginal) => ({
   },
 }));
 
+const LEAD = '3f6c1a2e-8b4d-4c7a-9e1f-2b5d6c7a8e90';
+
 describe('BookingCta', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
-    fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    push.mockClear();
+    fetchMock = vi
+      .fn()
+      .mockResolvedValue({ ok: true, json: async () => ({ id: LEAD }) });
     vi.stubGlobal('fetch', fetchMock);
   });
 
@@ -56,12 +64,61 @@ describe('BookingCta', () => {
     expect(body()).toEqual({ source: 'pricing' });
   });
 
-  it('uses keepalive so the record survives the navigation it triggers', () => {
-    // Without this the request is cancelled the moment the page starts unloading, which is
-    // exactly when it is sent — the lead would be recorded only when the click was slow.
+  it('carries the lead id to the booking surface', async () => {
+    // THE POINT OF THE WHOLE FEATURE. The id becomes the embed's hidden `lead_ref` field,
+    // Cal.com returns it in the webhook payload, and calcom-webhook advances that exact lead.
+    // Without it on the URL there is nothing for a booking to be matched against.
     render(<BookingCta source="pricing" />);
     fireEvent.click(screen.getByRole('link', { name: /book a call/i }));
-    expect(fetchMock.mock.calls[0][1].keepalive).toBe(true);
+    await waitFor(() =>
+      expect(push).toHaveBeenCalledWith(`/schedule?lead=${LEAD}`)
+    );
+  });
+
+  it('still goes to the calendar when the lead cannot be recorded', async () => {
+    // An unattributed booking is a small loss. A visitor who thinks the button is broken is
+    // a large one, so every failure path falls through to the plain navigation.
+    fetchMock.mockRejectedValue(new Error('offline'));
+    render(<BookingCta source="pricing" />);
+    fireEvent.click(screen.getByRole('link', { name: /book a call/i }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith('/schedule'));
+  });
+
+  it('goes to the calendar without waiting forever on a slow response', async () => {
+    // The cap, not the request, is what protects the visitor.
+    vi.useFakeTimers();
+    fetchMock.mockReturnValue(new Promise(() => {}));
+    render(<BookingCta source="pricing" />);
+    fireEvent.click(screen.getByRole('link', { name: /book a call/i }));
+    expect(push).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1300);
+    expect(push).toHaveBeenCalledWith('/schedule');
+    vi.useRealTimers();
+  });
+
+  it('navigates once, even if the response lands after the timeout', async () => {
+    // Both paths call the same guarded `once`. Without it a late response would push a
+    // second navigation on top of the page the visitor is already reading.
+    vi.useFakeTimers();
+    let settle: (v: unknown) => void = () => {};
+    fetchMock.mockReturnValue(new Promise((r) => (settle = r)));
+    render(<BookingCta source="pricing" />);
+    fireEvent.click(screen.getByRole('link', { name: /book a call/i }));
+    vi.advanceTimersByTime(1300);
+    settle({ ok: true, json: async () => ({ id: LEAD }) });
+    await vi.runAllTimersAsync();
+    expect(push).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it('leaves a modified click to the browser, so open-in-new-tab still works', () => {
+    // preventDefault on a ctrl/cmd click would drag a new tab back into this one.
+    render(<BookingCta source="pricing" />);
+    fireEvent.click(screen.getByRole('link', { name: /book a call/i }), {
+      metaKey: true,
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(push).not.toHaveBeenCalled();
   });
 
   it('sends the anonymous key, because the caller has no session', () => {
@@ -70,17 +127,6 @@ describe('BookingCta', () => {
     const headers = fetchMock.mock.calls[0][1].headers;
     expect(headers.apikey).toBe('anon-key');
     expect(headers.Authorization).toBe('Bearer anon-key');
-  });
-
-  it('does not throw at the visitor when recording fails', async () => {
-    // A failed lead is an operator's missing row. It must never be a visitor's broken
-    // booking, so the rejection is swallowed and the link still navigates.
-    fetchMock.mockRejectedValue(new Error('offline'));
-    render(<BookingCta source="pricing" />);
-    expect(() =>
-      fireEvent.click(screen.getByRole('link', { name: /book a call/i }))
-    ).not.toThrow();
-    await Promise.resolve();
   });
 
   it('says so rather than offering a dead control when no calendar is configured', async () => {

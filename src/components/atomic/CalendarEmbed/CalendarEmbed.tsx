@@ -13,6 +13,19 @@ export interface CalendarEmbedProps {
   prefill?: {
     name?: string;
     email?: string;
+    /**
+     * The lead this booking belongs to (#562 T039).
+     *
+     * Cal.com turns `config` into the embed iframe's QUERY STRING, and a custom booking field
+     * is prefilled by a query parameter named after its own identifier — so this arrives as
+     * `responses.lead_ref` in the BOOKING_CREATED webhook, which is what lets a booking be
+     * matched back to the click that started it. The field is configured `hidden` on the
+     * event type, so the person booking never sees it.
+     *
+     * The obvious carrier, `utm_content`, does NOT work: Cal.com keeps auto-tracked UTM in a
+     * separate table its webhook never reads from.
+     */
+    lead_ref?: string;
   };
   className?: string;
 }

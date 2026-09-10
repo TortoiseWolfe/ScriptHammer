@@ -39,6 +39,8 @@ interface CalComProviderProps {
     notes?: string;
     guests?: string[];
     theme?: 'light' | 'dark' | 'auto';
+    /** Prefills the hidden `lead_ref` booking field, which the webhook joins on (#562). */
+    lead_ref?: string;
   };
   styles?: Record<string, string>;
 }
