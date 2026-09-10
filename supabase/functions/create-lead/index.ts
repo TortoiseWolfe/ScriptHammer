@@ -99,6 +99,12 @@ Deno.serve(async (req: Request) => {
     .single();
 
   if (insertError) {
+    // 23505 means the caller reused an id. Nothing is wrong with the click and the lead it
+    // names already exists, so answering 409 lets the caller distinguish it from a real
+    // failure without inventing a second row (#1166).
+    if (insertError.code === '23505') {
+      return jsonResponse(req, { error: 'That lead id already exists' }, 409);
+    }
     console.error('create-lead insert failed', insertError);
     return jsonResponse(req, { error: 'Could not record that' }, 500);
   }

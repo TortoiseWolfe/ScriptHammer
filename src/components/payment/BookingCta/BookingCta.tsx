@@ -8,14 +8,6 @@ import { createLogger } from '@/lib/logger';
 
 const logger = createLogger('components:payment:BookingCta');
 
-/**
- * How long a click may wait for a lead id before going to the calendar without one.
- *
- * A booking that is not attributed is a small loss; a visitor who thinks the button is broken
- * is a large one. Short enough to feel like a normal navigation on a bad connection.
- */
-const LEAD_WAIT_MS = 1200;
-
 /** Where the visitor asked from. Must match `leads_source_check` and `LEAD_SOURCES`. */
 export type BookingSource = 'pricing' | 'schedule' | 'checkout';
 
@@ -64,28 +56,25 @@ export default function BookingCta({
   const router = useRouter();
 
   /**
-   * Record the click, then carry the lead id to the booking surface (#562 T039).
+   * Mint the lead id here, carry it immediately, and record in the background (#1166).
    *
-   * THIS NOW AWAITS, AND THE REASON IS THE WHOLE FEATURE. The id has to reach the booking or
-   * the webhook has nothing to join on: `/schedule` puts it in the embed's hidden `lead_ref`
-   * field, Cal.com returns it in `responses.lead_ref`, and `calcom-webhook` advances that
-   * exact lead to `scheduled`. Fire-and-forget cannot do that — the id only exists in the
-   * response.
+   * THE ID IS GENERATED ON THIS SIDE, AND THAT IS THE FIX. It has to be on the URL the moment
+   * the visitor clicks — it becomes the booking's hidden `lead_ref`, which is the only thing
+   * tying a booking back to a click. Asking the server for one meant waiting for `create-lead`
+   * to answer, and a cold Edge Function start beat the 1200ms cap this used to allow: measured
+   * on production, the first click after a quiet period navigated with no id at all while still
+   * writing a perfect-looking lead. On a low-traffic site that is most clicks.
    *
-   * IT IS STILL NEVER ALLOWED TO COST THE VISITOR THEIR BOOKING. The wait is capped, and
-   * every failure — slow, offline, rate-limited, misconfigured — falls through to the plain
-   * navigation. The worst case is an unattributed booking, which is exactly what happens
-   * today anyway. It stays a real `<a href>` underneath, so no-JS and middle-click still
-   * reach the calendar with no id and no wait.
+   * GENERATED AT CLICK TIME, NOT RENDER TIME. This page is statically exported, so an id minted
+   * during render would be baked into the HTML and every visitor would share one.
+   *
+   * The record is fire-and-forget again, with `keepalive` so it survives the navigation it
+   * races. A failed record costs attribution, never the booking.
    */
   const recordLead = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement>) => {
-      const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      if (!base || !anon) return;
-
-      // Let the browser handle anything that is not a plain left-click — a new tab must not
-      // be hijacked into this tab by a preventDefault.
+      // Let the browser handle anything that is not a plain left-click — a new tab must not be
+      // hijacked into this tab by a preventDefault.
       if (
         e.defaultPrevented ||
         e.button !== 0 ||
@@ -97,47 +86,33 @@ export default function BookingCta({
         return;
       }
 
+      const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      // No id to carry and nothing to record: leave the plain link alone.
+      if (!base || !anon || typeof crypto?.randomUUID !== 'function') return;
+
+      const leadId = crypto.randomUUID();
       e.preventDefault();
 
-      const go = (leadId?: string) =>
-        router.push(
-          leadId ? `${href}?lead=${encodeURIComponent(leadId)}` : href
-        );
-
-      // The cap, not the request, is what protects the visitor. AbortSignal.timeout is not
-      // available everywhere this ships, so the race is explicit.
-      let settled = false;
-      const once = (leadId?: string) => {
-        if (settled) return;
-        settled = true;
-        go(leadId);
-      };
-      const timer = setTimeout(() => once(), LEAD_WAIT_MS);
-
-      fetch(`${base}/functions/v1/create-lead`, {
+      void fetch(`${base}/functions/v1/create-lead`, {
         method: 'POST',
+        keepalive: true,
         headers: {
           'Content-Type': 'application/json',
           apikey: anon,
           Authorization: `Bearer ${anon}`,
         },
         body: JSON.stringify({
+          id: leadId,
           source,
           ...(productId ? { product_id: productId } : {}),
         }),
-      })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data: { id?: string } | null) => {
-          clearTimeout(timer);
-          once(data?.id);
-        })
-        .catch((error) => {
-          // Logged, not surfaced. A 429 here is the rate limiter working, not something to
-          // tell a visitor about.
-          logger.info('Lead not recorded', { source, error: String(error) });
-          clearTimeout(timer);
-          once();
-        });
+      }).catch((error) => {
+        // Logged, not surfaced. A 429 here is the rate limiter working.
+        logger.info('Lead not recorded', { source, error: String(error) });
+      });
+
+      router.push(`${href}?lead=${encodeURIComponent(leadId)}`);
     },
     [source, productId, href, router]
   );

@@ -25,6 +25,7 @@ describe('BookingCta', () => {
     process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://example.supabase.co';
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key';
     push.mockClear();
+    vi.stubGlobal('crypto', { ...globalThis.crypto, randomUUID: () => LEAD });
     fetchMock = vi
       .fn()
       .mockResolvedValue({ ok: true, json: async () => ({ id: LEAD }) });
@@ -53,7 +54,11 @@ describe('BookingCta', () => {
     fireEvent.click(screen.getByRole('link', { name: /book a call/i }));
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toMatch(/\/functions\/v1\/create-lead$/);
-    expect(body()).toEqual({ source: 'pricing', product_id: 'svc-landing' });
+    expect(body()).toEqual({
+      id: LEAD,
+      source: 'pricing',
+      product_id: 'svc-landing',
+    });
   });
 
   it('omits product_id entirely when there is no SKU', () => {
@@ -61,54 +66,40 @@ describe('BookingCta', () => {
     // a value the resolver has to interpret rather than an absence.
     render(<BookingCta source="pricing" />);
     fireEvent.click(screen.getByRole('link', { name: /book a call/i }));
-    expect(body()).toEqual({ source: 'pricing' });
+    // `id` is always sent now; `product_id` is the thing that must be absent, not present
+    // and empty — an empty string is a value the resolver would have to interpret.
+    expect(body()).toEqual({ id: LEAD, source: 'pricing' });
   });
 
-  it('carries the lead id to the booking surface', async () => {
-    // THE POINT OF THE WHOLE FEATURE. The id becomes the embed's hidden `lead_ref` field,
-    // Cal.com returns it in the webhook payload, and calcom-webhook advances that exact lead.
-    // Without it on the URL there is nothing for a booking to be matched against.
+  it('carries the lead id to the booking surface, without waiting for the server', async () => {
+    // THE POINT OF THE WHOLE FEATURE, and the fix for #1166. The id is minted here, so it is on
+    // the URL immediately — a cold Edge Function can no longer cost the attribution.
     render(<BookingCta source="pricing" />);
     fireEvent.click(screen.getByRole('link', { name: /book a call/i }));
-    await waitFor(() =>
-      expect(push).toHaveBeenCalledWith(`/schedule?lead=${LEAD}`)
-    );
+    expect(push).toHaveBeenCalledWith(`/schedule?lead=${LEAD}`);
   });
 
-  it('still goes to the calendar when the lead cannot be recorded', async () => {
-    // An unattributed booking is a small loss. A visitor who thinks the button is broken is
-    // a large one, so every failure path falls through to the plain navigation.
+  it('sends the same id it navigated with', async () => {
+    // Two different ids would be worse than none: the lead would exist, the booking would carry
+    // something else, and the join would fail while everything looked correct.
+    render(<BookingCta source="pricing" />);
+    fireEvent.click(screen.getByRole('link', { name: /book a call/i }));
+    expect(body().id).toBe(LEAD);
+    expect(push).toHaveBeenCalledWith(`/schedule?lead=${LEAD}`);
+  });
+
+  it('navigates even when recording fails outright', async () => {
+    // A failed record costs attribution, never the booking.
     fetchMock.mockRejectedValue(new Error('offline'));
     render(<BookingCta source="pricing" />);
     fireEvent.click(screen.getByRole('link', { name: /book a call/i }));
-    await waitFor(() => expect(push).toHaveBeenCalledWith('/schedule'));
+    expect(push).toHaveBeenCalledWith(`/schedule?lead=${LEAD}`);
   });
 
-  it('goes to the calendar without waiting forever on a slow response', async () => {
-    // The cap, not the request, is what protects the visitor.
-    vi.useFakeTimers();
-    fetchMock.mockReturnValue(new Promise(() => {}));
+  it('uses keepalive, since the request now races the navigation', async () => {
     render(<BookingCta source="pricing" />);
     fireEvent.click(screen.getByRole('link', { name: /book a call/i }));
-    expect(push).not.toHaveBeenCalled();
-    vi.advanceTimersByTime(1300);
-    expect(push).toHaveBeenCalledWith('/schedule');
-    vi.useRealTimers();
-  });
-
-  it('navigates once, even if the response lands after the timeout', async () => {
-    // Both paths call the same guarded `once`. Without it a late response would push a
-    // second navigation on top of the page the visitor is already reading.
-    vi.useFakeTimers();
-    let settle: (v: unknown) => void = () => {};
-    fetchMock.mockReturnValue(new Promise((r) => (settle = r)));
-    render(<BookingCta source="pricing" />);
-    fireEvent.click(screen.getByRole('link', { name: /book a call/i }));
-    vi.advanceTimersByTime(1300);
-    settle({ ok: true, json: async () => ({ id: LEAD }) });
-    await vi.runAllTimersAsync();
-    expect(push).toHaveBeenCalledTimes(1);
-    vi.useRealTimers();
+    expect(fetchMock.mock.calls[0][1].keepalive).toBe(true);
   });
 
   it('leaves a modified click to the browser, so open-in-new-tab still works', () => {

@@ -68,7 +68,22 @@ describe('create-lead resolves what it will write', () => {
     });
     expect(r.ok).toBe(true);
     if (r.ok) {
-      expect(Object.keys(r.row).sort()).toEqual(['product_id', 'source']);
+      // `id` is legitimate since #1166 — the caller mints it so the click can carry it. The
+      // exact list still matters: it is what catches a NEW field leaking in later.
+      expect(Object.keys(r.row).sort()).toEqual(['id', 'product_id', 'source']);
+      // Named explicitly as well, so the rule survives a future addition to that list.
+      for (const forbidden of [
+        'utm_source',
+        'utm_content',
+        'utm_campaign',
+        'name',
+        'email',
+        'status',
+      ]) {
+        expect(r.row, `${forbidden} must never be stored`).not.toHaveProperty(
+          forbidden
+        );
+      }
     }
   });
 
@@ -130,5 +145,35 @@ describe('the rate limiter can actually limit', () => {
     // `rate_limit_attempts_attempt_type_check` was widened by DROP+ADD and applied to
     // production. An inline edit to the CREATE TABLE would have been a silent no-op there.
     expect(ATTEMPT_TYPE).toBe('booking_lead');
+  });
+});
+
+describe('the caller may name the lead, but only in the right shape (#1166)', () => {
+  const UUID = '3f6c1a2e-8b4d-4c7a-9e1f-2b5d6c7a8e90';
+
+  it('accepts a v4 uuid and passes it through lowercased', () => {
+    const r = resolveLead({ source: 'pricing', id: UUID.toUpperCase() });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.row.id).toBe(UUID);
+  });
+
+  it('omits id entirely when the caller supplies none', () => {
+    // The database default still applies; the column must not be sent as undefined.
+    const r = resolveLead({ source: 'pricing' });
+    expect(r.ok).toBe(true);
+    if (r.ok) expect('id' in r.row).toBe(false);
+  });
+
+  it('refuses anything that is not a uuid, so caller text never reaches Postgres', () => {
+    for (const bad of [
+      "'; drop table leads; --",
+      '1',
+      'lead_test1',
+      '3f6c1a2e-8b4d-1c7a-9e1f-2b5d6c7a8e90', // v1, not v4
+      '../../etc/passwd',
+    ]) {
+      const r = resolveLead({ source: 'pricing', id: bad });
+      expect(r.ok, `expected ${bad} to be refused`).toBe(false);
+    }
   });
 });
