@@ -1,6 +1,8 @@
 'use client';
 
+import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 import Icon from '@/components/atomic/Icon';
 
 const CalendarEmbed = dynamic(
@@ -15,7 +17,22 @@ const CalendarEmbed = dynamic(
   }
 );
 
-export default function SchedulePage() {
+/**
+ * Carries a lead id from the storefront into the booking, so a booking can be matched back
+ * to the click that started it (#562 T039).
+ *
+ * `BookingCta` records the click, gets a lead id back, and arrives here as `?lead=<uuid>`.
+ * That id becomes the embed's hidden `lead_ref` booking field, Cal.com returns it in the
+ * BOOKING_CREATED payload as `responses.lead_ref`, and `calcom-webhook` advances that exact
+ * lead to `scheduled`.
+ *
+ * ARRIVING WITHOUT ONE IS ORDINARY. Somebody can reach /schedule from the nav, a bookmark or
+ * a link somebody sent them. They book exactly as before; the booking simply is not
+ * attributed to a lead, which is what happened for every booking before this existed.
+ */
+function ScheduleContent() {
+  const leadRef = useSearchParams()?.get('lead') ?? undefined;
+
   return (
     // One explicit measure instead of `container` plus an inner `max-w-7xl`.
     //
@@ -148,11 +165,29 @@ export default function SchedulePage() {
           {/* Right column - Calendar embed */}
           <section className="lg:col-span-2">
             <div className="sh-well bg-base-100 rounded-box min-h-[1200px] p-4 lg:min-h-[1250px] lg:p-6">
-              <CalendarEmbed mode="inline" />
+              <CalendarEmbed mode="inline" prefill={{ lead_ref: leadRef }} />
             </div>
           </section>
         </div>
       </div>
     </main>
+  );
+}
+
+export default function SchedulePage() {
+  // useSearchParams needs a Suspense boundary or Next 15 fails the build — the same
+  // constraint /checkout works under.
+  return (
+    <Suspense
+      fallback={
+        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+          <div className="flex justify-center py-16">
+            <span className="loading loading-spinner loading-lg" />
+          </div>
+        </main>
+      }
+    >
+      <ScheduleContent />
+    </Suspense>
   );
 }
