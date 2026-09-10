@@ -317,3 +317,12 @@ docker-compose.override.yml
 
 # Scratch output of a base-path-divergent local build (#1114). Never committed.
 .manifest-divergent.json
+
+# Deno's lockfile, written by `scripts/ci/check-edge-functions.sh` (#1153).
+#
+# NOT committed, and the deciding fact is where deploys get their dependencies: Edge Functions
+# ship via the Management API, which bundles remotely and never reads this file. So committing it
+# would pin the CHECK's resolution only — not what actually runs in production — while churning
+# on every local run. If deploys ever move to a path that honours a lockfile, revisit this: then
+# it would genuinely pin what signature-verification and money-handling code imports.
+deno.lock
