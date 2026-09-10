@@ -45,6 +45,14 @@ export default function AccountPage() {
             >
               View recent security activity
             </Link>
+            {/*
+              A route nobody can find is not delivered. /orders is `robots.index: false`
+              and absent from every nav, so this is the only path to it that does not
+              involve typing a URL (#561 T029).
+            */}
+            <Link href="/orders" className="btn btn-outline min-h-11 w-full">
+              View your orders
+            </Link>
             <Link href="/payment" className="btn btn-outline min-h-11 w-full">
               View payments
             </Link>

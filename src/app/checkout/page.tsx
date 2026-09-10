@@ -450,7 +450,13 @@ function CheckoutContent() {
             updated the copy on the GATE (see the signed-out branch above) but not
             here — so a buyer who had just been made to create an account was then
             told they did not need one. The two branches of this page must agree
-            about whether an account is required. */}
+            about whether an account is required.
+
+            The SECOND half of that sentence was unbacked for far longer: nothing on
+            the checkout path showed any terms at all until #561 T034 put them in
+            CheckoutSummary, which is the only component rendered on both branches.
+            `scripts/__tests__/checkout-shows-the-terms-it-promises.test.js` fails if
+            this promise and that content ever separate again. */}
         <p className="text-base-content">
           Signed in — your order is saved to your account. Terms are shown
           before payment.

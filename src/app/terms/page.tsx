@@ -117,6 +117,21 @@ export default function TermsOfServicePage() {
             that happens you will have a grace period to update your payment
             details before access ends.
           </p>
+          <p>
+            <strong>Cancelling stops the work, not your site.</strong> When a
+            maintenance plan ends we stop maintaining, patching and updating —
+            we do not take anything down. What we cannot promise is that the
+            site stays reachable, because that does not depend on us: it depends
+            on your domain staying registered, on the account the site is hosted
+            under, and on you holding your own copy of it.
+          </p>
+          <p>
+            So before you cancel, make sure you have the three things you would
+            need to carry on without us: a copy of the site&rsquo;s repository,
+            access to the hosting and domain accounts in your own name, and your
+            account recovery codes. Ask us for any of them and we will hand them
+            over — that is true while the plan is running, not only at the end.
+          </p>
         </section>
 
         <section className="mb-8">
