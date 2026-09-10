@@ -25,6 +25,8 @@ export type LeadSource = (typeof LEAD_SOURCES)[number];
 
 /** What actually gets written. Deliberately small. */
 export interface LeadRow {
+  /** Supplied by the caller so the click can carry it without waiting (#1166). */
+  id?: string;
   source: LeadSource;
   product_id: string | null;
 }
@@ -35,6 +37,23 @@ export type LeadResult =
 
 /** A SKU is a catalog id like `svc-landing`, and it is a FOREIGN KEY, so shape it early. */
 const SKU = /^[a-z0-9][a-z0-9-]{0,63}$/;
+
+/**
+ * A caller-supplied lead id, which must be a v4 UUID and nothing else.
+ *
+ * WHY THE CALLER GETS TO CHOOSE IT (#1166). The id has to be on the URL the moment the visitor
+ * clicks, because it becomes the booking's hidden `lead_ref` and that is the only thing tying a
+ * booking back to a click. Waiting for the server to mint one meant waiting for this function to
+ * answer — and a cold Edge Function start beat the 1200ms cap, so the FIRST click after any quiet
+ * period silently lost attribution while still recording a perfect-looking lead.
+ *
+ * What that concedes, said plainly: a collision is a unique violation and harmless, and somebody
+ * who picks their own id can mark a lead they invented as `scheduled` — a row they created about
+ * themselves. Neither is worth a mechanism. What is NOT conceded is shape: anything that is not a
+ * UUID is refused here, so caller text never reaches Postgres.
+ */
+const UUID_V4 =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
  * Validate a submission and produce the row to insert.
@@ -81,11 +100,25 @@ export function resolveLead(body: unknown): LeadResult {
     }
   }
 
+  let id: string | undefined;
+  if (input.id !== undefined && input.id !== null && String(input.id) !== '') {
+    const raw = String(input.id).trim();
+    if (!UUID_V4.test(raw)) {
+      problems.push('id is not a uuid');
+    } else {
+      id = raw.toLowerCase();
+    }
+  }
+
   if (problems.length > 0) return { ok: false, problems };
 
   return {
     ok: true,
-    row: { source: source as LeadSource, product_id: productId },
+    row: {
+      ...(id ? { id } : {}),
+      source: source as LeadSource,
+      product_id: productId,
+    },
   };
 }
 
