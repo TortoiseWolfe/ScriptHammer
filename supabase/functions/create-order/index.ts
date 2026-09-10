@@ -25,6 +25,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { type SupabaseLike } from '../_shared/webhook-types.ts';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAuthenticatedUserId, UnauthorizedError } from '../_shared/auth.ts';
 import {
@@ -84,7 +85,7 @@ interface RequestBody {
  */
 async function handleRetry(
   req: Request,
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseLike,
   userId: string,
   body: RequestBody
 ): Promise<Response> {

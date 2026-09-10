@@ -43,16 +43,28 @@ const GRACE_DAYS = (() => {
 const PAGE = 100;
 const MAX_PAGES = 200;
 
-function json(body: unknown, status = 200) {
+/*
+ * `corsHeaders` is a FUNCTION of the request, and this spread never called it (#1153).
+ *
+ * `{ ...corsHeaders }` spreads a function's own enumerable properties — of which there are
+ * none — so every response here shipped with NO CORS headers at all, silently. Latent rather
+ * than user-facing: this function is invoked by `intake-orphan-sweep.yml` with curl, and no
+ * browser calls it. But it was wrong, it looked right, and nothing could see it because
+ * nothing type-checked this directory.
+ */
+function json(body: unknown, status = 200, req?: Request) {
   return new Response(JSON.stringify(body, null, 2), {
     status,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: {
+      ...(req ? corsHeaders(req) : {}),
+      'Content-Type': 'application/json',
+    },
   });
 }
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders(req) });
   }
 
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';

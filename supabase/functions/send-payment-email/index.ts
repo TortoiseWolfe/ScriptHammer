@@ -1,3 +1,4 @@
+import { errorMessage } from '../_shared/webhook-types.ts';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   getEmailSubject,
@@ -118,7 +119,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Email notification error:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
+      JSON.stringify({ error: errorMessage(error) || 'Internal server error' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
