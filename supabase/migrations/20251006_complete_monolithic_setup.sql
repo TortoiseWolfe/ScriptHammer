@@ -463,7 +463,12 @@ VALUES
 
   ('svc-care', 'service', 'Care Plan', 'Someone answers when it breaks.',
    9900, 'fixed', NULL, NULL, 'recurring', 'month',
-   '["Hosting, SSL, daily backups","Dependency + security updates","Uptime monitoring","30 min of edits per month"]'::jsonb,
+   -- "on accounts in your name" is load-bearing, not marketing (#1158). The plan
+   -- MANAGES hosting; it does not rent you a server we can switch off. That is what
+   -- makes the terms' promise -- cancelling stops the work and we take nothing down --
+   -- true. The old string, "Hosting, SSL, daily backups", read as a service that ends
+   -- with the subscription, and directly contradicted both /terms and spec.md.
+   '["Hosting, SSL and daily backups, on accounts in your name","Dependency + security updates","Uptime monitoring","30 min of edits per month"]'::jsonb,
    '{"attach_at_checkout":true}'::jsonb, 40, false),
 
   ('svc-care-pro', 'service', 'Care Plan Pro', 'Care Plan, plus someone who keeps it current.',

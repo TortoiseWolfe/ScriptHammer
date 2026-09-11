@@ -433,8 +433,16 @@ re-litigated during planning:
    a second checkout.
 2. Vertical templates are one catalog item with a selectable variant, not four
    separate items.
-3. Cancelling a maintenance plan stops maintenance. The deployed site stays up.
-   This is stated in the terms before purchase.
+3. Cancelling a maintenance plan stops maintenance. Nothing is torn down. What
+   is NOT promised is that the site stays reachable: that depends on the buyer's
+   domain staying registered, on the account it is hosted under, and on them
+   holding their own copy. This is stated in the terms before purchase, and the
+   plan's own feature list says the hosting sits on accounts in their name —
+   which is what makes "we do not take anything down" true rather than a hope.
+   (Corrected in #1158. It previously promised uptime outright, which the catalog
+   contradicted by selling hosting as something the plan provides — and a plan that
+   provides hosting ends it when the plan ends. The exact retracted wording is in
+   the issue, deliberately not repeated here: a guard greps these files for it.)
 4. Photos in formats the browser cannot preview are stored as-is. No conversion.
 5. Booking confirmations are wired from the start rather than flagged by hand,
    because the booking action is an outbound link and the confirmation is
