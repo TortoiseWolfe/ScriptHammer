@@ -25,6 +25,7 @@ import {
   type TerrainGrid,
 } from '@/lib/manifest';
 import { createBakedTerrainProvider, sampleEllipsoidalM } from './terrain';
+import { planPhotoreal, attachPhotoreal, KEY_ENV } from './photoreal';
 import { fetchLiveBuildings, atlasBoxFor } from './overpass';
 import {
   landmarkStops,
@@ -139,6 +140,19 @@ export default function AtlasViewer({ slug }: { slug: string }) {
     typeof window !== 'undefined' &&
     new URLSearchParams(window.location.search).has('live');
 
+  /**
+   * `?photoreal` — Google's tiles instead of the baked twin, WEB ONLY.
+   *
+   * Same window.location.search convention as `?live` above and for the same
+   * reason. Three states, not two: "asked for and no key configured" has to be
+   * distinguishable from "not asked for", or a missing key renders as an
+   * unexplained blank globe. See photoreal.ts for why the mobile build cannot
+   * have this (the terms forbid caching and offline use) and what it is for.
+   */
+  const [photoreal, setPhotoreal] = useState<
+    'off' | 'loading' | 'on' | 'no-key' | 'failed'
+  >('off');
+
   useEffect(() => {
     const el = mountRef.current;
     if (!el) return;
@@ -193,6 +207,41 @@ export default function AtlasViewer({ slug }: { slug: string }) {
         // splat pins and live-layer markers (#292) will need
         // disableDepthTestDistance when they land. The atlas has none today.
         viewer.scene.globe.depthTestAgainstTerrain = true;
+
+        /**
+         * PHOTOREAL BEFORE ANYTHING ELSE IS LOADED, because it replaces all of
+         * it. Google's tiles carry their own ground and their own buildings, so
+         * there is nothing for the baked terrain provider or the extruded
+         * footprints to add — they would only z-fight the mesh a few metres
+         * away. Returning early leaves the camera framing above intact, which
+         * is the one thing both paths share.
+         */
+        const plan = planPhotoreal(
+          window.location.search,
+          process.env.NEXT_PUBLIC_GOOGLE_MAP_TILES_KEY
+        );
+        if (plan.kind === 'no-key') {
+          setPhotoreal('no-key');
+          console.warn(
+            `[atlas] ?photoreal asked for, but ${KEY_ENV} is not set — showing the baked twin. ` +
+              'A browser Maps key is public by design; restrict it by HTTP referrer in Google Cloud.'
+          );
+        } else if (plan.kind === 'on') {
+          setPhotoreal('loading');
+          const res = await attachPhotoreal(Cesium, viewer, plan.key);
+          if (disposed) return;
+          if (res.ok) {
+            setPhotoreal('on');
+            setLive('baked');
+            return;
+          }
+          // A bad, unrestricted or unbilled key fails at the root tileset
+          // request and the message is the only thing separating that from a
+          // network problem. Fall through to the baked twin rather than
+          // leaving the page blank.
+          setPhotoreal('failed');
+          console.warn('[atlas] photorealistic tiles failed:', res.reason);
+        }
 
         // FRAME THE SITE FIRST — before any await.
         //
@@ -652,7 +701,22 @@ export default function AtlasViewer({ slug }: { slug: string }) {
         <div className="bg-base-100/85 rounded-box pointer-events-auto max-w-64 p-3 shadow-lg backdrop-blur">
           <div className="text-sm font-semibold">Atlas — {slug}</div>
           <div className="text-base-content font-mono text-[11px]">
-            {error
+            {/*
+              PHOTOREAL REPLACES THE READOUT, because it replaces the data.
+              Reporting "N buildings · baked · 3DEP" under Google's mesh would
+              describe a layer that is not on screen — and "asked for but no key"
+              has to say so, or a missing key is indistinguishable from a
+              network stall.
+            */}
+            {photoreal === 'on'
+              ? 'Google Photorealistic 3D Tiles · web only'
+              : photoreal === 'loading'
+                ? 'photorealistic tiles…'
+                : photoreal === 'no-key'
+                  ? `baked twin · ?photoreal needs ${KEY_ENV}`
+                  : photoreal === 'failed'
+                    ? 'baked twin · photorealistic tiles failed (see console)'
+                    : error
               ? `error: ${error}`
               : ready
                 ? `${total} buildings · ${
