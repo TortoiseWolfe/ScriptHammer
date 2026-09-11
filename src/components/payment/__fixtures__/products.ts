@@ -41,7 +41,7 @@ export const carePlan: Product = {
   ...landingPage,
   id: 'svc-care',
   name: 'Care Plan',
-  tagline: 'Hosting, SSL, daily backups, and someone who answers.',
+  tagline: 'Someone answers when it breaks.',
   amount: 9900,
   type: 'recurring',
   interval: 'month',

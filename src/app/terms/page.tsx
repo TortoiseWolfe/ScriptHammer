@@ -120,17 +120,24 @@ export default function TermsOfServicePage() {
           <p>
             <strong>Cancelling stops the work, not your site.</strong> When a
             maintenance plan ends we stop maintaining, patching and updating —
-            we do not take anything down. What we cannot promise is that the
-            site stays reachable, because that does not depend on us: it depends
-            on your domain staying registered, on the account the site is hosted
-            under, and on you holding your own copy of it.
+            we do not take anything down, and we could not: the site itself runs
+            on GitHub Pages, which is free and yours, and anything it stores
+            runs on your own Supabase account. Neither is ours to switch off.
           </p>
           <p>
-            So before you cancel, make sure you have the three things you would
-            need to carry on without us: a copy of the site&rsquo;s repository,
-            access to the hosting and domain accounts in your own name, and your
-            account recovery codes. Ask us for any of them and we will hand them
-            over — that is true while the plan is running, not only at the end.
+            We set those accounts up with you if you want the help, and they
+            stay in your name from the first day. That is the arrangement that
+            makes the sentence above true rather than a promise you would have
+            to trust us on.
+          </p>
+          <p>
+            What we cannot promise is that the site stays reachable, because
+            that depends on things you hold: your domain staying registered,
+            those accounts staying open, and you keeping your own copy of the
+            site. Before you cancel, make sure you have all three — a copy of
+            the repository, access to the GitHub and Supabase accounts, and your
+            recovery codes. Ask us for any of them at any time, not only at the
+            end.
           </p>
         </section>
 
