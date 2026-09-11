@@ -433,12 +433,15 @@ re-litigated during planning:
    a second checkout.
 2. Vertical templates are one catalog item with a selectable variant, not four
    separate items.
-3. Cancelling a maintenance plan stops maintenance. Nothing is torn down. What
-   is NOT promised is that the site stays reachable: that depends on the buyer's
-   domain staying registered, on the account it is hosted under, and on them
-   holding their own copy. This is stated in the terms before purchase, and the
-   plan's own feature list says the hosting sits on accounts in their name —
-   which is what makes "we do not take anything down" true rather than a hope.
+3. Cancelling a maintenance plan stops maintenance. Nothing is torn down, and
+   nothing CAN be: the front end runs on GitHub Pages, which is free and the
+   buyer's, and the backend runs on the buyer's own Supabase account, which we
+   offer to set up with them. Neither is ours to switch off. What is NOT promised
+   is that the site stays reachable — that depends on their domain staying
+   registered, those accounts staying open, and them holding their own copy.
+   This is stated in the terms before purchase, and the plan's feature list names
+   both accounts, which is what makes "we take nothing down" a fact about the
+   arrangement rather than a promise to be trusted on.
    (Corrected in #1158. It previously promised uptime outright, which the catalog
    contradicted by selling hosting as something the plan provides — and a plan that
    provides hosting ends it when the plan ends. The exact retracted wording is in

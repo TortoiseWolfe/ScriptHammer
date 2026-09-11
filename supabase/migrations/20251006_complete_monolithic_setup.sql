@@ -463,12 +463,14 @@ VALUES
 
   ('svc-care', 'service', 'Care Plan', 'Someone answers when it breaks.',
    9900, 'fixed', NULL, NULL, 'recurring', 'month',
-   -- "on accounts in your name" is load-bearing, not marketing (#1158). The plan
-   -- MANAGES hosting; it does not rent you a server we can switch off. That is what
-   -- makes the terms' promise -- cancelling stops the work and we take nothing down --
-   -- true. The old string, "Hosting, SSL, daily backups", read as a service that ends
-   -- with the subscription, and directly contradicted both /terms and spec.md.
-   '["Hosting, SSL and daily backups, on accounts in your name","Dependency + security updates","Uptime monitoring","30 min of edits per month"]'::jsonb,
+   -- NAMING THE TWO ACCOUNTS IS THE WHOLE POINT (#1158). The site's front end runs on
+   -- GitHub Pages, which is free and the buyer's; its backend runs on the buyer's OWN
+   -- Supabase account, which has a free tier and which we offer to set up with them.
+   -- Neither is ours to switch off -- which is what makes the terms' promise, that
+   -- cancelling takes nothing down, true rather than a hope. The old string, "Hosting,
+   -- SSL, daily backups", read as a service that ends with the subscription and
+   -- contradicted both /terms and spec.md.
+   '["Hosting, SSL and daily backups — on your own GitHub and Supabase accounts","Dependency + security updates","Uptime monitoring","30 min of edits per month"]'::jsonb,
    '{"attach_at_checkout":true}'::jsonb, 40, false),
 
   ('svc-care-pro', 'service', 'Care Plan Pro', 'Care Plan, plus someone who keeps it current.',

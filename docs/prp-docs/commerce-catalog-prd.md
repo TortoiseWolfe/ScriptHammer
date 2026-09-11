@@ -302,7 +302,7 @@ buyers get plain names, developers get the ScriptHammer flavor.
 | `svc-discovery` | Discovery     | **$250**    | one-time  | Deployed staging page on a real URL, working contact form, mobile pass. Credited in full toward any build within 30 days.                               |
 | `svc-landing`   | Landing Page  | **$1,200**  | one-time  | Single page, live on your domain. Form wired to your inbox and phone. Click-to-call, LocalBusiness schema, OG tags, Lighthouse ≥ 90. 2 revision rounds. |
 | `svc-site`      | Business Site | **$3,500**  | one-time  | 5–7 pages, service pages, project gallery, local SEO, blog scaffold, analytics. 3 revision rounds.                                                      |
-| `svc-care`      | Care Plan     | **$99/mo**  | recurring | Hosting, SSL and backups on accounts in your name; dependency updates, uptime monitoring, 30 min of edits per month.                                                                |
+| `svc-care`      | Care Plan     | **$99/mo**  | recurring | Hosting, SSL and backups on the buyer's own GitHub and Supabase accounts; dependency updates, uptime monitoring, 30 min of edits per month.                                                                |
 | `svc-care-pro`  | Care Plan Pro | **$249/mo** | recurring | Care Plan plus content updates, monthly performance report, 2 hr of edits, priority turnaround.                                                         |
 
 **Rules encoded in the catalog, not in prose:**

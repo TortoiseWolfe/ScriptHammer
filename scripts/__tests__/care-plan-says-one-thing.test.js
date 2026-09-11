@@ -50,7 +50,7 @@ const flat = (s) => s.replace(/\s+/g, ' ');
  * dropping the qualifier — which is the whole point — fails.
  */
 const HOSTING_BULLET =
-  /Hosting, SSL and daily backups, on accounts in your name/;
+  /Hosting, SSL and daily backups — on your own GitHub and Supabase accounts/;
 
 describe('every source describes the same maintenance plan (#1158)', () => {
   it('states the hosting bullet identically in the catalog and on the page', () => {
@@ -75,9 +75,11 @@ describe('every source describes the same maintenance plan (#1158)', () => {
     // down becomes a thing we cannot actually honour.
     for (const file of [MIGRATION, PRICING]) {
       assert.ok(
-        /on accounts in your name/.test(flat(read(file))),
-        `${file} dropped "on accounts in your name" — that phrase is what makes ` +
-          '"cancelling takes nothing down" true rather than a hope.'
+        /your own GitHub and Supabase accounts/.test(flat(read(file))),
+        `${file} stopped naming the two accounts. "GitHub and Supabase" is not ` +
+          'detail — it is the REASON cancelling takes nothing down: the front end is ' +
+          "on GitHub Pages and the backend on the buyer's own Supabase, so neither " +
+          "is the seller's to switch off."
       );
     }
   });
@@ -87,6 +89,11 @@ describe('every source describes the same maintenance plan (#1158)', () => {
     assert.ok(
       /Cancelling stops the work, not your site/.test(terms),
       'src/app/terms lost the cancellation clause agreed with the owner on 2026-09-10.'
+    );
+    assert.ok(
+      /GitHub Pages/.test(terms) && /Supabase/.test(terms),
+      'the terms stopped naming where the site actually runs. Without that, ' +
+        '"we do not take anything down" is a promise rather than a consequence.'
     );
     assert.ok(
       /cannot promise/.test(terms) && /reachable/.test(terms),

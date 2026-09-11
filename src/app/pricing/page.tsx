@@ -148,7 +148,7 @@ const BUSINESS: Product[] = [
     per: '/ month',
     billing: 'Recurring',
     features: [
-      'Hosting, SSL and daily backups, on accounts in your name',
+      'Hosting, SSL and daily backups — on your own GitHub and Supabase accounts',
       'Dependency + security updates',
       'Uptime monitoring',
       '30 min of edits per month',
