@@ -4,9 +4,7 @@ import React, { useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { calendarConfig } from '@/config/calendar.config';
-import { createLogger } from '@/lib/logger';
-
-const logger = createLogger('components:payment:BookingCta');
+import { recordLead } from '@/lib/leads/record-lead';
 
 /** Where the visitor asked from. Must match `leads_source_check` and `LEAD_SOURCES`. */
 export type BookingSource = 'pricing' | 'schedule' | 'checkout';
@@ -71,7 +69,7 @@ export default function BookingCta({
    * The record is fire-and-forget again, with `keepalive` so it survives the navigation it
    * races. A failed record costs attribution, never the booking.
    */
-  const recordLead = useCallback(
+  const onBookingClick = useCallback(
     (e: React.MouseEvent<HTMLAnchorElement>) => {
       // Let the browser handle anything that is not a plain left-click — a new tab must not be
       // hijacked into this tab by a preventDefault.
@@ -86,32 +84,12 @@ export default function BookingCta({
         return;
       }
 
-      const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      // No id to carry and nothing to record: leave the plain link alone.
-      if (!base || !anon || typeof crypto?.randomUUID !== 'function') return;
+      // One recorder for every surface (#562). `/schedule` calls the same function for a
+      // visitor who arrives without a lead, so the request shape cannot drift between them.
+      const leadId = recordLead(source, productId);
+      if (!leadId) return; // nothing to carry — leave the plain link alone
 
-      const leadId = crypto.randomUUID();
       e.preventDefault();
-
-      void fetch(`${base}/functions/v1/create-lead`, {
-        method: 'POST',
-        keepalive: true,
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: anon,
-          Authorization: `Bearer ${anon}`,
-        },
-        body: JSON.stringify({
-          id: leadId,
-          source,
-          ...(productId ? { product_id: productId } : {}),
-        }),
-      }).catch((error) => {
-        // Logged, not surfaced. A 429 here is the rate limiter working.
-        logger.info('Lead not recorded', { source, error: String(error) });
-      });
-
       router.push(`${href}?lead=${encodeURIComponent(leadId)}`);
     },
     [source, productId, href, router]
@@ -132,7 +110,7 @@ export default function BookingCta({
   }
 
   return (
-    <Link href={href} className={className} onClick={recordLead}>
+    <Link href={href} className={className} onClick={onBookingClick}>
       {children}
     </Link>
   );
