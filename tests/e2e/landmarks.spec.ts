@@ -171,68 +171,85 @@ test.describe('Landmarks and skip link', () => {
         openedAdmin = await openAuthedPage(browser, adminFixture.session);
         page = openedAdmin.page;
       }
-      resp = await page.goto(path, {
-        waitUntil: 'domcontentloaded',
-        timeout: 45000,
-      });
-      if (needsAdmin) await dismissCookieBanner(page);
-      const status = resp?.status() ?? 0;
+      /*
+       * TEARDOWN IN A `finally`, BECAUSE IT WAS NOT (#1160).
+       *
+       * `auth.setup.ts` described this teardown as living in a `finally` and it did not -- it
+       * was a bare statement after seven assertions, so an ORDINARY failing expect on any
+       * `/admin` route leaked a live `is_admin` account into the shared project. No killed
+       * worker or cancelled shard required, which is the only case that comment accounted for.
+       *
+       * The backstop it deferred to is weaker than it reads: the sweep lives in the `Auth
+       * Setup` job, behind `needs: smoke -> build -> budget`, so a quota-blocked cycle runs no
+       * sweep at all -- measured 2026-09-10, 40 consecutive blocked runs.
+       *
+       * A `finally` needs none of that to be true. It runs on a failing assertion, on a throw
+       * from `goto`, and on a timeout inside the block.
+       */
+      try {
+        resp = await page.goto(path, {
+          waitUntil: 'domcontentloaded',
+          timeout: 45000,
+        });
+        if (needsAdmin) await dismissCookieBanner(page);
+        const status = resp?.status() ?? 0;
 
-      // Landing check, for the admin routes specifically: a redirect leaves
-      // every assertion below measuring `/`.
-      if (needsAdmin) {
+        // Landing check, for the admin routes specifically: a redirect leaves
+        // every assertion below measuring `/`.
+        if (needsAdmin) {
+          await expect(
+            page,
+            `${path}: redirected away — the admin fixture did not take, and the ` +
+              `assertions below would be measuring the home page`
+          ).toHaveURL(new RegExp(`${path.replace(/\//g, '\\/')}\\/?$`));
+        }
+
+        // A route template is REACHED, not enumerated — its probe path is
+        // expected to 404. Everything else must be a real 200: see the header,
+        // a non-200 measured as an a11y result is how phantom defects get filed.
+        const probe = TEMPLATE_PROBES[path];
+        if (probe) {
+          expect(status, `${path} should render ${probe.source}`).toBe(404);
+          await expect(
+            page.getByText(probe.contains),
+            `${path} did not land on ${probe.source} — the probe is measuring the wrong page`
+          ).toBeVisible();
+        } else {
+          expect(
+            status,
+            `${path} returned HTTP ${status}. NOT an a11y finding — the page did ` +
+              `not render, so nothing here was measured. Fix the route first.`
+          ).toBe(200);
+        }
+
         await expect(
-          page,
-          `${path}: redirected away — the admin fixture did not take, and the ` +
-            `assertions below would be measuring the home page`
-        ).toHaveURL(new RegExp(`${path.replace(/\//g, '\\/')}\\/?$`));
-      }
+          page.locator('main'),
+          `${path} must have exactly one <main>. Zero means the skip link lands ` +
+            `nowhere and screen-reader users get no landmark; more than one is ` +
+            `ambiguous. Gate screens count — ProtectedRoute/MessagingGate/AdminGate ` +
+            `render INSTEAD of the page, so their branches need the landmark too.`
+        ).toHaveCount(1);
 
-      // A route template is REACHED, not enumerated — its probe path is
-      // expected to 404. Everything else must be a real 200: see the header,
-      // a non-200 measured as an a11y result is how phantom defects get filed.
-      const probe = TEMPLATE_PROBES[path];
-      if (probe) {
-        expect(status, `${path} should render ${probe.source}`).toBe(404);
+        const skip = page.locator('a[data-skip-link]');
         await expect(
-          page.getByText(probe.contains),
-          `${path} did not land on ${probe.source} — the probe is measuring the wrong page`
-        ).toBeVisible();
-      } else {
-        expect(
-          status,
-          `${path} returned HTTP ${status}. NOT an a11y finding — the page did ` +
-            `not render, so nothing here was measured. Fix the route first.`
-        ).toBe(200);
+          skip,
+          `${path} has no skip link. It lives in app/layout.tsx so every route ` +
+            `inherits one — if this fails, the layout changed.`
+        ).toHaveCount(1);
+
+        const href = await skip.getAttribute('href');
+        expect(href, `${path}: skip link must target an in-page id`).toMatch(
+          /^#.+/
+        );
+        await expect(
+          page.locator(href!),
+          `${path}: skip link points at ${href}, which does not exist. A skip ` +
+            `link with no target is worse than none — it silently does nothing.`
+        ).toHaveCount(1);
+      } finally {
+        if (openedAdmin) await openedAdmin.close();
+        await deleteIsolatedAdmin(adminFixture);
       }
-
-      await expect(
-        page.locator('main'),
-        `${path} must have exactly one <main>. Zero means the skip link lands ` +
-          `nowhere and screen-reader users get no landmark; more than one is ` +
-          `ambiguous. Gate screens count — ProtectedRoute/MessagingGate/AdminGate ` +
-          `render INSTEAD of the page, so their branches need the landmark too.`
-      ).toHaveCount(1);
-
-      const skip = page.locator('a[data-skip-link]');
-      await expect(
-        skip,
-        `${path} has no skip link. It lives in app/layout.tsx so every route ` +
-          `inherits one — if this fails, the layout changed.`
-      ).toHaveCount(1);
-
-      const href = await skip.getAttribute('href');
-      expect(href, `${path}: skip link must target an in-page id`).toMatch(
-        /^#.+/
-      );
-      await expect(
-        page.locator(href!),
-        `${path}: skip link points at ${href}, which does not exist. A skip ` +
-          `link with no target is worse than none — it silently does nothing.`
-      ).toHaveCount(1);
-
-      if (openedAdmin) await openedAdmin.close();
-      await deleteIsolatedAdmin(adminFixture);
     });
   }
 
