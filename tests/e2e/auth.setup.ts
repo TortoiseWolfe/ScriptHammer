@@ -37,6 +37,17 @@ setup.setTimeout(180000);
  * the shared project. Teardown lives in a `finally`, but a killed worker or a
  * cancelled shard skips it, so this runs once per run as the backstop.
  *
+ * THAT SENTENCE WAS FALSE UNTIL #1160, AND IT MATTERED. Neither seeding spec had a
+ * `finally`: `color-contrast.spec.ts` tore down before its assertions deliberately, but
+ * `landmarks.spec.ts` tore down AFTER seven of them, so an ordinary failing expect on any
+ * `/admin` route leaked a live admin — no killed worker required, which is the only case
+ * this comment accounted for. Both are wrapped now.
+ *
+ * AND DO NOT LEAN ON THIS BACKSTOP. It runs in the `Auth Setup` job, which sits behind
+ * `needs: smoke -> build -> budget`, so a quota-blocked cycle runs no sweep at all —
+ * measured 2026-09-10: 40 consecutive blocked runs, and the quota does not reset until the
+ * 2nd. A `finally` in the spec needs none of that to be true.
+ *
  * PAGINATES. `admin.listUsers()` defaults to one page and silently truncates
  * past 50 (#197) — a sweep that reads page one and reports "0 orphans" is
  * exactly the kind of signal this repo keeps finding: it looks like a clean

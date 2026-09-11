@@ -1,8 +1,10 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
+import { useConsent } from '@/contexts/ConsentContext';
+import { scheduleLeadId } from '@/lib/leads/record-lead';
 import Icon from '@/components/atomic/Icon';
 
 const CalendarEmbed = dynamic(
@@ -31,7 +33,33 @@ const CalendarEmbed = dynamic(
  * attributed to a lead, which is what happened for every booking before this existed.
  */
 function ScheduleContent() {
-  const leadRef = useSearchParams()?.get('lead') ?? undefined;
+  const fromStorefront = useSearchParams()?.get('lead') ?? undefined;
+  const { consent } = useConsent();
+  const [ownLead, setOwnLead] = useState<string | undefined>(undefined);
+
+  /*
+   * A VISITOR WHO ARRIVES HERE DIRECTLY IS ALSO A LEAD (#562).
+   *
+   * `BookingCta` records the click on `/pricing` and arrives with `?lead=`. Everyone else —
+   * the nav, a bookmark, a link somebody sent them — reached the booking page with no record
+   * at all, so their interest was invisible AND their booking was unattributable. Both are
+   * fixed by minting an id here and handing it to the embed exactly as the storefront path
+   * does.
+   *
+   * GATED ON FUNCTIONAL CONSENT, WHICH IS NOT A FORMALITY. It is the same condition that
+   * decides whether the calendar renders at all, so the lead means "this person reached a
+   * working calendar" rather than "this URL was requested" — and it keeps crawlers, which do
+   * not grant consent, out of the count.
+   *
+   * Once per SESSION, not per render: `scheduleLeadId` remembers the id in sessionStorage, so
+   * a reload is the same person still deciding rather than a second enquiry.
+   */
+  useEffect(() => {
+    if (fromStorefront || !consent.functional) return;
+    setOwnLead(scheduleLeadId() ?? undefined);
+  }, [fromStorefront, consent.functional]);
+
+  const leadRef = fromStorefront ?? ownLead;
 
   return (
     // One explicit measure instead of `container` plus an inner `max-w-7xl`.
