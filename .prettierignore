@@ -71,3 +71,4 @@ src/lib/cod/*.js
 # bake. Formatting it guarantees a spurious diff on every regeneration, and the
 # file is 32 KB of coordinates and base64 that nobody reads by hand.
 public/twins/chatt/city.json
+public/twins/chatt/city.bin
