@@ -20,7 +20,18 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
 const supabaseUrl =
   Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
+// ONE URL SERVES BOTH STRIPE MODES, AND EACH MODE HAS ITS OWN SIGNING SECRET.
+// The live endpoint (we_1U5ZAe...) and the test endpoint (we_1U1geo...) both POST here.
+// Reading only STRIPE_WEBHOOK_SECRET meant every LIVE delivery failed HMAC for a month
+// while test traffic verified fine -- the live endpoint never delivered one event, and
+// Stripe moved to disable it. The live secret was stored as STRIPE_WEBHOOK_SECRET_LIVE,
+// following the .env.example convention for OPERATOR credentials that nothing reads.
+// That convention is right for STRIPE_SECRET_KEY_LIVE and exactly wrong here: production
+// MUST read this one (#1180). Try live first -- it is the traffic that pays.
+const WEBHOOK_SECRETS = [
+  Deno.env.get('STRIPE_WEBHOOK_SECRET_LIVE'),
+  Deno.env.get('STRIPE_WEBHOOK_SECRET'),
+].filter((s): s is string => !!s && s.length > 0);
 
 // Days a past-due subscription stays usable before expiring. Mirrors
 // subscriptionConfig.gracePeriodDays in src/config/payment.ts (kept in sync
@@ -40,21 +51,42 @@ serve(async (req) => {
 
     const body = await req.text();
 
+    // An unset secret used to be indistinguishable from a wrong one: both produced a
+    // 400 that read as "Stripe sent us something bad". Say which it is.
+    if (WEBHOOK_SECRETS.length === 0) {
+      console.error(
+        'No Stripe signing secret configured: set STRIPE_WEBHOOK_SECRET_LIVE ' +
+          '(live endpoint) and/or STRIPE_WEBHOOK_SECRET (test endpoint).'
+      );
+      return new Response(
+        JSON.stringify({ error: 'Webhook signing secret not configured' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Verify webhook signature. Must be the async variant: Deno's
     // SubtleCryptoProvider refuses synchronous use, so constructEvent()
     // throws on EVERY delivery (all events 400 before reaching handlers).
-    let event: Stripe.Event;
-    try {
-      event = await stripe.webhooks.constructEventAsync(
-        body,
-        signature,
-        webhookSecret
-      );
-    } catch (err) {
-      console.error('Signature verification failed:', errorMessage(err));
+    let event: Stripe.Event | undefined;
+    let lastErr: unknown;
+    for (const secret of WEBHOOK_SECRETS) {
+      try {
+        event = await stripe.webhooks.constructEventAsync(
+          body,
+          signature,
+          secret
+        );
+        break;
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+
+    if (!event) {
+      console.error('Signature verification failed:', errorMessage(lastErr));
       return new Response(
         JSON.stringify({
-          error: `Webhook signature verification failed: ${errorMessage(err)}`,
+          error: `Webhook signature verification failed: ${errorMessage(lastErr)}`,
         }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
@@ -89,6 +121,7 @@ serve(async (req) => {
         event_data: event.data.object,
         signature: signature,
         signature_verified: true,
+        livemode: event.livemode,
         processed: false,
       })
       .select()
@@ -99,48 +132,58 @@ serve(async (req) => {
       throw webhookError;
     }
 
-    // Process event based on type
+    // THE TEST ENDPOINT POSTS TO THIS SAME URL. A sandbox event therefore reaches these
+    // PRODUCTION tables -- which is how 74 test-mode rows got into them. Keep the audit row
+    // written above so the delivery stays visible, and touch nothing else. Returning 200 is
+    // deliberate: a non-2xx here would count against BOTH endpoints being disabled (#1180).
     let processResult;
-    switch (event.type) {
-      case 'payment_intent.succeeded':
-        processResult = await handlePaymentIntentSucceeded(
-          supabase,
-          event,
-          webhookEvent.id
-        );
-        break;
-      case 'checkout.session.completed':
-        processResult = await handleCheckoutSessionCompleted(
-          supabase,
-          event,
-          webhookEvent.id
-        );
-        break;
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated':
-        processResult = await handleSubscriptionEvent(
-          supabase,
-          event,
-          webhookEvent.id
-        );
-        break;
-      case 'customer.subscription.deleted':
-        processResult = await handleSubscriptionDeleted(
-          supabase,
-          event,
-          webhookEvent.id
-        );
-        break;
-      case 'invoice.payment_failed':
-        processResult = await handleInvoicePaymentFailed(
-          supabase,
-          event,
-          webhookEvent.id
-        );
-        break;
-      default:
-        console.log(`Unhandled event type: ${event.type}`);
-        processResult = { handled: false };
+    if (event.livemode === false) {
+      console.warn(
+        `Test-mode event ${event.id} (${event.type}) acknowledged, not processed`
+      );
+      processResult = { handled: false, reason: 'test_mode_event' };
+    } else {
+      switch (event.type) {
+        case 'payment_intent.succeeded':
+          processResult = await handlePaymentIntentSucceeded(
+            supabase,
+            event,
+            webhookEvent.id
+          );
+          break;
+        case 'checkout.session.completed':
+          processResult = await handleCheckoutSessionCompleted(
+            supabase,
+            event,
+            webhookEvent.id
+          );
+          break;
+        case 'customer.subscription.created':
+        case 'customer.subscription.updated':
+          processResult = await handleSubscriptionEvent(
+            supabase,
+            event,
+            webhookEvent.id
+          );
+          break;
+        case 'customer.subscription.deleted':
+          processResult = await handleSubscriptionDeleted(
+            supabase,
+            event,
+            webhookEvent.id
+          );
+          break;
+        case 'invoice.payment_failed':
+          processResult = await handleInvoicePaymentFailed(
+            supabase,
+            event,
+            webhookEvent.id
+          );
+          break;
+        default:
+          console.log(`Unhandled event type: ${event.type}`);
+          processResult = { handled: false };
+      }
     }
 
     // Mark webhook event as processed
@@ -473,11 +516,22 @@ async function handleSubscriptionDeleted(
     })
     .eq('provider_subscription_id', subscription.id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error('Failed to update subscription:', error);
     throw error;
+  }
+
+  // .single() ERRORS ON ZERO ROWS, and that threw a 500 here. Stripe RETRIES a 500 for
+  // three days and counts it toward disabling the endpoint, so a subscription we never
+  // recorded -- one created outside the app, or predating the row -- turned an
+  // unremarkable event into pressure on the whole webhook (#1180). Acknowledge it instead.
+  if (!sub) {
+    console.warn(
+      `subscription.deleted for a subscription not in the database: ${subscription.id}`
+    );
+    return { handled: false, reason: 'unknown_subscription' };
   }
 
   return {
