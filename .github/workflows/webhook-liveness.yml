@@ -1,0 +1,77 @@
+# Payment webhook liveness (#1183).
+#
+# WHY. The live Stripe webhook was dead for 31 days — 2026-08-17 to 2026-09-17 — because the
+# function read the TEST endpoint's signing secret, so every live delivery failed HMAC and
+# returned 400 (#1180). Nothing here noticed. The only signal that ever arrived was Stripe's own
+# "we are about to disable this endpoint" email, nine days after the first failure, and by then a
+# $349 payment and a live subscription had gone unrecorded.
+#
+# Every other lane already has a watchdog — auth-config-drift, prod-schema-drift, email-health,
+# intake-orphan-sweep, supabase-keepalive. The one path by which money becomes a database row had
+# none. This is that.
+#
+# NOT PR-TRIGGERED, DELIBERATELY. It holds a production credential, and #575 and #897 are both
+# about keeping those away from PR jobs that then run an arbitrary dependency graph.
+# prod-schema-drift.yml is the precedent this follows.
+#
+# NO STRIPE CREDENTIAL. The check reads the FUNCTION'S OWN LOGS, not Stripe's API, so it needs
+# nothing beyond the Supabase token CI already holds. Putting a live payment key in Actions is a
+# decision with a far larger blast radius than this check is worth (see #1185).
+#
+# REPORTS ONLY. It issues no writes and touches no Stripe object.
+#
+# THE VERDICT FUNCTION IS GATED ON EVERY PR — scripts/__tests__/webhook-liveness.test.js runs under
+# the required `Test (20.x)` check and drives evaluate() in both directions, including the real
+# pre-fix #1180 state. A scheduled checker nobody watches fail needs its logic checked where
+# somebody does.
+
+name: Webhook Liveness
+
+on:
+  schedule:
+    # Daily, offset from the other Supabase-touching crons (auth-config-drift 15:15,
+    # smoke 15:30, prod-schema-drift 06:40) so they do not contend for the same project.
+    - cron: '50 7 * * *'
+  push:
+    branches: [main]
+    paths:
+      # A paths filter is safe HERE, unlike on a required check: nothing requires this
+      # workflow, so a run that never reports is simply a run that did not happen. The
+      # daily cron covers everything this filter skips.
+      - 'scripts/ci/check-webhook-liveness.mjs'
+      - '.github/workflows/webhook-liveness.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: webhook-liveness
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  liveness:
+    name: Payment webhooks are delivering
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20.x
+          # This job installs nothing (see below), and v5 defaults package-manager-cache to
+          # TRUE, detects pnpm from `packageManager`, then fails with
+          # `Unable to locate executable file: pnpm`. It reddened four consecutive
+          # `Monitor and Update Status` runs on 2026-09-09. Guarded by
+          # scripts/__tests__/setup-node-v5-caches-a-manager-it-lacks.test.js.
+          package-manager-cache: false
+
+      # No dependencies: the script uses only node: builtins and global fetch, so there is
+      # nothing to install and no lockfile to resolve. Keeps a credential-holding job's
+      # dependency graph empty on purpose.
+      - name: Check payment webhook liveness
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+        run: node scripts/ci/check-webhook-liveness.mjs
