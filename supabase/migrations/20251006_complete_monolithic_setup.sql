@@ -265,6 +265,7 @@ CREATE TABLE IF NOT EXISTS webhook_events (
   event_data JSONB NOT NULL,
   signature TEXT NOT NULL,
   signature_verified BOOLEAN NOT NULL DEFAULT FALSE,
+  livemode BOOLEAN,
   processed BOOLEAN NOT NULL DEFAULT FALSE,
   processing_attempts INTEGER NOT NULL DEFAULT 0,
   processing_error TEXT,
@@ -285,7 +286,16 @@ CREATE INDEX IF NOT EXISTS idx_webhook_events_event_type ON webhook_events(event
 CREATE INDEX IF NOT EXISTS idx_webhook_events_retry ON webhook_events(next_retry_at, permanently_failed) WHERE processed = FALSE AND permanently_failed = FALSE;
 CREATE INDEX IF NOT EXISTS idx_webhook_events_failed ON webhook_events(permanently_failed, created_at DESC) WHERE permanently_failed = TRUE;
 
+-- One URL serves BOTH Stripe modes: the live endpoint and the test endpoint post to the
+-- same Edge Function, so without this column real money and sandbox traffic are
+-- indistinguishable in this table. 74 test-mode rows sit here for exactly that reason (#1180).
+-- Nullable on purpose: rows written before this column existed have an unknown mode, and
+-- defaulting them either way would assert something untrue about them.
+ALTER TABLE webhook_events ADD COLUMN IF NOT EXISTS livemode BOOLEAN;
+
 COMMENT ON TABLE webhook_events IS 'Webhook notifications with idempotency and retry';
+COMMENT ON COLUMN webhook_events.livemode IS
+  'Stripe event.livemode. NULL for rows predating the column. Sandbox events are recorded here but never processed.';
 
 -- ----------------------------------------------------------------------------
 -- COMMERCE CATALOG (Feature 050, Phase 1 — #557)
