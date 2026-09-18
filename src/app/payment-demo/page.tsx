@@ -183,14 +183,15 @@ function PaymentDemoContent() {
           <div className="card bg-base-100 rounded-box">
             <div className="card-body">
               <h2 className="card-title">Step 2: Make a Payment</h2>
-              <p className="text-base-content mb-4">
-                Click the button below to test the Stripe payment flow. Use test
-                card{' '}
-                <code className="bg-base-200 rounded px-2 py-1">
-                  4242 4242 4242 4242
-                </code>
-                .
-              </p>
+              <div role="alert" className="alert alert-warning mb-4">
+                <span>
+                  <strong>These buttons take real money.</strong> This site runs
+                  Stripe in live mode, so the amounts below are charged to the
+                  card you enter. Test cards are declined here. If you are
+                  trying the integration out, refund yourself in Stripe
+                  afterwards.
+                </span>
+              </div>
 
               <div className="flex flex-wrap gap-4">
                 {/* One-time payment */}
@@ -401,42 +402,6 @@ function PaymentDemoContent() {
               with pagination
             </li>
           </ul>
-
-          <div className="divider"></div>
-
-          <h3 className="text-lg font-semibold">Test Cards</h3>
-          <div className="sh-well bg-base-100 rounded-box overflow-x-auto px-4 py-2">
-            <table className="table-sm table">
-              <thead>
-                <tr>
-                  <th>Card Number</th>
-                  <th>Result</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>
-                    <code>4242 4242 4242 4242</code>
-                  </td>
-                  <td>Success</td>
-                </tr>
-                <tr>
-                  <td>
-                    <code>4000 0000 0000 0002</code>
-                  </td>
-                  <td>Declined</td>
-                </tr>
-                <tr>
-                  <td>
-                    <code>4000 0000 0000 9995</code>
-                  </td>
-                  <td>Insufficient funds</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div className="divider"></div>
 
           <div className="alert alert-info">
             <svg
