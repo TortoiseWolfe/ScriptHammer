@@ -16,12 +16,33 @@
  * fetches these functions.
  */
 
-const ALLOWED_HEADERS = [
+/**
+ * Every header the BROWSER is permitted to send to these functions.
+ *
+ * A header a function REQUIRES but does not list here is unreachable from a browser: the
+ * preflight succeeds, the response omits the header from Access-Control-Allow-Headers, and the
+ * browser then refuses to send the real request. fetch() rejects with `TypeError: Failed to
+ * fetch` — no status, no body, nothing in the function's logs, because the POST never happened.
+ *
+ * THAT IS EXACTLY WHAT HAPPENED. `idempotency-key` was missing while create-order documents it
+ * in its own contract (create-order/index.ts:8), reads it (create-order/resolve.ts) and enforces
+ * replay protection on it, and both callers send it — src/app/checkout/page.tsx:221 and
+ * src/lib/offline-queue/payment-adapter.ts:200. So /checkout could never complete a purchase
+ * from a browser, on the first real attempt after go-live.
+ *
+ * It was invisible to every server-side check because curl does not enforce CORS: the preflight
+ * returns 204 with correct-looking headers, and the POST succeeds when you send it yourself.
+ * Only a browser refuses. Guarded by scripts/__tests__/cors-allows-what-clients-send.test.js.
+ */
+export const ALLOWED_HEADER_LIST = [
   'authorization',
   'content-type',
   'x-client-info',
   'apikey',
-].join(', ');
+  'idempotency-key',
+];
+
+const ALLOWED_HEADERS = ALLOWED_HEADER_LIST.join(', ');
 
 const ALLOWED_METHODS = ['POST', 'OPTIONS'].join(', ');
 
