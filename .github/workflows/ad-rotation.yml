@@ -1,0 +1,93 @@
+# Creative rotation for the paid campaign.
+#
+# The ad group bids `maximize_clicks`, so two creatives in it are a bandit, not an A/B test -- the
+# optimiser shifts delivery toward whichever it predicts will click and the resulting CTR difference
+# measures its allocation rather than the copy. This job time-slices instead: exactly one creative
+# active per day, so the optimiser has no allocation decision left to make.
+#
+# A REPORT, NOT A GATE. It cannot fail the build, following actions-usage.yml and the stance in
+# supabase/functions/_shared/ad-conversions.ts:15-18 -- measurement must never cost the thing it
+# measures. The script exits 0 even on an unexpected throw.
+#
+# There is no ledger and nothing is committed back: `main` is protected, nothing here pushes to it
+# from CI, and a cron-written ledger inherits the defect
+# scripts/__tests__/frozen-ledger-cannot-report-coverage.test.js exists for. The rotation schedule
+# is a pure function of the clock and `report` verifies each window against what actually served.
+
+name: Ad Rotation
+
+on:
+  schedule:
+    # Daily at 00:10 UTC -- ten minutes past the window boundary the grid is anchored on, so a
+    # slow start cannot flip the arm into the previous window. Offset from every other cron here
+    # (data-retention 03:30, supabase-keepalive 03:00) since none of them contend for this API.
+    - cron: '10 0 * * *'
+  push:
+    branches: [main]
+    paths:
+      # Safe here, unlike on a required check: nothing requires this workflow, so a run that never
+      # reports is simply a run that did not happen. The daily cron covers what this skips.
+      - 'scripts/ci/ad-rotation.mjs'
+      - '.github/workflows/ad-rotation.yml'
+  workflow_dispatch:
+    inputs:
+      verb:
+        description: 'rotate (flip the active arm) or report (read results only)'
+        required: false
+        default: 'report'
+
+concurrency:
+  # Singleton, never cancelled. Two rotations racing could leave two arms active, which silently
+  # restores bandit mode and poisons every window after it.
+  group: ad-rotation
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  rotation:
+    name: Rotate creatives and report
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20.x
+          # v5 defaults this to TRUE, detects pnpm from `packageManager`, then fails with
+          # `Unable to locate executable file: pnpm` in a job that installs nothing.
+          # Pinned by scripts/__tests__/setup-node-v5-caches-a-manager-it-lacks.test.js.
+          package-manager-cache: false
+
+      # A step rather than a job-level `if:`, because the `secrets` context is not available in a
+      # job-level condition at all (the same reason email-health.yml:95-96 gives).
+      - name: Is an ads credential configured?
+        id: configured
+        env:
+          OPENAI_ADS_API_KEY: ${{ secrets.OPENAI_ADS_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "$OPENAI_ADS_API_KEY" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::OPENAI_ADS_API_KEY is not set — nothing to rotate or report."
+          fi
+
+      # No dependencies: node: builtins and global fetch only. Keeps a credential-holding job's
+      # dependency graph empty on purpose.
+      - name: Rotate the active creative
+        if: steps.configured.outputs.configured == 'true' && github.event_name == 'schedule'
+        env:
+          OPENAI_ADS_API_KEY: ${{ secrets.OPENAI_ADS_API_KEY }}
+        run: node scripts/ci/ad-rotation.mjs rotate
+
+      - name: Report on closed windows
+        if: steps.configured.outputs.configured == 'true'
+        env:
+          OPENAI_ADS_API_KEY: ${{ secrets.OPENAI_ADS_API_KEY }}
+          ROTATION_VERB: ${{ github.event.inputs.verb || 'report' }}
+        # Dispatch input goes through env, never interpolated into the run body.
+        run: node scripts/ci/ad-rotation.mjs "${ROTATION_VERB}"
