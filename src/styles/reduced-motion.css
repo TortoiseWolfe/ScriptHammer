@@ -24,11 +24,13 @@
   .animate-spin,
   .animate-bounce,
   .animate-pulse,
-  .animate-ping {
+  .animate-ping,
+  .sh-shake {
     animation: none !important;
   }
 }
 
+[data-reduce-motion='true'] .sh-shake,
 [data-reduce-motion='true'] .animate-spin,
 [data-reduce-motion='true'] .animate-bounce,
 [data-reduce-motion='true'] .animate-pulse,

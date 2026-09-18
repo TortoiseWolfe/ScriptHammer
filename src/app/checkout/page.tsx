@@ -86,6 +86,11 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const sku = searchParams?.get('sku') ?? skuFromLocation();
   const sessionId = searchParams?.get('session_id') ?? null;
+  // Only a `variable` SKU honours this, and only as an INPUT -- create-order
+  // re-validates it against the row's own min/max and refuses anything else
+  // (resolveChargeAmount). For every fixed SKU the submitted amount is
+  // DISCARDED rather than checked, so passing one here cannot move a price.
+  const amountParam = searchParams?.get('amount') ?? null;
 
   const [stage, setStage] = useState<Stage>({ kind: 'loading' });
   const [buyer, setBuyer] = useState<{ name?: string; email?: string }>({});
@@ -228,6 +233,12 @@ function CheckoutContent() {
             body: JSON.stringify({
               product_id: product.id,
               buyer_email: intake.email,
+              // Pay-what-you-want. Sent ONLY for a variable SKU so a tampered
+              // `?amount=` on a fixed one never even reaches the function, and
+              // rejected there anyway if it is out of bounds.
+              ...(product.amount_mode === 'variable' && amountParam
+                ? { amount: Number(amountParam) }
+                : {}),
               // The OpenAI Ads click id, only if this visitor arrived from an ad AND granted
               // marketing consent — readOppref returns null otherwise, and create-order drops
               // the field when absent. It rides payment_intents.metadata so stripe-webhook can
@@ -290,7 +301,7 @@ function CheckoutContent() {
     // `attachments: []` no matter how many files the buyer uploaded, and nothing
     // would look wrong: the uploads succeed, the thumbnails appear, the order is
     // created. Only the operator, later, finds nothing attached.
-    [stage, attemptNonce, attachments]
+    [stage, attemptNonce, attachments, amountParam]
   );
 
   // ---- render ------------------------------------------------------------

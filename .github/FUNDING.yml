@@ -1,0 +1,8 @@
+# Shown as a "Sponsor" button on the repository itself, which is where forkers
+# actually are -- the marketing site is not somewhere a person who cloned the
+# template ever goes back to.
+#
+# `custom` points at /tip rather than a third-party host so the contribution
+# runs through the same `create-order` path as every other SKU, against the
+# seeded `tip-jar` row. There is no GitHub Sponsors profile to list here yet.
+custom: ['https://scripthammer.com/tip']

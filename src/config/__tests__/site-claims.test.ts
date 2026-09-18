@@ -94,6 +94,12 @@ describe('landing-page claims', () => {
       'README.md',
       'CLAUDE.md',
       'public/blog/scripthammer-intro.md',
+      // The pricing page became the FIFTH copy of this fact and drifted to a
+      // stale 34 while THEME_COUNT moved to 35 -- unguarded, because this list
+      // covered prose only and nobody thought of the storefront as prose. It is
+      // the surface where a wrong number is read by someone deciding whether to
+      // pay, so it belongs here more than the blog post does.
+      'src/app/pricing/page.tsx',
     ];
     // THE RULE: a count must sit ADJACENT to the qualifier it describes.
     //

@@ -21,10 +21,23 @@ describe('Footer Accessibility', () => {
     // An icon-only or empty link passes axe's colour rules and is still unusable.
     render(<Footer />);
     const links = screen.getAllByRole('link');
-    expect(links.length).toBe(FOOTER_LINKS.length);
+    // FOOTER_LINKS models the three EXTERNAL brand links only. The tip jar is a
+    // fourth, internal link added directly in the component -- deliberately not
+    // in that array, which Footer.tsx destructures positionally and whose
+    // entries the sibling spec asserts open in a new tab (T051).
+    expect(links.length).toBe(FOOTER_LINKS.length + 1);
     for (const link of links) {
       expect((link.textContent ?? '').trim().length).toBeGreaterThan(0);
     }
+  });
+
+  it('the tip link is internal — no new tab, no noopener dance', () => {
+    // If this ever gains target=_blank it has been moved into FOOTER_LINKS,
+    // which would also silently reassign the three positional constants.
+    render(<Footer />);
+    const tip = screen.getByRole('link', { name: /tip jar/i });
+    expect(tip).toHaveAttribute('href', '/tip');
+    expect(tip).not.toHaveAttribute('target');
   });
 
   it('keeps the two primary links at the 44px touch target', () => {

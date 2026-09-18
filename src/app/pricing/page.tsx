@@ -3,6 +3,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import BookingCta from '@/components/payment/BookingCta';
 import styles from './pricing.module.css';
+import { THEME_COUNT } from '@/config/themes';
 import { routeMetadata } from '@/utils/metadata';
 
 // FONT FACES ARE VENDORED (#730). These were fetched from Google at BUILD time, which
@@ -187,7 +188,7 @@ const DEVELOPERS: Product[] = [
     billing: 'Open source',
     features: [
       'Next.js 15 + React 19 + TypeScript',
-      '680+ tests, PWA, 34 themes',
+      `2,400+ tests, PWA, ${THEME_COUNT} themes`,
       'Auth, payments, encrypted messaging',
       'MIT licensed, community support',
     ],
@@ -428,42 +429,6 @@ export default function PricingPage() {
             source="pricing"
             className={`${styles.btn} ${mono.className} mx-auto max-w-xs`}
           />
-        </section>
-
-        {/* The demo carried this three-column note and it is the most honest thing
-            on the page — it states what exists, what this feature adds, and the cap
-            that currently blocks the two largest packages. Keeping it. */}
-        <section
-          className={`${styles.footNote} mt-12 grid gap-8 pt-8 md:grid-cols-3`}
-        >
-          <div>
-            <h2 className="mb-2 text-[0.86rem]">Already built</h2>
-            <p>
-              13 Supabase Edge Functions, Stripe + PayPal, webhooks, offline
-              queue, subscription retry with grace period, GDPR consent gate,
-              admin dashboard.
-            </p>
-          </div>
-          <div>
-            <h2 className="mb-2 text-[0.86rem]">This PRD adds</h2>
-            <p>
-              <code className={mono.className}>products</code> and{' '}
-              <code className={mono.className}>orders</code> tables, a{' '}
-              <code className={mono.className}>create-order</code> Edge
-              Function, guest checkout via anonymous auth, and the storefront
-              you&apos;re looking at.
-            </p>
-          </div>
-          <div>
-            <h2 className="mb-2 text-[0.86rem]">Blocker it removes</h2>
-            <p>
-              <code className={mono.className}>payment_intents.amount</code> is
-              capped at{' '}
-              <span className={`${styles.danger} font-semibold`}>$999.99</span>{' '}
-              in both config and schema. Nothing above Discovery can be sold
-              until that ships.
-            </p>
-          </div>
         </section>
       </main>
     </div>
