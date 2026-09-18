@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { FOOTER_LINKS } from '@/config/footer-links';
 
 const [CRUDGAMES, GEOLARP_SITE, SCRIPTHAMMER] = FOOTER_LINKS;
@@ -44,6 +45,17 @@ export function Footer() {
             {SCRIPTHAMMER.label}
           </a>{' '}
           template
+        </p>
+        {/* Deliberately NOT in FOOTER_LINKS. That array is destructured
+            positionally at the top of this file, so adding an entry silently
+            reassigns CRUDGAMES/GEOLARP_SITE/SCRIPTHAMMER -- and it models
+            EXTERNAL brand links, which the Footer tests assert open in a new
+            tab with rel=noopener. This one is internal and must not. */}
+        <p className="text-base-content mt-1 text-xs">
+          <Link href="/tip" className="link-hover link">
+            Tip jar
+          </Link>{' '}
+          — the template is free; this is only if you want to.
         </p>
       </div>
     </footer>

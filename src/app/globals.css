@@ -948,6 +948,32 @@ p:not([class*='text-']) {
   }
 }
 
+/* A single short shake for a rejected tip amount (#T048). Follows the sh-pulse
+   idiom above: Tailwind 4 is CSS-first here, there is no tailwind.config, and the
+   media query belongs ON the utility because a custom name is NOT covered by the
+   animate-* kill-switch in reduced-motion.css. TipJar also gates the class before
+   applying it, so this is the second of two guards, not the only one. */
+@keyframes sh-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+@utility sh-shake {
+  animation: sh-shake 0.32s ease-in-out 1;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
 /* The 2a button (#379). The comp does not use DaisyUI's `.btn` silhouette —
    its buttons are mono, uppercase, letterspaced, 14px-radius slabs. Defined
    once here because the shape repeats four times across the page and would
