@@ -196,6 +196,20 @@ const DEVELOPERS: Product[] = [
     href: 'https://github.com/TortoiseWolfe/ScriptHammer',
   },
   {
+    // #1201. Was buyable at $149 and FEATURED as this lane's hero while not one
+    // of its four bullets was backed: the vertical templates appear nowhere in
+    // the repo, and checkout has no field to choose between them.
+    //
+    // `comingSoon` is what actually removes the buy link. This array is
+    // hardcoded and never reads the catalog, so setting `active = false` alone
+    // would leave a live Select dead-ending on "That package is not available"
+    // (checkout/page.tsx:185, :336) -- worse than doing nothing. Both halves.
+    //
+    // The licence bullet is DELETED rather than deferred: MIT (LICENSE:1) grants
+    // commercial use and unlimited sites already, and the free Forge card says so
+    // on this same page, so it was untrue in every tense. The other three are
+    // kept as the stated intent of an unbuilt product, which "Coming soon" makes
+    // an honest frame. What $149 actually buys is still open -- see #1201.
     sku: 'prd-anvil',
     name: 'Anvil',
     tagline: 'A vertical, productized.',
@@ -204,14 +218,11 @@ const DEVELOPERS: Product[] = [
     features: [
       'One industry template (Roofer, HVAC, Plumber, Landscaper)',
       'Copy, layout, and schema tuned for the trade',
-      'Commercial license, unlimited client sites',
       'Lifetime updates to that pack',
     ],
     cta: 'Select',
     href: '',
-    tag: 'Best value',
-    featured: true,
-    primary: true,
+    comingSoon: true,
   },
   {
     sku: 'prd-foundry',
