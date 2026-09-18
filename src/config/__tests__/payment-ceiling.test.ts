@@ -124,7 +124,24 @@ describe('payment ceiling', () => {
     expect(rows).toHaveLength(12);
     expect(rows.map((r) => r.sku)).toContain('svc-site');
     expect(rows.find((r) => r.sku === 'svc-site')?.amount).toBe(350000);
-    // The three recurring SKUs ship inactive until they have provider ids.
-    expect(rows.filter((r) => !r.active)).toHaveLength(3);
+    // WHY THIS NAMES SKUs RATHER THAN COUNTING. It used to assert "exactly 3
+    // inactive" — the three recurring SKUs awaiting provider plan ids. #1201 made
+    // `prd-anvil` a fourth, dark for an unrelated reason: it was sold at $149 with
+    // nothing behind it. Bumping 3 -> 4 would have kept the test green while saying
+    // nothing about WHY any of them are off the storefront, and a future SKU going
+    // dark for a bad reason would have been absorbed silently by the same number.
+    //
+    // Naming them means each has to be justified when it changes, and an unexpected
+    // fifth fails loudly instead of being counted.
+    const inactive = rows
+      .filter((r) => !r.active)
+      .map((r) => r.sku)
+      .sort();
+    expect(inactive).toEqual([
+      'prd-anvil', // #1201 — off the buy path until it delivers something
+      'prd-foundry', // recurring, no provider plan id
+      'svc-care', // recurring, no provider plan id
+      'svc-care-pro', // recurring, no provider plan id
+    ]);
   });
 });

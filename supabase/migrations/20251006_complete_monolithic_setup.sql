@@ -495,8 +495,9 @@ VALUES
 
   ('prd-anvil', 'product', 'Anvil', 'A vertical, productized.',
    14900, 'fixed', NULL, NULL, 'one_time', NULL,
-   '["One industry template (Roofer, HVAC, Plumber, Landscaper)","Copy, layout, and schema tuned for the trade","Commercial license, unlimited client sites","Lifetime updates to that pack"]'::jsonb,
-   '{}'::jsonb, 20, true),
+   '["One industry template (Roofer, HVAC, Plumber, Landscaper)","Copy, layout, and schema tuned for the trade","Lifetime updates to that pack"]'::jsonb,
+   '{}'::jsonb, 20, false),  -- #1201: inactive until it delivers something. The licence
+                             -- bullet is gone for good: MIT already grants it, free.
 
   ('prd-foundry', 'product', 'Foundry', 'Every pack, and the ones not built yet.',
    4900, 'fixed', NULL, NULL, 'recurring', 'month',
