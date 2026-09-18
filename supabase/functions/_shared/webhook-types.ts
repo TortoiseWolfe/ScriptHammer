@@ -72,3 +72,33 @@ export interface SupabaseLike {
   // deno-lint-ignore no-explicit-any
   from(table: string): any;
 }
+
+/**
+ * Which of our `payment_intents.id` a Stripe Checkout Session refers to.
+ *
+ * THIS WAS THE BUG THAT MADE HOSTED CHECKOUT UNFULFILLABLE. `handlePaymentCheckout` looked up
+ * `session.metadata?.intent_id` — and `create-stripe-checkout` never sets session-level
+ * metadata. It sets `payment_intent_data.metadata.intent_id` (which lands on the PaymentIntent,
+ * not the Session) and `client_reference_id`. So the lookup was always `undefined`, the handler
+ * always returned `{handled:false}`, and `payment_results` stayed empty for the life of the
+ * project — verified on a real live Session, whose `metadata` came back `{}` while
+ * `client_reference_id` carried the intent id correctly.
+ *
+ * Reading `client_reference_id` as the fallback also repairs sessions created BEFORE this fix,
+ * because it was always being set. Order matters only for forward compatibility: if session
+ * metadata is ever populated deliberately, it should win over the convention.
+ */
+export function resolveCheckoutIntentId(session: {
+  metadata?: Record<string, string> | null;
+  client_reference_id?: string | null;
+}): string | null {
+  const fromMetadata = session.metadata?.intent_id;
+  if (typeof fromMetadata === 'string' && fromMetadata.length > 0)
+    return fromMetadata;
+  const fromRef = session.client_reference_id;
+  if (typeof fromRef === 'string' && fromRef.length > 0) return fromRef;
+  return null;
+}
+
+/** Postgres unique_violation. Both payment handlers can now write the same row. */
+export const PG_UNIQUE_VIOLATION = '23505';

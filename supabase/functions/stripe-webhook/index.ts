@@ -6,6 +6,8 @@
 import { advanceOrderAndNotify } from '../_shared/advance-order.ts';
 import {
   errorMessage,
+  PG_UNIQUE_VIOLATION,
+  resolveCheckoutIntentId,
   type WebhookHandlerResult,
 } from '../_shared/webhook-types.ts';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -253,6 +255,24 @@ async function handlePaymentIntentSucceeded(
     .select()
     .single();
 
+  // BOTH payment handlers now write this row — checkout.session.completed was dead until the
+  // correlation fix, so this was the only writer and could never collide. Now whichever event
+  // Stripe delivers second hits idx_payment_results_one_succeeded_per_intent. A 500 here would
+  // be retried for three days and count toward the endpoint being disabled; the payment is
+  // already recorded, so acknowledge it and still advance (advance-order is compare-and-swap).
+  if (error?.code === PG_UNIQUE_VIOLATION) {
+    console.log(
+      `payment_result for intent ${intent.id} already recorded by the other event — advancing only`
+    );
+    await advanceOrderAndNotify(supabase, {
+      intentId: intent.id,
+      amount: paymentIntent.amount ?? null,
+      currency: paymentIntent.currency ?? null,
+      provider: 'stripe',
+    });
+    return { handled: false, reason: 'payment_already_recorded' };
+  }
+
   if (error) {
     console.error('Failed to create payment_result:', error);
     throw error;
@@ -302,14 +322,26 @@ async function handlePaymentCheckout(
   session: Stripe.Checkout.Session,
   webhookEventId: string
 ): Promise<WebhookHandlerResult> {
+  // session.metadata is EMPTY on every session this app creates — the intent id travels in
+  // client_reference_id. See resolveCheckoutIntentId for what that cost.
+  const intentId = resolveCheckoutIntentId(session);
+  if (!intentId) {
+    console.warn(
+      `Checkout session ${session.id} carries neither metadata.intent_id nor client_reference_id`
+    );
+    return { handled: false, reason: 'no_intent_reference' };
+  }
+
   const { data: intent } = await supabase
     .from('payment_intents')
     .select('*')
-    .eq('id', session.metadata?.intent_id)
+    .eq('id', intentId)
     .single();
 
   if (!intent) {
-    console.warn(`No payment_intent found for checkout session: ${session.id}`);
+    console.warn(
+      `No payment_intent ${intentId} for checkout session: ${session.id}`
+    );
     return { handled: false };
   }
 
@@ -327,6 +359,23 @@ async function handlePaymentCheckout(
     })
     .select()
     .single();
+
+  // See the matching note in handlePaymentIntentSucceeded: whichever event arrives second
+  // collides on the one-succeeded-per-intent index, and must not 500.
+  if (error?.code === PG_UNIQUE_VIOLATION) {
+    console.log(
+      `payment_result for intent ${intent.id} already recorded by the other event — advancing only`
+    );
+    if (session.payment_status === 'paid') {
+      await advanceOrderAndNotify(supabase, {
+        intentId: intent.id,
+        amount: session.amount_total ?? null,
+        currency: session.currency ?? null,
+        provider: 'stripe',
+      });
+    }
+    return { handled: false, reason: 'payment_already_recorded' };
+  }
 
   if (error) {
     console.error('Failed to create payment_result:', error);
