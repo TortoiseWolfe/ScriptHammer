@@ -22,7 +22,7 @@ export const metadata: Metadata = {
  */
 export default function TipPage() {
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-12">
+    <main className="container mx-auto max-w-2xl px-4 py-12">
       <h1 className="mb-3 text-3xl font-bold">Tip jar</h1>
       <p className="text-base-content mb-2">
         The template is free and stays free. Nothing here is gated, nothing
@@ -48,6 +48,6 @@ export default function TipPage() {
           .
         </p>
       </div>
-    </div>
+    </main>
   );
 }
