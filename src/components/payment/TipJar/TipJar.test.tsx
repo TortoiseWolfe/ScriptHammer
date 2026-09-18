@@ -91,4 +91,36 @@ describe('TipJar', () => {
     fireEvent.click(give());
     expect(amountField().className).toContain('sh-shake');
   });
+
+  describe('compact — the variant that actually sits where value lands', () => {
+    it('a preset goes STRAIGHT to checkout, no second screen', () => {
+      // The whole point of compact: giving is one click at the moment somebody
+      // takes the free thing. A navigation to /tip first is the empty room.
+      render(<TipJar compact />);
+      fireEvent.click(screen.getByRole('button', { name: '$15' }));
+      expect(push).toHaveBeenCalledWith('/checkout?sku=tip-jar&amount=1500');
+    });
+
+    it('offers all three presets and an escape to /tip for anything else', () => {
+      render(<TipJar compact />);
+      expect(screen.getByRole('button', { name: '$5' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '$15' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '$50' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('link', { name: /another amount/i })
+      ).toHaveAttribute('href', '/tip');
+    });
+
+    it('has no free-text amount field — that is what /tip is for', () => {
+      render(<TipJar compact />);
+      expect(screen.queryByLabelText(/amount in whole dollars/i)).toBeNull();
+    });
+
+    it('every preset clears the 44px touch target', () => {
+      render(<TipJar compact />);
+      for (const b of screen.getAllByRole('button')) {
+        expect(b.className).toMatch(/min-h-11/);
+      }
+    });
+  });
 });

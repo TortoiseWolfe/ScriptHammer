@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 
@@ -11,6 +12,13 @@ export const TIP_MAX_CENTS = 50_000;
 
 export interface TipJarProps {
   className?: string;
+  /**
+   * Compact renders the presets alone, for placing at the moment value lands --
+   * beside "Clone the starter", not on a page of its own. A jar on its own page
+   * is a jar in an empty room: nobody navigates in order to give. One click goes
+   * straight to checkout; "another amount" is the only thing that needs /tip.
+   */
+  compact?: boolean;
 }
 
 /**
@@ -32,7 +40,10 @@ export interface TipJarProps {
  * in reduced-motion.css covers only Tailwind's built-in animate-* names, so a custom
  * utility is not covered by inheritance (T049).
  */
-export default function TipJar({ className = '' }: TipJarProps) {
+export default function TipJar({
+  className = '',
+  compact = false,
+}: TipJarProps) {
   const router = useRouter();
   const prefersReduced = useReducedMotion();
   const [dollars, setDollars] = useState<string>('15');
@@ -62,6 +73,36 @@ export default function TipJar({ className = '' }: TipJarProps) {
     setError(null);
     router.push(`/checkout?sku=tip-jar&amount=${cents}`);
   }, [dollars, prefersReduced, router, validate]);
+
+  const goDirect = useCallback(
+    (cents: number) => router.push(`/checkout?sku=tip-jar&amount=${cents}`),
+    [router]
+  );
+
+  if (compact) {
+    return (
+      <div className={className}>
+        <p className="text-base-content mb-2 text-sm">
+          Free forever. If it saved you a weekend:
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {TIP_PRESETS.map((cents) => (
+            <button
+              key={cents}
+              type="button"
+              onClick={() => goDirect(cents)}
+              className="btn btn-outline btn-sm min-h-11 min-w-11"
+            >
+              ${cents / 100}
+            </button>
+          ))}
+          <Link href="/tip" className="link link-hover text-sm">
+            another amount
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={className}>

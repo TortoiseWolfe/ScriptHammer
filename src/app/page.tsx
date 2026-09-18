@@ -6,6 +6,7 @@ import { getProjectConfig } from '@/config/project.config';
 import Icon from '@/components/atomic/Icon';
 import { type TemplateDemo } from '@/components/molecular/TemplateStats';
 import { detectedConfig } from '@/config/project-detected';
+import TipJar from '@/components/payment/TipJar';
 import { CURATED_THEMES, THEME_COUNT } from '@/config/themes';
 import { countWireframes } from '@/config/wireframes';
 import pkg from '../../package.json';
@@ -717,6 +718,10 @@ export default function Home() {
               Storybook catalogue
               <span aria-hidden="true">→</span>
             </a>
+            {/* The jar sits HERE, one line under "Clone the starter", because
+                this is the moment somebody takes the free thing -- not on a
+                page of its own, which nobody navigates to in order to give. */}
+            <TipJar compact className="mt-2" />
           </div>
         </div>
       </section>
