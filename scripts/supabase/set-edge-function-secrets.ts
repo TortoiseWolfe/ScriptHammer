@@ -38,6 +38,9 @@ import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
+// Shared with scripts/__tests__/secret-digest.test.js — `pnpm test:scripts` runs plain
+// `node --test`, which cannot import a .ts, so the pure logic lives in a .mjs (#1182).
+import { classifySecrets, digest } from './secret-digest.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -45,18 +48,28 @@ const __dirname = dirname(__filename);
 type CliArgs = {
   apply: boolean;
   configPath: string;
+  /** Overwrite a deployed value that DIFFERS from the local one. */
+  force: boolean;
+  /** Restrict the run to these names. Empty means every name in the config. */
+  only: string[];
 };
 
 function parseArgs(argv: string[]): CliArgs {
   const args: CliArgs = {
     apply: false,
     configPath: resolve(__dirname, '..', '..', '.env'),
+    force: false,
+    only: [],
   };
 
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--apply') {
       args.apply = true;
+    } else if (a === '--force') {
+      args.force = true;
+    } else if (a.startsWith('--only=')) {
+      args.only.push(...a.slice('--only='.length).split(',').filter(Boolean));
     } else if (a === '--config') {
       const next = argv[i + 1];
       if (!next) {
@@ -67,7 +80,14 @@ function parseArgs(argv: string[]): CliArgs {
       i++;
     } else if (a === '--help' || a === '-h') {
       console.log(
-        'Usage: tsx scripts/supabase/set-edge-function-secrets.ts [--apply] [--config <path>]'
+        'Usage: tsx scripts/supabase/set-edge-function-secrets.ts [--apply] [--force]\n' +
+          '            [--only=NAME[,NAME...]] [--config <path>]\n' +
+          '\n' +
+          '  --only=NAME  restrict the run to these names — rotating one credential should\n' +
+          '               not require pushing all eight (#1182).\n' +
+          '  --force      overwrite a deployed value that DIFFERS from the local one.\n' +
+          '               Without it a divergence is REFUSED, because the deployed value\n' +
+          '               may be the correct one and this script cannot read it back.'
       );
       process.exit(0);
     } else {
@@ -127,10 +147,10 @@ function fingerprint(value: string): string {
   return `…${value.slice(-4)}`;
 }
 
-async function listSecretNames(
+async function listSecretDigests(
   projectRef: string,
   token: string
-): Promise<Set<string>> {
+): Promise<Map<string, string>> {
   const res = await fetch(
     `https://api.supabase.com/v1/projects/${projectRef}/secrets`,
     {
@@ -144,9 +164,10 @@ async function listSecretNames(
       `GET /secrets returned ${res.status} ${res.statusText}: ${body.slice(0, 300)}`
     );
   }
-  // The response includes plaintext `value`s — we deliberately keep only `name`.
+  // `value` is a SHA-256 DIGEST, not the plaintext this comment used to claim. Keeping it
+  // is what lets us tell "already correct" from "about to be silently replaced" (#1182).
   const remote = (await res.json()) as RemoteSecret[];
-  return new Set(remote.map((s) => s.name));
+  return new Map(remote.map((s) => [s.name, s.value ?? '']));
 }
 
 async function createSecrets(
@@ -315,6 +336,17 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  if (args.only.length > 0) {
+    const unknown = args.only.filter((n) => !(n in desired));
+    if (unknown.length > 0) {
+      console.error(`✗ --only names not in the config: ${unknown.join(', ')}`);
+      process.exit(1);
+    }
+    for (const n of Object.keys(desired)) {
+      if (!args.only.includes(n)) delete desired[n];
+    }
+  }
+
   const names = Object.keys(desired);
   if (names.length === 0) {
     console.error('✗ Config has no secrets. Nothing to do.');
@@ -328,46 +360,102 @@ async function main(): Promise<void> {
   console.log(`Mode:    ${args.apply ? 'APPLY' : 'dry-run (default)'}`);
   console.log();
 
-  console.log('Fetching current secret names...');
-  const existing = await listSecretNames(projectRef, token);
+  console.log('Fetching current secret digests...');
+  const existing = await listSecretDigests(projectRef, token);
 
   const keyWidth = Math.max(...names.map((n) => n.length), 20);
   console.log();
   console.log(`Secrets in config (${names.length}) — values masked:`);
   console.log();
+  // THE POINT OF #1182. This used to diff by NAME, so "already correct" and "about to be
+  // replaced with something else" printed identically, and --apply POSTed every allow-listed
+  // key unconditionally. A live-credential hazard, not a tidiness one: STRIPE_SECRET_KEY must
+  // be the LIVE key in the function runtime while `.env` must stay test-mode
+  // (.env.example:317-322 — the E2E fixture provisions REAL subscriptions with it). One
+  // --apply would push sk_test_ over production and print "8 secret(s) set and verified".
+  const { fresh, unchanged, overwrite } = classifySecrets(desired, existing);
+  const actionOf = (n: string) =>
+    fresh.includes(n)
+      ? 'NEW'
+      : unchanged.includes(n)
+        ? 'UNCHANGED'
+        : 'OVERWRITE';
+
   for (const name of names) {
-    const action = existing.has(name) ? 'UPDATE' : 'NEW   ';
     console.log(
-      `  [${action}] ${name.padEnd(keyWidth)}  value ${fingerprint(desired[name])}`
+      `  [${actionOf(name).padEnd(9)}] ${name.padEnd(keyWidth)}  value ${fingerprint(desired[name])}`
     );
   }
   console.log();
 
+  if (overwrite.length > 0) {
+    console.log(
+      `⚠ ${overwrite.length} secret(s) deployed with a DIFFERENT value: ${overwrite.join(', ')}`
+    );
+    console.log(
+      '  The deployed value may be the correct one — this script cannot read it'
+    );
+    console.log(
+      '  back, only its digest. Re-run with --force if the local value wins.'
+    );
+    console.log();
+  }
+
+  const willWrite = args.force ? [...fresh, ...overwrite] : [...fresh];
+
   if (!args.apply) {
-    console.log('Dry-run — no changes made. Re-run with --apply to write.');
+    console.log(
+      `Dry-run — no changes made. --apply would write ${willWrite.length}` +
+        `${unchanged.length ? `, skip ${unchanged.length} unchanged` : ''}` +
+        `${!args.force && overwrite.length ? `, and REFUSE ${overwrite.length} divergent` : ''}.`
+    );
     return;
   }
 
-  console.log('POSTing secrets to Supabase Vault...');
-  await createSecrets(projectRef, token, desired);
-
-  console.log('Verifying...');
-  const after = await listSecretNames(projectRef, token);
-  const missing = names.filter((n) => !after.has(n));
-  if (missing.length > 0) {
+  if (!args.force && overwrite.length > 0) {
     console.error(
-      `✗ Verification FAILED — not present after write: ${missing.join(', ')}`
+      `✗ Refusing to overwrite ${overwrite.length} divergent secret(s) without --force.`
+    );
+    process.exit(1);
+  }
+
+  if (willWrite.length === 0) {
+    console.log(
+      '✓ Nothing to do — every secret already matches what is deployed.'
+    );
+    return;
+  }
+
+  console.log(`POSTing ${willWrite.length} secret(s) to Supabase Vault...`);
+  await createSecrets(
+    projectRef,
+    token,
+    Object.fromEntries(willWrite.map((n) => [n, desired[n]]))
+  );
+
+  // Verify by DIGEST. The old check only asked whether the NAME existed afterwards — which
+  // was already true BEFORE the write, so it could report success having changed nothing.
+  console.log('Verifying...');
+  const after = await listSecretDigests(projectRef, token);
+  const wrong = willWrite.filter((n) => after.get(n) !== digest(desired[n]));
+  if (wrong.length > 0) {
+    console.error(
+      `✗ Verification FAILED — deployed digest does not match what we sent: ${wrong.join(', ')}`
     );
     process.exit(1);
   }
 
   console.log(
-    `✓ ${names.length} secret(s) set and verified in Supabase Vault.`
+    `✓ ${willWrite.length} secret(s) set and verified BY DIGEST in Supabase Vault.`
   );
   console.log('  Edge Functions pick up new secrets on their next cold start.');
 }
 
-main().catch((err) => {
-  console.error(`✗ ${err instanceof Error ? err.message : String(err)}`);
-  process.exit(1);
-});
+// Guarded so a test can import from this module without the CLI running. The spawn-based
+// permission test invokes this file as argv[1], so it still executes there.
+if (process.argv[1] && resolve(process.argv[1]) === __filename) {
+  main().catch((err) => {
+    console.error(`✗ ${err instanceof Error ? err.message : String(err)}`);
+    process.exit(1);
+  });
+}
