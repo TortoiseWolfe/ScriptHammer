@@ -88,6 +88,20 @@ vi.mock('@/lib/payments/stripe', () => ({
   }),
 }));
 
+// The page reads MARKETING consent to decide whether an ad click id may be carried into
+// create-order. That is a different question from usePaymentConsent below, and without a
+// provider useConsent throws by design — so the test supplies one.
+vi.mock('@/contexts/ConsentContext', () => ({
+  useConsent: () => ({
+    consent: {
+      necessary: true,
+      functional: false,
+      analytics: false,
+      marketing: false,
+    },
+  }),
+}));
+
 vi.mock('@/hooks/usePaymentConsent', () => ({
   usePaymentConsent: () => ({ hasConsent: true, ready: true }),
 }));

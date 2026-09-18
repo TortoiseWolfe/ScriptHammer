@@ -6,6 +6,7 @@ import {
   MIN_CHARGE_CENTS,
   buildIntentRow,
   buildOrderRow,
+  resolveOppref,
   decideIdempotency,
   depositPercent,
   fingerprintRequest,
@@ -647,5 +648,59 @@ describe('the create-order handler actually uses buildIntentRow (#559)', () => {
     expect(m, 'no buildIntentRow({...}) call found in index.ts').not.toBeNull();
     expect(m![0]).toMatch(/\bidempotencyKey\b/);
     expect(m![0]).not.toMatch(/idempotencyKey:\s*null/);
+  });
+});
+
+describe('ad click id on the purchase path (OpenAI Ads)', () => {
+  const base = {
+    userId: 'user-1',
+    amountCents: 5000,
+    product: {
+      id: 'svc-landing',
+      currency: 'usd',
+      type: 'one_time',
+      interval: null,
+      name: 'Landing page',
+    },
+    buyerEmail: 'buyer@example.com',
+    isDeposit: false,
+    idempotencyKey: null,
+  };
+
+  it('ORGANIC TRAFFIC LEAVES METADATA EXACTLY AS IT WAS', () => {
+    // The common case by far, and the one a regression would quietly change. An absent click
+    // id must not add `oppref: null` for every existing row's shape to then account for.
+    const row = buildIntentRow({ ...base });
+    expect(row.metadata).toEqual({
+      product_id: 'svc-landing',
+      is_deposit: false,
+    });
+    expect(Object.keys(row.metadata as object)).not.toContain('oppref');
+  });
+
+  it('carries a validated click id into metadata, where stripe-webhook can read it', () => {
+    const row = buildIntentRow({ ...base, oppref: 'CLICK-abc_123' });
+    expect(row.metadata).toMatchObject({ oppref: 'CLICK-abc_123' });
+  });
+
+  it('resolveOppref accepts an opaque URL-safe token', () => {
+    expect(resolveOppref('AbC-123_x.y~z')).toBe('AbC-123_x.y~z');
+  });
+
+  it('resolveOppref DROPS anything else rather than refusing the order', () => {
+    // A malformed click id is a measurement problem. Refusing the purchase over it would
+    // make an ad-tracking detail able to cost a sale, which is the wrong trade every time.
+    expect(resolveOppref('has space')).toBeNull();
+    expect(resolveOppref('<script>alert(1)</script>')).toBeNull();
+    expect(resolveOppref('a'.repeat(513))).toBeNull();
+    expect(resolveOppref(null)).toBeNull();
+    expect(resolveOppref(undefined)).toBeNull();
+    expect(resolveOppref(42)).toBeNull();
+    expect(resolveOppref({ toString: () => 'x' })).toBeNull();
+  });
+
+  it('CONTROL: resolveOppref can both accept and reject', () => {
+    expect(resolveOppref('ok')).not.toBeNull();
+    expect(resolveOppref('not ok')).toBeNull();
   });
 });

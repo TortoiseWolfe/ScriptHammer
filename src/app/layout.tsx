@@ -13,6 +13,7 @@ import { ConsentProvider } from '@/contexts/ConsentContext';
 import { CookieConsent } from '@/components/privacy/CookieConsent';
 import { ConsentModal } from '@/components/privacy/ConsentModal';
 import GoogleAnalytics from '@/lib/analytics/GoogleAnalytics';
+import OpenAIPixel from '@/lib/analytics/OpenAIPixel';
 import SentryMonitor from '@/lib/monitoring/SentryMonitor';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -177,6 +178,7 @@ export default function RootLayout({
         <ColorblindFilters />
         <ConsentProvider>
           <GoogleAnalytics />
+          <OpenAIPixel />
           <SentryMonitor />
           <AuthProvider>
             <AccessibilityProvider>

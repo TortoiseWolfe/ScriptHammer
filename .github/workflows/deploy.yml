@@ -127,6 +127,10 @@ jobs:
           # 2026-08-07 failure: two same-named stores, only one of them readable, so an
           # operator updating the wrong one changes nothing and can see no reason why.
           NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+          # OpenAI Ads measurement pixel id. A VARIABLE, not a secret — it ships in the client
+          # bundle by design, the same as the Stripe publishable key above. Unset means the
+          # pixel never mounts, which is the correct state for a fork.
+          NEXT_PUBLIC_OPENAI_PIXEL_ID: ${{ vars.NEXT_PUBLIC_OPENAI_PIXEL_ID }}
           NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY: ${{ secrets.NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY }}
           NEXT_PUBLIC_DEPLOY_URL: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}

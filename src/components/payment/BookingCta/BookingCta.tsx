@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { calendarConfig } from '@/config/calendar.config';
 import { recordLead } from '@/lib/leads/record-lead';
+import { trackAdConversion } from '@/lib/analytics/ad-events';
 
 /** Where the visitor asked from. Must match `leads_source_check` and `LEAD_SOURCES`. */
 export type BookingSource = 'pricing' | 'schedule' | 'checkout';
@@ -88,6 +89,12 @@ export default function BookingCta({
       // visitor who arrives without a lead, so the request shape cannot drift between them.
       const leadId = recordLead(source, productId);
       if (!leadId) return; // nothing to carry — leave the plain link alone
+
+      // Report the ad conversion, if this visitor came from an ad AND consented. No-ops
+      // otherwise: the pixel is only mounted with marketing consent, so an absent SDK is the
+      // gate rather than a second check to keep in sync. Never awaited and never throws — a
+      // failed report must cost attribution, never the booking (see the note above).
+      trackAdConversion('lead_created');
 
       e.preventDefault();
       router.push(`${href}?lead=${encodeURIComponent(leadId)}`);
