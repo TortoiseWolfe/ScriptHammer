@@ -43,7 +43,12 @@ export async function reportAdConversion(
   conversion: AdConversion
 ): Promise<boolean> {
   const pixelId = Deno.env.get('OPENAI_ADS_PIXEL_ID');
-  const apiKey = Deno.env.get('OPENAI_ADS_API_KEY');
+  // THE CONVERSIONS KEY, NOT THE ADVERTISER KEY. OpenAI issues two, and they are not
+  // interchangeable: OPENAI_ADS_API_KEY is the ad-account Advertiser key that calls
+  // api.ads.openai.com (management and reporting), while the key that may SEND events is the
+  // one returned by POST /conversions/api_keys. Sending with the wrong one fails auth, and
+  // the failure is silent here by design — see the header.
+  const apiKey = Deno.env.get('OPENAI_CONVERSIONS_API_KEY');
 
   // Unconfigured is the normal state for a fork, and for this project until the keys are set.
   // Silence rather than noise: a missing optional integration is not an error.
