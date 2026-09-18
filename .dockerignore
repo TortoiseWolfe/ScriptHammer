@@ -99,3 +99,7 @@ storybook-static/
 .chatt-verify/
 .speckit-tools/
 .speckit-cache/
+
+# SketchUp sources. .gitignore already excludes these and .dockerignore does not
+# read it, so 8.6 MB of stray .skp rode into every build context.
+*.skp

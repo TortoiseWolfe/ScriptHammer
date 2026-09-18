@@ -16,6 +16,7 @@ import { fetchMsHeights } from './fetch-ms-heights';
 import { fetchTerrain } from './fetch-terrain';
 import { fetchLidarHeights } from './fetch-lidar-heights';
 import { fetchDrape } from './fetch-drape';
+import { sliceDrape } from './slice-drape';
 import { buildScene } from './build-scene';
 import { createProjection } from './enu';
 import {
@@ -248,6 +249,27 @@ export async function bake(site: SiteConfig) {
     }
   }
   rmSync(paths.tmp, { recursive: true, force: true });
+
+  /**
+   * SLICE THE DRAPE LAST, in OUT rather than TMP.
+   *
+   * It is a pure raster operation on the file the stitch just produced, so it
+   * cannot disturb the georegistration `fetchDrape` validates tile by tile —
+   * and doing it after the atomic publish means the tiles are derived from
+   * exactly the bytes that shipped, not from a temporary that might differ.
+   *
+   * 1024 rather than the 2048 a modern phone would accept: this is the floor
+   * that every GL implementation in service is required to clear, and the
+   * failure mode on a device that cannot take a texture is a BLACK ground with
+   * no error anywhere. The cost of being conservative is a few more requests.
+   */
+  console.log('[bake] slice-drape...');
+  console.log(
+    await sliceDrape(paths.out, manifest.groundWm / 2, manifest.groundHm / 2, {
+      maxPx: 1024,
+    })
+  );
+
   console.log('[bake] done. rules:', JSON.stringify(manifest.ruleHistogram));
   return manifest;
 }
