@@ -239,6 +239,14 @@ const EDGE_SECRET_KEYS = [
   'NEXT_PUBLIC_PAYPAL_CLIENT_ID',
   'NEXT_PUBLIC_SITE_URL',
   'RESEND_API_KEY',
+  // OpenAI Ads (#1197). All three were set by hand-rolled POSTs before they were listed
+  // here, which is the same gap that lost the OAuth and Turnstile secrets when the project
+  // was deleted (#567): a credential this script cannot see is one a restore cannot replay.
+  // The pixel id is public — it ships in the browser bundle as NEXT_PUBLIC_OPENAI_PIXEL_ID —
+  // but the functions still need their own copy, and listing it keeps the set together.
+  'OPENAI_ADS_PIXEL_ID',
+  'OPENAI_ADS_API_KEY',
+  'OPENAI_CONVERSIONS_API_KEY',
 ] as const;
 
 /**
