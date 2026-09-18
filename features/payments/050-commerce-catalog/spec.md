@@ -490,6 +490,17 @@ Revisit when campaign volume makes the gap visible. Until then the identifier
 that links a booking to its conversation is used to find the record and is not
 retained as marketing data.
 
+**REVISITED 2026-09-18.** Campaign volume made the gap visible: a paid OpenAI Ads
+campaign began running against scripthammer.com and nothing could tell whether it
+produced anything. The resolution keeps FR-024a exactly as written — `leads` stores
+no attribution and `create-lead` still builds its row by naming two fields — and
+places attribution on the PURCHASE path instead, which this requirement does not
+reach. The concern recorded here is consent rather than tables, so the click
+identifier is captured, stored and reported only when the visitor has granted
+MARKETING consent; someone who declines has no identifier held anywhere and has
+nothing reported. It travels on `payment_intents.metadata` and is read by
+`stripe-webhook` once payment is proven.
+
 **Consequent requirements**: see FR-024a and FR-024b.
 
 ### Q2 — Zero-fee tipping

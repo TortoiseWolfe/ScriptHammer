@@ -14,6 +14,8 @@ import { getPaymentStatus } from '@/lib/payments/payment-service';
 import { UUID_RE } from '@/lib/payments/payment-return';
 import { PaymentConsentModal } from '@/components/payment/PaymentConsentModal';
 import { usePaymentConsent } from '@/hooks/usePaymentConsent';
+import { useConsent } from '@/contexts/ConsentContext';
+import { readOppref } from '@/lib/analytics/ad-attribution';
 import { useAuth } from '@/contexts/AuthContext';
 import SignInForm from '@/components/auth/SignInForm';
 import SignUpForm from '@/components/auth/SignUpForm';
@@ -88,6 +90,9 @@ function CheckoutContent() {
   const [stage, setStage] = useState<Stage>({ kind: 'loading' });
   const [buyer, setBuyer] = useState<{ name?: string; email?: string }>({});
   const { hasConsent, ready: consentReady } = usePaymentConsent();
+  // Marketing consent, separate from the payment consent above: it gates whether an ad click
+  // identifier may be carried at all. usePaymentConsent answers a different question.
+  const { consent } = useConsent();
   const { session, isLoading: authLoading } = useAuth();
   const [authTab, setAuthTab] = useState<'signin' | 'signup'>('signin');
   const [justSignedUp, setJustSignedUp] = useState(false);
@@ -223,6 +228,11 @@ function CheckoutContent() {
             body: JSON.stringify({
               product_id: product.id,
               buyer_email: intake.email,
+              // The OpenAI Ads click id, only if this visitor arrived from an ad AND granted
+              // marketing consent — readOppref returns null otherwise, and create-order drops
+              // the field when absent. It rides payment_intents.metadata so stripe-webhook can
+              // report the sale once payment is PROVEN; `leads` is untouched (FR-024a).
+              oppref: readOppref(consent.marketing) ?? undefined,
               // Intake goes to orders.intake_data, never to payment metadata —
               // that is capped at 1KB serialised and a job description blows it.
               intake: {

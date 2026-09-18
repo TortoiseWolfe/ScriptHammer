@@ -85,6 +85,11 @@ export const CSP_DIRECTIVES = {
     'https://challenges.cloudflare.com',
     'https://static.cloudflareinsights.com',
     'https://js.stripe.com',
+    // OpenAI Ads measurement pixel. Loaded only with MARKETING consent (FR-026) by
+    // src/lib/analytics/OpenAIPixel — but the declared policy must permit it regardless,
+    // because a CSP is not per-visitor. Production sends this report-only (#393), so an
+    // omission here would not have failed loudly.
+    'https://bzrcdn.openai.com',
   ],
   'style-src': [
     "'self'",

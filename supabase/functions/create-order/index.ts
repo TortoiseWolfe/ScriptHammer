@@ -38,6 +38,7 @@ import {
   fingerprintRequest,
   buildIntentRow,
   buildOrderRow,
+  resolveOppref,
   type ProductRow,
   buildRetryIntentRow,
   decideRetry,
@@ -62,6 +63,12 @@ interface RequestBody {
   op?: string;
   /** The intent being retried. Required when op === 'retry'. */
   intent_id?: string;
+  /**
+   * OpenAI Ads click identifier, sent only when the visitor arrived from an ad AND granted
+   * marketing consent. Typed `unknown` deliberately: resolveOppref validates it, and nothing
+   * here should be able to put an arbitrary caller string into metadata by asserting a type.
+   */
+  oppref?: unknown;
 }
 
 /**
@@ -289,6 +296,7 @@ serve(async (req) => {
           buyerEmail,
           isDeposit: decision.isDeposit,
           idempotencyKey,
+          oppref: resolveOppref(body.oppref),
         })
       )
       .select('id')

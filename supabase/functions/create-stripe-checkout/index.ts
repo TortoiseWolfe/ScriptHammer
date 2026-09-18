@@ -81,7 +81,7 @@ serve(async (req) => {
     const { data: intent, error: fetchError } = await supabase
       .from('payment_intents')
       .select(
-        'id, template_user_id, amount, currency, description, customer_email, expires_at, type'
+        'id, template_user_id, amount, currency, description, customer_email, expires_at, type, metadata'
       )
       .eq('id', intentId)
       .single();
@@ -140,6 +140,12 @@ serve(async (req) => {
       payment_intent_data: {
         metadata: {
           intent_id: intent.id,
+          // Carried so stripe-webhook can report the sale to OpenAI Ads once payment is
+          // PROVEN. Stripe returns this on the payment_intent.succeeded event, which is the
+          // only moment we know money actually moved. Absent for organic traffic.
+          ...(typeof intent.metadata?.oppref === 'string'
+            ? { oppref: intent.metadata.oppref }
+            : {}),
         },
       },
       success_url: `${siteUrl}/payment-result?session_id={CHECKOUT_SESSION_ID}&status=succeeded`,

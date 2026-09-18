@@ -436,6 +436,24 @@ export function sanitizeAttachments(
  * A null key is legitimate and preserved as null — the partial index ignores nulls, and a
  * caller that sends no header simply gets the previous behaviour.
  */
+/**
+ * The OpenAI Ads click identifier, if the caller sent one we are willing to keep.
+ *
+ * It rides `payment_intents.metadata` so `stripe-webhook` can report the sale once payment is
+ * PROVEN — a browser-side report is lost whenever the buyer closes the tab on Stripe's page.
+ * `leads` is deliberately untouched: FR-024a governs the booking confirmation, and this is the
+ * purchase path.
+ *
+ * Validated rather than trusted. OpenAI says to pass the value back unmodified, so we do not
+ * parse it — but an unbounded query parameter must not become an unbounded write, and metadata
+ * is capped at 1KB serialised. Anything that is not an opaque URL-safe token is dropped
+ * silently: a malformed click id is a measurement problem, never a reason to refuse an order.
+ */
+export function resolveOppref(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  return /^[A-Za-z0-9._~-]{1,512}$/.test(value) ? value : null;
+}
+
 export function buildIntentRow(input: {
   userId: string;
   amountCents: number;
@@ -449,6 +467,8 @@ export function buildIntentRow(input: {
   buyerEmail: string;
   isDeposit: boolean;
   idempotencyKey: string | null;
+  /** Ad click id, already validated by resolveOppref. Absent for organic traffic. */
+  oppref?: string | null;
 }): Record<string, unknown> {
   if (!input.userId) {
     // Same reasoning as buildOrderRow: refusing beats writing a row nobody can read.
@@ -468,7 +488,14 @@ export function buildIntentRow(input: {
     // Intake does NOT go here. metadata is capped at 1KB serialised
     // (metadata-validator.ts) and a job description blows straight past it;
     // it lives on orders.intake_data, which is unbounded JSONB.
-    metadata: { product_id: input.product.id, is_deposit: input.isDeposit },
+    // Spread rather than always-set: an absent click id must leave metadata exactly as it was
+    // for organic traffic, not add an `oppref: null` that then has to be reasoned about
+    // downstream and in every existing row's shape.
+    metadata: {
+      product_id: input.product.id,
+      is_deposit: input.isDeposit,
+      ...(input.oppref ? { oppref: input.oppref } : {}),
+    },
     idempotency_key: input.idempotencyKey,
   };
 }

@@ -131,6 +131,10 @@ export const GROUPS = [
     [
       ['NEXT_PUBLIC_GA_MEASUREMENT_ID', 'No Google Analytics.'],
       [
+        'NEXT_PUBLIC_OPENAI_PIXEL_ID',
+        'The OpenAI Ads pixel never mounts, so a paid campaign cannot be measured. Correct default for a fork: unset means no third-party ad script ships at all.',
+      ],
+      [
         'NEXT_PUBLIC_PAGESPEED_API_KEY',
         "/status falls back to the unauthenticated PageSpeed quota, so its live scores may read 'over the anonymous quota'. It stopped the deploy until #987; it no longer does.",
       ],

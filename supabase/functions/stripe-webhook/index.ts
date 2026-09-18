@@ -4,6 +4,7 @@
  */
 
 import { advanceOrderAndNotify } from '../_shared/advance-order.ts';
+import { reportAdConversion } from '../_shared/ad-conversions.ts';
 import {
   errorMessage,
   PG_UNIQUE_VIOLATION,
@@ -287,6 +288,18 @@ async function handlePaymentIntentSucceeded(
     amount: paymentIntent.amount ?? null,
     currency: paymentIntent.currency ?? null,
     provider: 'stripe',
+  });
+
+  // Ad attribution, last and least: the order is already advanced and the buyer already emailed
+  // before this runs, so a slow or broken ad network cannot delay either. `oppref` is present
+  // only when the buyer arrived from an ad AND granted marketing consent (create-order puts it
+  // on the intent); organic traffic reports nothing. Never throws — see ad-conversions.ts.
+  await reportAdConversion({
+    id: event.id,
+    type: 'order_created',
+    oppref: String(paymentIntent.metadata?.oppref ?? ''),
+    amountCents: paymentIntent.amount ?? null,
+    currency: paymentIntent.currency ?? null,
   });
 
   return {
