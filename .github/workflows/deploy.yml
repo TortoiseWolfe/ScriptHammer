@@ -66,6 +66,13 @@ jobs:
           # read, so it is a var. Without this line the tag is skipped and verification
           # never ships, with no error anywhere.
           NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }}
+          # Google Photorealistic 3D Tiles on the atlas (#1174), opt-in via ?photoreal.
+          # A VARIABLE, not a secret: a browser Maps key is sent to Google from the page
+          # and cannot be secret, so NEXT_PUBLIC_ is correct and `secrets.` would be a lie
+          # about its exposure. Restrict it by HTTP referrer in the Google console; nothing
+          # here can enforce that. Unset is the supported state -- the atlas renders the
+          # baked twin and the HUD reports which of its four states it is in.
+          NEXT_PUBLIC_GOOGLE_MAP_TILES_KEY: ${{ vars.NEXT_PUBLIC_GOOGLE_MAP_TILES_KEY }}
           NEXT_PUBLIC_PAGESPEED_API_KEY: ${{ secrets.NEXT_PUBLIC_PAGESPEED_API_KEY }}
 
       - name: Build Next.js app
