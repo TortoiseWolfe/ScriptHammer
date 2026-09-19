@@ -426,18 +426,50 @@ export function GlobalNav() {
   // "Atlas" even on the diorama. Reflect the ACTUAL renderer instead. Read the
   // query on the client only (mapMounted) to avoid a hydration mismatch; the map
   // links full-navigate, so the nav re-mounts and re-reads on every switch.
-  const mapRenderer =
+  //
+  // THREE destinations share /chatt, not two: Atlas (no query), Diorama
+  // (?diorama) and Play (?diorama&walk). The old check was a binary —
+  // `includes('?diorama') ? 'diorama' : 'atlas'` — which told Atlas from
+  // Diorama correctly and could not tell Play from Diorama at all, because
+  // both ARE diorama links and Play differs only by &walk. So on ?diorama the
+  // top-level Play lit up AND the Demos menu lit up (its Diorama child was
+  // active), showing two active nav items at once.
+  //
+  // TWO DIFFERENT QUESTIONS, computed two different ways on purpose.
+  //
+  // What the BROWSER is showing goes through selectRenderer, because a bare
+  // ?ortho / ?edit / ?walk also opens the diorama and only that function knows
+  // the full list.
+  //
+  // What a LINK asks for is read from the link's own query. It must not go
+  // through selectRenderer: every nav href is ours and spells its intent out,
+  // and routing the item side through the same helper made all three /chatt
+  // entries collapse to whatever the current renderer was — which is how the
+  // first attempt at this fix lit up Atlas on ?diorama.
+  type ChattMode = 'atlas' | 'diorama' | 'walk';
+
+  const hrefMode = (href: string): ChattMode => {
+    const q = new URLSearchParams(href.split('?')[1] ?? '');
+    return !q.has('diorama') ? 'atlas' : q.has('walk') ? 'walk' : 'diorama';
+  };
+
+  const mapRenderer: ChattMode =
     mapMounted && typeof window !== 'undefined'
-      ? selectRenderer(new URLSearchParams(window.location.search))
+      ? (() => {
+          const q = new URLSearchParams(window.location.search);
+          return selectRenderer(q) !== 'diorama'
+            ? 'atlas'
+            : q.has('walk')
+              ? 'walk'
+              : 'diorama';
+        })()
       : 'atlas';
+
   const isActive = (item: { href: string }): boolean => {
     if (item.href.startsWith('/chatt')) {
       const onChatt =
         pathname === '/chatt' || !!pathname?.startsWith('/chatt/');
-      return (
-        onChatt &&
-        (item.href.includes('?diorama') ? 'diorama' : 'atlas') === mapRenderer
-      );
+      return onChatt && hrefMode(item.href) === mapRenderer;
     }
     return (
       pathname === item.href ||
