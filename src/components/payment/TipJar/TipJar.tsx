@@ -4,6 +4,7 @@ import React, { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { trackEvent } from '@/utils/analytics';
 
 /** Cents. These mirror the seeded `tip-jar` row and the bounds the server enforces. */
 export const TIP_PRESETS = [500, 1500, 5000] as const;
@@ -58,6 +59,33 @@ export default function TipJar({
     return cents;
   }, []);
 
+  /**
+   * Report the tip to GA4, then go (#115 measurement arc).
+   *
+   * BOTH NAVIGATION POINTS REPORT, and they are not the same event. In `compact` mode a
+   * preset goes straight to checkout, so the preset IS the decision. In the full jar a
+   * preset only fills the input and `onGive` is the decision, so tracking presets there
+   * would count a glance as a conversion. One function, called from the two places a
+   * visitor actually commits, is how those stay in step.
+   *
+   * `value` is whole dollars because that is the unit GA sums into revenue-shaped reports;
+   * cents would report a $5 tip as 500 and make the jar look like the best product here.
+   *
+   * No consent check — `trackEvent` no-ops without `window.gtag`, and gtag only mounts with
+   * analytics consent. Same gate as `BookingCta`'s ad conversion.
+   */
+  const goToCheckout = useCallback(
+    (cents: number) => {
+      trackEvent('tip_jar_give', 'Conversion', `tip-jar`, cents / 100, {
+        tip_cents: cents,
+      });
+      router.push(`/checkout?sku=tip-jar&amount=${cents}`);
+    },
+    [router]
+  );
+
+  const goDirect = goToCheckout;
+
   const onGive = useCallback(() => {
     const cents = validate(dollars);
     if (cents === null) {
@@ -71,13 +99,8 @@ export default function TipJar({
       return;
     }
     setError(null);
-    router.push(`/checkout?sku=tip-jar&amount=${cents}`);
-  }, [dollars, prefersReduced, router, validate]);
-
-  const goDirect = useCallback(
-    (cents: number) => router.push(`/checkout?sku=tip-jar&amount=${cents}`),
-    [router]
-  );
+    goToCheckout(cents);
+  }, [dollars, prefersReduced, goToCheckout, validate]);
 
   if (compact) {
     return (

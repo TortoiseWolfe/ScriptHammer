@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { calendarConfig } from '@/config/calendar.config';
 import { recordLead } from '@/lib/leads/record-lead';
 import { trackAdConversion } from '@/lib/analytics/ad-events';
+import { trackEvent } from '@/utils/analytics';
 
 /** Where the visitor asked from. Must match `leads_source_check` and `LEAD_SOURCES`. */
 export type BookingSource = 'pricing' | 'schedule' | 'checkout';
@@ -84,6 +85,33 @@ export default function BookingCta({
       ) {
         return;
       }
+
+      /*
+       * GA4, BEFORE the lead is minted, and that ordering is the point.
+       *
+       * This is the highest-intent action on the site and until now nothing reported it to
+       * analytics — GA recorded that somebody reached /pricing and never that they asked to
+       * talk, which is exactly the half of "what does an ad click do" that was missing.
+       *
+       * NO CONSENT CHECK HERE, for the same reason the ad conversion below has none: the
+       * gtag script is only mounted with analytics consent (GoogleAnalytics.tsx:63 returns
+       * null without it), so `window.gtag` being absent IS the gate. A second check would be
+       * a copy to keep in sync, and `useAnalytics()` would drag a ConsentProvider into every
+       * test that renders this button.
+       *
+       * It runs BEFORE the `!leadId` return so a failed lead write does not also lose the
+       * analytics event. GA then reads >= leads, and the gap between them is itself the
+       * signal that lead recording is dropping clicks.
+       */
+      trackEvent(
+        'booking_cta_click',
+        'Conversion',
+        productId ?? source,
+        undefined,
+        {
+          booking_source: source,
+        }
+      );
 
       // One recorder for every surface (#562). `/schedule` calls the same function for a
       // visitor who arrives without a lead, so the request shape cannot drift between them.
