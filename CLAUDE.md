@@ -265,7 +265,21 @@ docker compose exec scripthammer pnpm run prime
 `SH_PORT` in `.env` pins the host port so the dev URL survives container
 restarts and self-heal events (issue #230). On this machine the convention is
 `SH_PORT=3002` (3000 is held by the RescueDogs container):
-`http://127.0.0.1:3002/ScriptHammer/`
+**`http://127.0.0.1:3002/`**
+
+**No `/ScriptHammer/` prefix any more (#1215).** `.env` used to set
+`NEXT_PUBLIC_BASE_PATH=/ScriptHammer`, which made dev the ONLY place a base path
+was exercised: production is `www.scripthammer.com` at the apex, and
+`deploy.yml` omits the variable on purpose ("auto-detected from
+GITHUB_REPOSITORY"). The cost was not cosmetic — every local `pnpm build` baked
+`/ScriptHammer/` into the TRACKED `public/manifest.json`, so the working tree
+was permanently dirty and `git add -A` would have shipped a manifest that breaks
+PWA install. Fifteen files carry a `DISABLE_BASE_PATH` flag whose only job was
+to undo it. Dev/prod parity instead.
+
+A fork that genuinely deploys to `github.io/<repo>` still sets the variable —
+that is what `.env.example` documents, and the `basepath` Playwright project is
+what keeps that configuration tested.
 
 If `SH_PORT` is unset, Docker assigns an ephemeral port per restart — find it
 with `docker compose port scripthammer 3000`. "Port in use" means another
