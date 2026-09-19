@@ -57,12 +57,62 @@ export const CADENCE_HOURS = 24;
  *  differ by noise, and printing them invites a decision the data cannot support. */
 export const MIN_IMPRESSIONS = 5000;
 
+/**
+ * May rotation touch anything at all, given the campaigns in this account? Pure.
+ *
+ * WHY THIS EXISTS. `rotate` decided which CREATIVE should be live and had no opinion about whether
+ * the CAMPAIGN should be. On 2026-09-18 the campaign was paused deliberately — a billing dispute
+ * with the provider, with "I have paused both ads and the campaign pending your response" in
+ * writing to their support team. A scheduled rotation would have activated an arm regardless,
+ * because nothing in the old path could even see the campaign: the ad object carries no campaign
+ * reference at all. Its keys are id, name, status, review, review_status, creative,
+ * landing_page_configuration, created_at, updated_at — verified against the live API, not assumed.
+ * The result would have been an ad reading `active` while its owner had told the provider in
+ * writing that everything was stopped, and spend re-arming the instant the campaign resumed.
+ *
+ * WHY IT ASKS ABOUT THE ACCOUNT RATHER THAN THIS AD'S CAMPAIGN. Because it cannot ask the narrower
+ * question. With no campaign id on the ad, "is MY campaign running" is not answerable from the ads
+ * endpoint, so the honest available question is "is ANY campaign running here". In a single-campaign
+ * account those coincide. In a multi-campaign account this is more permissive than ideal, and the
+ * note is here so that whoever adds the second campaign knows to tighten it rather than discovering
+ * the looseness later.
+ *
+ * FAILS CLOSED. An empty list, a missing list, or a shape that is not an array all refuse. For a
+ * verb that spends money, "I could not tell" must never read as "go ahead" — which is the same
+ * asymmetry the insights trap above taught, where a silent zero read as a measurement.
+ */
+export function campaignsAllowRotation(campaigns) {
+  if (!Array.isArray(campaigns) || campaigns.length === 0) {
+    return {
+      ok: false,
+      reason:
+        'no campaigns returned by the API — refusing to activate anything',
+    };
+  }
+  const active = campaigns.filter((c) => c?.status === 'active');
+  if (active.length === 0) {
+    const seen = campaigns
+      .map((c) => `${c?.id ?? '?'}=${c?.status ?? 'unknown'}`)
+      .join(', ');
+    return {
+      ok: false,
+      reason: `no active campaign (${seen}) — a paused campaign is a deliberate stop, not a gap to fill`,
+    };
+  }
+  return { ok: true, reason: `${active.length} active campaign(s)` };
+}
+
 const HOUR_MS = 3_600_000;
 
 /* ------------------------------------------------------------------ pure ---- */
 
 /** Which arm index owns the window containing `nowMs`. Pure. */
-export function armForWindow(nowMs, armCount, epochMs = EPOCH_MS, cadenceHours = CADENCE_HOURS) {
+export function armForWindow(
+  nowMs,
+  armCount,
+  epochMs = EPOCH_MS,
+  cadenceHours = CADENCE_HOURS
+) {
   if (armCount <= 0) throw new Error('armForWindow: armCount must be >= 1');
   const n = Math.floor((nowMs - epochMs) / (cadenceHours * HOUR_MS));
   // Negative before the epoch: a modulo that stays non-negative keeps the grid defined either way
@@ -71,7 +121,11 @@ export function armForWindow(nowMs, armCount, epochMs = EPOCH_MS, cadenceHours =
 }
 
 /** The window containing `nowMs`, snapped to the grid. Pure. */
-export function windowBounds(nowMs, epochMs = EPOCH_MS, cadenceHours = CADENCE_HOURS) {
+export function windowBounds(
+  nowMs,
+  epochMs = EPOCH_MS,
+  cadenceHours = CADENCE_HOURS
+) {
   const span = cadenceHours * HOUR_MS;
   const n = Math.floor((nowMs - epochMs) / span);
   const start = epochMs + n * span;
@@ -79,11 +133,19 @@ export function windowBounds(nowMs, epochMs = EPOCH_MS, cadenceHours = CADENCE_H
 }
 
 /** Every window that has CLOSED between the epoch and `nowMs`. Pure. */
-export function closedWindows(nowMs, epochMs = EPOCH_MS, cadenceHours = CADENCE_HOURS) {
+export function closedWindows(
+  nowMs,
+  epochMs = EPOCH_MS,
+  cadenceHours = CADENCE_HOURS
+) {
   const span = cadenceHours * HOUR_MS;
   const out = [];
   for (let s = epochMs; s + span <= nowMs; s += span) {
-    out.push({ start: s, end: s + span, index: Math.floor((s - epochMs) / span) });
+    out.push({
+      start: s,
+      end: s + span,
+      index: Math.floor((s - epochMs) / span),
+    });
   }
   return out;
 }
@@ -130,7 +192,8 @@ export function ctr({ impressions, clicks }) {
  */
 export function summarise(windows, arms, minImpressions = MIN_IMPRESSIONS) {
   const totals = {};
-  for (const a of arms) totals[a.id] = { impressions: 0, clicks: 0, windows: 0 };
+  for (const a of arms)
+    totals[a.id] = { impressions: 0, clicks: 0, windows: 0 };
   let excluded = 0;
   for (const w of windows) {
     if (w.contaminated) {
@@ -166,7 +229,8 @@ async function api(path, init = {}) {
       ...(init.headers ?? {}),
     },
   });
-  if (!res.ok) throw new Error(`${init.method ?? 'GET'} ${path} -> ${res.status}`);
+  if (!res.ok)
+    throw new Error(`${init.method ?? 'GET'} ${path} -> ${res.status}`);
   return res.json();
 }
 
@@ -175,7 +239,11 @@ export async function listArms() {
   const d = await api('/v1/ads?limit=50');
   return (d.data ?? [])
     .filter((a) => a.status !== 'archived')
-    .sort((x, y) => (x.created_at ?? 0) - (y.created_at ?? 0) || String(x.id).localeCompare(String(y.id)))
+    .sort(
+      (x, y) =>
+        (x.created_at ?? 0) - (y.created_at ?? 0) ||
+        String(x.id).localeCompare(String(y.id))
+    )
     .map((a) => ({
       id: a.id,
       name: a.name,
@@ -183,6 +251,16 @@ export async function listArms() {
       review: a.review?.status ?? null,
       title: a.creative?.title,
     }));
+}
+
+/** Campaigns in this ad account, id/status/name only. */
+export async function listCampaigns() {
+  const d = await api('/v1/campaigns?limit=50');
+  return (d.data ?? []).map((c) => ({
+    id: c.id,
+    status: c.status,
+    name: c.name,
+  }));
 }
 
 async function insights(adId, startMs, endMs) {
@@ -208,6 +286,17 @@ async function rotate(now = Date.now()) {
     console.log(`::notice::only ${arms.length} arm(s) — nothing to rotate`);
     return 0;
   }
+  // A paused campaign is a decision. Check it BEFORE any pause or activate, because the first
+  // write is the one that contradicts it. See campaignsAllowRotation for why the question is
+  // account-wide rather than per-campaign.
+  const gate = campaignsAllowRotation(await listCampaigns());
+  if (!gate.ok) {
+    const msg = `rotation skipped: ${gate.reason}`;
+    console.log(`::notice::${msg}`);
+    emit(`### Ad rotation\n\n${msg}`);
+    return 0;
+  }
+
   const { start, end } = windowBounds(now);
   const want = arms[armForWindow(now, arms.length)];
 
@@ -221,9 +310,11 @@ async function rotate(now = Date.now()) {
 
   for (const a of arms) {
     if (a.id === want.id) continue;
-    if (a.status === 'active') await api(`/v1/ads/${a.id}/pause`, { method: 'POST' });
+    if (a.status === 'active')
+      await api(`/v1/ads/${a.id}/pause`, { method: 'POST' });
   }
-  if (want.status !== 'active') await api(`/v1/ads/${want.id}/activate`, { method: 'POST' });
+  if (want.status !== 'active')
+    await api(`/v1/ads/${want.id}/activate`, { method: 'POST' });
 
   // VERIFY, do not assume. A pause that silently failed restores bandit mode and poisons every
   // window after it, which is exactly the failure this whole design exists to avoid.
@@ -236,10 +327,15 @@ async function rotate(now = Date.now()) {
     '',
     '| arm | title | status |',
     '| --- | --- | --- |',
-    ...after.map((a) => `| \`${a.id.slice(0, 14)}…\` | ${a.title ?? '—'} | ${a.status} |`),
+    ...after.map(
+      (a) => `| \`${a.id.slice(0, 14)}…\` | ${a.title ?? '—'} | ${a.status} |`
+    ),
   ];
   if (active.length !== 1 || active[0].id !== want.id) {
-    lines.push('', `**ROTATION DID NOT TAKE** — ${active.length} arm(s) active, expected exactly \`${want.id}\`.`);
+    lines.push(
+      '',
+      `**ROTATION DID NOT TAKE** — ${active.length} arm(s) active, expected exactly \`${want.id}\`.`
+    );
     console.log(`::error::rotation did not take: ${active.length} active`);
   } else {
     lines.push('', `Active: **${want.title ?? want.id}**`);
@@ -255,7 +351,12 @@ async function report(now = Date.now()) {
     const expectedArmId = arms[armForWindow(w.start, arms.length)]?.id;
     const perArm = {};
     for (const a of arms) perArm[a.id] = await insights(a.id, w.start, w.end);
-    windows.push({ ...w, expectedArmId, perArm, contaminated: isContaminated(expectedArmId, perArm) });
+    windows.push({
+      ...w,
+      expectedArmId,
+      perArm,
+      contaminated: isContaminated(expectedArmId, perArm),
+    });
   }
   const s = summarise(windows, arms);
 
@@ -270,10 +371,16 @@ async function report(now = Date.now()) {
     );
   }
   if (s.excluded > 0) {
-    lines.push('', `${s.excluded} window(s) EXCLUDED — an arm that should have been paused served impressions in them. A missed rotation, not a result.`);
+    lines.push(
+      '',
+      `${s.excluded} window(s) EXCLUDED — an arm that should have been paused served impressions in them. A missed rotation, not a result.`
+    );
   }
   if (s.verdict === 'NOT ENOUGH DATA') {
-    lines.push('', `Under the ${MIN_IMPRESSIONS} impression floor (${s.totalImpressions} so far). Two CTRs from this little traffic differ by noise; no comparison is offered on purpose.`);
+    lines.push(
+      '',
+      `Under the ${MIN_IMPRESSIONS} impression floor (${s.totalImpressions} so far). Two CTRs from this little traffic differ by noise; no comparison is offered on purpose.`
+    );
   }
   emit(lines.join('\n'));
   return 0;

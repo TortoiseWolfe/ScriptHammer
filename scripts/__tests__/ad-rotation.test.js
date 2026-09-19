@@ -23,6 +23,7 @@ import {
   summarise,
   ctr,
   isServable,
+  campaignsAllowRotation,
   EPOCH_MS,
   CADENCE_HOURS,
   MIN_IMPRESSIONS,
@@ -227,5 +228,69 @@ describe('review gate — rotating onto an unapproved arm stops delivery', () =>
       assert.equal(isServable({ id: B, review }), false, `review=${review}`);
     }
     assert.equal(isServable(undefined), false);
+  });
+});
+
+describe('campaign gate — a paused campaign is a decision, not a gap to fill', () => {
+  it('allows rotation when a campaign is actually running', () => {
+    const g = campaignsAllowRotation([{ id: 'cmpn_1', status: 'active' }]);
+    assert.equal(g.ok, true);
+    assert.match(g.reason, /1 active campaign/);
+  });
+
+  it('refuses when every campaign is paused — the #1201-era billing-dispute state', () => {
+    // 2026-09-18: campaign paused and both ads paused during a billing dispute, with "I have
+    // paused both ads and the campaign" sent in writing to the provider. Without this gate the
+    // scheduled rotation would have activated an arm and made that statement false.
+    const g = campaignsAllowRotation([
+      { id: 'cmpn_ce3e507e', status: 'paused' },
+      { id: 'cmpn_other', status: 'paused' },
+    ]);
+    assert.equal(g.ok, false);
+    assert.match(g.reason, /no active campaign/);
+    assert.match(g.reason, /cmpn_ce3e507e=paused/);
+    assert.match(g.reason, /cmpn_other=paused/);
+  });
+
+  it('FAILS CLOSED on an empty, missing or malformed list', () => {
+    // "I could not tell" must never read as "go ahead" for a verb that spends money. Each of
+    // these is a plausible API hiccup, and every one of them used to end in an activate call.
+    for (const bad of [[], undefined, null, {}, 'nope', 0]) {
+      const g = campaignsAllowRotation(bad);
+      assert.equal(
+        g.ok,
+        false,
+        `input ${JSON.stringify(bad) ?? String(bad)} must refuse`
+      );
+      assert.ok(g.reason.length > 0, 'a refusal must carry a reason');
+    }
+  });
+
+  it('CONTROL: a mixed account with one running campaign still allows rotation', () => {
+    // Without this, the test above is satisfied by a function that refuses unconditionally.
+    const g = campaignsAllowRotation([
+      { id: 'cmpn_a', status: 'paused' },
+      { id: 'cmpn_b', status: 'active' },
+    ]);
+    assert.equal(g.ok, true);
+  });
+
+  it('CONTROL: statuses that merely LOOK live are not active', () => {
+    // Only the literal 'active' counts. A status the API adds later must fail closed rather
+    // than be pattern-matched into permission.
+    for (const status of [
+      'ACTIVE',
+      'activating',
+      'in_review',
+      'ended',
+      'draft',
+      undefined,
+    ]) {
+      assert.equal(
+        campaignsAllowRotation([{ id: 'c', status }]).ok,
+        false,
+        `status=${status}`
+      );
+    }
   });
 });
