@@ -203,13 +203,21 @@ export async function bake(site: SiteConfig) {
   // as an olive slab). Baked over the SAME offset projection as the wide
   // buildings so footprints register on the imagery, at a coarser 1.5 m/px
   // (~22 MP) since the wide camera is pulled back.
-  if (atlasBox !== site.box) {
+  // Hoisted out of the `if` because the slice step below needs the SAME
+  // projection the imagery was baked over. Recomputing it there would work
+  // today and rot the first time `vectorOffsetM` handling changes in one place
+  // and not the other — the tiles' world rectangles are only meaningful
+  // against the projection that produced the raster.
+  const wideProj =
+    atlasBox !== site.box
+      ? createProjection(atlasBox, site.vectorOffsetM)
+      : null;
+  if (wideProj) {
     console.log('[bake] fetch-drape (wide atlas extent)...');
-    const wideProj = createProjection(atlasBox, site.vectorOffsetM);
     const wideDrape = await fetchDrape(
       paths.raw,
       wideProj,
-      1.5,
+      site.wideMpp,
       site.drapeSource,
       'drape-wide.jpg'
     );
@@ -269,6 +277,40 @@ export async function bake(site: SiteConfig) {
       maxPx: 1024,
     })
   );
+
+  /**
+   * And the WIDE drape too (#1176). This is the one a diorama visitor actually
+   * sees: `TwinWorld.tsx` computes `hasWideExtent(manifest)` and returns early
+   * for any site whose atlasBox differs from its box, so the narrow drape and
+   * the tiles above are never loaded by this repo at all — they serve the Expo
+   * game. The wide surface had no tiles, and therefore had to be ONE texture.
+   *
+   * That single texture, not the imagery, was the resolution ceiling. A WebGL
+   * implementation need only support 8192px, and the wide extent at 1 m/px is
+   * already 8212px across — so the drape was pinned near 1.5 m/px by the
+   * renderer while the source service serves 0.2445. Tiles remove the ceiling
+   * entirely; `maxPx: 1024` is the same conservative floor the narrow slice
+   * uses, and for the same reason: a device that cannot take the texture draws
+   * a BLACK ground and reports nothing.
+   *
+   * Half-extents come from the wide projection rather than the manifest,
+   * because `manifest.groundWm/Hm` describe the NARROW box. Passing those would
+   * put every tile's world rectangle inside a 1460x5791m footprint under an
+   * 8212x7566m scene — imagery stretched over a sixth of the ground, which
+   * renders as a plausible-looking city that is wrong everywhere.
+   */
+  if (wideProj) {
+    const { widthM, depthM } = wideProj.groundSize();
+    console.log('[bake] slice-drape (wide)...');
+    console.log(
+      await sliceDrape(paths.out, widthM / 2, depthM / 2, {
+        filename: 'drape-wide.jpg',
+        dir: 'drape-wide',
+        manifestName: 'drape-wide-tiles.json',
+        maxPx: 1024,
+      })
+    );
+  }
 
   console.log('[bake] done. rules:', JSON.stringify(manifest.ruleHistogram));
   return manifest;
