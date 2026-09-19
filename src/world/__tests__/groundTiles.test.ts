@@ -16,6 +16,7 @@ import {
   tileSegments,
   tilePlacement,
   tilingCoversExtent,
+  tilesByPriority,
   type DrapeTiling,
   type TileWorld,
 } from '../groundTiles';
@@ -155,5 +156,71 @@ describe('tilingCoversExtent — refuse rather than draw something wrong', () =>
     // the outermost edges land on the extent to within rounding, not exactly.
     // Too tight a tolerance rejects every real bake and silently falls back.
     expect(tilingCoversExtent(tiling(W - 0.4, H + 0.4), W, H)).toBe(true);
+  });
+});
+
+describe('tilesByPriority — stream nearest first, and not everything', () => {
+  // A 3x1 strip: west, middle, east, each 1000 m wide.
+  const strip: DrapeTiling = {
+    cols: 3,
+    rows: 1,
+    dir: 'drape-wide',
+    source: { width: 3000, height: 1000 },
+    tiles: [
+      { row: 0, col: 0, path: 'w.jpg', world: [-1500, -500, -500, 500] },
+      { row: 0, col: 1, path: 'm.jpg', world: [-500, -500, 500, 500] },
+      { row: 0, col: 2, path: 'e.jpg', world: [500, -500, 1500, 500] },
+    ],
+  };
+
+  it('orders by distance to the tile RECTANGLE, not its centre', () => {
+    // MUTATION-DRIVEN. The first version of this test used equal-sized tiles,
+    // where centre-ranking and rectangle-ranking agree — so it passed against a
+    // centre-distance implementation and proved nothing. Discriminating needs
+    // tiles of DIFFERENT sizes: a big tile the camera is standing on has a
+    // distant centre, and a small tile nearby has a close one.
+    const uneven: DrapeTiling = {
+      cols: 2,
+      rows: 1,
+      dir: 'drape-wide',
+      source: { width: 100, height: 100 },
+      tiles: [
+        // Camera at x=-50 is INSIDE this one; its centre is 2450 m away.
+        { row: 0, col: 0, path: 'big.jpg', world: [-5000, -500, 0, 500] },
+        // Not under the camera at all; its centre is only 250 m away.
+        { row: 0, col: 1, path: 'small.jpg', world: [100, -500, 300, 500] },
+      ],
+    };
+    const order = tilesByPriority(uneven, -50, 0, 5000).map((t) => t.path);
+    expect(order).toEqual(['big.jpg', 'small.jpg']);
+  });
+
+  it('equal-sized neighbours still order sensibly', () => {
+    const order = tilesByPriority(strip, 1400, 0, 5000).map((t) => t.path);
+    expect(order).toEqual(['e.jpg', 'm.jpg', 'w.jpg']);
+  });
+
+  it('a camera INSIDE a tile ranks it at distance zero', () => {
+    const order = tilesByPriority(strip, 0, 0, 5000).map((t) => t.path);
+    expect(order[0]).toBe('m.jpg');
+  });
+
+  it('drops tiles beyond the radius — the point is NOT fetching everything', () => {
+    // 221 tiles at 0.5 m/px is 55 MB. Fetching it all per visit was the bug
+    // this function exists to prevent, so a radius that quietly includes
+    // everything is the regression to catch.
+    const near = tilesByPriority(strip, -1400, 0, 600).map((t) => t.path);
+    expect(near).toEqual(['w.jpg']);
+  });
+
+  it('CONTROL: a generous radius really does include everything', () => {
+    // Without this, the test above passes for a function that returns [].
+    expect(tilesByPriority(strip, -1400, 0, 100000)).toHaveLength(3);
+  });
+
+  it('returns nothing when the camera is far outside, rather than the nearest', () => {
+    // Fallback-only is the correct state out here; "always give me one" would
+    // fetch a megabyte to texture something off screen.
+    expect(tilesByPriority(strip, 90000, 0, 1800)).toEqual([]);
   });
 });

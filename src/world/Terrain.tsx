@@ -1,6 +1,8 @@
 'use client';
-import { useEffect, useMemo, useRef } from 'react';
-import { useThree } from '@react-three/fiber';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useThree, useFrame } from '@react-three/fiber';
+import { TextureLoader } from 'three';
+import { siteAssetUrl } from '@/lib/manifest';
 import { PlaneGeometry, Texture, type Mesh } from 'three';
 import type { TerrainGrid, Manifest } from '@/lib/manifest';
 import { bilinear, assertExtent, minElevation } from './terrainSample';
@@ -10,6 +12,7 @@ import {
   tileSegments,
   tilePlacement,
   tilingCoversExtent,
+  tilesByPriority,
   type DrapeTiling,
 } from './groundTiles';
 
@@ -17,7 +20,7 @@ export default function Terrain({
   grid,
   drape,
   tiling,
-  tileTextures,
+  tileSlug,
   manifest,
   onMeshReady,
 }: {
@@ -29,10 +32,8 @@ export default function Terrain({
    *  visible ground is drawn from these instead of `drape`, which removes the
    *  8192px single-texture ceiling on drape resolution. */
   tiling?: DrapeTiling | null;
-  /** Tile textures, keyed by the tile's `path`. A tile with no texture yet
-   *  simply is not drawn, so a slow network degrades to holes over the fallback
-   *  rather than to a black ground. */
-  tileTextures?: Map<string, Texture> | null;
+  /** Site slug, used to resolve tile URLs. Required when `tiling` is given. */
+  tileSlug?: string;
   manifest: Manifest;
   /** Hands the displaced ground mesh to the composition root once built, so a
    *  physics layer (Walk-mode gravity/step/slope, #226) can bake it as the floor.
@@ -72,12 +73,60 @@ export default function Terrain({
     if (meshRef.current && onMeshReady) onMeshReady(meshRef.current);
   }, [geometry, onMeshReady]);
 
+  /**
+   * Stream tile textures nearest-to-camera, a few at a time.
+   *
+   * NEVER BLOCKS. The downscaled `drape-wide.jpg` is already loaded and drawn,
+   * so every tile that arrives is an upgrade over something already on screen.
+   * The previous version awaited all 221 textures before rendering anything —
+   * 55 MB of dead page — which is also wasted work, because the pulled-back
+   * diorama camera resolves about 6 m/px on screen while these tiles are 0.5.
+   *
+   * RADIUS, not everything. Beyond it the fallback is indistinguishable at this
+   * camera distance, so fetching more spends a visitor's bandwidth on pixels
+   * they cannot see.
+   */
+  const RADIUS_M = 1800;
+  const IN_FLIGHT = 4;
+  const [tileTextures, setTileTextures] = useState<Map<string, Texture>>(
+    () => new Map()
+  );
+  const wanted = useRef<Set<string>>(new Set());
+  const loading = useRef(0);
+  const loader = useMemo(() => new TextureLoader(), []);
+  const camera = useThree((s) => s.camera);
+
+  useFrame(() => {
+    if (!tiling || !tileSlug || loading.current >= IN_FLIGHT) return;
+    const next = tilesByPriority(
+      tiling,
+      camera.position.x,
+      camera.position.z,
+      RADIUS_M
+    ).find((t) => !wanted.current.has(t.path));
+    if (!next) return;
+    wanted.current.add(next.path);
+    loading.current += 1;
+    loader
+      .loadAsync(siteAssetUrl(tileSlug, `${tiling.dir}/${next.path}`))
+      .then((tex) =>
+        setTileTextures((prev) => new Map(prev).set(next.path, tex))
+      )
+      // A tile that will not load is simply never drawn, leaving the fallback
+      // showing there. One blurry patch, not a black one — which is the failure
+      // that matters, since a texture a device cannot take draws black silently.
+      .catch(() => {})
+      .finally(() => {
+        loading.current -= 1;
+      });
+  });
+
   // Tiles are used only when they demonstrably cover THIS scene. A tiling baked
   // against a different extent yields real imagery at wrong world rectangles —
   // a plausible-looking place that is wrong everywhere, which is worse than
   // blurry. See tilingCoversExtent.
   const tiled = useMemo(() => {
-    if (!tileTextures?.size) return null;
+    if (!tileTextures.size) return null;
     if (!tilingCoversExtent(tiling, manifest.groundWm, manifest.groundHm))
       return null;
     const W = manifest.groundWm,
@@ -116,8 +165,22 @@ export default function Terrain({
       .filter((x): x is NonNullable<typeof x> => x !== null);
   }, [tiling, tileTextures, grid, manifest]);
 
+  /**
+   * polygonOffset, not a Y nudge. Tiles sit on the SAME displaced surface as
+   * the fallback beneath them, so without a depth bias the two z-fight across
+   * the whole city. Lifting the tiles in Y instead would make them float at
+   * grazing street-level angles and break the physics floor's agreement with
+   * what you see. A depth-buffer bias moves neither.
+   */
   const tileMaterials = useMemo(
-    () => tiled?.map((t) => materialKit.drapedGround(t.tex, maxAniso)) ?? null,
+    () =>
+      tiled?.map((t) => {
+        const m = materialKit.drapedGround(t.tex, maxAniso);
+        m.polygonOffset = true;
+        m.polygonOffsetFactor = -1;
+        m.polygonOffsetUnits = -1;
+        return m;
+      }) ?? null,
     [tiled, maxAniso]
   );
 

@@ -130,3 +130,39 @@ export function tilingCoversExtent(
     Math.abs(spanX - groundWm) <= tolM && Math.abs(spanZ - groundHm) <= tolM
   );
 }
+
+/**
+ * Which tiles are worth having loaded, nearest first.
+ *
+ * WHY THIS EXISTS. The first version of the tiled ground fetched every tile and
+ * blocked the scene on `Promise.all` — 221 tiles and 55 MB before anything drew.
+ * That is a dead page on mobile, and it is wasted by construction: the diorama
+ * camera frames 8 x 7.5 km into ~1400px, which needs roughly 6 m/px on screen.
+ * The 0.5 m/px detail only earns its bytes once the camera is close.
+ *
+ * So the data is used as the two-level pyramid it already forms — the small
+ * downscaled `drape-wide.jpg` is the far level and draws immediately, and these
+ * are the near level, streamed in behind it.
+ *
+ * Distance is measured to the nearest point of the tile's rectangle, not its
+ * centre: a camera sitting just outside a large tile is ON it visually, and
+ * centre-distance would rank it behind smaller tiles that are further away.
+ */
+export function tilesByPriority(
+  tiling: DrapeTiling,
+  camX: number,
+  camZ: number,
+  radiusM: number
+): GroundTile[] {
+  const d2 = (t: GroundTile) => {
+    const [minX, minZ, maxX, maxZ] = t.world;
+    const dx = Math.max(minX - camX, 0, camX - maxX);
+    const dz = Math.max(minZ - camZ, 0, camZ - maxZ);
+    return dx * dx + dz * dz;
+  };
+  return tiling.tiles
+    .map((t) => ({ t, d: d2(t) }))
+    .filter((x) => x.d <= radiusM * radiusM)
+    .sort((a, b) => a.d - b.d)
+    .map((x) => x.t);
+}

@@ -32,9 +32,9 @@ interface WideData {
   buildings: Building[];
   streets: Street[];
   drape: Texture;
-  /** Tiled aerial (#1176); null when the bake predates it or the fetch failed. */
+  /** Tiled aerial PLAN (#1176); null when the bake predates it or the fetch
+   *  failed. Terrain streams the images themselves. */
   tiling: DrapeTiling | null;
-  tileTextures: Map<string, Texture> | null;
   wideManifest: Manifest;
   twin: { slug: string; house: HouseInfo } | null;
 }
@@ -108,41 +108,21 @@ export default function WideCity({
       ]);
 
       // Tiled aerial (#1176). BEST-EFFORT AND STRICTLY ADDITIVE: a twin baked
-      // before this existed has no drape-wide-tiles.json, and a fork may be
-      // serving an older bake, so a 404 here must degrade to the single texture
-      // rather than blank the city. `drape` above is already loaded and is the
-      // fallback, so there is nothing to wait for on the failure path.
+      // before this existed has no drape-wide-tiles.json, and a fork may serve
+      // an older bake, so a 404 here degrades to the single texture rather than
+      // blanking the city.
       //
-      // Tiles load in PARALLEL and are handed over as one batch: a partial map
-      // would render holes that fill in visibly, and since the fallback is
-      // already on screen underneath, waiting costs nothing but a moment of
-      // blur. A tile that fails individually is simply absent from the map, and
-      // Terrain skips it — one blurry patch, not a black one.
+      // ONLY THE PLAN IS FETCHED HERE — 63 KB of JSON. The tile IMAGES are
+      // streamed by Terrain, nearest-to-camera, because it is the component
+      // that knows where the camera is. The first version of this awaited all
+      // 221 textures before rendering anything: 55 MB blocking the whole scene,
+      // which is a dead page on mobile and wasted anyway, since the pulled-back
+      // diorama camera resolves ~6 m/px on screen and these tiles are 0.5.
       let tiling: DrapeTiling | null = null;
-      let tileTextures: Map<string, Texture> | null = null;
       try {
         tiling = await loadSiteJson<DrapeTiling>(slug, 'drape-wide-tiles.json');
-        const loader = new TextureLoader();
-        const loaded = await Promise.all(
-          tiling.tiles.map(async (t) => {
-            try {
-              return [
-                t.path,
-                await loader.loadAsync(
-                  siteAssetUrl(slug, `${tiling!.dir}/${t.path}`)
-                ),
-              ] as const;
-            } catch {
-              return null;
-            }
-          })
-        );
-        const ok = loaded.filter((x): x is NonNullable<typeof x> => x !== null);
-        tileTextures = ok.length ? new Map(ok) : null;
-        if (!tileTextures) tiling = null;
       } catch {
         tiling = null;
-        tileTextures = null;
       }
       // Project raw WGS84 → local ENU through the SAME shared transform the bake
       // used, origin = atlasBox centre, with the site's #233 vector offset so
@@ -218,7 +198,6 @@ export default function WideCity({
       if (!alive) return;
       setData({
         tiling,
-        tileTextures,
         grid,
         buildings,
         streets,
@@ -292,7 +271,7 @@ export default function WideCity({
         grid={data.grid}
         drape={data.drape}
         tiling={data.tiling}
-        tileTextures={data.tileTextures}
+        tileSlug={slug}
         manifest={data.wideManifest}
         onMeshReady={onTerrainMesh}
       />
