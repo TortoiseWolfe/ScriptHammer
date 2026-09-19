@@ -124,3 +124,60 @@ describe('TipJar', () => {
     });
   });
 });
+
+describe('TipJar — GA4 conversion signal (#115 measurement arc)', () => {
+  let gtag: ReturnType<typeof vi.fn>;
+  beforeEach(() => {
+    gtag = vi.fn();
+    vi.stubGlobal('gtag', gtag);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+  const evt = () => gtag.mock.calls.find((c) => c[0] === 'event');
+
+  it('reports a compact preset, in DOLLARS not cents', () => {
+    // cents would report a $5 tip as value 500 and make the jar look like the most
+    // valuable product on the site.
+    render(<TipJar compact />);
+    fireEvent.click(screen.getByRole('button', { name: '$5' }));
+    const [, action, params] = evt()!;
+    expect(action).toBe('tip_jar_give');
+    expect(params.event_category).toBe('Conversion');
+    expect(params.value).toBe(5);
+    expect(params.tip_cents).toBe(500);
+  });
+
+  it('does NOT report a preset in the full jar — that only fills the input', () => {
+    // In the full jar a preset is a glance, not a decision; `onGive` is the decision.
+    // Counting presets here would inflate conversions with people who changed their mind.
+    render(<TipJar />);
+    fireEvent.click(screen.getByRole('button', { name: '$15' }));
+    expect(evt()).toBeUndefined();
+  });
+
+  it('reports when the full jar is actually submitted', () => {
+    render(<TipJar />);
+    fireEvent.click(screen.getByRole('button', { name: '$15' }));
+    fireEvent.click(give());
+    expect(evt()![2].value).toBe(15);
+  });
+
+  it('does NOT report a rejected amount', () => {
+    // An amount outside the bounds never reaches checkout, so it is not a conversion.
+    render(<TipJar />);
+    const input = screen.getByRole('spinbutton');
+    fireEvent.change(input, { target: { value: '999999' } });
+    fireEvent.click(give());
+    expect(evt()).toBeUndefined();
+  });
+
+  it('CONTROL: no gtag is a silent no-op', () => {
+    vi.unstubAllGlobals();
+    render(<TipJar compact />);
+    expect(() =>
+      fireEvent.click(screen.getByRole('button', { name: '$5' }))
+    ).not.toThrow();
+  });
+});

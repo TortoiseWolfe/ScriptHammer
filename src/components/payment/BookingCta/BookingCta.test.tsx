@@ -147,3 +147,76 @@ describe('BookingCta', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+describe('BookingCta — GA4 conversion signal (#115 measurement arc)', () => {
+  // WHY THIS MATTERS. This is the highest-intent action on the site and GA reported
+  // nothing about it — pageviews said somebody reached /pricing and never that they
+  // asked to talk, which is the half of "what does an ad click do" that was missing.
+  let gtag: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    gtag = vi.fn();
+    vi.stubGlobal('gtag', gtag);
+    vi.stubGlobal('crypto', { ...globalThis.crypto, randomUUID: () => LEAD });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: LEAD }) })
+    );
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  });
+
+  const evt = () => gtag.mock.calls.find((c) => c[0] === 'event');
+
+  it('reports the click, carrying the SKU and the surface', () => {
+    render(<BookingCta source="pricing" productId="svc-discovery" />);
+    fireEvent.click(screen.getByRole('link'));
+    const [, action, params] = evt()!;
+    expect(action).toBe('booking_cta_click');
+    expect(params.event_category).toBe('Conversion');
+    expect(params.event_label).toBe('svc-discovery');
+    expect(params.booking_source).toBe('pricing');
+  });
+
+  it('falls back to the surface as the label when there is no SKU', () => {
+    render(<BookingCta source="schedule" />);
+    fireEvent.click(screen.getByRole('link'));
+    expect(evt()![2].event_label).toBe('schedule');
+  });
+
+  it('reports EVEN WHEN the lead cannot be minted — the ordering is the point', () => {
+    // The event fires before the `!leadId` return, so a failed lead write does not also
+    // lose the analytics event. GA then reads >= leads, and the gap between them is
+    // itself the signal that lead recording is dropping clicks. Put the call after that
+    // return and this test goes red.
+    vi.stubGlobal('crypto', { ...globalThis.crypto, randomUUID: () => '' });
+    render(<BookingCta source="pricing" productId="svc-site" />);
+    fireEvent.click(screen.getByRole('link'));
+    expect(evt()).toBeDefined();
+    expect(evt()![1]).toBe('booking_cta_click');
+  });
+
+  it('does NOT report a modified click, which is not a navigation we own', () => {
+    // A cmd/ctrl-click opens a new tab and the handler returns early without recording
+    // a lead. Reporting it would make GA and the leads table disagree in a way nobody
+    // could explain later.
+    render(<BookingCta source="pricing" productId="svc-site" />);
+    fireEvent.click(screen.getByRole('link'), { metaKey: true });
+    expect(evt()).toBeUndefined();
+  });
+
+  it('CONTROL: no gtag on the page is a silent no-op, not a crash', () => {
+    // SDK presence IS the consent gate — GoogleAnalytics.tsx returns null without
+    // analytics consent, so the script never loads. This must degrade quietly.
+    vi.unstubAllGlobals();
+    vi.stubGlobal('crypto', { ...globalThis.crypto, randomUUID: () => LEAD });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: LEAD }) })
+    );
+    render(<BookingCta source="pricing" />);
+    expect(() => fireEvent.click(screen.getByRole('link'))).not.toThrow();
+  });
+});

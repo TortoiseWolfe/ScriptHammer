@@ -1,6 +1,6 @@
 import React from 'react';
 import { Metadata } from 'next';
-import Link from 'next/link';
+import BuyLink from './BuyLink';
 import BookingCta from '@/components/payment/BookingCta';
 import styles from './pricing.module.css';
 import { THEME_COUNT } from '@/config/themes';
@@ -329,14 +329,20 @@ function Card({ p }: { p: Product }) {
           <span className={btnSoon} data-testid="coming-soon">
             Coming soon
           </span>
-        ) : external ? (
-          <a className={btn} href={href} target="_blank" rel="noreferrer">
-            {p.cta}
-          </a>
         ) : (
-          <Link className={btn} href={href}>
+          // Tracked so GA can answer what a visitor actually does after landing here —
+          // it could report that somebody reached /pricing and nothing about whether any
+          // price moved them. BuyLink is a client boundary because this page is a server
+          // component; see its header.
+          <BuyLink
+            sku={p.sku}
+            href={href}
+            className={btn}
+            price={p.price}
+            external={external}
+          >
             {p.cta}
-          </Link>
+          </BuyLink>
         )}
       </div>
     </div>
