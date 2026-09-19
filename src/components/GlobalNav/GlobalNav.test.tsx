@@ -382,3 +382,67 @@ describe('GlobalNav theming', () => {
     expect(heard).toContain(THEMES[6]);
   });
 });
+
+describe('/chatt active state — exactly one destination lights up', () => {
+  // THE BUG (user-reported). Three nav entries point at /chatt: Play
+  // (?diorama&walk) at top level, plus Atlas (no query) and Diorama (?diorama)
+  // inside Demos. The check was a binary — `href.includes('?diorama')` — so on
+  // ?diorama it matched Play AND Diorama, and Demos lit up too because one of
+  // its children was active. Two active top-level items at once, on screen.
+  //
+  // Uses this file's existing harness (`renderer` + `setSearch`) rather than
+  // poking window.location: selectRenderer is mocked here, so a test that sets
+  // only the URL exercises nothing.
+  const setChatt = (search: string, r: 'atlas' | 'diorama') => {
+    pathname = '/chatt';
+    renderer = r;
+    setSearch(search);
+  };
+
+  /** Top-level rail items currently showing the active treatment. */
+  const activeTopLevel = () =>
+    Array.from(document.querySelectorAll('.sh-rail-active'))
+      .map((el) => (el.textContent ?? '').replace(/[\s▾]+/g, ' ').trim())
+      .filter(Boolean);
+
+  it('on ?diorama&walk, Play is active and Demos is NOT', () => {
+    setChatt('?diorama&walk', 'diorama');
+    render(<GlobalNav />);
+    expect(activeTopLevel()).toEqual(['Play']);
+  });
+
+  it('on ?diorama, Demos is active and Play is NOT', () => {
+    setChatt('?diorama', 'diorama');
+    render(<GlobalNav />);
+    expect(activeTopLevel()).toEqual(['Demos']);
+  });
+
+  it('on the bare atlas, Demos is active and Play is NOT', () => {
+    setChatt('', 'atlas');
+    render(<GlobalNav />);
+    expect(activeTopLevel()).toEqual(['Demos']);
+  });
+
+  it('CONTROL: never more than one top-level item is active, on any /chatt url', () => {
+    // The assertion that encodes the bug itself. A future fourth /chatt
+    // destination reusing an existing discriminator fails here rather than
+    // quietly lighting two things up.
+    const cases: [string, 'atlas' | 'diorama'][] = [
+      ['', 'atlas'],
+      ['?diorama', 'diorama'],
+      ['?diorama&walk', 'diorama'],
+      ['?walk', 'diorama'],
+      ['?ortho', 'diorama'],
+      ['?edit', 'diorama'],
+    ];
+    for (const [q, r] of cases) {
+      setChatt(q, r);
+      const { unmount } = render(<GlobalNav />);
+      expect(
+        activeTopLevel().length,
+        `url ${q || '(bare)'}`
+      ).toBeLessThanOrEqual(1);
+      unmount();
+    }
+  });
+});
