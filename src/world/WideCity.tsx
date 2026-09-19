@@ -13,7 +13,17 @@ import type {
 } from '@/lib/manifest';
 import Buildings, { type BuildingPalette } from './Buildings';
 import Terrain from './Terrain';
-import type { DrapeTiling } from './groundTiles';
+import {
+  planStreamingTiles,
+  tileImageryUrl,
+  type DrapeTiling,
+} from './groundTiles';
+
+/** Tile edge in metres. 161 <= 1024 x 0.1588, so a 1024px texture carries the
+ *  county source's native resolution rather than a downsample of it. */
+const LIVE_TILE_M = 161;
+/** Hamilton County's finest LOD: 0.5208333 ft/px in SR 2274. */
+const LIVE_NATIVE_MPP = 0.1588;
 import HouseModel from './HouseModel';
 import Water from './Water';
 import Roads from './Roads';
@@ -35,6 +45,9 @@ interface WideData {
   /** Tiled aerial PLAN (#1176); null when the bake predates it or the fetch
    *  failed. Terrain streams the images themselves. */
   tiling: DrapeTiling | null;
+  /** The wide projection, so the ground can turn a tile's world rect into the
+   *  lon/lat bbox an imagery service wants. */
+  proj: ReturnType<typeof createProjection>;
   wideManifest: Manifest;
   twin: { slug: string; house: HouseInfo } | null;
 }
@@ -107,29 +120,29 @@ export default function WideCity({
         new TextureLoader().loadAsync(siteAssetUrl(slug, 'drape-wide.jpg')),
       ]);
 
-      // Tiled aerial (#1176). BEST-EFFORT AND STRICTLY ADDITIVE: a twin baked
-      // before this existed has no drape-wide-tiles.json, and a fork may serve
-      // an older bake, so a 404 here degrades to the single texture rather than
-      // blanking the city.
-      //
-      // ONLY THE PLAN IS FETCHED HERE — 63 KB of JSON. The tile IMAGES are
-      // streamed by Terrain, nearest-to-camera, because it is the component
-      // that knows where the camera is. The first version of this awaited all
-      // 221 textures before rendering anything: 55 MB blocking the whole scene,
-      // which is a dead page on mobile and wasted anyway, since the pulled-back
-      // diorama camera resolves ~6 m/px on screen and these tiles are 0.5.
-      let tiling: DrapeTiling | null = null;
-      try {
-        tiling = await loadSiteJson<DrapeTiling>(slug, 'drape-wide-tiles.json');
-      } catch {
-        tiling = null;
-      }
       // Project raw WGS84 → local ENU through the SAME shared transform the bake
       // used, origin = atlasBox centre, with the site's #233 vector offset so
       // footprints register on the wide drape (baked over this same projection).
       const atlasBox = manifest.atlasBox ?? manifest.box;
       const proj = createProjection(atlasBox, manifest.vectorOffsetM);
       const { widthM, depthM } = proj.groundSize();
+
+      // Aerial detail, fetched on demand from Hamilton County's 2024 orthos
+      // rather than baked (#1176).
+      //
+      // WHY NOT BAKED. The bake goes through one full raster and sharp's
+      // limitInputPixels (268.4 MP) caps this extent at 0.5 m/px. The county
+      // serves 0.1588; that extent at native resolution is ~3 billion pixels
+      // and ~800 MB, so no tuning of the bake reaches it. Fetching per tile
+      // removes the ceiling and stores nothing — which is exactly how the
+      // Cesium atlas beside this renderer has always worked.
+      //
+      // TILE SIZE IS THE RESOLUTION KNOB, and this is the part that is easy to
+      // get wrong: 1024px is the texture floor every GL implementation must
+      // clear, so a tile must cover <= 1024 x 0.1588 = 163 m to carry native
+      // detail. The baked grid's 483 m tiles would deliver 0.472 m/px — no
+      // better than the bake, with a network dependency added for nothing.
+      const tiling = planStreamingTiles(widthM, depthM, LIVE_TILE_M);
       const wideManifest: Manifest = {
         ...manifest,
         groundWm: widthM,
@@ -198,6 +211,7 @@ export default function WideCity({
       if (!alive) return;
       setData({
         tiling,
+        proj,
         grid,
         buildings,
         streets,
@@ -271,7 +285,15 @@ export default function WideCity({
         grid={data.grid}
         drape={data.drape}
         tiling={data.tiling}
-        tileSlug={slug}
+        tileUrl={(t) =>
+          tileImageryUrl(
+            t,
+            (x, z) => data.proj.enuToLonLat(x, z),
+            'hamco',
+            1024,
+            LIVE_NATIVE_MPP
+          )
+        }
         manifest={data.wideManifest}
         onMeshReady={onTerrainMesh}
       />

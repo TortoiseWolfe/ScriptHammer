@@ -166,3 +166,141 @@ export function tilesByPriority(
     .sort((a, b) => a.d - b.d)
     .map((x) => x.t);
 }
+
+/* ----------------------------------------------------- live imagery ---- */
+
+/**
+ * Live imagery services a tile can be streamed from, instead of baked.
+ *
+ * WHY STREAM AT ALL. Baking caps the resolution, and not by a little. The bake
+ * goes through one full raster, and sharp's default limitInputPixels is
+ * 268.4 MP — which puts chatt's 8212 x 7566 m atlas extent at 0.5 m/px and no
+ * finer. The sharpest source over Chattanooga is Hamilton County's 2024 orthos
+ * at 0.1588 m/px; that extent at native resolution is ~3 billion pixels and
+ * ~800 MB. It cannot be baked, at all, by any tuning of the existing pipeline.
+ *
+ * Streaming removes the question. The camera asks for the tiles it is near,
+ * at the resolution it needs, and nothing is stored — which is exactly how the
+ * Cesium atlas beside this renderer has always worked with Esri imagery. The
+ * difference in sharpness between the two views was never the imagery or the
+ * texture limit; it was that one streams and one baked.
+ *
+ * VERIFIED BEFORE BUILDING ON IT: the county service answers a cross-origin
+ * request (`access-control-allow-origin` echoes the caller) and `f=image`
+ * returns the JPEG directly, so no `f=json` round trip is needed at render
+ * time. The bake still uses the f=json path, because there it is validating the
+ * returned EXTENT — a different job from fetching pixels.
+ */
+export const IMAGERY_SERVICES = {
+  hamco:
+    'https://mapsdev.hamiltontn.gov/hcwa/rest/services/Base_Imagery_2024/MapServer/export',
+  tnmap:
+    'https://tnmap.tn.gov/arcgis/rest/services/BASEMAPS/IMAGERY_WEB_MERCATOR/MapServer/export',
+} as const;
+
+export type ImageryService = keyof typeof IMAGERY_SERVICES;
+
+/**
+ * Build the export URL for one tile, at a resolution capped by what the tile
+ * can usefully carry.
+ *
+ * `maxPx` is a TEXTURE budget, not a quality setting: every tile is a separate
+ * GPU texture, so asking for more than the renderer can hold wastes bandwidth
+ * to produce something a driver will downsample anyway. 1024 is the floor every
+ * GL implementation in service must clear, and a device that cannot take a
+ * texture draws a BLACK ground reporting nothing — which is why this stays
+ * conservative rather than tracking MAX_TEXTURE_SIZE.
+ */
+export function tileImageryUrl(
+  // Only the world rectangle is needed. Taking the narrow shape rather than a
+  // full GroundTile keeps Terrain able to pass whatever it holds.
+  tile: { world: TileWorld },
+  toLonLat: (x: number, z: number) => [number, number],
+  service: ImageryService = 'hamco',
+  maxPx = 1024,
+  /** Finest ground resolution the service actually serves. hamco 0.1588 m/px
+   *  (SR 2274, 0.5208333 ft/px); tnmap 0.2445 (LOD 19 after cos(lat)). */
+  nativeMpp = 0.1588
+): string {
+  const [minX, minZ, maxX, maxZ] = tile.world;
+  // -Z is north, so the tile's minZ edge is its NORTHERN one and becomes the
+  // bbox's MAXIMUM latitude. Swapping these silently returns a mirrored strip.
+  const [west, north] = toLonLat(minX, minZ);
+  const [east, south] = toLonLat(maxX, maxZ);
+  // Pixels the tile SHOULD carry at the source's native resolution, capped by
+  // the texture budget. The first version of this asked for `metres` pixels,
+  // which silently pins every request to 1 m/px no matter how fine the service
+  // is — it returned real county imagery and looked like it worked.
+  const wPx = Math.min(maxPx, Math.ceil((maxX - minX) / nativeMpp));
+  const hPx = Math.min(maxPx, Math.ceil((maxZ - minZ) / nativeMpp));
+  const q = new URLSearchParams({
+    bbox: `${west},${south},${east},${north}`,
+    bboxSR: '4326',
+    imageSR: '4326',
+    size: `${Math.max(1, wPx)},${Math.max(1, hPx)}`,
+    format: 'jpg',
+    f: 'image',
+  });
+  return `${IMAGERY_SERVICES[service]}?${q}`;
+}
+
+/**
+ * A streaming tile grid, derived from the scene extent rather than from a baked
+ * raster.
+ *
+ * WHY NOT REUSE THE BAKED PLAN. Because tile SIZE is the resolution knob once
+ * imagery is streamed, and the baked plan's size is an artifact of how a raster
+ * was cut, not a choice. Measured: the baked 17x13 grid gives 483 m tiles, and
+ * 483 m in the 1024px texture every GL implementation must support is
+ * 0.472 m/px — indistinguishable from what the bake already ships. Streaming
+ * through that grid would add a network dependency and buy nothing.
+ *
+ * To actually reach the county's native 0.1588 m/px a tile must cover at most
+ * 1024 x 0.1588 = 163 m. So the grid is generated from `tileM`, and `tileM` is
+ * chosen from the resolution you want, not inherited.
+ *
+ * The whole extent at 161 m is ~1,989 tiles, which sounds alarming and is not:
+ * nothing fetches the whole extent. At a 600 m radius that is roughly 55 tiles,
+ * about 5 MB, none of it stored.
+ *
+ * Edges are integer-divided the same way `splitEdges` does in the bake, so
+ * adjacent tiles AGREE on their shared edge rather than each rounding
+ * independently — the seam discipline is identical, it just applies to metres
+ * here instead of pixels.
+ */
+export function planStreamingTiles(
+  groundWm: number,
+  groundHm: number,
+  tileM: number,
+  dir = 'live'
+): DrapeTiling {
+  const cols = Math.max(1, Math.ceil(groundWm / tileM));
+  const rows = Math.max(1, Math.ceil(groundHm / tileM));
+  const edge = (i: number, n: number, total: number) =>
+    -total / 2 + (i / n) * total;
+  const tiles: GroundTile[] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      tiles.push({
+        row: r,
+        col: c,
+        // No file on disk — the path is an identity for the texture cache and
+        // for the priority queue's dedupe, nothing more.
+        path: `r${r}c${c}`,
+        world: [
+          edge(c, cols, groundWm),
+          edge(r, rows, groundHm),
+          edge(c + 1, cols, groundWm),
+          edge(r + 1, rows, groundHm),
+        ],
+      });
+    }
+  }
+  return {
+    cols,
+    rows,
+    dir,
+    source: { width: cols * 1024, height: rows * 1024 },
+    tiles,
+  };
+}

@@ -17,6 +17,8 @@ import {
   tilePlacement,
   tilingCoversExtent,
   tilesByPriority,
+  planStreamingTiles,
+  tileImageryUrl,
   type DrapeTiling,
   type TileWorld,
 } from '../groundTiles';
@@ -222,5 +224,90 @@ describe('tilesByPriority — stream nearest first, and not everything', () => {
     // Fallback-only is the correct state out here; "always give me one" would
     // fetch a megabyte to texture something off screen.
     expect(tilesByPriority(strip, 90000, 0, 1800)).toEqual([]);
+  });
+});
+
+describe('planStreamingTiles — tile SIZE is the resolution knob', () => {
+  it('covers the whole extent with no gap and no overlap', () => {
+    const p = planStreamingTiles(W, H, 161);
+    const xs = p.tiles.flatMap((t) => [t.world[0], t.world[2]]);
+    const zs = p.tiles.flatMap((t) => [t.world[1], t.world[3]]);
+    expect(Math.min(...xs)).toBeCloseTo(-W / 2, 6);
+    expect(Math.max(...xs)).toBeCloseTo(W / 2, 6);
+    expect(Math.min(...zs)).toBeCloseTo(-H / 2, 6);
+    expect(Math.max(...zs)).toBeCloseTo(H / 2, 6);
+    expect(p.tiles).toHaveLength(p.cols * p.rows);
+  });
+
+  it('makes shared edges BIT-IDENTICAL, same as the baked slicer', () => {
+    const p = planStreamingTiles(W, H, 400);
+    const at = (r: number, c: number) =>
+      p.tiles.find((t) => t.row === r && t.col === c)!;
+    for (let r = 0; r < p.rows; r++)
+      for (let c = 0; c + 1 < p.cols; c++)
+        expect(at(r, c).world[2]).toBe(at(r, c + 1).world[0]);
+    for (let r = 0; r + 1 < p.rows; r++)
+      for (let c = 0; c < p.cols; c++)
+        expect(at(r, c).world[3]).toBe(at(r + 1, c).world[1]);
+  });
+
+  it('a 161 m tile reaches county-native resolution in a 1024px texture', () => {
+    // THE POINT OF THE FUNCTION. The baked 17x13 grid gives 483 m tiles, which
+    // is 0.472 m/px in 1024px — no better than the bake it would replace. A
+    // grid that streams through 483 m tiles adds a network dependency and buys
+    // nothing, which is the mistake this test exists to prevent.
+    const p = planStreamingTiles(W, H, 161);
+    const t = p.tiles[0];
+    const widthM = t.world[2] - t.world[0];
+    expect(widthM / 1024).toBeLessThanOrEqual(0.1588);
+  });
+
+  it('CONTROL: a 483 m tile does NOT, which is why size is a parameter', () => {
+    const p = planStreamingTiles(W, H, 483);
+    const t = p.tiles[0];
+    expect((t.world[2] - t.world[0]) / 1024).toBeGreaterThan(0.4);
+  });
+});
+
+describe('tileImageryUrl', () => {
+  const ident = (x: number, z: number): [number, number] => [
+    x / 1000,
+    -z / 1000,
+  ];
+  const tile = planStreamingTiles(W, H, 161).tiles[0];
+
+  it('the DELIVERED resolution reaches native, not one pixel per metre', () => {
+    // MUTATION-DRIVEN, twice over. The bug: asking for `metres` pixels pins
+    // every request to 1 m/px however fine the service is — and it returns real
+    // county imagery, so it looks like it works. My FIRST attempt at this test
+    // asserted `pixels > metres`, which the bug passes on rounding alone
+    // (Math.round(157.9) = 158 > 157.9). Assert the thing that matters: the
+    // m/px the request actually delivers.
+    const NATIVE = 0.1588;
+    const u = new URL(tileImageryUrl(tile, ident, 'hamco', 1024, NATIVE));
+    const [w] = u.searchParams.get('size')!.split(',').map(Number);
+    const widthM = tile.world[2] - tile.world[0];
+    const deliveredMpp = widthM / w;
+    expect(deliveredMpp).toBeLessThanOrEqual(NATIVE * 1.01);
+    expect(w).toBeLessThanOrEqual(1024); // inside the texture budget
+  });
+
+  it('puts the tile NORTH edge at the bbox MAXIMUM latitude', () => {
+    // -Z is north. Swapping these returns a mirrored strip that still looks
+    // like a city, which is the worst kind of wrong.
+    const u = new URL(tileImageryUrl(tile, ident, 'hamco'));
+    const [, south, , north] = u.searchParams
+      .get('bbox')!
+      .split(',')
+      .map(Number);
+    expect(north).toBeGreaterThan(south);
+  });
+
+  it('never exceeds the texture budget, however large the tile', () => {
+    const big = planStreamingTiles(W, H, 4000).tiles[0];
+    const u = new URL(tileImageryUrl(big, ident, 'hamco', 1024, 0.1588));
+    const [w, h] = u.searchParams.get('size')!.split(',').map(Number);
+    expect(w).toBeLessThanOrEqual(1024);
+    expect(h).toBeLessThanOrEqual(1024);
   });
 });
