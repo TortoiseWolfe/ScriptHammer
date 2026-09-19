@@ -304,3 +304,30 @@ export function planStreamingTiles(
     tiles,
   };
 }
+
+/**
+ * Does the ground need synthetic road ribbons painted on it?
+ *
+ * `Roads` extrudes 8 m asphalt quads from OSM centrelines and lifts them 0.12 m
+ * above the terrain. That existed because the drape was 1.5 m/px, where an 8 m
+ * street is five pixels of smear and you cannot tell a road from a roof.
+ *
+ * At the county source's 0.1588 m/px the same street is fifty pixels, with lane
+ * markings and kerbs. The ribbon then does three bad things at once: it hides
+ * imagery that is now better than the thing covering it, it paints every street
+ * a uniform 8 m when real ones are not, and it places them from OSM centrelines
+ * whose registration against this imagery is ~5 m off (#229) — so the synthetic
+ * road visibly misses the real one.
+ *
+ * So the question is physical rather than a preference: how many pixels of
+ * imagery cover a road? Sixteen is the floor at which a street reads as a
+ * street; below it, paint one.
+ */
+export function needsSyntheticRoads(
+  groundMpp: number,
+  roadWidthM = 8,
+  minPx = 16
+): boolean {
+  if (!Number.isFinite(groundMpp) || groundMpp <= 0) return true; // unknown → paint
+  return roadWidthM / groundMpp < minPx;
+}

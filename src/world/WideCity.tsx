@@ -16,6 +16,7 @@ import Terrain from './Terrain';
 import {
   planStreamingTiles,
   tileImageryUrl,
+  needsSyntheticRoads,
   type DrapeTiling,
 } from './groundTiles';
 
@@ -302,13 +303,20 @@ export default function WideCity({
           Same layer the narrow TwinWorld path renders; chatt's manifest is
           water:true. */}
       {manifest.site.water === true && <Water manifest={data.wideManifest} />}
-      {/* Road ribbons — narrow streets reprojected into the wide frame (corridor
-          coverage). Terrain-riding asphalt so streets read at ground level. */}
-      <Roads
-        streets={data.streets}
-        grid={data.grid}
-        manifest={data.wideManifest}
-      />
+      {/* Road ribbons, ONLY when the imagery cannot resolve a street.
+          At the live source's 0.1588 m/px an 8 m road is ~50 px with lane
+          markings, and painting over it hides imagery better than the paint —
+          while placing that paint from OSM centrelines that sit ~5 m off this
+          imagery (#229), so the synthetic road visibly misses the real one.
+          At the 1.5 m/px fallback the same road is ~5 px of smear and the
+          ribbon is the only thing making a street read as a street. */}
+      {needsSyntheticRoads(LIVE_TILE_M / 1024) && (
+        <Roads
+          streets={data.streets}
+          grid={data.grid}
+          manifest={data.wideManifest}
+        />
+      )}
       {/* Zero-asset city life — instanced street trees + parked cars scattered
           along the streets so the city isn't dead-empty. */}
       <CityProps

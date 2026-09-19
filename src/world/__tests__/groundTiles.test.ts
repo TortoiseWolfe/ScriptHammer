@@ -19,6 +19,7 @@ import {
   tilesByPriority,
   planStreamingTiles,
   tileImageryUrl,
+  needsSyntheticRoads,
   type DrapeTiling,
   type TileWorld,
 } from '../groundTiles';
@@ -309,5 +310,43 @@ describe('tileImageryUrl', () => {
     const [w, h] = u.searchParams.get('size')!.split(',').map(Number);
     expect(w).toBeLessThanOrEqual(1024);
     expect(h).toBeLessThanOrEqual(1024);
+  });
+});
+
+describe('needsSyntheticRoads — paint a street only when imagery cannot show one', () => {
+  it('NO ribbons at the live source resolution', () => {
+    // 8 m / 0.1588 = ~50 px, with lane markings and kerbs. Painting over that
+    // hides imagery better than the paint, and places it from OSM centrelines
+    // sitting ~5 m off this imagery (#229) so it visibly misses the real road.
+    expect(needsSyntheticRoads(0.1588)).toBe(false);
+  });
+
+  it('YES ribbons at the baked fallback resolution', () => {
+    // 8 m / 1.5 = ~5 px of smear; without the ribbon a street does not read as
+    // a street at all. This is why the layer existed.
+    expect(needsSyntheticRoads(1.5)).toBe(true);
+  });
+
+  it('finds the threshold between them', () => {
+    // 8 m / 0.5 = exactly 16 px, which MEETS the floor rather than falling
+    // below it — so no paint. I wrote this assertion the other way round first
+    // and the test caught me, not the code.
+    expect(needsSyntheticRoads(0.5)).toBe(false);
+    expect(needsSyntheticRoads(0.51)).toBe(true); // 15.7 px — under the floor
+  });
+
+  it('paints when the resolution is unknown or nonsense', () => {
+    // Fails toward the version that always renders something. A missing number
+    // must not silently remove a layer.
+    for (const bad of [0, -1, NaN, Infinity]) {
+      expect(needsSyntheticRoads(bad)).toBe(true);
+    }
+  });
+
+  it('CONTROL: the road width and floor actually move the answer', () => {
+    // Without this the function could ignore its arguments and still pass.
+    expect(needsSyntheticRoads(0.3, 8, 16)).toBe(false);
+    expect(needsSyntheticRoads(0.3, 2, 16)).toBe(true); // a 2 m alley needs help
+    expect(needsSyntheticRoads(0.3, 8, 64)).toBe(true); // a stricter floor
   });
 });
