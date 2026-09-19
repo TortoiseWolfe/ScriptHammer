@@ -160,7 +160,7 @@ export const SiteConfigSchema = z.object({
     .optional(),
   /** Aerial source. NAIP is US-only; non-US sites need 'esri'; 'tnmap' is
    *  Tennessee's TDOT statewide ortho (0.15 m, engineering-grade georef). */
-  drapeSource: z.enum(['naip', 'esri', 'tnmap']).default('naip'),
+  drapeSource: z.enum(['naip', 'esri', 'tnmap', 'hamco']).default('naip'),
   /** Measured vector correction (#233): metres to ADD to every vector layer
    *  (+x east, +z south), from the bake's registration report. Applied at the
    *  projection chokepoint (createProjection). Pin the report's measured
@@ -337,7 +337,7 @@ const PROVENANCE_DRAPE: Record<string, string> = {
 /** Attribution line shown in the HUD, built from the actual sources baked. */
 export function provenanceFor(
   terrainDataset: string,
-  drapeSource: 'naip' | 'esri' | 'tnmap',
+  drapeSource: 'naip' | 'esri' | 'tnmap' | 'hamco',
   msHeights = false,
   lidar = false
 ): string {

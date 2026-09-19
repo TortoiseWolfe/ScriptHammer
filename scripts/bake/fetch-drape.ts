@@ -15,7 +15,34 @@ const ESRI =
 const TNMAP =
   'https://tnmap.tn.gov/arcgis/rest/services/BASEMAPS/IMAGERY_WEB_MERCATOR/MapServer/export';
 
-export type DrapeSource = 'naip' | 'esri' | 'tnmap';
+/**
+ * Hamilton County, TN — the county's own 2024 orthoimagery, and the SHARPEST
+ * source available over Chattanooga by a wide margin.
+ *
+ * WHY IT BEATS TDOT, which is the state service above and was assumed to be the
+ * ceiling. TDOT *flies* 6-inch, but publishes it through a Web Mercator cache
+ * whose `maxScale` is 1128.497176 — LOD 19, which is 0.2445 m/px of ground at
+ * 35°N once cos(lat) is applied. Ask finer and you get an interpolation with no
+ * error (measured: 0.2445 -> 0.1222 differs from a bicubic upsample of the
+ * coarser fetch by 2.8%, i.e. JPEG noise). The county serves the NATIVE imagery
+ * instead: SR 2274, Tennessee State Plane FEET, finest LOD 0.5208333 ft/px =
+ * 0.1588 m/px. That is 1.54x finer per axis, and visibly far more than that —
+ * crosswalk stripes, lane markings, benches and individual people resolve where
+ * TDOT gives a grey smear. It is also a better-lit capture; TDOT's has half of
+ * Miller Park in shadow.
+ *
+ * MapServer /export like tnmap, so it takes the same extent-validated path, and
+ * its maxImageWidth/Height is 4096 — the same cap MAX_EXPORT_PX already
+ * respects. bboxSR/imageSR 4326 makes the server reproject out of State Plane,
+ * so the degree-aspect discipline below applies unchanged.
+ *
+ * COVERAGE IS ONE COUNTY. Any site outside Hamilton County must pin a different
+ * source; there is no fallback, by the same reproducibility rule as the others.
+ */
+const HAMCO =
+  'https://mapsdev.hamiltontn.gov/hcwa/rest/services/Base_Imagery_2024/MapServer/export';
+
+export type DrapeSource = 'naip' | 'esri' | 'tnmap' | 'hamco';
 
 /** Measured live: USGSNAIPImagery clamps beyond ~4000; tnmap caps at 4096. */
 export const MAX_EXPORT_PX = 4000;
@@ -120,7 +147,13 @@ export function sliceDrapeTiles(
 }
 
 function baseFor(source: DrapeSource): string {
-  return source === 'naip' ? NAIP : source === 'esri' ? ESRI : TNMAP;
+  return source === 'naip'
+    ? NAIP
+    : source === 'esri'
+      ? ESRI
+      : source === 'hamco'
+        ? HAMCO
+        : TNMAP;
 }
 
 function exportUrl(
@@ -190,7 +223,9 @@ async function fetchWithRetry(
       ? ' (NAIP covers the US only — set "drapeSource": "esri" in the site config for non-US sites)'
       : source === 'tnmap'
         ? ' (TDOT orthos cover Tennessee only)'
-        : '';
+        : source === 'hamco'
+          ? ' (Hamilton County orthos cover Hamilton County, TN only)'
+          : '';
   throw new Error(`${source.toUpperCase()} ${lastFailure}${hint}`);
 }
 
@@ -322,7 +357,10 @@ async function fetchTile(
   // The site config pins the imagery source as part of its reproducibility
   // contract — NEVER silently substitute another source. Retry the pinned
   // source on transient errors, then fail loudly.
-  return source === 'tnmap'
+  // Both MapServer sources honour SIZE unconditionally and move the EXTENT on
+  // aspect mismatch, which a dims check cannot see — so both must validate the
+  // returned extent via f=json rather than trusting the image.
+  return source === 'tnmap' || source === 'hamco'
     ? fetchTileViaJson(tile, source)
     : fetchTileImage(tile, source);
 }
