@@ -1,6 +1,6 @@
 import React from 'react';
 import { Metadata } from 'next';
-import BuyLink, { priceToUsd } from './BuyLink';
+import BuyLink from './BuyLink';
 import BookingCta from '@/components/payment/BookingCta';
 import styles from './pricing.module.css';
 import { THEME_COUNT } from '@/config/themes';
@@ -338,7 +338,7 @@ function Card({ p }: { p: Product }) {
             sku={p.sku}
             href={href}
             className={btn}
-            priceUsd={priceToUsd(p.price)}
+            price={p.price}
             external={external}
           >
             {p.cta}

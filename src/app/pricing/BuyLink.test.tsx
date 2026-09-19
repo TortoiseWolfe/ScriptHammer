@@ -45,7 +45,7 @@ describe('BuyLink', () => {
 
   it('reports the SKU and the price on click', () => {
     render(
-      <BuyLink sku="svc-site" href="/checkout?sku=svc-site" priceUsd={3500}>
+      <BuyLink sku="svc-site" href="/checkout?sku=svc-site" price="$3,500">
         Select
       </BuyLink>
     );

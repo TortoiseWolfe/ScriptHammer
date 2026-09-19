@@ -52,22 +52,35 @@ export default function BuyLink({
   sku,
   href,
   className,
-  priceUsd,
+  price,
   external = false,
   children,
 }: {
   sku: string;
   href: string;
   className?: string;
-  /** Whole dollars, for GA's numeric `value`. Omit for "let's talk" CTAs with no price. */
-  priceUsd?: number;
+  /**
+   * The DISPLAY price, verbatim from the catalog ("$2,500", "Free", "Let's talk").
+   *
+   * Deliberately the string rather than a pre-parsed number: `priceToUsd` lives in this
+   * client module, and Next.js refuses to let a server component CALL a plain function
+   * exported from a `'use client'` file — it can only render it as a component or pass it
+   * as props. Parsing in the caller therefore built fine, type-checked fine, and failed at
+   * prerender with "Attempted to call priceToUsd() from the server". Taking the string and
+   * parsing on this side of the boundary is what makes that impossible rather than caught.
+   */
+  price?: string;
   external?: boolean;
   children: React.ReactNode;
 }) {
   const onClick = () =>
-    trackEvent('pricing_cta_click', 'Conversion', sku, priceUsd, {
-      outbound: external,
-    });
+    trackEvent(
+      'pricing_cta_click',
+      'Conversion',
+      sku,
+      price ? priceToUsd(price) : undefined,
+      { outbound: external }
+    );
 
   // An external CTA is a real navigation away; a plain <a> is correct and `Link` would
   // prefetch a route that does not exist.
