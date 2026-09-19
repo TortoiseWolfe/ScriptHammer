@@ -13,6 +13,18 @@ import type {
 } from '@/lib/manifest';
 import Buildings, { type BuildingPalette } from './Buildings';
 import Terrain from './Terrain';
+import {
+  planStreamingTiles,
+  tileImageryUrl,
+  needsSyntheticRoads,
+  type DrapeTiling,
+} from './groundTiles';
+
+/** Tile edge in metres. 161 <= 1024 x 0.1588, so a 1024px texture carries the
+ *  county source's native resolution rather than a downsample of it. */
+const LIVE_TILE_M = 161;
+/** Hamilton County's finest LOD: 0.5208333 ft/px in SR 2274. */
+const LIVE_NATIVE_MPP = 0.1588;
 import HouseModel from './HouseModel';
 import Water from './Water';
 import Roads from './Roads';
@@ -31,6 +43,12 @@ interface WideData {
   buildings: Building[];
   streets: Street[];
   drape: Texture;
+  /** Tiled aerial PLAN (#1176); null when the bake predates it or the fetch
+   *  failed. Terrain streams the images themselves. */
+  tiling: DrapeTiling | null;
+  /** The wide projection, so the ground can turn a tile's world rect into the
+   *  lon/lat bbox an imagery service wants. */
+  proj: ReturnType<typeof createProjection>;
   wideManifest: Manifest;
   twin: { slug: string; house: HouseInfo } | null;
 }
@@ -102,12 +120,30 @@ export default function WideCity({
         loadSiteJson<TerrainGrid>(slug, 'terrain-wide.json'),
         new TextureLoader().loadAsync(siteAssetUrl(slug, 'drape-wide.jpg')),
       ]);
+
       // Project raw WGS84 → local ENU through the SAME shared transform the bake
       // used, origin = atlasBox centre, with the site's #233 vector offset so
       // footprints register on the wide drape (baked over this same projection).
       const atlasBox = manifest.atlasBox ?? manifest.box;
       const proj = createProjection(atlasBox, manifest.vectorOffsetM);
       const { widthM, depthM } = proj.groundSize();
+
+      // Aerial detail, fetched on demand from Hamilton County's 2024 orthos
+      // rather than baked (#1176).
+      //
+      // WHY NOT BAKED. The bake goes through one full raster and sharp's
+      // limitInputPixels (268.4 MP) caps this extent at 0.5 m/px. The county
+      // serves 0.1588; that extent at native resolution is ~3 billion pixels
+      // and ~800 MB, so no tuning of the bake reaches it. Fetching per tile
+      // removes the ceiling and stores nothing — which is exactly how the
+      // Cesium atlas beside this renderer has always worked.
+      //
+      // TILE SIZE IS THE RESOLUTION KNOB, and this is the part that is easy to
+      // get wrong: 1024px is the texture floor every GL implementation must
+      // clear, so a tile must cover <= 1024 x 0.1588 = 163 m to carry native
+      // detail. The baked grid's 483 m tiles would deliver 0.472 m/px — no
+      // better than the bake, with a network dependency added for nothing.
+      const tiling = planStreamingTiles(widthM, depthM, LIVE_TILE_M);
       const wideManifest: Manifest = {
         ...manifest,
         groundWm: widthM,
@@ -174,7 +210,16 @@ export default function WideCity({
       }
 
       if (!alive) return;
-      setData({ grid, buildings, streets, drape, wideManifest, twin });
+      setData({
+        tiling,
+        proj,
+        grid,
+        buildings,
+        streets,
+        drape,
+        wideManifest,
+        twin,
+      });
       // Built once here, not per readout sample: see buildAddressIndex for why the
       // filter-and-box step is what makes a 13,877-building scan affordable at 4 Hz.
       onAddressIndex?.(buildAddressIndex(buildings, buildingLabelOf));
@@ -240,6 +285,16 @@ export default function WideCity({
       <Terrain
         grid={data.grid}
         drape={data.drape}
+        tiling={data.tiling}
+        tileUrl={(t) =>
+          tileImageryUrl(
+            t,
+            (x, z) => data.proj.enuToLonLat(x, z),
+            'hamco',
+            1024,
+            LIVE_NATIVE_MPP
+          )
+        }
         manifest={data.wideManifest}
         onMeshReady={onTerrainMesh}
       />
@@ -248,13 +303,20 @@ export default function WideCity({
           Same layer the narrow TwinWorld path renders; chatt's manifest is
           water:true. */}
       {manifest.site.water === true && <Water manifest={data.wideManifest} />}
-      {/* Road ribbons — narrow streets reprojected into the wide frame (corridor
-          coverage). Terrain-riding asphalt so streets read at ground level. */}
-      <Roads
-        streets={data.streets}
-        grid={data.grid}
-        manifest={data.wideManifest}
-      />
+      {/* Road ribbons, ONLY when the imagery cannot resolve a street.
+          At the live source's 0.1588 m/px an 8 m road is ~50 px with lane
+          markings, and painting over it hides imagery better than the paint —
+          while placing that paint from OSM centrelines that sit ~5 m off this
+          imagery (#229), so the synthetic road visibly misses the real one.
+          At the 1.5 m/px fallback the same road is ~5 px of smear and the
+          ribbon is the only thing making a street read as a street. */}
+      {needsSyntheticRoads(LIVE_TILE_M / 1024) && (
+        <Roads
+          streets={data.streets}
+          grid={data.grid}
+          manifest={data.wideManifest}
+        />
+      )}
       {/* Zero-asset city life — instanced street trees + parked cars scattered
           along the streets so the city isn't dead-empty. */}
       <CityProps

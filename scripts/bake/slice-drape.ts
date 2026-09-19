@@ -137,10 +137,23 @@ export async function sliceDrape(
   twinDir: string,
   halfX: number,
   halfZ: number,
-  opts: { filename?: string; dir?: string; maxPx?: number } = {}
+  opts: {
+    filename?: string;
+    dir?: string;
+    maxPx?: number;
+    /**
+     * Where the plan is written. Parameterised for #1176: this function could
+     * already slice any source via `filename`/`dir`, but every call wrote its
+     * plan to the one hardcoded `drape-tiles.json`, so slicing a SECOND drape
+     * silently clobbered the first one's manifest — the tiles would be on disk
+     * and the index would describe someone else's grid.
+     */
+    manifestName?: string;
+  } = {}
 ): Promise<DrapeTiling & { bytes: number }> {
   const filename = opts.filename ?? 'drape.jpg';
   const dir = opts.dir ?? 'drape';
+  const manifestName = opts.manifestName ?? 'drape-tiles.json';
   const src = join(twinDir, filename);
   if (!existsSync(src)) throw new Error(`slice-drape: no ${src}`);
 
@@ -168,7 +181,7 @@ export async function sliceDrape(
   }
 
   writeFileSync(
-    join(twinDir, 'drape-tiles.json'),
+    join(twinDir, manifestName),
     JSON.stringify({ ...plan, bytes }, null, 2)
   );
   return { ...plan, bytes };

@@ -70,6 +70,22 @@ export const SiteConfigSchema = z.object({
   box: GeoBoxSchema,
   /** Aerial drape metres-per-pixel. */
   mpp: z.number().positive().default(2),
+  /**
+   * Aerial drape m/px for the WIDE atlas extent (#1176). Was hardcoded 1.5 in
+   * run.ts, where it read as a judgement about the pulled-back camera. It was
+   * really a texture limit: the wide surface was one `TextureLoader` texture on
+   * one plane, and a WebGL implementation need only support 8192px — the wide
+   * extent at 1 m/px is already 8212px across. Now that the wide drape is
+   * sliced into 1024px tiles the ceiling is gone, so this is a real knob.
+   *
+   * The floor that remains is the SOURCE: tnmap caps at LOD 19 = 0.2445 m/px
+   * of ground at this latitude, and asking for finer returns an interpolation
+   * with no error (measured: 0.2445 -> 0.1222 differs from a bicubic upsample
+   * by 2.8%, i.e. JPEG noise). Do not set this below 0.2445 expecting detail.
+   *
+   * Default stays 1.5 so every existing site rebakes byte-identically.
+   */
+  wideMpp: z.number().positive().default(1.5),
   /** Elevation grid; absent -> defaultTerrainGridFor(dataset, box). */
   terrain: z
     .object({
@@ -144,7 +160,7 @@ export const SiteConfigSchema = z.object({
     .optional(),
   /** Aerial source. NAIP is US-only; non-US sites need 'esri'; 'tnmap' is
    *  Tennessee's TDOT statewide ortho (0.15 m, engineering-grade georef). */
-  drapeSource: z.enum(['naip', 'esri', 'tnmap']).default('naip'),
+  drapeSource: z.enum(['naip', 'esri', 'tnmap', 'hamco']).default('naip'),
   /** Measured vector correction (#233): metres to ADD to every vector layer
    *  (+x east, +z south), from the bake's registration report. Applied at the
    *  projection chokepoint (createProjection). Pin the report's measured
@@ -321,7 +337,7 @@ const PROVENANCE_DRAPE: Record<string, string> = {
 /** Attribution line shown in the HUD, built from the actual sources baked. */
 export function provenanceFor(
   terrainDataset: string,
-  drapeSource: 'naip' | 'esri' | 'tnmap',
+  drapeSource: 'naip' | 'esri' | 'tnmap' | 'hamco',
   msHeights = false,
   lidar = false
 ): string {
