@@ -18,9 +18,20 @@ const path = require('node:path');
 const SCRIPT = path.join(__dirname, '..', 'ci', 'check-cache-headers.mjs');
 
 const ASSET = '/_next/static/chunks/main-abc123.js';
+const CSS = '/_next/static/css/deadbeef.css';
 const PAGE = `<!doctype html><html><head>
-  <link rel="stylesheet" href="/_next/static/css/deadbeef.css">
+  <link rel="stylesheet" href="${CSS}">
   <script src="${ASSET}"></script></head><body>hi</body></html>`;
+
+/**
+ * The only files this site has. Everything else 404s, exactly like GitHub Pages.
+ *
+ * This replaced an exact-match `missing: string[]` option, which the #1199 probe
+ * defeats by construction: it invents a fresh path every run, so no list can name it
+ * in advance. Modelling the inventory instead is both closer to the real origin and
+ * the only shape that can answer "what happens to a path that was never published?".
+ */
+const REAL_ASSETS = new Set([ASSET, CSS]);
 
 /**
  * A stand-in for the live site.
@@ -29,26 +40,29 @@ const PAGE = `<!doctype html><html><head>
  * @param {string} o.docCacheControl  what the HTML document claims
  * @param {string} o.assetCacheControl what a hashed asset claims
  * @param {boolean} [o.edge]          whether to emit `cf-ray` (i.e. "Cloudflare answered")
- * @param {string[]} [o.missing]      paths that should 404
+ * @param {string|null} [o.missingCacheControl]       what a 404 claims
+ * @param {string|null} [o.staticMissingCacheControl] what a 404 under /_next/static/ claims
  */
 function fixture({
   docCacheControl,
   assetCacheControl,
   edge = true,
-  missing = [],
+  // `no-cache` is the correct configuration, so it is the default, the same way
+  // `edge: true` is. `null` models a bare GitHub Pages origin, which sends no
+  // cache-control on a 404 at all (#1199) — and is therefore not evidence either way.
+  missingCacheControl = 'no-cache',
+  // 404s under /_next/static/ get their own value: on production they are governed by
+  // the #635 Cache Rule rather than the zone default, and when #1199 was measured the
+  // two differed by four orders of magnitude (14400 vs 31536000).
+  staticMissingCacheControl = missingCacheControl,
 }) {
   return createServer((req, res) => {
     const url = req.url.split('?')[0];
     const headers = {};
     if (edge) headers['cf-ray'] = '8f0000000000abcd-ATL';
+    const isStatic = url.startsWith('/_next/static/');
 
-    if (missing.includes(url)) {
-      res.writeHead(404, headers);
-      res.end('nope');
-      return;
-    }
-
-    if (url.startsWith('/_next/static/')) {
+    if (isStatic && REAL_ASSETS.has(url)) {
       res.writeHead(200, {
         ...headers,
         'Content-Type': 'application/javascript',
@@ -58,12 +72,24 @@ function fixture({
       return;
     }
 
-    res.writeHead(200, {
-      ...headers,
-      'Content-Type': 'text/html',
-      'Cache-Control': docCacheControl,
-    });
-    res.end(PAGE);
+    if (!isStatic && url.endsWith('/')) {
+      res.writeHead(200, {
+        ...headers,
+        'Content-Type': 'text/html',
+        'Cache-Control': docCacheControl,
+      });
+      res.end(PAGE);
+      return;
+    }
+
+    const cc = isStatic ? staticMissingCacheControl : missingCacheControl;
+    // writeHead throws on an undefined header value, so the header is omitted
+    // entirely rather than sent empty.
+    res.writeHead(
+      404,
+      cc == null ? headers : { ...headers, 'Cache-Control': cc }
+    );
+    res.end('nope');
   });
 }
 
@@ -233,6 +259,214 @@ test('FAILS when hashed assets are not cached for a year', async () => {
       const { code, stderr } = await runProbe(base);
       assert.equal(code, 1, 'a short asset TTL must fail the check');
       assert.match(stderr, /expected max-age >= 31536000/);
+    }
+  );
+});
+
+test('FAILS when a 404 on an asset path is cached for hours (#1199)', async () => {
+  // The header production actually served on 2026-09-22. It is Cloudflare's zone
+  // Browser Cache TTL, not GitHub Pages' — the origin sends no cache-control on a 404
+  // at all — which is why the fix is a rule and not an origin change.
+  await withFixture(
+    {
+      docCacheControl: 'no-cache',
+      assetCacheControl: 'max-age=31536000',
+      missingCacheControl: 'max-age=14400',
+      staticMissingCacheControl: 'no-cache',
+    },
+    async (base) => {
+      const { code, stderr } = await runProbe(base);
+      assert.equal(code, 1, 'a four-hour cached 404 must fail the check');
+      assert.match(
+        stderr,
+        /cache-probe-[0-9a-z]+\.bin/,
+        'must name the path it probed'
+      );
+      assert.match(stderr, /max-age=14400/);
+      assert.match(
+        stderr,
+        /4\.0h/,
+        'must state the window in units a human weighs'
+      );
+      // The message has to name the cause, or a red run teaches the next reader nothing.
+      assert.match(
+        stderr,
+        /Response Header Transform Rule matches document paths only/
+      );
+      // Exactly one: the /_next/static/ probe was healthy in the same run, which
+      // proves the two probes are independently observable rather than one assertion.
+      assert.match(stderr, /\b1 cache-contract failure/);
+    }
+  );
+});
+
+test('CONTROL: the same run passes when missing paths say no-cache', async () => {
+  // Without this, a checker that pushed a failure unconditionally would satisfy both
+  // red tests above and below. This is the pair that makes them mean something.
+  await withFixture(
+    {
+      docCacheControl: 'no-cache',
+      assetCacheControl: 'max-age=31536000',
+      missingCacheControl: 'no-cache',
+    },
+    async (base) => {
+      const { code, stdout } = await runProbe(base);
+      assert.equal(code, 0, `expected pass, got:\n${stdout}`);
+      assert.match(stdout, /missing paths are not cached past 300s/);
+    }
+  );
+});
+
+test('FAILS when a 404 under /_next/static/ inherits the one-year Cache Rule TTL', async () => {
+  // Strictly worse than the four-hour case and recorded in no ticket before #1199:
+  // the #635 Cache Rule's own browser_ttl/edge_ttl defaults carry no status_code_ttl,
+  // so the one-year override lands on responses for files that do not exist.
+  await withFixture(
+    {
+      docCacheControl: 'no-cache',
+      assetCacheControl: 'max-age=31536000',
+      missingCacheControl: 'no-cache',
+      staticMissingCacheControl: 'max-age=31536000',
+    },
+    async (base) => {
+      const { code, stderr } = await runProbe(base);
+      assert.equal(code, 1, 'a year-long cached 404 must fail the check');
+      assert.match(stderr, /_next\/static\/[^\s]*cache-probe-[0-9a-z]+\.js/);
+      assert.match(stderr, /31536000s \(365 days\)/);
+      assert.match(stderr, /no status_code_ttl/);
+      // Load-bearing: without it a reader "fixes" this with the edge knob and leaves
+      // the browser holding the 404 for a year regardless.
+      assert.match(stderr, /caps the EDGE copy only/);
+      assert.match(stderr, /\b1 cache-contract failure/);
+    }
+  );
+});
+
+test('probes a different invented path every run, so it never reads its own cached answer', async () => {
+  // A constant path would be answered from the cache this phase exists to measure, and
+  // would leave a long-lived cached 404 on a path somebody might later publish — the
+  // exact failure #1199 describes, caused by the detector for it.
+  const opts = {
+    docCacheControl: 'no-cache',
+    assetCacheControl: 'max-age=31536000',
+    missingCacheControl: 'max-age=14400',
+  };
+  const seen = [];
+  for (let i = 0; i < 2; i += 1) {
+    // eslint-disable-next-line no-await-in-loop
+    await withFixture(opts, async (base) => {
+      const { stderr } = await runProbe(base);
+      const m = /cache-probe-([0-9a-z]+)\.bin/.exec(stderr);
+      assert.ok(m, `expected a probe path in:\n${stderr}`);
+      seen.push(m[1]);
+    });
+  }
+  assert.notEqual(
+    seen[0],
+    seen[1],
+    'the probe path must be fresh on every run'
+  );
+});
+
+test('a catch-all that answers 200 is UNVERIFIED, not a pass', async () => {
+  // A site that routes every unknown path to a page has made a routing choice, not a
+  // cache mistake. It must not fail — and must not be told its 404s are bounded.
+  const server = createServer((req, res) => {
+    const url = req.url.split('?')[0];
+    const headers = { 'cf-ray': '8f0000000000abcd-ATL' };
+    if (url.endsWith('/')) {
+      res.writeHead(200, {
+        ...headers,
+        'Content-Type': 'text/html',
+        'Cache-Control': 'no-cache',
+      });
+      res.end(PAGE);
+      return;
+    }
+    res.writeHead(200, {
+      ...headers,
+      'Content-Type': 'application/javascript',
+      'Cache-Control': 'max-age=31536000',
+    });
+    res.end('console.log(1)');
+  });
+  const port = await listen(server);
+  try {
+    const { code, stdout } = await runProbe(`http://127.0.0.1:${port}`);
+    assert.equal(code, 0, 'a catch-all route is not a cache defect');
+    assert.match(stdout, /UNVERIFIED/);
+    assert.match(stdout, /invented to be missing/);
+    assert.match(stdout, /NOT ASSERTED/);
+    // THE load-bearing assertion: "passed" and "learned nothing" must not look alike.
+    assert.ok(
+      !/missing paths are not cached/.test(stdout),
+      `a run that measured nothing must not claim the window is bounded:\n${stdout}`
+    );
+  } finally {
+    server.close();
+  }
+});
+
+test('a 404 with no cache-control at all is UNVERIFIED, not a silent pass', async () => {
+  // A fork on bare GitHub Pages, with no Cloudflare in front. The origin states no
+  // lifetime, so nothing is capped and nothing is broken — the absence of evidence.
+  await withFixture(
+    {
+      docCacheControl: 'no-cache',
+      assetCacheControl: 'max-age=31536000',
+      missingCacheControl: null,
+      staticMissingCacheControl: null,
+      edge: false,
+    },
+    async (base) => {
+      const { code, stdout } = await runProbe(base);
+      assert.equal(
+        code,
+        0,
+        "a fork's correct deployment must not be failed (#970)"
+      );
+      assert.match(stdout, /UNVERIFIED/);
+      assert.match(stdout, /not evidence that anything is capped/);
+      assert.ok(
+        !/missing paths are not cached/.test(stdout),
+        `nothing was measured, so nothing may be claimed:\n${stdout}`
+      );
+    }
+  );
+});
+
+test('the 404 assertion is not gated on REQUIRE_EDGE', async () => {
+  // REQUIRE_EDGE asks "did Cloudflare answer". This phase asks "what does the answer
+  // say", which is a header contract any host can violate. Stating the distinction as
+  // a test stops a later tidy-up folding it under the opt-in and breaking nothing visible.
+  await withFixture(
+    {
+      docCacheControl: 'no-cache',
+      assetCacheControl: 'max-age=31536000',
+      missingCacheControl: 'max-age=14400',
+      edge: false,
+    },
+    async (base) => {
+      const { code, stderr } = await runProbe(base);
+      assert.equal(code, 1, 'a cached 404 must fail with or without the edge');
+      assert.match(stderr, /cache-probe-/);
+    }
+  );
+});
+
+test('a short TTL on a 404 passes: the gate bounds the window, it does not ban caching', async () => {
+  // Briefly caching an error is what stops a crawler hammering the origin. Collapsing
+  // this back into revalidates() would fail a configuration that harms nobody.
+  await withFixture(
+    {
+      docCacheControl: 'no-cache',
+      assetCacheControl: 'max-age=31536000',
+      missingCacheControl: 'max-age=60',
+    },
+    async (base) => {
+      const { code, stdout } = await runProbe(base);
+      assert.equal(code, 0, `60s is inside the ceiling:\n${stdout}`);
+      assert.match(stdout, /missing paths are not cached/);
     }
   );
 });

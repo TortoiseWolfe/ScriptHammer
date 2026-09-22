@@ -19,7 +19,17 @@
  *   - the DMARC record, as the TXT at `_dmarc.<domain>` beginning `v=DMARC1`;
  *   - the CSP rule, as the rule in the `http_response_headers_transform` phase whose action
  *     sets a Content-Security-Policy header — in EITHER mode, so the rule is still found
- *     after it has been flipped.
+ *     after it has been flipped;
+ *   - the cache rules (#1199), as the rewrite rule in that same phase that sets
+ *     `cache-control`, and the `set_cache_settings` rule whose expression names the
+ *     hashed-asset prefix.
+ *
+ * WHY #1199 WIDENS AN EXISTING RULE RATHER THAN ADDING ONE. Discovery by content is what
+ * makes the line above possible, and it is also what forbids a second cache-control rule:
+ * the planner would find two, refuse as designed, and stay refusing — the "fallback"
+ * would permanently disable the planner. So the error condition joins the #635 document
+ * rule, and `cloudflare-intent.mjs` owns the whole expression so that reverting #1199 is
+ * passing `null` for the error ranges rather than re-deriving #635 from memory.
  *
  * A stored id would work here and break in every fork, which is the #1014 / #987 shape: a
  * template default silently pointing a fork's tooling at the template's infrastructure. It
@@ -37,7 +47,7 @@
  * USAGE
  *   node scripts/ci/cloudflare-apply.mjs                 # dry run: show the diff
  *   node scripts/ci/cloudflare-apply.mjs --apply         # write, wait, verify
- *   node scripts/ci/cloudflare-apply.mjs --only=csp      # or --only=dmarc
+ *   node scripts/ci/cloudflare-apply.mjs --only=csp      # or --only=dmarc, --only=cache
  *   node scripts/ci/cloudflare-apply.mjs --selftest      # planners, no network
  */
 import {
@@ -51,6 +61,8 @@ import {
   intendedCspHeader,
   cspPolicy,
   calendarProvider,
+  cacheIntent,
+  revalidateExpression,
 } from './cloudflare-intent.mjs';
 
 const API = 'https://api.cloudflare.com/client/v4';
@@ -216,7 +228,8 @@ export function planCsp(rules, mode = CSP_MODE, policy = cspPolicy()) {
   // Rename the key and/or set the value, keeping every other header on the rule.
   const next = {};
   for (const [k, v] of Object.entries(headers))
-    next[k === currentName ? want : k] = k === currentName ? { ...v, value: wantValue } : v;
+    next[k === currentName ? want : k] =
+      k === currentName ? { ...v, value: wantValue } : v;
   return {
     kind: 'csp',
     action: 'update',
@@ -227,6 +240,7 @@ export function planCsp(rules, mode = CSP_MODE, policy = cspPolicy()) {
     nextValue: wantValue,
     valueChanged: currentValue !== wantValue,
     headers: next,
+    actionParameters: { headers: next },
     // The rule's OWN Cloudflare fields, carried through because the PATCH is rejected
     // without them — see the call site. Named `rule` so `action` here cannot be confused
     // with `action` above, which is this planner's verdict.
@@ -239,6 +253,183 @@ export function planCsp(rules, mode = CSP_MODE, policy = cspPolicy()) {
   };
 }
 
+/**
+ * THE BROWSER HALF of the cache contract (#1199): the rule that sets `cache-control`.
+ *
+ * Widening this rule rather than adding a second one is deliberate, and the reason is
+ * this planner. Discovery here is by CONTENT — "a rewrite rule that sets cache-control" —
+ * because the module header forbids hardcoded rule ids. Add a second cache-control rule
+ * and this finds two, refuses, and stays refusing: the fallback would permanently
+ * disable the planner it exists to serve. The cost of widening (a bad revert has to
+ * re-derive #635's expression) is paid off by `cloudflare-intent.mjs` owning the whole
+ * expression, so reverting is passing `null` for the error ranges.
+ */
+export function planErrorHeaders(rules, intent = cacheIntent()) {
+  const isCacheControl = (h) => h.toLowerCase() === 'cache-control';
+  const matches = (rules ?? []).filter((r) => {
+    if (r.action !== 'rewrite') return false;
+    return Object.keys(r.action_parameters?.headers ?? {}).some(isCacheControl);
+  });
+  if (matches.length === 0) {
+    return {
+      kind: 'cache-browser',
+      action: 'skip',
+      reason:
+        'no response-header rule sets cache-control; this script edits an existing rule, it does not create one',
+    };
+  }
+  if (matches.length > 1) {
+    return {
+      kind: 'cache-browser',
+      action: 'skip',
+      reason:
+        `${matches.length} rules set cache-control — in this phase EVERY match runs and the ` +
+        'last one wins, which is not declared here; resolve that by hand first',
+    };
+  }
+  const rule = matches[0];
+  const headers = rule.action_parameters.headers;
+  const key = Object.keys(headers).find(isCacheControl);
+  const currentValue = headers[key]?.value;
+  const wantValue = intent.revalidateCacheControl;
+  const wantExpression = intent.revalidateExpression;
+  const wantDescription = intent.descriptions.revalidate;
+
+  if (
+    currentValue === wantValue &&
+    rule.expression === wantExpression &&
+    rule.description === wantDescription
+  ) {
+    return {
+      kind: 'cache-browser',
+      action: 'none',
+      current: rule.expression,
+      note: 'already covers documents and error responses',
+    };
+  }
+
+  // Keep every other header on the rule, replacing only the cache-control entry.
+  const next = {};
+  for (const [k, v] of Object.entries(headers))
+    next[k] = isCacheControl(k) ? { ...v, value: wantValue } : v;
+
+  return {
+    kind: 'cache-browser',
+    action: 'update',
+    id: rule.id,
+    changes: [
+      { field: 'expression', from: rule.expression, to: wantExpression },
+      { field: 'cache-control', from: currentValue, to: wantValue },
+      { field: 'description', from: rule.description, to: wantDescription },
+    ].filter((c) => c.from !== c.to),
+    headers: next,
+    actionParameters: { headers: next },
+    rule: {
+      action: rule.action,
+      expression: wantExpression,
+      description: wantDescription,
+      enabled: rule.enabled,
+    },
+  };
+}
+
+/**
+ * THE EDGE HALF (#1199): per-status TTLs on the existing hashed-asset Cache Rule.
+ *
+ * `edge_ttl.default` is compared as well as `status_code_ttl`, so this catches #635
+ * DRIFT and not merely the absence of #1199. Without that, a planner that never looked
+ * at the one-year value would satisfy every test about the new one.
+ */
+export function planErrorEdgeTtl(rules, intent = cacheIntent()) {
+  const matches = (rules ?? []).filter(
+    (r) =>
+      r.action === 'set_cache_settings' &&
+      String(r.expression ?? '').includes(intent.hashedAssetPrefix)
+  );
+  if (matches.length === 0) {
+    return {
+      kind: 'cache-edge',
+      action: 'skip',
+      reason: `no cache rule matches ${intent.hashedAssetPrefix}; this script edits an existing rule, it does not create one`,
+    };
+  }
+  if (matches.length > 1) {
+    return {
+      kind: 'cache-edge',
+      action: 'skip',
+      reason: `${matches.length} cache rules match ${intent.hashedAssetPrefix} — only the FIRST match applies in this phase, so which one wins is not declared here; resolve that by hand first`,
+    };
+  }
+  const rule = matches[0];
+  const params = rule.action_parameters ?? {};
+  const edge = params.edge_ttl ?? {};
+  const currentTtl = edge.status_code_ttl ?? null;
+  const wantTtl = intent.statusCodeTtl;
+  const same =
+    JSON.stringify(currentTtl) === JSON.stringify(wantTtl) &&
+    edge.default === intent.assetMaxAge;
+
+  if (same) {
+    return {
+      kind: 'cache-edge',
+      action: 'none',
+      current: JSON.stringify(currentTtl),
+      note: 'error TTLs already capped, and the one-year default is intact',
+    };
+  }
+
+  // SPREAD, NEVER REBUILD. The live rule may carry serve_stale, cache_key,
+  // respect_strong_etags and the browser_ttl this change must not touch. Regenerating
+  // action_parameters from declared intent would drop every one of them while reading
+  // like a tightening — the loosening trap `rewriteDmarc` documents, in a new costume.
+  const nextParams = {
+    ...params,
+    edge_ttl: {
+      ...edge,
+      default: intent.assetMaxAge,
+      status_code_ttl: wantTtl,
+    },
+  };
+
+  return {
+    kind: 'cache-edge',
+    action: 'update',
+    id: rule.id,
+    changes: [
+      {
+        field: 'edge_ttl.status_code_ttl',
+        from: JSON.stringify(currentTtl),
+        to: JSON.stringify(wantTtl),
+      },
+      {
+        field: 'edge_ttl.default',
+        from: String(edge.default),
+        to: String(intent.assetMaxAge),
+      },
+    ].filter((c) => c.from !== c.to),
+    actionParameters: nextParams,
+    rule: {
+      action: rule.action,
+      expression: rule.expression,
+      description: rule.description,
+      enabled: rule.enabled,
+    },
+  };
+}
+
+/**
+ * Both halves, browser first.
+ *
+ * ORDER IS LOAD-BEARING. `http.response.code` in a response-header expression is the one
+ * part of this change not yet proven against the live API. A rules PATCH is validated
+ * and atomic, so if Cloudflare rejects it the rule is left byte-identical and the loop
+ * aborts BEFORE the edge write — leaving the zone wholly unchanged rather than half
+ * changed. That rejection is the measurement; it is not a cue to improvise a fallback.
+ */
+export function planCache({ headers, cache }, intent = cacheIntent()) {
+  return [planErrorHeaders(headers, intent), planErrorEdgeTtl(cache, intent)];
+}
+
 /* ---------------------------------------------------------------- execution ------------ */
 
 function describe(plan) {
@@ -249,12 +440,36 @@ function describe(plan) {
   if (plan.kind === 'dmarc') {
     return `  DMARC: ${plan.name}\n    from: ${plan.from}\n    to:   ${plan.to}`;
   }
+  if (plan.kind === 'cache-browser' || plan.kind === 'cache-edge') {
+    // Rendered from `changes`, so a cache plan never touches the CSP fields below. The
+    // expressions print IN FULL and untokenised: they are ~250 characters, not 950, and
+    // the token-diff machinery would actively obscure a boolean restructuring — which
+    // is the one thing an operator approving this has to be able to read.
+    const label =
+      plan.kind === 'cache-browser' ? 'CACHE (browser)' : 'CACHE (edge)';
+    const lines = plan.changes.flatMap((c) => [
+      `    ${c.field}:`,
+      `      from: ${c.from}`,
+      `      to:   ${c.to}`,
+    ]);
+    return [`  ${label}: rule ${plan.id}`, ...lines].join('\n');
+  }
+  // CSP is now explicit rather than the fall-through: any future `kind` reaching this
+  // branch printed garbage, because it reads valueChanged/value/nextValue.
+  if (plan.kind !== 'csp') {
+    return `  ${plan.kind.toUpperCase()}: update (no renderer for this kind)`;
+  }
   const head = `  CSP: rule ${plan.id}\n    from: ${plan.from}\n    to:   ${plan.to}`;
   if (!plan.valueChanged)
     return `${head}\n    (policy value unchanged, ${String(plan.value ?? '').length} chars)`;
   // Print the DIFFERENCE, not the two 950-character strings. An operator approving a policy
   // change has to be able to see what it is; two walls of text are not a diff.
-  const toks = (v) => new Set(String(v ?? '').split(/[;\s]+/).filter(Boolean));
+  const toks = (v) =>
+    new Set(
+      String(v ?? '')
+        .split(/[;\s]+/)
+        .filter(Boolean)
+    );
   const before = toks(plan.value);
   const after = toks(plan.nextValue);
   const added = [...after].filter((t) => !before.has(t));
@@ -272,6 +487,16 @@ async function main(argv) {
   const apply = argv.includes('--apply');
   const only =
     (argv.find((a) => a.startsWith('--only=')) ?? '').split('=')[1] || null;
+  // An unknown --only used to select nothing and exit 0 reporting "nothing to do" — a
+  // typo reading as "Cloudflare already matches intent". Name the known set instead.
+  const KNOWN_ONLY = ['dmarc', 'csp', 'cache'];
+  if (only && !KNOWN_ONLY.includes(only)) {
+    console.error(
+      `[cf-apply] unknown --only=${only}. Expected one of: ${KNOWN_ONLY.join(', ')}.`
+    );
+    process.exitCode = 1;
+    return;
+  }
   // WHICH SCHEDULER'S ORIGINS GO IN THE POLICY IS DECIDED BY AN ENV VAR, SO IT MUST BE
   // EXPLICIT BEFORE WE WRITE (#1110).
   //
@@ -330,7 +555,9 @@ async function main(argv) {
   );
   console.log(
     `[cf-apply] scheduler: ${calendarProvider()}` +
-      (process.env.NEXT_PUBLIC_CALENDAR_PROVIDER ? '' : ' (DEFAULT — not set in this env)')
+      (process.env.NEXT_PUBLIC_CALENDAR_PROVIDER
+        ? ''
+        : ' (DEFAULT — not set in this env)')
   );
 
   const intended = intendedFor(domain, process.env);
@@ -343,22 +570,54 @@ async function main(argv) {
     );
     plans.push(planDmarc(records, intended));
   }
-  if (!only || only === 'csp') {
+  const wantCsp = !only || only === 'csp';
+  const wantCache = !only || only === 'cache';
+  if (wantCsp || wantCache) {
+    // One list call shared by both intents: the CSP rule and the #1199 browser rule
+    // live in the SAME ruleset, and fetching it twice invites them to disagree.
     const rulesets = await cf(token, `/zones/${zone.id}/rulesets`);
-    const rs = rulesets.find(
-      (r) => r.phase === 'http_response_headers_transform'
-    );
-    if (!rs) {
-      plans.push({
-        kind: 'csp',
-        action: 'skip',
-        reason: 'this zone has no http_response_headers_transform ruleset',
-      });
-    } else {
+    const loadPhase = async (phase) => {
+      const rs = rulesets.find((r) => r.phase === phase);
+      if (!rs) return null;
       const full = await cf(token, `/zones/${zone.id}/rulesets/${rs.id}`);
-      const plan = planCsp(full.rules, CSP_MODE);
+      return { id: rs.id, rules: full.rules ?? [] };
+    };
+    const withRulesetId = (plan, rs) =>
+      plan.action === 'update' ? { ...plan, rulesetId: rs.id } : plan;
+    const missing = (kind, phase) => ({
+      kind,
+      action: 'skip',
+      reason: `this zone has no ${phase} ruleset`,
+    });
+
+    const TRANSFORM = 'http_response_headers_transform';
+    const CACHE_SETTINGS = 'http_request_cache_settings';
+    const transform = await loadPhase(TRANSFORM);
+    const cacheRs = wantCache ? await loadPhase(CACHE_SETTINGS) : null;
+
+    if (wantCsp) {
       plans.push(
-        plan.action === 'update' ? { ...plan, rulesetId: rs.id } : plan
+        transform
+          ? withRulesetId(planCsp(transform.rules, CSP_MODE), transform)
+          : missing('csp', TRANSFORM)
+      );
+    }
+    if (wantCache) {
+      // Browser half FIRST — see planCache: a rejected expression must abort before
+      // the edge write, so the zone is left wholly unchanged rather than half changed.
+      const [browserPlan, edgePlan] = planCache({
+        headers: transform?.rules ?? [],
+        cache: cacheRs?.rules ?? [],
+      });
+      plans.push(
+        transform
+          ? withRulesetId(browserPlan, transform)
+          : missing('cache-browser', TRANSFORM)
+      );
+      plans.push(
+        cacheRs
+          ? withRulesetId(edgePlan, cacheRs)
+          : missing('cache-edge', CACHE_SETTINGS)
       );
     }
   }
@@ -401,13 +660,16 @@ async function main(argv) {
           // documented flip procedure ("change CSP_MODE, run --apply") would have failed the
           // first time anyone tried it. Only the DMARC path, a different endpoint, was ever
           // exercised. Found by running it (#1110).
+          // `actionParameters` rather than a headers-only literal: a cache rule's
+          // parameters are edge_ttl/browser_ttl, not headers, and each planner is the
+          // thing that knows how to preserve the keys it did not set.
           body: JSON.stringify({
             ...p.rule,
-            action_parameters: { headers: p.headers },
+            action_parameters: p.actionParameters,
           }),
         }
       );
-      console.log(`[cf-apply] wrote CSP rule ${p.id}`);
+      console.log(`[cf-apply] wrote ${p.kind} rule ${p.id}`);
     }
   }
 
@@ -421,6 +683,14 @@ async function main(argv) {
   console.log(`  node scripts/ci/check-mail-policy.mjs ${domain}`);
   console.log(
     `  SITE=https://${domain} REQUIRE_CSP=true node scripts/ci/check-csp-header.mjs`
+  );
+  console.log(
+    `  REQUIRE_EDGE=true node scripts/ci/check-cache-headers.mjs https://${domain}`
+  );
+  console.log(
+    '  — and read the header off a REAL missing path, not the rule: Browser TTL\n' +
+      '    accepts values it then ignores, so a rule that reads back correctly can\n' +
+      '    still do nothing. Keep a control that you know works.'
   );
 }
 
@@ -542,20 +812,27 @@ function selftest() {
   );
   check(
     'plans an update when only the POLICY differs (#1110)',
-    planCsp(ro, 'report-only', "default-src 'self'; frame-src https://app.cal.com")
-      .action,
+    planCsp(
+      ro,
+      'report-only',
+      "default-src 'self'; frame-src https://app.cal.com"
+    ).action,
     'update'
   );
   check(
     'and reports that the value is what changed, so the dry run can show a diff',
-    planCsp(ro, 'report-only', "default-src 'self'; frame-src https://app.cal.com")
-      .valueChanged,
+    planCsp(
+      ro,
+      'report-only',
+      "default-src 'self'; frame-src https://app.cal.com"
+    ).valueChanged,
     true
   );
   check(
     'writes the intended policy, not the one already there (#1110)',
-    planCsp(ro, 'report-only', 'default-src NEW')
-      .headers['Content-Security-Policy-Report-Only'].value,
+    planCsp(ro, 'report-only', 'default-src NEW').headers[
+      'Content-Security-Policy-Report-Only'
+    ].value,
     'default-src NEW'
   );
   check(
@@ -609,6 +886,213 @@ function selftest() {
       'enforcing'
     ).action,
     'skip'
+  );
+
+  /* ------------------------------------------------ the cache contract (#1199) ---- */
+
+  // THE ROUND-TRIP PIN. Captured verbatim from the live rule on 2026-09-22, BEFORE any
+  // of this ran. If `revalidateExpression(null)` ever stops reproducing it, #1199's
+  // widening has silently rewritten #635's document condition — the one outcome this
+  // whole design exists to make impossible. This replaces a citation in
+  // cloudflare-intent.mjs that named a test file which has never existed.
+  const LIVE_DOC_EXPRESSION =
+    '(ends_with(http.request.uri.path, "/") or ends_with(http.request.uri.path, ".html")) and not starts_with(http.request.uri.path, "/_next/")';
+  check(
+    'the document condition round-trips byte-for-byte (#635 unchanged by #1199)',
+    revalidateExpression(null),
+    LIVE_DOC_EXPRESSION
+  );
+  check(
+    'and the widened expression still CONTAINS it, rather than replacing it',
+    revalidateExpression().includes(LIVE_DOC_EXPRESSION),
+    true
+  );
+
+  const CACHE_INTENT = cacheIntent();
+  check(
+    'error TTLs use status_code_range, the documented shape (a bare status_code 400s)',
+    CACHE_INTENT.statusCodeTtl,
+    [
+      { status_code_range: { from: 404, to: 404 }, value: 60 },
+      { status_code_range: { from: 500, to: 599 }, value: 30 },
+    ]
+  );
+  // The browser half and the edge half must cover the SAME codes. They are generated
+  // from one array precisely so this cannot drift; assert it anyway, because "generated
+  // from one array" is a property of today's code, not a guarantee about tomorrow's.
+  check(
+    'the expression and the TTL array agree on which codes are errors',
+    CACHE_INTENT.statusCodeTtl.every(
+      (t) =>
+        CACHE_INTENT.revalidateExpression.includes(
+          String(t.status_code_range.from)
+        ) &&
+        CACHE_INTENT.revalidateExpression.includes(
+          String(t.status_code_range.to)
+        )
+    ),
+    true
+  );
+
+  const liveHeaderRules = [
+    {
+      id: 'h1',
+      action: 'rewrite',
+      enabled: true,
+      expression: LIVE_DOC_EXPRESSION,
+      description: '#635: HTML must revalidate',
+      action_parameters: {
+        headers: {
+          'cache-control': { operation: 'set', value: 'no-cache' },
+          'x-thing': { operation: 'set', value: 'keep me' },
+        },
+      },
+    },
+    ...ro,
+  ];
+  check(
+    'finds the cache-control rule among unrelated header rules',
+    planErrorHeaders(liveHeaderRules).id,
+    'h1'
+  );
+  check(
+    'does NOT match the CSP rule (cross-contamination, one direction)',
+    planErrorHeaders(ro).action,
+    'skip'
+  );
+  check(
+    // 'enforcing' so the plan is an update and therefore carries an id: in 'report-only'
+    // this fixture already matches intent and returns `none`, which has no id at all.
+    'and planCsp still picks the CSP rule, not the cache-control one (other direction)',
+    planCsp(liveHeaderRules, 'enforcing', FIXTURE_POLICY).id,
+    'r1'
+  );
+  check(
+    'plans an update while the expression still matches documents only',
+    planErrorHeaders(liveHeaderRules).action,
+    'update'
+  );
+  check(
+    'and PRESERVES unrelated headers on that rule',
+    planErrorHeaders(liveHeaderRules).headers['x-thing'].value,
+    'keep me'
+  );
+  check(
+    'plans no change once the rule already carries the widened expression',
+    planErrorHeaders([
+      {
+        ...liveHeaderRules[0],
+        expression: CACHE_INTENT.revalidateExpression,
+        description: CACHE_INTENT.descriptions.revalidate,
+      },
+    ]).action,
+    'none'
+  );
+  check(
+    'skips when no rule sets cache-control',
+    planErrorHeaders(ro).action,
+    'skip'
+  );
+  check(
+    'refuses two competing cache-control rules',
+    planErrorHeaders([liveHeaderRules[0], { ...liveHeaderRules[0], id: 'h2' }])
+      .action,
+    'skip'
+  );
+
+  const liveCacheRules = [
+    {
+      id: 'c1',
+      action: 'set_cache_settings',
+      enabled: true,
+      expression: 'starts_with(http.request.uri.path, "/_next/static/")',
+      description: '#635: hashed assets are immutable',
+      action_parameters: {
+        cache: true,
+        browser_ttl: { default: 31536000, mode: 'override_origin' },
+        edge_ttl: { default: 31536000, mode: 'override_origin' },
+        serve_stale: { disable_stale_while_updating: true },
+      },
+    },
+  ];
+  check(
+    'plans an update when the cache rule has no status_code_ttl',
+    planErrorEdgeTtl(liveCacheRules).action,
+    'update'
+  );
+  // THE HIGHEST-VALUE CASE. Rebuilding action_parameters from declared intent would drop
+  // browser_ttl, serve_stale and `cache` while reading like a tightening — the exact
+  // loosening trap rewriteDmarc exists to document.
+  check(
+    'and PRESERVES browser_ttl, serve_stale and cache, which it never declared',
+    (() => {
+      const p = planErrorEdgeTtl(liveCacheRules).actionParameters;
+      return [
+        p.browser_ttl?.default,
+        p.serve_stale?.disable_stale_while_updating,
+        p.cache,
+      ];
+    })(),
+    [31536000, true, true]
+  );
+  check(
+    'keeps the one-year edge default for responses that are not errors',
+    planErrorEdgeTtl(liveCacheRules).actionParameters.edge_ttl.default,
+    31536000
+  );
+  check(
+    'plans no change once the error TTLs are already capped',
+    planErrorEdgeTtl([
+      {
+        ...liveCacheRules[0],
+        action_parameters: {
+          ...liveCacheRules[0].action_parameters,
+          edge_ttl: {
+            default: 31536000,
+            mode: 'override_origin',
+            status_code_ttl: CACHE_INTENT.statusCodeTtl,
+          },
+        },
+      },
+    ]).action,
+    'none'
+  );
+  // NEGATIVE CONTROL for the case above: without it, a planner that compared only
+  // status_code_ttl and never looked at the #635 one-year default would still pass.
+  check(
+    'but still updates when the TTLs are right and the one-year default has DRIFTED',
+    planErrorEdgeTtl([
+      {
+        ...liveCacheRules[0],
+        action_parameters: {
+          ...liveCacheRules[0].action_parameters,
+          edge_ttl: {
+            default: 600,
+            mode: 'override_origin',
+            status_code_ttl: CACHE_INTENT.statusCodeTtl,
+          },
+        },
+      },
+    ]).action,
+    'update'
+  );
+  check(
+    'skips when no cache rule matches the hashed-asset prefix',
+    planErrorEdgeTtl([]).action,
+    'skip'
+  );
+  check(
+    'refuses two competing cache rules',
+    planErrorEdgeTtl([liveCacheRules[0], { ...liveCacheRules[0], id: 'c2' }])
+      .action,
+    'skip'
+  );
+  check(
+    'planCache returns the browser half FIRST, so a rejected expression aborts early',
+    planCache({ headers: liveHeaderRules, cache: liveCacheRules }).map(
+      (p) => p.kind
+    ),
+    ['cache-browser', 'cache-edge']
   );
 
   let bad = 0;
