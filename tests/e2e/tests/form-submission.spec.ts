@@ -1,23 +1,5 @@
-import { test, expect, Locator } from '@playwright/test';
+import { test, expect, Route } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
-
-/**
- * Check if an input field is a honeypot (bot trap) that should not be filled.
- * Honeypot fields have labels like "Don't fill this out if you're human"
- */
-async function isHoneypotField(input: Locator): Promise<boolean> {
-  try {
-    const labelText = await input.evaluate((el) => {
-      const id = el.id;
-      if (!id) return '';
-      const label = document.querySelector(`label[for="${id}"]`);
-      return label?.textContent?.toLowerCase() || '';
-    });
-    return labelText.includes('human') || labelText.includes("don't fill");
-  } catch {
-    return false;
-  }
-}
 
 test.describe('Form Submission', () => {
   test.beforeEach(async ({ page }) => {
@@ -102,53 +84,69 @@ test.describe('Form Submission', () => {
     await expect(nameInput).toHaveAttribute('aria-describedby', 'name-error');
   });
 
-  test('form submission with valid data', async ({ page }) => {
-    // Look for a form with submit button
-    const submitButton = page.locator('button[type="submit"]').first();
-    const hasSubmitButton = (await submitButton.count()) > 0;
+  /**
+   * THIS TEST USED TO PASS *BECAUSE* SUBMISSION FAILED (#1206).
+   *
+   * It filled `input[type=text], input[type=email]` only. `#message` is a
+   * `<textarea>`, so it was never filled, and `contact.schema.ts` requires
+   * `message.min(10)` — zodResolver blocked the submit on every single run. The
+   * assertion then counted `[role="alert"], .alert`, and the four per-field
+   * validation errors each carry `role="alert"`. The blocked submit manufactured
+   * the very elements the assertion accepted.
+   *
+   * Three further ways it could not fail: `.toPass().catch(() => {})` swallowed any
+   * failure outright; the whole body sat inside `if (hasSubmitButton)`, so it passed
+   * silently if the button ever disappeared; and nothing asserted a request was made,
+   * so the delivery path it exists to protect was never exercised.
+   *
+   * What it guards now is the real thing: a correctly filled form issues a delivery
+   * request and renders the SUCCESS alert specifically — never `[role="alert"]`,
+   * which validation errors also satisfy.
+   */
+  test('a correctly filled form issues a delivery request and succeeds', async ({
+    page,
+  }) => {
+    // Count both legs. SupabaseResend is the primary provider since #784 and
+    // Web3Forms is the failover; asserting only one would pass while the other was
+    // the one actually used.
+    let deliveryRequests = 0;
+    const countAndFulfil = (route: Route) => {
+      deliveryRequests += 1;
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, id: 'e2e-stub' }),
+      });
+    };
+    // Narrower than the beforeEach stub, so these take precedence.
+    await page.route('**/functions/v1/contact-message', countAndFulfil);
+    await page.route('**/api.web3forms.com/**', countAndFulfil);
 
-    if (hasSubmitButton) {
-      // Fill any text inputs
-      const textInputs = page.locator(
-        'input[type="text"], input[type="email"]'
-      );
-      const inputCount = await textInputs.count();
+    // By id, and every required control — the omission of #message is the whole bug.
+    // #_gotcha is the honeypot and is deliberately left empty: filling it disables
+    // the submit button, which is exactly the silent no-op this test must not become.
+    await page.locator('#name').fill('Playwright Probe');
+    await page.locator('#email').fill('probe@example.com');
+    await page.locator('#subject').fill('Contact form delivery probe');
+    await page
+      .locator('#message')
+      .fill('This message is comfortably longer than the ten-character floor.');
 
-      for (let i = 0; i < inputCount; i++) {
-        const input = textInputs.nth(i);
+    await page.locator('button[type="submit"]').click();
 
-        // Skip honeypot fields (bot traps)
-        if (await isHoneypotField(input)) {
-          continue;
-        }
+    // `.alert-success` specifically. `[role="alert"]` is what the old assertion used
+    // and it is satisfied by failure: the error banner at ContactForm.tsx:187 and
+    // every field error carry it too. Note the success node is `alert-info` when the
+    // message was queued offline, so this also pins that we took the online path.
+    await expect(page.locator('.alert-success')).toBeVisible({
+      timeout: 15000,
+    });
 
-        const inputType = await input.getAttribute('type');
-
-        if (inputType === 'email') {
-          await input.fill('test@example.com');
-        } else {
-          await input.fill('Test Value');
-        }
-      }
-
-      // Submit form
-      await submitButton.click();
-
-      // Wait for form response - loading state, success message, or error
-      await expect(async () => {
-        const buttonDisabled = await submitButton.isDisabled();
-        const hasAlert =
-          (await page.locator('[role="alert"], .alert').count()) > 0;
-        const hasLoadingClass = (
-          await submitButton.getAttribute('class')
-        )?.includes('loading');
-        expect(buttonDisabled || hasAlert || hasLoadingClass).toBeTruthy();
-      })
-        .toPass({ timeout: 5000 })
-        .catch(() => {
-          // Form may not have async behavior - that's acceptable
-        });
-    }
+    expect(
+      deliveryRequests,
+      'the form must issue a delivery request — a run that fails before the network ' +
+        'renders validation errors, which is what this test used to accept as success'
+    ).toBeGreaterThan(0);
   });
 
   test('form validation prevents submission with invalid data', async ({
