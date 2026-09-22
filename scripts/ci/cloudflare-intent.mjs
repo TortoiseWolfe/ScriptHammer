@@ -68,10 +68,16 @@ export function intendedCspHeader(mode = CSP_MODE) {
  * dashboard — unreviewable, unversioned, and invisible to `git log`. That is the gap this
  * module's header promises to close: "the same value can drive both the check and the change".
  *
- * Captured VERBATIM from production on 2026-09-09 before anything was added, and
- * `scripts/__tests__/csp-intent-round-trips.test.js` pins that `cspPolicy(null)` still
- * serialises to exactly that 951-character string. So this restructuring provably changed
- * nothing; the scheduler origins below are the only intended difference.
+ * Captured VERBATIM from production on 2026-09-09 before anything was added, so this
+ * restructuring provably changed nothing; the scheduler origins below are the only
+ * intended difference.
+ *
+ * This used to cite `scripts/__tests__/csp-intent-round-trips.test.js` as pinning the
+ * serialisation to exactly that 951-character string. THAT FILE HAS NEVER EXISTED, so
+ * the byte-comparison it promised was asserted nowhere — a #396-shaped claim sitting in
+ * the module whose whole job is to be the single source of truth. The pin now lives in
+ * `cloudflare-apply.mjs`'s inline `selftest()`, which CI genuinely runs via
+ * `cloudflare-apply-fork-safe.test.js`.
  *
  * Order is load-bearing for that byte-comparison — object key order is insertion order.
  */
@@ -180,4 +186,113 @@ export function cspPolicy(provider = calendarProvider()) {
   return Object.entries(cspDirectives(provider))
     .map(([name, sources]) => `${name} ${sources.join(' ')}`)
     .join('; ');
+}
+
+/* ------------------------------------------------- the cache contract (#635, #1199) ---- */
+
+/** Documents are never under this prefix; Next.js build output always is. */
+export const NEXT_PREFIX = '/_next/';
+
+/** Where content-hashed output lives. The filename IS the version. */
+export const HASHED_ASSET_PREFIX = '/_next/static/';
+
+/** One year — the #635 Cache Rule's browser and edge default for hashed assets. */
+export const ASSET_MAX_AGE = 31536000;
+
+/** What a document, and now an error response, must carry so a browser re-asks. */
+export const REVALIDATE_CACHE_CONTROL = 'no-cache';
+
+/**
+ * Error classes, and how long the EDGE may keep each (#1199).
+ *
+ * ONE DECLARATION, TWO SERIALISERS. `errorExpression()` turns this into the wirefilter
+ * clause that widens the response-header rule, and `edgeStatusCodeTtl()` turns the same
+ * array into Cloudflare's `status_code_ttl` shape. Neither is written by hand, so the
+ * browser half and the edge half provably cover the same set of codes — which is the
+ * entire reason to declare this rather than edit two dashboard fields.
+ *
+ * 60 and 30 rather than 0 (no-cache) or -1 (no-store): briefly absorbing a burst of
+ * requests for a missing path is the useful half of caching an error, and collapsing it
+ * entirely hands every 404 straight to the origin. The defect in #1199 was duration —
+ * four hours on an asset path, a YEAR under /_next/static/ — not the caching itself.
+ */
+export const CACHE_ERROR_TTLS = [
+  { from: 404, to: 404, edgeTtl: 60 },
+  { from: 500, to: 599, edgeTtl: 30 },
+];
+
+/**
+ * The condition matching a DOCUMENT response.
+ *
+ * Captured verbatim from the live rule on 2026-09-22 and re-derived here so that
+ * `revalidateExpression(null)` reproduces it byte for byte. The selftest pins that
+ * equality, which is what makes #1199's widening provably a no-op for #635: reverting
+ * it is deleting one argument, not re-deriving an expression from memory.
+ */
+export function documentExpression() {
+  return (
+    `(ends_with(http.request.uri.path, "/") or ` +
+    `ends_with(http.request.uri.path, ".html")) and ` +
+    `not starts_with(http.request.uri.path, "${NEXT_PREFIX}")`
+  );
+}
+
+/** The condition matching an ERROR response, from the same array as the edge TTLs. */
+export function errorExpression(ranges = CACHE_ERROR_TTLS) {
+  return ranges
+    .map(({ from, to }) =>
+      from === to
+        ? `http.response.code == ${from}`
+        : `(http.response.code >= ${from} and http.response.code <= ${to})`
+    )
+    .join(' or ');
+}
+
+/**
+ * The full expression for the rule that sets `cache-control: no-cache`.
+ *
+ * `ranges === null` yields the document half alone — the #635 rule exactly as it stood
+ * before #1199, which is what the round-trip pin compares against.
+ */
+export function revalidateExpression(ranges = CACHE_ERROR_TTLS) {
+  const doc = documentExpression();
+  if (ranges === null) return doc;
+  return `(${doc}) or (${errorExpression(ranges)})`;
+}
+
+/**
+ * Cloudflare's per-status edge TTL shape.
+ *
+ * `status_code_range` rather than a bare `status_code` key: every example in
+ * Cloudflare's documentation uses the range form, and a single-code rule is expressed
+ * as `{from: 404, to: 404}`. This exists only under `edge_ttl` — there is no per-status
+ * BROWSER TTL, which is why the browser half of #1199 has to be a response-header rule.
+ */
+export function edgeStatusCodeTtl(ranges = CACHE_ERROR_TTLS) {
+  return ranges.map(({ from, to, edgeTtl }) => ({
+    status_code_range: { from, to },
+    value: edgeTtl,
+  }));
+}
+
+/** Descriptions the planners match rules by, and write back on update. */
+export const CACHE_DESCRIPTIONS = {
+  revalidate:
+    '#635/#1199: documents and error responses must revalidate - a document is the ' +
+    'index of which assets to load, and a cached miss outlives the deploy that fixes it',
+  asset:
+    '#635: hashed assets are immutable - the filename IS the version, and #1199: an ' +
+    'error under that prefix must not inherit the one-year override',
+};
+
+/** The whole cache contract, frozen, as one override point for the planners. */
+export function cacheIntent(ranges = CACHE_ERROR_TTLS) {
+  return Object.freeze({
+    revalidateExpression: revalidateExpression(ranges),
+    revalidateCacheControl: REVALIDATE_CACHE_CONTROL,
+    hashedAssetPrefix: HASHED_ASSET_PREFIX,
+    assetMaxAge: ASSET_MAX_AGE,
+    statusCodeTtl: edgeStatusCodeTtl(ranges),
+    descriptions: CACHE_DESCRIPTIONS,
+  });
 }

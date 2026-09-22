@@ -522,11 +522,40 @@ now fronts GitHub Pages and rewrites the cache headers at the edge:
 
 ```
 document          cache-control: no-cache          (Response Header Transform Rule)
+404 / 5xx         cache-control: no-cache          (same rule, widened — #1199)
 /_next/static/*   cache-control: max-age=31536000  (Cache Rule)
+/_next/static/*   edge_ttl.status_code_ttl caps 404 at 60s, 5xx at 30s (#1199)
 ```
 
 A visitor can no longer hold HTML pointing at deleted assets — the document revalidates
 on every navigation. Verified live on `/`, `/blog/` and `/terms/`, each carrying `cf-ray`.
+
+**THE ERROR ROWS ARE #1199, AND THEY EXIST BECAUSE THIS RULE SET CAUSED HALF THE
+PROBLEM.** Measured 2026-09-22: an invented `.bin` path returned 404 with
+`max-age=14400`, and one under `/_next/static/` returned 404 with **`max-age=31536000` —
+a year** — because the Cache Rule above carried no `status_code_ttl`, so its one-year
+override applied to responses for files that do not exist. Both went `cf-cache-status:
+MISS` then `HIT`, so they were genuinely stored. A file published by a deploy could not
+reach anyone already holding that answer.
+
+Two corrections worth keeping, because both were asserted the other way first:
+
+- **The four hours was Cloudflare's, not GitHub Pages'.** The Pages origin sends **no
+  `cache-control` at all** on a 404; `max-age=14400` is the zone's own
+  `browser_cache_ttl`, applied to extensions in Cloudflare's default static list. That
+  is also why `.json` and `.glb` looked healthy — they are not in that list, so they
+  come back `DYNAMIC` with no header, and a spot check of `city.json` passed while
+  `city.bin` was broken.
+- **Edge TTL alone would NOT have fixed it.** `status_code_ttl` exists only under
+  `edge_ttl`; there is no per-status Browser TTL. The browser half has to be a response
+  header rule — the same instrument, and the same reason, as the document row.
+
+**What these rows do NOT cover:** the only `set_cache_settings` rule on this zone is
+scoped to `/_next/static/`, so an ordinary asset path still gets Cloudflare's default
+error TTL at the edge (observed `age: 175`). The browser half is fixed everywhere; the
+edge half only under that prefix. `check-cache-headers.mjs` probes both shapes with a
+fresh invented path each run and refuses to claim the window was measured when a probe
+returns 200 or states no lifetime.
 
 **Why it happened**: GitHub Pages serves HTML with `cache-control: max-age=600` and
 cannot be told otherwise, while every deploy deletes the previous build's content-hashed

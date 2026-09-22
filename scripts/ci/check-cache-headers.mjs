@@ -13,6 +13,14 @@
  *
  *   HTML                 must revalidate  — it is the index of which assets to load
  *   /_next/static/*      one year         — the content hash IS the version
+ *   a path that 404s     briefly at most  — a cached miss outlives the deploy that
+ *                                           publishes the file (#1199)
+ *
+ * The third line was added after production was measured serving a 404 with
+ * `max-age=14400` on an asset path and `max-age=31536000` — a year — on one under
+ * `/_next/static/`, where the #635 Cache Rule's own override applies to errors as well
+ * as to files that exist. Every non-200 used to be recorded here as "expected 200",
+ * so this class was invisible to the only gate that reads live production headers.
  *
  * THE PROBLEM THIS SCRIPT SOLVES. That contract lives in Cloudflare's dashboard, not
  * in this repository. Nothing in CI would notice if a rule were deleted, a token
@@ -50,6 +58,8 @@
  * headers were fine. A gate that measures the wrong host is worse than no gate: it
  * reads as coverage.
  */
+import { ASSET_MAX_AGE } from './cloudflare-intent.mjs';
+
 const BASE = (process.argv[2] || process.env.BASE || '').replace(/\/$/, '');
 
 if (!BASE) {
@@ -71,8 +81,17 @@ const DOC_PATHS = (process.env.CHECK_PATHS ?? '/,/blog/')
   .map((p) => p.trim())
   .filter(Boolean);
 
-/** Cloudflare Browser TTL for hashed assets, per the #635 Cache Rule. */
-const ASSET_MIN_MAX_AGE = Number(process.env.ASSET_MIN_MAX_AGE ?? 31536000);
+/**
+ * Cloudflare Browser TTL for hashed assets, per the #635 Cache Rule.
+ *
+ * IMPORTED, not repeated. `cloudflare-intent.mjs` exists so one value can drive both
+ * the check and the change; this was a second literal `31536000` sitting in the module
+ * that declaration was supposed to make unnecessary, so a tightening applied in one
+ * place and asserted in the other could disagree indefinitely.
+ */
+const ASSET_MIN_MAX_AGE = Number(
+  process.env.ASSET_MIN_MAX_AGE ?? ASSET_MAX_AGE
+);
 
 /**
  * Require proof that Cloudflare answered. The entire contract depends on the edge
@@ -92,8 +111,29 @@ const ASSET_MIN_MAX_AGE = Number(process.env.ASSET_MIN_MAX_AGE ?? 31536000);
  */
 const REQUIRE_EDGE = process.env.REQUIRE_EDGE === 'true';
 
+/**
+ * How long a path that does NOT exist may claim to be reusable for (#1199).
+ *
+ * WHY THERE IS A CEILING RATHER THAN A BAN. Caching an error briefly is useful — it is
+ * what stops a crawler hammering the origin with the same missing URL. The defect is
+ * duration, not caching: measured on production 2026-09-22, an invented `.bin` path
+ * came back `max-age=14400` and one under `/_next/static/` came back `max-age=31536000`,
+ * both `cf-cache-status: MISS` then `HIT`. A file published by a deploy could not reach
+ * anyone holding that answer for four hours, or a year.
+ *
+ * 300s is comfortably longer than any legitimate crawl burst and far shorter than a
+ * deploy cycle, so it separates the two without being a tripwire on normal behaviour.
+ */
+const ERROR_MAX_MAX_AGE = Number(process.env.ERROR_MAX_MAX_AGE ?? 300);
+
 const failures = [];
 const notes = [];
+/**
+ * Probes that could not reach a conclusion. Kept apart from `notes` on purpose: a
+ * check that could not fail must not print the success word (#396), and the summary
+ * line below withholds its error-cache clause unless every probe was measured.
+ */
+const unverified = [];
 
 function maxAgeOf(cacheControl) {
   const m = /(?:^|[\s,])max-age\s*=\s*(\d+)/i.exec(cacheControl ?? '');
@@ -109,6 +149,27 @@ function revalidates(cacheControl) {
   return age === 0;
 }
 
+/**
+ * How many seconds this response may be reused for, or `null` when it does not say.
+ *
+ * Deliberately NOT `revalidates()`, which is a boolean. The #1199 question is "for how
+ * long", and the answer `null` — no header, or a header stating no lifetime — is a
+ * third outcome that must not be read as either pass or fail: a bare GitHub Pages
+ * origin answers a 404 exactly that way.
+ */
+function reuseWindow(cacheControl) {
+  if (cacheControl == null) return null;
+  if (revalidates(cacheControl)) return 0;
+  return maxAgeOf(cacheControl);
+}
+
+/** Seconds as something a reader can weigh against a deploy cycle. */
+function humanSeconds(n) {
+  if (n < 3600) return `${n}s`;
+  if (n < 86400) return `${(n / 3600).toFixed(1)}h`;
+  return `${Math.round(n / 86400)} days`;
+}
+
 async function head(url) {
   // GET, not HEAD: some edges answer HEAD from a different path than the real
   // request, and the header under test is the one a browser actually receives.
@@ -117,6 +178,9 @@ async function head(url) {
     status: res.status,
     cacheControl: res.headers.get('cache-control'),
     cfRay: res.headers.get('cf-ray'),
+    // Evidence for the #1199 phase: MISS then HIT on the same invented path is how
+    // you tell "the edge stored this error" from "the header merely says it may".
+    cfCacheStatus: res.headers.get('cf-cache-status'),
     body: res,
   };
 }
@@ -227,8 +291,95 @@ if (assets.length === 0) {
   }
 }
 
+// ── a path that does not exist must not be cached for hours ──────────────────
+/**
+ * A FRESH path every run, and that is load-bearing twice over. A constant path would
+ * be answered from the cache this check exists to measure — run N reading run N-1's
+ * stored 404 — and it would accumulate a long-lived cached error on a path somebody
+ * might later publish, which is the very failure #1199 describes.
+ */
+const nonce = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
+
+/**
+ * Two probes because the two shapes fail for DIFFERENT reasons and one fix does not
+ * imply the other. Extensions matter: Cloudflare applies its Browser Cache TTL only to
+ * extensions in its default static list, so `.json` and `.glb` come back with no
+ * cache-control at all and would pass vacuously. `.bin` and `.js` are in the list.
+ */
+const errorProbes = [
+  {
+    shape: 'asset',
+    rel: `cache-probe-${nonce}.bin`,
+    cause:
+      'The #635 Response Header Transform Rule matches document paths only, and the ' +
+      'Cache Rule matches /_next/static/ only, so an ordinary asset path matches ' +
+      "neither and Cloudflare's zone Browser Cache TTL is what reaches the browser.",
+  },
+  {
+    shape: 'hashed asset',
+    rel: `_next/static/chunks/cache-probe-${nonce}.js`,
+    cause:
+      'The #635 Cache Rule sets browser_ttl and edge_ttl defaults on /_next/static/ ' +
+      'with no status_code_ttl, so its one-year override applies to error responses ' +
+      'too. Note status_code_ttl caps the EDGE copy only; the browser half needs a ' +
+      'response-header rule.',
+  },
+];
+
+let measuredProbes = 0;
+for (const probe of errorProbes) {
+  // RESOLVE, DON'T CONCATENATE, for the same reason as the asset above (#970): on a
+  // project-Pages deployment the basePath lives in the document URL, not in BASE.
+  const url = new URL(probe.rel, htmlUrl || BASE).href;
+  let res;
+  try {
+    res = await head(url);
+  } catch (err) {
+    failures.push(`${url} could not be fetched: ${err.message}`);
+    continue;
+  }
+
+  if (res.status === 200) {
+    unverified.push(
+      `${url} was invented to be missing and returned 200, so this run could not ` +
+        `measure how long a missing path stays cached. A catch-all route is a ` +
+        `routing choice, not a cache defect — but nothing here says the #1199 ` +
+        `window is bounded.`
+    );
+    continue;
+  }
+
+  const reuse = reuseWindow(res.cacheControl);
+  if (reuse === null) {
+    unverified.push(
+      `${url} returned ${res.status} with no cache lifetime stated ` +
+        `(\`cache-control: ${res.cacheControl ?? '<absent>'}\`). A bare GitHub Pages ` +
+        `origin answers exactly this way, so it is not evidence that anything is ` +
+        `capped — it is the absence of evidence either way.`
+    );
+    continue;
+  }
+
+  measuredProbes += 1;
+
+  if (reuse > ERROR_MAX_MAX_AGE) {
+    failures.push(
+      `${url} returned ${res.status} with \`cache-control: ${res.cacheControl}\`` +
+        (res.cfCacheStatus ? ` (cf-cache-status: ${res.cfCacheStatus})` : '') +
+        ` — a missing ${probe.shape} may be reused for ${reuse}s ` +
+        `(${humanSeconds(reuse)}), expected max-age <= ${ERROR_MAX_MAX_AGE}. Until ` +
+        `that expires, publishing this path cannot reach anyone who already asked ` +
+        `for it, so a deploy that did happen looks like one that did not (#1199). ` +
+        probe.cause
+    );
+  } else {
+    notes.push(`${probe.rel} → ${res.status} ${res.cacheControl}`);
+  }
+}
+
 // ── report ───────────────────────────────────────────────────────────────────
 for (const n of notes) console.log(`  ok  ${n}`);
+for (const u of unverified) console.log(`  UNVERIFIED  ${u}`);
 
 if (failures.length > 0) {
   for (const f of failures) console.error(`::error::${f}`);
@@ -241,5 +392,25 @@ if (failures.length > 0) {
 
 console.log(
   `\ncache contract holds at ${BASE}: documents revalidate, hashed assets cached ` +
-    `for >= ${ASSET_MIN_MAX_AGE}s, edge confirmed.`
+    `for >= ${ASSET_MIN_MAX_AGE}s` +
+    // Only claim the #1199 half when EVERY probe reached a conclusion. A mixed run
+    // where only the ordinary path was measurable must not say "missing paths are not
+    // cached": the /_next/static/ case is the worse of the two and is precisely the
+    // one that goes unmeasured on a site that answers it with a 200.
+    (measuredProbes === errorProbes.length
+      ? `, missing paths are not cached past ${ERROR_MAX_MAX_AGE}s`
+      : '') +
+    // Was unconditional, and therefore false on every run that did not require the
+    // edge — the same shape of overclaim as the clause above.
+    (REQUIRE_EDGE ? ', edge confirmed' : '') +
+    `.`
 );
+
+if (measuredProbes !== errorProbes.length) {
+  console.log(
+    `  NOT ASSERTED — ${errorProbes.length - measuredProbes} of ` +
+      `${errorProbes.length} invented paths produced no error response with a stated ` +
+      `cache lifetime, so the #1199 window was not measured on this run. Nothing ` +
+      `above says missing paths are cached briefly.`
+  );
+}
