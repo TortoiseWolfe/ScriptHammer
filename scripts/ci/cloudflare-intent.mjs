@@ -263,16 +263,26 @@ export function revalidateExpression(ranges = CACHE_ERROR_TTLS) {
 /**
  * Cloudflare's per-status edge TTL shape.
  *
- * `status_code_range` rather than a bare `status_code` key: every example in
- * Cloudflare's documentation uses the range form, and a single-code rule is expressed
- * as `{from: 404, to: 404}`. This exists only under `edge_ttl` — there is no per-status
- * BROWSER TTL, which is why the browser half of #1199 has to be a response-header rule.
+ * A SINGLE code uses the bare `status_code` key; only a genuine span uses
+ * `status_code_range`. This was written the other way first — every example in
+ * Cloudflare's documentation shows the range form, so a lone 404 was expressed as
+ * `{from: 404, to: 404}` — and the live API rejected it:
+ *
+ *   400 20110: status_code_range is incorrect ('from' should be less than 'to')
+ *
+ * `from` must be STRICTLY less than `to`, so an equal-bounds range is not a legal way
+ * to say "one status". Nothing in the docs says so, and no unit test could have found
+ * it: the only oracle is the API. Recorded here because the shape reads plausible.
+ *
+ * This exists only under `edge_ttl` — there is no per-status BROWSER TTL, which is why
+ * the browser half of #1199 has to be a response-header rule.
  */
 export function edgeStatusCodeTtl(ranges = CACHE_ERROR_TTLS) {
-  return ranges.map(({ from, to, edgeTtl }) => ({
-    status_code_range: { from, to },
-    value: edgeTtl,
-  }));
+  return ranges.map(({ from, to, edgeTtl }) =>
+    from === to
+      ? { status_code: from, value: edgeTtl }
+      : { status_code_range: { from, to }, value: edgeTtl }
+  );
 }
 
 /** Descriptions the planners match rules by, and write back on update. */
