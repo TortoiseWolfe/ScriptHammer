@@ -9,6 +9,7 @@ import {
   clearRateLimitHistory,
   sanitizeFormData,
   validateWeb3FormsResponse,
+  formatErrorMessage,
   WEB3FORMS_CONFIG,
   RETRY_CONFIG,
   RATE_LIMIT_CONFIG,
@@ -515,6 +516,114 @@ describe('Web3Forms Utilities', () => {
       expect(() => validateWeb3FormsResponse(null)).toThrow();
       expect(() => validateWeb3FormsResponse(undefined)).toThrow();
       expect(() => validateWeb3FormsResponse('string')).toThrow();
+    });
+  });
+});
+
+/**
+ * `formatErrorMessage` owns every failure sentence a visitor reads on the contact
+ * form, and had ZERO coverage until #1205 — the one function whose output IS the
+ * user experience of a broken form was the one nothing asserted.
+ *
+ * Every branch is exercised, including both arms of the rate-limit guard and the
+ * default. Deleting any single guard must turn exactly one case red; a suite that
+ * stays green through that mutation is not covering the branch, it is covering the
+ * default underneath it.
+ */
+describe('formatErrorMessage', () => {
+  it('names a network failure', () => {
+    expect(formatErrorMessage(new Error('Network request failed'))).toBe(
+      'Network error. Please check your connection and try again.'
+    );
+  });
+
+  it('names a timeout', () => {
+    expect(formatErrorMessage(new Error('Request timeout'))).toBe(
+      'Request timed out. Please try again.'
+    );
+  });
+
+  // BOTH arms. The guard is `includes('rate limit') || includes('429')`, so asserting
+  // one arm leaves the other deletable with the suite still green.
+  it('names a rate limit, by phrase', () => {
+    expect(formatErrorMessage(new Error('Rate limit exceeded'))).toBe(
+      'Too many requests. Please wait a moment and try again.'
+    );
+  });
+
+  it('names a rate limit, by status code', () => {
+    expect(formatErrorMessage(new Error('Request failed with 429'))).toBe(
+      'Too many requests. Please wait a moment and try again.'
+    );
+  });
+
+  it('names a validation problem', () => {
+    expect(formatErrorMessage(new Error('validation failed'))).toBe(
+      'Please check your input and try again.'
+    );
+  });
+
+  it('names a queueing failure', () => {
+    expect(formatErrorMessage(new Error('Failed to queue message'))).toBe(
+      'Failed to queue message. Please try again.'
+    );
+  });
+
+  it('falls back to the generic message for an unrecognised error', () => {
+    // `toBe`, not `toContain`: a substring assertion on the default would survive a
+    // reword, and the default is the string this whole ticket is about.
+    expect(formatErrorMessage(new Error('something unmapped'))).toBe(
+      'An error occurred. Please try again later.'
+    );
+  });
+
+  it('is case-insensitive, because provider errors are not normalised', () => {
+    expect(formatErrorMessage(new Error('NETWORK UNREACHABLE'))).toBe(
+      'Network error. Please check your connection and try again.'
+    );
+  });
+
+  /**
+   * #1204: a MISCONFIGURED form must not be told to try again later.
+   *
+   * "Please try again later" is a lie that never becomes true when nothing is
+   * configured — the visitor retries forever and the owner never hears about it.
+   * These are the exact strings `EmailService` throws, so they are the messages that
+   * actually reach here in production.
+   */
+  describe('a configuration failure is distinguishable from a transient one (#1204)', () => {
+    it('recognises "no providers available"', () => {
+      const out = formatErrorMessage(
+        new Error('No email providers available. Please check configuration.')
+      );
+      expect(out).toBe('Configuration error. Please contact support.');
+      expect(out).not.toContain('try again later');
+    });
+
+    it('recognises a provider reporting it is not configured', () => {
+      const out = formatErrorMessage(
+        new Error(
+          'All email providers failed: Contact delivery is not configured'
+        )
+      );
+      expect(out).toBe('Configuration error. Please contact support.');
+      expect(out).not.toContain('try again later');
+    });
+
+    it('still recognises the original Web3Forms access-key wording', () => {
+      expect(formatErrorMessage(new Error('Invalid access key provided'))).toBe(
+        'Configuration error. Please contact support.'
+      );
+    });
+
+    it('leaves a genuinely transient provider failure on the generic message', () => {
+      // The counterpart that stops the fix over-reaching: an aggregate failure with no
+      // configuration signal really is "try again later", and must stay that way.
+      expect(
+        formatErrorMessage(
+          new Error('All email providers failed: Web3Forms error 503')
+        )
+      ).toBe('An error occurred. Please try again later.');
     });
   });
 });

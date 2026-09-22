@@ -104,6 +104,23 @@ describe('EmailService', () => {
       );
     });
 
+    it("carries each provider's own cause, instead of 'try again later' (#1204)", async () => {
+      // The aggregate used to discard lastErrorLog entirely. A form that was never
+      // configured therefore advised an indefinite retry, while the one sentence that
+      // explained it sat in memory and was dropped.
+      vi.mocked(mockWeb3Forms.send).mockRejectedValue(
+        new Error('Contact delivery is not configured')
+      );
+      vi.mocked(mockEmailJS.send).mockRejectedValue(new Error('EmailJS error'));
+
+      await expect(emailService.send(testData)).rejects.toThrow(
+        /Contact delivery is not configured/
+      );
+      await expect(emailService.send(testData)).rejects.not.toThrow(
+        /try again later/
+      );
+    });
+
     it('should throw error when no providers are available', async () => {
       vi.mocked(mockWeb3Forms.isAvailable).mockResolvedValue(false);
       vi.mocked(mockEmailJS.isAvailable).mockResolvedValue(false);

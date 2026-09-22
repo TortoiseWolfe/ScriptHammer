@@ -319,7 +319,20 @@ export const formatErrorMessage = (error: Error): string => {
     return 'Too many requests. Please wait a moment and try again.';
   }
 
-  if (message.includes('access key')) {
+  // A MISCONFIGURED FORM MUST NOT BE TOLD TO TRY AGAIN LATER (#1204).
+  //
+  // `access key` alone was unreachable through EmailService, which is the only caller
+  // in production since #784. EmailService throws 'No email providers available.
+  // Please check configuration.' when nothing is available, and surfaces each
+  // provider's own cause otherwise — the Supabase provider's being 'Contact delivery
+  // is not configured'. None of those contained 'access key', so a dead form fell
+  // through to the default and told the visitor to try again later: a lie that never
+  // becomes true, which they retry forever while the owner never hears about it.
+  if (
+    message.includes('access key') ||
+    message.includes('not configured') ||
+    message.includes('check configuration')
+  ) {
     return 'Configuration error. Please contact support.';
   }
 
