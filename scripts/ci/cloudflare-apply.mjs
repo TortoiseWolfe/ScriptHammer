@@ -910,27 +910,38 @@ function selftest() {
 
   const CACHE_INTENT = cacheIntent();
   check(
-    'error TTLs use status_code_range, the documented shape (a bare status_code 400s)',
+    // Pinned against the LIVE API, which rejected the all-ranges form with
+    // `400 20110 status_code_range is incorrect ('from' should be less than 'to')`.
+    // A single code is `status_code`; only a real span is a range.
+    'a single code uses status_code, a span uses status_code_range',
     CACHE_INTENT.statusCodeTtl,
     [
-      { status_code_range: { from: 404, to: 404 }, value: 60 },
+      { status_code: 404, value: 60 },
       { status_code_range: { from: 500, to: 599 }, value: 30 },
     ]
+  );
+  check(
+    'and no entry is an equal-bounds range, which the API refuses',
+    CACHE_INTENT.statusCodeTtl.filter(
+      (t) =>
+        t.status_code_range &&
+        t.status_code_range.from >= t.status_code_range.to
+    ),
+    []
   );
   // The browser half and the edge half must cover the SAME codes. They are generated
   // from one array precisely so this cannot drift; assert it anyway, because "generated
   // from one array" is a property of today's code, not a guarantee about tomorrow's.
   check(
     'the expression and the TTL array agree on which codes are errors',
-    CACHE_INTENT.statusCodeTtl.every(
-      (t) =>
-        CACHE_INTENT.revalidateExpression.includes(
-          String(t.status_code_range.from)
-        ) &&
-        CACHE_INTENT.revalidateExpression.includes(
-          String(t.status_code_range.to)
-        )
-    ),
+    CACHE_INTENT.statusCodeTtl.every((t) => {
+      const codes = t.status_code_range
+        ? [t.status_code_range.from, t.status_code_range.to]
+        : [t.status_code];
+      return codes.every((c) =>
+        CACHE_INTENT.revalidateExpression.includes(String(c))
+      );
+    }),
     true
   );
 
