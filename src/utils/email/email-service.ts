@@ -117,9 +117,26 @@ export class EmailService {
       }
     }
 
-    // All providers failed
+    // All providers failed.
+    //
+    // CARRY THE CAUSES (#1204). `lastErrorLog` already holds each provider's real
+    // error — including the Supabase function's 'Contact delivery is not configured'
+    // — and this throw used to discard all of it for a fixed 'Please try again
+    // later.'. That string reaches the visitor via formatErrorMessage, so a form that
+    // was never configured advised an indefinite retry, and the one diagnostic that
+    // would have explained it existed in memory and was dropped on the floor.
+    //
+    // The 'All email providers failed' prefix is preserved deliberately: it is what
+    // existing assertions match on, and it keeps the aggregate readable when a cause
+    // is long.
+    const causes = failedProviders
+      .map((name) => this.lastErrorLog.get(name))
+      .filter((c): c is string => Boolean(c));
+
     throw new EmailServiceError(
-      'All email providers failed. Please try again later.',
+      causes.length > 0
+        ? `All email providers failed: ${causes.join('; ')}`
+        : 'All email providers failed. Please try again later.',
       failedProviders
     );
   }
