@@ -149,9 +149,16 @@ if [ "$IN_DOCKER" = true ]; then
     # LEGITIMATELY regenerates this file with a diverging base path (#985,
     # tests/rebrand/test-rebrand.sh), and a generator-side rule cannot tell that apart from
     # this accidental case.
-    run_check "Production build" "env MANIFEST_OUTPUT_DIR=/tmp pnpm build"
+    #
+    # ROBOTS_OUTPUT_DIR is the SAME defect one artifact over (#1171). prebuild also runs
+    # generate-sitemap.js, which writes the tracked public/robots.txt with a Sitemap line
+    # derived from NEXT_PUBLIC_DEPLOY_URL. A worktree provisioned from .env.example does not
+    # set that, so the line falls back to a github.io origin (#504) and every validation
+    # build dirtied the tree again — the manifest fix was half the problem, and the half it
+    # left behind was invisible here because this machine takes the host branch below.
+    run_check "Production build" "env MANIFEST_OUTPUT_DIR=/tmp ROBOTS_OUTPUT_DIR=/tmp pnpm build"
 else
-    run_host_check "Production build" "docker compose run --rm -e MANIFEST_OUTPUT_DIR=/tmp builder pnpm build"
+    run_host_check "Production build" "docker compose run --rm -e MANIFEST_OUTPUT_DIR=/tmp -e ROBOTS_OUTPUT_DIR=/tmp builder pnpm build"
 fi
 
 # 5b. Browser-parseability of emitted chunks (#294). `next build` succeeds even

@@ -174,7 +174,22 @@ ${disallowRules}
 
 Sitemap: ${SITE_URL}/sitemap.xml`;
 
-  const robotsPath = path.join(PUBLIC_DIR, 'robots.txt');
+  // Same class and same seam as MANIFEST_OUTPUT_DIR (#931, #1114, #1171).
+  // public/robots.txt is TRACKED on purpose (#504), and this generator derives its
+  // Sitemap line from NEXT_PUBLIC_DEPLOY_URL — which a worktree provisioned from
+  // .env.example does not set, so it falls back to a github.io origin. A VALIDATION
+  // build therefore rewrote a tracked file and left the tree dirty on every push.
+  //
+  // Scoped to the CALLER rather than taught to the generator, exactly as #1114 argued:
+  // a rebrand LEGITIMATELY regenerates this with a diverging origin, and the generator
+  // cannot tell that apart from the accidental case.
+  //
+  // Only robots.txt is redirected, never PUBLIC_DIR itself — line 46 READS
+  // `public/twins` to enumerate baked twin routes, so a wholesale redirect would
+  // silently drop those URLs from the sitemap.
+  const robotsPath = process.env.ROBOTS_OUTPUT_DIR
+    ? path.join(path.resolve(process.env.ROBOTS_OUTPUT_DIR), 'robots.txt')
+    : path.join(PUBLIC_DIR, 'robots.txt');
   fs.writeFileSync(robotsPath, robotsTxt, 'utf8');
   console.log(
     `🤖 Robots.txt generated with ${disallowedPaths.length} disallow rules`
