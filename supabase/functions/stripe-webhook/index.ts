@@ -14,6 +14,7 @@ import {
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
+import { resolveSigningSecret, livemodeMismatch } from './resolve.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   apiVersion: '2024-06-20',
@@ -31,10 +32,16 @@ const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 // following the .env.example convention for OPERATOR credentials that nothing reads.
 // That convention is right for STRIPE_SECRET_KEY_LIVE and exactly wrong here: production
 // MUST read this one (#1180). Try live first -- it is the traffic that pays.
-const WEBHOOK_SECRETS = [
-  Deno.env.get('STRIPE_WEBHOOK_SECRET_LIVE'),
-  Deno.env.get('STRIPE_WEBHOOK_SECRET'),
-].filter((s): s is string => !!s && s.length > 0);
+// ONE secret, chosen by deployment, BEFORE any signature is examined (#1229).
+//
+// This used to be a list that was tried in turn. Both secrets are configured in
+// production and both Stripe endpoints point at this same URL, so a TEST-mode signature
+// verified against the LIVE deployment and the handler never learned which matched — a
+// fabricated event could mark a real order paid. See resolve.ts for the full account.
+const SIGNING = resolveSigningSecret({
+  STRIPE_WEBHOOK_SECRET_LIVE: Deno.env.get('STRIPE_WEBHOOK_SECRET_LIVE'),
+  STRIPE_WEBHOOK_SECRET: Deno.env.get('STRIPE_WEBHOOK_SECRET'),
+});
 
 // Days a past-due subscription stays usable before expiring. Mirrors
 // subscriptionConfig.gracePeriodDays in src/config/payment.ts (kept in sync
@@ -56,11 +63,8 @@ serve(async (req) => {
 
     // An unset secret used to be indistinguishable from a wrong one: both produced a
     // 400 that read as "Stripe sent us something bad". Say which it is.
-    if (WEBHOOK_SECRETS.length === 0) {
-      console.error(
-        'No Stripe signing secret configured: set STRIPE_WEBHOOK_SECRET_LIVE ' +
-          '(live endpoint) and/or STRIPE_WEBHOOK_SECRET (test endpoint).'
-      );
+    if (!SIGNING.ok) {
+      console.error(SIGNING.reason);
       return new Response(
         JSON.stringify({ error: 'Webhook signing secret not configured' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
@@ -72,17 +76,14 @@ serve(async (req) => {
     // throws on EVERY delivery (all events 400 before reaching handlers).
     let event: Stripe.Event | undefined;
     let lastErr: unknown;
-    for (const secret of WEBHOOK_SECRETS) {
-      try {
-        event = await stripe.webhooks.constructEventAsync(
-          body,
-          signature,
-          secret
-        );
-        break;
-      } catch (err) {
-        lastErr = err;
-      }
+    try {
+      event = await stripe.webhooks.constructEventAsync(
+        body,
+        signature,
+        SIGNING.choice.secret
+      );
+    } catch (err) {
+      lastErr = err;
     }
 
     if (!event) {
@@ -93,6 +94,19 @@ serve(async (req) => {
         }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
+    }
+
+    // The signature proved WHO signed it. This proves the event came from the MODE that
+    // secret belongs to (#1229). They are different questions, and #1180 is the standing
+    // example of them disagreeing for 31 days while everything looked configured. Checked
+    // BEFORE the Supabase client exists, so a mismatch cannot touch a row.
+    const mismatch = livemodeMismatch(event, SIGNING.choice);
+    if (mismatch) {
+      console.error('Rejecting webhook:', mismatch);
+      return new Response(JSON.stringify({ error: mismatch }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Initialize Supabase client with service role
