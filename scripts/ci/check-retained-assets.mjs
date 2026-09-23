@@ -165,11 +165,46 @@ const RETIMED_AT = Date.parse(
 );
 
 /**
+ * WHY A NON-200 IS NOT ONE THING (#1239).
+ *
+ * This check used to treat every non-2xx as deletion and say so: `!r.ok` filtered into
+ * a bucket named `missing`, reported as "N retained asset(s) are gone". `Production
+ * Smoke` run 35803250426 failed that way on a 503 for a chunk that was serving 200 at
+ * 22,582 bytes minutes later, with green runs either side.
+ *
+ * The false red was the cheap half. The expensive half is the stylesheet branch below,
+ * which announces that visitors are looking at an unstyled page right now — the
+ * #548/#635 incident that has been reported from production eight times. Printing that
+ * sentence because an edge wobbled is how a gate stops being believed.
+ *
+ * So: 404/410 is GONE (the failure this check exists for), 5xx or a dead socket is
+ * UNAVAILABLE, anything else is UNEXPECTED. All three still fail — production serving
+ * 503 for a retained asset is a real problem — but only GONE may claim deletion, and
+ * only GONE may claim an unstyled page.
+ */
+function classify(code) {
+  if (code === 404 || code === 410) return 'gone';
+  if (typeof code !== 'number' || code >= 500) return 'unavailable';
+  return 'unexpected';
+}
+
+/** Attempts per asset. A deleted file answers 404 every time; edge weather does not. */
+const RETRY_ATTEMPTS = 3;
+
+/**
+ * Pause between attempts. Overridable ONLY so the tests can exercise the retry without
+ * sleeping — the same reason `RETENTION_RETIMED_AT` is overridable. Nothing in CI sets it.
+ */
+const RETRY_DELAY_MS = Number(process.env.RETAINED_RETRY_DELAY_MS ?? 750);
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
  * HEAD, falling back to a ranged GET whenever HEAD cannot prove the asset is
  * served. Some CDNs reject HEAD while serving GET, and a valid ranged response
  * is commonly 206 rather than 200.
  */
-async function status(url) {
+async function probeOnce(url) {
   let head;
   try {
     head = await fetch(url, { method: 'HEAD', redirect: 'follow' });
@@ -191,6 +226,21 @@ async function status(url) {
       code: head ? head.status : `ERR ${err.message}`,
     };
   }
+}
+
+/** `probeOnce`, retried only while the answer looks like the edge rather than the file. */
+async function status(url) {
+  let last;
+  for (let attempt = 1; attempt <= RETRY_ATTEMPTS; attempt += 1) {
+    last = await probeOnce(url);
+    if (last.ok) return { ...last, attempts: attempt };
+    // Retrying a 404 just spends time confirming it. Only ask again when the answer
+    // is one the edge could give for a file that exists.
+    if (classify(last.code) !== 'unavailable')
+      return { ...last, attempts: attempt };
+    if (attempt < RETRY_ATTEMPTS) await sleep(RETRY_DELAY_MS);
+  }
+  return { ...last, attempts: RETRY_ATTEMPTS };
 }
 
 async function pool(items, worker, size) {
@@ -245,27 +295,59 @@ if (doReach) {
   );
 
   const missing = results.filter((r) => !r.ok);
-  const missingCss = missing.filter((r) => r.rel.endsWith('.css'));
+  const gone = missing.filter((r) => classify(r.code) === 'gone');
+  const unavailable = missing.filter((r) => classify(r.code) === 'unavailable');
+  const unexpected = missing.filter((r) => classify(r.code) === 'unexpected');
+  // Only a file that is GONE can leave anyone unstyled. A stylesheet behind a 503 is
+  // still published, and saying otherwise is the #1239 false alarm.
+  const goneCss = gone.filter((r) => r.rel.endsWith('.css'));
 
   console.log(`  base      ${BASE}`);
   console.log(`  manifest  ${entries.length} entries`);
   console.log(`  reachable ${results.length - missing.length}`);
-  console.log(
-    `  MISSING   ${missing.length}  (of which CSS: ${missingCss.length})`
-  );
+  console.log(`  MISSING   ${missing.length}`);
+  if (gone.length)
+    console.log(
+      `  GONE        ${gone.length}  (404/410 — not published; of which CSS: ${goneCss.length})`
+    );
+  if (unavailable.length)
+    console.log(
+      `  UNAVAILABLE ${unavailable.length}  (5xx or no response after ${RETRY_ATTEMPTS} attempts)`
+    );
+  if (unexpected.length) console.log(`  UNEXPECTED  ${unexpected.length}`);
 
   if (missing.length) {
     console.log('');
-    for (const m of missing.slice(0, 40)) console.log(`   ${m.code}  ${m.rel}`);
+    for (const m of missing.slice(0, 40))
+      console.log(
+        `   ${m.code}  ${m.rel}${m.attempts > 1 ? `  (${m.attempts} attempts)` : ''}`
+      );
     if (missing.length > 40)
       console.log(`   … and ${missing.length - 40} more`);
-    console.error(
-      `\n::error::${missing.length} retained asset(s) are gone from ${BASE}` +
-        (missingCss.length
-          ? ` — ${missingCss.length} of them STYLESHEETS. Anyone holding HTML that ` +
-            `references them is seeing an unstyled page right now.`
-          : '.')
-    );
+
+    if (gone.length) {
+      console.error(
+        `\n::error::${gone.length} retained asset(s) are gone from ${BASE}` +
+          (goneCss.length
+            ? ` — ${goneCss.length} of them STYLESHEETS. Anyone holding HTML that ` +
+              `references them is seeing an unstyled page right now.`
+            : '.')
+      );
+    }
+    if (unavailable.length) {
+      console.error(
+        `::error::${unavailable.length} retained asset(s) could not be served by ${BASE} ` +
+          `after ${RETRY_ATTEMPTS} attempts (5xx or no response). These files are still ` +
+          `published — this is the edge failing to serve them, not a deletion. If it ` +
+          `persists, visitors are being denied assets the deploy promised to retain.`
+      );
+    }
+    if (unexpected.length) {
+      console.error(
+        `::error::${unexpected.length} retained asset(s) answered with an unexpected status ` +
+          `from ${BASE}. Neither served nor deleted — read the codes above.`
+      );
+    }
     process.exit(1);
   }
 }
