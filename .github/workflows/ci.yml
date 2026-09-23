@@ -57,6 +57,39 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
+        with:
+          # The scope step below diffs against the PR base, which a shallow clone lacks
+          # (e2e-local.yml does the same for the same reason).
+          fetch-depth: 0
+
+      # WHICH STEPS THIS DIFF ACTUALLY NEEDS (#1218).
+      #
+      # Coverage + app build + Storybook build are ~9 of this job's ~10 minutes, and it is
+      # the highest-frequency REQUIRED check in the repo. Measured on #1217, a one-markdown-
+      # file PR: coverage 5.7 min, app build 1.7, Storybook 0.6.
+      #
+      # GATED PER-STEP, NOT BY A `paths:` FILTER OR A `needs:` JOB. `Test (20.x)` IS the
+      # required context — there is no always-reporting aggregate wrapping it — and a
+      # required check that never reports is PENDING FOREVER, not skipped. Either of those
+      # shapes would make every docs-only PR permanently unmergeable.
+      #
+      # Polarity is fail-safe: the gates below test `!= 'true'`, so an empty output, a
+      # crash, or anything the decider cannot classify runs the full job.
+      - name: Decide whether this diff needs the build steps
+        id: scope
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+            case "$BASE" in
+              0000000*|'') BASE="$(git rev-parse HEAD^1 2>/dev/null || git rev-parse HEAD)" ;;
+            esac
+            HEAD="${{ github.sha }}"
+          fi
+          node scripts/ci/ci-docs-only.mjs "$BASE" "$HEAD"
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6
@@ -139,10 +172,13 @@ jobs:
         run: pnpm check:icons
 
       - name: Check test coverage
+        if: steps.scope.outputs.docs_only != 'true'
         run: pnpm test:coverage
 
       - name: Build application
+        if: steps.scope.outputs.docs_only != 'true'
         run: pnpm build
 
       - name: Build Storybook
+        if: steps.scope.outputs.docs_only != 'true'
         run: pnpm build-storybook
