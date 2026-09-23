@@ -26,6 +26,7 @@ import { encryptionService } from '@/lib/messaging/encryption';
 import { db } from '@/lib/messaging/database';
 import { KeyDerivationService } from '@/lib/messaging/key-derivation';
 import { createLogger } from '@/lib/logger';
+import { sweepLegacyLocalStorageKeys } from './legacy-key-sweep';
 import type { DerivedKeyPair } from '@/types/messaging';
 import {
   AuthenticationError,
@@ -65,6 +66,10 @@ interface OwnEncryptionKey {
 // now imports the in-memory private key as non-extractable from the start
 // (see src/lib/messaging/key-derivation.ts importPrivateKey). The keyPair
 // object can be passed directly to encryptionService.storePrivateKey().
+
+// A March 2026 build left private JWKs in localStorage; sweep them the moment the
+// key service is loaded, before any key is used or restored (#1243).
+sweepLegacyLocalStorageKeys();
 
 export class KeyManagementService {
   /** In-memory storage for derived keys (cleared on logout) */
@@ -392,6 +397,7 @@ export class KeyManagementService {
    */
   clearKeys(): void {
     this.derivedKeys = null;
+    sweepLegacyLocalStorageKeys();
     // Fire-and-forget — caller doesn't need to await IDB clear.
     void db.messaging_private_keys.clear().catch((err) => {
       logger.warn('Failed to clear messaging_private_keys on logout', {
