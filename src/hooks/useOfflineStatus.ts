@@ -62,26 +62,29 @@ export function useOfflineStatus() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    // Check connection changes
-    if ('connection' in navigator) {
-      const conn = (
-        navigator as unknown as {
-          connection: {
-            addEventListener?: (event: string, handler: () => void) => void;
-          };
-        }
-      ).connection;
-      conn?.addEventListener?.('change', () => {
-        setStatus((prev) => ({
-          ...prev,
-          connectionSpeed: checkConnectionSpeed(),
-        }));
-      });
-    }
+    // Check connection changes. The handler is named and the connection
+    // reference kept so the cleanup can remove it — an inline arrow here
+    // leaked one listener per mount for the life of the page (#1258).
+    type Conn = {
+      addEventListener?: (event: string, handler: () => void) => void;
+      removeEventListener?: (event: string, handler: () => void) => void;
+    };
+    const conn =
+      'connection' in navigator
+        ? ((navigator as unknown as { connection?: Conn }).connection ?? null)
+        : null;
+    const handleConnectionChange = () => {
+      setStatus((prev) => ({
+        ...prev,
+        connectionSpeed: checkConnectionSpeed(),
+      }));
+    };
+    conn?.addEventListener?.('change', handleConnectionChange);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      conn?.removeEventListener?.('change', handleConnectionChange);
     };
   }, [updateStatus, checkConnectionSpeed]);
 
