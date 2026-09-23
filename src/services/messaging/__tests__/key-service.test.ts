@@ -111,10 +111,18 @@ vi.mock('@/lib/messaging/key-derivation', () => ({
 // ---------------------------------------------------------------------------
 const mockPrivateKeysClear = vi.fn().mockResolvedValue(undefined);
 
+// clearKeys() also empties the offline queue (#1256): the double must carry
+// that table, or the call throws and every test that clears keys fails.
+const mockQueuedMessagesClear = vi.hoisted(() =>
+  vi.fn(() => Promise.resolve(undefined))
+);
 vi.mock('@/lib/messaging/database', () => ({
   db: {
     messaging_private_keys: {
       clear: mockPrivateKeysClear,
+    },
+    messaging_queued_messages: {
+      clear: mockQueuedMessagesClear,
     },
   },
 }));
@@ -442,6 +450,8 @@ describe('KeyManagementService', () => {
 
       expect(keyManagementService.getCurrentKeys()).toBeNull();
       expect(mockPrivateKeysClear).toHaveBeenCalled();
+      // #1256: the queue holds plaintext until it syncs; logout clears it too.
+      expect(mockQueuedMessagesClear).toHaveBeenCalled();
     });
   });
 
