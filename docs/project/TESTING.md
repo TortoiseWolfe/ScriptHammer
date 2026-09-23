@@ -224,14 +224,22 @@ These failures do not affect the actual functionality of the colorblind assistan
 
 ### Vitest Exclusions (vitest.config.ts)
 
-The main vitest suite excludes 105 tests across three categories:
+The main vitest suite excludes 91 tests across three categories:
 
-#### TDD Placeholders (47 tests) - Features Not Yet Implemented
+#### TDD Placeholders (33 tests) - Features Not Yet Implemented
 
 These tests intentionally fail with `expect(true).toBe(false)` until features are built:
 
+> `tests/contract/stripe-webhook.test.ts` was **deleted**, not un-excluded (#1186). Every
+> assertion in it asserted REJECTION — 400 on a bad signature, 400 on a missing header — and it
+> never sent a correctly-signed payload. #1180 was the opposite failure: valid live deliveries
+> 400'd for 31 days because the secret was filed under a name nothing read. That test would
+> have been green for every one of those days. Its replacement is
+> `tests/unit/stripe-webhook-resolve.test.ts` (behaviour) plus
+> `scripts/__tests__/stripe-webhook-verifies-one-secret.test.js` (wiring), both inside the
+> required `Test (20.x)` check.
+
 - `tests/contract/email-notifications.test.ts` (17 tests) - Email Edge Function
-- `tests/contract/stripe-webhook.test.ts` (14 tests) - Stripe webhook handling
 - `tests/contract/paypal-webhook.test.ts` (15 tests) - PayPal webhook handling
 - `tests/contract/profile/delete-account.contract.test.ts` (1 test) - Cascade delete
 

@@ -36,7 +36,6 @@ export default defineConfig({
       '**/.component-backup-*/**', // Exclude backup directories
       // Exclude intentional TDD placeholder tests (not yet implemented)
       'tests/contract/email-notifications.test.ts', // 17 TDD failures
-      'tests/contract/stripe-webhook.test.ts', // 14 TDD failures
       'tests/contract/paypal-webhook.test.ts', // 15 TDD failures
       // Exclude contract/integration tests requiring dedicated test Supabase instance
       // These tests require specific configuration and will hit rate limits on shared instances
