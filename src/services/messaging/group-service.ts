@@ -401,6 +401,12 @@ export class GroupService {
     if (!member_ids || member_ids.length === 0) {
       throw new ValidationError('No members provided', 'member_ids');
     }
+    // Every id must be a well-formed UUID BEFORE it reaches any query — the same
+    // guard createGroup applies, for the same reason: getConnectedUserIds
+    // interpolates these into a PostgREST `.or(...)` filter string (#1242).
+    for (const id of member_ids) {
+      validateUUID(id, 'member_ids');
+    }
     if (!(await this.isMember(conversation_id, user.id))) {
       throw new MembershipError(
         'Only a group member can add members',
@@ -649,6 +655,12 @@ export class GroupService {
   async upgradeToGroup(input: UpgradeToGroupInput): Promise<GroupConversation> {
     const user = await this.requireUser();
     const { conversation_id, name, member_ids } = input;
+
+    // Same guard as createGroup and addMembers: these ids reach the `.or(...)`
+    // filter in getConnectedUserIds, so they are validated before any query (#1242).
+    for (const id of member_ids ?? []) {
+      validateUUID(id, 'member_ids');
+    }
 
     const msgClient = createMessagingClient(this.supabase);
     const { data: conv, error: convError } = await msgClient
