@@ -100,6 +100,40 @@ describe('ProtectedRoute', () => {
     );
   });
 
+  it('carries the query string on ALL THREE exits (#1155)', () => {
+    // #1126 added the query string to the REDIRECT and left the two card links behind,
+    // because the only assertions were `stringContaining('/sign-in?returnUrl=')` — which
+    // passes with an empty value, and did. /payment-result and /checkout are both behind
+    // this component and both carry `session_id`, so clicking "Sign In" on the card during
+    // the 500 ms debounce dropped exactly the id the receipt needs.
+    window.history.replaceState({}, '', '/protected?session_id=cs_test_1155');
+    const want = encodeURIComponent('/protected?session_id=cs_test_1155');
+
+    render(
+      <ProtectedRoute>
+        <div>secret</div>
+      </ProtectedRoute>
+    );
+
+    expect(screen.getByRole('link', { name: /sign in/i })).toHaveAttribute(
+      'href',
+      `/sign-in?returnUrl=${want}`
+    );
+    expect(screen.getByRole('link', { name: /sign up/i })).toHaveAttribute(
+      'href',
+      `/sign-up?returnUrl=${want}`
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(501);
+    });
+    // toHaveBeenCalledWith on the EXACT string, not stringContaining: the loose form is
+    // what let the links diverge from the redirect for six weeks.
+    expect(mockPush).toHaveBeenCalledWith(`/sign-in?returnUrl=${want}`);
+
+    window.history.replaceState({}, '', '/protected');
+  });
+
   it('uses custom redirectTo when provided', () => {
     render(
       <ProtectedRoute redirectTo="/login">

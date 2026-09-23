@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
@@ -38,17 +38,31 @@ export default function ProtectedRoute({
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname() || '/';
+
   /**
-   * The query string is part of where the user was (#1126).
+   * The same return URL the redirect uses, made available to RENDER (#1155).
    *
-   * `returnUrl` was built from `pathname` alone, so a buyer bounced to sign-in from
-   * `/payment-result?session_id=cs_…` came back to a bare `/payment-result`, which classifies
-   * as `missing-id`. Their receipt — and now their booking link — became unreachable, with
-   * nothing on screen explaining why.
+   * #1126 added the query string to the redirect below and left the two card links on
+   * `pathname` alone. The only assertions were `stringContaining('/sign-in?returnUrl=')`,
+   * which passes with an empty value — so the divergence was invisible. `/payment-result`
+   * and `/checkout` are both behind this component and both carry `session_id`, so a
+   * visitor who clicked "Sign In" on the card during the 500 ms debounce, instead of
+   * waiting for the automatic redirect, lost exactly the id their receipt needs.
    *
-   * Reachable whenever a session lapses while the buyer is on Stripe's hosted page, which is
-   * exactly the moment they are least able to guess what went wrong.
+   * The query string is part of where the user was (#1126): a buyer bounced to sign-in
+   * from `/payment-result?session_id=cs_…` and returned to a bare `/payment-result`
+   * classifies as `missing-id`, so their receipt and booking link become unreachable with
+   * nothing on screen explaining why — reachable whenever a session lapses while they are
+   * on Stripe's hosted page, the moment they are least able to guess what went wrong.
+   *
+   * Populated from an effect rather than read during render: `window` does not exist when
+   * the static export prerenders this, and `useSearchParams()` is ruled out below.
    */
+  const [search, setSearch] = useState('');
+  useEffect(() => {
+    setSearch(window.location.search);
+  }, []);
+  const returnUrl = encodeURIComponent(`${pathname}${search}`);
 
   const wasAuthenticated = useRef(false);
 
@@ -70,10 +84,16 @@ export default function ProtectedRoute({
     // OUTSIDE their own Suspense boundary, and `useSearchParams()` forces one — it fails the
     // static export with "should be wrapped in a suspense boundary" on every protected route.
     // This runs inside an effect, so `window` is always defined and no boundary is needed.
+    // READ WINDOW DIRECTLY HERE, not the `returnUrl` computed above from state. They
+    // agree in practice, but state is populated by a mount effect while this timer is
+    // already counting down — unifying them would mean a redirect that fires before the
+    // state lands navigates to a bare pathname, silently reintroducing #1126. The render
+    // path cannot read window and the redirect path cannot wait for state, so each reads
+    // what is correct for it, and the test asserts BOTH exits carry the query string.
     const search = typeof window === 'undefined' ? '' : window.location.search;
-    const returnUrl = encodeURIComponent(`${pathname}${search}`);
+    const redirectUrl = encodeURIComponent(`${pathname}${search}`);
     const timer = setTimeout(() => {
-      router.push(`${redirectTo}?returnUrl=${returnUrl}`);
+      router.push(`${redirectTo}?returnUrl=${redirectUrl}`);
     }, AUTH_FLIP_DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
@@ -124,13 +144,13 @@ export default function ProtectedRoute({
 
             <div className="card-actions flex w-full flex-col gap-3 sm:flex-row">
               <Link
-                href={`${redirectTo}?returnUrl=${encodeURIComponent(pathname)}`}
+                href={`${redirectTo}?returnUrl=${returnUrl}`}
                 className="btn btn-primary min-h-11 flex-1"
               >
                 Sign In
               </Link>
               <Link
-                href={`/sign-up?returnUrl=${encodeURIComponent(pathname)}`}
+                href={`/sign-up?returnUrl=${returnUrl}`}
                 className="btn btn-outline min-h-11 flex-1"
               >
                 Sign Up
