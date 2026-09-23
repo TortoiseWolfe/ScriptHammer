@@ -447,6 +447,28 @@ function limitsFromEnv(env) {
  * The job LOG already carried the day/cycle split, and it was still misread for weeks —
  * a log is something you open after you have already decided a red check matters.
  */
+/**
+ * Publish a step output; a no-op anywhere else (#1069).
+ *
+ * WHY THE VERDICT HAS TO LEAVE THIS JOB. `hosted-lane-status` can currently see only
+ * `needs.budget.result` — success or failure — so a blocked lane reports "BLOCKED" and
+ * nothing more. But the two block reasons mean OPPOSITE things: `DAY_EXCEEDED` is a rate
+ * limiter that ordinary work trips and clears within 24h, while `MONTH_EXCEEDED` is real
+ * exhaustion that persists until the cycle resets on the 2nd. CLAUDE.md tells readers to
+ * check WHICH before concluding anything; until now the check could not tell them.
+ *
+ * Fail-soft like the summary above: losing an output must never change the verdict.
+ */
+function writeJobOutput(name, value) {
+  const file = process.env.GITHUB_OUTPUT;
+  if (!file) return;
+  try {
+    appendFileSync(file, `${name}=${value}\n`);
+  } catch {
+    // An output is a courtesy, never a gate.
+  }
+}
+
 function writeJobSummary(markdown) {
   const file = process.env.GITHUB_STEP_SUMMARY;
   if (!file) return;
@@ -498,6 +520,10 @@ async function main() {
     console.log('E2E cloud-quota budget');
     console.log(`  mode ........... ${mode}`);
     console.log(`  verdict ........ ${identity.code}`);
+    // This path exits before the ordinary emit below, so it needs its own. Without it the
+    // status job reports a bare BLOCKED for the #949 refusal while reporting a reason for
+    // every other block — the half-wired shape that makes a reader trust the blank one.
+    writeJobOutput('verdict', identity.code);
     console.log(`  ${identity.message}`);
     console.log(
       `::error::E2E blocked by the cloud-quota circuit breaker — ${identity.message}`
@@ -583,6 +609,8 @@ async function main() {
       `${verdict.message}`,
     ].join('\n')
   );
+
+  writeJobOutput('verdict', verdict.code);
 
   if (verdict.code === 'OVERRIDDEN') {
     console.log(

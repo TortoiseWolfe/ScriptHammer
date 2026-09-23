@@ -163,9 +163,15 @@ jobs:
        contains(github.event.pull_request.labels.*.name, 'full-e2e'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # WHICH block, not just THAT it blocked (#1069). DAY_EXCEEDED is a rate limiter that
+    # clears within 24h; MONTH_EXCEEDED is exhaustion until the cycle resets on the 2nd.
+    # CLAUDE.md tells readers to check which before concluding anything.
+    outputs:
+      verdict: ${{ steps.guard.outputs.verdict }}
     steps:
       - uses: actions/checkout@v5
       - name: Check recent E2E run rate against the quota budget
+        id: guard
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -236,6 +242,7 @@ jobs:
         env:
           PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
           BUDGET: ${{ needs.budget.result }}
+          VERDICT: ${{ needs.budget.outputs.verdict }}
         run: |
           set -euo pipefail
           if [ -z "$PROJECT_REF" ]; then
@@ -248,8 +255,20 @@ jobs:
               echo "  lane ........... RAN — see 'Test Report' for whether the tests passed"
               ;;
             failure)
-              echo "::warning::Hosted E2E did NOT run: the cloud-quota guard blocked it. Read the 'Cloud-quota budget' job — DAY_EXCEEDED is a daily rate limiter that ordinary work trips, and is NOT the same as exhausting the monthly quota. This PR's E2E coverage came from the local lane only."
-              echo "  lane ........... BLOCKED by the cloud-quota guard — no tests ran"
+              case "${VERDICT:-}" in
+                MONTH_EXCEEDED)
+                  echo "::warning::Hosted E2E did NOT run: the monthly cloud quota is EXHAUSTED. This does not clear on its own — the cycle resets on the 2nd. This PR's E2E coverage came from the local lane only."
+                  echo "  lane ........... BLOCKED — MONTH_EXCEEDED (resets on the 2nd)"
+                  ;;
+                DAY_EXCEEDED)
+                  echo "::warning::Hosted E2E did NOT run: the DAILY rate limiter tripped. Ordinary work trips it — two PRs, each pushed and then merged, is four runs against a ceiling of ten — and it says NOTHING about the monthly quota. It clears within 24h."
+                  echo "  lane ........... BLOCKED — DAY_EXCEEDED (a rate limiter; clears within 24h)"
+                  ;;
+                *)
+                  echo "::warning::Hosted E2E did NOT run: the cloud-quota guard blocked it. Read the 'Cloud-quota budget' job — DAY_EXCEEDED is a daily rate limiter that ordinary work trips, and is NOT the same as exhausting the monthly quota. This PR's E2E coverage came from the local lane only."
+                  echo "  lane ........... BLOCKED by the cloud-quota guard — no tests ran${VERDICT:+ ($VERDICT)}"
+                  ;;
+              esac
               ;;
             *)
               echo "::warning::Hosted E2E lane state is '$BUDGET' — the budget job did not reach a verdict, so whether the lane ran is unknown."

@@ -792,3 +792,121 @@ test('#949: the workflow passes the project-ref override', async () => {
       'does not pass it, which is exactly how E2E_BUDGET_BACKEND_EPOCH sat dead (#726)'
   );
 });
+
+/**
+ * THE VERDICT HAS TO LEAVE THE JOB (#1069).
+ *
+ * `hosted-lane-status` could only see `needs.budget.result` — success or failure — so a blocked
+ * lane reported a bare "BLOCKED". The two block reasons mean opposite things: DAY_EXCEEDED is a
+ * rate limiter ordinary work trips, clearing within 24h; MONTH_EXCEEDED is exhaustion until the
+ * cycle resets on the 2nd. CLAUDE.md tells readers to check which, and the check could not say.
+ *
+ * NOTE ON WHAT IS BEHAVIOURAL AND WHAT IS NOT. `--dry-run` in this environment reaches only the
+ * #949 identity-refusal path (no SUPABASE_PROJECT_REF), so a single end-to-end run exercises ONE
+ * of the two emit sites. The first version of these tests did exactly that and passed every
+ * mutation — including deleting the other emit entirely. Both sites are therefore asserted in
+ * source as well; that is the half-wired shape this guard exists to prevent.
+ */
+const fsq = require('node:fs');
+const osq = require('node:os');
+
+test('the guard publishes its verdict to GITHUB_OUTPUT', () => {
+  const { spawnSync } = require('node:child_process');
+  const out = path.join(
+    fsq.mkdtempSync(path.join(osq.tmpdir(), 'budget-verdict-')),
+    'gh-output'
+  );
+  fsq.writeFileSync(out, '');
+  const res = spawnSync(
+    process.execPath,
+    [path.resolve(__dirname, '..', 'ci', 'e2e-budget-guard.mjs'), '--dry-run'],
+    {
+      encoding: 'utf8',
+      env: { ...process.env, GITHUB_OUTPUT: out },
+      timeout: 120000,
+    }
+  );
+  assert.notStrictEqual(res.status, null, `guard did not run: ${res.stderr}`);
+  assert.match(
+    fsq.readFileSync(out, 'utf8'),
+    /^verdict=[A-Z_]+$/m,
+    'the guard must append `verdict=<CODE>` to GITHUB_OUTPUT (#1069)'
+  );
+});
+
+test('BOTH exit paths emit the verdict, not just the one --dry-run reaches', () => {
+  // Source-level on purpose. Deleting the ordinary-path emit left the behavioural test above
+  // green, because --dry-run never reaches it. A reader trusts a blank reason least when only
+  // half the paths supply one.
+  const src = fsq
+    .readFileSync(
+      path.resolve(__dirname, '..', 'ci', 'e2e-budget-guard.mjs'),
+      'utf8'
+    )
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+  const calls = (src.match(/writeJobOutput\(\s*'verdict'/g) || []).length;
+  assert.strictEqual(
+    calls,
+    2,
+    `expected 2 verdict emits (the #949 identity refusal AND the ordinary path), found ${calls}. ` +
+      'A path that exits without emitting makes hosted-lane-status report a bare BLOCKED for ' +
+      'that case only (#1069).'
+  );
+});
+
+test('an unwritable GITHUB_OUTPUT does not change the verdict', () => {
+  // Fail-soft, like the job summary. Pointing at a DIRECTORY makes appendFileSync throw for
+  // real — deleting the env var merely made it undefined, which the try/catch also swallowed,
+  // so that weaker version passed even with the early return removed.
+  const { spawnSync } = require('node:child_process');
+  const dir = fsq.mkdtempSync(path.join(osq.tmpdir(), 'budget-unwritable-'));
+  const res = spawnSync(
+    process.execPath,
+    [path.resolve(__dirname, '..', 'ci', 'e2e-budget-guard.mjs'), '--dry-run'],
+    {
+      encoding: 'utf8',
+      env: { ...process.env, GITHUB_OUTPUT: dir },
+      timeout: 120000,
+    }
+  );
+  assert.strictEqual(
+    res.status,
+    0,
+    `--dry-run must still exit 0 when the output file cannot be written.\n${res.stdout}\n${res.stderr}`
+  );
+});
+
+test('e2e.yml carries the verdict from the guard step to the status job', () => {
+  // Kills the half-wired shape: a guard that emits into a job that publishes nothing.
+  const yml = fsq.readFileSync(
+    path.resolve(__dirname, '..', '..', '.github', 'workflows', 'e2e.yml'),
+    'utf8'
+  );
+  const code = yml
+    .split('\n')
+    .filter((l) => !l.trim().startsWith('#'))
+    .join('\n');
+  assert.match(
+    code,
+    /verdict:\s*\$\{\{\s*steps\.guard\.outputs\.verdict\s*\}\}/,
+    'the budget job must publish the guard step output (#1069)'
+  );
+  assert.match(
+    code,
+    /VERDICT:\s*\$\{\{\s*needs\.budget\.outputs\.verdict\s*\}\}/,
+    'hosted-lane-status must read it, in the step env — not in the job `if:`, which ' +
+      'fork-first-push-skips.test.js forbids'
+  );
+  for (const v of ['MONTH_EXCEEDED', 'DAY_EXCEEDED']) {
+    // The case ARM, not a mention. `includes(v)` passed with the arm renamed, because the
+    // verdict name also appears in the prose of the fallback warning — a guard satisfied by
+    // the text it is supposed to be replacing.
+    assert.match(
+      code,
+      new RegExp(`^\\s*${v}\\)`, 'm'),
+      `the status job must BRANCH on ${v}, not merely mention it — reporting a bare BLOCKED ` +
+        'for every block is the defect (#1069)'
+    );
+  }
+});
