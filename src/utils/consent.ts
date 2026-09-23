@@ -277,17 +277,6 @@ export function deleteCookie(name: string, path: string = '/'): void {
 }
 
 /**
- * Delete all cookies in a category
- */
-export function deleteCategoryCookies(category: CookieCategory): void {
-  // This would need a registry of cookies by category
-  // For now, we'll implement this when we have the cookie registry
-  logger.warn('Deleting cookies for category not yet implemented', {
-    category,
-  });
-}
-
-/**
  * Get all cookies
  */
 export function getAllCookies(): CookieData[] {

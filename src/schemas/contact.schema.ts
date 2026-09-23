@@ -246,16 +246,3 @@ export const getFieldError = (
 export const isValidContactData = (data: unknown): data is ContactFormData => {
   return contactSchema.safeParse(data).success;
 };
-
-/**
- * Sanitize form data for safe display
- */
-export const sanitizeFormData = (data: ContactFormData): ContactFormData => {
-  return {
-    ...data,
-    // Additional sanitization if needed
-    name: data.name.replace(/<[^>]*>/g, ''), // Strip HTML tags
-    subject: data.subject.replace(/<[^>]*>/g, ''),
-    message: data.message.replace(/<[^>]*>/g, ''),
-  };
-};
