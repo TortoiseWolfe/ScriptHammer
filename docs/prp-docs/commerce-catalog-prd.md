@@ -644,7 +644,7 @@ CREATE INDEX idx_leads_status ON leads(booking_status, created_at DESC);
 Structure follows `auth_audit_logs` (`migration:265-292`); `is_admin()` reads
 `user_profiles.is_admin` (`migration:815-831`). `updated_at` uses the existing
 `update_updated_at_column()` trigger (`migration:359-370`). Add
-`DROP TABLE IF EXISTS leads CASCADE;` to `999_drop_all_tables.sql`.
+`DROP TABLE IF EXISTS leads CASCADE;` to `supabase/scripts/drop_all_tables.sql`.
 
 **Why no anonymous INSERT policy.** The repo's only precedent for an anonymous
 write is a `SECURITY DEFINER` RPC (`log_auth_event`, `migration:726-763`).

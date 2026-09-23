@@ -1636,7 +1636,7 @@ function MessageBubble({ message }) {
 
 - **Database Migrations**:
   - `/supabase/migrations/20251006_complete_monolithic_setup.sql` (Part 5: Messaging tables)
-  - `/supabase/migrations/999_drop_all_tables.sql` (Teardown script)
+  - `/supabase/scripts/drop_all_tables.sql` (Teardown script)
 
 ### Community Support
 
