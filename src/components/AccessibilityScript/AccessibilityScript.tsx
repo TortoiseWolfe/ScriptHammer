@@ -1,3 +1,4 @@
+import { jsonForScript } from '@/utils/json-script';
 import {
   ACCESSIBILITY_STORAGE_KEYS,
   CONSENT_STORAGE_KEY,
@@ -33,15 +34,11 @@ import {
  *     retyped, so they cannot drift from what the provider applies.
  */
 /**
- * Serialise a build-time constant for embedding in an inline `<script>`.
- *
- * Everything passed here is a module-level literal, never user input, so this
- * is not an injection boundary. Escaping `<` anyway means a future token value
- * containing `</script>` cannot terminate the tag early.
+ * Everything embedded below is a module-level literal, never user input, so this
+ * is not an injection boundary. It goes through the shared escape anyway so a
+ * future token value containing `</script>` cannot terminate the tag early.
  */
-function embed(value: unknown): string {
-  return JSON.stringify(value).replace(/</g, '\\u003c');
-}
+const embed = jsonForScript;
 
 export default function AccessibilityScript() {
   const script = `
