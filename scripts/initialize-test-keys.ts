@@ -68,7 +68,7 @@ async function initializeTestKeys() {
       salt,
     });
 
-    console.log(`Salt (base64): ${keyPair.salt.substring(0, 20)}...`);
+    console.log('Salt generated'); // never its value — #1040: salt + public key is a password oracle
     console.log(`Public key generated`);
 
     // Insert new key with salt

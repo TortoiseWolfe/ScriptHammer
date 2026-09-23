@@ -21,6 +21,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import { randomBytes } from 'node:crypto';
 import * as crypto from 'crypto';
 import { requireApprovedTarget } from './lib/supabase-target';
 
@@ -53,6 +54,9 @@ if (!PRIMARY_PASSWORD || !SECONDARY_PASSWORD || !TERTIARY_PASSWORD) {
  * Admin user configuration (T004)
  * Fixed UUID for consistent welcome message sender
  */
+const ADMIN_PASSWORD =
+  process.env.SEED_ADMIN_PASSWORD ?? randomBytes(32).toString('base64url');
+
 const ADMIN_USER = {
   id: '00000000-0000-0000-0000-000000000001',
   email: 'admin@scripthammer.com',
@@ -150,7 +154,10 @@ async function setupAdminUser(): Promise<boolean> {
       const { data: authData, error: authError } =
         await supabase.auth.admin.createUser({
           email: ADMIN_USER.email,
-          password: 'AdminPassword123!', // Not used - no login needed
+          // Never a literal: this account carries is_admin and the repo is public.
+          // Set SEED_ADMIN_PASSWORD to sign in as it (the admin contract test
+          // does); otherwise it gets a random one that is never printed (#1246).
+          password: ADMIN_PASSWORD,
           email_confirm: true,
           user_metadata: { username: ADMIN_USER.username },
           // #240: pre-seed the claim for pre-hook projects (see note above).
@@ -470,7 +477,7 @@ async function main() {
   console.log('\n📋 Users:');
   console.log(`   Admin: ${ADMIN_USER.email} (for welcome messages)`);
   for (const user of TEST_USERS) {
-    console.log(`   Test: ${user.email} / ${user.password}`);
+    console.log(`   Test: ${user.email}`);
   }
 
   console.log('\n📋 Next steps:');
