@@ -339,3 +339,213 @@ test('fails when the age ledger is missing entirely', async (t) => {
   assert.equal(result.code, 1, output);
   assert.match(output, /age ledger/i);
 });
+
+/**
+ * A 503 IS NOT A DELETION (#1239).
+ *
+ * `Production Smoke` run 35803250426 failed with
+ * `503 _next/static/chunks/3065.1400581724a7477a.js` under the headline
+ * "1 retained asset(s) are gone". The asset was not gone — it served 200 at 22,582
+ * bytes with `cf-cache-status: HIT` minutes later, and the runs either side passed.
+ *
+ * The danger is not the false red. It is the CSS branch: had that 503 landed on a
+ * stylesheet, the gate would have announced "anyone holding HTML that references them
+ * is seeing an unstyled page right now" — the #548/#635 production incident, in the
+ * words that make people act on it at one in the morning.
+ *
+ * `NO_RETRY` keeps these fast. The retry exists for real edge weather, not for a
+ * fixture that has already decided what it will answer.
+ */
+const NO_RETRY = {
+  RETAINED_RETRY_DELAY_MS: '0',
+  RETAINED_CHECK: 'reachability',
+};
+
+/** Serve the ledgers, and hand every asset request to `assetHandler`. */
+const serveAssets = (entries, assetHandler) => (request, response) => {
+  if (isLedger(request.url, 'ASSET_MANIFEST.txt')) {
+    response.end(entries.join('\n'));
+    return;
+  }
+  if (isLedger(request.url, 'ASSET_AGES.txt')) {
+    response.end(agesFor(entries, 20));
+    return;
+  }
+  assetHandler(request, response);
+};
+
+test('a persistent 503 fails, but is NOT reported as gone or as an unstyled page', async (t) => {
+  const flaky = '/_next/static/css/app.css';
+  const entries = retainedEntries([flaky]);
+  const server = await startServer(
+    serveAssets(entries, (request, response) => {
+      if (request.url.split('?')[0] === flaky) {
+        response.writeHead(503).end();
+        return;
+      }
+      response.writeHead(200).end();
+    })
+  );
+  t.after(() => server.close());
+
+  const result = await runProbe(server.baseUrl, NO_RETRY);
+  const output = result.stdout + result.stderr;
+
+  // Still a failure: production serving 503 for a retained asset is a real problem.
+  assert.equal(result.code, 1, output);
+  assert.match(output, /app\.css/);
+  // But NOT these two claims, both of which would be false.
+  assert.doesNotMatch(output, /are gone/i);
+  assert.doesNotMatch(output, /unstyled page right now/i);
+});
+
+test('a 503 that recovers on retry passes — edge weather is not a deleted file', async (t) => {
+  const flaky = '/_next/static/chunks/flaky.js';
+  const entries = retainedEntries([flaky]);
+  let attempts = 0;
+  const server = await startServer(
+    serveAssets(entries, (request, response) => {
+      if (request.url.split('?')[0] === flaky) {
+        attempts += 1;
+        // 503 for the FIRST TWO requests, because `status()` already tries HEAD and
+        // then a ranged GET. Failing only the first would be satisfied by that
+        // existing fallback and would pass with no retry implemented at all — which
+        // is exactly how this test was wrong when first written.
+        response.writeHead(attempts <= 2 ? 503 : 200).end();
+        return;
+      }
+      response.writeHead(200).end();
+    })
+  );
+  t.after(() => server.close());
+
+  const result = await runProbe(server.baseUrl, {
+    RETAINED_RETRY_DELAY_MS: '0',
+    RETAINED_CHECK: 'reachability',
+  });
+  const output = result.stdout + result.stderr;
+
+  assert.equal(result.code, 0, output);
+  assert.match(output, /MISSING   0/);
+  assert.ok(
+    attempts >= 3,
+    `expected a retry beyond the HEAD/GET fallback, saw ${attempts} attempt(s)`
+  );
+});
+
+test('CONTROL: a real 404 on a stylesheet still says gone AND still says unstyled', async (t) => {
+  // The floor. Every assertion above is about NOT crying wolf, and the cheapest way
+  // to satisfy those is a check that never fires. This is the case that must stay loud.
+  const removed = '/_next/static/css/deleted.css';
+  const entries = retainedEntries([removed]);
+  const server = await startServer(
+    serveAssets(entries, (request, response) => {
+      if (request.url.split('?')[0] === removed) {
+        response.writeHead(404).end();
+        return;
+      }
+      response.writeHead(200).end();
+    })
+  );
+  t.after(() => server.close());
+
+  const result = await runProbe(server.baseUrl, NO_RETRY);
+  const output = result.stdout + result.stderr;
+
+  assert.equal(result.code, 1, output);
+  assert.match(output, /deleted\.css/);
+  assert.match(output, /are gone/i);
+  assert.match(output, /unstyled page right now/i);
+});
+
+test('a 404 and a 503 in one run are counted and described separately', async (t) => {
+  const removed = '/_next/static/chunks/removed.js';
+  const wobbling = '/_next/static/chunks/wobbling.js';
+  const entries = retainedEntries([removed, wobbling]);
+  const server = await startServer(
+    serveAssets(entries, (request, response) => {
+      const path = request.url.split('?')[0];
+      if (path === removed) {
+        response.writeHead(404).end();
+        return;
+      }
+      if (path === wobbling) {
+        response.writeHead(503).end();
+        return;
+      }
+      response.writeHead(200).end();
+    })
+  );
+  t.after(() => server.close());
+
+  const result = await runProbe(server.baseUrl, NO_RETRY);
+  const output = result.stdout + result.stderr;
+
+  assert.equal(result.code, 1, output);
+  // One of each, not two of the same — the distinction this change exists to make.
+  assert.match(output, /GONE +1/);
+  assert.match(output, /UNAVAILABLE +1/);
+  assert.match(output, /removed\.js/);
+  assert.match(output, /wobbling\.js/);
+});
+
+test('the unstyled claim counts only DELETED stylesheets, not unavailable ones', async (t) => {
+  // Found by mutation: `goneCss` computed from `missing` instead of `gone` survived
+  // every test above, because it is only read inside `if (gone.length)`. It becomes
+  // visible the moment one run has both — the sentence then inflates a real incident
+  // with a file that is still published.
+  const deleted = '/_next/static/css/deleted.css';
+  const wobbling = '/_next/static/css/wobbling.css';
+  const entries = retainedEntries([deleted, wobbling]);
+  const server = await startServer(
+    serveAssets(entries, (request, response) => {
+      const path = request.url.split('?')[0];
+      if (path === deleted) {
+        response.writeHead(404).end();
+        return;
+      }
+      if (path === wobbling) {
+        response.writeHead(503).end();
+        return;
+      }
+      response.writeHead(200).end();
+    })
+  );
+  t.after(() => server.close());
+
+  const result = await runProbe(server.baseUrl, NO_RETRY);
+  const output = result.stdout + result.stderr;
+
+  assert.equal(result.code, 1, output);
+  assert.match(output, /1 of them STYLESHEETS/);
+  assert.doesNotMatch(output, /2 of them STYLESHEETS/);
+});
+
+test('a 404 is not retried — only the edge gets a second chance', async (t) => {
+  // Found by mutation: dropping the `!== 'unavailable'` early return changed no
+  // verdict, so nothing failed. It triples the wall-clock of a real deletion across
+  // a 300-entry manifest, which is when this check is most urgently being read.
+  const removed = '/_next/static/chunks/removed.js';
+  const entries = retainedEntries([removed]);
+  let requests = 0;
+  const server = await startServer(
+    serveAssets(entries, (request, response) => {
+      if (request.url.split('?')[0] === removed) {
+        requests += 1;
+        response.writeHead(404).end();
+        return;
+      }
+      response.writeHead(200).end();
+    })
+  );
+  t.after(() => server.close());
+
+  const result = await runProbe(server.baseUrl, NO_RETRY);
+
+  assert.equal(result.code, 1, result.stdout + result.stderr);
+  // One attempt is HEAD then a ranged GET. A retry would make it four or six.
+  assert.ok(
+    requests <= 2,
+    `a 404 should settle in one attempt (HEAD + GET); saw ${requests} requests`
+  );
+});
