@@ -4,6 +4,45 @@
  * Ported from SpokeToWork fork (Feature 050 - Code Consolidation).
  * Defines common types for all offline queue adapters.
  *
+ * BEFORE YOU ADD A BINARY PAYLOAD, READ THIS (#1209).
+ *
+ * **WebKit cannot store a `Blob` or a `File` in IndexedDB.** Nothing in this template
+ * persists binary client-side today, so there is no bug to fix — but this interface is
+ * exactly where a fork will eventually try to queue an attachment, and the failure mode
+ * is unusually quiet.
+ *
+ * Measured against Playwright's own browser builds (`webkit-2203`):
+ *
+ * | stored value  | chromium | firefox | webkit   |
+ * |---------------|----------|---------|----------|
+ * | plain object  | OK       | OK      | OK       |
+ * | `ArrayBuffer` | OK       | OK      | OK       |
+ * | `Uint8Array`  | OK       | OK      | OK       |
+ * | `Blob`        | OK       | OK      | **FAILS**|
+ * | `File`        | OK       | OK      | **FAILS**|
+ *
+ * WHY IT IS HARD TO NOTICE. The write transaction fires `onerror` with a **null
+ * `tx.error`**. It does not identify itself as a structured-clone failure and it does not
+ * throw at the `put()` call. `fake-indexeddb` does not faithfully clone binary either, so
+ * a unit suite goes green whichever shape you store; Chromium and Firefox both accept
+ * Blobs, so local development and most of CI pass. The net effect is a feature that works
+ * everywhere except the phone, with a green pipeline and nothing in the console.
+ *
+ * THE PATTERN. Store `ArrayBuffer` plus the MIME type as separate fields and rebuild the
+ * Blob on read:
+ *
+ * ```ts
+ * // write
+ * { bytes: await blobToArrayBuffer(blob), type: blob.type || 'application/octet-stream' }
+ * // read
+ * new Blob([row.bytes], { type: row.type })
+ * ```
+ *
+ * ONE RELATED TRAP. `Blob.prototype.arrayBuffer` does not exist in jsdom (nor `text()`
+ * nor `stream()` — only `size` and `type`), and it is missing in older Safari. Without a
+ * `FileReader` fallback the write path throws, gets swallowed by whatever guard stops a
+ * storage failure from breaking the UI, stores nothing, and every test still passes.
+ *
  * @module lib/offline-queue/types
  */
 
