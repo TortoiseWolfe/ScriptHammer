@@ -404,6 +404,13 @@ export class KeyManagementService {
         error: err,
       });
     });
+    // A device that can no longer decrypt should not still hold what was
+    // composed offline: queued rows carry plaintext until they sync (#1256).
+    void db.messaging_queued_messages.clear().catch((err) => {
+      logger.warn('Failed to clear messaging_queued_messages on logout', {
+        error: err,
+      });
+    });
     this.publicKeyCache.clear();
     logger.debug('Keys cleared from memory and IndexedDB');
   }

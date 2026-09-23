@@ -285,11 +285,16 @@ export class OfflineQueueService {
             .update({ last_message_at: new Date().toISOString() })
             .eq('id', queuedMsg.conversation_id);
 
-          // Mark as synced
+          // Mark as synced — and drop the plaintext in the same write. Both
+          // fields exist "for UI rendering while queued"; once the message is
+          // on the server there is nothing left to render and no reason for
+          // what was said to stay on disk (#1256).
           await messagingDb.messaging_queued_messages.update(queuedMsg.id, {
             status: 'sent' as QueueStatus,
             synced: 1,
             sequence_number: nextSequenceNumber,
+            content: undefined,
+            plaintext_content: undefined,
           });
 
           successCount++;
