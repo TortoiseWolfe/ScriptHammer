@@ -61,7 +61,7 @@ echo "TEST_USER_TERTIARY_PASSWORD=TestPassword456!" >> .env
 
 ```bash
 # Run seed script for third test user
-docker compose exec scripthammer psql $DATABASE_URL -f supabase/migrations/seed-test-user-b.sql
+docker compose exec scripthammer pnpm run seed:local   # seed-test-user-b.sql was retired in #1248; the seeder creates all three users
 ```
 
 **Expected output**:
@@ -496,7 +496,7 @@ docker compose exec scripthammer psql $DATABASE_URL -c \
   "SELECT email FROM auth.users WHERE email LIKE 'test%@example.com';"
 
 # If missing, run seed script
-docker compose exec scripthammer psql $DATABASE_URL -f supabase/migrations/seed-test-user-b.sql
+docker compose exec scripthammer pnpm run seed:local   # seed-test-user-b.sql was retired in #1248; the seeder creates all three users
 ```
 
 ---

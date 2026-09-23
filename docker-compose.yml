@@ -213,8 +213,9 @@ services:
       #
       #  (2) The host dir also holds 00000000000000_rls_foundation.sql
       #      (creates on_auth_user_created first -> monolithic :421 re-creates
-      #      it and crashes), 999_drop_all_tables.sql (header: "WARNING: This
-      #      script will DELETE EVERYTHING"), and seed-test-user-b.sql.
+      #      it and crashes). It also used to hold a drop-everything script and
+      #      a deprecated seed; both left the directory in #1248, and a guard
+      #      test now keeps it to the one monolithic migration.
       #      migrate.sh globs migrations/*.sql alphabetically with
       #      ON_ERROR_STOP=1; the first error poisons the volume.
       #
