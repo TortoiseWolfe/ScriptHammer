@@ -38,6 +38,7 @@
     "supabase:local:up": "docker compose --profile supabase up -d",
     "supabase:local:down": "docker compose --profile supabase down",
     "supabase:auth-config": "tsx scripts/supabase/set-auth-config.ts",
+    "supabase:plan-edge": "tsx scripts/supabase/plan-edge-deploy.ts",
     "supabase:auth-config:check": "tsx scripts/supabase/set-auth-config.ts --check",
     "supabase:retention": "tsx scripts/supabase/cleanup-audit-logs.ts",
     "supabase:retention:check": "tsx scripts/supabase/cleanup-audit-logs.ts --check",
