@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -51,6 +51,15 @@ export default function TipJar({
   const [error, setError] = useState<string | null>(null);
   const [shake, setShake] = useState(false);
 
+  // The shake ends itself — and its timer dies with the component. Scheduling it from the
+  // click handler left a timer that outlived an unmount; the test environment was the first
+  // place strict enough to notice, failing a required check after teardown (#1281).
+  useEffect(() => {
+    if (!shake) return;
+    const t = window.setTimeout(() => setShake(false), 400);
+    return () => window.clearTimeout(t);
+  }, [shake]);
+
   const validate = useCallback((raw: string): number | null => {
     const n = Number(raw);
     if (!Number.isFinite(n) || !Number.isInteger(n)) return null;
@@ -92,10 +101,7 @@ export default function TipJar({
       setError(
         `Whole dollars, $${TIP_MIN_CENTS / 100} to $${TIP_MAX_CENTS / 100}.`
       );
-      if (!prefersReduced) {
-        setShake(true);
-        window.setTimeout(() => setShake(false), 400);
-      }
+      if (!prefersReduced) setShake(true);
       return;
     }
     setError(null);
