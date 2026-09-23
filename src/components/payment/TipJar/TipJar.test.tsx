@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import TipJar, { TIP_MIN_CENTS, TIP_MAX_CENTS } from './TipJar';
 
 const push = vi.fn();
@@ -83,6 +83,37 @@ describe('TipJar', () => {
     fireEvent.click(give());
     expect(amountField().className).not.toContain('sh-shake');
     expect(screen.getByRole('alert')).toBeInTheDocument();
+  });
+
+  it('the shake timer dies with the component (#1281)', () => {
+    vi.useFakeTimers();
+    try {
+      const { unmount } = render(<TipJar />);
+      fireEvent.change(amountField(), { target: { value: '0' } });
+      fireEvent.click(give());
+      // CONTROL: a timer really was scheduled, so the zero below is not vacuous.
+      expect(vi.getTimerCount()).toBe(1);
+      unmount();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('the shake still ends on its own after 400ms', () => {
+    vi.useFakeTimers();
+    try {
+      render(<TipJar />);
+      fireEvent.change(amountField(), { target: { value: '0' } });
+      fireEvent.click(give());
+      expect(amountField().className).toContain('sh-shake');
+      act(() => {
+        vi.advanceTimersByTime(400);
+      });
+      expect(amountField().className).not.toContain('sh-shake');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('applies sh-shake on rejection when motion is allowed', () => {
