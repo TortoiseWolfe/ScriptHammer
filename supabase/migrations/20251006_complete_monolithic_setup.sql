@@ -771,26 +771,36 @@ DECLARE
   v_cutoff TIMESTAMPTZ := NOW() - INTERVAL '90 days';
   v_batch  INT;
   v_total  INT := 0;
+  -- Clamped (#1245): a batch size of 0 never satisfies `v_batch < p_batch_size`, so an
+  -- unclamped call spun until statement_timeout. Closed to every client role below as well;
+  -- the clamp is what keeps a future grant from reopening the loop.
+  v_size   INT := LEAST(GREATEST(COALESCE(p_batch_size, 5000), 1), 50000);
+  v_max    INT := LEAST(GREATEST(COALESCE(p_max_batches, 100), 1), 1000);
 BEGIN
-  FOR i IN 1..p_max_batches LOOP
+  FOR i IN 1..v_max LOOP
     DELETE FROM auth_audit_logs
     WHERE id IN (
       SELECT id
       FROM auth_audit_logs
       WHERE created_at < v_cutoff
       ORDER BY created_at
-      LIMIT p_batch_size
+      LIMIT v_size
     );
     GET DIAGNOSTICS v_batch = ROW_COUNT;
     v_total := v_total + v_batch;
     -- A short batch means the cutoff is drained; stop rather than burning
     -- the remaining iterations on empty DELETEs.
-    EXIT WHEN v_batch < p_batch_size;
+    EXIT WHEN v_batch < v_size;
   END LOOP;
 
   RETURN v_total;
 END;
 $$;
+-- Its only caller is the data-retention job, which runs it through the Management API as the
+-- function's owner — so no client role needs it at all (#1245). PUBLIC, anon and authenticated
+-- are named separately: on Supabase the default ACL grants anon and authenticated by NAME, so
+-- `REVOKE … FROM PUBLIC` alone leaves both holding EXECUTE.
+REVOKE ALL ON FUNCTION cleanup_old_audit_logs(INT, INT) FROM PUBLIC, anon, authenticated, service_role;
 
 -- Rate limiting check (Feature 017)
 CREATE OR REPLACE FUNCTION check_rate_limit(
@@ -809,10 +819,16 @@ DECLARE
   v_window_minutes INTEGER := 15;
   v_now TIMESTAMPTZ := now();
 BEGIN
+  -- Plain FOR UPDATE, never SKIP LOCKED (#1237). SKIP LOCKED returned NO row whenever another
+  -- caller held the lock, the branch below read that as "first attempt", and the reset path
+  -- zeroed the count and cleared a lockout in force — a limiter strictest against sequential
+  -- callers and absent against parallel ones. Waiting for the lock is the correct behaviour.
+  -- (Check-then-record is still two transactions; consume_rate_limit below is the atomic
+  -- replacement the Edge Functions move to.)
   SELECT * INTO v_record
   FROM rate_limit_attempts
   WHERE identifier = p_identifier AND attempt_type = p_attempt_type
-  FOR UPDATE SKIP LOCKED;
+  FOR UPDATE;
 
   IF v_record.locked_until IS NOT NULL AND v_record.locked_until > v_now THEN
     RETURN json_build_object('allowed', FALSE, 'remaining', 0, 'locked_until', v_record.locked_until, 'reason', 'rate_limited');
@@ -836,6 +852,63 @@ BEGIN
   END IF;
 END;
 $$;
+
+-- Consume one attempt and decide, atomically (#1237).
+--
+-- check_rate_limit + record_failed_attempt are two RPCs, so N concurrent callers all pass the
+-- check before any of them records — a ceiling of 5 admitted 15+ under a burst even with the
+-- SKIP LOCKED fix. This does both in one INSERT … ON CONFLICT DO UPDATE, which serialises on
+-- the (identifier, attempt_type) unique index: the Nth concurrent caller sees the Nth count.
+-- Same JSON contract as check_rate_limit so callers need no new parsing. Server-only: the
+-- identifier must be derived by the server, never chosen by the caller (#1245).
+CREATE OR REPLACE FUNCTION consume_rate_limit(
+  p_identifier TEXT,
+  p_attempt_type TEXT,
+  p_ip_address INET DEFAULT NULL
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_max    INTEGER  := 5;
+  v_window INTERVAL := interval '15 minutes';
+  v_now    TIMESTAMPTZ := now();
+  v_row    rate_limit_attempts%ROWTYPE;
+BEGIN
+  INSERT INTO rate_limit_attempts AS r
+    (identifier, attempt_type, ip_address, window_start, attempt_count, locked_until)
+  VALUES (p_identifier, p_attempt_type, p_ip_address, v_now, 1, NULL)
+  ON CONFLICT (identifier, attempt_type) DO UPDATE SET
+    -- A lockout in force is honoured unchanged; an expired window starts again at 1.
+    attempt_count = CASE
+      WHEN r.locked_until > v_now THEN r.attempt_count
+      WHEN v_now - r.window_start > v_window THEN 1
+      ELSE r.attempt_count + 1 END,
+    window_start = CASE
+      WHEN r.locked_until > v_now THEN r.window_start
+      WHEN v_now - r.window_start > v_window THEN v_now
+      ELSE r.window_start END,
+    locked_until = CASE
+      WHEN r.locked_until > v_now THEN r.locked_until
+      WHEN v_now - r.window_start > v_window THEN NULL
+      WHEN r.attempt_count + 1 > v_max THEN v_now + v_window
+      ELSE NULL END,
+    ip_address = COALESCE(EXCLUDED.ip_address, r.ip_address),
+    updated_at = v_now
+  RETURNING * INTO v_row;
+
+  IF v_row.locked_until > v_now THEN
+    RETURN json_build_object('allowed', FALSE, 'remaining', 0,
+      'locked_until', v_row.locked_until, 'reason', 'rate_limited');
+  END IF;
+  RETURN json_build_object('allowed', TRUE,
+    'remaining', GREATEST(v_max - v_row.attempt_count, 0), 'locked_until', NULL);
+END;
+$$;
+REVOKE ALL ON FUNCTION consume_rate_limit(TEXT, TEXT, INET) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION consume_rate_limit(TEXT, TEXT, INET) TO service_role;
 
 -- Record failed auth attempt (Feature 017)
 CREATE OR REPLACE FUNCTION record_failed_attempt(
@@ -1237,17 +1310,40 @@ BEGIN
     RAISE EXCEPTION 'log_auth_event: cannot log an event for another user';
   END IF;
 
+  -- Anonymous callers keep EXECUTE on purpose — failed sign-ins, sign-up failures and reset
+  -- requests happen before any session exists, and revoking it would silently zero that
+  -- telemetry (#241). What anon may WRITE is bounded instead (#1245): only those three event
+  -- types, and never a success except a reset request, so the sign-up and sign-in counts on the
+  -- admin dashboard cannot be inflated by forged rows.
+  IF auth.uid() IS NULL AND auth.role() IS DISTINCT FROM 'service_role' THEN
+    IF p_event_type NOT IN ('sign_in_failed', 'sign_up', 'password_reset_request') THEN
+      RAISE EXCEPTION 'log_auth_event: % cannot be logged without a session', p_event_type
+        USING ERRCODE = '42501';
+    END IF;
+    IF COALESCE(p_success, TRUE) AND p_event_type <> 'password_reset_request' THEN
+      RAISE EXCEPTION 'log_auth_event: an anonymous caller cannot log a successful %', p_event_type
+        USING ERRCODE = '42501';
+    END IF;
+  END IF;
+
+  -- Bounded payload for every caller: the table keeps rows 90 days on a 500 MB free tier.
+  IF p_event_data IS NOT NULL AND pg_column_size(p_event_data) > 4096 THEN
+    RAISE EXCEPTION 'log_auth_event: event_data is % bytes; the limit is 4096',
+      pg_column_size(p_event_data) USING ERRCODE = '22001';
+  END IF;
+
   INSERT INTO auth_audit_logs (
     user_id, event_type, event_data, success, error_message, user_agent
   ) VALUES (
     p_user_id, p_event_type, p_event_data,
-    COALESCE(p_success, TRUE), p_error_message, left(p_user_agent, 500)
+    COALESCE(p_success, TRUE), left(p_error_message, 1000), left(p_user_agent, 500)
   );
 END;
 $$;
--- Revoke the implicit PUBLIC grant Postgres puts on new functions, then grant
--- explicitly to the client roles that need it — least privilege for a function
--- that writes to a security table.
+-- Revoke the implicit PUBLIC grant, then grant explicitly to the client roles that need it.
+-- anon is granted DELIBERATELY (pre-session events); what it may write is bounded in the body.
+-- Note `FROM public` removes only PUBLIC's grant — Supabase's default ACL grants anon and
+-- authenticated by name, which is why the GRANT below is the real statement of intent (#1245).
 REVOKE EXECUTE ON FUNCTION public.log_auth_event(TEXT, UUID, JSONB, BOOLEAN, TEXT, TEXT)
   FROM public;
 GRANT EXECUTE ON FUNCTION public.log_auth_event(TEXT, UUID, JSONB, BOOLEAN, TEXT, TEXT)
@@ -1345,10 +1441,19 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT COALESCE(
-    (SELECT is_admin FROM user_profiles WHERE id = check_user_id),
-    false
-  );
+  -- Answers only about the CALLER, unless the caller is an admin or the service role (#1245).
+  -- It used to answer about anyone: user ids are listable (profile search, the avatars bucket),
+  -- so `is_admin(<id>)` for each enumerated the admin set without a session. A grant cannot fix
+  -- that — every RLS policy calls this function as the querying role, so authenticated (and anon,
+  -- wherever an anon-reachable policy uses it) must keep EXECUTE. The signature is unchanged on
+  -- purpose: CREATE OR REPLACE with the same arguments keeps the ACL and adds no new overload.
+  SELECT CASE
+    WHEN check_user_id IS NOT DISTINCT FROM auth.uid()
+      OR auth.role() = 'service_role'
+      OR EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin)
+    THEN COALESCE((SELECT is_admin FROM user_profiles WHERE id = check_user_id), false)
+    ELSE false
+  END;
 $$;
 GRANT EXECUTE ON FUNCTION public.is_admin(UUID) TO authenticated, anon;
 
@@ -1648,7 +1753,7 @@ $$;
 --
 -- Depending on a default that differs between the database you develop on and
 -- the one you ship is the drift; naming the grant removes it.
-REVOKE ALL ON FUNCTION admin_payment_stats() FROM PUBLIC;
+REVOKE ALL ON FUNCTION admin_payment_stats() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION admin_payment_stats() TO authenticated;
 
 -- admin_auth_stats(): Auth/security metrics for admin dashboard
@@ -1706,7 +1811,7 @@ $$;
 --
 -- Depending on a default that differs between the database you develop on and
 -- the one you ship is the drift; naming the grant removes it.
-REVOKE ALL ON FUNCTION admin_auth_stats() FROM PUBLIC;
+REVOKE ALL ON FUNCTION admin_auth_stats() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION admin_auth_stats() TO authenticated;
 
 -- admin_user_stats(): User metrics for admin dashboard
@@ -1764,7 +1869,7 @@ $$;
 --
 -- Depending on a default that differs between the database you develop on and
 -- the one you ship is the drift; naming the grant removes it.
-REVOKE ALL ON FUNCTION admin_user_stats() FROM PUBLIC;
+REVOKE ALL ON FUNCTION admin_user_stats() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION admin_user_stats() TO authenticated;
 
 -- admin_messaging_stats(): Messaging metrics for admin dashboard
@@ -1821,7 +1926,7 @@ $$;
 --
 -- Depending on a default that differs between the database you develop on and
 -- the one you ship is the drift; naming the grant removes it.
-REVOKE ALL ON FUNCTION admin_messaging_stats() FROM PUBLIC;
+REVOKE ALL ON FUNCTION admin_messaging_stats() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION admin_messaging_stats() TO authenticated;
 
 -- admin_list_users(p_search, p_limit, p_offset): User listing for admin dashboard
@@ -1906,7 +2011,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION admin_list_users(TEXT, INT, INT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION admin_list_users(TEXT, INT, INT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION admin_list_users(TEXT, INT, INT) TO authenticated;
 
 -- admin_payment_trends(p_start, p_end): Date-ranged payment breakdown for admin dashboard
@@ -2013,7 +2118,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION admin_payment_trends(TIMESTAMPTZ, TIMESTAMPTZ) FROM PUBLIC;
+REVOKE ALL ON FUNCTION admin_payment_trends(TIMESTAMPTZ, TIMESTAMPTZ) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION admin_payment_trends(TIMESTAMPTZ, TIMESTAMPTZ) TO authenticated;
 
 -- admin_audit_trends(p_start, p_end): sign-in totals and a daily series for the admin dashboard
@@ -2100,7 +2205,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION admin_audit_trends(TIMESTAMPTZ, TIMESTAMPTZ) FROM PUBLIC;
+REVOKE ALL ON FUNCTION admin_audit_trends(TIMESTAMPTZ, TIMESTAMPTZ) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION admin_audit_trends(TIMESTAMPTZ, TIMESTAMPTZ) TO authenticated;
 
 -- admin_messaging_trends(p_start, p_end, p_top_limit): Messaging volume for admin dashboard
@@ -2219,7 +2324,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION admin_messaging_trends(TIMESTAMPTZ, TIMESTAMPTZ, INT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION admin_messaging_trends(TIMESTAMPTZ, TIMESTAMPTZ, INT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION admin_messaging_trends(TIMESTAMPTZ, TIMESTAMPTZ, INT) TO authenticated;
 
 -- admin_conversation_list(p_limit, p_offset): Per-conversation metadata
@@ -2305,7 +2410,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION admin_conversation_list(INT, INT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION admin_conversation_list(INT, INT) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION admin_conversation_list(INT, INT) TO authenticated;
 
 -- admin_overview(p_start, p_end): Composite dashboard payload — one round-trip, all four domains
@@ -2422,7 +2527,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION admin_overview(TIMESTAMPTZ, TIMESTAMPTZ) FROM PUBLIC;
+REVOKE ALL ON FUNCTION admin_overview(TIMESTAMPTZ, TIMESTAMPTZ) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION admin_overview(TIMESTAMPTZ, TIMESTAMPTZ) TO authenticated;
 
 -- ============================================================================
@@ -3511,10 +3616,12 @@ BEGIN
 END;
 $$;
 
--- CREATE FUNCTION grants EXECUTE to PUBLIC by default, and PUBLIC includes anon.
--- The function RAISEs for an anonymous caller anyway, but defence in depth costs
--- one line here and the six admin RPCs in this file already do it.
-REVOKE ALL ON FUNCTION public.get_own_encryption_key() FROM PUBLIC;
+-- CREATE FUNCTION grants EXECUTE to PUBLIC by default — AND, on Supabase, the platform's
+-- default ACL grants anon and authenticated by NAME, so `FROM PUBLIC` alone removes nothing
+-- they hold (#1245, measured on a fresh stack and on production: anon kept EXECUTE on every
+-- function that relied on it). Name the roles. The function RAISEs for an anonymous caller
+-- anyway; this makes the grant say what is meant.
+REVOKE ALL ON FUNCTION public.get_own_encryption_key() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.get_own_encryption_key() TO authenticated;
 -- #1073, table 3 of 10 -- and the first one that was NOT latent.
 --
@@ -3794,7 +3901,11 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT EXISTS (
+  -- Answers only about the caller (or for the service role), for the same reason as is_admin
+  -- (#1245): with any check_user_id it was a membership oracle. Signature unchanged, so the ACL
+  -- and every policy that calls it with the default auth.uid() are untouched.
+  SELECT (check_user_id IS NOT DISTINCT FROM auth.uid() OR auth.role() = 'service_role')
+    AND EXISTS (
     SELECT 1 FROM conversation_members
     WHERE conversation_id = conv_id
       AND user_id = check_user_id
@@ -3810,7 +3921,11 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT EXISTS (
+  -- Answers only about the caller (or for the service role), for the same reason as is_admin
+  -- (#1245): with any check_user_id it was a membership oracle. Signature unchanged, so the ACL
+  -- and every policy that calls it with the default auth.uid() are untouched.
+  SELECT (check_user_id IS NOT DISTINCT FROM auth.uid() OR auth.role() = 'service_role')
+    AND EXISTS (
     SELECT 1 FROM conversation_members
     WHERE conversation_id = conv_id
       AND user_id = check_user_id
@@ -3835,7 +3950,11 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT EXISTS (
+  -- Answers only about the caller (or for the service role), for the same reason as is_admin
+  -- (#1245): with any check_user_id it was a membership oracle. Signature unchanged, so the ACL
+  -- and every policy that calls it with the default auth.uid() are untouched.
+  SELECT (check_user_id IS NOT DISTINCT FROM auth.uid() OR auth.role() = 'service_role')
+    AND EXISTS (
     SELECT 1 FROM conversations
     WHERE id = conv_id
       AND created_by = check_user_id
