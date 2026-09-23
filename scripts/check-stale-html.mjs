@@ -41,6 +41,7 @@
  */
 
 import { createServer } from 'node:http';
+import { renameHash } from './lib/stale-html-rename.mjs';
 import {
   readFile,
   cp,
@@ -106,16 +107,10 @@ async function makeBuild(from, to, tag) {
 
   const renames = [];
   for (const f of files) {
-    // A deterministic but different hash, so B cannot accidentally serve A's
-    // filenames — which is precisely what GitHub Pages does on deploy.
-    const next = f.replace(/^[a-f0-9]+/, (h) =>
-      h
-        .split('')
-        .reverse()
-        .join('')
-        .replace(/[a-f]/g, (c) => (c === 'f' ? 'a' : 'f'))
-    );
-    if (next === f) throw new Error(`rename produced the same name for ${f}`);
+    // A deterministic hash that differs PER GENERATION, so B cannot serve A's
+    // filenames and C cannot serve A's either — see scripts/lib/stale-html-rename.mjs
+    // for how the previous transform round-tripped across two deploys (#1278).
+    const next = renameHash(f, tag);
     await rename(join(cssDir, f), join(cssDir, next));
     renames.push([f, next]);
   }
@@ -462,6 +457,22 @@ const oneGen = await retainInto(DIR_B_PRISTINE, DIR_C);
 console.log(
   `\n--- one-generation retention: C kept ${oneGen} file(s) from B-as-emitted`
 );
+// Say it directly (#1278): under one-generation retention, none of build A's
+// stylesheets may exist in C. If one does, the scenario below is not modelling a
+// burst, and the negative control would only discover that obliquely.
+{
+  const cssA = (await readdir(join(DIR_A, '_next/static/css'))).filter((f) =>
+    f.endsWith('.css')
+  );
+  const leaked = cssA.filter((f) =>
+    existsSync(join(DIR_C, '_next/static/css', f))
+  );
+  if (leaked.length)
+    throw new Error(
+      `build C still carries build A's stylesheet name(s) ${leaked.join(', ')} — the ` +
+        'simulated deploy did not rename them, so the burst cannot be modelled'
+    );
+}
 ROOT = DIR_C;
 const burstCold = await browser.newContext();
 const burstPage = await burstCold.newPage();
