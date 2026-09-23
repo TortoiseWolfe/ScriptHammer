@@ -25,6 +25,13 @@ export default defineConfig({
       'scripts/**/*.test.js', // Exclude Node.js test runner tests
       'scripts/__tests__/**', // Exclude all script tests
       'tests/e2e/**', // Exclude Playwright E2E tests
+      // EVERY Playwright directory must be listed here, not just tests/e2e (#1209).
+      // A Playwright spec collected by Vitest fails with "did not expect
+      // test.beforeEach() to be called here", which names neither the runner nor the
+      // directory — it reads like a duplicate @playwright/test install. The #1209 probe
+      // lives outside tests/e2e deliberately (playwright-env-forwarding.test.js walks
+      // that tree), so it needed its own line. Pinned by playwright-dirs-excluded.test.js.
+      'tests/idb/**', // Playwright: IndexedDB capability probe
       'supabase/functions/**', // Deno Edge Function tests — run via `deno test`, not Vitest
       '**/.component-backup-*/**', // Exclude backup directories
       // Exclude intentional TDD placeholder tests (not yet implemented)
