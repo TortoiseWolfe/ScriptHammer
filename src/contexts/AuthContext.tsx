@@ -284,6 +284,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // sign-out AND the auth-token is gone/expired (we cleared it in
       // another tab, or the refresh token was revoked server-side).
       if (_event === 'SIGNED_OUT' && !isLocalSignOut.current) {
+        // The session ended somewhere else — revoked, expired, or another tab.
+        // That is precisely when this device must stop being able to decrypt,
+        // so the private key goes BEFORE any decision about redirecting (#1257).
+        // A protection, so it runs on every route including the callback page:
+        // no key stored there is a no-op; a key stored there is a stale device.
+        try {
+          const { keyManagementService } = await import(
+            '@/services/messaging/key-service'
+          );
+          keyManagementService.clearKeys();
+        } catch (error) {
+          logger.error('Failed to clear encryption keys on remote sign-out', {
+            error,
+          });
+        }
         // Never hijack the confirmation/OAuth landing page: during email
         // confirmation no auth-token exists yet, so a transient SIGNED_OUT
         // passes the validity guard above — and the callback page owns its

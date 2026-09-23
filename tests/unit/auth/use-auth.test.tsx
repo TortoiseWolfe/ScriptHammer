@@ -7,6 +7,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 
 // Mock Supabase client first (this needs to be hoisted)
+// AuthContext imports the key service lazily; a module mock covers the dynamic
+// import too, so clearKeys() can be asserted without loading real crypto (#1257).
+vi.mock('@/services/messaging/key-service', () => ({
+  keyManagementService: { clearKeys: vi.fn() },
+}));
+
 vi.mock('@/lib/supabase/client', () => {
   const mockAuth = {
     getSession: vi.fn(() =>
@@ -394,5 +400,84 @@ describe('useAuth', () => {
 
       expect(loc.href).toBe(hrefBefore);
     });
+  });
+});
+
+describe('encryption keys on sign-out (#1257)', () => {
+  // Same jsdom location stub and basePath setup as the #154 block above: a
+  // "real" SIGNED_OUT is one with no sb-*-auth-token in localStorage.
+  const originalBasePath = process.env.NEXT_PUBLIC_BASE_PATH;
+  const stubLocation = (pathname: string) => {
+    Object.defineProperty(window, 'location', {
+      value: {
+        href: `http://localhost:3000${pathname}`,
+        origin: 'http://localhost:3000',
+        pathname,
+      },
+      writable: true,
+      configurable: true,
+    });
+    return window.location;
+  };
+  afterEach(() => {
+    if (originalBasePath === undefined)
+      delete process.env.NEXT_PUBLIC_BASE_PATH;
+    else process.env.NEXT_PUBLIC_BASE_PATH = originalBasePath;
+  });
+
+  const armCallback = () => {
+    let cb: any;
+    vi.mocked(supabase.auth.onAuthStateChange).mockImplementation(
+      (callback) => {
+        cb = callback;
+        return { data: { subscription: { unsubscribe: vi.fn() } } } as any;
+      }
+    );
+    return () => cb;
+  };
+  const clearKeys = async () =>
+    (await import('@/services/messaging/key-service')).keyManagementService
+      .clearKeys as ReturnType<typeof vi.fn>;
+
+  beforeEach(async () => {
+    process.env.NEXT_PUBLIC_BASE_PATH = '/RescueDogs';
+    localStorage.clear();
+    (await clearKeys()).mockClear();
+  });
+
+  it('a remote / cross-tab SIGNED_OUT clears the device private key', async () => {
+    stubLocation('/RescueDogs/profile/');
+    const getCb = armCallback();
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await getCb()('SIGNED_OUT', null);
+
+    expect(await clearKeys()).toHaveBeenCalledTimes(1);
+  });
+
+  it('clears the key on the auth callback page too, while still not redirecting', async () => {
+    const loc = stubLocation('/RescueDogs/auth/callback/');
+    const getCb = armCallback();
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await getCb()('SIGNED_OUT', null);
+
+    expect(await clearKeys()).toHaveBeenCalledTimes(1);
+    // Unchanged from the stub: no redirect happened.
+    expect(loc.href).toBe('http://localhost:3000/RescueDogs/auth/callback/');
+  });
+
+  it('CONTROL: the local sign-out path still clears the key', async () => {
+    stubLocation('/RescueDogs/profile/');
+    const getCb = armCallback();
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await result.current.signOut(); // marks the sign-out as local
+    await getCb()('SIGNED_OUT', null);
+
+    expect(await clearKeys()).toHaveBeenCalledTimes(1);
   });
 });
