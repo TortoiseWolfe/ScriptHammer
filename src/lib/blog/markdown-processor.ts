@@ -1,6 +1,4 @@
 import matter from 'gray-matter';
-import Markdown from 'markdown-to-jsx';
-import { createElement } from 'react';
 import {
   blogHeadingDemotion,
   generateBlogHeadingId,
@@ -284,31 +282,6 @@ export class MarkdownProcessor {
   /**
    * Create React component from markdown
    */
-  renderToReact(markdown: string, options?: any) {
-    const { content } = matter(markdown);
-    return createElement(Markdown, {
-      options: {
-        ...options,
-        overrides: {
-          // Custom component overrides
-          a: {
-            component: 'a',
-            props: {
-              target: '_blank',
-              rel: 'noopener noreferrer',
-            },
-          },
-          img: {
-            component: 'img',
-            props: {
-              loading: 'lazy',
-            },
-          },
-        },
-      },
-      children: content,
-    });
-  }
 }
 
 // Export singleton instance

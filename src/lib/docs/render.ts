@@ -10,11 +10,12 @@ import rehypeSlug from 'rehype-slug';
 /**
  * Markdown → HTML for `/docs` (#380).
  *
- * NOT `src/lib/blog/markdown-processor.ts`. That is a hand-rolled regex
- * processor and, measured, it renders neither tables nor blockquotes — a table
- * comes out as `<p>| Col A | Col B | | --- | --- |</p>`. The seven documents
- * behind this route carry **194 table rows** between them, and tables are most
- * of what makes reference docs useful.
+ * NOT `src/lib/blog/markdown-processor.ts`. That used to be a hand-rolled regex
+ * processor that rendered neither tables nor blockquotes; it now delegates to
+ * `src/lib/blog/render.ts` (remark-gfm → rehype-sanitize, #1265), but it is
+ * shaped for BLOG posts — heading nonces, a sanitizer schema, Prism classes —
+ * and the seven documents behind this route are trusted repo files that want
+ * plain GFM with their **194 table rows** intact.
  *
  * `remark-gfm` supplies tables. The whole unified stack was already a direct
  * dependency of this repo with no importer, so this adds no package — only a
