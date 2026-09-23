@@ -59,8 +59,11 @@ function makeBuilder() {
   }));
   return b;
 }
+// One shared spy, so a test can assert that NO query was issued (#1242). A fresh
+// vi.fn per call would make that assertion unobservable, and therefore vacuous.
+const msgFrom = vi.fn(() => makeBuilder());
 vi.mock('@/lib/supabase/messaging-client', () => ({
-  createMessagingClient: () => ({ from: vi.fn(() => makeBuilder()) }),
+  createMessagingClient: () => ({ from: msgFrom }),
 }));
 
 // --- groupKeyService: the service does `new GroupKeyService()`, so mock the
@@ -197,5 +200,49 @@ describe('GroupService membership (#26)', () => {
       await expect(svc.renameGroup(CONV, 'x')).rejects.toThrow(/signed in/i);
       await expect(svc.removeMember(CONV, OTHER)).rejects.toThrow(/signed in/i);
     });
+  });
+});
+
+describe('member id validation (#1242)', () => {
+  // A string shaped to escape the `.in.(...)` list inside getConnectedUserIds'
+  // `.or(...)` filter. createGroup already refuses it; these two paths did not.
+  const CRAFTED = `x),or(requester_id.eq.${USER}`;
+  const queries = () =>
+    msgFrom.mock.calls.length + mockSupabase.from.mock.calls.length;
+  let svc: InstanceType<typeof GroupService>;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    getUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
+    mockSupabase.from.mockImplementation(() => makeBuilder());
+    msgState.single = { data: null, error: null };
+    svc = new GroupService();
+  });
+
+  it('addMembers refuses a malformed member id before any query', async () => {
+    await expect(
+      svc.addMembers({ conversation_id: CONV, member_ids: [CRAFTED] })
+    ).rejects.toThrow(/Invalid member_ids format/);
+    expect(queries()).toBe(0);
+  });
+
+  it('upgradeToGroup refuses a malformed member id before any query', async () => {
+    await expect(
+      svc.upgradeToGroup({
+        conversation_id: CONV,
+        name: 'g',
+        member_ids: [CRAFTED],
+      })
+    ).rejects.toThrow(/Invalid member_ids format/);
+    expect(queries()).toBe(0);
+  });
+
+  it('CONTROL: a well-formed id gets past validation and the harness sees the query', async () => {
+    // Proves `queries()` can observe a query at all — otherwise the two zero
+    // assertions above would pass against a service that never validates.
+    await expect(
+      svc.addMembers({ conversation_id: CONV, member_ids: [OTHER] })
+    ).rejects.toThrow(/only a group member/i);
+    expect(queries()).toBeGreaterThan(0);
   });
 });
