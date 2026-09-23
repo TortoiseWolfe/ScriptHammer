@@ -200,7 +200,13 @@ describe('Admin Access Contract Tests', () => {
   });
 });
 
-describe('Admin RPC Shape Contract — admin caller', () => {
+// Signing in as the admin needs the password the seeder was given. There is no
+// fallback literal any more (#1246): without SEED_ADMIN_PASSWORD this block
+// skips by name rather than trying a password that must not exist.
+const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD;
+const describeAdmin = ADMIN_PASSWORD ? describe : describe.skip;
+
+describeAdmin('Admin RPC Shape Contract — admin caller', () => {
   // One client for the whole block. Each test creating its own client +
   // sign-in worked fine for the non-admin tests above (where the sign-in
   // is part of what's being proven), but here we just need a JWT that
@@ -211,7 +217,7 @@ describe('Admin RPC Shape Contract — admin caller', () => {
     admin = createClient(supabaseUrl, supabaseKey);
     const { error } = await admin.auth.signInWithPassword({
       email: process.env.SEED_ADMIN_EMAIL || 'admin@scripthammer.com',
-      password: process.env.SEED_ADMIN_PASSWORD || 'AdminPassword123!',
+      password: ADMIN_PASSWORD as string,
     });
     if (error) {
       throw new Error(
