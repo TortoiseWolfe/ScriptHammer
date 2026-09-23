@@ -28,11 +28,6 @@ describe('AuthorProfile Accessibility', () => {
     expect(results).toHaveNoViolations();
   });
 
-  it('should have proper ARIA attributes', () => {
-    const { container } = render(<AuthorProfile author={mockAuthor} />);
-    // Add specific tests
-  });
-
   it('should be keyboard navigable', () => {
     const { container } = render(<AuthorProfile author={mockAuthor} />);
     const focusableElements = container.querySelectorAll(

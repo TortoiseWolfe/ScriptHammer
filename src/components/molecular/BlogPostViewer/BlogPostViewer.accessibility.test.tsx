@@ -37,11 +37,6 @@ describe('BlogPostViewer Accessibility', () => {
     expect(results).toHaveNoViolations();
   });
 
-  it('should have proper ARIA attributes', () => {
-    const { container } = render(<BlogPostViewer post={mockPost} />);
-    // Add specific tests
-  });
-
   it('should be keyboard navigable', () => {
     const { container } = render(<BlogPostViewer post={mockPost} />);
     const focusableElements = container.querySelectorAll(

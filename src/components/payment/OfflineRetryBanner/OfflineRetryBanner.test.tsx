@@ -84,11 +84,10 @@ describe('OfflineRetryBanner', () => {
   it('survives a getCount rejection without throwing', async () => {
     setOnline(false);
     getCountMock.mockRejectedValue(new Error('IndexedDB locked'));
-    render(<OfflineRetryBanner />);
+    const { container } = render(<OfflineRetryBanner />);
     await waitFor(() => expect(getCountMock).toHaveBeenCalled());
-    // Component still renders something; specifically, online + count=0
-    // is the steady state, so the banner is null. The test passes if
-    // render didn't throw.
-    expect(true).toBe(true);
+    // The rejection is swallowed and the count falls back to 0, which with
+    // online === false is the steady state where the banner renders nothing.
+    expect(container.firstChild).toBeNull();
   });
 });
