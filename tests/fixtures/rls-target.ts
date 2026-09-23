@@ -19,6 +19,11 @@
  * here went to production. So the decision is made on the URL the suite actually uses.
  *
  * It REFUSES rather than skips. A skipped security suite reads exactly like a passing one.
+ *
+ * The message deliberately does not start with a bracketed tag. Tailwind scans this
+ * repository wholesale — comments included — and reads a square-bracketed `name:value` as an
+ * arbitrary-property class, so such a tag here shipped as a production CSS rule and moved a
+ * stylesheet hash (#1279). Do not spell the pattern out in this comment either.
  */
 import { decide, type SupabaseEnv } from '../../scripts/lib/supabase-target';
 
@@ -35,7 +40,7 @@ export function assertRlsTargetApproved(env: SupabaseEnv = process.env): void {
   const { allowed, target, reason } = rlsTargetDecision(env);
   if (allowed) return;
   throw new Error(
-    `[test:rls] REFUSING to run against ${target?.url ?? '(no URL)'}: ${reason}. ` +
+    `test:rls REFUSING to run against ${target?.url ?? '(no URL)'}: ${reason}. ` +
       'This suite creates and deletes users with the service-role key. Point ' +
       'NEXT_PUBLIC_SUPABASE_URL at a local stack (`docker compose --profile supabase up`), ' +
       'or — only if you mean it — set ALLOW_REMOTE_SUPABASE to that exact hostname.'
