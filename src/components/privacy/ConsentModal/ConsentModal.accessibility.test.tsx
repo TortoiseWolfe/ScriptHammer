@@ -25,9 +25,4 @@ describe('ConsentModal Accessibility', () => {
     const { container } = renderComponent();
     expect(container).toBeInTheDocument();
   });
-
-  it('should be accessible', () => {
-    // Placeholder test - actual modal accessibility is tested in integration tests
-    expect(true).toBe(true);
-  });
 });

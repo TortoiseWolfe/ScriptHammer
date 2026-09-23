@@ -25,9 +25,4 @@ describe('PrivacyControls Accessibility', () => {
     const { container } = renderComponent();
     expect(container).toBeInTheDocument();
   });
-
-  it('should be accessible', () => {
-    // Placeholder test - actual accessibility is tested in integration tests
-    expect(true).toBe(true);
-  });
 });
