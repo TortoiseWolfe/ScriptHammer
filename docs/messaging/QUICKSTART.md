@@ -284,6 +284,25 @@ await supabase.from('messages').insert({
 
 ### 2. Offline Queue
 
+> **Adding an attachment? WebKit cannot store a `Blob` or a `File` in IndexedDB.**
+> It works in Chromium and Firefox and fails silently on iOS: the write transaction
+> fires `onerror` with a **null `tx.error`**, `put()` does not throw, and
+> `fake-indexeddb` does not faithfully clone binary either — so unit tests, local
+> development and most of CI all stay green. Store `ArrayBuffer` plus the MIME type
+> and rebuild the Blob on read:
+>
+> ```ts
+> // write
+> { bytes: await blobToArrayBuffer(blob), type: blob.type || 'application/octet-stream' }
+> // read
+> new Blob([row.bytes], { type: row.type })
+> ```
+>
+> `Blob.prototype.arrayBuffer` is absent in jsdom and in older Safari, so the write
+> path needs a `FileReader` fallback or it throws, stores nothing, and still passes
+> every test. Nothing in this template persists binary today — this is recorded
+> before a fork hits it (#1209). Measured on `webkit-2203`, not inferred.
+
 Messages sent while offline are queued and automatically synced on reconnection:
 
 ```typescript

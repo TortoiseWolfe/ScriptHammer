@@ -1,0 +1,68 @@
+# Cross-browser IndexedDB binary-storage capability probe (#1209).
+#
+# WebKit cannot store a `Blob` or a `File` in IndexedDB. Nothing in this template persists
+# binary client-side today, so this guards a CONSTRAINT rather than a bug: the moment a
+# fork queues an attachment, the offline queue works in Chromium and Firefox and fails
+# silently on iOS. The write transaction fires `onerror` with a NULL `tx.error`, `put()`
+# does not throw, and `fake-indexeddb` does not faithfully clone binary either — so a unit
+# suite, local development and most of CI all stay green.
+#
+# WHAT IT ASSERTS. That the shape `src/lib/offline-queue/types.ts` recommends —
+# `ArrayBuffer` + MIME type, rebuilt into a Blob on read — round-trips on all three
+# engines. If that ever stops being true the recommendation is wrong, and this goes red.
+#
+# WHAT IT ONLY REPORTS. Whether a raw Blob survives, per engine, printed and annotated but
+# never asserted. Pinning "webkit fails" would turn a future WebKit fix into a red build;
+# pinning "webkit succeeds" fails today. The record is the value, not the gate.
+#
+# NOT A REQUIRED CHECK, and not proposed as one. The seven required contexts are listed in
+# CLAUDE.md and pinned by scripts/__tests__/required-checks-documented.test.js; adding an
+# eighth is a branch-protection change with its own decision. This is cheap (~4s of
+# browser time) and advisory.
+#
+# No Supabase, no build, no app server: the spec drives a synthetic intercepted origin, so
+# it measures the browser and nothing else.
+
+name: IndexedDB Capability
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: idb-capability-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: IndexedDB binary storage (chromium, firefox, webkit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.16.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Through the shared runner, never `playwright install --with-deps`: the browsers
+      # already ship in the image, and scripts/__tests__/playwright-runs-from-image.test.js
+      # fails on any workflow that installs them or invokes `playwright test` directly.
+      - name: Probe IndexedDB binary storage
+        run: scripts/ci/playwright-in-container.sh test --config playwright.idb.config.ts
