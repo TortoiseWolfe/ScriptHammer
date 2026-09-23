@@ -207,6 +207,7 @@
     "dotenv": "^17.2.2",
     "eslint": "^9.35.0",
     "eslint-config-next": "15.5.9",
+    "eslint-plugin-react-hooks": "5.2.0",
     "eslint-plugin-storybook": "^10.2.8",
     "fake-indexeddb": "^6.2.2",
     "geotiff": "^3.0.5",
