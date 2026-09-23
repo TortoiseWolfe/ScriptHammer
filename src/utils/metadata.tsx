@@ -1,3 +1,4 @@
+import { jsonForScript } from './json-script';
 import type { Metadata } from 'next';
 import { projectConfig } from '@/config/project.config';
 
@@ -269,7 +270,7 @@ export function JsonLdScript({ data }: { data: Record<string, unknown> }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: jsonForScript(data) }}
     />
   );
 }

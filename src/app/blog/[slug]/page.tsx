@@ -1,3 +1,4 @@
+import { jsonForScript } from '@/utils/json-script';
 import { notFound } from 'next/navigation';
 import BlogPostPageClient from './BlogPostPageClient';
 import { markdownProcessor } from '@/lib/blog/markdown-processor';
@@ -233,7 +234,7 @@ export default async function BlogPostPage({
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonForScript(jsonLd) }}
       />
       <BlogPostPageClient
         post={post}
