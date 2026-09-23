@@ -106,7 +106,13 @@ jobs:
           NEXT_PUBLIC_PAYPAL_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_PAYPAL_CLIENT_ID }}
           NEXT_PUBLIC_PROJECT_NAME: ${{ vars.NEXT_PUBLIC_PROJECT_NAME }}
           NEXT_PUBLIC_PROJECT_OWNER: ${{ vars.NEXT_PUBLIC_PROJECT_OWNER }}
-          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+          # A Sentry DSN is a PUBLIC client key — it ships in the browser bundle, and
+          # src/lib/monitoring/sentry.ts:24 says so in as many words. Filing it under
+          # Secrets bought no secrecy (the value is served to every visitor) and cost
+          # auditability: a write-only store cannot be read back, so nobody can tell
+          # whether it is set, or to what, without a deploy. Same shape as #629, where
+          # the Supabase pair being on the wrong tab shipped a bundle with no backend.
+          NEXT_PUBLIC_SENTRY_DSN: ${{ vars.NEXT_PUBLIC_SENTRY_DSN }}
           NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL }}
           # (#917) twitter:site attribution. Missing from EVERY page without this line.
           NEXT_PUBLIC_SITE_TWITTER_HANDLE: ${{ vars.NEXT_PUBLIC_SITE_TWITTER_HANDLE }}
