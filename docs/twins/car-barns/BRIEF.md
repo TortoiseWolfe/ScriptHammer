@@ -70,13 +70,20 @@ The source for most rows is B25 LiDAR, `R/carbarns-synth/lidar_end_wall_profiles
 | End walls: tall piers flanking the raised part | Market 10.7, Broad 10.3         | 35 / 34     | LiDAR                                                                       |
 | End walls: low end sections                    | 9.0                             | 29.5        | LiDAR                                                                       |
 | End walls: stub piers and corner piers         | 9.5-10.1                        | 31-33       | LiDAR                                                                       |
-| Chimney top                                    | 13.0-13.6                       | 43-44.5     | LiDAR; photo 6 gives about 13 m                                             |
+| Chimney top, 2025                              | 13.6                            | 44.5        | LiDAR (219.44 m NAVD88)                                                     |
+| Chimney top, 1978                              | about 14.5                      | about 47.5  | Photo 6's solved camera: 0.9-1.0 m above the 2025 LiDAR (§8)                |
 | Car door openings                              | 12 ft wide x 16 ft high nominal |             | NRHP. Photo 3 measures 12.0-12.3 ft wide, and D3 about 15.9 ft high         |
 | Lintel course over the doors                   | about 4.9                       | about 16    | NRHP "directly above"; photo 3                                              |
 | Corbelled round-arch course                    | about 5.5-6.0                   | about 18-20 | NRHP "some two feet above"; photo 3 estimate                                |
 | Ground floor, clear                            |                                 | 20          | Assessor "FA H=20"                                                          |
 | Basement, clear                                |                                 | 10          | Assessor "BMD H=10"                                                         |
 | Bus-wash wing top                              | about 4.9-5.3                   | about 16-17 | Photo 6 estimate (_inferred_)                                               |
+
+**The LiDAR parapet profile is simplified; model the silhouette from the photo-matched scenes.** `cb004-archival.skp` has one camera-matched page per solved photo (photos 3 and 6, and the 2010 photo). In three rounds of blind visual review, both reviewers found the same three differences between the measured profile and the photographs, on both end walls. The cameras themselves line up: the corners match within a few pixels.
+
+- **Scroll shoulders, not square steps.** The tall piers flare out in curved scroll (ogee) shoulders at their base (§0, item 2). The measured profile draws each step as a vertical at the scroll's foot, so the tall central piers come out too wide.
+- **The first step from each corner is misplaced.** The low coping between the corner pier and the first tall pier sits lower than the measured line.
+- **Narrow pier caps read low.** The corner and stub piers' stone caps stand above the LiDAR tops. Photo 6's camera draws the SW corner-pier top 12 px below the clicked cap, a 3-sigma residual. The reviewers saw corner caps 10-30 px above the drawn tops in every round. LiDAR under-reads narrow piers.
 
 ## 4. Elevations
 
@@ -184,10 +191,10 @@ Sources are photos 5 and 6, the 1975 plan (employee parking against this wall) a
 ## 8. SW chimney and the 1955 bus-wash wing
 
 - **Chimney:** tall, square, brick, with a slight corbelled cap (photos 5 and 6).
-  - Size about **2 x 2 m** (6.5 ft); top at about **13.0-13.6 m** above the sidewalk.
+  - Size about **2 x 2 m** (6.5 ft); top at about **13.6 m** above the sidewalk in 2025 and about **14.5 m** in 1978 (below).
   - **Position:** built into the Broad (west) wall, **3.8-5.7 m north of the SW corner**, with its centre about 1.5 m east of the Broad face and 4.75 m north of the south face ([massing_spec.json](massing_spec.json) `chimney`). Top 219.44 m NAVD88, 13.6 m above the SW-corner grade. The 1975 plan draws it a little further south, and the LiDAR wins.
   - The same corner is marked "Black Sm." in 1917 and "Heater Rm Bst" in 1950/55, so it is probably the forge or boiler flue (_inferred_).
-  - It stood in both 1978 and 2025.
+  - It stood in both 1978 and 2025, but **it was about 1 m taller in 1978.** Photo 6 is the only solved view of the chimney top, and its camera puts the top 0.90-1.01 m above the 2025 LiDAR (the coarse and final solves' free-height fits; three cap corners were clicked). Both first-round visual reviewers saw the real top 20-27 px above the drawn one, and the photo-matched SketchUp scene for photo 6 (`cb004-archival.skp`) shows the corbelled cap rising clear of the LiDAR box. Model the 1978 top at about **220.4 m NAVD88, about 14.5 m above SW-corner grade**. It was probably cut down after 1978 (_inferred_). The camera solves let the chimney's 1978 height float and pin only its position (owner decision, 2026-09-24).
 - **Bus-wash wing (1953 per Sanborn; NRHP says 1955):** brick walls, concrete floor and roof, fireproof (Sanborn). one storey, flat roof, attached to the **south** face at the **Broad** end, with its west face flush with the Broad elevation.
   - **Size** from three sources: NRHP "14' x 52'"; 1975 plan 17.6 x 52.8 ft outside (labelled "STEAM"); 1955 Sanborn about 18 x 50 ("BUS WASHING"). Use **about 16 ft N-S x 52 ft E-W**, about 16 ft high.
   - **Openings:** a drive-through vehicle bay at each end, facing Broad (photo 6) and facing east into the yard (photo 5). Three large steel industrial windows on the south face (photo 6).
@@ -214,7 +221,7 @@ The 1975 plan (`R/adv-check-carbarns-geo/nom-9.jpg`, `nomhi-9.jpg`; Selmon T. Fr
 - **1997 office on lot 2**, built against the south wall east of about x -59 m. In 2025 it hides most of the south elevation. The twin's baked office overlaps the barn by 4-5.6 m (round-1 verdict).
 - **Removal of the wash wing** before 2008 (_inferred_).
 - **North of 3rd:** the 1906 office and the 1926 garage were gone by 2008 (round 1).
-- **B25 LiDAR (2025) differences from 1978:** no wing, and altered openings. Parapets, roof and chimney are the same.
+- **B25 LiDAR (2025) differences from 1978:** no wing, altered openings, and a chimney about 1 m shorter (§8). Parapets and roof are the same.
 
 ## 11. Demolition status (as of 2026-09-23)
 

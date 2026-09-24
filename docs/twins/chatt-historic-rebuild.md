@@ -35,6 +35,18 @@ dossier ─► measured shell ─► SketchUp scaffold ─► owner models it �
    Fit the footprint, rotation, grade, roof plane and parapet profile. For the Car Barns this is [car-barns/massing_spec.json](car-barns/massing_spec.json).
 
 4. **SketchUp scaffold** through the site pipeline in the owner's `ada-stair-generator` repo, which is private. That pipeline already fits LiDAR shells, solves cameras, gates quality (G0–G6) and keeps read-only `.skp` waypoints it calls _spawn points_. Each building is a site there (`data/sites/<slug>/site.json`, see its `docs/house/NEW-ADDRESS.md`). The Car Barns is `data/sites/chattanooga-car-barns/`, and its `carbarns_scaffold` step builds the starter model (`cb001-scaffold.skp`: footprint, LiDAR massing, end parapets, chimney, 1978 doors, column grid, wash wing, grade and north, on eight `CB ref` layers). A site can ship its own step file, `src/sketchup/site_steps_<site>.rb`, without editing the shared `site_steps.rb`. For a **demolished** building, the Street View stages do not apply: the Static API serves only the newest capture, which shows a construction site, and Google imagery is excluded anyway. They are replaced by archival-photo camera solves, controlled by LiDAR corners.
+
+   **Photo-matched scenes (the archival stage).** This is a repeatable pipeline stage, A0–A9 in ada's `docs/house/ARCHIVAL-PHOTOS-RUNBOOK.md`, so any demolished or photo-only building can run it. It turns each archival photo into a solved camera and a SketchUp page:
+   - **Intake** registers each photo with its sha and licence use.
+   - **Two blind annotators** name the LiDAR-measured corners, parapet steps and wall tops in each photo, then click them to the pixel. A planted feature proves each annotator is looking.
+   - **A resection solve** finds each camera, with χ²-scaled uncertainties, held-out check points and eight gates (AC0–AC7).
+   - **Two blind reviewers** judge each camera's overlay. A planted wrong camera proves they are looking.
+   - **The `archival_scenes` step** adds one page per photo. The photo sits on its own `SH_AP` layer as a camera-matched backdrop. SketchUp's own projection of the control must land within half a pixel of the solver's (AS1).
+   - **The owner** then models openings and details by eye against the photo. Every camera states how far a point read off each wall can be trusted, along the wall and in height.
+   - **The owner accepts** the cameras and the model: a camera that fails a gate is accepted only for its exact solution.
+
+   The Car Barns' results and accuracy are on #1290.
+
 5. **The owner models the building by hand** over the scaffold, in true-north metres, with the origin on a surveyed corner. Model it axis-aligned and record the rotation as `yawDeg`. Faces go white side out, because the twin renders single-sided. No ground plane, and no basement: the model is seated on the terrain by its lowest point.
 6. **Export** COLLADA, then run `docker compose exec scripthammer node scripts/house/convert-scan.mjs --dae <file.dae> --out <slug>.glb`. It prints the bounding box in metres; check it against the measured footprint. Budget: 24k LOD0 triangles, 3 MB, 8 materials, 2 textures (`scripts/warehouse/__tests__/budget.test.ts`).
 7. **Into the twin**, using the replace-a-slot recipe [below](#replacing-a-warehouse-slot). Verify in `/chatt/?diorama&walk`, which is the only renderer that draws models today.
@@ -44,7 +56,7 @@ dossier ─► measured shell ─► SketchUp scaffold ─► owner models it �
 The point is to cure #714, not to swap it for a different licence problem. The rules below come from a licence review of each input, done 2026-09-23. It is not legal advice.
 
 - **Derive geometry only from public-domain inputs:** USGS 3DEP LiDAR and DEMs, Library of Congress Sanborn maps, NAIP and USGS historical aerials, HABS/HAER drawings, and **the owner's own photographs**. Photos of buildings visible from a public place are fine to take and use (17 USC 120(a)).
-- **Measure, never trace or texture,** from everything else: NRHP nomination photos (third-party work, not federal), Wikimedia Commons (CC BY-SA), Flickr, Mapillary and KartaView (BY-SA), Hamilton County and TDOT imagery and vectors (no licence stated), and OpenStreetMap (ODbL). Taking a dimension from a photo is not an adaptation of it; baking the photo into a texture is.
+- **Measure, never trace or texture,** from everything else: NRHP nomination photos (third-party work, not federal), Wikimedia Commons (CC BY-SA), Flickr, Mapillary and KartaView (BY-SA), Hamilton County and TDOT imagery and vectors (no licence stated), and OpenStreetMap (ODbL). Taking a dimension from a photo is not an adaptation of it; baking the photo into a texture is. **Measure-only photos may be shown as camera-matched backdrops for positioning.** A solved scene is a measuring instrument. They are never traced into outlines, never textured, never exported and never committed.
 - **Excluded from modelling:**
   - Google Street View, Google Earth and Google satellite imagery. Google's Geo Guidelines forbid "digitizing or tracing" from Street View and using Earth output "to reconstruct 3D models". Viewing them to decide _where to look_ is not modelling; putting them in a Match Photo scene is.
   - SketchUp Photo Textures and Add Location imagery. The EULA bars them from "mapping or geographic" apps, the same clause as #714.
