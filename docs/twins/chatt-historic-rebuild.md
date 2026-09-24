@@ -143,6 +143,8 @@ This is where to look for context on any building downtown. Each building's own 
 
 [chatt-historic-backlog.md](chatt-historic-backlog.md) holds all 215 buildings: **59 tier A** (NRHP-listed or named landmark), **82 B**, **20 C** and **54 D**, plus 31 non-buildings. Each row gives the Warehouse slug(s) it replaces, an OpenStreetMap link and 1–4 sources. 13 buildings are demolished and can only be modelled from archival evidence; 38 have no model today. It is generated from the research JSON, not hand-typed: to change a row, correct it there and say so in the building's issue.
 
+**[chatt-historic-route.md](chatt-historic-route.md) is the order of work.** It covers the passes each building gets, the detail budget that keeps the city game fast, and next: the four river bridges.
+
 **Ranks 1–3 are one place.** The 1886 Car Barns building (demolished), R.H. Hunt's 1907 trolley barn across W 3rd (standing, and becoming a Mast General Store in spring 2027, so photograph it **before the renovation**), and the Car Barns' 1906 office wing (gone). After those, each tier is ordered by distance from the spawn.
 
 ## Building #1: the Chattanooga Car Barns
