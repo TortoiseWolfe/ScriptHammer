@@ -133,7 +133,7 @@
   "palette": "toy",
   "day": 0.4,
   "framing": {
-    "homeFocus": [-100, 0, -2000]
+    "homeFocus": [-150.73, 0, -2177.43]
   },
   "drapeSource": "tnmap",
   "vectorOffsetM": {
