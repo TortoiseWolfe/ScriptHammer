@@ -1482,7 +1482,7 @@ AS $$
   -- purpose: CREATE OR REPLACE with the same arguments keeps the ACL and adds no new overload.
   SELECT CASE
     WHEN check_user_id IS NOT DISTINCT FROM auth.uid()
-      OR auth.role() = 'service_role'
+      OR auth.role() IS NOT DISTINCT FROM 'service_role'
       OR EXISTS (SELECT 1 FROM user_profiles WHERE id = auth.uid() AND is_admin)
     THEN COALESCE((SELECT is_admin FROM user_profiles WHERE id = check_user_id), false)
     ELSE false
@@ -3937,7 +3937,11 @@ AS $$
   -- Answers only about the caller (or for the service role), for the same reason as is_admin
   -- (#1245): with any check_user_id it was a membership oracle. Signature unchanged, so the ACL
   -- and every policy that calls it with the default auth.uid() are untouched.
-  SELECT (check_user_id IS NOT DISTINCT FROM auth.uid() OR auth.role() = 'service_role')
+  -- Two-valued on purpose: with no JWT claims (Management API, cron) `x = 'service_role'` is
+  -- NULL, and `(false OR NULL) AND EXISTS` returned NULL — which a plpgsql IF would silently
+  -- treat as "not false". IS NOT DISTINCT FROM keeps the answer true or false (#1245 review).
+  SELECT (check_user_id IS NOT DISTINCT FROM auth.uid()
+          OR auth.role() IS NOT DISTINCT FROM 'service_role')
     AND EXISTS (
     SELECT 1 FROM conversation_members
     WHERE conversation_id = conv_id
@@ -3957,7 +3961,11 @@ AS $$
   -- Answers only about the caller (or for the service role), for the same reason as is_admin
   -- (#1245): with any check_user_id it was a membership oracle. Signature unchanged, so the ACL
   -- and every policy that calls it with the default auth.uid() are untouched.
-  SELECT (check_user_id IS NOT DISTINCT FROM auth.uid() OR auth.role() = 'service_role')
+  -- Two-valued on purpose: with no JWT claims (Management API, cron) `x = 'service_role'` is
+  -- NULL, and `(false OR NULL) AND EXISTS` returned NULL — which a plpgsql IF would silently
+  -- treat as "not false". IS NOT DISTINCT FROM keeps the answer true or false (#1245 review).
+  SELECT (check_user_id IS NOT DISTINCT FROM auth.uid()
+          OR auth.role() IS NOT DISTINCT FROM 'service_role')
     AND EXISTS (
     SELECT 1 FROM conversation_members
     WHERE conversation_id = conv_id
@@ -3986,7 +3994,11 @@ AS $$
   -- Answers only about the caller (or for the service role), for the same reason as is_admin
   -- (#1245): with any check_user_id it was a membership oracle. Signature unchanged, so the ACL
   -- and every policy that calls it with the default auth.uid() are untouched.
-  SELECT (check_user_id IS NOT DISTINCT FROM auth.uid() OR auth.role() = 'service_role')
+  -- Two-valued on purpose: with no JWT claims (Management API, cron) `x = 'service_role'` is
+  -- NULL, and `(false OR NULL) AND EXISTS` returned NULL — which a plpgsql IF would silently
+  -- treat as "not false". IS NOT DISTINCT FROM keeps the answer true or false (#1245 review).
+  SELECT (check_user_id IS NOT DISTINCT FROM auth.uid()
+          OR auth.role() IS NOT DISTINCT FROM 'service_role')
     AND EXISTS (
     SELECT 1 FROM conversations
     WHERE id = conv_id

@@ -515,5 +515,23 @@ describe.skipIf(!hasRlsTestEnvironment())(
         expect(sixth.data?.allowed).toBe(false);
       });
     });
+
+    describe('the guards answer true or false, never NULL, without JWT claims (#1245 review)', () => {
+      it('a caller with no claims (Management API, cron) gets a definite false for someone else', async () => {
+        const db = new Client(DB);
+        await db.connect();
+        try {
+          const { rows } = await db.query(
+            `select is_conversation_member($1, $2) as m, is_conversation_owner($1, $2) as o,
+                    is_conversation_creator($1, $2) as c, is_admin($2) as a`,
+            [groupId, bob.id]
+          );
+          // NULL here is what a plpgsql `IF NOT is_conversation_member(...) THEN RAISE` skips.
+          expect(rows[0]).toEqual({ m: false, o: false, c: false, a: false });
+        } finally {
+          await db.end();
+        }
+      });
+    });
   }
 );
