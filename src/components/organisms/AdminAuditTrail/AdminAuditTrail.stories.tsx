@@ -10,7 +10,6 @@ const mockStats: AdminAuthStats = {
   logins_today: 28,
   failed_this_week: 5,
   signups_this_month: 12,
-  rate_limited_users: 2,
   top_failed_logins: [],
 };
 
@@ -94,7 +93,6 @@ export const Empty: Story = {
       logins_today: 0,
       failed_this_week: 0,
       signups_this_month: 0,
-      rate_limited_users: 0,
       top_failed_logins: [],
     },
     events: [],

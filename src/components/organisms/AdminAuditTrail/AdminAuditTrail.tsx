@@ -141,7 +141,7 @@ export function AdminAuditTrail({
         <h2 id="audit-stats-heading" className="mb-4 text-xl font-semibold">
           Authentication Statistics
         </h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <AdminStatCard
             label="Logins Today"
             value={stats?.logins_today ?? 0}
@@ -152,11 +152,6 @@ export function AdminAuditTrail({
             value={stats?.failed_this_week ?? 0}
             trend={stats && stats.failed_this_week > 0 ? 'down' : undefined}
             testId="stat-failed-week"
-          />
-          <AdminStatCard
-            label="Rate Limited"
-            value={stats?.rate_limited_users ?? 0}
-            testId="stat-rate-limited"
           />
           <AdminStatCard
             label="Signups (30d)"

@@ -62,7 +62,6 @@ const healthyOverview: AdminOverview = {
     logins_today: 28,
     failed_this_week: 5,
     signups_this_month: 12,
-    rate_limited_users: 0,
     top_failed_logins: [],
   },
   users: {
@@ -102,8 +101,7 @@ const noisyOverview: AdminOverview = {
   },
   auth: {
     ...healthyOverview.auth,
-    rate_limited_users: 3, // present-tense lockout → alert
-    failed_this_week: 42,
+    failed_this_week: 64, // a credential list being tried → alert
   },
 };
 

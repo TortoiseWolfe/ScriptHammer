@@ -4,7 +4,6 @@ export interface AdminAuthStats {
   logins_today: number;
   failed_this_week: number;
   signups_this_month: number;
-  rate_limited_users: number;
   top_failed_logins: { user_id: string; attempts: number }[];
 }
 

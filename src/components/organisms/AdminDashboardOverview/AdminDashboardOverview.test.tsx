@@ -22,7 +22,6 @@ const healthyOverview: AdminOverview = {
     logins_today: 28,
     failed_this_week: 5,
     signups_this_month: 12,
-    rate_limited_users: 0,
     top_failed_logins: [],
   },
   users: {
@@ -91,7 +90,6 @@ describe('AdminDashboardOverview', () => {
     expect(screen.getByTestId('stat-total-payments')).toBeInTheDocument();
     expect(screen.getByText('Active Subscriptions')).toBeInTheDocument();
     expect(screen.getByText('Logins Today')).toBeInTheDocument();
-    expect(screen.getByText('Rate Limited')).toBeInTheDocument();
     expect(screen.getByText('New Signups 30d')).toBeInTheDocument();
     expect(screen.getByText('Total Users')).toBeInTheDocument();
     expect(screen.getByText('Active This Week')).toBeInTheDocument();
@@ -261,14 +259,29 @@ describe('AdminDashboardOverview', () => {
       expect(screen.queryByTestId('attention-banner')).not.toBeInTheDocument();
     });
 
-    it('treats any rate-limited user as alert', () => {
+    it('shows no lockout tile, and lets an odd last card take its row (#1285)', () => {
+      render(<AdminDashboardOverview overview={healthyOverview} />);
+      expect(screen.queryByText('Rate Limited')).not.toBeInTheDocument();
+      // Auth now has three cards in a two-column grid: the last spans the row
+      // instead of leaving a hole, and the others stay single-width.
+      expect(screen.getByTestId('stat-signups')).toHaveClass('col-span-2');
+      expect(screen.getByTestId('stat-logins-today')).not.toHaveClass(
+        'col-span-2'
+      );
+      // CONTROL: a four-card domain spans nothing.
+      expect(screen.getByTestId('stat-total-payments')).not.toHaveClass(
+        'col-span-2'
+      );
+    });
+
+    it('treats 50 or more failed logins in a week as alert', () => {
       const ov: AdminOverview = {
         ...healthyOverview,
-        auth: { ...healthyOverview.auth, rate_limited_users: 1 },
+        auth: { ...healthyOverview.auth, failed_this_week: 60 },
       };
       render(<AdminDashboardOverview overview={ov} />);
       expect(screen.getByTestId('attention-banner')).toHaveTextContent(
-        '1 user rate-limited right now'
+        '60 failed login attempts this week'
       );
       const section = screen
         .getAllByRole('region')
@@ -282,7 +295,7 @@ describe('AdminDashboardOverview', () => {
       const ov: AdminOverview = {
         ...healthyOverview,
         payments: { ...healthyOverview.payments, failed_this_week: 2 },
-        auth: { ...healthyOverview.auth, rate_limited_users: 3 },
+        auth: { ...healthyOverview.auth, failed_this_week: 60 },
       };
       const { container } = render(<AdminDashboardOverview overview={ov} />);
       const domains = Array.from(
@@ -295,7 +308,7 @@ describe('AdminDashboardOverview', () => {
       const ov: AdminOverview = {
         ...healthyOverview,
         payments: { ...healthyOverview.payments, failed_this_week: 2 },
-        auth: { ...healthyOverview.auth, rate_limited_users: 3 },
+        auth: { ...healthyOverview.auth, failed_this_week: 60 },
       };
       render(<AdminDashboardOverview overview={ov} />);
       const items = screen

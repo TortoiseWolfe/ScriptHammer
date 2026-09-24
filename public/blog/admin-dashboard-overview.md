@@ -134,7 +134,7 @@ async getRecentTransactions(limit = 50): Promise<PaymentActivity[]> {
 
 ### Auth Audit: Login Patterns and Security Events
 
-The auth audit domain tracks authentication events with 90-day retention. Stat cards show logins today, failed attempts this week, sign-ups this month, and the count of currently rate-limited users. A **top failed logins** list highlights user IDs with the most failed attempts — useful for identifying brute-force targets.
+The auth audit domain tracks authentication events with 90-day retention. Stat cards show logins today, failed attempts this week and sign-ups this month. A **top failed logins** list highlights user IDs with the most failed attempts — useful for identifying brute-force targets.
 
 The **event log table** displays individual audit entries: user ID, event type (sign-in, sign-up, password reset), success/failure, Internet Protocol (IP) address, and timestamp. An optional event-type filter narrows the view:
 

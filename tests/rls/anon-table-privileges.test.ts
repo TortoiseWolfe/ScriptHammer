@@ -51,8 +51,10 @@ const DB = {
  * that keeps today's code working. Several of these tables have no client query at all.
  */
 const ALLOWED: Record<string, string[]> = {
-  // A SECURITY INVOKER admin RPC reads this as the caller, so SELECT must stay.
-  rate_limit_attempts: ['SELECT'],
+  // Nothing a client runs reads it (#1285). SELECT stayed only while the SECURITY INVOKER
+  // `admin_auth_stats()` counted lockouts off it; that metric went when #1245 made sign-in
+  // lockouts impossible, and every writer is a SECURITY DEFINER function.
+  rate_limit_attempts: [],
   // `getUserAuditLogs` uses select('*'), so a column list would name every column and
   // make a later column silently invisible. Table-wide SELECT is the honest choice.
   auth_audit_logs: ['SELECT'],
@@ -122,7 +124,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
     });
 
     it('every table under test actually exists', () => {
-      // ANTI-VACUITY, and it is not decoration here. Six of the twenty role/table pairs
+      // ANTI-VACUITY, and it is not decoration here. Seven of the twenty role/table pairs
       // below expect an EMPTY privilege list, and a renamed table, a wrong schema or a
       // typo in a table name produces exactly that — so without this check those
       // assertions would pass by inspecting nothing. That failure mode is the same

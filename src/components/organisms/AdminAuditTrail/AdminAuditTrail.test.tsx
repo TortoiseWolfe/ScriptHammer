@@ -11,7 +11,6 @@ const mockStats: AdminAuthStats = {
   logins_today: 28,
   failed_this_week: 5,
   signups_this_month: 12,
-  rate_limited_users: 2,
   top_failed_logins: [],
 };
 
@@ -70,8 +69,9 @@ describe('AdminAuditTrail', () => {
     render(<AdminAuditTrail stats={mockStats} events={mockEvents} />);
     expect(screen.getByText('Logins Today')).toBeInTheDocument();
     expect(screen.getByText('Failed This Week')).toBeInTheDocument();
-    expect(screen.getByText('Rate Limited')).toBeInTheDocument();
     expect(screen.getByText('Signups (30d)')).toBeInTheDocument();
+    // #1285: no lockout tile — after #1245 there are no sign-in lockouts to count.
+    expect(screen.queryByText('Rate Limited')).not.toBeInTheDocument();
   });
 
   it('renders event table with rows', () => {

@@ -268,11 +268,8 @@ VALUES
   ('55555555-5555-5555-5555-555555555555', '11111111-1111-1111-1111-111111111102', 'sign_in_failed',  false, NULL, now() - interval '9 days')
 ON CONFLICT (id) DO NOTHING;
 
--- Rate limit entry (shows as rate_limited_users in audit stats)
-INSERT INTO rate_limit_attempts (id, identifier, attempt_type, ip_address, attempt_count, locked_until, window_start, created_at)
-VALUES
-  ('66666666-6666-6666-6666-666666666601', 'eve@demo.test', 'sign_in', NULL, 6, now() - interval '10 minutes', now() - interval '30 minutes', now() - interval '30 minutes')
-ON CONFLICT (identifier, attempt_type) DO NOTHING;
+-- No rate-limit row (#1285): the dashboard no longer counts them, and since #1245 a
+-- sign-in lockout like the one this used to depict cannot happen.
 
 -- ============================================================================
 -- 4. USER CONNECTIONS (10 connections, mixed statuses)

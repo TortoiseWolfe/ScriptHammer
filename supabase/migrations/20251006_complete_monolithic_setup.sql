@@ -1698,11 +1698,9 @@ CREATE POLICY "Admin can view all subscriptions" ON subscriptions
     is_admin()  -- #240: live column authority (was: JWT claim, which could drift/linger)
   );
 
+-- No admin read of rate_limit_attempts any more (#1285). Its one reader was the
+-- `rate_limited_users` count in admin_auth_stats(), removed with the grant below.
 DROP POLICY IF EXISTS "Admin can view all rate limits" ON rate_limit_attempts;
-CREATE POLICY "Admin can view all rate limits" ON rate_limit_attempts
-  FOR SELECT USING (
-    is_admin()  -- #240: live column authority (was: JWT claim, which could drift/linger)
-  );
 
 -- #1073, table 1 of 10. `anon` held all seven privileges here, and on nine other
 -- tables, because this file never said otherwise -- Supabase's `pg_default_acl`
@@ -1711,26 +1709,23 @@ CREATE POLICY "Admin can view all rate limits" ON rate_limit_attempts
 -- read zero of the 7,440 audit rows and zero here. But that left RLS as the only
 -- layer, and one policy written without a `TO` clause is #1039 again.
 --
--- WHY anon NEEDS NOTHING AT ALL. Both writers are SECURITY DEFINER and run as the
--- owner, so they need no privilege from the caller: `check_rate_limit` and
--- `record_failed_attempt` (both `SET search_path = public`). The only reader is
--- gated on `is_admin()`, which an anonymous session can never satisfy.
+-- WHY NEITHER CLIENT ROLE NEEDS ANYTHING. Every writer is SECURITY DEFINER and runs
+-- as the owner, so it needs no privilege from the caller: `check_rate_limit`,
+-- `record_failed_attempt` and `consume_rate_limit` (all `SET search_path = public`).
 --
--- WHY authenticated KEEPS SELECT, AND ONLY SELECT. `admin_auth_stats()` is
--- SECURITY INVOKER and counts locked-out users straight off this table, so it
--- runs with the CALLER's grants -- revoke SELECT and the admin dashboard's
--- `rate_limited_users` metric fails with 42501 rather than returning zero, which
--- is the failure mode that reads as "not an admin" (#1029). INSERT/UPDATE/DELETE
--- are not granted back: every write goes through the two DEFINER functions above,
--- and the `USING (false)` service-role policy means a direct write would affect
--- no rows anyway. The grant is the layer that refuses BEFORE any policy runs.
+-- `authenticated` used to keep SELECT for one reader: `admin_auth_stats()` is
+-- SECURITY INVOKER and counted locked rows here as `rate_limited_users`, so a revoke
+-- would have turned the admin dashboard into a 42501 (#1029). That metric is gone
+-- (#1285) — after #1245 no sign-in lockout can exist, and the count had become
+-- contact-form throttles labelled as locked-out users — so the grant went with it.
+-- `tests/rls/admin-auth-stats.test.ts` calls the dashboard's RPCs as a real admin,
+-- which is what fails if a read of this table is ever left behind.
 --
 -- Adding a REVOKE here also brings this table under `Prod Schema Drift` for the
 -- first time -- derive-intended-schema.mjs asserts grants only where the file has
 -- taken control. That is the point: one table at a time, each with its own
 -- decision, so the gate never goes red on ten at once and get switched off.
 REVOKE ALL ON rate_limit_attempts FROM anon, authenticated;
-GRANT SELECT ON rate_limit_attempts TO authenticated;
 GRANT ALL ON rate_limit_attempts TO service_role;
 
 -- The three admin-read policies for user_connections / conversations / messages
@@ -1829,7 +1824,6 @@ BEGIN
       'logins_today', (SELECT count(*) FROM auth_audit_logs WHERE event_type IN ('sign_in', 'sign_in_success') AND success = TRUE AND created_at > now() - interval '1 day'),
       'failed_this_week', (SELECT count(*) FROM auth_audit_logs WHERE event_type = 'sign_in_failed' AND created_at > now() - interval '7 days'),
       'signups_this_month', (SELECT count(*) FROM auth_audit_logs WHERE event_type = 'sign_up' AND success = TRUE AND created_at > now() - interval '30 days'),
-      'rate_limited_users', (SELECT count(*) FROM rate_limit_attempts WHERE locked_until IS NOT NULL AND locked_until > now()),
       'top_failed_logins', (
         SELECT COALESCE(json_agg(row_to_json(t)), '[]'::json)
         FROM (

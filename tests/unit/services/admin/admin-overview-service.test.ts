@@ -36,7 +36,6 @@ const sample: AdminOverview = {
     logins_today: 42,
     failed_this_week: 18,
     signups_this_month: 29,
-    rate_limited_users: 1,
     top_failed_logins: [],
   },
   users: {
