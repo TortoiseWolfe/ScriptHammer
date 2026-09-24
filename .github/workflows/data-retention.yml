@@ -34,7 +34,7 @@ concurrency:
 
 jobs:
   audit-logs:
-    name: auth_audit_logs past the 90-day window are deleted
+    name: auth_audit_logs past 90 days and stale rate-limit rows are deleted
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -68,7 +68,7 @@ jobs:
       # A restricted project (#567, HTTP 402) exits 0 with a ::warning:: — that
       # is a quota incident, not a retention defect, and a job that goes red for
       # the duration of one trains people to ignore it.
-      - name: Enforce auth_audit_logs retention
+      - name: Enforce auth_audit_logs and rate_limit_attempts retention
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}

@@ -1,6 +1,8 @@
 #!/usr/bin/env tsx
 /**
  * auth_audit_logs retention — invoke cleanup_old_audit_logs() and prove it worked.
+ * Also rate_limit_attempts (#1295): the limiter's throwaway buckets, which held typed
+ * email addresses and client IPs forever. Same shape: counts only, then verify.
  *
  * #585: the function has existed since the initial migration and was NEVER
  * CALLED. The table COMMENT, two security audits and one E2E-teardown design
@@ -25,6 +27,12 @@
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import {
+  RATE_LIMIT_CENSUS_SQL,
+  RATE_LIMIT_DELETE_SQL,
+  RATE_LIMIT_RETENTION_HOURS,
+  assertRetentionOutlivesLimiter,
+} from '../lib/rate-limit-retention';
 
 /**
  * Must match the INTERVAL inside cleanup_old_audit_logs(). Not merely asserted —
@@ -161,6 +169,15 @@ async function main(): Promise<void> {
   }
 
   const api = `https://api.supabase.com/v1/projects/${projectRef}/database/query`;
+  await auditLogRetention(api, token, check);
+  await rateLimitRetention(api, token, check);
+}
+
+async function auditLogRetention(
+  api: string,
+  token: string,
+  check: boolean
+): Promise<void> {
   const CUTOFF = `NOW() - INTERVAL '${RETENTION_DAYS} days'`;
   const censusSql = `
     SELECT count(*)                                               AS total,
@@ -225,6 +242,63 @@ async function main(): Promise<void> {
   }
 
   console.log('\n✓ retention enforced — nothing past the window.');
+}
+
+/**
+ * rate_limit_attempts (#1295). The limiter reads only its last window (minutes); a bucket
+ * untouched for a day, and not under a live lock, is never read again. Counts only — rows
+ * carry email addresses and IPs.
+ */
+async function rateLimitRetention(
+  api: string,
+  token: string,
+  check: boolean
+): Promise<void> {
+  try {
+    assertRetentionOutlivesLimiter(
+      readFileSync(resolve(process.cwd(), MIGRATION_PATH), 'utf8')
+    );
+  } catch (err) {
+    console.error(`\n✗ ${(err as Error).message}`);
+    process.exit(1);
+  }
+
+  const before = await query(api, token, RATE_LIMIT_CENSUS_SQL);
+  const stale = num(before, 'stale');
+  console.log(
+    `\nrate_limit_attempts — retention ${RATE_LIMIT_RETENTION_HOURS} hours, live locks kept`
+  );
+  console.log(`  rows total .......... ${num(before, 'total')}`);
+  console.log(`  rows past retention . ${stale}`);
+
+  if (check) {
+    if (stale > 0) {
+      console.error(
+        `\n✗ ${stale} stale rate-limit row(s). Run \`pnpm supabase:retention\`.`
+      );
+      process.exit(1);
+    }
+    console.log('\n✓ rate-limit retention is holding.');
+    return;
+  }
+  if (stale === 0) {
+    console.log('\n✓ nothing to delete.');
+    return;
+  }
+
+  const deleted = num(
+    await query(api, token, RATE_LIMIT_DELETE_SQL),
+    'deleted'
+  );
+  console.log(`\n  deleted ............. ${deleted}`);
+  const after = num(await query(api, token, RATE_LIMIT_CENSUS_SQL), 'stale');
+  if (after > 0) {
+    console.error(
+      `\n✗ ${after} stale rate-limit row(s) remain after the delete.`
+    );
+    process.exit(1);
+  }
+  console.log('\n✓ rate-limit retention enforced.');
 }
 
 main().catch((err) => {
