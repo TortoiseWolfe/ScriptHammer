@@ -29,6 +29,7 @@ import {
   hasRlsTestEnvironment,
   RLS_SKIP_REASON,
   type TestUser,
+  deleteConversations,
 } from '../fixtures/test-users';
 
 const SENDER = {
@@ -135,7 +136,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
     }, 60_000);
 
     afterAll(async () => {
-      await svc.from('conversations').delete().eq('id', conversationId);
+      await deleteConversations(svc, [conversationId]);
       await svc
         .from('user_connections')
         .delete()

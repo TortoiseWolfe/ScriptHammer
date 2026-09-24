@@ -2338,19 +2338,24 @@ export async function deleteIsolatedGroup(
       `⚠ Isolated group ${fixture.conversationId} NOT torn down: no admin client ` +
         `(SUPABASE_SERVICE_ROLE_KEY absent). The conversation row is leaking.`
     );
-  } else {
-    const { error } = await admin
-      .from('conversations')
-      .delete()
-      .eq('id', fixture.conversationId);
-    if (error) {
-      console.error(
-        `⚠ Isolated group ${fixture.conversationId} delete FAILED: ${error.message}`
-      );
-    }
   }
+  const { error } = admin
+    ? await admin
+        .from('conversations')
+        .delete()
+        .eq('id', fixture.conversationId)
+    : { error: null };
 
   for (const p of fixture.participants) await deleteTestUser(p.user.id);
+
+  // #1247 B2: fail the run, after the users are gone. Logging was not enough: F10 (the owner
+  // hand-over trigger aborting every delete of a group with survivors) was logged here and the
+  // run still passed, while 84 empty groups built up on production.
+  if (error) {
+    throw new Error(
+      `Isolated group ${fixture.conversationId} was not deleted: ${error.message}`
+    );
+  }
 }
 
 /**

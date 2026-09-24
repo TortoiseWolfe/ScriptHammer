@@ -20,7 +20,11 @@ import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 const h = vi.hoisted(() => ({
   ops: [] as Array<{ table: string; op: 'select' | 'delete'; column: string }>,
   deleteUserCalls: [] as string[],
-  cfg: { subsData: [] as Array<{ id: string }>, failDeleteUser: false },
+  cfg: {
+    subsData: [] as Array<{ id: string }>,
+    failDeleteUser: false,
+    failGroupDelete: false,
+  },
 }));
 
 vi.mock('@supabase/supabase-js', () => ({
@@ -43,6 +47,11 @@ vi.mock('@supabase/supabase-js', () => ({
       delete: () => ({
         eq: async (column: string) => {
           h.ops.push({ table, op: 'delete', column });
+          if (table === 'conversations' && h.cfg.failGroupDelete) {
+            return {
+              error: { message: 'tuple to be updated was already modified' },
+            };
+          }
           return { error: null };
         },
         in: async (column: string) => {
@@ -54,7 +63,10 @@ vi.mock('@supabase/supabase-js', () => ({
   }),
 }));
 
-import { deleteTestUser } from '../e2e/utils/test-user-factory';
+import {
+  deleteIsolatedGroup,
+  deleteTestUser,
+} from '../e2e/utils/test-user-factory';
 
 describe('deleteTestUser — FK-safe cleanup order', () => {
   beforeAll(() => {
@@ -64,7 +76,11 @@ describe('deleteTestUser — FK-safe cleanup order', () => {
   beforeEach(() => {
     h.ops = [];
     h.deleteUserCalls = [];
-    h.cfg = { subsData: [{ id: 'sub-1' }], failDeleteUser: false };
+    h.cfg = {
+      subsData: [{ id: 'sub-1' }],
+      failDeleteUser: false,
+      failGroupDelete: false,
+    };
   });
 
   it('clears payment blockers then deletes the auth user, and NEVER touches the profile', async () => {
@@ -114,5 +130,37 @@ describe('deleteTestUser — FK-safe cleanup order', () => {
     // Even on failure, the profile was never deleted → the user stays intact.
     expect(h.ops.map((o) => o.table)).not.toContain('user_profiles');
     expect(h.deleteUserCalls).toEqual(['user-3']);
+  });
+});
+
+describe('deleteIsolatedGroup — a failed delete fails the teardown (#1247 B2)', () => {
+  // Logging the failure was not enough: F10 (the owner hand-over trigger aborting every delete of
+  // a group with survivors) was logged here while the run passed and empty groups built up.
+  const fixture = {
+    conversationId: 'group-1',
+    participants: [{ user: { id: 'owner-1' } }, { user: { id: 'member-1' } }],
+  } as unknown as Parameters<typeof deleteIsolatedGroup>[0];
+
+  beforeAll(() => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://mock.local';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'mock-service-role-key';
+  });
+  beforeEach(() => {
+    h.ops = [];
+    h.deleteUserCalls = [];
+    h.cfg = { subsData: [], failDeleteUser: false, failGroupDelete: false };
+  });
+
+  it('throws when the group was not deleted — after still removing the users', async () => {
+    h.cfg.failGroupDelete = true;
+    await expect(deleteIsolatedGroup(fixture)).rejects.toThrow(
+      /group-1 was not deleted/
+    );
+    expect(h.deleteUserCalls).toEqual(['owner-1', 'member-1']);
+  });
+
+  it('control: a successful delete resolves', async () => {
+    await expect(deleteIsolatedGroup(fixture)).resolves.toBeUndefined();
+    expect(h.deleteUserCalls).toEqual(['owner-1', 'member-1']);
   });
 });

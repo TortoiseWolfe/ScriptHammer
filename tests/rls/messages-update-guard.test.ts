@@ -32,6 +32,7 @@ import {
   hasRlsTestEnvironment,
   RLS_SKIP_REASON,
   type TestUser,
+  deleteConversations,
 } from '../fixtures/test-users';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -91,7 +92,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
     }, 60_000);
 
     afterAll(async () => {
-      await svc.from('conversations').delete().eq('id', conversationId);
+      await deleteConversations(svc, [conversationId]);
       await svc
         .from('user_connections')
         .delete()

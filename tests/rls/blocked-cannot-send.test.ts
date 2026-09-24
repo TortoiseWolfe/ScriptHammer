@@ -37,6 +37,7 @@ import {
   deleteTestUser,
   hasRlsTestEnvironment,
   RLS_SKIP_REASON,
+  deleteConversations,
 } from '../fixtures/test-users';
 
 const ALICE = {
@@ -175,7 +176,7 @@ describeRls(
           .from('messages')
           .delete()
           .eq('conversation_id', conversationId);
-        await svc.from('conversations').delete().eq('id', conversationId);
+        await deleteConversations(svc, [conversationId]);
       }
       for (const id of [aliceId, bobId].filter(Boolean)) {
         await svc.from('user_connections').delete().eq('requester_id', id);

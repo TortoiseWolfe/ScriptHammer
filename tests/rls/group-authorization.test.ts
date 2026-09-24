@@ -32,6 +32,7 @@ import {
   RLS_SKIP_REASON,
   TEST_USERS,
   type TestUser,
+  deleteConversations,
 } from '../fixtures/test-users';
 
 // Distinct P-256-shaped public keys. Only crv/x/y are compared, so extra members are allowed.
@@ -185,8 +186,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
     });
 
     afterAll(async () => {
-      for (const id of groups)
-        await db().from('conversations').delete().eq('id', id);
+      for (const id of groups) await deleteConversations(db(), [id]);
       await db()
         .from('user_encryption_keys')
         .delete()
