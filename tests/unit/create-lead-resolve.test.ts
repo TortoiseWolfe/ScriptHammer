@@ -125,8 +125,9 @@ describe('the rate limiter can actually limit', () => {
   });
 
   it('takes the FIRST x-forwarded-for entry, not the last', () => {
-    // The last entry is attacker-controlled: a caller can prepend their own header and
-    // rotate identifiers at will, which is a limiter that cannot limit.
+    // Supabase's edge SETS the first entry to the true client address — measured on
+    // production 2026-09-24 (#1237): a spoofed TEST-NET value was ignored and the limiter
+    // keyed on the sender's real IP. That is what makes [0] the one to trust here.
     expect(
       clientIp(
         headers({ 'x-forwarded-for': '203.0.113.7, 10.0.0.1, 10.0.0.2' })

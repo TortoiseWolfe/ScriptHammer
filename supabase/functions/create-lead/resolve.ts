@@ -125,10 +125,16 @@ export function resolveLead(body: unknown): LeadResult {
 /**
  * The caller's IP, as the rate limiter's identifier.
  *
- * `x-forwarded-for` is a LIST when proxies chain, and the ORIGINAL client is the FIRST
- * entry. Taking the last would let a caller prepend their own header and rotate identifiers
- * at will, which is a limiter that cannot limit. Copied deliberately from
- * `contact-message/index.ts:72-79` rather than re-derived.
+ * WHY THE FIRST `x-forwarded-for` ENTRY, AND WHY THAT IS SAFE HERE (#1237). Supabase's edge
+ * puts the true client address first: measured on production 2026-09-24, a request sent with
+ * `X-Forwarded-For: 203.0.113.9` was keyed on the sender's real public IPv4 — not on the
+ * spoofed value, and not on any internal or shared address. So entry [0] is trustworthy
+ * because the platform SETS it, not because of which end of the list a client can reach (a
+ * client can always write the leftmost entry of a header it sends; an edge that merely
+ * appended would make [0] the attacker's). If this ever moves behind a different proxy,
+ * re-measure before trusting [0]: send a TEST-NET value and read which key the limiter used.
+ *
+ * Copied deliberately from `contact-message/index.ts` rather than re-derived.
  */
 export function clientIp(headers: {
   get(name: string): string | null;
