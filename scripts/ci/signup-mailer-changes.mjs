@@ -37,6 +37,13 @@ import { execFileSync } from 'node:child_process';
  *   - `scripts/supabase/` carries the GoTrue settings, including the mailer URL paths the
  *     confirmation link depends on.
  *   - the lockfile: a dependency bump changes client behaviour with no source edit.
+ *   - the `captcha-blocked` project's specs and the helpers they seed through. They run
+ *     nowhere else — every other lane skips them for captcha — so a PR editing only them
+ *     used to report "suite skipped, reporting green" without running them once (#1245).
+ *   - `src/app/sign-in/` and `src/app/forgot-password/`: the pages those specs drive.
+ *   - `supabase/migrations/`: brute-force.spec.ts calls the limiter RPCs anonymously and
+ *     asserts nobody can be locked out, so a SQL-only change to them (#1245's stage A4)
+ *     moves its verdict with no client edit at all.
  */
 export const SIGNUP_MAILER_PATHS = [
   'src/components/auth/',
@@ -51,6 +58,14 @@ export const SIGNUP_MAILER_PATHS = [
   'scripts/ci/signup-mailer-changes.mjs',
   'tests/e2e/signup-mailer/',
   'tests/e2e/utils/mailpit.ts',
+  'tests/e2e/security/brute-force.spec.ts',
+  'tests/e2e/auth/rate-limiting.spec.ts',
+  'tests/e2e/auth/sign-up.spec.ts',
+  'tests/e2e/utils/test-user-factory.ts',
+  'tests/e2e/utils/captcha-guard.ts',
+  'src/app/sign-in/',
+  'src/app/forgot-password/',
+  'supabase/migrations/',
   'playwright.signup-mailer.config.ts',
   'docker-compose.yml',
   'pnpm-lock.yaml',
@@ -60,7 +75,9 @@ export const SIGNUP_MAILER_PATHS = [
 /** True when any changed file is one this suite's verdict can depend on. */
 export function needsSignupMailer(files) {
   return files.some((f) =>
-    SIGNUP_MAILER_PATHS.some((p) => (p.endsWith('/') ? f.startsWith(p) : f === p))
+    SIGNUP_MAILER_PATHS.some((p) =>
+      p.endsWith('/') ? f.startsWith(p) : f === p
+    )
   );
 }
 
@@ -75,19 +92,29 @@ function changedFiles(base, head) {
 function main(argv) {
   if (argv.includes('--selftest')) {
     // A decider that can only ever reach one answer is not a decider.
-    const yes = needsSignupMailer(['src/components/auth/SignUpForm/SignUpForm.tsx']);
-    const no = needsSignupMailer(['README.md', 'src/components/atomic/Card/Card.tsx']);
+    const yes = needsSignupMailer([
+      'src/components/auth/SignUpForm/SignUpForm.tsx',
+    ]);
+    const no = needsSignupMailer([
+      'README.md',
+      'src/components/atomic/Card/Card.tsx',
+    ]);
     const captcha = needsSignupMailer(['src/config/captcha.config.ts']);
     if (!yes || no || !captcha) {
-      console.error(`selftest FAILED: signup=${yes} unrelated=${no} captcha=${captcha}`);
+      console.error(
+        `selftest FAILED: signup=${yes} unrelated=${no} captcha=${captcha}`
+      );
       process.exit(1);
     }
-    console.log('selftest ok: yes to the signup form, no to unrelated UI, yes to captcha config');
+    console.log(
+      'selftest ok: yes to the signup form, no to unrelated UI, yes to captcha config'
+    );
     return;
   }
 
   const flag = argv.indexOf('--files');
-  const files = flag !== -1 ? argv.slice(flag + 1) : changedFiles(argv[0], argv[1]);
+  const files =
+    flag !== -1 ? argv.slice(flag + 1) : changedFiles(argv[0], argv[1]);
   const run = needsSignupMailer(files);
   console.log(
     `  ${files.length} changed file(s); signup mailer ${run ? 'REQUIRED' : 'not required'}`
@@ -98,4 +125,5 @@ function main(argv) {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) main(process.argv.slice(2));
+if (import.meta.url === `file://${process.argv[1]}`)
+  main(process.argv.slice(2));

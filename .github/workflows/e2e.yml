@@ -755,7 +755,8 @@ jobs:
           # pre-authenticated fixtures. Multi-user messaging and security
           # specs load storage-state-auth-b.json into a second browser
           # context instead of calling performSignIn live, which cumulatively
-          # exceeded Supabase GoTrue's 5-attempt brute-force lockout.
+          # tripped the app's own 5-attempt sign-in lockout (never GoTrue's;
+          # removed in #1245).
           path: |
             tests/e2e/fixtures/storage-state-auth.json
             tests/e2e/fixtures/storage-state-auth-b.json

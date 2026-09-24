@@ -289,7 +289,7 @@ async function globalSetup(): Promise<void> {
         fix: signInError.message.includes('Invalid login')
           ? `TEST_USER_PRIMARY_PASSWORD in GitHub secrets does not match the password for ${process.env.TEST_USER_PRIMARY_EMAIL} in Supabase. Update the secret or reset the user's password.`
           : signInError.message.includes('rate')
-            ? 'Rate limited - too many sign-in attempts. Wait 15 minutes or increase rate limits in Supabase.'
+            ? 'Rate limited - Supabase Auth refused for rate (a per-IP ceiling). Wait a few minutes, or raise the limits in Supabase.'
             : `Check Supabase logs for details: ${signInError.message}`,
       });
     } else {

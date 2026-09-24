@@ -642,7 +642,7 @@ CREATE TABLE IF NOT EXISTS rate_limit_attempts (
 );
 
 -- #784: the contact form is an ANONYMOUS endpoint that sends mail, so it needs the
--- same ceiling the auth forms have. Reusing `check_rate_limit` / `record_failed_attempt`
+-- same ceiling the auth forms had (they stopped using it in #1245). Reusing `check_rate_limit` / `record_failed_attempt`
 -- rather than hand-rolling a second limiter means one implementation to get right —
 -- but the CHECK above predates that caller and rejected 'contact_form' with a 23514,
 -- which surfaced only because the live probe was run rather than assumed.
@@ -660,7 +660,7 @@ CREATE INDEX IF NOT EXISTS idx_rate_limit_window ON rate_limit_attempts(window_s
 CREATE INDEX IF NOT EXISTS idx_rate_limit_locked ON rate_limit_attempts(locked_until) WHERE locked_until IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_rate_limit_unique ON rate_limit_attempts(identifier, attempt_type);
 
-COMMENT ON TABLE rate_limit_attempts IS 'Server-side rate limiting - prevents brute force';
+COMMENT ON TABLE rate_limit_attempts IS 'Per-identifier limits for the anonymous Edge Functions (contact form, booking lead). Written only by the service role since #1245; sign-in brute force is Supabase Auth''s job.';
 
 -- Enable RLS on rate_limit_attempts (system-managed, service role only)
 ALTER TABLE rate_limit_attempts ENABLE ROW LEVEL SECURITY;
@@ -819,6 +819,17 @@ DECLARE
   v_window_minutes INTEGER := 15;
   v_now TIMESTAMPTZ := now();
 BEGIN
+  -- Only the service role gets a real answer (#1245 stage A2). A browser used to call this with
+  -- the email being signed in to, which made the pair a weapon: five anonymous
+  -- record_failed_attempt calls locked anyone out of sign-in, and this function told anyone
+  -- whether an email was under attack. A client now gets a constant, before any row is read or
+  -- locked. It stays EXECUTE-able so a tab still running the pre-A2 bundle is not refused (its
+  -- wrapper read any error as a lockout); stage A4 revokes it. Brute-force protection for
+  -- sign-in is GoTrue's: the captcha on every password grant, and its per-IP limits.
+  IF auth.role() IS DISTINCT FROM 'service_role' THEN
+    RETURN json_build_object('allowed', TRUE, 'remaining', v_max_attempts, 'locked_until', NULL);
+  END IF;
+
   -- Plain FOR UPDATE, never SKIP LOCKED (#1237). SKIP LOCKED returned NO row whenever another
   -- caller held the lock, the branch below read that as "first attempt", and the reset path
   -- zeroed the count and cleared a lockout in force — a limiter strictest against sequential
@@ -934,6 +945,11 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
 BEGIN
+  -- A client's failure writes nothing (#1245 stage A2) — see check_rate_limit above.
+  IF auth.role() IS DISTINCT FROM 'service_role' THEN
+    RETURN;
+  END IF;
+
   UPDATE rate_limit_attempts
   SET attempt_count = attempt_count + 1, updated_at = now(), ip_address = COALESCE(p_ip_address, ip_address)
   WHERE identifier = p_identifier AND attempt_type = p_attempt_type;
@@ -4651,7 +4667,7 @@ REVOKE ALL ON leads FROM anon, authenticated;
 GRANT SELECT ON leads TO authenticated;
 GRANT ALL ON leads TO service_role;
 
--- `create-lead` rate-limits through the same helper the auth forms use, so its
+-- `create-lead` rate-limits through the same helper the auth forms used to, so its
 -- attempt_type must be a permitted literal. AN INLINE EDIT TO THE CREATE TABLE ABOVE
 -- WOULD BE A SILENT NO-OP ON AN EXISTING DATABASE -- this DROP+ADD is the only form that
 -- reaches production, which is why `contact_form` was added the same way at :635 after

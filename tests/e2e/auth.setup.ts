@@ -282,8 +282,8 @@ setup('authenticate shared test user', async ({ page, browser }) => {
     // Pre-authenticate User B (TERTIARY) and save its storageState to
     // AUTH_FILE_B. Messaging and multi-user security specs load this fixture
     // into a second browser.newContext() instead of calling performSignIn
-    // live — which was cumulatively exceeding Supabase GoTrue's 5-attempt
-    // brute-force lockout across concurrent CI shards.
+    // live — which was cumulatively tripping the app's own 5-attempt sign-in
+    // lockout across concurrent CI shards (never GoTrue's; removed in #1245).
     // ────────────────────────────────────────────────────────────────────────
     const userBEmail = process.env.TEST_USER_TERTIARY_EMAIL;
     const userBPassword = process.env.TEST_USER_TERTIARY_PASSWORD;

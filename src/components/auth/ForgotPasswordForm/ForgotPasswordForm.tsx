@@ -2,11 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import {
-  checkRateLimit,
-  recordFailedAttempt,
-  formatLockoutTime,
-} from '@/lib/auth/rate-limit-check';
+import { authRateLimitMessage } from '@/lib/auth/auth-rate-limit';
 import { validateEmail } from '@/lib/auth/email-validator';
 import { logAuthEvent } from '@/lib/auth/audit-logger';
 import { getRedirectUrl } from '@/config/project.config';
@@ -24,7 +20,8 @@ export interface ForgotPasswordFormProps {
 
 /**
  * ForgotPasswordForm component
- * Send password reset email with server-side rate limiting
+ * Send a password reset email. Limits are Supabase Auth's (captcha, per-IP ceilings and the
+ * project's email quota); this form only reports them (#1245).
  *
  * @category molecular
  */
@@ -74,19 +71,6 @@ export default function ForgotPasswordForm({
       return;
     }
 
-    // Check server-side rate limit for password reset attempts (REQ-SEC-003)
-    const rateLimit = await checkRateLimit(email, 'password_reset');
-
-    if (!rateLimit.allowed) {
-      const timeUntilReset = rateLimit.locked_until
-        ? formatLockoutTime(rateLimit.locked_until)
-        : '15 minutes';
-      setError(
-        `Too many password reset attempts. Please try again in ${timeUntilReset}.`
-      );
-      return;
-    }
-
     if (captchaConfig.enabled && !captchaToken) {
       setError('Please complete the verification challenge.');
       return;
@@ -108,9 +92,6 @@ export default function ForgotPasswordForm({
       // Single-use token: reset so a retry can get a fresh one.
       captchaRef.current?.reset();
 
-      // Record failed attempt
-      await recordFailedAttempt(email, 'password_reset');
-
       // Log failed password reset attempt (T036)
       await logAuthEvent({
         event_type: 'password_reset_request',
@@ -119,7 +100,7 @@ export default function ForgotPasswordForm({
         error_message: resetError.message,
       });
 
-      setError(resetError.message);
+      setError(authRateLimitMessage(resetError) ?? resetError.message);
     } else {
       // Log successful password reset request (T036)
       await logAuthEvent({

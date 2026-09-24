@@ -346,6 +346,157 @@ describe.skipIf(!hasRlsTestEnvironment())(
       });
     });
 
+    describe('the lockout pair answers a client with a constant and writes nothing (#1245 A2)', () => {
+      // Stage A2. The pair stays anon-executable so a tab still running the pre-A2 bundle does
+      // not fail closed (its wrapper reads any error as "locked"), but a client's answer no
+      // longer depends on, or changes, anyone's history. Before A2, five anonymous
+      // record_failed_attempt calls with someone else's email locked that person out of
+      // sign-in for fifteen minutes, renewable forever, and check_rate_limit told anyone
+      // whether a given email was under attack.
+      const seedLocked = async (id: string) => {
+        const { error } = await service.from('rate_limit_attempts').insert({
+          identifier: id,
+          attempt_type: 'sign_in',
+          attempt_count: 6,
+          window_start: new Date().toISOString(),
+          locked_until: new Date(Date.now() + 15 * 60_000).toISOString(),
+        });
+        if (error)
+          throw new Error(`could not seed a lockout: ${error.message}`);
+      };
+      const rowFor = async (id: string) => {
+        const { data, error } = await service
+          .from('rate_limit_attempts')
+          .select('attempt_count, locked_until')
+          .eq('identifier', id);
+        if (error)
+          throw new Error(`could not read the limiter: ${error.message}`);
+        return data ?? [];
+      };
+
+      it('six failed attempts recorded by a client write nothing, so nobody is locked out', async () => {
+        for (const [who, client] of [
+          ['anon', anon],
+          ['signed-in', aliceClient],
+        ] as const) {
+          const id = fresh(`record-${who}`);
+          identifiers.push(id);
+          for (let i = 0; i < 6; i++) {
+            const { error } = await client.rpc('record_failed_attempt', {
+              p_identifier: id,
+              p_attempt_type: 'sign_in',
+            });
+            // Still callable: an error here is what an old tab would read as a lockout.
+            expect(error).toBeNull();
+          }
+          expect({ who, rows: await rowFor(id) }).toEqual({ who, rows: [] });
+        }
+      });
+
+      it('a client asking about a locked identifier is told nothing, and the lockout is left alone', async () => {
+        const id = fresh('oracle');
+        identifiers.push(id);
+        await seedLocked(id);
+        for (const client of [anon, aliceClient]) {
+          const { data, error } = await client.rpc('check_rate_limit', {
+            p_identifier: id,
+            p_attempt_type: 'sign_in',
+          });
+          expect(error).toBeNull();
+          // The whole shape: a pre-A2 tab computes `remaining - 1` from it.
+          expect(data).toEqual({
+            allowed: true,
+            remaining: 5,
+            locked_until: null,
+          });
+        }
+        const rows = await rowFor(id);
+        expect(rows).toHaveLength(1);
+        expect(rows[0].attempt_count).toBe(6);
+        expect(
+          new Date(rows[0].locked_until as string).getTime()
+        ).toBeGreaterThan(Date.now());
+      });
+
+      it('a client asking about an identifier nobody has used creates no row', async () => {
+        // Before A2 the first check for any string inserted a bucket for it, so anyone could
+        // grow the table one arbitrary identifier at a time.
+        for (const [who, client] of [
+          ['anon', anon],
+          ['signed-in', aliceClient],
+        ] as const) {
+          const id = fresh(`probe-${who}`);
+          identifiers.push(id);
+          const { error } = await client.rpc('check_rate_limit', {
+            p_identifier: id,
+            p_attempt_type: 'sign_in',
+          });
+          expect(error).toBeNull();
+          expect({ who, rows: await rowFor(id) }).toEqual({ who, rows: [] });
+        }
+      });
+
+      it('a client call takes no row lock, so it cannot be made to wait on one', async () => {
+        const id = fresh('nowait');
+        identifiers.push(id);
+        await seedLocked(id);
+        const holder = new Client(DB);
+        const caller = new Client(DB);
+        await holder.connect();
+        await caller.connect();
+        try {
+          await holder.query('begin');
+          await holder.query(
+            `select 1 from rate_limit_attempts where identifier = $1 for update`,
+            [id]
+          );
+          await caller.query('begin');
+          await caller.query(
+            `select set_config('request.jwt.claims', '{"role":"anon"}', true)`
+          );
+          // Before A2 this call queued behind the holder until the timeout.
+          await caller.query(`set local statement_timeout = '1500ms'`);
+          const { rows } = await caller.query(
+            `select check_rate_limit($1, 'sign_in') as r`,
+            [id]
+          );
+          expect(rows[0].r).toEqual({
+            allowed: true,
+            remaining: 5,
+            locked_until: null,
+          });
+        } finally {
+          await caller.query('rollback').catch(() => undefined);
+          await holder.query('rollback').catch(() => undefined);
+          await holder.end();
+          await caller.end();
+        }
+      });
+
+      it('CONTROL: the service role still records, and still gets the real answer', async () => {
+        // The Edge Functions call this pair with the service key until stage A3. Without this
+        // test, a body that answered everyone "allowed" would pass the two above.
+        const locked = fresh('svc-locked');
+        identifiers.push(locked);
+        await seedLocked(locked);
+        const check = await service.rpc('check_rate_limit', {
+          p_identifier: locked,
+          p_attempt_type: 'sign_in',
+        });
+        expect(check.error).toBeNull();
+        expect(check.data).toMatchObject({ allowed: false });
+
+        const counted = fresh('svc-record');
+        identifiers.push(counted);
+        const rec = await service.rpc('record_failed_attempt', {
+          p_identifier: counted,
+          p_attempt_type: 'sign_in',
+        });
+        expect(rec.error).toBeNull();
+        expect(await rowFor(counted)).toMatchObject([{ attempt_count: 1 }]);
+      });
+    });
+
     describe('cleanup_old_audit_logs is closed to every client role', () => {
       it('anon, a signed-in user and the service role are all refused', async () => {
         expect(refused((await anon.rpc('cleanup_old_audit_logs')).error)).toBe(

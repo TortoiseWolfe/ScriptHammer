@@ -6,7 +6,8 @@
  * `KeyDerivationService`, `GroupKeyService` and two more E2E helpers. Anything
  * outside Playwright that wanted the guard had to drag all of that into its
  * module graph, so `tests/supabase-admin.ts` — a plain vitest/tsx helper, and the
- * last unguarded service-role client in the tree — simply went without one.
+ * last unguarded service-role client in the tree — simply went without one. (It
+ * was deleted in #1245 along with its last consumer.)
  *
  * Nothing here imports anything. That is the feature.
  */

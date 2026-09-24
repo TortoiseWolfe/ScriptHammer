@@ -1,5 +1,12 @@
+import type React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { AuthApiError } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase/client';
+import {
+  EMAIL_QUOTA_MESSAGE,
+  REQUEST_RATE_MESSAGE,
+} from '@/lib/auth/auth-rate-limit';
 import SignUpForm from './SignUpForm';
 
 // (#353) CAPTCHA config is read at render time. Default to UNCONFIGURED so the
@@ -19,6 +26,47 @@ vi.mock('@marsidev/react-turnstile', () => ({
     </button>
   ),
 }));
+
+// The setup file's useAuth returns a fresh spy per render, so no test can make sign-up fail.
+// Same shape as that mock, with the one method these cases drive held where they can reach it.
+const auth = vi.hoisted(() => ({
+  signUp: vi.fn(async (..._args: unknown[]) => ({ error: null as unknown })),
+}));
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: {
+      id: '123',
+      email: 'test@example.com',
+      user_metadata: { username: 'testuser' },
+      email_confirmed_at: null,
+    },
+    session: { access_token: 'mock-token' },
+    isLoading: false,
+    isAuthenticated: true,
+    signIn: vi.fn(async () => ({ error: null })),
+    signOut: vi.fn(async () => ({ error: null })),
+    refreshSession: vi.fn(async () => {}),
+    signUp: auth.signUp,
+  }),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+const rpcNames = () =>
+  vi.mocked(supabase.rpc).mock.calls.map(([name]) => name as string);
+
+const submitValidSignUp = async () => {
+  fireEvent.change(screen.getByLabelText(/email/i), {
+    target: { value: 'someone@example.com' },
+  });
+  fireEvent.change(screen.getByLabelText(/^password$/i), {
+    target: { value: 'CorrectHorse1!' },
+  });
+  fireEvent.change(screen.getByLabelText(/confirm password/i), {
+    target: { value: 'CorrectHorse1!' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: /sign up/i }));
+  return screen.findByRole('alert');
+};
 
 const configure = (siteKey?: string) => {
   mockConfig.captchaConfig.siteKey = siteKey as never;
@@ -89,6 +137,59 @@ describe('SignUpForm', () => {
       expect(
         await screen.findByText(/complete the verification challenge/i)
       ).toBeInTheDocument();
+    });
+  });
+
+  // #1245 stage A2: no email-keyed limiter before or after the call. Sign-up sends mail, so
+  // its 429 is usually the project's email quota — which minutes of waiting will not clear.
+  describe("rate limits are Supabase Auth's, and only reported here (#1245)", () => {
+    beforeEach(() => {
+      auth.signUp.mockReset();
+      auth.signUp.mockResolvedValue({ error: null });
+      vi.mocked(supabase.rpc).mockClear();
+    });
+
+    it('names the email quota when that is the limit that refused', async () => {
+      auth.signUp.mockResolvedValueOnce({
+        error: new AuthApiError(
+          'Email rate limit exceeded',
+          429,
+          'over_email_send_rate_limit'
+        ),
+      });
+      render(<SignUpForm />);
+      expect(await submitValidSignUp()).toHaveTextContent(EMAIL_QUOTA_MESSAGE);
+    });
+
+    it('names the request ceiling for any other 429', async () => {
+      auth.signUp.mockResolvedValueOnce({
+        error: new AuthApiError(
+          'Request rate limit reached',
+          429,
+          'over_request_rate_limit'
+        ),
+      });
+      render(<SignUpForm />);
+      expect(await submitValidSignUp()).toHaveTextContent(REQUEST_RATE_MESSAGE);
+    });
+
+    it('a failed sign-up neither consults nor feeds the email-keyed limiter', async () => {
+      auth.signUp.mockResolvedValueOnce({
+        error: new AuthApiError(
+          'User already registered',
+          422,
+          'user_already_exists'
+        ),
+      });
+      render(<SignUpForm />);
+      // CONTROL for the message path: an ordinary refusal still says what Auth said.
+      expect(await submitValidSignUp()).toHaveTextContent(
+        /^User already registered$/
+      );
+      // Audited through rpc, which proves this spy sees the form's calls at all.
+      await vi.waitFor(() => expect(rpcNames()).toContain('log_auth_event'));
+      expect(rpcNames()).not.toContain('check_rate_limit');
+      expect(rpcNames()).not.toContain('record_failed_attempt');
     });
   });
 });

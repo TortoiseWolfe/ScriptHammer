@@ -46,7 +46,7 @@ test.describe('Payment Isolation E2E - REQ-SEC-001', () => {
   }) => {
     // Both users come from pre-authenticated storage states seeded by
     // auth.setup.ts. Prior live performSignIn across concurrent CI shards
-    // was exceeding Supabase's 5-attempt brute-force lockout.
+    // was tripping the app's own 5-attempt sign-in lockout (removed in #1245).
     const contextA = await browser.newContext({
       storageState: './tests/e2e/fixtures/storage-state-auth.json',
     });

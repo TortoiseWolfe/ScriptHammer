@@ -240,6 +240,14 @@ As a user with a ScriptHammer account, I need my payment data and personal infor
 - Legitimate users see clear feedback on remaining attempts and lockout duration
 - Bypass attempts (cleared storage, different browser) still blocked
 
+**Amended 2026-09-24 (#1245):** this requirement is met by Supabase Auth itself — a captcha on every
+password grant, and per-IP ceilings on hosted projects — enforced where no client can skip them.
+The app's own implementation was an email-keyed lockout that the browser consulted before calling
+Auth. It stopped nobody who called Auth directly, and it let anyone lock anyone out with five
+anonymous calls, so it was removed. There is no per-account lockout and no remaining-attempts
+counter; a person who meets a limit sees a plain message naming it
+(`src/lib/auth/auth-rate-limit.ts`). A bare local docker stack enforces no per-IP ceiling.
+
 **Current Issue**: Rate limiting uses localStorage only (client-side)
 
 ---

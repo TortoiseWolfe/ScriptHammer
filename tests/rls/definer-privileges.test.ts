@@ -28,9 +28,9 @@ const DB = {
 /** Open to anon on purpose. Each entry says why, and which stage of #1245 changes it. */
 const ANON_EXECUTABLE: Record<string, string> = {
   'check_rate_limit(text,text,inet)':
-    'the browser limiter still calls it; neutered for non-service callers in #1245 stage A2, revoked in A4',
+    'only tabs still running the pre-A2 bundle call it; a client gets a constant (#1245 A2), revoked in A4',
   'record_failed_attempt(text,text,inet)':
-    'the browser limiter still calls it; neutered for non-service callers in #1245 stage A2, revoked in A4',
+    'only tabs still running the pre-A2 bundle call it; a client writes nothing (#1245 A2), revoked in A4',
   'is_admin(uuid)':
     'an RLS policy helper that anon-reachable policies call; its body answers only about the caller',
   'is_conversation_member(uuid,uuid)':
