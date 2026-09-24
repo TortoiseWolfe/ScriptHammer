@@ -261,6 +261,44 @@ describe.skipIf(!hasRlsTestEnvironment())(
           refused((await aliceClient.rpc('consume_rate_limit', args)).error)
         ).toBe(true);
       });
+
+      it('answers in the exact shape the Edge Functions send (#1245 A3)', async () => {
+        // The handlers pass the caller's IP as both the identifier and p_ip_address, and
+        // create-lead uses the booking_lead bucket — neither of which the tests above do.
+        const ip = '203.0.113.47'; // TEST-NET-3, never a real client
+        identifiers.push(ip);
+        await service
+          .from('rate_limit_attempts')
+          .delete()
+          .eq('identifier', ip)
+          .eq('attempt_type', 'booking_lead');
+        const { data, error } = await service.rpc('consume_rate_limit', {
+          p_identifier: ip,
+          p_attempt_type: 'booking_lead',
+          p_ip_address: ip,
+        });
+        expect(error).toBeNull();
+        expect(data).toMatchObject({ allowed: true, remaining: 4 });
+        const { data: row } = await service
+          .from('rate_limit_attempts')
+          .select('attempt_count, ip_address')
+          .eq('identifier', ip)
+          .eq('attempt_type', 'booking_lead')
+          .single();
+        expect(row).toEqual({ attempt_count: 1, ip_address: ip });
+      });
+
+      it('an x-forwarded-for value that is not an address is an error, so the handler answers 503', async () => {
+        // p_ip_address is INET: PostgREST refuses the cast before the function runs. The
+        // handlers read any error as "cannot check" and fail closed — never as permission.
+        const { data, error } = await service.rpc('consume_rate_limit', {
+          p_identifier: 'not-an-address',
+          p_attempt_type: 'booking_lead',
+          p_ip_address: 'not-an-address',
+        });
+        expect(error).not.toBeNull();
+        expect(data).toBeNull();
+      });
     });
 
     describe('check_rate_limit waits for a held lock instead of resetting (#1237)', () => {
@@ -474,8 +512,10 @@ describe.skipIf(!hasRlsTestEnvironment())(
       });
 
       it('CONTROL: the service role still records, and still gets the real answer', async () => {
-        // The Edge Functions call this pair with the service key until stage A3. Without this
-        // test, a body that answered everyone "allowed" would pass the two above.
+        // The service role is the only caller the pair still answers for real — nothing in the
+        // repo calls it since #1245 A3, but redeploying the pre-A3 Edge Functions (the rollback)
+        // would. Without this test, a body that answered everyone "allowed" would pass the two
+        // above.
         const locked = fresh('svc-locked');
         identifiers.push(locked);
         await seedLocked(locked);

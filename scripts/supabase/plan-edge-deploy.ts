@@ -3,11 +3,12 @@
  * Plan an Edge Function deploy: resolve the closure, and refuse a stale tree (#1188).
  *
  * WHAT THIS IS NOT. It does not deploy. There is no `--apply`, deliberately — uploading to a
- * live Edge Function is a production write on the money path, and the piece that decides
- * `verify_jwt` per slug does not exist anywhere in this repo (`git grep verify_jwt` returns
- * nothing). That boolean lives in an operator's head; guessing it wrong either 401s a live
- * provider or strips the platform JWT gate off a money endpoint. So the upload stays a
- * deliberate human act until someone writes that table down.
+ * live Edge Function is a production write on the money path. The per-slug `verify_jwt` it
+ * would need used to live only in an operator's head; it is now declared in
+ * `scripts/lib/edge-function-jwt.ts` and compared to the live project by
+ * `pnpm supabase:check-jwt` (#1238). Whether to build an uploader on top of that is the owner
+ * decision recorded in #1188, so the upload stays a deliberate act: bytes staged from the
+ * approved ref, `verify_jwt` taken from that table, never guessed.
  *
  * WHAT IT FIXES. Two failures, both observed on 2026-09-23 while deploying `stripe-webhook`
  * for #1229:
@@ -129,10 +130,10 @@ function main(): void {
     // Stated as a refusal rather than an unimplemented flag, so nobody reads its absence as
     // "not wired up yet" and adds it casually.
     console.error(
-      '::error::--apply is deliberately not implemented (#1188). Uploading to a live Edge ' +
-        'Function is a production write on the money path, and the per-slug verify_jwt table ' +
-        'it needs exists nowhere in this repo — guessing it 401s a provider or removes the ' +
-        'JWT gate from a money endpoint. Deploy by hand, from a ref this planner approved.'
+      '::error::--apply is deliberately not implemented — refused pending the owner decision ' +
+        'in #1188. Uploading to a live Edge Function is a production write on the money path. ' +
+        'Deploy by hand, from a ref this planner approved, with verify_jwt taken from ' +
+        'scripts/lib/edge-function-jwt.ts — never guessed.'
     );
     process.exit(2);
   }

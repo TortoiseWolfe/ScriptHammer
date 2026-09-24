@@ -20,21 +20,23 @@
  * environment configuration. The worst an abuser achieves is spam into our own
  * inbox.
  *
- * RATE LIMITED PER IP (#784), by reusing the limiter the auth forms already use —
- * `check_rate_limit` / `record_failed_attempt` over `rate_limit_attempts`, which is
- * SECURITY DEFINER, takes a row lock, and manages the sliding window. 5 submissions
- * per 15 minutes per IP.
+ * RATE LIMITED PER IP (#784): 5 submissions per 15 minutes, over `rate_limit_attempts`.
  *
- * Reused rather than reinvented: a second hand-rolled limiter would be a second
- * thing to get wrong, and this one is already exercised by the auth specs. Note
- * `record_failed_attempt` is named for its original use — it is simply the
- * limiter's INCREMENT primitive, and a contact submission is not a failure. The
- * name is wrong for this caller and the behaviour is right; renaming it would mean
- * a production migration for cosmetics.
+ * ONE CALL, BEFORE THE SEND (#1245 stage A3, #1237). This used to check the limit and then
+ * record the attempt — two round trips, so every request in a concurrent burst passed the
+ * check before any record landed, and the ceiling held only against callers polite enough to
+ * wait their turn. `consume_rate_limit` counts and decides in one statement. Its answer goes
+ * through `limiterVerdict`, which treats anything but an explicit allowance as "cannot
+ * check" — the old test (`allowed === false`) let a null answer straight through.
+ * `tests/unit/edge-function-limiter.test.ts` pins the call, its count and its order.
+ *
+ * Still open under #1237: the IP is the FIRST `x-forwarded-for` entry, which a client may
+ * control. Until that is measured and fixed, this limits honest clients, not determined ones.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
+import { limiterVerdict } from '../_shared/limiter-verdict.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
@@ -162,17 +164,25 @@ Deno.serve(async (req: Request) => {
     return jsonResponse(req, { error: 'Could not send the message' }, 503);
   }
 
-  const { data: limit, error: limitError } = await admin.rpc(
-    'check_rate_limit',
-    { p_identifier: ip, p_attempt_type: ATTEMPT_TYPE, p_ip_address: ip }
-  );
+  // Counted BEFORE sending, in the same statement that decides. If the send then
+  // fails, the attempt is still spent — deliberate: the alternative lets a caller
+  // hammer a failing provider without limit, which is exactly when the ceiling
+  // matters most.
+  const limit = await admin.rpc('consume_rate_limit', {
+    p_identifier: ip,
+    p_attempt_type: ATTEMPT_TYPE,
+    p_ip_address: ip,
+  });
+  const verdict = limiterVerdict(limit);
 
-  if (limitError) {
-    console.error('rate limit check failed', limitError);
+  if (verdict === 'unavailable') {
+    // Do NOT proceed. A send that was not counted makes the limit advisory, and an
+    // advisory limit on an anonymous endpoint is none.
+    console.error('rate limit unavailable', limit.error);
     return jsonResponse(req, { error: 'Could not send the message' }, 503);
   }
 
-  if (limit && limit.allowed === false) {
+  if (verdict === 'refused') {
     return jsonResponse(
       req,
       {
@@ -181,21 +191,6 @@ Deno.serve(async (req: Request) => {
       },
       429
     );
-  }
-
-  // Count this submission BEFORE sending. If the send then fails, the attempt is
-  // still spent — deliberate: the alternative lets a caller hammer a failing
-  // provider without limit, which is exactly when the ceiling matters most.
-  const { error: recordError } = await admin.rpc('record_failed_attempt', {
-    p_identifier: ip,
-    p_attempt_type: ATTEMPT_TYPE,
-    p_ip_address: ip,
-  });
-  if (recordError) {
-    // Do NOT proceed. A send that does not count against the limit makes the
-    // limit advisory, and an advisory limit on an anonymous endpoint is none.
-    console.error('rate limit record failed', recordError);
-    return jsonResponse(req, { error: 'Could not send the message' }, 503);
   }
 
   const res = await fetch('https://api.resend.com/emails', {
