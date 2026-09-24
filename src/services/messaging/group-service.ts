@@ -611,31 +611,35 @@ export class GroupService {
       );
     }
 
+    // Promote FIRST, then step down (#1247). The old order demoted the caller first, after
+    // which they were no longer an owner, so the promotion matched 0 rows WITHOUT an error,
+    // the rollback never ran, and the group was left with no owner at all. The database now
+    // refuses to demote the last owner, so this order is also the only one that works. Both
+    // steps read back what they changed: a 0-row update is a failure, not a success.
     const msgClient = createMessagingClient(this.supabase);
-    const { error: demoteError } = await msgClient
-      .from('conversation_members')
-      .update({ role: 'member' })
-      .eq('conversation_id', conversation_id)
-      .eq('user_id', user.id)
-      .is('left_at', null);
-    if (demoteError) {
-      throw new GroupError('Failed to transfer ownership', demoteError);
-    }
-    const { error: promoteError } = await msgClient
+    const { data: promoted, error: promoteError } = await msgClient
       .from('conversation_members')
       .update({ role: 'owner' })
       .eq('conversation_id', conversation_id)
       .eq('user_id', new_owner_id)
-      .is('left_at', null);
-    if (promoteError) {
-      // Best-effort rollback of the demotion to avoid an owner-less group.
-      await msgClient
-        .from('conversation_members')
-        .update({ role: 'owner' })
-        .eq('conversation_id', conversation_id)
-        .eq('user_id', user.id)
-        .is('left_at', null);
+      .is('left_at', null)
+      .select('id');
+    if (promoteError || !promoted?.length) {
       throw new GroupError('Failed to transfer ownership', promoteError);
+    }
+    const { data: demoted, error: demoteError } = await msgClient
+      .from('conversation_members')
+      .update({ role: 'member' })
+      .eq('conversation_id', conversation_id)
+      .eq('user_id', user.id)
+      .is('left_at', null)
+      .select('id');
+    if (demoteError || !demoted?.length) {
+      // Two owners is a safe state to stop in: nothing is lost, and stepping down can be retried.
+      throw new GroupError(
+        'The new owner was promoted, but you are still an owner',
+        demoteError
+      );
     }
 
     await this.recordSystemMessage(

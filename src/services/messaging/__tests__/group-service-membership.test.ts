@@ -29,13 +29,17 @@ const msgState: {
   updateError: unknown;
   deleteError: unknown;
   selectRows: unknown;
+  updateRows: unknown[];
 } = {
   single: { data: null, error: null },
   insertError: null,
   updateError: null,
   deleteError: null,
   selectRows: { data: [], error: null },
+  updateRows: [{ id: 'row' }],
 };
+/** Every UPDATE payload, in order — so a test can see which step ran first (#1247). */
+const updates: Record<string, unknown>[] = [];
 
 function makeBuilder() {
   const b: Record<string, unknown> = {};
@@ -46,14 +50,26 @@ function makeBuilder() {
   b.order = vi.fn(() => Promise.resolve(msgState.selectRows));
   b.single = vi.fn(() => Promise.resolve(msgState.single));
   b.insert = vi.fn(() => Promise.resolve({ error: msgState.insertError }));
-  b.update = vi.fn(() => ({
-    eq: vi.fn(() => ({
+  // `.is()` resolves like the real builder AND offers `.select()` for callers that read back
+  // what they changed (transferOwnership, #1247).
+  const settled = () =>
+    Object.assign(Promise.resolve({ error: msgState.updateError }), {
+      select: vi.fn(() =>
+        Promise.resolve({
+          data: msgState.updateRows,
+          error: msgState.updateError,
+        })
+      ),
+    });
+  b.update = vi.fn((payload: Record<string, unknown>) => {
+    updates.push(payload);
+    return {
       eq: vi.fn(() => ({
-        is: vi.fn(() => Promise.resolve({ error: msgState.updateError })),
+        eq: vi.fn(() => ({ is: vi.fn(settled) })),
+        is: vi.fn(settled),
       })),
-      is: vi.fn(() => Promise.resolve({ error: msgState.updateError })),
-    })),
-  }));
+    };
+  });
   b.delete = vi.fn(() => ({
     eq: vi.fn(() => Promise.resolve({ error: msgState.deleteError })),
   }));
@@ -190,6 +206,29 @@ describe('GroupService membership (#26)', () => {
       await expect(
         svc.transferOwnership({ conversation_id: CONV, new_owner_id: OTHER })
       ).rejects.toThrow(/owner can transfer/i);
+    });
+
+    it('promotes the new owner BEFORE stepping down (#1247)', async () => {
+      // Demote-first left groups owner-less: the promotion then matched 0 rows silently.
+      asRole('owner');
+      updates.length = 0;
+      msgState.updateRows = [{ id: 'row' }];
+      await svc.transferOwnership({
+        conversation_id: CONV,
+        new_owner_id: OTHER,
+      });
+      expect(updates.map((u) => u.role)).toEqual(['owner', 'member']);
+    });
+
+    it('a promotion that changed no row fails loudly, and the caller is not demoted', async () => {
+      asRole('owner');
+      updates.length = 0;
+      msgState.updateRows = [];
+      await expect(
+        svc.transferOwnership({ conversation_id: CONV, new_owner_id: OTHER })
+      ).rejects.toThrow(/failed to transfer ownership/i);
+      expect(updates.map((u) => u.role)).toEqual(['owner']);
+      msgState.updateRows = [{ id: 'row' }];
     });
   });
 

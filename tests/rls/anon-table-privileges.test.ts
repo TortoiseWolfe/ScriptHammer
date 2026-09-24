@@ -61,7 +61,8 @@ const ALLOWED: Record<string, string[]> = {
   conversation_keys: ['INSERT', 'SELECT'],
   // Table-wide UPDATE is deliberately ABSENT — replaced by a column grant, checked below.
   messages: ['INSERT', 'SELECT'],
-  group_keys: ['INSERT', 'SELECT'],
+  // INSERT is column-scoped since #1247 (checked below): created_at and id are the database's.
+  group_keys: ['SELECT'],
   // No SELECT policy exists at all; the writers are edge functions holding the service
   // role key. The only table here where neither client role keeps anything.
   webhook_events: [],
@@ -193,6 +194,39 @@ describe.skipIf(!hasRlsTestEnvironment())(
           'other test in this suite: PostgREST does not expose it, so nothing but this ' +
           'assertion can see it.'
       ).toEqual([]);
+    });
+
+    it('group keys and group seats are INSERTed by column, never table-wide (#1247)', async () => {
+      // A table-wide INSERT let a key row choose its own created_at (which the reader's
+      // fallback trusts) and a seat choose its own joined_at (which orders the owner
+      // hand-over on erasure) and arrive already departed or archived. column_privileges
+      // also lists columns a TABLE grant covers, so an exact list fails either way.
+      const insertable = async (table: string) =>
+        (
+          await db.query(
+            `SELECT column_name
+               FROM information_schema.column_privileges
+              WHERE table_schema = 'public' AND table_name = $1
+                AND grantee = 'authenticated' AND privilege_type = 'INSERT'
+              ORDER BY column_name`,
+            [table]
+          )
+        ).rows.map((r) => r.column_name);
+      expect(await insertable('group_keys')).toEqual([
+        'conversation_id',
+        'created_by',
+        'creator_public_key',
+        'encrypted_key',
+        'key_version',
+        'user_id',
+      ]);
+      expect(await insertable('conversation_members')).toEqual([
+        'conversation_id',
+        'key_status',
+        'key_version_joined',
+        'role',
+        'user_id',
+      ]);
     });
 
     it('messages keeps a COLUMN-scoped UPDATE rather than a table-wide one', async () => {
