@@ -3,6 +3,7 @@
 import React, { type ReactNode, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { getRedirectUrl } from '@/config/project.config';
 import { isOAuthUser } from '@/lib/auth/oauth-utils';
 import CaptchaWidget, {
   type CaptchaWidgetHandle,
@@ -108,7 +109,14 @@ export default function MessagingGate({ children }: MessagingGateProps) {
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email: user!.email!,
-      options: { captchaToken: captchaToken ?? undefined },
+      options: {
+        captchaToken: captchaToken ?? undefined,
+        // Land where sign-in links are handled (#1255). With no redirect the link went
+        // to the site root, which no longer reads a session from the URL. auth-js 2.72's
+        // resend() sends no PKCE challenge, so this link confirms the address but cannot
+        // sign anyone in; /auth/callback says so and offers sign-in.
+        emailRedirectTo: getRedirectUrl('/auth/callback'),
+      },
     });
 
     setResending(false);

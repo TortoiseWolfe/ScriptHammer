@@ -314,11 +314,13 @@ export function OAuthButtons() {
 }
 ```
 
-⚠️ **Gotcha**: because ScriptHammer is a **static export** (no server to run a code exchange), the client is configured with `flowType: 'implicit'` (see `src/lib/supabase/client.ts`) — the provider returns the session token in the URL fragment and supabase-js picks it up on the callback. The `state` CSRF check is automatic either way; just register your callback URL in the Supabase dashboard's redirect allow-list. (A server-rendered app would instead use `flowType: 'pkce'` + `exchangeCodeForSession`.)
+⚠️ **Gotcha**: a **static export** does not rule out PKCE. The code exchange is a request from the browser, not the server, so the client is configured with `flowType: 'pkce'` (see `src/lib/supabase/client.ts`). Starting sign-in stores a random verifier in this browser; the redirect back to `/auth/callback/` carries a `?code=`, and supabase-js exchanges it together with that verifier. Register your callback URL in the Supabase dashboard's redirect allow-list.
+
+This template shipped the implicit flow until [#1255](https://github.com/TortoiseWolfe/ScriptHammer/issues/1255), on the theory that PKCE needs a server. The implicit flow puts the session itself in the URL fragment, and the client consumed it on any page, so a link carrying an attacker's session signed whoever clicked it into the attacker's account (login CSRF). Only the redirect from the provider to Supabase is protected by the OAuth `state` parameter; nothing protected the redirect from Supabase to the app. PKCE binds that second redirect to the browser that started the flow. The cost is that an emailed link has to be opened in the same browser, within five minutes of requesting it.
 
 ### OAuth Callback Handling
 
-When the user authorizes on GitHub/Google, they're redirected back to our callback. Under the implicit flow, supabase-js reads the session token from the URL fragment and validates the `state` parameter internally — so the callback doesn't hand-check anything; it just waits for the client to reflect the authenticated session:
+When the user authorizes on GitHub/Google, they're redirected back to our callback with a `?code=`. supabase-js redeems it when the page loads, and it only looks at the URL on `/auth/callback/` and `/reset-password/`, the two pages a sign-in lands on. So the callback doesn't hand-check anything; it waits for the client to reflect the authenticated session:
 
 ```tsx
 // src/app/auth/callback/page.tsx (simplified)
@@ -335,8 +337,8 @@ export default function AuthCallbackPage() {
     if (isLoading) return;
 
     // Supabase handles state validation internally — no manual check needed.
-    // supabase-js parses the token from the URL fragment and fires the auth
-    // state change; we just redirect once the session is present.
+    // supabase-js exchanges the ?code= with this browser's verifier and fires
+    // the auth state change; we just redirect once the session is present.
     if (user) {
       // ...populate the OAuth profile (non-blocking), then:
       router.replace('/profile');
@@ -773,7 +775,7 @@ test.describe('Sign-In Flow', () => {
 
 ### Lesson 1: Cookies vs localStorage
 
-For static sites with no server-side code exchange, we use `localStorage` for session tokens with Supabase's implicit flow:
+A static site keeps the session in the browser. We use `localStorage` (or `sessionStorage` when "Remember me" is off) with Supabase's PKCE flow:
 
 ```typescript
 // src/lib/supabase/client.ts
@@ -783,14 +785,15 @@ export function createClient(): SupabaseClient<Database> {
     supabaseAnonKey,
     {
       auth: {
-        // Use implicit flow for static sites (no server-side code exchange)
-        flowType: 'implicit',
+        // PKCE: a sign-in link only works in the browser that asked for it
+        flowType: 'pkce',
         // Store session in localStorage
         storage:
           typeof window !== 'undefined' ? window.localStorage : undefined,
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true,
+        // Only the two pages a sign-in lands on redeem a code
+        detectSessionInUrl: shouldDetectSessionInUrl(window.location.href),
       },
     }
   );

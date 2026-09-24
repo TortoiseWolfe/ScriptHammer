@@ -2,7 +2,8 @@
  * Supabase Client for Browser (Client-side)
  *
  * Creates a Supabase client for use in browser/client components.
- * Configured for static export (no server-side code exchange).
+ * Sign-in links use PKCE, whose code exchange is a request from the browser, so
+ * the static export needs no server for it (#1255).
  *
  * @module lib/supabase/client
  */
@@ -10,6 +11,7 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { shouldDetectSessionInUrl } from '@/lib/auth/url-session';
 
 /**
  * Flag for the E2E storage adapter: when true, auth-token removal is
@@ -180,7 +182,7 @@ export function setSessionPersistence(remember: boolean): void {
       next === 'session' ? window.localStorage : window.sessionStorage;
     const to = next === 'session' ? window.sessionStorage : window.localStorage;
     for (const key of Object.keys(from)) {
-      if (!key.includes('auth-token')) continue;
+      if (!key.includes('auth-token') || isCodeVerifierKey(key)) continue;
       const value = from.getItem(key);
       if (value === null) continue;
       to.setItem(key, value);
@@ -190,6 +192,20 @@ export function setSessionPersistence(remember: boolean): void {
     // Storage unavailable — the session still works for this page view; it
     // just cannot honour the preference. Better than throwing mid-sign-in.
   }
+}
+
+/**
+ * auth-js keeps a PKCE flow's verifier under `<storageKey>-code-verifier` (#1255). It is a
+ * one-time secret for a flow in progress, not a session, and neither session rule fits it:
+ *
+ * - It must be readable from a NEW tab. An emailed sign-in or reset link opens in one, and with
+ *   "Remember me" off the session store is sessionStorage, which belongs to the tab that wrote
+ *   it. So the verifier always lives in localStorage.
+ * - It must be deletable. auth-js removes it once redeemed, and the key contains `auth-token`,
+ *   so the removal guard below would keep a spent secret forever.
+ */
+function isCodeVerifierKey(key: string): boolean {
+  return key.endsWith('-code-verifier');
 }
 
 /** Read the current preference. Exported for the UI to reflect real state. */
@@ -220,14 +236,21 @@ export function getSessionPersistence(): boolean {
  *    session on transient 406/403s from Realtime/RLS; without the guard that
  *    wipes the token, fires SIGNED_OUT, and bounces a user with a perfectly
  *    valid access_token back to /sign-in.
+ *
+ * The PKCE code verifier is the exception to all three — see `isCodeVerifierKey`.
  */
 export function createAuthStorage() {
   return {
     getItem: (key: string): string | null => {
+      if (isCodeVerifierKey(key)) return window.localStorage.getItem(key);
       const found = authStore().getItem(key);
       return found !== null ? found : otherStore().getItem(key);
     },
     setItem: (key: string, value: string): void => {
+      if (isCodeVerifierKey(key)) {
+        window.localStorage.setItem(key, value);
+        return;
+      }
       authStore().setItem(key, value);
       try {
         otherStore().removeItem(key);
@@ -236,7 +259,12 @@ export function createAuthStorage() {
       }
     },
     removeItem: (key: string): void => {
-      if (key.includes('auth-token') && !_allowAuthTokenRemoval) return;
+      if (
+        key.includes('auth-token') &&
+        !isCodeVerifierKey(key) &&
+        !_allowAuthTokenRemoval
+      )
+        return;
       window.localStorage.removeItem(key);
       window.sessionStorage.removeItem(key);
     },
@@ -253,7 +281,7 @@ export function isSupabaseConfigured(): boolean {
 
 /**
  * Creates a Supabase client for browser use
- * Uses implicit flow for static sites (no PKCE)
+ * Uses the PKCE flow, so a sign-in link only works in the browser that asked for it (#1255)
  *
  * @returns Supabase client instance
  * @throws Error if environment variables are not configured (browser only)
@@ -291,8 +319,17 @@ export function createClient(): SupabaseClient<Database> {
     supabaseAnonKey,
     {
       auth: {
-        // Use implicit flow for static sites (no server-side code exchange)
-        flowType: 'implicit',
+        // PKCE binds every sign-in link to the browser that started the flow (#1255).
+        // Starting one — sign-up, password reset, OAuth — stores a random verifier here,
+        // and the link that comes back carries a `?code=` GoTrue exchanges only together
+        // with it. The exchange is a POST from this page, so a static export needs no
+        // server. The implicit flow this replaced put the session itself in the link, and
+        // whoever clicked someone else's link was signed into their account.
+        //
+        // The cost is real and deliberate: an emailed link opened in a different browser,
+        // or more than five minutes after it was requested (GoTrue's flow-state lifetime),
+        // cannot sign anyone in. The landing pages explain that instead of failing quietly.
+        flowType: 'pkce',
         // Custom storage adapter that prevents auth-token removal except
         // during an explicit sign-out (toggled via setAllowAuthTokenRemoval).
         // Supabase auth-js clears the session on transient 406/403 errors
@@ -324,7 +361,10 @@ export function createClient(): SupabaseClient<Database> {
         // boolean gate is no longer needed.
         autoRefreshToken: true,
         persistSession: true,
-        detectSessionInUrl: true,
+        // Read once, when this document builds the client — which is also the only time
+        // auth-js looks. Only the two pages a sign-in lands on, and only for a code: see
+        // shouldDetectSessionInUrl. Everywhere else a URL cannot sign anyone in or out.
+        detectSessionInUrl: shouldDetectSessionInUrl(window.location.href),
       },
     }
   );

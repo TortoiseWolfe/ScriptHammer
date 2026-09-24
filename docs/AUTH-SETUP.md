@@ -266,8 +266,8 @@ docker compose exec scripthammer pnpm run dev
 **Step 4:** Check email for verification
 
 - Check inbox for confirmation email from Supabase
-- Click the verification link
-- You should be redirected to the app
+- Click the verification link **in the same browser you signed up in**
+- You should be redirected to the app, signed in
 
 **Step 5:** Verify user was created
 
@@ -570,6 +570,23 @@ docker compose exec scripthammer pnpm run dev
 - Go to: https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/auth/url-configuration
 - Add your URL to **"Redirect URLs"**
 - Format: `http://localhost:3000/**` (note the `/**` wildcard)
+
+### Issue: an emailed link says "Sign in to continue" or "This reset link can't be used here"
+
+**Cause:** sign-in links use PKCE (#1255). Starting a sign-up, a password reset or an OAuth
+sign-in stores a one-time verifier in that browser, and the link that comes back can only be
+redeemed together with it. That is what stops someone else's link from signing you into their
+account (login CSRF). So a link does not sign anyone in when it is:
+
+- opened in a different browser or device from the one that asked for it;
+- opened more than five minutes after it was requested (GoTrue's flow-state lifetime; none of
+  the 243 settings the Management API returns for a hosted project changes it);
+- a **resent** confirmation — auth-js 2.72's `resend()` sends no PKCE challenge;
+- sent from the Supabase dashboard (invites, magic links), which carry no challenge either.
+
+A confirmation link has still **confirmed the address** in every one of those cases, so the
+user signs in with their password. A reset link has not reset anything: request a new one from
+the same browser, and open it within five minutes.
 
 ### Issue: "Email not confirmed"
 

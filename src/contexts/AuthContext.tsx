@@ -21,6 +21,7 @@ import {
   isSupabaseConfigured,
 } from '@/lib/supabase/client';
 import { getInternalUrl, getRedirectUrl } from '@/config/project.config';
+import { isAuthLandingPath } from '@/lib/auth/url-session';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { retryWithBackoff } from '@/lib/auth/retry-utils';
 import { createLogger } from '@/lib/logger';
@@ -299,11 +300,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             error,
           });
         }
-        // Never hijack the confirmation/OAuth landing page: during email
+        // Never hijack a page a sign-in link lands on: during email
         // confirmation no auth-token exists yet, so a transient SIGNED_OUT
         // passes the validity guard above — and the callback page owns its
-        // own error/redirect handling (issue #154).
-        if (!window.location.pathname.includes('/auth/callback')) {
+        // own error/redirect handling (issue #154). The reset page is the
+        // second such page (#1255): a reset link that cannot be redeemed here
+        // fires SIGNED_OUT, and the page explains why rather than vanishing.
+        if (!isAuthLandingPath(window.location.pathname)) {
           logger.info('Cross-tab sign-out detected, redirecting to home');
           window.location.href = getInternalUrl('/');
         }

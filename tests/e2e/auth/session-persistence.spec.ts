@@ -80,9 +80,9 @@ test.describe('Session Persistence E2E', () => {
 
     // #845: what stood here was an `if (authCookie)` block asserting a ~30 day cookie
     // expiry. THIS APP NEVER SETS AN AUTH COOKIE — `client.ts` installs
-    // `storage: createAuthStorage()`, which picks between sessionStorage (:142) and
-    // localStorage (:143); `document.cookie` appears nowhere in the file, and
-    // `flowType: 'implicit'` writes none either. The guard was false on every run, so
+    // `storage: createAuthStorage()`, which picks between sessionStorage (:144) and
+    // localStorage (:145); `document.cookie` appears nowhere in the file, and
+    // supabase-js writes none either. The guard was false on every run, so
     // the only duration assertion in this test had never executed.
     //
     // It was the wrong contract too. Since #375 "Remember me" does not extend an
@@ -97,7 +97,7 @@ test.describe('Session Persistence E2E', () => {
     //
     // NOT asserted here, on purpose:
     //   - `sh-auth-persistence`. `setSessionPersistence()` early-returns when the
-    //     preference is unchanged (client.ts:169-170) and 'local' is the default, so
+    //     preference is unchanged (client.ts:171-172) and 'local' is the default, so
     //     with Remember Me CHECKED the key is never written. The sibling test below can
     //     assert it because unchecking is a real change; mirroring it here would fail.
     //   - "the token is absent from sessionStorage". It cannot fail in this flow —

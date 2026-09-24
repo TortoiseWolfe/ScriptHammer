@@ -400,6 +400,37 @@ describe('useAuth', () => {
 
       expect(loc.href).toBe(hrefBefore);
     });
+
+    it('never redirects a SIGNED_OUT fired on the password-reset page', async () => {
+      // The second page a sign-in link lands on (#1255). An expired or other-browser reset
+      // link makes auth-js clear the session and fire SIGNED_OUT with no token stored, so
+      // it passes the validity guard. Bouncing to the home page here would hide the page's
+      // own explanation of what went wrong.
+      const loc = stubLocation('/RescueDogs/reset-password/');
+      const hrefBefore = loc.href;
+
+      let authStateCallback: any;
+      vi.mocked(supabase.auth.onAuthStateChange).mockImplementation(
+        (callback) => {
+          authStateCallback = callback;
+          return {
+            data: { subscription: { unsubscribe: vi.fn() } },
+          } as any;
+        }
+      );
+
+      const { result } = renderHook(() => useAuth(), {
+        wrapper: AuthProvider,
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await authStateCallback('SIGNED_OUT', null);
+
+      expect(loc.href).toBe(hrefBefore);
+    });
   });
 });
 
