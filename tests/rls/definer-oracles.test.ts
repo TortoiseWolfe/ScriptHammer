@@ -22,6 +22,7 @@ import {
   RLS_SKIP_REASON,
   TEST_USERS,
   type TestUser,
+  deleteConversations,
 } from '../fixtures/test-users';
 
 const DB = {
@@ -105,8 +106,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
     });
 
     afterAll(async () => {
-      if (groupId)
-        await service.from('conversations').delete().eq('id', groupId);
+      if (groupId) await deleteConversations(service, [groupId]);
       if (identifiers.length)
         await service
           .from('rate_limit_attempts')
@@ -209,8 +209,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
       });
 
       afterAll(async () => {
-        if (unseated)
-          await service.from('conversations').delete().eq('id', unseated);
+        if (unseated) await deleteConversations(service, [unseated]);
       });
 
       it('is_unseated_group_founder: an outsider learns nothing about another founder’s group', async () => {

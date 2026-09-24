@@ -23,6 +23,7 @@ import {
   createServiceClient,
   createAuthenticatedClient,
   createTestUser,
+  deleteConversations,
   hasRlsTestEnvironment,
   RLS_SKIP_REASON,
   TEST_USERS,
@@ -228,13 +229,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
     afterAll(async () => {
       // Teardown must not hide a failure: a delete that errors is what leaked 1,400+ local groups
       // before the F10 early return.
-      for (const id of [...groups, ...oneToOnes]) {
-        const { error } = await db()
-          .from('conversations')
-          .delete()
-          .eq('id', id);
-        if (error) throw new Error(`teardown ${id}: ${error.message}`);
-      }
+      await deleteConversations(db(), [...groups, ...oneToOnes]);
       await db().from('user_encryption_keys').delete().in('device_id', DEVICES);
       for (const [x, y] of [
         [a, b],

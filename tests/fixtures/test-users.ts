@@ -336,3 +336,40 @@ export async function cleanupTestUsers(users: TestUser[]): Promise<void> {
     }
   }
 }
+
+/**
+ * Delete test conversations in a teardown, and FAIL if a delete did (#1247 B2).
+ *
+ * supabase-js returns an error rather than throwing, so a teardown that awaited the delete and
+ * moved on reported success whatever happened. That is how F10 — the owner hand-over trigger
+ * aborting every delete of a group with more than one member — went unnoticed while 1,400+ groups
+ * leaked on the local stack and 84 empty ones reached production. Every id is attempted before
+ * anything is thrown, so one failure does not strand the rest.
+ */
+/** The one call deleteConversations makes; typed and untyped test clients both satisfy it. */
+interface ConversationDeleter {
+  from(table: 'conversations'): {
+    delete(): {
+      eq(
+        column: 'id',
+        value: string
+      ): PromiseLike<{ error: { message: string } | null }>;
+    };
+  };
+}
+
+export async function deleteConversations(
+  client: ConversationDeleter,
+  ids: string[]
+): Promise<void> {
+  const failures: string[] = [];
+  for (const id of ids.filter(Boolean)) {
+    const { error } = await client.from('conversations').delete().eq('id', id);
+    if (error) failures.push(`${id}: ${error.message}`);
+  }
+  if (failures.length) {
+    throw new Error(
+      `teardown left ${failures.length} conversation(s) behind: ${failures.join('; ')}`
+    );
+  }
+}

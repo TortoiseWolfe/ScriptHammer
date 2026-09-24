@@ -38,6 +38,7 @@ import {
   RLS_SKIP_REASON,
   TEST_USERS,
   type TestUser,
+  deleteConversations,
 } from '../fixtures/test-users';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -124,7 +125,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
     afterAll(async () => {
       for (const id of [groupId, ...extraGroups].filter(Boolean)) {
         // ON DELETE CASCADE clears members, keys, and messages.
-        await service.from('conversations').delete().eq('id', id);
+        await deleteConversations(service, [id]);
       }
       await service
         .from('user_connections')

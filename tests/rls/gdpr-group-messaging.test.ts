@@ -27,6 +27,7 @@ import {
   RLS_SKIP_REASON,
   TEST_USERS,
   type TestUser,
+  deleteConversations,
 } from '../fixtures/test-users';
 
 describe.skipIf(!hasRlsTestEnvironment())(
@@ -50,7 +51,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
     afterAll(async () => {
       for (const id of convIds) {
-        await svc.from('conversations').delete().eq('id', id);
+        await deleteConversations(svc, [id]);
       }
       // creator may already be gone (erasure test); deleteTestUser is best-effort
       await deleteTestUser(creator.id).catch(() => {});
