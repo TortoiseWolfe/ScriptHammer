@@ -21,9 +21,10 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
+import { limiterVerdict } from '../_shared/limiter-verdict.ts';
 import { ATTEMPT_TYPE, clientIp, resolveLead } from './resolve.ts';
 
-/** Service-role client — `leads` has no other writer, and the limiter RPCs are DEFINER. */
+/** Service-role client — `leads` has no other writer, and the limiter RPC is DEFINER. */
 function adminClient() {
   const url =
     Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL');
@@ -54,12 +55,15 @@ Deno.serve(async (req: Request) => {
 
   // ── rate limit ─────────────────────────────────────────────────────────────
   // AFTER validation, so malformed junk cannot burn a real visitor's budget, and BEFORE the
-  // insert, so a limited caller costs us no rows. Reuses the limiter the auth forms and
-  // contact-message already use rather than growing a second one to get wrong.
+  // insert, so a limited caller costs us no rows. The same limiter contact-message uses.
   //
-  // `record_failed_attempt` is named for its original caller; it is simply the INCREMENT
-  // primitive, and a booking click is not a failure. Renaming it would mean a production
-  // migration for cosmetics.
+  // ONE CALL THAT COUNTS AND DECIDES (#1245 stage A3, #1237). This used to check before the
+  // insert and record only after a successful one — two round trips, so a concurrent burst
+  // all passed the check, and a record error was ignored outright. Now the attempt is spent
+  // up front: an insert that then fails (a reused id, a SKU missing from `products`) still
+  // counts. Legitimate clients never hit either — `record-lead.ts` mints a fresh id per call
+  // and never retries — and the insert path itself is now capped, where it used to do
+  // unlimited database work on failures.
   const ip = clientIp(req.headers);
   const admin = adminClient();
 
@@ -74,17 +78,19 @@ Deno.serve(async (req: Request) => {
     return jsonResponse(req, { error: 'Could not record that' }, 503);
   }
 
-  const { data: limit, error: limitError } = await admin.rpc(
-    'check_rate_limit',
-    { p_identifier: ip, p_attempt_type: ATTEMPT_TYPE, p_ip_address: ip }
-  );
+  const limit = await admin.rpc('consume_rate_limit', {
+    p_identifier: ip,
+    p_attempt_type: ATTEMPT_TYPE,
+    p_ip_address: ip,
+  });
+  const verdict = limiterVerdict(limit);
 
-  if (limitError) {
-    console.error('create-lead rate limit check failed', limitError);
+  if (verdict === 'unavailable') {
+    console.error('create-lead rate limit unavailable', limit.error);
     return jsonResponse(req, { error: 'Could not record that' }, 503);
   }
 
-  if (limit && limit.allowed === false) {
+  if (verdict === 'refused') {
     return jsonResponse(
       req,
       { error: 'Too many requests. Please try again shortly.' },
@@ -108,12 +114,6 @@ Deno.serve(async (req: Request) => {
     console.error('create-lead insert failed', insertError);
     return jsonResponse(req, { error: 'Could not record that' }, 500);
   }
-
-  await admin.rpc('record_failed_attempt', {
-    p_identifier: ip,
-    p_attempt_type: ATTEMPT_TYPE,
-    p_ip_address: ip,
-  });
 
   // The id goes back so a later booking could be joined to this lead. Nothing can do that
   // join on Cal.com today — it does not deliver a correlation identifier in its webhook

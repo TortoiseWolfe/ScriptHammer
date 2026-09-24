@@ -642,8 +642,10 @@ CREATE TABLE IF NOT EXISTS rate_limit_attempts (
 );
 
 -- #784: the contact form is an ANONYMOUS endpoint that sends mail, so it needs the
--- same ceiling the auth forms had (they stopped using it in #1245). Reusing `check_rate_limit` / `record_failed_attempt`
--- rather than hand-rolling a second limiter means one implementation to get right —
+-- same ceiling the auth forms had (they stopped using it in #1245). It reused the
+-- limiter those forms used, `check_rate_limit` / `record_failed_attempt`, and since
+-- #1245 stage A3 calls the atomic `consume_rate_limit` over the same table instead —
+-- one implementation to get right either way —
 -- but the CHECK above predates that caller and rejected 'contact_form' with a 23514,
 -- which surfaced only because the live probe was run rather than assumed.
 --
@@ -802,7 +804,12 @@ $$;
 -- `REVOKE … FROM PUBLIC` alone leaves both holding EXECUTE.
 REVOKE ALL ON FUNCTION cleanup_old_audit_logs(INT, INT) FROM PUBLIC, anon, authenticated, service_role;
 
--- Rate limiting check (Feature 017)
+-- Rate limiting check (Feature 017). No caller in this repository since #1245 stage A3:
+-- the browser stopped calling the pair in A2, and both Edge Functions moved to
+-- `consume_rate_limit` in A3. It stays service_role-executable so redeploying the
+-- pre-A3 functions remains a working rollback; A4 revokes it from the client roles.
+-- (This note sits OUTSIDE the body on purpose: the drift gate compares bodies byte for
+-- byte, comments included, so an edit inside would need a production apply.)
 CREATE OR REPLACE FUNCTION check_rate_limit(
   p_identifier TEXT,
   p_attempt_type TEXT,
@@ -4661,7 +4668,7 @@ REVOKE ALL ON leads FROM anon, authenticated;
 GRANT SELECT ON leads TO authenticated;
 GRANT ALL ON leads TO service_role;
 
--- `create-lead` rate-limits through the same helper the auth forms used to, so its
+-- `create-lead` rate-limits over this table (via `consume_rate_limit` since #1245 A3), so its
 -- attempt_type must be a permitted literal. AN INLINE EDIT TO THE CREATE TABLE ABOVE
 -- WOULD BE A SILENT NO-OP ON AN EXISTING DATABASE -- this DROP+ADD is the only form that
 -- reaches production, which is why `contact_form` was added the same way at :635 after
