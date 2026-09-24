@@ -240,9 +240,12 @@ export class MessageService {
         );
       }
 
-      // Get conversation details (with cache for offline support)
+      // Get conversation details (with cache for offline support). A group's key version moves
+      // with every rotation (#1247 B2), so online it is always read fresh: a cached copy would
+      // keep messages going out under a key a removed member still holds. Offline, the cache is
+      // all there is.
       let conversation = conversationCache.get(input.conversation_id) ?? null;
-      if (!conversation) {
+      if (!conversation || (conversation.is_group && navigator.onLine)) {
         const data = await this.provider.getConversationMeta(
           ctx,
           input.conversation_id

@@ -105,7 +105,11 @@ export default function ConversationView({
 
       const result = await msgClient
         .from('conversations')
-        .select('participant_1_id, participant_2_id, is_group')
+        // current_key_version too (#1247 B2): the offline send path encrypts at whatever
+        // version this cache holds, and without it every group message fell back to v1.
+        .select(
+          'participant_1_id, participant_2_id, is_group, current_key_version'
+        )
         .eq('id', conversationId)
         .maybeSingle();
 
@@ -113,6 +117,7 @@ export default function ConversationView({
         participant_1_id: string;
         participant_2_id: string;
         is_group: boolean;
+        current_key_version: number;
       } | null;
 
       if (!conversation) {

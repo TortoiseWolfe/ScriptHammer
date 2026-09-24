@@ -211,8 +211,11 @@ vi.mock('@/lib/supabase/messaging-client', () => ({
 
       if (table === 'conversations') {
         return {
-          insert: vi.fn(() => ({
-            select: vi.fn(() => ({
+          // createGroup sends its own id and asks for no RETURNING (#1247 B2), then reads the
+          // row back once the creator is seated.
+          insert: vi.fn(() => Promise.resolve({ error: null })),
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
               single: vi.fn(() => ({
                 data: mockConversation,
                 error: null,
@@ -220,7 +223,12 @@ vi.mock('@/lib/supabase/messaging-client', () => ({
             })),
           })),
           delete: vi.fn(() => ({
-            eq: vi.fn(() => ({ error: null })),
+            eq: vi.fn(() => ({
+              select: vi.fn(() => ({
+                data: [{ id: 'new-group-id' }],
+                error: null,
+              })),
+            })),
           })),
         };
       }

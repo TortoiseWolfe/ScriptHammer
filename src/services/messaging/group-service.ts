@@ -158,22 +158,23 @@ export class GroupService {
     const msgClient = createMessagingClient(this.supabase);
 
     try {
-      // Create group conversation
-      const { data: conversation, error: convError } = await msgClient
+      // Create group conversation. The id is chosen here and the insert asks for no RETURNING
+      // (#1247 B2): RETURNING is checked against the conversations SELECT policy, and a policy
+      // helper cannot see a row its own statement inserted. Knowing the id also lets the seat
+      // and both rollbacks name the row without reading it back first.
+      const conversationId = crypto.randomUUID();
+      const { error: convError } = await msgClient
         .from('conversations')
         .insert({
+          id: conversationId,
           is_group: true,
           group_name: name || null,
           created_by: user.id,
           current_key_version: 1,
           // participant_1_id and participant_2_id are NULL for groups
-        })
-        .select(
-          'id, is_group, group_name, created_by, current_key_version, created_at, last_message_at'
-        )
-        .single();
+        });
 
-      if (convError || !conversation) {
+      if (convError) {
         throw new GroupError('Failed to create group conversation', convError);
       }
 
@@ -181,7 +182,7 @@ export class GroupService {
       const memberEntries = [
         // Creator as owner
         {
-          conversation_id: conversation.id,
+          conversation_id: conversationId,
           user_id: user.id,
           role: 'owner' as const,
           key_version_joined: 1,
@@ -189,7 +190,7 @@ export class GroupService {
         },
         // Other members
         ...member_ids.map((memberId) => ({
-          conversation_id: conversation.id,
+          conversation_id: conversationId,
           user_id: memberId,
           role: 'member' as const,
           key_version_joined: 1,
@@ -205,17 +206,13 @@ export class GroupService {
         );
 
       if (membersError || !members) {
-        // Rollback: delete conversation
-        await msgClient
-          .from('conversations')
-          .delete()
-          .eq('id', conversation.id);
+        await this.rollbackCreatedGroup(conversationId);
         throw new GroupError('Failed to add group members', membersError);
       }
 
       // T024-T025: Distribute group key to all members
       const keyResult = await this.groupKeyService.distributeGroupKey(
-        conversation.id,
+        conversationId,
         members as ConversationMember[],
         1 // Initial key version
       );
@@ -223,14 +220,11 @@ export class GroupService {
       // If no members received keys, fail the entire operation and rollback
       if (keyResult.successful.length === 0) {
         logger.error('Failed to distribute group key to any members', {
-          conversationId: conversation.id,
+          conversationId,
           pending: keyResult.pending,
         });
         // Rollback: delete the conversation (cascade deletes members)
-        await msgClient
-          .from('conversations')
-          .delete()
-          .eq('id', conversation.id);
+        await this.rollbackCreatedGroup(conversationId);
         throw new GroupError(
           'Failed to distribute encryption keys. Please try again.'
         );
@@ -239,7 +233,7 @@ export class GroupService {
       // If some members are pending, log warning but continue
       if (keyResult.pending.length > 0) {
         logger.warn('Some members marked pending for key distribution', {
-          conversationId: conversation.id,
+          conversationId,
           pending: keyResult.pending,
           successful: keyResult.successful,
         });
@@ -247,25 +241,39 @@ export class GroupService {
         await msgClient
           .from('conversation_members')
           .update({ key_status: 'pending' })
-          .eq('conversation_id', conversation.id)
+          .eq('conversation_id', conversationId)
           .in('user_id', keyResult.pending);
       }
 
+      // Read the row back now that the creator is seated and can see it as a member. If that
+      // read fails the group still exists; report what we know rather than a failure.
+      const { data: stored, error: readError } = await msgClient
+        .from('conversations')
+        .select('created_at, last_message_at')
+        .eq('id', conversationId)
+        .single();
+      if (readError) {
+        logger.warn('Created group could not be read back', {
+          conversationId,
+          error: readError,
+        });
+      }
+
       logger.info('Group created', {
-        conversationId: conversation.id,
+        conversationId,
         memberCount: members.length,
         groupName: name,
       });
 
       return {
         conversation: {
-          id: conversation.id,
+          id: conversationId,
           is_group: true,
-          group_name: conversation.group_name,
-          created_by: conversation.created_by || user.id, // Guaranteed to exist since we just created it
-          current_key_version: conversation.current_key_version,
-          last_message_at: conversation.last_message_at,
-          created_at: conversation.created_at,
+          group_name: name || null,
+          created_by: user.id,
+          current_key_version: 1,
+          last_message_at: stored?.last_message_at ?? null,
+          created_at: stored?.created_at ?? new Date().toISOString(),
         },
         members: members as ConversationMember[],
       };
@@ -363,10 +371,10 @@ export class GroupService {
     actorId: string,
     type: string,
     extra?: Record<string, unknown>
-  ): Promise<void> {
+  ): Promise<boolean> {
     try {
       const msgClient = createMessagingClient(this.supabase);
-      await msgClient.from('messages').insert({
+      const { error } = await msgClient.from('messages').insert({
         conversation_id: conversationId,
         sender_id: actorId,
         is_system_message: true,
@@ -379,19 +387,50 @@ export class GroupService {
         // column is NOT NULL so a value must be supplied client-side.
         sequence_number: 0,
       });
+      // A refused insert reports an error rather than throwing (#1247 B2).
+      if (error) throw error;
+      return true;
     } catch (error) {
       logger.warn('Failed to record group system message', {
         conversationId,
         type,
         error,
       });
+      return false;
     }
   }
 
   /**
-   * Add members to an existing group (#26). Owner or existing member may add.
-   * Distributes the current group key to the new members; members without a
-   * public key are returned as `pending` (retryable via the key service).
+   * Delete a group that createGroup could not finish (#1247 B2).
+   *
+   * A delete RLS does not allow matches 0 rows and returns no error, so the rollback reads back
+   * what it removed. Until the conversations DELETE policy is applied, it removes nothing and
+   * the empty group stays behind, which is how production collected its empty shells. Logged
+   * rather than thrown: the caller is already failing with the error that matters.
+   */
+  private async rollbackCreatedGroup(conversationId: string): Promise<void> {
+    const msgClient = createMessagingClient(this.supabase);
+    const { data, error } = await msgClient
+      .from('conversations')
+      .delete()
+      .eq('id', conversationId)
+      .select('id');
+    if (error || !data?.length) {
+      logger.error(
+        'createGroup rollback removed no row; an empty group remains',
+        {
+          conversationId,
+          error,
+        }
+      );
+    }
+  }
+
+  /**
+   * Add members to an existing group (#26). Owner only (#1247 B2): only an active owner may
+   * write group key rows (the database's enforce_group_key_insert), so a member could seat
+   * someone but never give them the key. Hands the new members the key the group already uses;
+   * members without a public key are returned as `pending` (retryable via the key service).
    * @throws AuthenticationError / MembershipError / GroupError
    */
   async addMembers(input: AddMembersInput): Promise<AddMembersResult> {
@@ -407,9 +446,9 @@ export class GroupService {
     for (const id of member_ids) {
       validateUUID(id, 'member_ids');
     }
-    if (!(await this.isMember(conversation_id, user.id))) {
+    if (!(await this.isOwner(conversation_id, user.id))) {
       throw new MembershipError(
-        'Only a group member can add members',
+        'Only the group owner can add members',
         'NOT_CONNECTED'
       );
     }
@@ -475,8 +514,9 @@ export class GroupService {
       throw new GroupError('Failed to add members', insertError);
     }
 
-    // Distribute the CURRENT key to the new members (no rotation needed on add —
-    // new members legitimately may read history they now belong to).
+    // Hand the new members the key the group ALREADY uses at this version (#1247 F9). This
+    // used to generate a fresh key under the existing version, so newcomers could read nothing
+    // anyone else sent. No rotation on add: newcomers may read the conversation they joined.
     const withKeys = newIds.filter((id) => !keyCheck.missingKeys.includes(id));
     const memberRows: ConversationMember[] =
       await this.getMembers(conversation_id);
@@ -485,12 +525,36 @@ export class GroupService {
     );
     let pending = [...keyCheck.missingKeys];
     if (newMemberRows.length > 0) {
-      const result = await this.groupKeyService.distributeGroupKey(
-        conversation_id,
-        newMemberRows,
-        keyVersion
-      );
-      pending = [...pending, ...result.pending];
+      let undelivered: string[];
+      try {
+        const result = await this.groupKeyService.distributeExistingGroupKey(
+          conversation_id,
+          newMemberRows,
+          keyVersion
+        );
+        undelivered = result.pending;
+      } catch (error) {
+        // Seated but keyless: say so on their rows, so a retry can find them.
+        logger.error('Failed to give new members the group key', {
+          conversationId: conversation_id,
+          error,
+        });
+        undelivered = newMemberRows.map((m) => m.user_id);
+      }
+      if (undelivered.length > 0) {
+        const { error: statusError } = await msgClient
+          .from('conversation_members')
+          .update({ key_status: 'pending' })
+          .eq('conversation_id', conversation_id)
+          .in('user_id', undelivered);
+        if (statusError) {
+          logger.error('Failed to mark new members pending', {
+            conversationId: conversation_id,
+            error: statusError,
+          });
+        }
+      }
+      pending = [...pending, ...undelivered];
     }
 
     await this.recordSystemMessage(conversation_id, user.id, 'member_added', {
@@ -549,8 +613,12 @@ export class GroupService {
   /**
    * Leave a group voluntarily (#26). An owner must transfer ownership first
    * (unless they are the last member, in which case the group is deleted).
-   * Rotates the key on departure for forward secrecy.
-   * @throws AuthenticationError / MembershipError
+   *
+   * The leaver does not rotate the key (#1247 B2). Their rotation could never land: once
+   * left_at is set they can no longer read the group, and only an active owner may write key
+   * rows. It threw AFTER the leave had committed. A remaining owner's client rotates when it
+   * sees a departure newer than its own current key.
+   * @throws AuthenticationError / MembershipError / GroupError
    */
   async leaveGroup(conversationId: string): Promise<void> {
     const user = await this.requireUser();
@@ -571,19 +639,20 @@ export class GroupService {
       return;
     }
 
+    // Record the departure first: after leaving, the leaver can no longer post to the group.
+    await this.recordSystemMessage(conversationId, user.id, 'member_left');
+
     const msgClient = createMessagingClient(this.supabase);
-    const { error } = await msgClient
+    const { data: left, error } = await msgClient
       .from('conversation_members')
       .update({ left_at: new Date().toISOString() })
       .eq('conversation_id', conversationId)
       .eq('user_id', user.id)
-      .is('left_at', null);
-    if (error) {
+      .is('left_at', null)
+      .select('id');
+    if (error || !left?.length) {
       throw new GroupError('Failed to leave group', error);
     }
-
-    await this.groupKeyService.rotateGroupKey(conversationId);
-    await this.recordSystemMessage(conversationId, user.id, 'member_left');
   }
 
   /**

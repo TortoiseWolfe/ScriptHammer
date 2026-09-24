@@ -591,6 +591,50 @@ describe.skipIf(!hasRlsTestEnvironment())(
         ]);
         expect(keys.error).toBeNull();
       });
+
+      it('CONTROL: createGroup as the #1247 B2 client does it — its own id, no RETURNING', async () => {
+        // Stage 1 of B2 ships app-first, against the policies production has now. The group row
+        // goes in with a client-chosen id and no read-back; the seat keeps its RETURNING; the row
+        // is read back once the creator is a member.
+        const g = crypto.randomUUID();
+        const inserted = await aClient.from('conversations').insert({
+          id: g,
+          is_group: true,
+          group_name: '#1247 B2 client create',
+          created_by: a.id,
+          current_key_version: 1,
+        });
+        expect(inserted.error).toBeNull();
+        groups.push(g);
+        const seated = await aClient
+          .from('conversation_members')
+          .insert([
+            {
+              conversation_id: g,
+              user_id: a.id,
+              role: 'owner',
+              key_version_joined: 1,
+              key_status: 'active',
+            },
+            {
+              conversation_id: g,
+              user_id: b.id,
+              role: 'member',
+              key_version_joined: 1,
+              key_status: 'active',
+            },
+          ])
+          .select('id');
+        expect(seated.error).toBeNull();
+        expect(seated.data ?? []).toHaveLength(2);
+        const readBack = await aClient
+          .from('conversations')
+          .select('created_at, last_message_at')
+          .eq('id', g)
+          .single();
+        expect(readBack.error).toBeNull();
+        expect(readBack.data?.created_at).toBeTruthy();
+      });
     });
 
     describe('F3: group_keys', () => {

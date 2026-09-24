@@ -40,8 +40,10 @@ const msgState: {
 };
 /** Every UPDATE payload, in order — so a test can see which step ran first (#1247). */
 const updates: Record<string, unknown>[] = [];
+/** Every write as `table:op`, in order, across all builders (#1247 B2). */
+const writes: string[] = [];
 
-function makeBuilder() {
+function makeBuilder(table = '?') {
   const b: Record<string, unknown> = {};
   const chain = () => b;
   b.select = vi.fn(chain);
@@ -49,7 +51,10 @@ function makeBuilder() {
   b.is = vi.fn(chain);
   b.order = vi.fn(() => Promise.resolve(msgState.selectRows));
   b.single = vi.fn(() => Promise.resolve(msgState.single));
-  b.insert = vi.fn(() => Promise.resolve({ error: msgState.insertError }));
+  b.insert = vi.fn(() => {
+    writes.push(`${table}:insert`);
+    return Promise.resolve({ error: msgState.insertError });
+  });
   // `.is()` resolves like the real builder AND offers `.select()` for callers that read back
   // what they changed (transferOwnership, #1247).
   const settled = () =>
@@ -63,6 +68,7 @@ function makeBuilder() {
     });
   b.update = vi.fn((payload: Record<string, unknown>) => {
     updates.push(payload);
+    writes.push(`${table}:update`);
     return {
       eq: vi.fn(() => ({
         eq: vi.fn(() => ({ is: vi.fn(settled) })),
@@ -77,7 +83,7 @@ function makeBuilder() {
 }
 // One shared spy, so a test can assert that NO query was issued (#1242). A fresh
 // vi.fn per call would make that assertion unobservable, and therefore vacuous.
-const msgFrom = vi.fn(() => makeBuilder());
+const msgFrom = vi.fn((table: string) => makeBuilder(table));
 vi.mock('@/lib/supabase/messaging-client', () => ({
   createMessagingClient: () => ({ from: msgFrom }),
 }));
@@ -108,6 +114,8 @@ describe('GroupService membership (#26)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    writes.length = 0;
+    msgState.updateRows = [{ id: 'row' }];
     getUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
     // default generic builder for the service's own helper queries
     mockSupabase.from.mockImplementation(() => makeBuilder());
@@ -159,11 +167,42 @@ describe('GroupService membership (#26)', () => {
   });
 
   describe('leaveGroup', () => {
-    it('rotates the key when a non-owner member leaves', async () => {
-      // isMember=true (row), isOwner=false (role member)
+    it('a leaving member does not rotate the key (#1247 B2)', async () => {
+      // The leaver's rotation can never land: once left_at is set they can no longer read the
+      // group, and B1's key guard refuses key rows from anyone but an active owner. It threw
+      // AFTER the leave had committed. A remaining owner rotates instead.
       asRole('member');
       await svc.leaveGroup(CONV);
-      expect(rotateGroupKey).toHaveBeenCalledWith(CONV);
+      expect(rotateGroupKey).not.toHaveBeenCalled();
+    });
+
+    it('records member_left BEFORE leaving, while the leaver can still post', async () => {
+      asRole('member');
+      await svc.leaveGroup(CONV);
+      expect(writes).toEqual([
+        'messages:insert',
+        'conversation_members:update',
+      ]);
+    });
+
+    it('a leave that changed no row fails loudly', async () => {
+      asRole('member');
+      msgState.updateRows = [];
+      await expect(svc.leaveGroup(CONV)).rejects.toThrow(
+        /failed to leave group/i
+      );
+    });
+  });
+
+  describe('addMembers (owner-only, #1247 B2)', () => {
+    it('refuses a plain member before seating anyone', async () => {
+      // B1's key guard lets only an active owner write key rows, so a member-seated
+      // newcomer would sit in the group with no key.
+      asRole('member');
+      await expect(
+        svc.addMembers({ conversation_id: CONV, member_ids: [OTHER] })
+      ).rejects.toThrow(/only the group owner can add members/i);
+      expect(writes).toEqual([]);
     });
   });
 
@@ -281,7 +320,7 @@ describe('member id validation (#1242)', () => {
     // assertions above would pass against a service that never validates.
     await expect(
       svc.addMembers({ conversation_id: CONV, member_ids: [OTHER] })
-    ).rejects.toThrow(/only a group member/i);
+    ).rejects.toThrow(/only the group owner can add members/i);
     expect(queries()).toBeGreaterThan(0);
   });
 });
