@@ -4023,6 +4023,56 @@ AS $$
   );
 $$;
 
+-- #1247: the founder of a group, BEFORE anyone — the founder included — holds a
+-- seat in it. That is the only moment "I created it" should grant anything:
+-- is_conversation_creator is true forever, so a creator the owner later removed
+-- could re-seat themselves and read the roster indefinitely. Once any row exists
+-- (a departed one included), the founder is a member like any other, or nothing.
+-- Answers only about the caller's own groups (created_by = auth.uid()), so it
+-- is not an oracle about anyone else's (#1245).
+CREATE OR REPLACE FUNCTION is_unseated_group_founder(conv_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+      SELECT 1 FROM conversations c
+      WHERE c.id = conv_id AND c.is_group AND c.created_by = auth.uid()
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM conversation_members m WHERE m.conversation_id = conv_id
+    );
+$$;
+REVOKE ALL ON FUNCTION is_unseated_group_founder(UUID) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION is_unseated_group_founder(UUID) TO authenticated;
+
+-- #1247: the same test for the conversations SELECT policy, which must also pass
+-- for createGroup's INSERT ... RETURNING — where no helper can see the row being
+-- inserted, so the row's own created_by is passed in. Bound to the caller so a
+-- direct RPC learns nothing about another user's group: the creator argument
+-- must be the caller, and a conversation with this id created by anyone else
+-- makes it false.
+CREATE OR REPLACE FUNCTION is_unseated_founder_of(conv_id UUID, creator UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT COALESCE(creator = auth.uid(), false)
+    AND NOT EXISTS (
+      SELECT 1 FROM conversations c
+      WHERE c.id = conv_id AND c.created_by IS DISTINCT FROM auth.uid()
+    )
+    AND NOT EXISTS (
+      SELECT 1 FROM conversation_members m WHERE m.conversation_id = conv_id
+    );
+$$;
+REVOKE ALL ON FUNCTION is_unseated_founder_of(UUID, UUID) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION is_unseated_founder_of(UUID, UUID) TO authenticated;
+
 -- Group-conversation policies RELOCATED here from the 1:1 conversations policy
 -- block (#286). They reference is_group / created_by (added to conversations
 -- below the base table) and is_conversation_member() (defined just above), so
@@ -4035,11 +4085,15 @@ $$;
 -- for createGroup(): its INSERT ... RETURNING reads the new row back BEFORE the
 -- creator is added to conversation_members, so a membership-only check would
 -- 403 the returning select and break creation.
+-- #1247: the creator branch is now "an unseated founder" rather than "the
+-- creator, forever" — a creator the owner removed used to keep reading the group.
+-- A tab running the pre-#1247 client still creates groups: its insert().select()
+-- passes on the row's own created_by while the group has no seats.
 DROP POLICY IF EXISTS "Members can view group conversations" ON conversations;
 CREATE POLICY "Members can view group conversations" ON conversations
   FOR SELECT USING (
     is_group = true
-    AND (created_by = auth.uid() OR is_conversation_member(id))
+    AND (is_conversation_member(id) OR is_unseated_founder_of(id, created_by))
   );
 
 -- Users can create GROUP conversations they own (Feature 010 / #182).
@@ -4063,7 +4117,9 @@ CREATE POLICY "Members can view conversation members" ON conversation_members
     -- while membership is still being established, so a membership-only check
     -- races (is_conversation_member can't see the just-inserted rows yet) and
     -- the returning read intermittently 403s → "Failed to add group members".
-    OR is_conversation_creator(conversation_id)
+    -- #1247: only while the group has no seats. As "the creator" it was forever,
+    -- so a removed creator kept reading the roster.
+    OR is_unseated_group_founder(conversation_id)
   );
 
 -- INSERT: existing members can add others (connection validation in the
@@ -4109,22 +4165,30 @@ CREATE POLICY "Members can view conversation members" ON conversation_members
 -- the C30 block rule below. Both orderings are tested because
 -- `unique_connection` is (requester_id, addressee_id) and is not symmetric.
 DROP POLICY IF EXISTS "Members can add to their conversations" ON conversation_members;
+-- #1247: two changes to the #1059 policy. The founder's own row must be the
+-- OWNER row, and only while the group has no seats (a removed creator used to
+-- re-seat themselves forever); everyone else is seated as a plain member, so an
+-- accomplice can no longer be seated straight into `owner`. Re-adding someone
+-- who left or was removed needs an owner — enforced by
+-- conversation_member_insert_guard, which sees the old row this policy is not shown.
 CREATE POLICY "Members can add to their conversations" ON conversation_members
   FOR INSERT WITH CHECK (
+    -- The founder seating their own owner row: nobody to be connected to, and
+    -- the first row of every group.
     (
-      is_conversation_member(conversation_id)
-      OR is_conversation_creator(conversation_id)
+      conversation_members.user_id = auth.uid()
+      AND conversation_members.role = 'owner'
+      AND is_unseated_group_founder(conversation_id)
     )
-    AND (
-      -- The creator seating their own owner row: there is nobody to be
-      -- connected to, and this is the first row of every group.
-      (
-        conversation_members.user_id = auth.uid()
-        AND is_conversation_creator(conversation_id)
+    -- Anyone else: a plain member, seated by a member (or the founder's first
+    -- statement) who has an accepted connection with them, in either direction.
+    OR (
+      conversation_members.role = 'member'
+      AND (
+        is_conversation_member(conversation_id)
+        OR is_unseated_group_founder(conversation_id)
       )
-      -- Anyone else must be someone the ACTOR has an accepted connection with,
-      -- in either direction.
-      OR EXISTS (
+      AND EXISTS (
         SELECT 1
         FROM user_connections uc
         WHERE uc.status = 'accepted'
@@ -4138,10 +4202,18 @@ CREATE POLICY "Members can add to their conversations" ON conversation_members
 
 -- UPDATE: Members can update own preferences, owners can update others
 DROP POLICY IF EXISTS "Members can update membership" ON conversation_members;
+-- #1247: a departed row is never a target, and the new row must still belong to
+-- the actor or be the actor's to manage as owner. The real rules — who may
+-- change role, who may depart whom, never an owner-less group — live in
+-- conversation_member_update_guard: a policy judges every row against the
+-- statement's starting snapshot, so one PATCH could demote two owners at once.
 CREATE POLICY "Members can update membership" ON conversation_members
   FOR UPDATE USING (
-    user_id = auth.uid()
-    OR is_conversation_owner(conversation_id)
+    left_at IS NULL
+    AND (user_id = auth.uid() OR is_conversation_owner(conversation_id))
+  )
+  WITH CHECK (
+    user_id = auth.uid() OR is_conversation_owner(conversation_id)
   );
 
 -- DELETE: No direct deletes - use soft delete via left_at
@@ -4164,6 +4236,11 @@ DROP POLICY IF EXISTS "Members can distribute keys" ON group_keys;
 CREATE POLICY "Members can distribute keys" ON group_keys
   FOR INSERT WITH CHECK (
     is_conversation_member(conversation_id)
+    -- #1247: the distributor is the caller. The reader trusts created_by and the
+    -- JWK on the row; both were the inserter's to choose. The remaining rules
+    -- (owner only, active target, version, a registered JWK) are in
+    -- group_key_insert_guard.
+    AND created_by = auth.uid()
   );
 
 -- UPDATE: No updates allowed - keys are immutable
@@ -4175,6 +4252,235 @@ CREATE POLICY "Keys are immutable" ON group_keys
 DROP POLICY IF EXISTS "No direct key deletes" ON group_keys;
 CREATE POLICY "No direct key deletes" ON group_keys
   FOR DELETE USING (false);
+
+-- #1247: the membership rules RLS cannot express. BEFORE UPDATE, and the checks
+-- re-read the table (this function is VOLATILE), so a multi-row PATCH is judged
+-- row by row against the changes it has already made — a policy cannot do that.
+CREATE OR REPLACE FUNCTION enforce_conversation_member_update()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_uid   uuid := auth.uid();
+  v_role  text := auth.role();
+  v_owner boolean;
+BEGIN
+  -- Privileged/system contexts bypass RLS entirely; let them bypass this guard
+  -- too. Requires BOTH a NULL uid AND a trusted role (or no role) so a real
+  -- end-user who forges "role":"service_role" (still carrying their sub) can
+  -- NEVER reach this early return. (Copied from enforce_message_update_columns.)
+  IF v_uid IS NULL
+     AND (v_role IS NULL
+          OR v_role IN ('service_role', 'supabase_admin', 'supabase_auth_admin', 'postgres'))
+  THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.id IS DISTINCT FROM OLD.id
+     OR NEW.conversation_id IS DISTINCT FROM OLD.conversation_id
+     OR NEW.user_id IS DISTINCT FROM OLD.user_id
+     OR NEW.joined_at IS DISTINCT FROM OLD.joined_at
+     OR NEW.key_version_joined IS DISTINCT FROM OLD.key_version_joined
+  THEN
+    RAISE EXCEPTION 'a membership''s identity cannot change' USING ERRCODE = '42501';
+  END IF;
+
+  -- A departure is final. Rejoining is a new row, which needs an owner.
+  IF OLD.left_at IS NOT NULL THEN
+    RAISE EXCEPTION 'a departed membership cannot change' USING ERRCODE = '42501';
+  END IF;
+
+  v_owner := EXISTS (
+    SELECT 1 FROM conversation_members m
+    WHERE m.conversation_id = OLD.conversation_id
+      AND m.user_id = v_uid AND m.role = 'owner' AND m.left_at IS NULL
+  );
+
+  -- Archive and mute are each member's own view of the group.
+  IF (NEW.archived IS DISTINCT FROM OLD.archived OR NEW.muted IS DISTINCT FROM OLD.muted)
+     AND (v_uid = OLD.user_id) IS NOT TRUE
+  THEN
+    RAISE EXCEPTION 'only the member can archive or mute their membership' USING ERRCODE = '42501';
+  END IF;
+
+  IF NEW.role IS DISTINCT FROM OLD.role AND v_owner IS NOT TRUE THEN
+    RAISE EXCEPTION 'only an owner can change roles' USING ERRCODE = '42501';
+  END IF;
+
+  IF NEW.left_at IS DISTINCT FROM OLD.left_at THEN
+    IF (v_uid = OLD.user_id OR v_owner) IS NOT TRUE THEN
+      RAISE EXCEPTION 'only the member or an owner can end a membership' USING ERRCODE = '42501';
+    END IF;
+    -- When it happened, not when the caller says it did: a backdated departure
+    -- would hide it from the owner's "rotate if anyone left since my key" check.
+    NEW.left_at := now();
+  END IF;
+
+  -- Never leave a group without an owner while anyone remains in it. A
+  -- demotion always needs another owner; a departure needs one only if others
+  -- stay behind (the last person may simply leave).
+  IF OLD.role = 'owner' AND (NEW.role IS DISTINCT FROM 'owner' OR NEW.left_at IS NOT NULL)
+     AND NOT EXISTS (
+       SELECT 1 FROM conversation_members m
+       WHERE m.conversation_id = OLD.conversation_id AND m.id <> OLD.id
+         AND m.role = 'owner' AND m.left_at IS NULL
+     )
+     AND (
+       NEW.role IS DISTINCT FROM 'owner'
+       OR EXISTS (
+         SELECT 1 FROM conversation_members m
+         WHERE m.conversation_id = OLD.conversation_id AND m.id <> OLD.id
+           AND m.left_at IS NULL
+       )
+     )
+  THEN
+    RAISE EXCEPTION 'transfer ownership before leaving or stepping down' USING ERRCODE = '42501';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS conversation_member_update_guard ON conversation_members;
+CREATE TRIGGER conversation_member_update_guard
+  BEFORE UPDATE ON conversation_members
+  FOR EACH ROW EXECUTE FUNCTION enforce_conversation_member_update();
+
+-- #1247: seating rules the INSERT policy cannot see. Members exist only in
+-- groups (a 1:1 thread's creator could seat a third party, who could then post
+-- to it past the C30 block rule), and someone who left or was removed comes back
+-- only through an owner — otherwise any member connected to them could undo a
+-- removal the owner made.
+CREATE OR REPLACE FUNCTION enforce_conversation_member_insert()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_uid  uuid := auth.uid();
+  v_role text := auth.role();
+BEGIN
+  -- Privileged/system contexts bypass RLS entirely; let them bypass this guard
+  -- too. Requires BOTH a NULL uid AND a trusted role (or no role) so a real
+  -- end-user who forges "role":"service_role" (still carrying their sub) can
+  -- NEVER reach this early return. (Copied from enforce_message_update_columns.)
+  IF v_uid IS NULL
+     AND (v_role IS NULL
+          OR v_role IN ('service_role', 'supabase_admin', 'supabase_auth_admin', 'postgres'))
+  THEN
+    RETURN NEW;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM conversations c WHERE c.id = NEW.conversation_id AND c.is_group
+  ) THEN
+    RAISE EXCEPTION 'members can be added only to a group' USING ERRCODE = '42501';
+  END IF;
+
+  IF EXISTS (
+       SELECT 1 FROM conversation_members m
+       WHERE m.conversation_id = NEW.conversation_id AND m.user_id = NEW.user_id
+     )
+     AND NOT EXISTS (
+       SELECT 1 FROM conversation_members m
+       WHERE m.conversation_id = NEW.conversation_id AND m.user_id = v_uid
+         AND m.role = 'owner' AND m.left_at IS NULL
+     )
+  THEN
+    RAISE EXCEPTION 'only an owner can re-add someone who left or was removed' USING ERRCODE = '42501';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS conversation_member_insert_guard ON conversation_members;
+CREATE TRIGGER conversation_member_insert_guard
+  BEFORE INSERT ON conversation_members
+  FOR EACH ROW EXECUTE FUNCTION enforce_conversation_member_insert();
+
+-- #1247: who may write a group key row. Any member could plant rows — for
+-- another member, at a future version, under someone else's name and JWK — and
+-- the UNIQUE (conversation_id, user_id, key_version) then refused the owner's
+-- real rotation, so a member about to be removed kept the key. Until key
+-- distribution by ordinary members is designed (#1247 B2), only an active owner
+-- writes key rows: every live flow distributes as the owner.
+CREATE OR REPLACE FUNCTION enforce_group_key_insert()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_uid  uuid := auth.uid();
+  v_role text := auth.role();
+  v_cur  integer;
+BEGIN
+  -- Privileged/system contexts bypass RLS entirely; let them bypass this guard
+  -- too. Requires BOTH a NULL uid AND a trusted role (or no role) so a real
+  -- end-user who forges "role":"service_role" (still carrying their sub) can
+  -- NEVER reach this early return. (Copied from enforce_message_update_columns.)
+  IF v_uid IS NULL
+     AND (v_role IS NULL
+          OR v_role IN ('service_role', 'supabase_admin', 'supabase_auth_admin', 'postgres'))
+  THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT c.current_key_version INTO v_cur
+  FROM conversations c WHERE c.id = NEW.conversation_id AND c.is_group;
+  IF v_cur IS NULL THEN
+    RAISE EXCEPTION 'group keys exist only for groups' USING ERRCODE = '42501';
+  END IF;
+
+  IF (NEW.created_by = v_uid) IS NOT TRUE THEN
+    RAISE EXCEPTION 'a key row names its distributor, who must be the caller' USING ERRCODE = '42501';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM conversation_members m
+    WHERE m.conversation_id = NEW.conversation_id AND m.user_id = v_uid
+      AND m.role = 'owner' AND m.left_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'only an owner distributes group keys' USING ERRCODE = '42501';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM conversation_members m
+    WHERE m.conversation_id = NEW.conversation_id AND m.user_id = NEW.user_id
+      AND m.left_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'a group key is only for an active member' USING ERRCODE = '42501';
+  END IF;
+
+  IF (NEW.key_version = v_cur OR NEW.key_version = v_cur + 1) IS NOT TRUE THEN
+    RAISE EXCEPTION 'a group key is for the current version or the next one' USING ERRCODE = '42501';
+  END IF;
+
+  -- Compared on crv/x/y, as the app compares keys — never as whole jsonb, whose
+  -- extra members (ext, key_ops) differ between a stored and an exported JWK.
+  -- A revoked key still counts: it was the caller's when it was used (#243).
+  IF NEW.creator_public_key IS NULL OR NOT EXISTS (
+    SELECT 1 FROM user_encryption_keys k
+    WHERE k.user_id = v_uid
+      AND k.public_key ->> 'crv' = NEW.creator_public_key ->> 'crv'
+      AND k.public_key ->> 'x' = NEW.creator_public_key ->> 'x'
+      AND k.public_key ->> 'y' = NEW.creator_public_key ->> 'y'
+  ) THEN
+    RAISE EXCEPTION 'the key row''s JWK must be one of the caller''s registered keys' USING ERRCODE = '42501';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS group_key_insert_guard ON group_keys;
+CREATE TRIGGER group_key_insert_guard
+  BEFORE INSERT ON group_keys
+  FOR EACH ROW EXECUTE FUNCTION enforce_group_key_insert();
 
 -- T014a: Update messages table RLS for group membership
 
@@ -4305,7 +4611,11 @@ GRANT UPDATE (archived_by_participant_1, archived_by_participant_2, group_name,
 GRANT ALL ON conversations TO service_role;
 
 REVOKE ALL ON conversation_members FROM anon, authenticated;
-GRANT SELECT, INSERT ON conversation_members TO authenticated;
+GRANT SELECT ON conversation_members TO authenticated;
+-- #1247: INSERT by column. joined_at orders the owner hand-over on erasure, and
+-- left_at/archived/muted are not a seat's to set at birth.
+GRANT INSERT (conversation_id, user_id, role, key_version_joined, key_status)
+  ON conversation_members TO authenticated;
 GRANT UPDATE (left_at, role, key_status, archived, muted)
   ON conversation_members TO authenticated;
 GRANT ALL ON conversation_members TO service_role;
@@ -4373,7 +4683,11 @@ GRANT ALL ON messages TO service_role;
 -- Immutability is structural now rather than policy-deep: the privilege is not held,
 -- and a grant is checked before any policy runs.
 REVOKE ALL ON group_keys FROM anon, authenticated;
-GRANT SELECT, INSERT ON group_keys TO authenticated;
+GRANT SELECT ON group_keys TO authenticated;
+-- #1247: INSERT by column; created_at (which the reader's fallback trusts) and
+-- id are the database's to set.
+GRANT INSERT (conversation_id, user_id, key_version, encrypted_key, created_by, creator_public_key)
+  ON group_keys TO authenticated;
 GRANT ALL ON group_keys TO service_role;
 
 -- Enable realtime for group tables

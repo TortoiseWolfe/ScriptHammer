@@ -190,6 +190,80 @@ describe.skipIf(!hasRlsTestEnvironment())(
       }
     });
 
+    describe('the founder helpers answer only about the caller (#1247)', () => {
+      // Both are SECURITY DEFINER and exist so a group's first seats can be written and read
+      // back. Neither may tell anyone whether SOMEONE ELSE'S group has members yet.
+      let unseated: string;
+
+      beforeAll(async () => {
+        const { data, error } = await service
+          .from('conversations')
+          .insert({
+            is_group: true,
+            group_name: 'RLS #1247 unseated',
+            created_by: alice.id,
+            current_key_version: 1,
+          })
+          .select('id')
+          .single();
+        if (error || !data)
+          throw new Error(`seed unseated group: ${error?.message}`);
+        unseated = data.id;
+      });
+
+      afterAll(async () => {
+        if (unseated)
+          await service.from('conversations').delete().eq('id', unseated);
+      });
+
+      it('is_unseated_group_founder: an outsider learns nothing about another founder’s group', async () => {
+        const { data, error } = await bobClient.rpc(
+          'is_unseated_group_founder',
+          {
+            conv_id: unseated,
+          }
+        );
+        expect(error).toBeNull();
+        expect(data).toBe(false);
+      });
+
+      it('is_unseated_founder_of: naming yourself or the real creator changes nothing for an outsider', async () => {
+        for (const creator of [bob.id, alice.id]) {
+          const { data, error } = await bobClient.rpc(
+            'is_unseated_founder_of',
+            {
+              conv_id: unseated,
+              creator,
+            }
+          );
+          expect(error).toBeNull();
+          expect(data).toBe(false);
+        }
+      });
+
+      it('CONTROL: the founder gets true until the first seat, then false', async () => {
+        const before = await aliceClient.rpc('is_unseated_group_founder', {
+          conv_id: unseated,
+        });
+        const beforeOf = await aliceClient.rpc('is_unseated_founder_of', {
+          conv_id: unseated,
+          creator: alice.id,
+        });
+        expect([before.data, beforeOf.data]).toEqual([true, true]);
+        const { error } = await service.from('conversation_members').insert({
+          conversation_id: unseated,
+          user_id: alice.id,
+          role: 'owner',
+          key_version_joined: 1,
+        });
+        if (error) throw new Error(`seat: ${error.message}`);
+        const after = await aliceClient.rpc('is_unseated_group_founder', {
+          conv_id: unseated,
+        });
+        expect(after.data).toBe(false);
+      });
+    });
+
     describe('consume_rate_limit decides atomically (#1237)', () => {
       it('twenty concurrent consumes on one identifier allow exactly five', async () => {
         const id = fresh('burst');
