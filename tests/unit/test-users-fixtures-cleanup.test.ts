@@ -25,6 +25,10 @@ const h = vi.hoisted(() => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://mock.local';
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'mock-anon-key';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'mock-service-role-key';
+  // mock.local is not a local stack, so the #1234 target guard refuses it unless named. The
+  // client is mocked below and nothing leaves the process; authorise the fake host the same
+  // way a real remote would be, rather than weakening the guard for tests.
+  process.env.ALLOW_REMOTE_SUPABASE = 'mock.local';
   return {
     ops: [] as Array<{
       table: string;

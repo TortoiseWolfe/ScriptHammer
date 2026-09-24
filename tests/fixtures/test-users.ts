@@ -9,6 +9,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
+import { assertRlsTargetApproved } from './rls-target';
 
 // Test configuration — read without non-null assertion so we can gate
 // cleanly when infra is absent rather than failing with an opaque
@@ -32,15 +33,30 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
  * invisibly excluded, so reviewers know they exist.
  */
 export function hasRlsTestEnvironment(): boolean {
-  return Boolean(
+  const configured = Boolean(
     SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_SERVICE_ROLE_KEY
   );
+  // Configured is not the same as safe (#1234). Absent credentials still skip, as before;
+  // credentials aimed at a remote project that nothing authorised THROW, at collection time,
+  // so a mis-pointed run fails loudly instead of skipping or writing to production.
+  if (configured) assertRlsTargetApproved();
+  return configured;
 }
 
 /** Human-readable explanation for why RLS tests were skipped. */
 export const RLS_SKIP_REASON =
   'RLS tests require a live Supabase instance and SUPABASE_SERVICE_ROLE_KEY. ' +
   'Run `docker compose --profile supabase up` then `pnpm test:rls`.';
+
+/**
+ * The URL every client in this suite is built with — checked before it is returned, so no
+ * client (anon or service-role) can exist against an unapproved target (#1234).
+ */
+function suiteUrl(): string {
+  const url = requireEnv(SUPABASE_URL, 'NEXT_PUBLIC_SUPABASE_URL');
+  assertRlsTargetApproved();
+  return url;
+}
 
 function requireEnv(value: string | undefined, name: string): string {
   if (!value) {
@@ -84,7 +100,7 @@ export const TEST_USERS = {
  */
 export function createAnonClient() {
   return createClient<Database>(
-    requireEnv(SUPABASE_URL, 'NEXT_PUBLIC_SUPABASE_URL'),
+    suiteUrl(),
     requireEnv(SUPABASE_ANON_KEY, 'NEXT_PUBLIC_SUPABASE_ANON_KEY')
   );
 }
@@ -94,7 +110,7 @@ export function createAnonClient() {
  */
 export function createServiceClient() {
   return createClient<Database>(
-    requireEnv(SUPABASE_URL, 'NEXT_PUBLIC_SUPABASE_URL'),
+    suiteUrl(),
     requireEnv(SUPABASE_SERVICE_ROLE_KEY, 'SUPABASE_SERVICE_ROLE_KEY'),
     {
       auth: {
@@ -126,7 +142,7 @@ export async function createAuthenticatedClient(
   // the user, so RLS must apply. Never give this client the service-role key —
   // it would bypass RLS and quietly turn RLS tests green.
   const client = createClient<Database>(
-    requireEnv(SUPABASE_URL, 'NEXT_PUBLIC_SUPABASE_URL'),
+    suiteUrl(),
     requireEnv(SUPABASE_ANON_KEY, 'NEXT_PUBLIC_SUPABASE_ANON_KEY')
   );
 
@@ -136,7 +152,7 @@ export async function createAuthenticatedClient(
   // password is examined. GoTrue exempts service-role callers; a wrong password
   // is still rejected, so this check keeps its meaning.
   const signInClient = createClient<Database>(
-    requireEnv(SUPABASE_URL, 'NEXT_PUBLIC_SUPABASE_URL'),
+    suiteUrl(),
     requireEnv(SUPABASE_SERVICE_ROLE_KEY, 'SUPABASE_SERVICE_ROLE_KEY'),
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
