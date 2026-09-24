@@ -182,6 +182,6 @@ describe('siteManifestBlock', () => {
     expect(block.day).toBeCloseTo(0.4, 10);
     expect(block.tour).toHaveLength(7);
     expect(block.trolley).toHaveLength(16);
-    expect(block.framing).toEqual({ homeFocus: [-100, 0, -2000] });
+    expect(block.framing).toEqual({ homeFocus: [-150.73, 0, -2177.43] });
   });
 });

@@ -138,7 +138,10 @@ describe('golden: sites/chatt.json', () => {
       'Chattanooga Choo Choo',
     ]);
     expect(site.trolley).toHaveLength(16);
-    expect(site.framing?.homeFocus).toEqual([-100, 0, -2000]);
+    // Walk spawn: Market x W 3rd St (OSM signal node 202596768, 35.0535269,
+    // -85.3096573), in front of the 1886 Car Barns site with the standing 1907
+    // Hunt trolley barn across 3rd (#1290). Clear of every footprint.
+    expect(site.framing?.homeFocus).toEqual([-150.73, 0, -2177.43]);
     expect(site.carveWater).toBe(true);
   });
 

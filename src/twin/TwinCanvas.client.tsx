@@ -707,10 +707,11 @@ function SceneInner({
     // spawning there leaves every landmark fogged out (walk Fog near 1500 / far
     // 6000) and unseeable — the "I can't see these buildings" bug. The wide path
     // drops site.framing (so framing.homeFocus is the atlasBox origin here), so
-    // instead reproject the AUTHORED narrow homeFocus ([-100,-2000], the
-    // riverfront) into the wide frame the SAME way the landmark anchors are
-    // (narrow enu → lon/lat → wide enu). That lands ~300-470 m from the cluster,
-    // well inside the fog. Narrow sites (no atlasBox) keep the twin/home spawn.
+    // instead reproject the AUTHORED narrow homeFocus (Market x W 3rd St, in
+    // front of the Car Barns site, #1290) into the wide frame the SAME way the
+    // landmark anchors are (narrow enu → lon/lat → wide enu). That lands a few
+    // hundred metres from the riverfront cluster, well inside the fog. Narrow
+    // sites (no atlasBox) keep the twin/home spawn.
     const authored = manifest.site.framing?.homeFocus;
     let sx: number;
     let sz: number;
