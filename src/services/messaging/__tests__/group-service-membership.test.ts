@@ -30,6 +30,7 @@ const msgState: {
   deleteError: unknown;
   selectRows: unknown;
   updateRows: unknown[];
+  deleteRows: unknown[];
 } = {
   single: { data: null, error: null },
   insertError: null,
@@ -37,6 +38,7 @@ const msgState: {
   deleteError: null,
   selectRows: { data: [], error: null },
   updateRows: [{ id: 'row' }],
+  deleteRows: [{ id: 'row' }],
 };
 /** Every UPDATE payload, in order — so a test can see which step ran first (#1247). */
 const updates: Record<string, unknown>[] = [];
@@ -73,12 +75,32 @@ function makeBuilder(table = '?') {
       eq: vi.fn(() => ({
         eq: vi.fn(() => ({ is: vi.fn(settled) })),
         is: vi.fn(settled),
+        // renameGroup reads back what it changed (#1247 B2).
+        select: vi.fn(() =>
+          Promise.resolve({
+            data: msgState.updateRows,
+            error: msgState.updateError,
+          })
+        ),
       })),
     };
   });
-  b.delete = vi.fn(() => ({
-    eq: vi.fn(() => Promise.resolve({ error: msgState.deleteError })),
-  }));
+  b.delete = vi.fn(() => {
+    writes.push(`${table}:delete`);
+    return {
+      eq: vi.fn(() =>
+        Object.assign(Promise.resolve({ error: msgState.deleteError }), {
+          // deleteGroup reads back what it removed (#1247 B2).
+          select: vi.fn(() =>
+            Promise.resolve({
+              data: msgState.deleteRows,
+              error: msgState.deleteError,
+            })
+          ),
+        })
+      ),
+    };
+  });
   return b;
 }
 // One shared spy, so a test can assert that NO query was issued (#1242). A fresh
@@ -116,6 +138,7 @@ describe('GroupService membership (#26)', () => {
     vi.clearAllMocks();
     writes.length = 0;
     msgState.updateRows = [{ id: 'row' }];
+    msgState.deleteRows = [{ id: 'row' }];
     getUser.mockResolvedValue({ data: { user: { id: USER } }, error: null });
     // default generic builder for the service's own helper queries
     mockSupabase.from.mockImplementation(() => makeBuilder());
@@ -218,6 +241,17 @@ describe('GroupService membership (#26)', () => {
       asRole('owner');
       await expect(svc.renameGroup(CONV, '   ')).rejects.toThrow(/empty/i);
     });
+
+    it('a rename that changed no row fails loudly, and announces nothing (#1247 B2)', async () => {
+      // Before the owner UPDATE policy, every rename updated 0 rows with no error, and the
+      // group_renamed message still went out for a rename that never happened.
+      asRole('owner');
+      msgState.updateRows = [];
+      await expect(svc.renameGroup(CONV, 'New')).rejects.toThrow(
+        /failed to rename group/i
+      );
+      expect(writes).not.toContain('messages:insert');
+    });
   });
 
   describe('deleteGroup (owner-only)', () => {
@@ -229,6 +263,14 @@ describe('GroupService membership (#26)', () => {
     it('allows the owner', async () => {
       asRole('owner');
       await expect(svc.deleteGroup(CONV)).resolves.toBeUndefined();
+    });
+
+    it('a delete that removed no row fails loudly (#1247 B2)', async () => {
+      asRole('owner');
+      msgState.deleteRows = [];
+      await expect(svc.deleteGroup(CONV)).rejects.toThrow(
+        /failed to delete group/i
+      );
     });
   });
 

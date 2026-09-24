@@ -186,4 +186,32 @@ describe('addMembers hands the newcomer the key the group already uses (#1247 F9
     ]);
     expect(Buffer.from(got).equals(Buffer.from(want))).toBe(true);
   });
+
+  it('checks for an unrotated departure BEFORE handing out the current key (#1247 B2)', async () => {
+    // If someone left and no owner has rotated yet, the current key is one the leaver holds.
+    // Rotating first means the newcomer never receives it.
+    const order: string[] = [];
+    const rotateCheck = vi
+      .spyOn(GroupKeyService.prototype, 'rotateIfDepartedSinceKey')
+      .mockImplementation(async () => {
+        order.push('rotate-check');
+        return false;
+      });
+    const distribute = vi
+      .spyOn(GroupKeyService.prototype, 'distributeExistingGroupKey')
+      .mockImplementation(async () => {
+        order.push('distribute');
+        return { successful: [NEWCOMER], pending: [] };
+      });
+    try {
+      await new GroupService().addMembers({
+        conversation_id: CONV,
+        member_ids: [NEWCOMER],
+      });
+      expect(order).toEqual(['rotate-check', 'distribute']);
+    } finally {
+      rotateCheck.mockRestore();
+      distribute.mockRestore();
+    }
+  });
 });

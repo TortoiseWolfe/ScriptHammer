@@ -90,6 +90,27 @@ const conversationCache = new Map<
 const sharedSecretCache = new Map<string, CryptoKey>();
 let cachedSenderPrivateKey: CryptoKey | null = null;
 
+/**
+ * Move a cached group onto its new key version (#1247 B2).
+ *
+ * Online, a group send reads the version fresh; offline it can only use this cache. Called
+ * when a rotation arrives over Realtime, so a device that goes offline afterwards still sends
+ * under the key the removed member does not hold. A conversation that is not cached is left
+ * alone: the next online load caches it with the right version.
+ */
+export function updateCachedKeyVersion(
+  conversationId: string,
+  version: number
+): void {
+  const cached = conversationCache.get(conversationId);
+  if (cached?.is_group) {
+    conversationCache.set(conversationId, {
+      ...cached,
+      current_key_version: version,
+    });
+  }
+}
+
 /** Check if conversation data is cached (for E2E test verification). */
 export function isConversationCached(conversationId: string): boolean {
   return conversationCache.has(conversationId);

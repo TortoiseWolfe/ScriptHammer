@@ -1123,6 +1123,14 @@ export type Database = {
         };
         Returns: undefined;
       };
+      rotate_group_key: {
+        Args: {
+          p_conversation_id: string;
+          p_from_version: number;
+          p_rows: Json;
+        };
+        Returns: number;
+      };
     };
     Enums: {
       [_ in never]: never;

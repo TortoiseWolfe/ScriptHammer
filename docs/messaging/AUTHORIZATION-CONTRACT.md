@@ -193,15 +193,24 @@ method + both providers + .NET endpoint + conformance case):
 - **Group management.** `createGroup`, `addMembers`, `removeMember`, `leaveGroup`,
   `transferOwnership`, `renameGroup` live only in `src/services/messaging/group-service.ts`.
   Backing RLS, by policy NAME rather than line number (those had rotted by ~1000 lines):
-  `conversation_members` INSERT "Members can add to their conversations" — creator-or-member
-  AND an accepted `user_connections` row with the actor, exempting only the creator's own
-  owner row (#34 self-insert escalation, then #1059 consent); UPDATE "Members can update
-  membership", narrowed by COLUMN GRANT so `user_id` and `conversation_id` cannot be
-  rewritten (#1059 residual); DELETE blocked by "No direct member deletes", soft-leave via
-  `left_at`; owner-reassign trigger `reassign_group_owner_on_member_removal`.
+  `conversation_members` INSERT "Members can add to their conversations" — an active owner
+  (or the founder of a group nobody is seated in yet) AND an accepted `user_connections` row
+  with the actor, exempting only the founder's own owner row (#34 self-insert escalation,
+  #1059 consent, #1247 B2 owners-only); UPDATE "Members can update membership", narrowed by
+  COLUMN GRANT so `user_id` and `conversation_id` cannot be rewritten (#1059 residual);
+  DELETE blocked by "No direct member deletes", soft-leave via `left_at`; owner-reassign
+  trigger `reassign_group_owner_on_member_removal`. Rename and delete are `conversations`
+  UPDATE "Owners can update their group" and DELETE "Owners can delete their group" (#1247 B2;
+  before them both matched 0 rows, silently).
   `user_connections` INSERT "Users can create friend requests" pins `status = 'pending'`, so
   a caller cannot grant themselves the consent the seat rule reads (#1059 residual).
-- **Key rotation.** Conversation key-version lifecycle — direct Supabase.
+- **Key rotation.** Conversation key-version lifecycle — direct Supabase, through
+  `rotate_group_key` (SECURITY INVOKER: writes every member's row and bumps
+  `current_key_version` in one transaction). Guarded by `conversation_update_guard` →
+  `enforce_conversation_update` (one version at a time, by an active owner who already holds
+  the new key, with every keyed member covered) and `group_key_insert_guard` →
+  `enforce_group_key_insert` (who may write key rows, at which version, with whose JWK)
+  (#1247).
 - **GDPR export / delete.** Account data export and erasure paths — direct Supabase.
 
 When one of these is ported into the seam, add its clause row above (with real rule text

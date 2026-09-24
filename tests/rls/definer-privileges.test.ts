@@ -37,8 +37,6 @@ const ANON_EXECUTABLE: Record<string, string> = {
     'an RLS policy helper; its body answers only about the caller',
   'is_conversation_owner(uuid,uuid)':
     'an RLS policy helper; its body answers only about the caller',
-  'is_conversation_creator(uuid,uuid)':
-    'no longer called by any policy since #1247 B1 (the founder helpers replaced it); dropped in B2 — its body answers only about the caller',
   'log_auth_event(text,uuid,jsonb,boolean,text,text)':
     'pre-session telemetry (failed sign-ins, reset requests); what anon may write is bounded in the body',
 };
