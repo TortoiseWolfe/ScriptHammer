@@ -366,7 +366,6 @@ describeAdmin('Admin RPC Shape Contract — admin caller', () => {
         'logins_today',
         'failed_this_week',
         'signups_this_month',
-        'rate_limited_users',
         'top_failed_logins',
       ].sort()
     );

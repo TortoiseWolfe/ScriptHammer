@@ -12,7 +12,6 @@ const mockStats: AdminAuthStats = {
   logins_today: 28,
   failed_this_week: 5,
   signups_this_month: 12,
-  rate_limited_users: 2,
   top_failed_logins: [],
 };
 

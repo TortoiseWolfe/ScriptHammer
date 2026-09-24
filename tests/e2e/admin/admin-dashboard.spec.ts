@@ -295,10 +295,12 @@ test.describe('Admin Dashboard E2E', () => {
       await expect(
         page.locator('[data-testid="stat-failed-week"]')
       ).toBeVisible();
+      await expect(page.locator('[data-testid="stat-signups"]')).toBeVisible();
+      // #1285: no lockout tile. After #1245 no sign-in lockout can exist, and the
+      // count had become contact-form throttles labelled as locked-out users.
       await expect(
         page.locator('[data-testid="stat-rate-limited"]')
-      ).toBeVisible();
-      await expect(page.locator('[data-testid="stat-signups"]')).toBeVisible();
+      ).toHaveCount(0);
     });
 
     test('should display event log table with rows', async ({ page }) => {

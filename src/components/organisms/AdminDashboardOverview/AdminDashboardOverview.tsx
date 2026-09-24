@@ -82,23 +82,18 @@ function scoreAuth(s: AdminAuthStats): Attention {
   const reasons: string[] = [];
   let level: AttentionLevel = 'ok';
 
-  // Rate-limit lockout is present-tense: someone is locked out right now.
-  // That's an active incident, not a historical trend — alert regardless of
-  // count.
-  if (s.rate_limited_users > 0) {
-    level = 'alert';
-    reasons.push(
-      `${s.rate_limited_users} user${s.rate_limited_users === 1 ? '' : 's'} rate-limited right now`
-    );
-  }
+  // No lockout rule (#1285). This used to alert on "N users rate-limited right
+  // now", but after #1245 no sign-in lockout can exist: the only rows that can
+  // lock are the contact-form and booking throttles, keyed by IP, so the count
+  // was labelling spam throttling as locked-out users.
 
   // Failed-login volume. 50/week is "someone's running a credential list";
   // 10/week is "worth a glance".
   if (s.failed_this_week >= 50) {
-    if (level !== 'alert') level = 'alert';
+    level = 'alert';
     reasons.push(`${s.failed_this_week} failed login attempts this week`);
   } else if (s.failed_this_week >= 10) {
-    if (level === 'ok') level = 'warn';
+    level = 'warn';
     reasons.push(`${s.failed_this_week} failed login attempts this week`);
   }
 
@@ -284,11 +279,6 @@ export function AdminDashboardOverview({
           trend: a && a.failed_this_week > 0 ? 'down' : undefined,
         },
         {
-          label: 'Rate Limited',
-          value: a?.rate_limited_users ?? 0,
-          testId: 'stat-rate-limited',
-        },
-        {
           label: 'New Signups 30d',
           value: a?.signups_this_month ?? 0,
           testId: 'stat-signups',
@@ -445,6 +435,13 @@ export function AdminDashboardOverview({
                     trend={c.trend}
                     href={i === 0 ? s.href : undefined}
                     testId={c.testId}
+                    // An odd count leaves the last card alone on its row;
+                    // let it take the row rather than leave a hole beside it.
+                    className={
+                      s.cards.length % 2 === 1 && i === s.cards.length - 1
+                        ? 'col-span-2'
+                        : undefined
+                    }
                   />
                 ))}
               </div>

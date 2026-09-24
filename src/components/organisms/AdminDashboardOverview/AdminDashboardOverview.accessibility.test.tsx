@@ -20,7 +20,6 @@ const healthyOverview: AdminOverview = {
     logins_today: 28,
     failed_this_week: 5,
     signups_this_month: 12,
-    rate_limited_users: 0,
     top_failed_logins: [],
   },
   users: {
@@ -76,12 +75,12 @@ describe('AdminDashboardOverview Accessibility', () => {
   });
 
   it('should have no axe violations with attention banner', async () => {
-    // Trip both an alert (rate-limit) and a warn (payment failures) so the
+    // Trip both an alert (failed logins) and a warn (payment failures) so the
     // banner + both badge variants are in the DOM during the axe pass.
     const noisy: AdminOverview = {
       ...healthyOverview,
       payments: { ...healthyOverview.payments, failed_this_week: 3 },
-      auth: { ...healthyOverview.auth, rate_limited_users: 2 },
+      auth: { ...healthyOverview.auth, failed_this_week: 60 },
     };
     const { container } = render(<AdminDashboardOverview overview={noisy} />);
     const results = await axe(container);
