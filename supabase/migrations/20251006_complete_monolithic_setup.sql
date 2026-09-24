@@ -876,10 +876,22 @@ DECLARE
   v_window INTERVAL := interval '15 minutes';
   v_now    TIMESTAMPTZ := now();
   v_row    rate_limit_attempts%ROWTYPE;
+  -- Trim ALL surrounding whitespace, not just spaces: btrim() alone left a trailing tab as a
+  -- separate bucket, which the spelling test caught on its first run.
+  v_key    TEXT := lower(regexp_replace(p_identifier, '^\s+|\s+$', '', 'g'));
 BEGIN
+  -- One bucket per identity, not per spelling (#1245 review): 'Victim@Example.com' and
+  -- 'victim@example.com ' — or '::1' and '0:0:0:0:0:0:0:1' — each got their own five attempts.
+  -- An identifier that parses as an address is keyed on its canonical text form.
+  BEGIN
+    v_key := host(v_key::inet);
+  EXCEPTION WHEN invalid_text_representation THEN
+    NULL; -- not an address; the lower-cased, trimmed text is the key
+  END;
+
   INSERT INTO rate_limit_attempts AS r
     (identifier, attempt_type, ip_address, window_start, attempt_count, locked_until)
-  VALUES (p_identifier, p_attempt_type, p_ip_address, v_now, 1, NULL)
+  VALUES (v_key, p_attempt_type, p_ip_address, v_now, 1, NULL)
   ON CONFLICT (identifier, attempt_type) DO UPDATE SET
     -- A lockout in force is honoured unchanged; an expired window starts again at 1.
     attempt_count = CASE
@@ -1310,11 +1322,31 @@ BEGIN
     RAISE EXCEPTION 'log_auth_event: cannot log an event for another user';
   END IF;
 
+  -- A signed-in caller's event is attributed to that caller. It used to accept a NULL user_id,
+  -- so any account could write unattributed success rows — measured: 200 forged calls moved the
+  -- admin dashboard's logins_today from 1 to 201 (#1245 review).
+  IF auth.uid() IS NOT NULL AND p_user_id IS NULL THEN
+    p_user_id := auth.uid();
+  END IF;
+
+  -- A successful sign-up is recorded by the database itself when the user row is created; no
+  -- client — anonymous or signed in — may write one.
+  IF p_event_type = 'sign_up' AND COALESCE(p_success, TRUE)
+     AND auth.role() IS DISTINCT FROM 'service_role' THEN
+    RAISE EXCEPTION 'log_auth_event: successful sign-ups are recorded server-side'
+      USING ERRCODE = '42501';
+  END IF;
+
   -- Anonymous callers keep EXECUTE on purpose — failed sign-ins, sign-up failures and reset
   -- requests happen before any session exists, and revoking it would silently zero that
   -- telemetry (#241). What anon may WRITE is bounded instead (#1245): only those three event
-  -- types, and never a success except a reset request, so the sign-up and sign-in counts on the
-  -- admin dashboard cannot be inflated by forged rows.
+  -- types, and never a success except a reset request.
+  --
+  -- WHAT THIS DOES NOT BOUND, stated so nobody reads more into it: the NUMBER of rows. Anon can
+  -- still insert failed-sign-in rows without limit (each capped below), and a signed-in user can
+  -- still log repeated sign-ins against their own id, which the dashboard's logins_today counts
+  -- as rows. Both need a server-derived throttle or counts read from GoTrue's own audit log —
+  -- #1284, not claimed here.
   IF auth.uid() IS NULL AND auth.role() IS DISTINCT FROM 'service_role' THEN
     IF p_event_type NOT IN ('sign_in_failed', 'sign_up', 'password_reset_request') THEN
       RAISE EXCEPTION 'log_auth_event: % cannot be logged without a session', p_event_type
@@ -1326,7 +1358,8 @@ BEGIN
     END IF;
   END IF;
 
-  -- Bounded payload for every caller: the table keeps rows 90 days on a 500 MB free tier.
+  -- Each row is bounded for every caller (the table keeps rows 90 days on a 500 MB free tier).
+  -- Text is truncated by characters in the INSERT; 500 characters is at most ~2 KB of UTF-8.
   IF p_event_data IS NOT NULL AND pg_column_size(p_event_data) > 4096 THEN
     RAISE EXCEPTION 'log_auth_event: event_data is % bytes; the limit is 4096',
       pg_column_size(p_event_data) USING ERRCODE = '22001';
@@ -1336,7 +1369,7 @@ BEGIN
     user_id, event_type, event_data, success, error_message, user_agent
   ) VALUES (
     p_user_id, p_event_type, p_event_data,
-    COALESCE(p_success, TRUE), left(p_error_message, 1000), left(p_user_agent, 500)
+    COALESCE(p_success, TRUE), left(p_error_message, 500), left(p_user_agent, 300)
   );
 END;
 $$;

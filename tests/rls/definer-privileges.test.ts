@@ -27,27 +27,27 @@ const DB = {
 
 /** Open to anon on purpose. Each entry says why, and which stage of #1245 changes it. */
 const ANON_EXECUTABLE: Record<string, string> = {
-  check_rate_limit:
+  'check_rate_limit(text,text,inet)':
     'the browser limiter still calls it; neutered for non-service callers in #1245 stage A2, revoked in A4',
-  record_failed_attempt:
+  'record_failed_attempt(text,text,inet)':
     'the browser limiter still calls it; neutered for non-service callers in #1245 stage A2, revoked in A4',
-  is_admin:
+  'is_admin(uuid)':
     'an RLS policy helper that anon-reachable policies call; its body answers only about the caller',
-  is_conversation_member:
+  'is_conversation_member(uuid,uuid)':
     'an RLS policy helper; its body answers only about the caller',
-  is_conversation_owner:
+  'is_conversation_owner(uuid,uuid)':
     'an RLS policy helper; its body answers only about the caller',
-  is_conversation_creator:
+  'is_conversation_creator(uuid,uuid)':
     'an RLS policy helper; its body answers only about the caller',
-  log_auth_event:
+  'log_auth_event(text,uuid,jsonb,boolean,text,text)':
     'pre-session telemetry (failed sign-ins, reset requests); what anon may write is bounded in the body',
 };
 
 /** Must be closed to both client roles. */
 const CLOSED_TO_CLIENTS = [
-  'consume_rate_limit',
-  'cleanup_old_audit_logs',
-  'custom_access_token_hook',
+  'consume_rate_limit(text,text,inet)',
+  'cleanup_old_audit_logs(integer,integer)',
+  'custom_access_token_hook(jsonb)',
 ];
 
 type Row = { fn: string; anon: boolean; authd: boolean };
@@ -62,7 +62,9 @@ describe.skipIf(!hasRlsTestEnvironment())(
       db = new Client(DB);
       await db.connect();
       const res = await db.query<Row>(`
-        select p.proname as fn,
+        -- The full signature, not the name: a new overload of an allowlisted name that answers
+        -- about anyone would otherwise pass as the entry it shadows (#1245 review, measured).
+        select p.oid::regprocedure::text as fn,
                has_function_privilege('anon', p.oid, 'EXECUTE') as anon,
                has_function_privilege('authenticated', p.oid, 'EXECUTE') as authd
         from pg_proc p
@@ -80,10 +82,10 @@ describe.skipIf(!hasRlsTestEnvironment())(
       // Without this, an empty result or a query that reads every privilege the same way would
       // satisfy both assertions below.
       expect(rows.length).toBeGreaterThanOrEqual(15);
-      expect(rows.find((r) => r.fn === 'custom_access_token_hook')?.anon).toBe(
-        false
-      );
-      expect(rows.find((r) => r.fn === 'is_admin')?.anon).toBe(true);
+      expect(
+        rows.find((r) => r.fn === 'custom_access_token_hook(jsonb)')?.anon
+      ).toBe(false);
+      expect(rows.find((r) => r.fn === 'is_admin(uuid)')?.anon).toBe(true);
     });
 
     it('every definer anon can execute is on the allowlist, with a reason', () => {
@@ -104,6 +106,18 @@ describe.skipIf(!hasRlsTestEnvironment())(
         stale,
         `allowlisted but no longer anon-executable — remove them: ${stale.join(', ')}`
       ).toEqual([]);
+    });
+
+    it('each allowlisted name has exactly one SECURITY DEFINER overload — a second would be unreviewed', () => {
+      const names = Object.keys(ANON_EXECUTABLE).map((sig) =>
+        sig.slice(0, sig.indexOf('('))
+      );
+      const wrong = names.filter(
+        (n) => rows.filter((r) => r.fn.startsWith(`${n}(`)).length !== 1
+      );
+      expect(wrong, `not exactly one overload: ${wrong.join(', ')}`).toEqual(
+        []
+      );
     });
 
     it('the server-only functions are closed to anon AND authenticated', () => {

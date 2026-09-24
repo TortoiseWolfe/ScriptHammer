@@ -426,5 +426,94 @@ describe.skipIf(!hasRlsTestEnvironment())(
           .contains('event_data', { marker });
       });
     });
+
+    describe('log_auth_event pins a signed-in caller to their own id (#1245 review)', () => {
+      it('an unattributed event from a signed-in user is recorded against that user, not against no one', async () => {
+        const marker = fresh('attrib');
+        const { error } = await aliceClient.rpc('log_auth_event', {
+          p_event_type: 'sign_in_success',
+          p_event_data: { marker },
+        });
+        expect(error).toBeNull();
+        const { data } = await service
+          .from('auth_audit_logs')
+          .select('user_id')
+          .contains('event_data', { marker });
+        expect(data).toEqual([{ user_id: alice.id }]);
+        await service
+          .from('auth_audit_logs')
+          .delete()
+          .contains('event_data', { marker });
+      });
+
+      it('no client, signed in or not, may write a successful sign-up — the database records those', async () => {
+        const signedIn = await aliceClient.rpc('log_auth_event', {
+          p_event_type: 'sign_up',
+          p_success: true,
+        });
+        expect(refused(signedIn.error)).toBe(true);
+        const defaulted = await anon.rpc('log_auth_event', {
+          p_event_type: 'sign_up',
+        });
+        expect(refused(defaulted.error)).toBe(true); // p_success defaults to TRUE
+      });
+
+      it('CONTROL: a failed sign-up is still logged from the form', async () => {
+        const marker = fresh('signup-fail');
+        const { error } = await anon.rpc('log_auth_event', {
+          p_event_type: 'sign_up',
+          p_success: false,
+          p_event_data: { marker },
+        });
+        expect(error).toBeNull();
+        await service
+          .from('auth_audit_logs')
+          .delete()
+          .contains('event_data', { marker });
+      });
+    });
+
+    describe('consume_rate_limit keys on the identity, not its spelling (#1245 review)', () => {
+      it('case and whitespace variants of one address share one bucket', async () => {
+        const base = fresh('spell');
+        identifiers.push(base.toLowerCase());
+        const spellings = [
+          base.toUpperCase(),
+          base,
+          ` ${base} `,
+          base.toLowerCase(),
+          `${base}\t`,
+        ];
+        for (const id of spellings) {
+          const r = await service.rpc('consume_rate_limit', {
+            p_identifier: id,
+            p_attempt_type: 'contact_form',
+          });
+          expect(r.data?.allowed, `spelling ${JSON.stringify(id)}`).toBe(true);
+        }
+        const sixth = await service.rpc('consume_rate_limit', {
+          p_identifier: base.toUpperCase(),
+          p_attempt_type: 'contact_form',
+        });
+        expect(sixth.data?.allowed).toBe(false);
+      });
+
+      it('two spellings of one IPv6 address share one bucket', async () => {
+        const n = Math.floor(Math.random() * 0xfff0) + 1;
+        const short = `fd00::${n.toString(16)}`;
+        const long = `fd00:0:0:0:0:0:0:${n.toString(16)}`;
+        identifiers.push(short);
+        for (let i = 0; i < 5; i++)
+          await service.rpc('consume_rate_limit', {
+            p_identifier: i % 2 ? long : short,
+            p_attempt_type: 'contact_form',
+          });
+        const sixth = await service.rpc('consume_rate_limit', {
+          p_identifier: long,
+          p_attempt_type: 'contact_form',
+        });
+        expect(sixth.data?.allowed).toBe(false);
+      });
+    });
   }
 );
