@@ -30,8 +30,8 @@
  * check" — the old test (`allowed === false`) let a null answer straight through.
  * `tests/unit/edge-function-limiter.test.ts` pins the call, its count and its order.
  *
- * Still open under #1237: the IP is the FIRST `x-forwarded-for` entry, which a client may
- * control. Until that is measured and fixed, this limits honest clients, not determined ones.
+ * The IP comes from `clientIp` below; why its choice of header entry is safe is recorded
+ * there (#1237, measured).
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -67,9 +67,14 @@ const ATTEMPT_TYPE = 'contact_form';
 /**
  * The caller's IP, as the limiter's identifier.
  *
- * `x-forwarded-for` is a LIST when proxies chain; the ORIGINAL client is the first
- * entry. Taking the last would let a caller prepend their own header and rotate
- * identifiers at will, which is a limiter that cannot limit.
+ * WHY THE FIRST `x-forwarded-for` ENTRY, AND WHY THAT IS SAFE HERE (#1237). Supabase's edge
+ * puts the true client address first: measured on production 2026-09-24, a request sent with
+ * `X-Forwarded-For: 203.0.113.9` was keyed on the sender's real public IPv4 — not on the
+ * spoofed value, and not on any internal or shared address. So entry [0] is trustworthy
+ * because the platform SETS it, not because of which end of the list a client can reach (a
+ * client can always write the leftmost entry of a header it sends; an edge that merely
+ * appended would make [0] the attacker's). If this ever moves behind a different proxy,
+ * re-measure before trusting [0]: send a TEST-NET value and read which key the limiter used.
  */
 function clientIp(req: Request): string | null {
   const fwd = req.headers.get('x-forwarded-for');
