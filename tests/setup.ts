@@ -238,6 +238,10 @@ vi.mock('@/lib/supabase/client', () => ({
   getSupabase: vi.fn(() => mockSupabaseClient),
   supabase: mockSupabaseClient,
   isSupabaseConfigured: vi.fn(() => false),
+  // The sign-in and sign-up forms call this before the auth request (#375). Without it
+  // no form test could get past that line to the auth call, and none did until #1245.
+  setSessionPersistence: vi.fn(),
+  getSessionPersistence: vi.fn(() => false),
 }));
 
 vi.mock('@/lib/supabase/server', () => ({

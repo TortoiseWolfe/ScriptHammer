@@ -6,11 +6,13 @@
  * provider renders the widget, and the public site key.
  *
  * ## Why this exists
- * The sign-up form already rate-limits (`checkRateLimit(email, 'sign_up')`), but
- * that limit is keyed on the EMAIL ADDRESS — a bot that uses a fresh address per
- * attempt never trips it. That is exactly what happened: 17 accounts created in a
- * 7-day window, 13 of which belonged to people who never asked for one, meaning
- * our domain sent them mail. A per-request bot check is the missing control.
+ * The sign-up form used to rate-limit by EMAIL ADDRESS, which a bot using a fresh
+ * address per attempt never trips. That is exactly what happened: 17 accounts
+ * created in a 7-day window, 13 of which belonged to people who never asked for
+ * one, meaning our domain sent them mail. A per-request bot check is the control
+ * that costs an attacker something. (The email-keyed limit is gone since #1245 —
+ * it also let anyone block someone else's sign-up — so this and Supabase Auth's
+ * per-IP ceilings are now the whole of sign-up's bot protection.)
  *
  * ## Fork-safe by default
  * Everything is INERT until `NEXT_PUBLIC_CAPTCHA_SITE_KEY` is set. A fork with no

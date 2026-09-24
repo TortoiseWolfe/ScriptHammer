@@ -23,7 +23,13 @@ function isSafeRedirectUrl(url: string): boolean {
  * something in this repo — checked, not assumed, because a badge with nothing
  * behind it is the #422/#383 failure:
  *
- *   Rate limited     `checkRateLimit` is called on submit (SignInForm, 3 sites)
+ *   Rate limited     Supabase Auth's per-IP ceilings on its endpoints (hosted
+ *                    projects), plus a captcha on every password grant once
+ *                    NEXT_PUBLIC_CAPTCHA_SITE_KEY is set (#353). Until #1245 this
+ *                    pointed at an email-keyed lockout in the browser, which
+ *                    stopped nobody who called Auth directly. A bare local docker
+ *                    stack has no per-IP ceiling: 40 bad passwords, no 429
+ *                    (measured 2026-09-24).
  *   Session refresh  `autoRefreshToken: true` (lib/supabase/client.ts)
  *   WCAG AA          config/pa11yci-auth.json gates /sign-in at WCAG2AA
  *

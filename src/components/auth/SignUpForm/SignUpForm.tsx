@@ -3,11 +3,7 @@
 import React, { useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { setSessionPersistence } from '@/lib/supabase/client';
-import {
-  checkRateLimit,
-  recordFailedAttempt,
-  formatLockoutTime,
-} from '@/lib/auth/rate-limit-check';
+import { authRateLimitMessage } from '@/lib/auth/auth-rate-limit';
 import { validateEmail } from '@/lib/auth/email-validator';
 import { logAuthEvent } from '@/lib/auth/audit-logger';
 import PasswordStrengthIndicator from '@/components/atomic/PasswordStrengthIndicator';
@@ -107,24 +103,12 @@ export default function SignUpForm({
       return;
     }
 
-    // (#353) Require a solved CAPTCHA when one is configured. Note the rate
-    // limit below is keyed on the EMAIL ADDRESS, so a bot rotating addresses
-    // never trips it — this check is what actually costs an attacker something.
+    // (#353) Require a solved CAPTCHA when one is configured. With GoTrue's
+    // per-IP ceilings it is the whole of sign-up's bot protection: the
+    // email-keyed limit that used to run here stopped only a bot polite enough
+    // to reuse an address, and let anyone block someone else's sign-up (#1245).
     if (captchaConfig.enabled && !captchaToken) {
       setError('Please complete the verification challenge.');
-      return;
-    }
-
-    // Check server-side rate limit for sign-up attempts (REQ-SEC-003)
-    const rateLimit = await checkRateLimit(email, 'sign_up');
-
-    if (!rateLimit.allowed) {
-      const timeUntilReset = rateLimit.locked_until
-        ? formatLockoutTime(rateLimit.locked_until)
-        : '15 minutes';
-      setError(
-        `Too many sign-up attempts. Please try again in ${timeUntilReset}.`
-      );
       return;
     }
 
@@ -151,9 +135,6 @@ export default function SignUpForm({
       // widget sitting there, never firing onSuccess again.
       captchaRef.current?.reset();
 
-      // Record failed attempt on server
-      await recordFailedAttempt(email, 'sign_up');
-
       // Log failed sign-up attempt (T034)
       await logAuthEvent({
         event_type: 'sign_up',
@@ -162,7 +143,7 @@ export default function SignUpForm({
         error_message: signUpError.message,
       });
 
-      setError(signUpError.message);
+      setError(authRateLimitMessage(signUpError) ?? signUpError.message);
     } else {
       // #49: the successful 'sign_up' audit event is now written by the
       // create_user_profile() trigger (AFTER INSERT ON auth.users), which fires

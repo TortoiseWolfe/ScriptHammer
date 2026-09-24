@@ -8,11 +8,7 @@ import CaptchaWidget, {
   type CaptchaWidgetHandle,
 } from '@/components/auth/CaptchaWidget';
 import { captchaConfig } from '@/config/captcha.config';
-import {
-  checkRateLimit,
-  recordFailedAttempt,
-  formatLockoutTime,
-} from '@/lib/auth/rate-limit-check';
+import { authRateLimitMessage } from '@/lib/auth/auth-rate-limit';
 import { validateEmail } from '@/lib/auth/email-validator';
 import { logAuthEvent } from '@/lib/auth/audit-logger';
 import { getInternalUrl } from '@/config/project.config';
@@ -29,7 +25,8 @@ export interface SignInFormProps {
 
 /**
  * SignInForm component
- * Email/password sign-in with server-side rate limiting
+ * Email/password sign-in. Brute-force limits are Supabase Auth's (captcha and per-IP
+ * ceilings); this form only reports them (#1245).
  *
  * @category molecular
  */
@@ -61,9 +58,6 @@ export default function SignInForm({
     message: string;
   } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [remainingAttempts, setRemainingAttempts] = useState<number | null>(
-    null
-  );
   // (#353) SECURITY_CAPTCHA_ENABLED is GLOBAL to Supabase auth — it gates
   // sign-IN as well as sign-up. Omitting this here is what locked every
   // existing user out of production the first time the flag was flipped.
@@ -86,31 +80,15 @@ export default function SignInForm({
       return;
     }
 
-    // Check server-side rate limit (REQ-SEC-003). checkRateLimit is
-    // fail-CLOSED by design (it returns allowed:false if the rate-limit
-    // infrastructure is down, to prevent brute force) — matching SignUpForm
-    // and ForgotPasswordForm, which also call it directly. Do NOT wrap it in a
-    // fail-open catch: that would silently disable brute-force protection on a
-    // backend outage, contradicting the wrapper's documented policy.
+    // No email-keyed lockout before the auth call (#1245). One used to run here, in the
+    // browser, keyed on the address being signed in to: it never stood in front of anyone who
+    // called Supabase Auth directly, and it let anyone lock anyone else out. The limits that
+    // hold are GoTrue's own, reported below when they refuse.
     if (captchaConfig.enabled && !captchaToken) {
       setError('Please complete the verification challenge.');
       return;
     }
 
-    const rateLimit = await checkRateLimit(email, 'sign_in');
-
-    if (!rateLimit.allowed) {
-      const timeUntilReset = rateLimit.locked_until
-        ? formatLockoutTime(rateLimit.locked_until)
-        : '15 minutes';
-      setError(
-        `Too many failed attempts. Your account has been temporarily locked. Please try again in ${timeUntilReset}.`
-      );
-      setRemainingAttempts(0);
-      return;
-    }
-
-    setRemainingAttempts(rateLimit.remaining);
     setLoading(true);
 
     // BEFORE the auth call, not after (#375). The session is written to storage
@@ -138,9 +116,6 @@ export default function SignInForm({
         return;
       }
 
-      // Record failed attempt on server (REQ-SEC-003)
-      await recordFailedAttempt(email, 'sign_in');
-
       // Log failed sign-in attempt (T033). #241: use 'sign_in_failed' — the
       // event_type the admin failed-attempt stats + burst detector actually
       // read (they never matched the old 'sign_in'+success:false shape).
@@ -151,16 +126,7 @@ export default function SignInForm({
         error_message: signInError.message,
       });
 
-      // Update remaining attempts display
-      const newRemaining = rateLimit.remaining - 1;
-      setRemainingAttempts(newRemaining);
-
-      let errorMessage = signInError.message;
-      if (newRemaining > 0 && newRemaining <= 3) {
-        errorMessage += ` (${newRemaining} attempts remaining)`;
-      }
-
-      setError(errorMessage);
+      setError(authRateLimitMessage(signInError) ?? signInError.message);
     } else {
       // Log successful sign-in (T033). The `user` from useAuth() is still
       // null at this point — Supabase's onAuthStateChange hasn't propagated

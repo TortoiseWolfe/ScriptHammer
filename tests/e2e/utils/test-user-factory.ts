@@ -124,7 +124,7 @@ let adminClient: SupabaseClient | null = null;
 // Moved to tests/utils/local-backend.ts, which imports nothing (#959). This file
 // pulls in @playwright/test and the messaging key services, so anything outside
 // Playwright that wanted the guard had to inherit all of it — which is why
-// tests/supabase-admin.ts went without one. Re-exported so every existing caller
+// tests/supabase-admin.ts (deleted in #1245) went without one. Re-exported so every existing caller
 // keeps working.
 export {
   isLocalSupabaseUrl,
@@ -1162,8 +1162,9 @@ export async function performSignIn(
   // skip explicitly via captcha-guard, so nothing passes for the wrong reason.
   //
   // Doing this inside the helper rather than at each call site also stops the
-  // repeated form submissions that were tripping GoTrue's 5-attempt lockout on
-  // the SHARED test users and cascading across concurrent shards.
+  // repeated form submissions that were tripping the 5-attempt lockout on the
+  // SHARED test users and cascading across concurrent shards. (That lockout was
+  // the app's own, never GoTrue's, and #1245 removed it.)
   if (await isBackendCaptchaProtected()) {
     const { session, error } = await signInAsInjectable(email, password);
     if (!session) {

@@ -21,9 +21,9 @@ import { defineConfig, devices } from '@playwright/test';
  *
  * Deliberately **no globalSetup**: the main `playwright.config.ts` globalSetup
  * requires cloud creds + the shared PRIMARY/TERTIARY users, which the ephemeral
- * local stack does not have. The captcha-blocked specs are chosen to need no
- * seeded users — they generate fresh addresses and sign in with deliberately
- * wrong passwords, so failed-attempt lockout is all they exercise.
+ * local stack does not have. The captcha-blocked specs need no shared users:
+ * any account they sign in to is created for the test through the admin API
+ * (the local service key) and deleted after it.
  *
  * The CI job (`.github/workflows/signup-mailer.yml`) builds a ROOT-anchored app
  * (`DISABLE_BASE_PATH=true`) pointed at local Supabase and lets `webServer` serve
@@ -67,9 +67,10 @@ export default defineConfig({
       // where CAPTCHA makes them unrunnable (#353). `captcha-guard` probes the
       // backend, so here — captcha off — they execute instead of skipping.
       //
-      // These need no seeded users: they generate fresh addresses and sign in
-      // with wrong passwords, exercising failed-attempt lockout. That is why
-      // they fit a config with no globalSetup.
+      // These need no globalSetup: an account they sign in to is created per
+      // test through the admin API and deleted after. brute-force.spec.ts pins
+      // that a stranger's wrong passwords cannot lock an address's owner out
+      // (#1245); rate-limiting.spec.ts, what the forms say when Auth answers 429.
       name: 'captcha-blocked',
       testMatch: [
         '**/security/brute-force.spec.ts',

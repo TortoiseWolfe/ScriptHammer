@@ -107,14 +107,11 @@ describe('Sign-In Flow Integration', () => {
     expect(error?.message).toContain('Invalid');
   });
 
-  // Rate limiting is enforced server-side via the Supabase RPCs
-  // `check_rate_limit` and `record_failed_attempt` (see
-  // src/lib/auth/rate-limit-check.ts). The previous test here exercised
-  // a now-deleted client-only `RateLimiter` localStorage class that no
-  // production code ever imported — that test gave a false sense of
-  // security because passing it didn't say anything about real rate
-  // limiting behavior. End-to-end coverage of the server enforcement
-  // lives in tests/contract/ + the auth E2E specs.
+  // Sign-in rate limiting is Supabase Auth's own (captcha plus per-IP
+  // ceilings); the app adds no lockout of its own since #1245, whose
+  // email-keyed one stopped nobody and let anyone lock anyone out. The
+  // property that matters — wrong passwords typed at someone's address do not
+  // keep them out — is pinned by tests/e2e/security/brute-force.spec.ts.
 
   it('should update user state after successful sign-in', async () => {
     // Sign out first

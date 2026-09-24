@@ -147,8 +147,10 @@ export default defineConfig({
 
     // ============================================================
     // ORDERED PROJECTS: Rate-limiting tests run FIRST (unauthenticated)
-    // This prevents sign-up tests from exhausting Supabase's
-    // IP-based rate limits before rate-limiting tests can run.
+    // This kept sign-up tests from exhausting Supabase's IP-based rate
+    // limits before the lockout specs ran. Since #1245 neither of the
+    // first two spends real quota (one mocks Auth's 429, the other seeds
+    // its own victim), so the order is harmless rather than load-bearing.
     // ============================================================
 
     // Rate-limiting tests - run FIRST with clean IP quota

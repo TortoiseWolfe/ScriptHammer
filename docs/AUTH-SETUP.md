@@ -349,13 +349,18 @@ This one-line check is fast enough to run as part of every deploy verification.
 
 ## Part 6.5: Bot Protection for Sign-Up (CAPTCHA) — #353
 
-**Why this exists.** The sign-up form already rate-limits, but that limit is keyed
-on the **email address** (`checkRateLimit(email, 'sign_up')`) — a bot that uses a
-fresh address per attempt never trips it. That is not hypothetical: with no
-CAPTCHA, 17 accounts were created here in a 7-day window, **13 of which belonged
-to people who never asked for one**, meaning this project's domain sent them
-mail. An open sign-up form is a free mail relay; CAPTCHA is the control that
-makes each attempt cost something.
+**Why this exists.** The sign-up form used to rate-limit by **email address**,
+which a bot using a fresh address per attempt never trips. That is not
+hypothetical: with no CAPTCHA, 17 accounts were created here in a 7-day window,
+**13 of which belonged to people who never asked for one**, meaning this
+project's domain sent them mail. An open sign-up form is a free mail relay;
+CAPTCHA is the control that makes each attempt cost something.
+
+The email-keyed limit itself was removed in #1245 — it stopped nobody who called
+Supabase Auth directly, and let anyone lock anyone else out — so this CAPTCHA
+and Supabase Auth's per-IP ceilings are what protect sign-up, and sign-in, now.
+There is no per-account limit. A fork without CAPTCHA has only the per-IP
+ceilings, and a bare local docker stack enforces none.
 
 The client half ships **inert**: with no site key set, no widget renders, no
 token is sent, and behaviour is exactly as before. Forks are unaffected until

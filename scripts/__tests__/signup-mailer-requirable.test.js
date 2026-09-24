@@ -122,6 +122,30 @@ describe('Signup Mailer can be a required check (#870)', () => {
     assert.ok(SIGNUP_MAILER_PATHS.length > 8, 'the path list looks truncated');
   });
 
+  it('covers the captcha-blocked specs, which run in no other lane (#1245)', async () => {
+    const { needsSignupMailer } = await import(`file://${DECIDER}`);
+    for (const [f, why] of [
+      [
+        'tests/e2e/security/brute-force.spec.ts',
+        'skipped for captcha everywhere else, so an edit to it alone must still run it',
+      ],
+      [
+        'tests/e2e/auth/rate-limiting.spec.ts',
+        'same: this lane is its only home',
+      ],
+      [
+        'src/app/sign-in/page.tsx',
+        'the page the brute-force spec signs in through',
+      ],
+      [
+        'supabase/migrations/20251006_complete_monolithic_setup.sql',
+        'the spec calls the limiter RPCs directly, so a SQL-only change moves its verdict',
+      ],
+    ]) {
+      assert.ok(needsSignupMailer([f]), `${f} must require the suite: ${why}`);
+    }
+  });
+
   it('covers the paths the old trigger filter missed', async () => {
     const { needsSignupMailer } = await import(`file://${DECIDER}`);
     // Each of these moves the verdict without touching anything the old filter named.

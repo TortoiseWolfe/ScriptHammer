@@ -633,57 +633,53 @@ await handlePaymentConsent(page);
 
 ### Supabase Rate Limiting in E2E Tests
 
-Supabase enforces rate limits that can cause E2E test failures. Understanding these limits is critical for reliable testing.
+Supabase Auth enforces rate limits that can cause E2E test failures. Know which ones exist before
+debugging one.
 
-#### How Supabase Rate Limiting Works
+#### Which limits exist
 
-| Type            | Scope       | Default            | Configurable             |
-| --------------- | ----------- | ------------------ | ------------------------ |
-| API Rate Limits | Per IP      | 30-360/hour        | Yes (via Management API) |
-| Account Lockout | Per Email   | 5 failed attempts  | No (built-in security)   |
-| Email Sending   | Per Project | 4/hour (free tier) | Yes (custom SMTP)        |
+| Type                  | Scope                        | Where it applies                                         |
+| --------------------- | ---------------------------- | -------------------------------------------------------- |
+| Request ceilings      | Per IP                       | Hosted projects; configurable via the API                |
+| CAPTCHA               | Per request                  | Wherever `SECURITY_CAPTCHA_ENABLED` is on                |
+| Email sending         | Per project, and per address | Hourly project cap; a wait between emails to one address |
+| **Per-email lockout** | —                            | **None.** See below.                                     |
 
-**Key Insight**: Login rate limiting is **IP-based**, not email-based. All tests running from the same CI runner share the same IP and rate limit bucket.
+**There is no account lockout.** Until #1245 the app ran its own: five failed sign-ins for an
+email locked that address out for 15 minutes. It ran in the browser, so it never stood in front
+of anyone who called Supabase Auth directly — and anyone could trigger it for anyone. It was
+removed. Sign-in's brute-force protection is Supabase Auth's: the captcha and the per-IP ceilings.
 
-#### Symptoms of Rate Limiting
+**A bare local docker stack has no per-IP ceiling at all** — 40 bad passwords from one IP drew no
+429 (measured 2026-09-24), where a hosted project enforces its configured ceilings. Do not read a
+green local run as evidence about rate limits.
+
+On a hosted project, login limiting is **IP-based**. All tests on one CI runner share one bucket.
+
+#### What a refusal looks like
+
+Auth answers HTTP 429 with a code naming the limit (`over_request_rate_limit`,
+`over_email_send_rate_limit`), which auth-js surfaces as an `AuthApiError` with `status: 429`. The
+forms map it through `src/lib/auth/auth-rate-limit.ts`:
 
 ```
-"Too many failed attempts. Your account has been temporarily locked. Please try again in 15 minutes."
+Too many attempts. Please wait a few minutes, then try again.
+Too many emails have been sent recently. Check your inbox, or try again later.
 ```
 
-This error indicates the account lockout feature triggered after 5+ failed login attempts.
+#### How the specs cover it
 
-#### Solutions for Rate Limiting Tests
+- `tests/e2e/auth/rate-limiting.spec.ts` **simulates** Auth's 429 with a route mock — including the
+  CORS and `x-supabase-api-version` headers GoTrue really sends, or the browser withholds the
+  response — and runs an unmocked CONTROL beside each case. Provoking a real 429 would spend the
+  IP quota every later spec shares.
+- `tests/e2e/security/brute-force.spec.ts` seeds a victim through the admin API and asserts that
+  neither anonymous limiter RPCs nor six wrong passwords, from another browser or their own, keep
+  them out.
+- Both run in `signup-mailer.yml`'s `captcha-blocked` project against the local stack, and skip
+  wherever captcha protects the backend.
 
-**1. Run rate limiting tests in SERIAL mode:**
-
-```typescript
-// tests/e2e/auth/rate-limiting.spec.ts
-test.describe.configure({ mode: 'serial' });
-
-test.describe('Rate Limiting', () => {
-  let sharedEmail: string;
-
-  test.beforeAll(() => {
-    // Generate ONE email for all tests
-    sharedEmail = generateTestEmail('ratelimit');
-  });
-
-  test('1. triggers rate limit', async ({ page }) => {
-    // Only THIS test triggers rate limiting
-    for (let i = 0; i < 6; i++) {
-      /* failed attempts */
-    }
-  });
-
-  test('2. verifies lockout message', async ({ page }) => {
-    // Verifies the ALREADY triggered rate limit
-    // Only 1 attempt, not 6
-  });
-});
-```
-
-**2. Increase Supabase rate limits via Management API:**
+**Increase Supabase rate limits via Management API** if a hosted run is being throttled:
 
 ```bash
 # Check current limits
@@ -708,7 +704,7 @@ fetch(\`https://api.supabase.com/v1/projects/\${ref}/config/auth\`, {
 "
 ```
 
-**3. Required environment variables:**
+**Required environment variables:**
 
 ```bash
 # .env - for Management API access
@@ -745,53 +741,20 @@ const email2 = generateEmail('test2');
 // This doesn't help - rate limiting is IP-based, not email-based
 ```
 
-#### Playwright Project Ordering (Implemented Solution)
+#### Playwright Project Ordering
 
-This project uses **Playwright project dependencies** to ensure rate-limiting tests run before sign-up tests can consume the IP quota:
-
-```
-playwright.config.ts project execution order:
-┌──────────────────┐
-│  rate-limiting   │  ← Runs FIRST (clean IP state)
-└────────┬─────────┘
-         │ depends on
-┌────────▼─────────┐
-│   brute-force    │  ← Runs second
-└────────┬─────────┘
-         │ depends on
-┌────────▼─────────┐
-│     signup       │  ← Runs LAST (can consume quota)
-└──────────────────┘
-
-┌──────────────────┐
-│    chromium      │  ← Runs in parallel (excludes above tests)
-│    firefox       │
-│    webkit        │
-│    Mobile-*      │
-└──────────────────┘
-```
-
-**Key files:**
-
-- `playwright.config.ts` - Defines project dependencies via `dependencies: ['rate-limiting']`
-- `tests/e2e/utils/rate-limit-admin.ts` - Clears `rate_limit_attempts` table before tests
-- `.github/workflows/e2e.yml` - Runs ordered projects first, then parallel tests
-
-**How it works:**
-
-1. Rate-limiting tests use `test.beforeAll()` to clear the custom `rate_limit_attempts` table
-2. Playwright enforces project execution order via `dependencies`
-3. The `chromium` project uses `testIgnore` to exclude rate-limiting/brute-force/signup tests
-4. CI workflow runs ordered projects first, then remaining tests
+`playwright.config.ts` chains three projects — `rate-limiting` → `brute-force` → `signup` — and
+the parallel projects `testIgnore` all three. The chain once existed so the lockout specs could
+run on a clean IP before sign-up spent the quota. Since #1245 neither of the first two spends any
+real quota, so the order is harmless rather than load-bearing.
 
 #### For Forked Projects
 
-If you're experiencing rate limiting issues in a fork:
-
-1. **The project ordering is already configured** - tests should work out of the box
-2. **Increase rate limits** via Management API if still seeing issues (see above)
-3. **Verify SUPABASE_SERVICE_ROLE_KEY is set** - needed for rate limit table cleanup
-4. **Consider skipping** rate limiting tests in CI if they test Supabase behavior, not your code
+1. **Increase rate limits** via the Management API if a hosted run is being throttled (see above).
+2. **Set `SUPABASE_SERVICE_ROLE_KEY`** where the `captcha-blocked` project runs — the brute-force
+   spec seeds its victim through the admin API, and fails rather than skipping without it.
+3. **Turn CAPTCHA on** for production (docs/AUTH-SETUP.md, Part 6.5). Without it, per-IP ceilings
+   are the only brute-force limit a fork has.
 
 ### Accessibility Testing (axe-core)
 

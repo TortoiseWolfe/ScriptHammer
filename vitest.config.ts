@@ -71,7 +71,6 @@ export default defineConfig({
       'tests/contract/auth/sign-in.contract.test.ts',
       'tests/contract/profile/get-profile.contract.test.ts',
       'tests/contract/profile/update-profile.contract.test.ts',
-      'tests/integration/auth/rate-limiting.integration.test.ts',
       'tests/integration/messaging/connections.test.ts',
       'src/tests/integration/payment-isolation.test.ts',
       // Exclude admin contract tests requiring live Supabase with admin RPC functions
