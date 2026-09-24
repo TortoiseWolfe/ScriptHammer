@@ -170,6 +170,10 @@ describe('Signup Mailer can be a required check (#870)', () => {
         'pnpm-lock.yaml',
         'a dependency bump changes client behaviour with no source edit',
       ],
+      [
+        'src/app/reset-password/page.tsx',
+        'where the only test that clicks a reset email lands (#1255)',
+      ],
     ]) {
       assert.ok(needsSignupMailer([f]), `${f} must require the suite — ${why}`);
     }

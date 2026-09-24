@@ -110,6 +110,15 @@ describe('EmailVerificationNotice', () => {
     expect(resendMock).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'signup', email: unverifiedUser.email })
     );
+    // And where the link lands (#1255): the callback page handles sign-in links; the site
+    // root, where a resend with no redirect used to send people, no longer reads the URL.
+    expect(resendMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({
+          emailRedirectTo: expect.stringMatching(/\/auth\/callback\/$/),
+        }),
+      })
+    );
   });
 
   it('surfaces a resend failure instead of claiming success', async () => {

@@ -138,3 +138,52 @@ describe('auth-token removal guard survives the store change (#375)', () => {
     expect(storage.getItem('sb-abcdefgh-other')).toBeNull();
   });
 });
+
+/**
+ * The PKCE code verifier (#1255) is not a session, and must not be stored like one.
+ *
+ * auth-js writes it under `<storageKey>-code-verifier` when a flow starts (sign-up, password
+ * reset, OAuth) and reads it back when the emailed or redirected link lands. Two properties of
+ * the session store would break that:
+ *
+ * - "Remember me" OFF puts auth keys in sessionStorage, which belongs to ONE tab. An emailed link
+ *   opens in a new tab, finds no verifier, and the sign-in silently fails.
+ * - The removal guard matches any key containing `auth-token`, which this one does. auth-js
+ *   deletes the verifier once redeemed; the guard would keep a spent secret forever.
+ */
+describe('PKCE code verifier storage (#1255)', () => {
+  const VERIFIER_KEY = `${AUTH_KEY}-code-verifier`;
+
+  it('lives in localStorage even when Remember Me is OFF, so the emailed link can find it', () => {
+    setSessionPersistence(false);
+    const storage = createAuthStorage();
+
+    storage.setItem(VERIFIER_KEY, 'verifier');
+
+    expect(window.localStorage.getItem(VERIFIER_KEY)).toBe('verifier');
+    expect(window.sessionStorage.getItem(VERIFIER_KEY)).toBeNull();
+    expect(storage.getItem(VERIFIER_KEY)).toBe('verifier');
+  });
+
+  it('is deleted once redeemed, although the session guard is closed', () => {
+    const storage = createAuthStorage();
+    storage.setItem(VERIFIER_KEY, 'verifier');
+
+    storage.removeItem(VERIFIER_KEY);
+
+    expect(window.localStorage.getItem(VERIFIER_KEY)).toBeNull();
+    // Control: the same call on the session itself is still refused.
+    storage.setItem(AUTH_KEY, 'token');
+    storage.removeItem(AUTH_KEY);
+    expect(storage.getItem(AUTH_KEY)).toBe('token');
+  });
+
+  it('is not moved into sessionStorage when the preference changes', () => {
+    createAuthStorage().setItem(VERIFIER_KEY, 'verifier');
+
+    setSessionPersistence(false);
+
+    expect(window.localStorage.getItem(VERIFIER_KEY)).toBe('verifier');
+    expect(window.sessionStorage.getItem(VERIFIER_KEY)).toBeNull();
+  });
+});

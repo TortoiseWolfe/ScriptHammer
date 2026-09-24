@@ -43,7 +43,9 @@ import { execFileSync } from 'node:child_process';
  *   - `src/app/sign-in/` and `src/app/forgot-password/`: the pages those specs drive.
  *   - `supabase/migrations/`: brute-force.spec.ts calls the limiter RPCs anonymously and
  *     asserts nobody can be locked out, so a SQL-only change to them (#1245's stage A4)
- *     moves its verdict with no client edit at all.
+ *     moves its verdict with no client edit at all. *   - `src/app/reset-password/`: where password-reset.spec.ts follows the emailed link. It
+ *     is the only test that clicks a reset email, so the page changing alone must run it
+ *     (#1255).
  */
 export const SIGNUP_MAILER_PATHS = [
   'src/components/auth/',
@@ -65,6 +67,7 @@ export const SIGNUP_MAILER_PATHS = [
   'tests/e2e/utils/captcha-guard.ts',
   'src/app/sign-in/',
   'src/app/forgot-password/',
+  'src/app/reset-password/',
   'supabase/migrations/',
   'playwright.signup-mailer.config.ts',
   'docker-compose.yml',

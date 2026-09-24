@@ -3,6 +3,7 @@ import {
   dismissCookieBanner,
   waitForAuthenticatedState,
   deleteTestUserByEmail,
+  signInAsInjectable,
 } from '../utils/test-user-factory';
 import {
   waitForMessageTo,
@@ -65,12 +66,57 @@ test.describe('Real-form signup with email confirmation (#288)', () => {
     const message = await waitForMessageTo(email, { timeoutMs: 30_000 });
     const confirmationLink = extractConfirmationLink(message);
 
-    // 4. Click the emailed link → GoTrue verify → /auth/callback establishes the
-    //    session (implicit flow, detectSessionInUrl) → app pushes to /profile.
+    // 4. Click the emailed link → GoTrue verify → /auth/callback?code= → the client
+    //    redeems the code with the verifier this page stored at sign-up (PKCE, #1255)
+    //    → app pushes to /profile. Same browser context, which is the only place it can.
     await page.goto(confirmationLink);
     await page.waitForURL(/\/profile/, { timeout: 30_000 });
 
     // 5. Assert authenticated: GlobalNav shows Messages / account menu / avatar.
     await waitForAuthenticatedState(page);
+  });
+
+  test('the link opened in another browser confirms the address but signs nobody in (#1255)', async ({
+    page,
+    browser,
+  }) => {
+    // The emailed link is bound to the browser that signed up (PKCE). That is what stops
+    // someone else's confirmation link from signing a victim into THEIR account. A person who
+    // signs up on a laptop and taps the link on their phone still gets their address confirmed
+    // — GoTrue verifies it before redirecting — and is told to sign in.
+    email = `signup-e2e-${Date.now()}@scripthammer.test`;
+
+    await page.goto('/sign-up');
+    await dismissCookieBanner(page);
+    await page.getByLabel('Email').fill(email);
+    await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
+    await page.getByLabel('Confirm Password').fill(PASSWORD);
+    await page.getByRole('button', { name: /sign up/i }).click();
+    await page.waitForURL(/\/verify-email/, { timeout: 30_000 });
+
+    const confirmationLink = extractConfirmationLink(
+      await waitForMessageTo(email, { timeoutMs: 30_000 })
+    );
+    // Control for the last assertion: before the link is opened, Auth refuses the password.
+    expect((await signInAsInjectable(email, PASSWORD)).session).toBeNull();
+
+    const phone = await browser.newContext({
+      storageState: { cookies: [], origins: [] },
+    });
+    try {
+      const other = await phone.newPage();
+      await other.goto(confirmationLink);
+      await other.waitForURL(/\/auth\/callback/, { timeout: 30_000 });
+      await expect(
+        other.getByRole('heading', { name: /sign in to continue/i })
+      ).toBeVisible({ timeout: 20_000 });
+      await expect(other.getByText(/it's confirmed/i)).toBeVisible();
+    } finally {
+      await phone.close();
+    }
+
+    // The address really is confirmed: Auth now accepts the password, which it refuses for an
+    // unconfirmed address while GOTRUE_MAILER_AUTOCONFIRM is off.
+    expect((await signInAsInjectable(email, PASSWORD)).session).not.toBeNull();
   });
 });

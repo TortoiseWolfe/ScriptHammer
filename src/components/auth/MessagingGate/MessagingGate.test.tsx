@@ -211,6 +211,16 @@ describe('MessagingGate', () => {
     await waitFor(() => {
       expect(screen.getByText(/verification email sent/i)).toBeInTheDocument();
     });
+
+    // The resent link must land where a sign-in link is handled (#1255). With no redirect it
+    // went to the site root, which no longer reads a session from the URL.
+    expect(mockResend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: expect.objectContaining({
+          emailRedirectTo: expect.stringMatching(/\/auth\/callback\/$/),
+        }),
+      })
+    );
   });
 
   // (#353) The guard the pinned config above switches off. Asserted here so

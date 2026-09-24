@@ -26,9 +26,9 @@ export default function OAuthButtons({ className = '' }: OAuthButtonsProps) {
     setLoading(provider);
 
     try {
-      // Supabase handles CSRF protection via its built-in OAuth2 state
-      // parameter (the client uses flowType: 'implicit' for this static export).
-      // No need to manually manage state tokens.
+      // Supabase's OAuth2 `state` parameter protects the provider's redirect to
+      // Supabase; PKCE (the client's flowType, #1255) binds Supabase's redirect
+      // back here to this browser. No need to manually manage state tokens.
       await supabase.auth.signInWithOAuth({
         provider,
         options: {
