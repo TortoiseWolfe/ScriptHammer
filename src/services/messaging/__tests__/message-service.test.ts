@@ -460,6 +460,63 @@ describe('MessageService', () => {
         })
       );
     });
+
+    it('online, a group send reads the key version fresh instead of trusting the cache (#1247 B2)', async () => {
+      // ConversationView caches a group with no version, and sendMessage used to read that
+      // entry and fall back to v1 — so after a rotation, messages kept going out under the key
+      // the removed member still holds.
+      setOnline(true);
+      const groupKey = { type: 'group-key' } as unknown as CryptoKey;
+      groupKeyService.getGroupKeyForConversation.mockResolvedValue(groupKey);
+      const insertSpy = vi.fn();
+      mockMsgFrom.mockImplementation((table: string) => {
+        if (table === 'conversations') {
+          return createMockQueryBuilder(
+            { ...baseConv, is_group: true, current_key_version: 3 },
+            null
+          );
+        }
+        if (table === 'messages') {
+          return {
+            select: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            order: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+            insert: (payload: any) => {
+              insertSpy(payload);
+              return {
+                select: vi.fn().mockReturnThis(),
+                single: vi.fn().mockResolvedValue({
+                  data: { id: MESSAGE_ID, ...payload },
+                  error: null,
+                }),
+              };
+            },
+            update: vi.fn().mockReturnThis(),
+          };
+        }
+        return createMockQueryBuilder(null, null);
+      });
+      await cacheConversationData(CONVERSATION_ID, {
+        participant_1_id: '',
+        participant_2_id: '',
+        is_group: true,
+      });
+
+      await messageService.sendMessage({
+        conversation_id: CONVERSATION_ID,
+        content: 'after rotation',
+      });
+
+      expect(groupKeyService.getGroupKeyForConversation).toHaveBeenCalledWith(
+        CONVERSATION_ID,
+        3
+      );
+      expect(insertSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ key_version: 3 })
+      );
+    });
   });
 
   // -----------------------------------------------------------------------

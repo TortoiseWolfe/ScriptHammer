@@ -55,6 +55,7 @@ vi.mock('@/services/messaging/key-service', () => ({
     getCurrentKeys: vi.fn(),
     getUserPublicKey: vi.fn(),
     getUserPublicKeyAt: vi.fn(), // #243: legacy-row fallback resolver
+    getUserPublicKeyHistory: vi.fn(), // #1247 B2: every key a user has held
   },
 }));
 
@@ -151,6 +152,10 @@ describe('GroupKeyService', () => {
     vi.mocked(keyManagementService.getUserPublicKey).mockResolvedValue(
       TEST_PUBLIC_KEY
     );
+    // Default: a row's creator owns the JWK stored on it (#1247 B2 reader check)
+    vi.mocked(keyManagementService.getUserPublicKeyHistory).mockResolvedValue([
+      { kty: 'EC', crv: 'P-256', x: 'x', y: 'y' },
+    ]);
 
     // Use a fresh instance per test so the in-memory cache is isolated
     service = new GroupKeyService();
@@ -352,6 +357,69 @@ describe('GroupKeyService', () => {
       ).rejects.toThrow('You must be signed in to access group keys');
     });
 
+    // #1247 B2: the reader trusted whatever JWK sat on the row. B1's write guard now refuses a
+    // foreign JWK, but rows written before it, or by service code, were never checked — and the
+    // JWK decides whose ECDH secret unwraps the key.
+    describe('the stored creator key must belong to created_by (#1247 B2)', () => {
+      const row = (over: Record<string, unknown>) =>
+        createMockQueryBuilder(
+          {
+            encrypted_key: 'ZmFrZQ==',
+            created_by: MEMBER_1_ID,
+            creator_public_key: { kty: 'EC', crv: 'P-256', x: 'x', y: 'y' },
+            created_at: '2025-01-01T00:00:00Z',
+            ...over,
+          },
+          null
+        ) as any;
+
+      it('refuses a row whose JWK is not one of its creator’s keys', async () => {
+        mockMessagingFrom.mockReturnValue(
+          row({
+            creator_public_key: {
+              kty: 'EC',
+              crv: 'P-256',
+              x: 'forged',
+              y: 'forged',
+            },
+          })
+        );
+
+        await expect(
+          service.getGroupKeyForConversation(CONVERSATION_ID, 4)
+        ).rejects.toThrow(/does not belong to the member who wrote it/i);
+        expect(
+          keyManagementService.getUserPublicKeyHistory
+        ).toHaveBeenCalledWith(MEMBER_1_ID);
+        expect(mockDecrypt).not.toHaveBeenCalled();
+      });
+
+      it('control: a key the creator has since revoked still counts as theirs (#243)', async () => {
+        vi.mocked(
+          keyManagementService.getUserPublicKeyHistory
+        ).mockResolvedValue([
+          { kty: 'EC', crv: 'P-256', x: 'current', y: 'current' },
+          { kty: 'EC', crv: 'P-256', x: 'x', y: 'y' }, // revoked, but theirs
+        ]);
+        mockMessagingFrom.mockReturnValue(row({}));
+
+        await expect(
+          service.getGroupKeyForConversation(CONVERSATION_ID, 4)
+        ).resolves.toBeDefined();
+      });
+
+      it('control: an erased creator (created_by NULL) leaves only the stored JWK (#247)', async () => {
+        mockMessagingFrom.mockReturnValue(row({ created_by: null }));
+
+        await expect(
+          service.getGroupKeyForConversation(CONVERSATION_ID, 4)
+        ).resolves.toBeDefined();
+        expect(
+          keyManagementService.getUserPublicKeyHistory
+        ).not.toHaveBeenCalled();
+      });
+    });
+
     it('throws GroupKeyError when the key row is not found (PGRST116)', async () => {
       mockMessagingFrom.mockReturnValue(
         createMockQueryBuilder(null, {
@@ -390,6 +458,23 @@ describe('GroupKeyService', () => {
       expect(builder.insert).toHaveBeenCalled();
       // Distributed key is cached for the current user
       expect(service.getCachedKey(CONVERSATION_ID, 1)).toBe(STUB_GROUP_KEY);
+    });
+
+    it('writes every member’s row in ONE insert, whatever the group size (#1247 B2)', async () => {
+      // Batches of 50 were separate statements: a failure after the first left some members
+      // with rows at the new version and others without, and group_keys has no DELETE path.
+      const many = Array.from({ length: 120 }, (_, i) => ({
+        id: `m${i}`,
+        conversation_id: CONVERSATION_ID,
+        user_id: `00000000-0000-0000-0000-${String(i).padStart(12, '0')}`,
+      })) as any;
+      const builder = createMockQueryBuilder([], null);
+      mockMessagingFrom.mockReturnValue(builder as any);
+
+      await service.distributeGroupKey(CONVERSATION_ID, many, 1);
+
+      expect(builder.insert).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(builder.insert).mock.calls[0][0]).toHaveLength(120);
     });
 
     it('marks members without a public key as pending', async () => {
@@ -514,6 +599,36 @@ describe('GroupKeyService', () => {
       ]);
 
       expect(stillPending).toEqual([]);
+    });
+
+    it('a refused insert leaves the member pending instead of counting as delivered (#1247 B2)', async () => {
+      mockMessagingFrom.mockReturnValue(
+        createMockQueryBuilder([], null) as any
+      );
+      await service.distributeGroupKey(CONVERSATION_ID, [], 5);
+      vi.spyOn(service as any, 'delay').mockResolvedValue(undefined);
+
+      mockMessagingFrom.mockImplementation((table: string) => {
+        if (table === 'conversations') {
+          return createMockQueryBuilder(
+            { current_key_version: 5 },
+            null
+          ) as any;
+        }
+        if (table === 'group_keys') {
+          return createMockQueryBuilder(null, {
+            code: '42501',
+            message: 'refused',
+          }) as any;
+        }
+        return createMockQueryBuilder([], null) as any;
+      });
+
+      const stillPending = await service.retryKeyDistribution(CONVERSATION_ID, [
+        MEMBER_1_ID,
+      ]);
+
+      expect(stillPending).toEqual([MEMBER_1_ID]);
     });
 
     it('throws AuthenticationError when not signed in', async () => {

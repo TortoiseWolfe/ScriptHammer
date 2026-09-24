@@ -856,6 +856,34 @@ export class KeyManagementService {
     return (data?.public_key as unknown as JsonWebKey) ?? null;
   }
 
+  /**
+   * Every public key a user has ever registered, revoked ones included (#1247 B2).
+   *
+   * The group-key reader checks that the JWK stored on a group_keys row belongs to the row's
+   * created_by before unwrapping with it. "Belongs" has to mean the same thing the database's
+   * write guard means (enforce_group_key_insert counts revoked keys too, #243): a creator who
+   * later rotated their personal keys still owns the rows they wrapped before.
+   *
+   * @param userId - key owner
+   * @returns the user's public JWKs, newest first; empty if they have none
+   */
+  async getUserPublicKeyHistory(userId: string): Promise<JsonWebKey[]> {
+    const supabase = createClient();
+    const msgClient = createMessagingClient(supabase);
+    const { data, error } = await msgClient
+      .from('user_encryption_keys')
+      .select('public_key')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new ConnectionError(
+        'Failed to get user public key history: ' + error.message
+      );
+    }
+    return (data ?? []).map((row) => row.public_key as unknown as JsonWebKey);
+  }
+
   /** Clear the public key cache (call after key reset) */
   clearPublicKeyCache(): void {
     this.publicKeyCache.clear();

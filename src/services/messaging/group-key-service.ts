@@ -335,6 +335,15 @@ export class GroupKeyService {
       if (!creatorPublicKey) {
         throw new GroupKeyError('Key creator public key not found');
       }
+      // #1247 B2: a JWK stored on the row is only trusted if it is one of created_by's own keys.
+      // The fallback above already resolved from created_by's history, so it needs no check, and
+      // an erased creator (#247) leaves the stored JWK as the only evidence there is.
+      if (keyData.creator_public_key && keyData.created_by) {
+        await this.assertKeyBelongsToCreator(
+          creatorPublicKey,
+          keyData.created_by
+        );
+      }
 
       // Get current user's private key
       const currentKeys = keyManagementService.getCurrentKeys();
@@ -400,92 +409,15 @@ export class GroupKeyService {
       );
     }
 
-    const msgClient = createMessagingClient(this.supabase);
-    const successful: string[] = [];
-    const pending: string[] = [];
-
     try {
-      // Generate new group key
       const groupKey = await this.generateGroupKey();
-
-      // Get current user's keys for signing
-      const currentKeys = keyManagementService.getCurrentKeys();
-      if (!currentKeys) {
-        throw new GroupKeyError('Encryption keys not available');
-      }
-
-      // Process in batches for large groups
-      const batchSize = GROUP_CONSTRAINTS.KEY_DISTRIBUTION_BATCH_SIZE;
-      const batches = [];
-      for (let i = 0; i < members.length; i += batchSize) {
-        batches.push(members.slice(i, i + batchSize));
-      }
-
-      for (const batch of batches) {
-        const keyRecords: Array<{
-          conversation_id: string;
-          user_id: string;
-          key_version: number;
-          encrypted_key: string;
-          created_by: string;
-          creator_public_key: Json;
-        }> = [];
-
-        for (const member of batch) {
-          try {
-            // Get member's public key
-            const memberPublicKey = await keyManagementService.getUserPublicKey(
-              member.user_id
-            );
-            if (!memberPublicKey) {
-              logger.warn('Member has no public key, marking as pending', {
-                userId: member.user_id,
-              });
-              pending.push(member.user_id);
-              continue;
-            }
-
-            // Encrypt group key for this member
-            const encryptedKey = await this.encryptGroupKeyForMember(
-              groupKey,
-              memberPublicKey,
-              currentKeys.privateKey
-            );
-
-            keyRecords.push({
-              conversation_id: conversationId,
-              user_id: member.user_id,
-              key_version: keyVersion,
-              encrypted_key: encryptedKey,
-              created_by: user.id,
-              // #243: capture the creator's public JWK used to wrap THIS key, so
-              // unwrapping survives the creator later rotating their personal keys.
-              creator_public_key: currentKeys.publicKeyJwk as unknown as Json,
-            });
-
-            successful.push(member.user_id);
-          } catch (error) {
-            logger.error('Failed to encrypt key for member', {
-              userId: member.user_id,
-              error,
-            });
-            pending.push(member.user_id);
-          }
-        }
-
-        // Insert batch of key records
-        if (keyRecords.length > 0) {
-          const { error: insertError } = await msgClient
-            .from('group_keys')
-            .insert(keyRecords);
-
-          if (insertError) {
-            throw new ConnectionError(
-              'Failed to store group keys: ' + insertError.message
-            );
-          }
-        }
-      }
+      const result = await this.wrapAndStore(
+        conversationId,
+        members,
+        keyVersion,
+        groupKey,
+        user.id
+      );
 
       // Cache the key for current user
       this.keyCache.set(conversationId, keyVersion, groupKey);
@@ -493,11 +425,11 @@ export class GroupKeyService {
       logger.info('Group key distributed', {
         conversationId,
         keyVersion,
-        successful: successful.length,
-        pending: pending.length,
+        successful: result.successful.length,
+        pending: result.pending.length,
       });
 
-      return { successful, pending };
+      return result;
     } catch (error) {
       if (
         error instanceof GroupKeyError ||
@@ -507,6 +439,174 @@ export class GroupKeyService {
         throw error;
       }
       throw new GroupKeyError('Failed to distribute group key', error);
+    }
+  }
+
+  /**
+   * Give members the key the group ALREADY uses at `keyVersion` (#1247 F9).
+   *
+   * Adding members used distributeGroupKey, which generates a NEW key and wraps it under the
+   * existing version: the newcomers could decrypt nothing anyone else sent, before or after. A
+   * newcomer joins the conversation that is already happening, so they get the current key,
+   * unwrapped from the caller's own row.
+   *
+   * @throws GroupKeyError if the caller cannot read the current key
+   * @throws AuthenticationError if not authenticated
+   */
+  async distributeExistingGroupKey(
+    conversationId: string,
+    members: ConversationMember[],
+    keyVersion: number
+  ): Promise<{ successful: string[]; pending: string[] }> {
+    const {
+      data: { user },
+      error: authError,
+    } = await this.supabase.auth.getUser();
+    if (authError || !user) {
+      throw new AuthenticationError(
+        'You must be signed in to distribute group keys'
+      );
+    }
+
+    try {
+      const groupKey = await this.getGroupKeyForConversation(
+        conversationId,
+        keyVersion
+      );
+      const result = await this.wrapAndStore(
+        conversationId,
+        members,
+        keyVersion,
+        groupKey,
+        user.id
+      );
+
+      logger.info('Existing group key distributed', {
+        conversationId,
+        keyVersion,
+        successful: result.successful.length,
+        pending: result.pending.length,
+      });
+
+      return result;
+    } catch (error) {
+      if (
+        error instanceof GroupKeyError ||
+        error instanceof AuthenticationError ||
+        error instanceof ConnectionError
+      ) {
+        throw error;
+      }
+      throw new GroupKeyError('Failed to distribute group key', error);
+    }
+  }
+
+  /**
+   * Wrap `groupKey` for each member and store every row in ONE insert (#1247 B2).
+   *
+   * Rows used to go in batches of 50, each its own statement. A failure after the first batch
+   * left some members holding the new version and others not, and group_keys has no DELETE
+   * path to take the partial set back. One statement is all-or-nothing. A group is capped at
+   * GROUP_CONSTRAINTS.MAX_MEMBERS, which one insert carries comfortably.
+   */
+  private async wrapAndStore(
+    conversationId: string,
+    members: ConversationMember[],
+    keyVersion: number,
+    groupKey: CryptoKey,
+    creatorId: string
+  ): Promise<{ successful: string[]; pending: string[] }> {
+    const currentKeys = keyManagementService.getCurrentKeys();
+    if (!currentKeys) {
+      throw new GroupKeyError('Encryption keys not available');
+    }
+
+    const successful: string[] = [];
+    const pending: string[] = [];
+    const keyRecords: Array<{
+      conversation_id: string;
+      user_id: string;
+      key_version: number;
+      encrypted_key: string;
+      created_by: string;
+      creator_public_key: Json;
+    }> = [];
+
+    for (const member of members) {
+      try {
+        const memberPublicKey = await keyManagementService.getUserPublicKey(
+          member.user_id
+        );
+        if (!memberPublicKey) {
+          logger.warn('Member has no public key, marking as pending', {
+            userId: member.user_id,
+          });
+          pending.push(member.user_id);
+          continue;
+        }
+
+        const encryptedKey = await this.encryptGroupKeyForMember(
+          groupKey,
+          memberPublicKey,
+          currentKeys.privateKey
+        );
+
+        keyRecords.push({
+          conversation_id: conversationId,
+          user_id: member.user_id,
+          key_version: keyVersion,
+          encrypted_key: encryptedKey,
+          created_by: creatorId,
+          // #243: capture the creator's public JWK used to wrap THIS key, so
+          // unwrapping survives the creator later rotating their personal keys.
+          creator_public_key: currentKeys.publicKeyJwk as unknown as Json,
+        });
+        successful.push(member.user_id);
+      } catch (error) {
+        logger.error('Failed to encrypt key for member', {
+          userId: member.user_id,
+          error,
+        });
+        pending.push(member.user_id);
+      }
+    }
+
+    if (keyRecords.length > 0) {
+      const msgClient = createMessagingClient(this.supabase);
+      const { error: insertError } = await msgClient
+        .from('group_keys')
+        .insert(keyRecords);
+      if (insertError) {
+        throw new ConnectionError(
+          'Failed to store group keys: ' + insertError.message
+        );
+      }
+    }
+
+    return { successful, pending };
+  }
+
+  /**
+   * Refuse a stored creator JWK that is not one of `creatorId`'s own keys (#1247 B2).
+   *
+   * The unwrap derives an ECDH secret from this JWK, so whoever chose it chose the key. B1's
+   * write guard now refuses a foreign JWK, but rows written before it — or by service code,
+   * which the guard exempts — were never checked. Revoked keys count (#243), exactly as they do
+   * in the write guard.
+   */
+  private async assertKeyBelongsToCreator(
+    jwk: JsonWebKey,
+    creatorId: string
+  ): Promise<void> {
+    const history =
+      await keyManagementService.getUserPublicKeyHistory(creatorId);
+    const owned = history.some(
+      (k) => k.crv === jwk.crv && k.x === jwk.x && k.y === jwk.y
+    );
+    if (!owned) {
+      throw new GroupKeyError(
+        'This group key was wrapped with a public key that does not belong to the member who wrote it'
+      );
     }
   }
 
@@ -695,23 +795,37 @@ export class GroupKeyService {
               currentKeys.privateKey
             );
 
-            await msgClient.from('group_keys').insert({
-              conversation_id: conversationId,
-              user_id: memberId,
-              key_version: keyVersion,
-              encrypted_key: encryptedKey,
-              created_by: user.id,
-              // #243: same as distributeGroupKey — retried rows must also record
-              // the wrap-time creator key, or they re-brick on creator rotation.
-              creator_public_key: currentKeys.publicKeyJwk as unknown as Json,
-            });
+            const { error: insertError } = await msgClient
+              .from('group_keys')
+              .insert({
+                conversation_id: conversationId,
+                user_id: memberId,
+                key_version: keyVersion,
+                encrypted_key: encryptedKey,
+                created_by: user.id,
+                // #243: same as distributeGroupKey — retried rows must also record
+                // the wrap-time creator key, or they re-brick on creator rotation.
+                creator_public_key: currentKeys.publicKeyJwk as unknown as Json,
+              });
+            // A refused insert used to count as delivered (#1247 B2). 23505 means the member
+            // already holds a row at this version, which is what the retry was for.
+            if (insertError && insertError.code !== '23505') {
+              throw new ConnectionError(
+                'Failed to store group key: ' + insertError.message
+              );
+            }
 
             // Update member status to active
-            await msgClient
+            const { error: statusError } = await msgClient
               .from('conversation_members')
               .update({ key_status: 'active' })
               .eq('conversation_id', conversationId)
               .eq('user_id', memberId);
+            if (statusError) {
+              throw new ConnectionError(
+                'Failed to mark key delivered: ' + statusError.message
+              );
+            }
 
             success = true;
           } catch (error) {

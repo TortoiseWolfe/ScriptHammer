@@ -77,12 +77,19 @@ vi.mock('@/lib/logger', () => ({
 
 import { GroupService } from '@/services/messaging/group-service';
 
+/** What createGroup sent to `conversations`, and what it deleted (#1247 B2). */
+const convInserts: Record<string, unknown>[] = [];
+const convDeletes: { col: string; val: string; readBack: boolean }[] = [];
+const convReturning = vi.fn();
+
 describe('GroupService', () => {
   let service: GroupService;
 
   beforeEach(() => {
     service = new GroupService();
     vi.clearAllMocks();
+    convInserts.length = 0;
+    convDeletes.length = 0;
 
     mockFrom.mockImplementation((table: string) => {
       if (table === 'user_connections') {
@@ -120,25 +127,42 @@ describe('GroupService', () => {
 
     mockMsgFrom.mockImplementation((table: string) => {
       if (table === 'conversations') {
+        // The row as the database would hold it, under whatever id the client sent (#1247 B2).
+        const row = () => ({
+          id: (convInserts.at(-1)?.id as string) ?? 'new-conv-id',
+          is_group: true,
+          group_name: 'Test Group',
+          created_by: '11111111-1111-4111-8111-111111111111',
+          current_key_version: 1,
+          created_at: new Date().toISOString(),
+          last_message_at: null,
+        });
         return {
-          insert: vi.fn(() => ({
-            select: vi.fn(() => ({
-              single: vi.fn(() => ({
-                data: {
-                  id: 'new-conv-id',
-                  is_group: true,
-                  group_name: 'Test Group',
-                  created_by: '11111111-1111-4111-8111-111111111111',
-                  current_key_version: 1,
-                  created_at: new Date().toISOString(),
-                  last_message_at: null,
-                },
-                error: null,
+          insert: vi.fn((payload: Record<string, unknown>) => {
+            convInserts.push(payload);
+            // Awaiting the insert itself is return=minimal; `.select()` would be RETURNING.
+            return Object.assign(Promise.resolve({ error: null }), {
+              select: convReturning.mockImplementation(() => ({
+                single: vi.fn(() => ({ data: row(), error: null })),
               })),
+            });
+          }),
+          select: vi.fn(() => ({
+            eq: vi.fn(() => ({
+              single: vi.fn(() => ({ data: row(), error: null })),
             })),
           })),
           delete: vi.fn(() => ({
-            eq: vi.fn(() => ({ error: null })),
+            eq: vi.fn((col: string, val: string) => {
+              const entry = { col, val, readBack: false };
+              convDeletes.push(entry);
+              return Object.assign(Promise.resolve({ error: null }), {
+                select: vi.fn(() => {
+                  entry.readBack = true;
+                  return { data: [{ id: val }], error: null };
+                }),
+              });
+            }),
           })),
         };
       }
@@ -297,6 +321,51 @@ describe('GroupService', () => {
         expect(result.conversation.created_by).toBe(
           '11111111-1111-4111-8111-111111111111'
         );
+      });
+
+      it('sends its own id and never reads the new row back through RETURNING (#1247 B2)', async () => {
+        // RETURNING on the insert is evaluated against the conversations SELECT policy, which a
+        // helper cannot satisfy for a row its own statement inserted. A client-chosen id makes the
+        // insert independent of that, and lets every later step (seat, rollback) name the row.
+        const result = await service.createGroup({
+          name: 'Test',
+          member_ids: ['22222222-2222-4222-8222-222222222222'],
+        });
+
+        const sent = convInserts[0]?.id;
+        expect(sent).toMatch(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+        );
+        expect(convReturning).not.toHaveBeenCalled();
+        expect(result.conversation.id).toBe(sent);
+      });
+
+      it('a failed seat rolls back the row it created and checks what the delete removed', async () => {
+        const base = mockMsgFrom.getMockImplementation()!;
+        mockMsgFrom.mockImplementation((table: string) =>
+          table === 'conversation_members'
+            ? {
+                insert: vi.fn(() => ({
+                  select: vi.fn(() => ({
+                    data: null,
+                    error: { message: 'seat refused' },
+                  })),
+                })),
+              }
+            : base(table)
+        );
+
+        await expect(
+          service.createGroup({
+            name: 'Test',
+            member_ids: ['22222222-2222-4222-8222-222222222222'],
+          })
+        ).rejects.toThrow(/failed to add group members/i);
+
+        // Read back, because a delete RLS refuses matches 0 rows and reports no error.
+        expect(convDeletes).toEqual([
+          { col: 'id', val: convInserts[0].id, readBack: true },
+        ]);
       });
 
       it('should set current_key_version to 1', async () => {
