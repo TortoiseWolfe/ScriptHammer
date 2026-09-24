@@ -3847,7 +3847,17 @@ SET search_path = public
 LANGUAGE plpgsql
 AS $$
 BEGIN
-  -- Only act when an ACTIVE OWNER is leaving (hard delete OR soft-leave).
+  -- #1247 B2 (F10): the whole group is being deleted. The conversations row is already
+  -- gone when its cascade reaches this row, and promoting a survivor that the same
+  -- cascade then deletes aborts the delete ("tuple to be updated was already modified by
+  -- an operation triggered by the current command"). There is nobody left to hand to.
+  IF NOT EXISTS (SELECT 1 FROM conversations WHERE id = OLD.conversation_id) THEN
+    RETURN OLD;
+  END IF;
+
+  -- Only act when an ACTIVE OWNER's row is deleted. This trigger fires on DELETE only; a
+  -- soft-leave (setting left_at) is conversation_member_update_guard's job, which refuses
+  -- an owner leaving while other members remain.
   IF OLD.role <> 'owner' OR OLD.left_at IS NOT NULL THEN
     RETURN OLD;
   END IF;
@@ -3992,36 +4002,12 @@ AS $$
   );
 $$;
 
--- SECURITY (#34): check whether a user CREATED a conversation, reading
--- conversations.created_by directly. SECURITY DEFINER because the
--- conversations SELECT policy only exposes 1-to-1 participant rows, so a
--- group's creator cannot see their own group row through RLS — an inline
--- EXISTS sub-select against conversations returns nothing for a group and
--- would wrongly reject the creator. This helper is the creator-scoped
--- counterpart to is_conversation_member(), and unlike is_conversation_owner()
--- it does not depend on a membership row existing yet, so it also authorizes
--- the very first owner-row insert during group creation.
-CREATE OR REPLACE FUNCTION is_conversation_creator(conv_id UUID, check_user_id UUID DEFAULT auth.uid())
-RETURNS BOOLEAN
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  -- Answers only about the caller (or for the service role), for the same reason as is_admin
-  -- (#1245): with any check_user_id it was a membership oracle. Signature unchanged, so the ACL
-  -- and every policy that calls it with the default auth.uid() are untouched.
-  -- Two-valued on purpose: with no JWT claims (Management API, cron) `x = 'service_role'` is
-  -- NULL, and `(false OR NULL) AND EXISTS` returned NULL — which a plpgsql IF would silently
-  -- treat as "not false". IS NOT DISTINCT FROM keeps the answer true or false (#1245 review).
-  SELECT (check_user_id IS NOT DISTINCT FROM auth.uid()
-          OR auth.role() IS NOT DISTINCT FROM 'service_role')
-    AND EXISTS (
-    SELECT 1 FROM conversations
-    WHERE id = conv_id
-      AND created_by = check_user_id
-  );
-$$;
+-- #1247 B2: is_conversation_creator is retired. It answered "did I create this
+-- conversation", which was true forever — the reason a removed creator could re-seat
+-- themselves (F4). B1 replaced every policy that called it with the unseated-founder
+-- helpers below, and no client ever called it, so all it still did was sit in the
+-- API as an anon-executable SECURITY DEFINER function.
+DROP FUNCTION IF EXISTS is_conversation_creator(UUID, UUID);
 
 -- #1247: the founder of a group, BEFORE anyone — the founder included — holds a
 -- seat in it. That is the only moment "I created it" should grant anything:
@@ -4107,6 +4093,37 @@ CREATE POLICY "Users can create group conversations" ON conversations
     is_group = true AND created_by = auth.uid()
   );
 
+-- #1247 B2 (F2): the owner's writes to their group row. Group rows carry NULL
+-- participant columns, so the 1:1 archive policy above can never match one, and until
+-- this policy nothing a client sent could: the owner's key-version bump after a
+-- rotation, and every rename, updated 0 rows with no error. Forward secrecy after a
+-- removal never actually took effect. Keyed on is_conversation_owner, never created_by,
+-- so a demoted, removed or erased creator gets nothing. The columns are the table's
+-- UPDATE grant; conversation_update_guard decides what may change within them.
+DROP POLICY IF EXISTS "Owners can update their group" ON conversations;
+CREATE POLICY "Owners can update their group" ON conversations
+  FOR UPDATE TO authenticated
+  USING (
+    is_group = true AND is_conversation_owner(id)
+  )
+  WITH CHECK (
+    is_group = true AND is_conversation_owner(id)
+  );
+
+-- #1247 B2: deleting a group. There was no DELETE policy at all, so deleteGroup and
+-- both of createGroup's rollbacks deleted nothing, silently — which is how production
+-- collected dozens of empty group shells. The owner may delete; so may the founder of a
+-- group nobody has been seated in yet, which is exactly createGroup's rollback. The
+-- founder branch needs the SELECT policy's unseated-founder branch too: a DELETE that
+-- filters on a column only sees rows the SELECT policy admits.
+DROP POLICY IF EXISTS "Owners can delete their group" ON conversations;
+CREATE POLICY "Owners can delete their group" ON conversations
+  FOR DELETE TO authenticated
+  USING (
+    is_group = true
+    AND (is_conversation_owner(id) OR is_unseated_group_founder(id))
+  );
+
 -- SELECT: Members can see other members of their conversations
 DROP POLICY IF EXISTS "Members can view conversation members" ON conversation_members;
 CREATE POLICY "Members can view conversation members" ON conversation_members
@@ -4180,12 +4197,15 @@ CREATE POLICY "Members can add to their conversations" ON conversation_members
       AND conversation_members.role = 'owner'
       AND is_unseated_group_founder(conversation_id)
     )
-    -- Anyone else: a plain member, seated by a member (or the founder's first
+    -- Anyone else: a plain member, seated by an active OWNER (or the founder's first
     -- statement) who has an accepted connection with them, in either direction.
+    -- #1247 B2: owners only. Only an active owner may write key rows
+    -- (enforce_group_key_insert), so a member-seated person sat in the group with no
+    -- key, and any member could keep seating people to disturb rotations.
     OR (
       conversation_members.role = 'member'
       AND (
-        is_conversation_member(conversation_id)
+        is_conversation_owner(conversation_id)
         OR is_unseated_group_founder(conversation_id)
       )
       AND EXISTS (
@@ -4481,6 +4501,157 @@ DROP TRIGGER IF EXISTS group_key_insert_guard ON group_keys;
 CREATE TRIGGER group_key_insert_guard
   BEFORE INSERT ON group_keys
   FOR EACH ROW EXECUTE FUNCTION enforce_group_key_insert();
+
+-- #1247 B2: what may change on a conversations row, beyond who may change it.
+--
+-- "Owners can update their group" lets an owner write the table's UPDATE columns on
+-- their group. Of those, current_key_version is the one forward secrecy rests on: a bump
+-- that skips a version, goes backwards, comes from anyone but an active owner, or lands
+-- before every keyed member holds the new key would strand members or re-arm a key a
+-- removed member still has. Each rule below refuses with its own message.
+--
+-- The archive columns belong to 1:1 conversations; the owner policy must not open them on
+-- group rows. last_message_at is deliberately not in the trigger's column list:
+-- update_conversation_timestamp writes it on every message, as the sender.
+CREATE OR REPLACE FUNCTION enforce_conversation_update()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_uid  uuid := auth.uid();
+  v_role text := auth.role();
+BEGIN
+  -- Privileged/system contexts bypass RLS entirely; let them bypass this guard
+  -- too. Requires BOTH a NULL uid AND a trusted role (or no role) so a real
+  -- end-user who forges "role":"service_role" (still carrying their sub) can
+  -- NEVER reach this early return. (Copied from enforce_message_update_columns.)
+  IF v_uid IS NULL
+     AND (v_role IS NULL
+          OR v_role IN ('service_role', 'supabase_admin', 'supabase_auth_admin', 'postgres'))
+  THEN
+    RETURN NEW;
+  END IF;
+
+  IF OLD.is_group
+     AND (NEW.archived_by_participant_1 IS DISTINCT FROM OLD.archived_by_participant_1
+          OR NEW.archived_by_participant_2 IS DISTINCT FROM OLD.archived_by_participant_2)
+  THEN
+    RAISE EXCEPTION 'archived_by_participant columns do not apply to group conversations'
+      USING ERRCODE = '42501';
+  END IF;
+
+  IF NEW.current_key_version IS NOT DISTINCT FROM OLD.current_key_version THEN
+    RETURN NEW;
+  END IF;
+
+  IF NOT OLD.is_group THEN
+    RAISE EXCEPTION 'current_key_version belongs to group conversations'
+      USING ERRCODE = '42501';
+  END IF;
+
+  IF NEW.current_key_version IS DISTINCT FROM OLD.current_key_version + 1 THEN
+    RAISE EXCEPTION 'the group key moves one version at a time' USING ERRCODE = '42501';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM conversation_members m
+    WHERE m.conversation_id = OLD.id
+      AND m.user_id = v_uid AND m.role = 'owner' AND m.left_at IS NULL
+  ) THEN
+    RAISE EXCEPTION 'only an active owner rotates the group key' USING ERRCODE = '42501';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM group_keys k
+    WHERE k.conversation_id = OLD.id
+      AND k.user_id = v_uid AND k.key_version = NEW.current_key_version
+  ) THEN
+    RAISE EXCEPTION 'write your own key at the new version first' USING ERRCODE = '42501';
+  END IF;
+
+  -- Members still waiting for their first key (key_status 'pending') have nothing to lose
+  -- and may have no public key yet, so they do not block a rotation.
+  IF EXISTS (
+    SELECT 1 FROM conversation_members m
+    WHERE m.conversation_id = OLD.id
+      AND m.left_at IS NULL AND m.key_status = 'active'
+      AND NOT EXISTS (
+        SELECT 1 FROM group_keys k
+        WHERE k.conversation_id = OLD.id
+          AND k.user_id = m.user_id AND k.key_version = NEW.current_key_version
+      )
+  ) THEN
+    RAISE EXCEPTION 'every active member needs a key at the new version'
+      USING ERRCODE = '42501';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS conversation_update_guard ON conversations;
+CREATE TRIGGER conversation_update_guard
+  BEFORE UPDATE OF current_key_version, archived_by_participant_1, archived_by_participant_2
+  ON conversations
+  FOR EACH ROW EXECUTE FUNCTION enforce_conversation_update();
+
+-- #1247 B2: rotate the group key in ONE transaction.
+--
+-- Rotation was two requests: insert the new key rows, then bump current_key_version. When
+-- the bump failed, the rows stayed at N+1 — group_keys has no DELETE path — and UNIQUE
+-- (conversation, user, version) then refused every later attempt at N+1, for good. Here
+-- the rows and the bump commit together or not at all.
+--
+-- SECURITY INVOKER: it grants nothing. The caller's RLS, the group_keys insert guard and
+-- conversation_update_guard all still apply, so it can only do what the caller could do
+-- in two requests. p_rows is [{user_id, encrypted_key, creator_public_key}]; the version
+-- and the author are set here, not taken from the caller.
+CREATE OR REPLACE FUNCTION rotate_group_key(
+  p_conversation_id UUID,
+  p_from_version INTEGER,
+  p_rows JSONB
+)
+RETURNS INTEGER
+SECURITY INVOKER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_current integer;
+BEGIN
+  -- FOR UPDATE applies the UPDATE policy, so only the group's owner finds the row, and a
+  -- second rotation racing this one waits here and then sees the version it moved to.
+  SELECT current_key_version INTO v_current
+  FROM conversations
+  WHERE id = p_conversation_id
+  FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'only an active owner rotates the group key' USING ERRCODE = '42501';
+  END IF;
+  IF v_current IS DISTINCT FROM p_from_version THEN
+    -- PT409: PostgREST answers 409 Conflict.
+    RAISE EXCEPTION 'the group key moved on from version %; reload and rotate again',
+      p_from_version USING ERRCODE = 'PT409';
+  END IF;
+
+  INSERT INTO group_keys
+    (conversation_id, user_id, key_version, encrypted_key, created_by, creator_public_key)
+  SELECT p_conversation_id, r.user_id, p_from_version + 1, r.encrypted_key, auth.uid(),
+         r.creator_public_key
+  FROM jsonb_to_recordset(p_rows)
+    AS r(user_id uuid, encrypted_key text, creator_public_key jsonb);
+
+  UPDATE conversations
+  SET current_key_version = p_from_version + 1
+  WHERE id = p_conversation_id;
+
+  RETURN p_from_version + 1;
+END;
+$$;
+REVOKE ALL ON FUNCTION rotate_group_key(UUID, INTEGER, JSONB) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION rotate_group_key(UUID, INTEGER, JSONB) TO authenticated;
 
 -- T014a: Update messages table RLS for group membership
 

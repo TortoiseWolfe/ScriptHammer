@@ -516,6 +516,48 @@ export class GroupKeyService {
     groupKey: CryptoKey,
     creatorId: string
   ): Promise<{ successful: string[]; pending: string[] }> {
+    const { records, successful, pending } = await this.wrapForMembers(
+      conversationId,
+      members,
+      keyVersion,
+      groupKey,
+      creatorId
+    );
+
+    if (records.length > 0) {
+      const msgClient = createMessagingClient(this.supabase);
+      const { error: insertError } = await msgClient
+        .from('group_keys')
+        .insert(records);
+      if (insertError) {
+        throw new ConnectionError(
+          'Failed to store group keys: ' + insertError.message
+        );
+      }
+    }
+
+    return { successful, pending };
+  }
+
+  /** Wrap `groupKey` for each member; members with no public key come back as pending. */
+  private async wrapForMembers(
+    conversationId: string,
+    members: ConversationMember[],
+    keyVersion: number,
+    groupKey: CryptoKey,
+    creatorId: string
+  ): Promise<{
+    records: Array<{
+      conversation_id: string;
+      user_id: string;
+      key_version: number;
+      encrypted_key: string;
+      created_by: string;
+      creator_public_key: Json;
+    }>;
+    successful: string[];
+    pending: string[];
+  }> {
     const currentKeys = keyManagementService.getCurrentKeys();
     if (!currentKeys) {
       throw new GroupKeyError('Encryption keys not available');
@@ -571,19 +613,7 @@ export class GroupKeyService {
       }
     }
 
-    if (keyRecords.length > 0) {
-      const msgClient = createMessagingClient(this.supabase);
-      const { error: insertError } = await msgClient
-        .from('group_keys')
-        .insert(keyRecords);
-      if (insertError) {
-        throw new ConnectionError(
-          'Failed to store group keys: ' + insertError.message
-        );
-      }
-    }
-
-    return { successful, pending };
+    return { records: keyRecords, successful, pending };
   }
 
   /**
@@ -614,9 +644,14 @@ export class GroupKeyService {
    * Rotate group key (generate new version, distribute to members)
    * T044: Key rotation on member add/remove
    *
+   * Owner only, and one transaction (#1247 B2): `rotate_group_key` writes every member's row
+   * at the next version and bumps current_key_version together, or does neither. Rotation used
+   * to be two requests; the bump never landed (no UPDATE policy matched a group row), and rows
+   * left at N+1 then blocked every later attempt at N+1 for good.
+   *
    * @param conversationId - Group conversation ID
    * @returns New key version number
-   * @throws GroupKeyError if rotation fails
+   * @throws GroupKeyError if the caller is not the owner, or another rotation won the race
    */
   async rotateGroupKey(conversationId: string): Promise<number> {
     const {
@@ -632,6 +667,12 @@ export class GroupKeyService {
     const msgClient = createMessagingClient(this.supabase);
 
     try {
+      if (!(await this.isActiveOwner(conversationId, user.id))) {
+        throw new GroupKeyError(
+          'Only the group owner can rotate the group key'
+        );
+      }
+
       // Get current key version from conversation
       const { data: conversation, error: convError } = await msgClient
         .from('conversations')
@@ -645,7 +686,8 @@ export class GroupKeyService {
         );
       }
 
-      const newVersion = (conversation.current_key_version || 1) + 1;
+      const fromVersion = conversation.current_key_version || 1;
+      const newVersion = fromVersion + 1;
 
       // Get all active members
       const { data: members, error: membersError } = await msgClient
@@ -660,42 +702,64 @@ export class GroupKeyService {
         );
       }
 
-      // Distribute new key to all active members
-      const result = await this.distributeGroupKey(
+      const groupKey = await this.generateGroupKey();
+      const { records, successful, pending } = await this.wrapForMembers(
         conversationId,
         members as ConversationMember[],
-        newVersion
+        newVersion,
+        groupKey,
+        user.id
       );
 
-      // Update conversation's current_key_version
-      const { error: updateError } = await msgClient
-        .from('conversations')
-        .update({ current_key_version: newVersion })
-        .eq('id', conversationId);
-
-      if (updateError) {
+      const { data: landed, error: rotateError } = await msgClient.rpc(
+        'rotate_group_key',
+        {
+          p_conversation_id: conversationId,
+          p_from_version: fromVersion,
+          p_rows: records.map((r) => ({
+            user_id: r.user_id,
+            encrypted_key: r.encrypted_key,
+            creator_public_key: r.creator_public_key,
+          })) as unknown as Json,
+        }
+      );
+      if (rotateError) {
+        if (rotateError.code === 'PT409') {
+          throw new GroupKeyError(
+            'Another rotation got there first; reload the group and try again',
+            rotateError
+          );
+        }
         throw new ConnectionError(
-          'Failed to update key version: ' + updateError.message
+          'Failed to rotate group key: ' + rotateError.message
         );
       }
 
-      // Update pending members' key_status
-      if (result.pending.length > 0) {
-        await msgClient
+      this.keyCache.set(conversationId, landed ?? newVersion, groupKey);
+
+      // Members with no public key could not be given the new key.
+      if (pending.length > 0) {
+        const { error: statusError } = await msgClient
           .from('conversation_members')
           .update({ key_status: 'pending' })
           .eq('conversation_id', conversationId)
-          .in('user_id', result.pending);
+          .in('user_id', pending);
+        if (statusError) {
+          logger.error('Failed to mark members pending after rotation', {
+            conversationId,
+            error: statusError,
+          });
+        }
       }
 
       logger.info('Group key rotated', {
         conversationId,
-        newVersion,
-        distributed: result.successful.length,
-        pending: result.pending.length,
+        newVersion: landed ?? newVersion,
+        distributed: successful.length,
+        pending: pending.length,
       });
 
-      return newVersion;
+      return landed ?? newVersion;
     } catch (error) {
       if (
         error instanceof GroupKeyError ||
@@ -706,6 +770,89 @@ export class GroupKeyService {
       }
       throw new GroupKeyError('Failed to rotate group key', error);
     }
+  }
+
+  /**
+   * Rotate if someone has left since the caller's current key was written (#1247 B2).
+   *
+   * A member who leaves cannot rotate for themselves: after leaving they can no longer read the
+   * group, and only an active owner may write key rows. So an owner's client does it — when the
+   * owner opens the group, or sees a member's departure live. The database stamps left_at itself
+   * (conversation_member_update_guard), which is what makes comparing it against the owner's own
+   * key row trustworthy.
+   *
+   * Idempotent and safe to call from anywhere: it does nothing for a non-owner, and it logs and
+   * swallows its own failures.
+   *
+   * @returns true if it rotated
+   */
+  async rotateIfDepartedSinceKey(conversationId: string): Promise<boolean> {
+    try {
+      const {
+        data: { user },
+      } = await this.supabase.auth.getUser();
+      if (!user || !(await this.isActiveOwner(conversationId, user.id))) {
+        return false;
+      }
+
+      const msgClient = createMessagingClient(this.supabase);
+      const { data: conversation, error: convError } = await msgClient
+        .from('conversations')
+        .select('current_key_version')
+        .eq('id', conversationId)
+        .single();
+      if (convError || !conversation) return false;
+
+      const { data: ownKey } = await msgClient
+        .from('group_keys')
+        .select('created_at')
+        .eq('conversation_id', conversationId)
+        .eq('user_id', user.id)
+        .eq('key_version', conversation.current_key_version)
+        .maybeSingle();
+
+      const { data: lastDeparture } = await msgClient
+        .from('conversation_members')
+        .select('left_at')
+        .eq('conversation_id', conversationId)
+        .not('left_at', 'is', null)
+        .order('left_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!lastDeparture?.left_at) return false;
+      if (
+        ownKey?.created_at &&
+        Date.parse(lastDeparture.left_at) <= Date.parse(ownKey.created_at)
+      ) {
+        return false;
+      }
+
+      await this.rotateGroupKey(conversationId);
+      return true;
+    } catch (error) {
+      logger.warn('Rotation after a departure did not happen', {
+        conversationId,
+        error,
+      });
+      return false;
+    }
+  }
+
+  /** Whether `userId` is an active owner of the group. */
+  private async isActiveOwner(
+    conversationId: string,
+    userId: string
+  ): Promise<boolean> {
+    const msgClient = createMessagingClient(this.supabase);
+    const { data } = await msgClient
+      .from('conversation_members')
+      .select('role')
+      .eq('conversation_id', conversationId)
+      .eq('user_id', userId)
+      .is('left_at', null)
+      .maybeSingle();
+    return data?.role === 'owner';
   }
 
   /**

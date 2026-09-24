@@ -162,11 +162,8 @@ describe.skipIf(!hasRlsTestEnvironment())(
     });
 
     describe('membership helpers answer only about the caller', () => {
-      for (const fn of [
-        'is_conversation_member',
-        'is_conversation_owner',
-        'is_conversation_creator',
-      ]) {
+      // is_conversation_creator was retired in #1247 B2: no policy or client called it any more.
+      for (const fn of ['is_conversation_member', 'is_conversation_owner']) {
         it(`${fn}: a non-member cannot learn that someone else belongs`, async () => {
           const { data, error } = await aliceClient.rpc(fn, {
             conv_id: groupId,
@@ -788,11 +785,11 @@ describe.skipIf(!hasRlsTestEnvironment())(
         try {
           const { rows } = await db.query(
             `select is_conversation_member($1, $2) as m, is_conversation_owner($1, $2) as o,
-                    is_conversation_creator($1, $2) as c, is_admin($2) as a`,
+                    is_admin($2) as a`,
             [groupId, bob.id]
           );
           // NULL here is what a plpgsql `IF NOT is_conversation_member(...) THEN RAISE` skips.
-          expect(rows[0]).toEqual({ m: false, o: false, c: false, a: false });
+          expect(rows[0]).toEqual({ m: false, o: false, a: false });
         } finally {
           await db.end();
         }

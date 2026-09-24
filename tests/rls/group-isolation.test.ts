@@ -10,8 +10,9 @@
  * Regression pinned here (#34): the conversation_members INSERT policy once
  * carried an `OR user_id = auth.uid()` self-join branch that let ANY
  * authenticated user insert a membership row into ANY group — a privilege
- * escalation. The fix replaces that branch with is_conversation_creator(),
- * so only the group's creator can seed the roster.
+ * escalation. The fix scoped that branch to the group's creator; #1247 B1 narrowed it to a
+ * founder whose group nobody has been seated in yet, and B2 retired the old
+ * is_conversation_creator() helper. The cases below insert for real rather than asking a helper.
  *
  * These run against a live Supabase instance (real Postgres RLS) and skip —
  * visibly — when the service-role key and URL are absent, so CI shows the
@@ -46,8 +47,27 @@ describe.skipIf(!hasRlsTestEnvironment())(
     let owner: TestUser; // creates the group
     let outsider: TestUser; // never a member — the attacker
     let outsiderClient: SupabaseClient;
+    let ownerClient: SupabaseClient;
     let service: SupabaseClient;
     let groupId: string;
+    const extraGroups: string[] = [];
+
+    /** A group the owner created and nobody has been seated in yet. */
+    async function unseatedGroup(name: string): Promise<string> {
+      const { data, error } = await service
+        .from('conversations')
+        .insert({
+          is_group: true,
+          group_name: name,
+          created_by: owner.id,
+          current_key_version: 1,
+        })
+        .select('id')
+        .single();
+      if (error || !data) throw new Error(`seed group: ${error?.message}`);
+      extraGroups.push(data.id as string);
+      return data.id as string;
+    }
 
     beforeAll(async () => {
       service = createServiceClient();
@@ -62,6 +82,10 @@ describe.skipIf(!hasRlsTestEnvironment())(
       outsiderClient = await createAuthenticatedClient(
         TEST_USERS.userB.email,
         TEST_USERS.userB.password
+      );
+      ownerClient = await createAuthenticatedClient(
+        TEST_USERS.userA.email,
+        TEST_USERS.userA.password
       );
 
       // Seed a group with the owner as sole member and one encrypted key,
@@ -98,34 +122,53 @@ describe.skipIf(!hasRlsTestEnvironment())(
     });
 
     afterAll(async () => {
-      if (groupId) {
+      for (const id of [groupId, ...extraGroups].filter(Boolean)) {
         // ON DELETE CASCADE clears members, keys, and messages.
-        await service.from('conversations').delete().eq('id', groupId);
+        await service.from('conversations').delete().eq('id', id);
       }
+      await service
+        .from('user_connections')
+        .delete()
+        .or(
+          `and(requester_id.eq.${owner.id},addressee_id.eq.${outsider.id}),and(requester_id.eq.${outsider.id},addressee_id.eq.${owner.id})`
+        );
       if (owner) await deleteTestUser(owner.id);
       if (outsider) await deleteTestUser(outsider.id);
     });
 
     // The core regression: the INSERT WITH CHECK must reject a self-join into
-    // a group the caller did not create. is_conversation_creator() is the
-    // exact predicate the policy uses for the non-member branch, so a false
-    // here means the escalation is reachable.
-    it('the creator predicate rejects a non-creator (the closed self-join branch)', async () => {
-      const { data, error } = await service.rpc('is_conversation_creator', {
-        conv_id: groupId,
-        check_user_id: outsider.id,
-      });
-      expect(error).toBeNull();
-      expect(data).toBe(false);
+    // a group the caller did not create — as owner or as member.
+    it('an outsider cannot seat themselves in a group they did not create (the closed self-join branch)', async () => {
+      for (const role of ['owner', 'member'] as const) {
+        const { error } = await outsiderClient
+          .from('conversation_members')
+          .insert({
+            conversation_id: groupId,
+            user_id: outsider.id,
+            role,
+            key_version_joined: 1,
+            key_status: 'active',
+          });
+        expect(error?.code, `self-seat as ${role}`).toBe('42501');
+      }
+      const { data } = await service
+        .from('conversation_members')
+        .select('id')
+        .eq('conversation_id', groupId)
+        .eq('user_id', outsider.id);
+      expect(data ?? []).toHaveLength(0);
     });
 
-    it('the creator predicate accepts the actual creator', async () => {
-      const { data, error } = await service.rpc('is_conversation_creator', {
-        conv_id: groupId,
-        check_user_id: owner.id,
+    it('CONTROL: the founder seats themselves as owner while nobody is seated', async () => {
+      const g = await unseatedGroup('RLS isolation: founder seat');
+      const { error } = await ownerClient.from('conversation_members').insert({
+        conversation_id: g,
+        user_id: owner.id,
+        role: 'owner',
+        key_version_joined: 1,
+        key_status: 'active',
       });
       expect(error).toBeNull();
-      expect(data).toBe(true);
     });
 
     // Impact assertions: even if some insert path existed, an outsider must
@@ -147,16 +190,39 @@ describe.skipIf(!hasRlsTestEnvironment())(
       expect(data ?? []).toHaveLength(0);
     });
 
-    // The legitimate create path must still pass: the creator can seat a
-    // member into their own group. This is the branch the fix had to
-    // preserve (createGroup batch-inserts owner + members).
+    // The legitimate create path must still pass: the creator seats themselves and a
+    // connection in one statement, exactly as createGroup does.
     it('lets the creator seat a member in their own group', async () => {
-      const { data, error } = await service.rpc('is_conversation_creator', {
-        conv_id: groupId,
-        check_user_id: owner.id,
-      });
+      const { error: connectError } = await service
+        .from('user_connections')
+        .insert({
+          requester_id: owner.id,
+          addressee_id: outsider.id,
+          status: 'accepted',
+        });
+      expect(connectError).toBeNull();
+      const g = await unseatedGroup('RLS isolation: founder seats a member');
+      const { data, error } = await ownerClient
+        .from('conversation_members')
+        .insert([
+          {
+            conversation_id: g,
+            user_id: owner.id,
+            role: 'owner',
+            key_version_joined: 1,
+            key_status: 'active',
+          },
+          {
+            conversation_id: g,
+            user_id: outsider.id,
+            role: 'member',
+            key_version_joined: 1,
+            key_status: 'active',
+          },
+        ])
+        .select('id');
       expect(error).toBeNull();
-      expect(data).toBe(true);
+      expect(data ?? []).toHaveLength(2);
     });
   }
 );

@@ -478,11 +478,13 @@ describe.skipIf(!hasRlsTestEnvironment())(
         expect(await member(g, a)).toEqual([]);
       });
 
-      it('CONTROL: a member may seat a connection who was never in the group', async () => {
+      it('CONTROL: an owner may seat a connection who was never in the group', async () => {
+        // #1247 B2 made seating the owner's job (tests/rls/group-rotation.test.ts pins that a
+        // member is refused): only an owner can give the newcomer a key.
         const g = await group('seat control');
         await seat(g, a, 'owner');
         await seat(g, b, 'member');
-        const { error } = await bClient.from('conversation_members').insert({
+        const { error } = await aClient.from('conversation_members').insert({
           conversation_id: g,
           user_id: c.id,
           role: 'member',
@@ -499,7 +501,9 @@ describe.skipIf(!hasRlsTestEnvironment())(
         const g = await group('seat joined_at');
         await seat(g, a, 'owner');
         await seat(g, b, 'member');
-        await bClient.from('conversation_members').insert({
+        // The owner, so that only the withheld joined_at column can refuse it (#1247 B2 refuses
+        // a member's seat outright, which would make this pass for the wrong reason).
+        await aClient.from('conversation_members').insert({
           conversation_id: g,
           user_id: c.id,
           role: 'member',

@@ -30,7 +30,8 @@ const mockSupabase = {
 
 // Mock messaging client (createMessagingClient(supabase).from(...))
 const mockMessagingFrom = vi.fn();
-const msgClient = { from: mockMessagingFrom };
+const mockMessagingRpc = vi.fn();
+const msgClient = { from: mockMessagingFrom, rpc: mockMessagingRpc };
 
 // Mock createClient
 vi.mock('@/lib/supabase/client', () => ({
@@ -67,6 +68,7 @@ const createMockQueryBuilder = (data: any = null, error: any = null) => ({
   delete: vi.fn().mockReturnThis(),
   eq: vi.fn().mockReturnThis(),
   neq: vi.fn().mockReturnThis(),
+  not: vi.fn().mockReturnThis(),
   is: vi.fn().mockReturnThis(),
   in: vi.fn().mockReturnThis(),
   or: vi.fn().mockReturnThis(),
@@ -519,30 +521,87 @@ describe('GroupKeyService', () => {
   // rotateGroupKey
   // ---------------------------------------------------------------------------
   describe('rotateGroupKey', () => {
-    it('bumps the key version, distributes, and updates the conversation', async () => {
-      const activeMembers = [
-        { id: 'm1', conversation_id: CONVERSATION_ID, user_id: MEMBER_1_ID },
-      ];
-
+    /** Each table answers its calls in order; the last answer repeats. */
+    function answers(byTable: Record<string, unknown[]>) {
+      const queues = Object.fromEntries(
+        Object.entries(byTable).map(([t, list]) => [t, [...list]])
+      );
       mockMessagingFrom.mockImplementation((table: string) => {
-        if (table === 'conversations') {
-          return createMockQueryBuilder(
-            { current_key_version: 2 },
-            null
-          ) as any;
-        }
-        if (table === 'conversation_members') {
-          return createMockQueryBuilder(activeMembers, null) as any;
-        }
-        if (table === 'group_keys') {
-          return createMockQueryBuilder([], null) as any;
-        }
-        return createMockQueryBuilder(null, null) as any;
+        const q = queues[table] ?? [createMockQueryBuilder(null, null)];
+        return (q.length > 1 ? q.shift() : q[0]) as any;
       });
+    }
+    const activeMembers = [
+      { id: 'm0', conversation_id: CONVERSATION_ID, user_id: CURRENT_USER_ID },
+      { id: 'm1', conversation_id: CONVERSATION_ID, user_id: MEMBER_1_ID },
+    ];
+
+    it('rotates in ONE call to rotate_group_key and returns the new version (#1247 B2)', async () => {
+      // Writing the rows and bumping were two requests: a failed bump left rows at N+1 that
+      // then blocked every later rotation. The RPC commits both or neither.
+      answers({
+        conversation_members: [
+          createMockQueryBuilder({ role: 'owner' }, null),
+          createMockQueryBuilder(activeMembers, null),
+        ],
+        conversations: [
+          createMockQueryBuilder({ current_key_version: 2 }, null),
+        ],
+      });
+      mockMessagingRpc.mockResolvedValue({ data: 3, error: null });
 
       const newVersion = await service.rotateGroupKey(CONVERSATION_ID);
 
       expect(newVersion).toBe(3);
+      expect(mockMessagingRpc).toHaveBeenCalledTimes(1);
+      const [fn, args] = mockMessagingRpc.mock.calls[0];
+      expect(fn).toBe('rotate_group_key');
+      expect(args).toMatchObject({
+        p_conversation_id: CONVERSATION_ID,
+        p_from_version: 2,
+      });
+      expect(args.p_rows.map((r: any) => r.user_id)).toEqual([
+        CURRENT_USER_ID,
+        MEMBER_1_ID,
+      ]);
+      // Nothing is written outside the RPC.
+      expect(mockMessagingFrom).not.toHaveBeenCalledWith('group_keys');
+    });
+
+    it('a rotation that lost the race says so, as a GroupKeyError', async () => {
+      answers({
+        conversation_members: [
+          createMockQueryBuilder({ role: 'owner' }, null),
+          createMockQueryBuilder(activeMembers, null),
+        ],
+        conversations: [
+          createMockQueryBuilder({ current_key_version: 2 }, null),
+        ],
+      });
+      mockMessagingRpc.mockResolvedValue({
+        data: null,
+        error: {
+          code: 'PT409',
+          message: 'the group key moved on from version 2',
+        },
+      });
+
+      await expect(service.rotateGroupKey(CONVERSATION_ID)).rejects.toThrow(
+        /another rotation got there first/i
+      );
+    });
+
+    it('only an owner rotates: a member is refused before anything is written', async () => {
+      answers({
+        conversation_members: [
+          createMockQueryBuilder({ role: 'member' }, null),
+        ],
+      });
+
+      await expect(service.rotateGroupKey(CONVERSATION_ID)).rejects.toThrow(
+        /only the group owner can rotate/i
+      );
+      expect(mockMessagingRpc).not.toHaveBeenCalled();
     });
 
     it('throws AuthenticationError when not signed in', async () => {
@@ -557,18 +616,111 @@ describe('GroupKeyService', () => {
     });
 
     it('throws ConnectionError when the conversation lookup fails', async () => {
-      mockMessagingFrom.mockImplementation((table: string) => {
-        if (table === 'conversations') {
-          return createMockQueryBuilder(null, {
-            message: 'db down',
-          }) as any;
-        }
-        return createMockQueryBuilder(null, null) as any;
+      answers({
+        conversation_members: [createMockQueryBuilder({ role: 'owner' }, null)],
+        conversations: [createMockQueryBuilder(null, { message: 'db down' })],
       });
 
       await expect(service.rotateGroupKey(CONVERSATION_ID)).rejects.toThrow(
         'Failed to get conversation: db down'
       );
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // rotateIfDepartedSinceKey (#1247 B2): the owner's client rotates after a leave
+  // ---------------------------------------------------------------------------
+  describe('rotateIfDepartedSinceKey', () => {
+    const KEY_AT = '2026-09-24T10:00:00.000Z';
+    function wire(opts: {
+      role: string | null;
+      ownKeyAt: string | null;
+      lastLeftAt: string | null;
+    }) {
+      const queues: Record<string, unknown[]> = {
+        conversation_members: [
+          createMockQueryBuilder(opts.role ? { role: opts.role } : null, null),
+          createMockQueryBuilder(
+            opts.lastLeftAt ? { left_at: opts.lastLeftAt } : null,
+            null
+          ),
+        ],
+        conversations: [
+          createMockQueryBuilder({ current_key_version: 4 }, null),
+        ],
+        group_keys: [
+          createMockQueryBuilder(
+            opts.ownKeyAt ? { created_at: opts.ownKeyAt } : null,
+            null
+          ),
+        ],
+      };
+      mockMessagingFrom.mockImplementation((table: string) => {
+        const q = queues[table] ?? [createMockQueryBuilder(null, null)];
+        return (q.length > 1 ? q.shift() : q[0]) as any;
+      });
+      return vi.spyOn(service, 'rotateGroupKey').mockResolvedValue(5);
+    }
+
+    it('rotates when someone left after the owner’s current key was written', async () => {
+      const rotate = wire({
+        role: 'owner',
+        ownKeyAt: KEY_AT,
+        lastLeftAt: '2026-09-24T11:00:00.000Z',
+      });
+      await expect(
+        service.rotateIfDepartedSinceKey(CONVERSATION_ID)
+      ).resolves.toBe(true);
+      expect(rotate).toHaveBeenCalledWith(CONVERSATION_ID);
+    });
+
+    it('leaves the key alone when nobody has left since it was written', async () => {
+      const rotate = wire({
+        role: 'owner',
+        ownKeyAt: KEY_AT,
+        lastLeftAt: '2026-09-24T09:00:00.000Z',
+      });
+      await expect(
+        service.rotateIfDepartedSinceKey(CONVERSATION_ID)
+      ).resolves.toBe(false);
+      expect(rotate).not.toHaveBeenCalled();
+    });
+
+    it('rotates when the owner holds no key at the current version and someone has left', async () => {
+      // A newly promoted owner (#247 erasure hand-over) may never have been given the current key.
+      const rotate = wire({
+        role: 'owner',
+        ownKeyAt: null,
+        lastLeftAt: '2026-09-24T09:00:00.000Z',
+      });
+      await expect(
+        service.rotateIfDepartedSinceKey(CONVERSATION_ID)
+      ).resolves.toBe(true);
+      expect(rotate).toHaveBeenCalled();
+    });
+
+    it('does nothing for a member who is not the owner', async () => {
+      const rotate = wire({
+        role: 'member',
+        ownKeyAt: KEY_AT,
+        lastLeftAt: '2026-09-24T11:00:00.000Z',
+      });
+      await expect(
+        service.rotateIfDepartedSinceKey(CONVERSATION_ID)
+      ).resolves.toBe(false);
+      expect(rotate).not.toHaveBeenCalled();
+    });
+
+    it('never throws: a failed rotation is logged and reported as false', async () => {
+      const rotate = wire({
+        role: 'owner',
+        ownKeyAt: KEY_AT,
+        lastLeftAt: '2026-09-24T11:00:00.000Z',
+      });
+      rotate.mockRejectedValue(new Error('boom'));
+      await expect(
+        service.rotateIfDepartedSinceKey(CONVERSATION_ID)
+      ).resolves.toBe(false);
     });
   });
 

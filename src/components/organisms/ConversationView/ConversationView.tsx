@@ -9,6 +9,7 @@ import {
 } from '@/services/messaging/message-service';
 import { usePendingMessages } from '@/hooks/usePendingMessages';
 import { createLogger } from '@/lib/logger/logger';
+import { groupKeyService } from '@/services/messaging/group-key-service';
 import type { DecryptedMessage } from '@/types/messaging';
 
 const logger = createLogger('organisms:ConversationView');
@@ -128,6 +129,12 @@ export default function ConversationView({
       // Cache for offline sendMessage support (fire-and-forget pre-fetches
       // the recipient's public key for offline encryption)
       void cacheConversationData(conversationId, conversation);
+
+      // #1247 B2: if this user owns the group and someone has left since their current key
+      // was written, rotate now. A no-op for anyone else, and it never throws.
+      if (conversation.is_group) {
+        void groupKeyService.rotateIfDepartedSinceKey(conversationId);
+      }
 
       const otherParticipantId =
         conversation.participant_1_id === user.id

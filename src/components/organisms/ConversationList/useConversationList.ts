@@ -5,6 +5,10 @@ import { messageService } from '@/services/messaging/message-service';
 import type { UserProfile } from '@/types/messaging';
 import { createLogger } from '@/lib/logger/logger';
 import { createMessagingClient } from '@/lib/supabase/messaging-client';
+import {
+  onConversationChange,
+  onMemberChange,
+} from '@/services/messaging/group-realtime';
 
 const logger = createLogger('components:organisms:ConversationList:hook');
 
@@ -379,6 +383,7 @@ export function useConversationList() {
           logger.debug('Realtime: conversations change', {
             event: payload.eventType,
           });
+          onConversationChange(payload); // #1247 B2: follow key rotations
           debouncedLoad();
         }
       )
@@ -393,6 +398,7 @@ export function useConversationList() {
           logger.debug('Realtime: conversation_members change', {
             event: payload.eventType,
           });
+          onMemberChange(payload); // #1247 B2: an owner rotates after a departure
           debouncedLoad();
         }
       )

@@ -455,6 +455,10 @@ export class GroupService {
 
     const msgClient = createMessagingClient(this.supabase);
 
+    // If someone left and no owner has rotated since, the current key is one the leaver
+    // still holds. Rotate first, so the newcomers never receive it (#1247 B2).
+    await this.groupKeyService.rotateIfDepartedSinceKey(conversation_id);
+
     // Read the group's current key version + capacity.
     const { data: conversation, error: convError } = await msgClient
       .from('conversations')
@@ -868,11 +872,14 @@ export class GroupService {
       );
     }
     const msgClient = createMessagingClient(this.supabase);
-    const { error } = await msgClient
+    // Read back what was deleted (#1247 B2): a delete RLS refuses matches 0 rows and returns no
+    // error, and before the owner DELETE policy every deleteGroup "succeeded" that way.
+    const { data: deleted, error } = await msgClient
       .from('conversations')
       .delete()
-      .eq('id', conversationId);
-    if (error) {
+      .eq('id', conversationId)
+      .select('id');
+    if (error || !deleted?.length) {
       throw new GroupError('Failed to delete group', error);
     }
   }
@@ -900,11 +907,14 @@ export class GroupService {
       );
     }
     const msgClient = createMessagingClient(this.supabase);
-    const { error } = await msgClient
+    // Read back what changed (#1247 B2): before the owner UPDATE policy every rename matched 0
+    // rows with no error, and group_renamed still announced a rename that never happened.
+    const { data: renamed, error } = await msgClient
       .from('conversations')
       .update({ group_name: trimmed })
-      .eq('id', conversationId);
-    if (error) {
+      .eq('id', conversationId)
+      .select('id');
+    if (error || !renamed?.length) {
       throw new GroupError('Failed to rename group', error);
     }
     await this.recordSystemMessage(conversationId, user.id, 'group_renamed', {
