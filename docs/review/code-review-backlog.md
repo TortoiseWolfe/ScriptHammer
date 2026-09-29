@@ -22,13 +22,13 @@ could not see (deployed config, live data).
 | ---- | ---------------------------------------------- | ------- |
 | 1    | `supabase/`                                    | pending |
 | 2    | `src/lib`                                      | done    |
-| 2    | `src/services`, `src/contexts`                 | pending |
+| 2    | `src/services`, `src/contexts`                 | done    |
 | 3    | `src/hooks`, `src/utils`, `src/app`            | done    |
 | 4    | `src/world`, `src/twin`, `src/stage` + assets  | pending |
 | 5    | `src/components` (payment, auth, forms, …)     | done    |
 | 5    | `src/components` (everything else)             | done    |
 | 6    | `scripts/`, `.github/workflows/`               | pending |
-| 6    | `tests/`, `src/tests/`                         | pending |
+| 6    | `tests/`, `src/tests/`                         | done    |
 
 ## Backlog
 
@@ -123,6 +123,38 @@ could not see (deployed config, live data).
 - **Defect:** The code registers the tag `form-submission-sync`, but the SW only handles `sync-offline-queue`, and that handler just posts `SYNC_OFFLINE_QUEUE`, which no client listens for. The foreground fallback is skipped whenever `SyncManager` exists, and `retryQueue` has no UI caller.
 - **Failure scenario:** On Chrome, Edge or Android, the user submits offline and is told the message "will be sent automatically", but it never is.
 - **Fix:** Use one tag name and add a client SW message listener that calls `processQueue()`, or run the foreground fallback on every browser.
+- **Confidence:** confirmed
+
+### With "Remember me" off, any spurious SIGNED_OUT wipes the keys and the offline queue
+
+- **Where:** `src/contexts/AuthContext.tsx:48-68` (`isAuthTokenValidInLocalStorage`), `:269-313`
+- **Defect:** The spurious-SIGNED_OUT check reads only `localStorage`. Since #375, session-only users keep their token in `sessionStorage` (`src/lib/supabase/client.ts:142-146`), so for them every transient SIGNED_OUT counts as real.
+- **Failure scenario:** A transient Realtime/RLS 401 makes AuthContext null the user and call `clearKeys()`, which deletes the IndexedDB private key and `messaging_queued_messages`. Unsent offline messages are lost and the user is redirected to `/`.
+- **Fix:** Read the token through the same store logic the adapter uses (`createAuthStorage().getItem(key)`).
+- **Confidence:** confirmed
+
+### Account deletion leaves a signed-in ghost session and token behind
+
+- **Where:** `src/services/messaging/gdpr-service.ts:616`, `src/lib/supabase/client.ts:261-268`, `src/contexts/AuthContext.tsx:269-276`
+- **Defect:** The code calls `supabase.auth.signOut()` directly, bypassing `AuthContext.signOut`. The storage adapter therefore refuses to remove the token, and AuthContext then treats the SIGNED_OUT as spurious.
+- **Failure scenario:** After deletion, the client-side push to `/sign-in` still shows the deleted user as signed in. The dead token stays, and every later page load runs the ~7s refresh-retry loop before ending in `AUTH_FAILED`.
+- **Fix:** Route deletion through `AuthContext.signOut()` (or `setAllowAuthTokenRemoval`), use `scope: 'local'`, and do a full reload.
+- **Confidence:** confirmed
+
+### "Remove" on an accepted connection does nothing but reports success
+
+- **Where:** `src/services/messaging/connection-service.ts:540-542`; `supabase/migrations/20251006_complete_monolithic_setup.sql:2996-2998`; `src/components/organisms/ConnectionManager/ConnectionManager.tsx:183`
+- **Defect:** The only DELETE policy on `user_connections` is `auth.uid() = requester_id AND status = 'pending'`. RLS silently filters the delete to 0 rows, and the service checks only `error`.
+- **Failure scenario:** Nobody can ever unfriend anyone. The row persists and keeps satisfying the connection-gated rules for 1:1 conversations and groups, and no error is shown.
+- **Fix:** Add a DELETE policy (or RPC) for either participant on `accepted` rows, and use `.select('id')` so the call throws on 0 rows.
+- **Confidence:** confirmed
+
+### Payment-isolation E2E tests pass without checking isolation
+
+- **Where:** `tests/e2e/security/payment-isolation.spec.ts:113`, `:171`; `tests/e2e/auth/protected-routes.spec.ts:123`
+- **Defect:** The "unauthenticated" test runs with the authenticated storageState, and its else-branch accepts any URL matching `/sign-in|payment-demo/`. "Only own payments" asserts only that the list renders. The RLS test's claim is a comment with no assertion.
+- **Failure scenario:** Anonymous access to `/payment-demo`, or cross-user rows in payment history, ship green. Only the DB-level `tests/rls/payment-rls.test.ts` remains, and it can't see a client or query leak.
+- **Fix:** Use a fresh context with no storageState and assert the redirect. Seed a payment for user B and assert it is absent for A.
 - **Confidence:** confirmed
 
 ## P2
@@ -277,6 +309,69 @@ could not see (deployed config, live data).
 - **Fix:** Tie the verdict to a user id, and reset both values when the id changes.
 - **Confidence:** plausible (depends on the cross-tab auth event not setting `isLoading`)
 
+### Real server-side revocation is hidden by the token-removal guard
+
+- **Where:** `src/lib/supabase/client.ts:261-268`, `src/contexts/AuthContext.tsx:269-276`
+- **Defect:** The adapter blocks every `auth-token` removal outside explicit sign-out, including auth-js `_removeSession()` after a refresh token is revoked. The stale token then makes the real SIGNED_OUT look spurious.
+- **Failure scenario:** After a password reset elsewhere, "sign out everywhere", or a ban, the UI stays authenticated, the #1257 remote-sign-out key wipe doesn't run, and later loads end in `AUTH_FAILED`.
+- **Fix:** Allow removal once `getUser()` confirms the session is invalid, instead of inferring validity from `expires_at`.
+- **Confidence:** plausible
+
+### Offline/fetch-failure history fallback always fails with "Conversation not found"
+
+- **Where:** `src/services/messaging/message-service.ts:608`, `src/services/messaging/providers/supabase-provider.ts:228-241`
+- **Defect:** `getConversationMeta` swallows `{ error }` and returns `null`, so after cached rows load, the method throws `ValidationError('Conversation not found')`. Online group sends on a flaky network (line 269) throw instead of queueing for the same reason. See also the UUID-ordering item under "Offline message cache" above.
+- **Failure scenario:** Opening a previously viewed conversation offline errors instead of showing the cache. The IndexedDB cache path never works.
+- **Fix:** Throw `ConnectionError` on `error`, and cache the metadata for offline use.
+- **Confidence:** confirmed
+
+### Live message sends retry a non-idempotent insert, which can duplicate messages
+
+- **Where:** `src/services/messaging/providers/supabase-provider.ts:325-386`, `src/services/messaging/message-service.ts:424-461`
+- **Defect:** Live inserts use `client_generated_id: null` and are retried up to 3 times on fetch errors. If they still fail, the message is queued again under a new UUID.
+- **Failure scenario:** An insert commits but its response is lost, so the recipient sees the message two to four times.
+- **Fix:** Mint one `client_generated_id` per `sendMessage`, upsert with `onConflict: 'client_generated_id'`, and reuse the id in the queue fallback.
+- **Confidence:** plausible
+
+### `hasKeys()` reports "no keys" on failure, which can lead to overwriting the keypair
+
+- **Where:** `src/services/messaging/key-service.ts:496-550`; callers `src/components/auth/ReAuthModal/ReAuthModal.tsx:80,179`, `src/components/auth/SignInForm/SignInForm.tsx:164-169`
+- **Defect:** `hasKeys()` returns false on session or query errors, and callers treat false as "new user" and call `initializeKeys()`, which doesn't check for existing keys itself. `fetchOwnEncryptionKey` was fixed for exactly this in #1038/#1040.
+- **Failure scenario:** The session is mid-refresh when ReAuthModal opens, so the modal shows "setup" and a new key is created. All earlier 1:1 messages become "Encrypted with previous keys".
+- **Fix:** Make `hasKeys()` throw on failure, and have `initializeKeys()` refuse when `active_key_count > 0`.
+- **Confidence:** plausible
+
+### Security, admin and payment Vitest suites run in no CI job
+
+- **Where:** `vitest.config.ts:40-79`; `src/tests/integration/payment-isolation.test.ts`; `tests/contract/admin/admin-access.contract.test.ts`; `tests/contract/auth/sign-in.contract.test.ts`; `tests/integration/messaging/connections.test.ts:47-53`
+- **Defect:** These files are excluded from the default config and not included by `vitest.rls.config.ts`, and no workflow runs them. `connections.test.ts` also asserts `toBeDefined()` on `id || ''`.
+- **Failure scenario:** 25 admin-access contract tests and 11 payment-isolation tests never execute.
+- **Fix:** Move the ones worth keeping into `vitest.rls.config.ts` (run by `conformance.yml`) and delete the rest.
+- **Confidence:** confirmed
+
+### Tests that cannot fail (service worker, typing indicator, admin, groups, a11y, consent)
+
+Grouped, because they share one fix pattern: assert the positive outcome with no escape hatch.
+
+- **Service-worker registration:** `tests/e2e/tests/pwa-installation.spec.ts:45-47,158` asserts `a || b || true`. The offline test at `:74-92,174-205` skips instead of failing when the SW doesn't activate.
+- **Typing indicator:** `tests/e2e/messaging/real-time-delivery.spec.ts:185-310` has no typing-indicator assertion. One test wraps `toBeVisible()` in an empty `catch`. `tests/e2e/messaging/offline-queue-sync.spec.ts:100-110` waits 5s and asserts nothing.
+- **Admin dashboard:** `tests/e2e/admin/admin-dashboard.spec.ts:224-226,272-278,359-368,437-442,503-510` has "if visible, expect visible" checks. The date-filter selector matches nothing, the `svgCount > 0` check is satisfied by nav icons, and the sort tests skip when controls are absent.
+- **Group creation:** `tests/e2e/messaging/group-chat-multiuser.spec.ts:152-226` treats an error banner as the end of a passing test.
+- **Group integration:** `tests/integration/messaging/group-creation.test.ts` asserts the mock's canned rows. Its escaped `` `member-\${i}` `` makes all 201 ids identical, and `rejects.toThrow()` accepts any error.
+- **Offline queue unit test:** `src/tests/offline-integration.test.tsx:499-576` mocks keys the hook doesn't have (`queueSize` vs `queueCount`) and never asserts `registerBackgroundSync`.
+- **Analytics consent:** `src/tests/analytics-consent-integration.test.tsx:65-92` never renders `GoogleAnalytics`, the component that actually gates GA.
+- **A11y:** in `tests/e2e/accessibility/avatar-upload.a11y.test.ts:373-383` the else-branch is a tautology. `tests/e2e/tests/accessibility.spec.ts:196-208` checks that computed `outline || border` is truthy, which is always true.
+- **Failure scenario:** SW registration, typing indicator, admin sort/stats, group creation, GA consent gating and visible focus can each regress while these tests stay green.
+- **Confidence:** confirmed
+
+### Avatar upload E2E spec is skipped in every CI lane
+
+- **Where:** `tests/e2e/avatar/upload.spec.ts:25-28`
+- **Defect:** `test.skip(!!process.env.CI, …)` skips all 9 tests, including on the local lane, which has its own Storage.
+- **Failure scenario:** The #1068 class of avatar regression is never exercised before merge.
+- **Fix:** Gate the skip on missing Storage, not on `CI`.
+- **Confidence:** confirmed (the skip); plausible (that the local lane can run it)
+
 ## P3
 
 ### Completed payment-queue rows are never removed, so the listener probes Supabase every 30s forever
@@ -358,3 +453,35 @@ could not see (deployed config, live data).
 - **Failure scenario:** `/sign-in?returnUrl=%25` throws `URIError` and the sign-in page shows the error boundary. The open-redirect guard itself holds.
 - **Fix:** Drop the second decode, or treat a decode failure as unsafe.
 - **Confidence:** confirmed
+
+### Non-retryable message send errors are queued as "pending" instead of shown
+
+- **Where:** `src/services/messaging/message-service.ts:431-461`
+- **Defect:** Every provider error is queued, including RLS denials.
+- **Failure scenario:** A removed group member's message shows as queued, then silently fails after 5 syncs.
+- **Fix:** Queue only network-class errors, and rethrow the rest to the UI.
+- **Confidence:** plausible
+
+### A declined requester can never re-request and gets a raw DB error
+
+- **Where:** `src/services/messaging/connection-service.ts:147-157`
+- **Defect:** The pre-check ignores `status = 'declined'`, so the insert hits the `unique_connection` constraint, and RLS stops the requester deleting the row.
+- **Failure scenario:** Every later request fails with "duplicate key value…" permanently.
+- **Fix:** Handle `declined` explicitly, with a clear message or a reset path.
+- **Confidence:** confirmed
+
+### `refreshSession`/`retry` in AuthContext ignore returned errors
+
+- **Where:** `src/contexts/AuthContext.tsx:408-412`, `:419-424`
+- **Defect:** Both destructure only `data`, and Supabase returns errors rather than throwing them.
+- **Failure scenario:** A network blip during `refreshSession()` after a profile update shows the user as signed out while the token and keys remain.
+- **Fix:** Check `error`, keep the current session on failure, and set the error state.
+- **Confidence:** confirmed
+
+### Fixed waits and one-shot counts in E2E that race or turn into silent skips
+
+- **Where:** `tests/e2e/admin/admin-user-pagination.spec.ts:233-244`, `tests/e2e/payment/05-offline-queue.spec.ts:92,116-118`, `tests/e2e/admin/admin-dashboard.spec.ts:332-333`, `tests/e2e/auth/protected-routes.spec.ts:103-110`
+- **Defect:** These tests use fixed `waitForTimeout` values and one-shot `count()` reads that choose between skipping and asserting. The protected-routes skip ("transient WebKit issue") applies on every browser.
+- **Failure scenario:** Intermittent red on healthy code, or regressions that turn into skips.
+- **Fix:** Use `expect.poll`/`toContainText`, and scope the WebKit skip to `browserName === 'webkit'`.
+- **Confidence:** confirmed (code); plausible (observed flake)
