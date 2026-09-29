@@ -23,7 +23,7 @@ could not see (deployed config, live data).
 | 1    | `supabase/`                                    | pending |
 | 2    | `src/lib`                                      | done    |
 | 2    | `src/services`, `src/contexts`                 | pending |
-| 3    | `src/hooks`, `src/utils`, `src/app`            | pending |
+| 3    | `src/hooks`, `src/utils`, `src/app`            | done    |
 | 4    | `src/world`, `src/twin`, `src/stage` + assets  | pending |
 | 5    | `src/components` (payment, auth, forms, …)     | done    |
 | 5    | `src/components` (everything else)             | done    |
@@ -107,6 +107,22 @@ could not see (deployed config, live data).
 - **Defect:** The loop calls `onChange([...value, result.attachment])` with a `value` captured when the callback was created, so each iteration overwrites the previous one.
 - **Failure scenario:** When 3 screenshots are selected, all 3 upload but the order posts only the third. The other two are orphaned in the bucket until the 7-day sweep. The existing test uses a single file.
 - **Fix:** Use a functional update, or keep a ref to the latest `value`.
+- **Confidence:** confirmed
+
+### useOfflineQueue re-runs its sync forever while any unsynced message exists
+
+- **Where:** `src/hooks/useOfflineQueue.ts:109-133` (the `syncQueue` deps), `:236-257` (the mount/poll effect)
+- **Defect:** `syncQueue` depends on `isSyncing`, so its identity changes on every sync. The mount effect re-runs each time and syncs again if `getQueue()` is non-empty. `getQueue()` includes permanently `failed` rows, because `markAsFailed` never sets `synced`.
+- **Failure scenario:** One failed message, or a signed-out visitor with a queued row, causes back-to-back syncs for as long as the component is mounted: `getSession`, IndexedDB churn and re-renders. The hook is used on `/contact`, `QueueStatusIndicator` and `ConversationView`.
+- **Fix:** Guard in-flight state with a ref so `syncQueue` stays stable, and auto-sync only when a `pending` row exists.
+- **Confidence:** confirmed
+
+### Offline contact-form submissions are never auto-sent on Chromium
+
+- **Where:** `src/utils/background-sync.ts:17,23-44,175-178`; `public/sw.js:403-405`
+- **Defect:** The code registers the tag `form-submission-sync`, but the SW only handles `sync-offline-queue`, and that handler just posts `SYNC_OFFLINE_QUEUE`, which no client listens for. The foreground fallback is skipped whenever `SyncManager` exists, and `retryQueue` has no UI caller.
+- **Failure scenario:** On Chrome, Edge or Android, the user submits offline and is told the message "will be sent automatically", but it never is.
+- **Fix:** Use one tag name and add a client SW message listener that calls `processQueue()`, or run the foreground fallback on every browser.
 - **Confidence:** confirmed
 
 ## P2
@@ -221,6 +237,46 @@ could not see (deployed config, live data).
 - **Fix:** Have `trackEvent`/`trackAdConversion` check the current consent state rather than whether the SDK exists.
 - **Confidence:** plausible
 
+### usePaymentReturn hangs on "loading" if any step throws
+
+- **Where:** `src/hooks/usePaymentReturn.ts:54-128`
+- **Defect:** The async IIFE has no try/catch, and `getPaymentStatus` throws on a missing session or a PostgREST error.
+- **Failure scenario:** A buyer returns from Stripe to `/checkout?session_id=…`, which is not protected, before their session restores. They get a permanent spinner and no confirmation or booking link. `/payment-result` has the same problem.
+- **Fix:** Wrap the body in try/catch and set `{kind:'error'}` on failure (guarded by `cancelled`).
+- **Confidence:** confirmed
+
+### Admin "7d/30d/90d" ranges always leave out today
+
+- **Where:** `src/app/admin/audit/page.tsx:63-66`, `src/app/admin/page.tsx:59`, `src/app/admin/messaging/page.tsx:75-78`, `src/app/admin/payments/page.tsx:63-66`
+- **Defect:** The date-only `end` becomes 00:00 UTC of that day, and the RPCs filter `created_at < p_end`.
+- **Failure scenario:** Every admin range misses today's events, and custom ranges drop their last day.
+- **Fix:** Send `end + 1 day` as the exclusive bound, from one shared helper.
+- **Confidence:** confirmed
+
+### /messages/setup sends `?redirect=`, which sign-in ignores
+
+- **Where:** `src/app/messages/setup/page.tsx:54`
+- **Defect:** Sign-in reads only `returnUrl`.
+- **Failure scenario:** After signing in, the user lands on `/profile` instead of back in messaging.
+- **Fix:** Use `/sign-in?returnUrl=${encodeURIComponent('/messages/setup')}`.
+- **Confidence:** confirmed
+
+### Hardcoded history.pushState paths drop NEXT_PUBLIC_BASE_PATH
+
+- **Where:** `src/app/messages/page.tsx:60`, `src/app/payment/PaymentHubContent.tsx:77`
+- **Defect:** These are absolute root paths that bypass `getInternalUrl()`.
+- **Failure scenario:** In a fork deployed at `github.io/<repo>`, selecting a conversation rewrites the URL without the base path, so a reload or shared link 404s.
+- **Fix:** Build the URL from `window.location.pathname` plus the new query.
+- **Confidence:** confirmed (only under a base-path config)
+
+### AdminGate keeps the previous user's admin verdict when the user changes
+
+- **Where:** `src/app/admin/AdminGate.tsx:57-78,89`
+- **Defect:** On a user change, `isAdmin` isn't reset and `wasAdmin.current` is never cleared.
+- **Failure scenario:** A non-admin signs in from another tab while an admin page is open. The console stays rendered with the already-loaded audit data visible. RLS blocks new fetches but not what is already on screen.
+- **Fix:** Tie the verdict to a user id, and reset both values when the id changes.
+- **Confidence:** plausible (depends on the cross-tab auth event not setting `isLoading`)
+
 ## P3
 
 ### Completed payment-queue rows are never removed, so the listener probes Supabase every 30s forever
@@ -286,3 +342,19 @@ could not see (deployed config, live data).
 - **Failure scenario:** After N visits to `/schedule`, each booking fires N `bookingSuccessful` handlers.
 - **Fix:** Keep the callbacks and unregister them in the effect cleanup.
 - **Confidence:** plausible
+
+### usePaymentReturn reports "paid" without checking payment status
+
+- **Where:** `src/hooks/usePaymentReturn.ts:60-83,120-126`
+- **Defect:** The hook ignores `success` and `result.status`, and returns `paid`, with the booking link, whenever a result row and an order exist.
+- **Failure scenario:** Not reachable today, because the webhook writes only success rows. A future failed or refunded row would still hand out the paid booking link.
+- **Fix:** Require `result.status === 'succeeded'`.
+- **Confidence:** plausible
+
+### A malformed `returnUrl` crashes /sign-in and /sign-up
+
+- **Where:** `src/app/sign-in/page.tsx:54`, `src/app/sign-up/page.tsx:27`
+- **Defect:** `decodeURIComponent` runs on a value `URLSearchParams` has already decoded, with no try/catch.
+- **Failure scenario:** `/sign-in?returnUrl=%25` throws `URIError` and the sign-in page shows the error boundary. The open-redirect guard itself holds.
+- **Fix:** Drop the second decode, or treat a decode failure as unsafe.
+- **Confidence:** confirmed
