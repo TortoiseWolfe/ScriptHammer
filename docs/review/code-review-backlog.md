@@ -16,18 +16,37 @@ When an item is filed, put the issue number in its heading; when it is fixed, de
 defect is real in the code but exploitability or impact depends on something the reviewer
 could not see (deployed config, live data).
 
+## Summary
+
+**83 findings: 4 P0, 21 P1, 38 P2, 20 P3.** Every tier below has been reviewed once. Every
+reviewer only read code, traced each finding in the code before reporting it, and dropped
+anything it could not substantiate. Nothing here has been reproduced in a running app.
+
+Themes worth fixing as a class rather than one by one:
+
+- **Payments lose or duplicate money-state.** Webhook dedupe swallows retries, retry intents
+  have no order, idempotency keys are missing on one path and stuck on another, and the Tip
+  Jar shows a price different from the one it charges.
+- **Supabase `{ error }` is treated as success.** postgrest-js resolves errors instead of
+  throwing, and many call sites check only for a throw (`isSupabaseOnline`,
+  `getConversationMeta`, `refreshSession`, RLS-filtered deletes that return 0 rows).
+- **Auth sign-out heuristics.** The token-removal guard plus the spurious-SIGNED_OUT check
+  mis-handles session-only users, account deletion and real revocation, and each path can
+  wipe or strand messaging keys.
+- **Tests and CI checks that cannot fail.** See the grouped entries under P1 and P2.
+
 ## Coverage
 
 | Tier | Scope                                          | Status  |
 | ---- | ---------------------------------------------- | ------- |
-| 1    | `supabase/`                                    | pending |
+| 1    | `supabase/`                                    | done    |
 | 2    | `src/lib`                                      | done    |
 | 2    | `src/services`, `src/contexts`                 | done    |
 | 3    | `src/hooks`, `src/utils`, `src/app`            | done    |
-| 4    | `src/world`, `src/twin`, `src/stage` + assets  | pending |
+| 4    | `src/world`, `src/twin`, `src/stage` + assets  | done    |
 | 5    | `src/components` (payment, auth, forms, …)     | done    |
 | 5    | `src/components` (everything else)             | done    |
-| 6    | `scripts/`, `.github/workflows/`               | pending |
+| 6    | `scripts/`, `.github/workflows/`               | done    |
 | 6    | `tests/`, `src/tests/`                         | done    |
 
 ## Backlog
@@ -42,6 +61,32 @@ could not see (deployed config, live data).
 - **Fix:** For variable SKUs, preview the requested amount clamped by the same `min_amount`/`max_amount` rules create-order uses, in both the summary and the button.
 - **Confidence:** confirmed
 - **Severity note:** Raised from the reviewer's P1 to P0, because the customer is charged an amount different from the one shown.
+
+### Webhooks dedupe before processing, so a failed payment event is never retried
+
+- **Where:** `supabase/functions/stripe-webhook/index.ts:116-127`, `supabase/functions/paypal-webhook/index.ts:85-97`, `supabase/functions/calcom-webhook/index.ts:95`
+- **Defect:** The `webhook_events` row is inserted with `processed=false` before the handler runs, and the duplicate check tests only whether the row exists.
+- **Failure scenario:** A transient DB error in `handlePaymentIntentSucceeded` returns 500. The provider retries, gets 200 "already processed", and the `payment_results` row and order advance are lost for good. `check-webhook-liveness.mjs` only reports these rows.
+- **Fix:** Short-circuit only when `processed=true`. Re-run or compare-and-swap-claim rows that are still `processed=false`.
+- **Confidence:** confirmed
+
+### A paid retry intent never advances its order or sends the receipt
+
+- **Where:** `supabase/functions/create-order/index.ts:134` (retry branch), `supabase/functions/_shared/advance-order.ts`
+- **Defect:** A retry inserts a child `payment_intents` row but no `orders` row, and `advanceOrderAndNotify` looks orders up only by `intent_id = child.id`.
+- **Failure scenario:** After a failed first attempt the buyer retries and pays. The webhook logs "no order for intent", the order stays `pending`, no receipt is sent, and admin shows a paid order as unpaid.
+- **Fix:** Resolve the order through `parent_intent_id` to the root intent, or re-point the order when the retry is created.
+- **Confidence:** confirmed
+- **Severity note:** Raised from P1 to P0, because the buyer is charged and the order is never fulfilled.
+
+### Account deletion fails for anyone who ever started a checkout, after keys are already wiped
+
+- **Where:** `supabase/migrations/20251006_complete_monolithic_setup.sql:56`, `:140`, `:412`; `supabase/functions/delete-account/index.ts:79`; client `src/services/messaging/gdpr-service.ts:561`
+- **Defect:** `payment_intents.template_user_id`, `subscriptions.template_user_id` and `orders.buyer_user_id` reference `auth.users(id)` with NO ACTION, so `auth.admin.deleteUser` fails with 23503.
+- **Failure scenario:** Every checkout writes an intent and an order, so every buyer's erasure request returns 500. The client has already deleted the private keys, so the user keeps the account but can never decrypt their messages again. The GDPR erasure is also not done.
+- **Fix:** Encode retention in the FKs (`ON DELETE SET NULL`, or anonymise the rows first), and delete local keys only after the server confirms.
+- **Confidence:** confirmed (schema); plausible (exact GoTrue error text)
+- **Severity note:** Raised from P1 to P0 for data loss plus a failed legal erasure.
 
 ## P1
 
@@ -146,7 +191,8 @@ could not see (deployed config, live data).
 - **Where:** `src/services/messaging/connection-service.ts:540-542`; `supabase/migrations/20251006_complete_monolithic_setup.sql:2996-2998`; `src/components/organisms/ConnectionManager/ConnectionManager.tsx:183`
 - **Defect:** The only DELETE policy on `user_connections` is `auth.uid() = requester_id AND status = 'pending'`. RLS silently filters the delete to 0 rows, and the service checks only `error`.
 - **Failure scenario:** Nobody can ever unfriend anyone. The row persists and keeps satisfying the connection-gated rules for 1:1 conversations and groups, and no error is shown.
-- **Fix:** Add a DELETE policy (or RPC) for either participant on `accepted` rows, and use `.select('id')` so the call throws on 0 rows.
+- **Also:** The requester has no way to revoke at all (the UPDATE policy is addressee-only), and there is no unblock path for `blocked` rows. Two reviewers found this independently.
+- **Fix:** Add a DELETE policy (or RPC) for either participant on `accepted` rows, and one for the blocker on `blocked` rows. Use `.select('id')` so the call throws on 0 rows.
 - **Confidence:** confirmed
 
 ### Payment-isolation E2E tests pass without checking isolation
@@ -156,6 +202,63 @@ could not see (deployed config, live data).
 - **Failure scenario:** Anonymous access to `/payment-demo`, or cross-user rows in payment history, ship green. Only the DB-level `tests/rls/payment-rls.test.ts` remains, and it can't see a client or query leak.
 - **Fix:** Use a fresh context with no storageState and assert the redirect. Seed a payment for user B and assert it is absent for A.
 - **Confidence:** confirmed
+
+### PayPal subscription webhook writes values the CHECK constraints reject
+
+- **Where:** `supabase/functions/paypal-webhook/index.ts:361`, `:365`, `:481`
+- **Defect:** `plan_interval` comes from `tenure_type` (`'regular'`/`'trial'`), which is not in `('month','year')`. `plan_amount` falls back to `0`, which fails `>= 100`. `APPROVAL_PENDING` maps to `'pending'`, which is not in the status CHECK.
+- **Failure scenario:** The webhook is the only writer of the `subscriptions` row. Every upsert fails with 23514 and returns 500, and the retry is then swallowed by the dedupe bug above. PayPal subscribers get no row and cannot cancel or resume in-app.
+- **Fix:** Read interval and amount from the plan or the catalog, and skip non-ACTIVE states the way the Stripe handler does.
+- **Confidence:** confirmed (code); plausible (live impact until exercised)
+
+### Members can forge `created_at` and system messages on insert
+
+- **Where:** `supabase/migrations/20251006_complete_monolithic_setup.sql:4835` (table-wide INSERT grant), `:3157-3159` (edit policy)
+- **Defect:** No BEFORE INSERT trigger resets `created_at`, `is_system_message` or `system_message_type`, and the #281 trigger then freezes a forged `created_at`.
+- **Failure scenario:** A message inserted with `created_at = 2099-01-01` is editable forever and pins the conversation to the top of the victim's list. A group member can also post a forged "ownership_transferred" system notice.
+- **Fix:** In `assign_sequence_number()` or a new BEFORE INSERT trigger, force `created_at := now()` and reset the system and state columns for non-service callers. Alternatively, narrow the INSERT grant to a column list.
+- **Confidence:** confirmed
+- **Severity note:** Raised from P2 to P1 because of the forged system notices.
+
+### Abstraction bake simplifies LOD0 in place, so every landmark ships at the far level
+
+- **Where:** `scripts/warehouse/abstract-glb.mjs:210` (`mesh.clone()`), `:202` (`lodTris.LOD0` measured before the loop)
+- **Defect:** glTF-Transform's `Mesh.clone()` shares Primitives by reference, so simplifying "LOD1" and "LOD2" simplifies LOD0's own geometry twice. `report.json` records LOD0 before this happens.
+- **Failure scenario:** In all 129 committed `public/twins/chatt/models/*.glb`, LOD0, LOD1 and LOD2 point at the same accessors: 87,019 triangles each, about 675 per landmark. Landmarks render at the twice-simplified level. This is why `src/world/WarehouseModels.tsx:216-222` saw "no tri change" between LODs and removed `<Detailed>`, which is the LOD0-at-every-distance finding from the #1304 review. The `lod0Triangles` ceiling checks a number that doesn't describe the shipped files.
+- **Fix:** Deep-copy the primitives and accessors per level before simplifying, compute `lodTris` from the final document, and assert the LOD accessor sets are disjoint. Then restore distance LOD switching.
+- **Confidence:** confirmed (artifact evidence); the by-reference `clone()` behaviour is from the library's docs
+
+### HouseModel mutates the cached GLTF scene, so the house is misplaced on remount
+
+- **Where:** `src/world/HouseModel.tsx:276-329`, `:338`
+- **Defect:** The centring offset is set on the shared `useGLTF` scene, and the next mount measures a box that already includes that offset.
+- **Failure scenario:** Toggling As-built → Massing → As-built, or client-side navigation to `/chatt?diorama`, renders the scan metres off its footprint.
+- **Fix:** Clone the scene per instance (as `WarehouseModels` does), or put the offset on a wrapper `<group>`.
+- **Confidence:** confirmed
+
+### Directory fly-to and gizmo base use narrow-frame anchors on the wide (chatt) site
+
+- **Where:** `src/twin/useWarehouseEditor.ts:185-198`, `src/twin/TwinCanvas.client.tsx:494-499`
+- **Defect:** `WideCity` and `hudLandmarks` reproject `models.json` anchors into the `atlasBox` frame, but `flyToModel` and `gizmoBase` use the raw narrow x/z.
+- **Failure scenario:** On chatt, the only site with models, clicking a building in the HUD directory flies the camera about 1.1 km from it.
+- **Fix:** Use one shared reprojection helper for all three.
+- **Confidence:** confirmed
+
+### Every new ground tile re-uploads every loaded tile texture
+
+- **Where:** `src/world/Terrain.tsx:270-280`, `src/stage/materialKit.ts:17`
+- **Defect:** `tileMaterials` rebuilds a material for all tiles on each arrival, and `drapedGround` sets `needsUpdate = true` on every texture.
+- **Failure scenario:** With N tiles loaded, each arrival uploads N 1024² textures in one frame. This defeats the one-per-frame queue, and the hitch grows as you walk.
+- **Fix:** Create and cache each tile's material once, when it is promoted.
+- **Confidence:** confirmed
+
+### Webhook liveness samples 1000 unfiltered log rows, so it can miss signature failures
+
+- **Where:** `scripts/ci/check-webhook-liveness.mjs:147-165`
+- **Defect:** The `function_logs` query has `limit 1000` with no `WHERE` or `ORDER BY`, and signature rejections are counted in JS over whichever rows come back.
+- **Failure scenario:** On a busy day the page holds no rejection lines, so the check reports PASS while Stripe keeps refusing deliveries (#1180, with the check green).
+- **Fix:** Filter the rejection messages in SQL, count them there, and fail if the result hits the cap.
+- **Confidence:** confirmed (query shape); depends on log volume
 
 ## P2
 
@@ -182,20 +285,6 @@ could not see (deployed config, live data).
 - **Failure scenario:** The mirror write failed on upload, or the avatar came from OAuth. Remove says it worked, but the profile row and the storage file remain and the avatar keeps rendering.
 - **Fix:** Read `avatar_url` from `user_profiles` (with metadata as the fallback). Clear the profile first as the fatal step, check its error, and make the metadata clear best-effort.
 - **Confidence:** confirmed
-
-### City renders full-detail models at every distance; route doc budgets as if it didn't
-
-- **Where:** `src/world/WarehouseModels.tsx:216-222`, `docs/twins/chatt-historic-route.md:44`
-- **Defect:** The renderer always mounts `lods[0]` and its comment says distance LOD
-  switching was removed. The route doc says LOD0 is only drawn near the camera and LOD2
-  city-wide, so it concludes detail only costs frame time near the camera.
-- **Failure scenario:** Landmarks and truss bridges built up to the 24k-triangle LOD0 cap
-  are all drawn at full detail across the whole city; the 150k city-wide cap no longer
-  bounds what is actually drawn and the game's frame rate drops.
-- **Fix:** Either restore distance LOD switching before the route is built out, or rewrite
-  the doc's budget against LOD0 totals.
-- **Confidence:** confirmed
-- **Source:** `/code-review` of #1304
 
 ### Switching conversations races in-flight loads and shows the old thread's messages
 
@@ -372,6 +461,118 @@ Grouped, because they share one fix pattern: assert the positive outcome with no
 - **Fix:** Gate the skip on missing Storage, not on `CI`.
 - **Confidence:** confirmed (the skip); plausible (that the local lane can run it)
 
+### A create-order idempotency claim is never released, so the key returns 503 forever
+
+- **Where:** `supabase/functions/create-order/index.ts:241`, `:276`; `supabase/functions/_shared/idempotency.ts`
+- **Defect:** The key row is claimed with `result: {}` before validation, and refusals and insert failures never release or complete it. An empty result is read as "in flight", so the server answers 503.
+- **Failure scenario:** A buyer enters a tip below the minimum and gets a 4xx. The page-load key is then stuck, so every later submit returns 503 until the page is reloaded. The offline queue replays the same key forever.
+- **Fix:** On every non-success exit, delete the claim or store the refusal, and give in-flight claims a TTL.
+- **Confidence:** confirmed
+
+### User status update plus `resume-subscription` reopens the #1089 status flip
+
+- **Where:** `supabase/migrations/20251006_complete_monolithic_setup.sql:1216-1218`; `supabase/functions/resume-subscription/index.ts:142-152`, `:196`
+- **Defect:** RLS lets an owner set `status='canceled'` from any status, and resume then writes `active` without checking the provider's own status.
+- **Failure scenario:** A user PATCHes a `past_due` sub to canceled and then resumes it. The row becomes `active` while Stripe still says past_due, which inflates `admin_payment_stats` and escapes the #242 one-live-per-user index.
+- **Fix:** Drop the client UPDATE grant, since `cancel-subscription` already does this server-side, and check the provider's status in resume.
+- **Confidence:** confirmed (logic); plausible (business impact)
+
+### Orphan sweep reads only 1000 orders, then deletes attachments that orders still reference
+
+- **Where:** `supabase/functions/sweep-intake-orphans/index.ts:93`, `:107`; `.github/workflows/intake-orphan-sweep.yml:78`
+- **Defect:** The `orders` select is capped by `max_rows = 1000`, the root listing is capped at 100, and neither is paged.
+- **Failure scenario:** Once there are more than 1000 orders, attachments for real orders are deleted by the weekly `mode=delete` run.
+- **Fix:** Page both reads, and refuse to delete when either read could have been truncated.
+- **Confidence:** confirmed (latent until more than 1000 orders)
+
+### Test-user seed makes the monolithic migration non-re-runnable on Supabase Cloud
+
+- **Where:** `supabase/migrations/20251006_complete_monolithic_setup.sql:1-8`, `:2869-2934`
+- **Defect:** The guarded `DELETE FROM auth.users` is skipped on Cloud, and the seed INSERT handler doesn't catch `unique_violation`/`insufficient_privilege`. It also seeds a publicly documented credential into production.
+- **Failure scenario:** A Cloud re-run aborts the whole `BEGIN…COMMIT`.
+- **Fix:** Use `WHERE NOT EXISTS` and a wider handler, or better, move test-user seeding into the existing seed script.
+- **Confidence:** plausible (depends on Cloud's auth.users privileges)
+
+### Streamed ground-tile textures are never evicted or disposed
+
+- **Where:** `src/world/Terrain.tsx:99-169`, `:303-311`; `src/world/groundTiles.ts:262-264`
+- **Defect:** `tileTextures` only grows. `RADIUS_M` limits fetching, not retention, and nothing disposes the textures or closes the bitmaps.
+- **Failure scenario:** Walking across downtown keeps hundreds of MB to GB resident, so mobile GPUs lose context, and all of it leaks on unmount.
+- **Fix:** Evict tiles beyond about 1.5×`RADIUS_M` (`dispose()` + `bitmap.close()`), and dispose everything on unmount.
+- **Confidence:** confirmed
+
+### Placement editor is inert on the wide site
+
+- **Where:** `src/world/TwinWorld.tsx:161-178`
+- **Defect:** The wide branch drops `modelOverrides`/`registerModelGroup`, so `WarehouseModels` never receives them.
+- **Failure scenario:** On `/chatt?edit` no gizmo appears, and nudges save to localStorage but nothing moves.
+- **Fix:** Forward them through `WideCity` (reprojected), or hide edit mode on wide sites.
+- **Confidence:** confirmed
+
+### Model budget gate never runs in CI and sums LOD2 while the runtime draws LOD0
+
+- **Where:** `scripts/warehouse/__tests__/budget.test.ts:14-31`, `:76-84`; `docs/twins/chatt-historic-route.md:44-47`; `src/world/WarehouseModels.tsx:5`
+- **Defect:** The gate reads the gitignored `sites/_warehouse/report.json` and `skipIf`s without it, even though the 129 GLBs are committed. The whole-set total sums LOD2, and the route doc budgets as if LOD2 is drawn city-wide.
+- **Failure scenario:** Heavier GLBs merge green. Once the bake bug is fixed, the 150k ceiling won't see the geometry that is actually drawn.
+- **Fix:** Measure the committed GLBs directly, budget on LOD0 while LOD0 is what renders, and update the route doc and the header comment.
+- **Confidence:** confirmed
+
+### Declared CSP would block live aerial tiles once enforced
+
+- **Where:** `scripts/ci/cloudflare-intent.mjs:108-122`; `src/world/groundTiles.ts:194-197`, `src/world/Terrain.tsx:118-125,165`
+- **Defect:** `ImageBitmapLoader` uses `fetch()`, which falls under `connect-src`, and `mapsdev.hamiltontn.gov` isn't listed there.
+- **Failure scenario:** When `CSP_MODE` flips to enforce, every tile is silently blocked. The ground stays blurry and the roads disappear too.
+- **Fix:** Add the origin to `connect-src`, and gate `Roads` on tiles actually loading.
+- **Confidence:** confirmed
+
+### Contact form rejects names with non-ASCII letters
+
+- **Where:** `src/schemas/contact.schema.ts:17`, `:198`
+- **Defect:** `/^[a-zA-Z\s\-'\.]+$/` allows only ASCII letters.
+- **Failure scenario:** "José Núñez", "Zoë" and "李雷" cannot submit the contact form.
+- **Fix:** Use `/^[\p{L}\p{M}\s\-'.]+$/u` in both places.
+- **Confidence:** confirmed
+
+### Webhook liveness turns a failed 5xx query into "0 errors" and passes
+
+- **Where:** `scripts/ci/check-webhook-liveness.mjs:177-196`
+- **Defect:** The catch sets `serverErrors = 0` and `evaluate()` returns PASS, which contradicts its own comment.
+- **Failure scenario:** After a log schema change, the 5xx signal disappears for good and the job stays green.
+- **Fix:** Keep the value unknown, and don't PASS on an unobserved signal.
+- **Confidence:** confirmed
+
+### Hosted `Test Report` ignores the shard jobs' own result
+
+- **Where:** `.github/workflows/e2e.yml:1296-1413`
+- **Defect:** The verdict fails only on failing tests in the merged blobs, and never checks `needs.*.result` or the blob count. The local lane got this guard in #934; the hosted lane didn't.
+- **Failure scenario:** A shard that dies before writing a blob leaves `Test Report` green.
+- **Fix:** Fail unless every non-skipped shard succeeded and the blob count matches the shard count.
+- **Confidence:** confirmed
+
+### Docs-only skip removes coverage for vitest tests that read markdown
+
+- **Where:** `scripts/ci/ci-docs-only.mjs:62-70`; `.github/workflows/ci.yml:174-176`
+- **Defect:** `*.md` and `docs/**` count as inert, but `tests/unit/no-build-in-dev-container.test.ts` and `src/config/__tests__/site-claims.test.ts` assert on markdown.
+- **Failure scenario:** A docs-only PR that reintroduces `docker compose exec … pnpm build` (#293) passes the required `Test (20.x)`.
+- **Fix:** Always run the markdown-reading vitest files.
+- **Confidence:** confirmed
+
+### Sitemap/robots fallback hardcodes owner `TortoiseWolfe`
+
+- **Where:** `scripts/site-url.js:42-44`
+- **Defect:** The repo name falls back to `project-detected.json`, but the owner falls back to the literal.
+- **Failure scenario:** A fork's `sitemap.xml`/`robots.txt`/RSS advertise `tortoisewolfe.github.io/<fork>`.
+- **Fix:** Fall back to the detected `projectOwner` first.
+- **Confidence:** confirmed
+
+### Required `Auth Config Drift result` fails on fork PRs that touch auth paths
+
+- **Where:** `.github/workflows/auth-config-drift.yml:84-103`, `:158-161`
+- **Defect:** On fork PRs the secret is empty but the `vars` value is set, so the preflight exits "half-configured" before the fork skip is reached.
+- **Failure scenario:** An outside contributor gets a permanently red required check.
+- **Fix:** Detect fork PRs in the preflight, before the half-configured test.
+- **Confidence:** plausible
+
 ## P3
 
 ### Completed payment-queue rows are never removed, so the listener probes Supabase every 30s forever
@@ -485,3 +686,51 @@ Grouped, because they share one fix pattern: assert the positive outcome with no
 - **Failure scenario:** Intermittent red on healthy code, or regressions that turn into skips.
 - **Fix:** Use `expect.poll`/`toContainText`, and scope the WebKit skip to `browserName === 'webkit'`.
 - **Confidence:** confirmed (code); plausible (observed flake)
+
+### Ground-tile planner maps and sorts the whole grid every idle frame
+
+- **Where:** `src/world/Terrain.tsx:142-149`
+- **Defect:** Each frame with fewer than 6 fetches in flight builds about 1,989 objects, then sorts and searches them, forever.
+- **Failure scenario:** Steady GC churn for the lifetime of the diorama.
+- **Fix:** Re-plan only after camera movement or on a timer.
+- **Confidence:** confirmed
+
+### Player walk cycle advances twice per frame
+
+- **Where:** `src/agents/playerCharacter.tsx:141`
+- **Defect:** drei's `useAnimations` already calls `mixer.update`, and this component calls it again.
+- **Failure scenario:** The walk plays at 2× speed and the feet slide.
+- **Fix:** Remove the manual `mixer.update(dt)`.
+- **Confidence:** confirmed
+
+### Stale payment.ts comment says the PayPal per-SKU plan defect is still open
+
+- **Where:** `src/config/payment.ts:114-118`
+- **Defect:** The comment says "STILL OPEN HERE", but `create-paypal-subscription/resolve.ts:117` already resolves per SKU.
+- **Failure scenario:** Someone "fixes" or reports a defect that doesn't exist.
+- **Fix:** Point the comment at `resolve.ts` / #774.
+- **Confidence:** confirmed
+
+### a11y check audits unstyled pages in forks that deploy under a base path
+
+- **Where:** `.github/workflows/accessibility.yml`, `config/pa11yci.json`
+- **Defect:** The build doesn't set `DISABLE_BASE_PATH`, so `/_next/` assets 404 under `serve out`.
+- **Failure scenario:** In a fork with no custom domain, pa11y passes against unstyled HTML.
+- **Fix:** Set `DISABLE_BASE_PATH: 'true'`, as the E2E workflows do.
+- **Confidence:** confirmed (only in that configuration)
+
+### Dispatching E2E (local) tests a months-old commit by default
+
+- **Where:** `.github/workflows/e2e-local.yml:64-67`
+- **Defect:** The dispatch input `ref` defaults to the August parity-baseline SHA.
+- **Failure scenario:** A dispatch run meant to cover a branch tests the baseline instead.
+- **Fix:** Default `ref` to empty, and pass the baseline explicitly for parity runs.
+- **Confidence:** confirmed
+
+### Secret and dispatch input interpolated directly into `run:` scripts
+
+- **Where:** `.github/workflows/deploy.yml:59`, `.github/workflows/e2e-local.yml:833`
+- **Defect:** The code uses `${{ secrets.… }}` and `${{ inputs.ref }}` inside bash rather than `env:`.
+- **Failure scenario:** A value containing `$(…)` or `"` runs as shell. Reaching it needs write access, so this is hardening.
+- **Fix:** Pass the values via `env:`, and validate `ref` as hex.
+- **Confidence:** confirmed
