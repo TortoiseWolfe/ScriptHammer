@@ -25,7 +25,7 @@ could not see (deployed config, live data).
 | 2    | `src/services`, `src/contexts`                 | pending |
 | 3    | `src/hooks`, `src/utils`, `src/app`            | pending |
 | 4    | `src/world`, `src/twin`, `src/stage` + assets  | pending |
-| 5    | `src/components` (payment, auth, forms, …)     | pending |
+| 5    | `src/components` (payment, auth, forms, …)     | done    |
 | 5    | `src/components` (everything else)             | done    |
 | 6    | `scripts/`, `.github/workflows/`               | pending |
 | 6    | `tests/`, `src/tests/`                         | pending |
@@ -34,7 +34,14 @@ could not see (deployed config, live data).
 
 ## P0
 
-_None yet._
+### Tip Jar checkout shows the catalog default but charges the chosen tip
+
+- **Where:** `src/components/payment/CheckoutSummary/CheckoutSummary.tsx:41` (`previewAmountDue`); used at `src/app/checkout/page.tsx:392`, `:499`
+- **Defect:** `previewAmountDue` ignores `amount_mode === 'variable'` and always returns `product.amount` (1500 for `tip-jar`), while the request sends `?amount=` and create-order honours it.
+- **Failure scenario:** On `/checkout?sku=tip-jar&amount=5000` the page says "Total today $15.00 — the price shown here is the price charged" and the button says "Pay $15". Stripe then charges $50.
+- **Fix:** For variable SKUs, preview the requested amount clamped by the same `min_amount`/`max_amount` rules create-order uses, in both the summary and the button.
+- **Confidence:** confirmed
+- **Severity note:** Raised from the reviewer's P1 to P0, because the customer is charged an amount different from the one shown.
 
 ## P1
 
@@ -69,6 +76,38 @@ _None yet._
 - **Failure scenario:** `/messages?conversation=X` opens at `scrollTop = 0`, showing the oldest of the 50 loaded messages. That position is inside the `< 100` zone, so the first small scroll triggers `onLoadMore`.
 - **Fix:** On the first transition from empty to non-empty, or on a conversation change, call `scrollToBottomRef.current(false)` in a layout effect.
 - **Confidence:** confirmed (from code, not reproduced in a browser)
+
+### Changing or resetting the password permanently locks the user out of messaging
+
+- **Where:** `src/components/auth/AccountSettings/AccountSettings.tsx:188`, `src/components/auth/ResetPasswordForm/ResetPasswordForm.tsx:73`
+- **Defect:** Both call `supabase.auth.updateUser({ password })` and never re-key or warn. For email users, E2E keys are derived from the login password. Spec 032 SC-005 requires re-encryption or a warning.
+- **Failure scenario:** After a password change, sign-in's `deriveKeys(newPassword)` throws `KeyMismatchError` (only logged), and `/messages` asks for the "messaging password". The current password is rejected and there is no recovery path. After a forgot-password reset the old password is gone, so messaging is locked for good.
+- **Fix:** On a change, derive keys with the old password and `rotateKeys(newPassword)`. After a reset, offer an explicit "reset messaging keys" path, and have the unlock modal detect this state.
+- **Confidence:** confirmed
+
+### "Use a different payment method" always fails: SwitchProviderPanel sends no productId
+
+- **Where:** `src/components/payment/SwitchProviderPanel/SwitchProviderPanel.tsx:158-167`
+- **Defect:** `<PaymentButton>` is rendered without `productId`, and `getParentIntentForRetry` doesn't select `product_id`. `createPaymentIntent` (`src/lib/payments/payment-service.ts:149-153`) then throws "A product_id is required…". `parent_intent_id` is also no longer forwarded to create-order.
+- **Failure scenario:** After a declined payment, every attempt to switch provider fails, so the recovery flow can never succeed.
+- **Fix:** Select `product_id`, pass it as `productId`, and forward `parent_intent_id` in the create-order body.
+- **Confidence:** confirmed
+
+### Cookie modal applies analytics/marketing consent on toggle; Close/Esc don't undo it
+
+- **Where:** `src/components/privacy/ConsentModal/ConsentModal.tsx:140-143`, `:90-93`; `src/contexts/ConsentContext.tsx:83-110`
+- **Defect:** Each toggle calls `updateConsent`, which commits and persists consent and mounts gtag at once. Close, Escape and backdrop clicks only close the modal.
+- **Failure scenario:** A visitor turns Analytics on "to read about it" and clicks X. GA is loaded and the consent is saved for a year, although the user never saved anything.
+- **Fix:** Keep a local draft in the modal and commit it only on Save, Accept All or Reject All.
+- **Confidence:** confirmed
+
+### IntakeUploader keeps only the last file when several are added at once
+
+- **Where:** `src/components/forms/IntakeUploader/IntakeUploader.tsx:128` (deps `:138`)
+- **Defect:** The loop calls `onChange([...value, result.attachment])` with a `value` captured when the callback was created, so each iteration overwrites the previous one.
+- **Failure scenario:** When 3 screenshots are selected, all 3 upload but the order posts only the third. The other two are orphaned in the bucket until the 7-day sweep. The existing test uses a single file.
+- **Fix:** Use a functional update, or keep a ref to the latest `value`.
+- **Confidence:** confirmed
 
 ## P2
 
@@ -166,6 +205,22 @@ _None yet._
 - **Fix:** `getItemKey: (i) => messages[i].id`.
 - **Confidence:** plausible
 
+### PayPal buttons render again into the same container on every tab switch
+
+- **Where:** `src/components/payment/PaymentButton/PaymentButton.tsx:70-80`, `src/lib/payments/paypal.ts:245`
+- **Defect:** The container stays mounted (hidden) but the effect resets `paypalMounted` and renders again, with no `close()` cleanup.
+- **Failure scenario:** PayPal → Stripe → PayPal stacks two sets of buttons, each with a stale `createOrder` closure that ignores later prop changes.
+- **Fix:** Keep the Buttons instance and `close()` it in cleanup, or mount the container only while PayPal is selected.
+- **Confidence:** plausible
+
+### Revoking analytics consent doesn't stop events; components treat `window.gtag` as the gate
+
+- **Where:** `src/components/payment/TipJar/TipJar.tsx:86-94`, `src/components/payment/BookingCta/BookingCta.tsx:106-125`, `src/utils/analytics.ts:98`
+- **Defect:** These components skip the consent check because "gtag only mounts with consent", but `window.gtag` (and `window.oaiq`) stay defined after consent is revoked.
+- **Failure scenario:** A user accepts, revokes in PrivacyControls, then clicks a tip preset without reloading, and `tip_jar_give`/`lead_created` are still sent.
+- **Fix:** Have `trackEvent`/`trackAdConversion` check the current consent state rather than whether the SDK exists.
+- **Confidence:** plausible
+
 ## P3
 
 ### Completed payment-queue rows are never removed, so the listener probes Supabase every 30s forever
@@ -199,3 +254,35 @@ _None yet._
 - **Failure scenario:** From Oct 31 to Dec 31 the banner is on every page, and screen readers announce "Nd Nh Nm Ns" continuously.
 - **Fix:** Remove `aria-live`, or scope it to the static text only.
 - **Confidence:** confirmed
+
+### Failed intake uploads can't be dismissed and count toward the file cap
+
+- **Where:** `src/components/forms/IntakeUploader/IntakeUploader.tsx:130-134`, `:72-73`
+- **Defect:** Errored uploads stay in `pending` with no remove control, and `total` counts them.
+- **Failure scenario:** After a storage outage clears, the dropzone says the file limit has been reached until the page is reloaded.
+- **Fix:** Add a dismiss control for errored items, or leave them out of `total`.
+- **Confidence:** confirmed
+
+### Cookie banner has "Accept All" but no one-click reject
+
+- **Where:** `src/components/privacy/CookieConsent/CookieConsent.tsx:65-72`, `:149-162`
+- **Defect:** `rejectAll` is wired but deliberately unused, so rejecting takes extra steps. CNIL and EDPB guidance treats that as non-compliant.
+- **Failure scenario:** An EU visitor can accept in one click but must dig into the modal to reject.
+- **Fix:** Add a Reject All button with the same prominence as Accept All.
+- **Confidence:** confirmed
+
+### GeolocationConsent pre-ticks the analytics and personalization purposes
+
+- **Where:** `src/components/map/GeolocationConsent/GeolocationConsent.tsx:41-52`
+- **Defect:** `selectedPurposes` starts with every purpose checked. Pre-ticked consent is not valid (Planet49).
+- **Failure scenario:** Clicking Accept to see oneself on the map also records consent to location analytics.
+- **Fix:** Pre-select only the display purpose.
+- **Confidence:** confirmed
+
+### CalComProvider adds duplicate Cal.com listeners on every mount
+
+- **Where:** `src/components/calendar/providers/CalComProvider/CalComProvider.tsx:68-113`
+- **Defect:** `cal('on', …)` is registered on the global instance with no `cal('off', …)` cleanup.
+- **Failure scenario:** After N visits to `/schedule`, each booking fires N `bookingSuccessful` handlers.
+- **Fix:** Keep the callbacks and unregister them in the effect cleanup.
+- **Confidence:** plausible
