@@ -53,7 +53,7 @@ Themes worth fixing as a class rather than one by one:
 
 ## P0
 
-### Tip Jar checkout shows the catalog default but charges the chosen tip
+### #1306 — Tip Jar checkout shows the catalog default but charges the chosen tip (fixed on this branch)
 
 - **Where:** `src/components/payment/CheckoutSummary/CheckoutSummary.tsx:41` (`previewAmountDue`); used at `src/app/checkout/page.tsx:392`, `:499`
 - **Defect:** `previewAmountDue` ignores `amount_mode === 'variable'` and always returns `product.amount` (1500 for `tip-jar`), while the request sends `?amount=` and create-order honours it.
@@ -62,7 +62,7 @@ Themes worth fixing as a class rather than one by one:
 - **Confidence:** confirmed
 - **Severity note:** Raised from the reviewer's P1 to P0, because the customer is charged an amount different from the one shown.
 
-### Webhooks dedupe before processing, so a failed payment event is never retried
+### #1307 — Webhooks dedupe before processing, so a failed payment event is never retried
 
 - **Where:** `supabase/functions/stripe-webhook/index.ts:116-127`, `supabase/functions/paypal-webhook/index.ts:85-97`, `supabase/functions/calcom-webhook/index.ts:95`
 - **Defect:** The `webhook_events` row is inserted with `processed=false` before the handler runs, and the duplicate check tests only whether the row exists.
@@ -70,7 +70,7 @@ Themes worth fixing as a class rather than one by one:
 - **Fix:** Short-circuit only when `processed=true`. Re-run or compare-and-swap-claim rows that are still `processed=false`.
 - **Confidence:** confirmed
 
-### A paid retry intent never advances its order or sends the receipt
+### #1308 — A paid retry intent never advances its order or sends the receipt
 
 - **Where:** `supabase/functions/create-order/index.ts:134` (retry branch), `supabase/functions/_shared/advance-order.ts`
 - **Defect:** A retry inserts a child `payment_intents` row but no `orders` row, and `advanceOrderAndNotify` looks orders up only by `intent_id = child.id`.
@@ -79,7 +79,7 @@ Themes worth fixing as a class rather than one by one:
 - **Confidence:** confirmed
 - **Severity note:** Raised from P1 to P0, because the buyer is charged and the order is never fulfilled.
 
-### Account deletion fails for anyone who ever started a checkout, after keys are already wiped
+### #1309 — Account deletion fails for anyone who ever started a checkout, after keys are already wiped
 
 - **Where:** `supabase/migrations/20251006_complete_monolithic_setup.sql:56`, `:140`, `:412`; `supabase/functions/delete-account/index.ts:79`; client `src/services/messaging/gdpr-service.ts:561`
 - **Defect:** `payment_intents.template_user_id`, `subscriptions.template_user_id` and `orders.buyer_user_id` reference `auth.users(id)` with NO ACTION, so `auth.admin.deleteUser` fails with 23503.
