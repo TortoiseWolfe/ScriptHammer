@@ -11,7 +11,7 @@
  * - Manual retry for failed messages
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { offlineQueueService } from '@/services/messaging/offline-queue-service';
 import { createLogger } from '@/lib/logger';
 import type { QueuedMessage } from '@/types/messaging';
@@ -102,14 +102,21 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     }
   }, []);
 
+  // In-flight guard as a ref, not state (#1262). With `isSyncing` in
+  // syncQueue's dependencies its identity changed twice per sync, which re-ran
+  // the mount effect below, which synced again — forever, while any row sat in
+  // the queue. The state still drives the UI; the ref is what gates re-entry.
+  const syncingRef = useRef(false);
+
   // Sync queue with server. Guard only on the in-flight flag, not on
   // navigator.onLine — the latter is unreliable under Playwright emulation
   // and the underlying REST insert fails fast if truly offline anyway.
   const syncQueue = useCallback(async () => {
-    if (isSyncing) {
+    if (syncingRef.current) {
       return;
     }
 
+    syncingRef.current = true;
     setIsSyncing(true);
 
     try {
@@ -124,9 +131,10 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     } catch (error) {
       logger.error('Failed to sync queue', { error });
     } finally {
+      syncingRef.current = false;
       setIsSyncing(false);
     }
-  }, [isSyncing, loadQueue]);
+  }, [loadQueue]);
 
   // Retry all failed messages
   const retryFailed = useCallback(async () => {
@@ -241,8 +249,11 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     void (async () => {
       await loadQueue();
       try {
+        // Only rows that can still be sent. getQueue() returns every unsynced
+        // row, including ones marked `failed` after their last retry, so one
+        // dead message used to make this true on every mount (#1262).
         const queued = await offlineQueueService.getQueue();
-        if (queued.length > 0) void syncQueue();
+        if (queued.some((m) => m.status === 'pending')) void syncQueue();
       } catch {
         // loadQueue already logged any error; nothing more to do.
       }

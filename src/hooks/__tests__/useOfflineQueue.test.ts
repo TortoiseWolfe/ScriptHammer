@@ -487,6 +487,51 @@ describe('useOfflineQueue', () => {
       expect(typeof result.current.syncQueue).toBe('function');
     });
 
+    it('syncs on mount when a pending message is queued', async () => {
+      mockGetQueue.mockResolvedValue([createMockQueuedMessage('msg-1')]);
+
+      renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(mockSyncQueue).toHaveBeenCalledTimes(1);
+      });
+    });
+
+    it('does not sync on mount when only failed messages remain (#1262)', async () => {
+      mockGetQueue.mockResolvedValue([
+        { ...createMockQueuedMessage('msg-dead'), status: 'failed' as const },
+      ]);
+
+      renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(mockGetFailedMessages).toHaveBeenCalled();
+      });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      expect(mockSyncQueue).not.toHaveBeenCalled();
+    });
+
+    it('does not re-sync in a loop after a mount sync completes (#1262)', async () => {
+      // A pending row that the sync cannot clear — the service reports it
+      // failed and it stays queued. Before #1262 each finished sync changed
+      // syncQueue's identity, re-ran the mount effect, and synced again.
+      mockGetQueue.mockResolvedValue([createMockQueuedMessage('msg-1')]);
+      mockSyncQueue.mockResolvedValue({ success: 0, failed: 1 });
+
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(mockSyncQueue).toHaveBeenCalledTimes(1);
+      });
+      await waitFor(() => {
+        expect(result.current.isSyncing).toBe(false);
+      });
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      expect(mockSyncQueue).toHaveBeenCalledTimes(1);
+    });
+
     it('should not sync empty queue', async () => {
       mockGetQueue.mockResolvedValue([]);
 
