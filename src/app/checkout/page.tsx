@@ -20,6 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import SignInForm from '@/components/auth/SignInForm';
 import SignUpForm from '@/components/auth/SignUpForm';
 import CheckoutSummary, {
+  formatCents,
   previewAmountDue,
 } from '@/components/payment/CheckoutSummary';
 import BookingStep from '@/components/payment/BookingStep';
@@ -91,6 +92,9 @@ function CheckoutContent() {
   // (resolveChargeAmount). For every fixed SKU the submitted amount is
   // DISCARDED rather than checked, so passing one here cannot move a price.
   const amountParam = searchParams?.get('amount') ?? null;
+  // Parsed ONCE, and the same value feeds both the request body and the
+  // on-screen preview, so the page cannot show one number and submit another.
+  const requestedAmount = amountParam ? Number(amountParam) : undefined;
 
   const [stage, setStage] = useState<Stage>({ kind: 'loading' });
   const [buyer, setBuyer] = useState<{ name?: string; email?: string }>({});
@@ -236,8 +240,9 @@ function CheckoutContent() {
               // Pay-what-you-want. Sent ONLY for a variable SKU so a tampered
               // `?amount=` on a fixed one never even reaches the function, and
               // rejected there anyway if it is out of bounds.
-              ...(product.amount_mode === 'variable' && amountParam
-                ? { amount: Number(amountParam) }
+              ...(product.amount_mode === 'variable' &&
+              requestedAmount !== undefined
+                ? { amount: requestedAmount }
                 : {}),
               // The OpenAI Ads click id, only if this visitor arrived from an ad AND granted
               // marketing consent — readOppref returns null otherwise, and create-order drops
@@ -301,7 +306,7 @@ function CheckoutContent() {
     // `attachments: []` no matter how many files the buyer uploaded, and nothing
     // would look wrong: the uploads succeed, the thumbnails appear, the order is
     // created. Only the operator, later, finds nothing attached.
-    [stage, attemptNonce, attachments, amountParam]
+    [stage, attemptNonce, attachments, requestedAmount]
   );
 
   // ---- render ------------------------------------------------------------
@@ -389,7 +394,8 @@ function CheckoutContent() {
 
   const product = stage.product;
   const busy = stage.kind === 'submitting';
-  const due = previewAmountDue(product);
+  // null only for a variable SKU whose amount create-order would refuse.
+  const due = previewAmountDue(product, requestedAmount);
 
   // ---- the account gate -------------------------------------------------
   // Rendered in place of the intake form, never as a redirect, so `?sku=` and the
@@ -491,16 +497,34 @@ function CheckoutContent() {
             which is the largest single reason this screen did not look like the
             rest of the app. */}
         <div className="sh-plate order-2 min-w-0 rounded-[26px] px-6 py-8 sm:px-8 lg:order-1">
-          <IntakeForm
-            onSubmit={onSubmit}
-            busy={busy}
-            attachments={attachments}
-            onAttachmentsChange={setAttachments}
-            submitLabel={`Pay ${(due / 100).toLocaleString('en-US', {
-              style: 'currency',
-              currency: product.currency.toUpperCase(),
-            })}`}
-          />
+          {due === null ? (
+            // A variable SKU with no amount, or one outside its bounds. The
+            // server would refuse it, so say so here instead of collecting an
+            // intake form that can only end in a 400.
+            <div role="alert" className="alert alert-warning">
+              <div className="min-w-0">
+                <p className="font-semibold">Choose an amount first</p>
+                <p className="text-sm">
+                  {product.name} takes an amount{' '}
+                  {product.max_amount === null
+                    ? `of at least ${formatCents(product.min_amount ?? 100, product.currency)}`
+                    : `from ${formatCents(product.min_amount ?? 100, product.currency)} to ${formatCents(product.max_amount, product.currency)}`}
+                  .{' '}
+                  <Link href="/tip" className="link">
+                    Pick an amount
+                  </Link>
+                </p>
+              </div>
+            </div>
+          ) : (
+            <IntakeForm
+              onSubmit={onSubmit}
+              busy={busy}
+              attachments={attachments}
+              onAttachmentsChange={setAttachments}
+              submitLabel={`Pay ${formatCents(due, product.currency)}`}
+            />
+          )}
           {consentReady && !hasConsent && (
             <p role="status" className="text-base-content mt-4 text-sm">
               You will be asked to accept payment processing before we continue.
