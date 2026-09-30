@@ -1,6 +1,80 @@
 {
   "posts": [
     {
+      "id": "post_9901223f",
+      "slug": "head-chef-line-cooks",
+      "title": "I was paying the head chef to chop onions",
+      "content": "\nSomeone gave me good advice about my AI setup this week. Stop using the expensive model for grunt work. Let it plan and review, and let cheaper helpers do the typing.\n\nSo I sat down to act on it, and in the first hundred minutes I burned 5% of my weekly limit doing it.\n\nThat's the funny part. The rest of this post is what I built once I stopped laughing, and the numbers from the first real run.\n\n## 🔍 The advice was right, my kitchen was wrong\n\nThe advice came from an AI chat, and the core of it holds up. A model that's good at architecture and hard debugging costs more per step than one that's good at renaming a variable. Paying top rate for renames wastes the plan.\n\nWhere it went wrong was the \"cheap local agents\" part. My graphics card (Graphics Processing Unit, GPU) has 8 GB of video memory (VRAM), and the desktop keeps about 1.2 GB of that. [Ollama](https://ollama.com/)'s own docs say coding agents need at least 64,000 tokens of working memory, and the models it suggests need roughly 19 to 23 GB at that size. Back in February a mid-size local model on this same card fumbled its tools and drifted into other languages. Local models weren't going to be my line cooks.\n\nThe cheap cooks were already in the plan I pay for. [Claude Code](https://www.anthropic.com/claude-code) can run helpers on smaller [Claude models](https://www.anthropic.com/claude), and Anthropic says it plainly: \"Opus costs several times more per turn than Sonnet, and Sonnet more than Haiku.\"\n\n## 🔨 How the kitchen works\n\n![A map of the workflow. The head chef, Claude Code on Opus, hands a goal to the line: an Opus planner writes specs, Haiku or Sonnet cooks work in separate git worktrees, tests in Docker decide pass or fail, a Jev check is logged on the side, and a blind Opus reviewer tastes before merge and push. Only results come back to the head chef. Muse exchanges notes through Gmail, and the OpenClaw tray runs short commands that I approve.](/blog-images/head-chef-line-cooks/kitchen-map.png)\n\nThere's a head chef, which is my main Claude Code session on Opus. It holds the plan, not the work.\n\nWhen I have a batch of small, well-defined changes, the head chef hands the whole batch to the line:\n\n1. **Plan.** Opus reads the repo and writes a spec for each task: exact values, exact files, and a test that proves it's done.\n2. **Cook.** Each task goes to Haiku or Sonnet, working in its own [git worktree](https://git-scm.com/docs/git-worktree), a separate copy of the repo, so nobody bumps elbows.\n3. **Test.** The repo's own tests run in [Docker](https://www.docker.com/), and code decides pass or fail. The cook's word doesn't count. If a cook fails twice, the task goes to a stronger cook.\n4. **Taste.** A fresh Opus reviewer sees the spec and the diff, and nothing else. It passes the work or sends it back, twice at most.\n5. **Ship.** The head chef merges and pushes.\n\nThe part that matters most for cost: only results come back to the head chef. Each cook's working history gets thrown away when its job ends.\n\nThe full map, with notes on every part, a dark mode and a printable PDF, is here: **[TurtleWolfe's AI Kitchen](https://tortoisewolfe.github.io/AI_Workflow/05-advanced-orchestration/ai-kitchen-map.html)**.\n\n## 🧪 Does the taster actually taste?\n\nA reviewer that passes everything is worse than no reviewer, so I tested it.\n\nI slipped in a wrong measurement on purpose. The spec said 5/8 inch plywood is 19/32 actual, and I changed it to 9/16. Then I edited the test to agree with the wrong number, so every test still passed.\n\nThe blind reviewer caught it. It named the exact line, and it flagged that the test had been changed to protect the error.\n\n## 🎯 The first real run\n\nFive small tasks in a real repo:\n\n- ✅ **Four of five came back right the first time.** They passed the tests and the taste, with zero escalations to a stronger cook.\n- ⚠️ **The fifth failed for a reason worth knowing.** It updated a README describing a Dockerfile that a different cook was changing at the same moment. Tasks that depend on each other can't run side by side, so the planner now merges them into one task.\n- 💡 **The planner overreached.** While writing the specs it built and tested one of the tasks itself, which was most of the bill. It now runs read-only.\n\nThe cost came to about **41% less** than the same work done entirely on Opus, measured at Application Programming Interface (API) prices. My plan doesn't publish its own weighting, so treat that as a ratio, not a promise.\n\n## 💡 A penny-per-hundred yes/no check\n\nThere's one more station, and it's on probation. [Jev](https://typesafe.ai/) is a model that only answers yes or no, fast and very cheap. A check costs about a hundredth of a cent.\n\nIt's only useful if you ask it narrow questions. When I asked \"does this change meet every criterion?\", it scored the correct change 0.72 and the planted bug 0.70, which is useless. When I asked whether the code for 5/8 plywood reads `actual: 19.0 / 32`, it scored 0.99 against 0.03.\n\nRight now it runs in shadow. Its answer gets logged next to the Opus reviewer's verdict and decides nothing. If they keep agreeing, Jev can start skipping reviews on the clear passes, and that's where the real savings are.\n\n## ⚠️ What actually cost me the most\n\nIt wasn't the models. It was the conversation.\n\nEvery turn, the AI rereads the whole conversation. My long planning session grew huge, and it was most of a $49 day on its own. On top of that, the built-in research helpers were quietly running on the expensive model, and they were about a third of the day's usage.\n\nThe fixes are boring:\n\n- **Research helpers run on Sonnet.** It's one setting.\n- **Every task starts a fresh session.**\n- **The head chef stays thin.** It holds the plan, and the cooks hold the work.\n\n## 📝 Steal it\n\nEverything is public:\n\n- **[The AI Kitchen map](https://tortoisewolfe.github.io/AI_Workflow/05-advanced-orchestration/ai-kitchen-map.html)**: the whole setup on one page, with notes on every part.\n- **[Head chef, line cooks](https://tortoisewolfe.github.io/AI_Workflow/05-advanced-orchestration/head-chef-line-cooks.html)**: the longer write-up, including a claim-by-claim check of the original advice.\n- **[The AI Workflow curriculum](https://tortoisewolfe.github.io/AI_Workflow/)**: how I got here, starting from day one.\n\nThe four rules, if you only take one thing:\n\n1. The expensive model decides and tastes. Cheap models cook.\n2. Tests come before taste, and code checks the plate, not the cook's word.\n3. Keep the head chef thin and the cooks disposable.\n4. Anything I have to do by hand comes as one step, with the link.\n",
+      "excerpt": "I asked an AI how to get more out of my $200 Claude plan, burned 5% of my weekly limit finding out, and ended up with a kitchen. One expensive model decides and tastes. Cheaper ones do the cooking, and tests check every plate first.",
+      "publishedAt": "2026-09-30T00:00:00.000Z",
+      "updatedAt": "2026-09-30T00:00:00.000Z",
+      "status": "published",
+      "author": {
+        "id": "default",
+        "name": "TortoiseWolfe"
+      },
+      "metadata": {
+        "tags": [
+          "claude-code",
+          "ai-agents",
+          "workflow",
+          "git-worktrees",
+          "cost"
+        ],
+        "categories": [
+          "engineering",
+          "workflow"
+        ],
+        "readingTime": 6,
+        "wordCount": 1119,
+        "showToc": true,
+        "showAuthor": true,
+        "showShareButtons": true,
+        "featured": false,
+        "featuredImage": "/blog-images/head-chef-line-cooks/featured-og.png",
+        "featuredImageAlt": "A map of the AI workflow. An Opus head chef hands a goal to a line of stations (plan, cooks, tests, blind taste, GitHub), with Muse notes over Gmail and the OpenClaw tray on the side."
+      },
+      "seo": {
+        "title": "I was paying the head chef to chop onions",
+        "description": "I asked an AI how to get more out of my $200 Claude plan, burned 5% of my weekly limit finding out, and ended up with a kitchen. One expensive model decides and tastes. Cheaper ones do the cooking, and tests check every plate first.",
+        "keywords": [
+          "claude-code",
+          "ai-agents",
+          "workflow",
+          "git-worktrees",
+          "cost"
+        ],
+        "ogTitle": "I was paying the head chef to chop onions",
+        "ogDescription": "One expensive AI model decides and tastes, cheap ones cook in their own copies of the repo, and tests check every plate. The first real run cost about 41% less than doing it all on the expensive model.",
+        "ogImage": "/blog-images/head-chef-line-cooks/featured-og.png",
+        "twitterCard": "summary_large_image"
+      },
+      "frontMatter": {
+        "title": "I was paying the head chef to chop onions",
+        "author": "TortoiseWolfe",
+        "date": "2026-09-30T00:00:00.000Z",
+        "slug": "head-chef-line-cooks",
+        "tags": [
+          "claude-code",
+          "ai-agents",
+          "workflow",
+          "git-worktrees",
+          "cost"
+        ],
+        "categories": [
+          "engineering",
+          "workflow"
+        ],
+        "excerpt": "I asked an AI how to get more out of my $200 Claude plan, burned 5% of my weekly limit finding out, and ended up with a kitchen. One expensive model decides and tastes. Cheaper ones do the cooking, and tests check every plate first.",
+        "featuredImage": "/blog-images/head-chef-line-cooks/featured-og.png",
+        "featuredImageAlt": "A map of the AI workflow. An Opus head chef hands a goal to a line of stations (plan, cooks, tests, blind taste, GitHub), with Muse notes over Gmail and the OpenClaw tray on the side.",
+        "ogImage": "/blog-images/head-chef-line-cooks/featured-og.png",
+        "ogTitle": "I was paying the head chef to chop onions",
+        "ogDescription": "One expensive AI model decides and tastes, cheap ones cook in their own copies of the repo, and tests check every plate. The first real run cost about 41% less than doing it all on the expensive model.",
+        "twitterCard": "summary_large_image"
+      }
+    },
+    {
       "id": "post_a1d955ae",
       "slug": "hello-world",
       "title": "Hello, world",
@@ -1191,8 +1265,13 @@
       }
     }
   ],
-  "count": 16,
+  "count": 17,
   "tags": [
+    "claude-code",
+    "ai-agents",
+    "workflow",
+    "git-worktrees",
+    "cost",
     "example",
     "three-js",
     "game-engine",
@@ -1225,8 +1304,6 @@
     "github",
     "freelancing",
     "project-management",
-    "ai-agents",
-    "workflow",
     "code-review",
     "collaboration",
     "authorship",
@@ -1262,13 +1339,13 @@
     "docker"
   ],
   "categories": [
+    "engineering",
+    "workflow",
     "example",
     "features",
-    "engineering",
     "tutorial",
     "ideas",
     "tutorials",
-    "workflow",
     "security",
     "monetization",
     "business",
