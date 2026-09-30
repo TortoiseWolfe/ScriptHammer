@@ -37,17 +37,17 @@ Themes worth fixing as a class rather than one by one:
 
 ## Coverage
 
-| Tier | Scope                                          | Status  |
-| ---- | ---------------------------------------------- | ------- |
-| 1    | `supabase/`                                    | done    |
-| 2    | `src/lib`                                      | done    |
-| 2    | `src/services`, `src/contexts`                 | done    |
-| 3    | `src/hooks`, `src/utils`, `src/app`            | done    |
-| 4    | `src/world`, `src/twin`, `src/stage` + assets  | done    |
-| 5    | `src/components` (payment, auth, forms, …)     | done    |
-| 5    | `src/components` (everything else)             | done    |
-| 6    | `scripts/`, `.github/workflows/`               | done    |
-| 6    | `tests/`, `src/tests/`                         | done    |
+| Tier | Scope                                         | Status |
+| ---- | --------------------------------------------- | ------ |
+| 1    | `supabase/`                                   | done   |
+| 2    | `src/lib`                                     | done   |
+| 2    | `src/services`, `src/contexts`                | done   |
+| 3    | `src/hooks`, `src/utils`, `src/app`           | done   |
+| 4    | `src/world`, `src/twin`, `src/stage` + assets | done   |
+| 5    | `src/components` (payment, auth, forms, …)    | done   |
+| 5    | `src/components` (everything else)            | done   |
+| 6    | `scripts/`, `.github/workflows/`              | done   |
+| 6    | `tests/`, `src/tests/`                        | done   |
 
 ## Backlog
 
@@ -553,7 +553,7 @@ Grouped, because they share one fix pattern: assert the positive outcome with no
 
 - **Where:** `scripts/ci/ci-docs-only.mjs:62-70`; `.github/workflows/ci.yml:174-176`
 - **Defect:** `*.md` and `docs/**` count as inert, but `tests/unit/no-build-in-dev-container.test.ts` and `src/config/__tests__/site-claims.test.ts` assert on markdown.
-- **Failure scenario:** A docs-only PR that reintroduces `docker compose exec … pnpm build` (#293) passes the required `Test (20.x)`.
+- **Failure scenario:** A docs-only PR that tells readers to run a production build in the dev container (the #293 anti-pattern this scan exists to catch) passes the required `Test (20.x)`, because the scan never runs on it.
 - **Fix:** Always run the markdown-reading vitest files.
 - **Confidence:** confirmed
 

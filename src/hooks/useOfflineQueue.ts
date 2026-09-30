@@ -16,6 +16,9 @@ import { offlineQueueService } from '@/services/messaging/offline-queue-service'
 import { createLogger } from '@/lib/logger';
 import type { QueuedMessage } from '@/types/messaging';
 
+/** Pause between retry passes; the service adds its own backoff per message. */
+const FOLLOW_UP_DELAY_MS = 500;
+
 const logger = createLogger('hooks:offlineQueue');
 
 export interface UseOfflineQueueReturn {
@@ -88,8 +91,9 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
   // only initialiser that cannot mismatch.
   const [isOnline, setIsOnline] = useState(true);
 
-  // Load queue data
-  const loadQueue = useCallback(async () => {
+  // Load queue data. Returns the rows it read so a caller can decide what to
+  // do next without waiting for the state update to commit.
+  const loadQueue = useCallback(async (): Promise<QueuedMessage[]> => {
     try {
       const queuedMessages = await offlineQueueService.getQueue();
       const failedMessages = await offlineQueueService.getFailedMessages();
@@ -97,8 +101,10 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
       setQueue(queuedMessages);
       setQueueCount(queuedMessages.length);
       setFailedCount(failedMessages.length);
+      return queuedMessages;
     } catch (error) {
       logger.error('Failed to load offline queue', { error });
+      return [];
     }
   }, []);
 
@@ -107,6 +113,16 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
   // the mount effect below, which synced again — forever, while any row sat in
   // the queue. The state still drives the UI; the ref is what gates re-entry.
   const syncingRef = useRef(false);
+
+  // The retry driver. The service makes ONE attempt per message per pass, and
+  // applies the exponential backoff (1s, 2s, 4s, 8s) itself before a retry, so
+  // something has to call it again while a message is still pending. That
+  // used to be the accidental identity loop above, which also never stopped:
+  // it treated rows already marked `failed` as work. This schedules the next
+  // pass only while a `pending` row remains, so it ends when every message has
+  // either sent or failed.
+  const followUpRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const syncQueueRef = useRef<() => Promise<void>>(async () => {});
 
   // Sync queue with server. Guard only on the in-flight flag, not on
   // navigator.onLine — the latter is unreliable under Playwright emulation
@@ -118,7 +134,12 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
 
     syncingRef.current = true;
     setIsSyncing(true);
+    if (followUpRef.current !== null) {
+      clearTimeout(followUpRef.current);
+      followUpRef.current = null;
+    }
 
+    let stillPending = false;
     try {
       const result = await offlineQueueService.syncQueue();
       logger.info('Sync complete', {
@@ -127,14 +148,31 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
       });
 
       // Reload queue to reflect changes
-      await loadQueue();
+      const remaining = await loadQueue();
+      stillPending = remaining.some((m) => m.status === 'pending');
     } catch (error) {
       logger.error('Failed to sync queue', { error });
     } finally {
       syncingRef.current = false;
       setIsSyncing(false);
     }
+
+    if (stillPending) {
+      followUpRef.current = setTimeout(() => {
+        followUpRef.current = null;
+        void syncQueueRef.current();
+      }, FOLLOW_UP_DELAY_MS);
+    }
   }, [loadQueue]);
+  syncQueueRef.current = syncQueue;
+
+  // Cancel a scheduled follow-up pass on unmount.
+  useEffect(
+    () => () => {
+      if (followUpRef.current !== null) clearTimeout(followUpRef.current);
+    },
+    []
+  );
 
   // Retry all failed messages
   const retryFailed = useCallback(async () => {
@@ -267,6 +305,10 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     return () => clearInterval(interval);
   }, [loadQueue, syncQueue]);
 
+  const refresh = useCallback(async () => {
+    await loadQueue();
+  }, [loadQueue]);
+
   return {
     queue,
     queueCount,
@@ -277,6 +319,6 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
     retryFailed,
     clearSynced,
     getFailedMessages,
-    refresh: loadQueue,
+    refresh,
   };
 }
