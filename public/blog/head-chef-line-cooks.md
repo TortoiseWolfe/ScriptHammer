@@ -1,5 +1,5 @@
 ---
-title: 'I was paying the head chef to chop onions'
+title: 'Claude Code: I was paying the head chef to chop onions'
 author: TortoiseWolfe
 date: 2026-09-30
 slug: head-chef-line-cooks
@@ -12,11 +12,11 @@ tags:
 categories:
   - engineering
   - workflow
-excerpt: I asked an AI how to get more out of my $200 Claude plan, burned 5% of my weekly limit finding out, and ended up with a kitchen. One expensive model decides and tastes. Cheaper ones do the cooking, and tests check every plate first.
+excerpt: One expensive model decides, cheaper ones cook in their own copies of the repo, and tests check every plate. Learn how the first run cost about 41% less.
 featuredImage: /blog-images/head-chef-line-cooks/featured-og.png
 featuredImageAlt: A map of the AI workflow. An Opus head chef hands a goal to a line of stations (plan, cooks, tests, blind taste, GitHub), with Muse notes over Gmail and the OpenClaw tray on the side.
 ogImage: /blog-images/head-chef-line-cooks/featured-og.png
-ogTitle: 'I was paying the head chef to chop onions'
+ogTitle: 'Claude Code: I was paying the head chef to chop onions'
 ogDescription: One expensive AI model decides and tastes, cheap ones cook in their own copies of the repo, and tests check every plate. The first real run cost about 41% less than doing it all on the expensive model.
 twitterCard: summary_large_image
 ---

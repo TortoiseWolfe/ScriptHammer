@@ -337,6 +337,18 @@ describe('SEOAnalyzer keyword analysis', () => {
     const { strengths } = new SEOAnalyzer().analyze(post);
     expect(strengths).toContain('Main keyword in title');
   });
+
+  it('matches a slug-style keyword against its spaced spelling in the title', () => {
+    const post = makePost({
+      title: 'Claude Code: I was paying the head chef to chop onions',
+      seo: { keywords: ['claude-code', 'ai-agents', 'workflow'] },
+    });
+    const { strengths, suggestions } = new SEOAnalyzer().analyze(post);
+    expect(strengths).toContain('Main keyword in title');
+    expect(
+      suggestions.find((s) => s.message.includes('Main keyword'))
+    ).toBeUndefined();
+  });
 });
 
 describe('SEOAnalyzer readability analysis', () => {
