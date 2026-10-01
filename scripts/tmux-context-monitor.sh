@@ -6,7 +6,10 @@
 # prompt line ("X% free"). Identifies terminals that need /clear + re-priming.
 
 SESSION="scripthammer"
-PROJECT_DIR="$HOME/repos/000_Mega_Plates/ScriptHammer"
+# Derive project dir from script location (scripts/ is one level down from root), as
+# tmux-session.sh does; the old hard-coded path pointed at a folder that no longer exists.
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 WARNING_THRESHOLD=20   # Yellow: 20% or less free
 CRITICAL_THRESHOLD=10  # Red: 10% or less free
 
