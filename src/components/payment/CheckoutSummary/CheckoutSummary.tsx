@@ -37,8 +37,44 @@ export function depositPercent(product: Product): number | null {
   return raw;
 }
 
-/** Round DOWN, exactly as the server does — never charge more than the price. */
-export function previewAmountDue(product: Product): number {
+/**
+ * What a pay-what-you-want SKU (the tip jar) will be charged, or null when the
+ * server would refuse the amount.
+ *
+ * Mirrors the variable branch of `resolveChargeAmount` in create-order: a whole
+ * number of cents within [min_amount ?? $1, max_amount]. The server does not
+ * clamp, it refuses, so neither does this.
+ */
+export function variableAmount(
+  product: Product,
+  requested: unknown
+): number | null {
+  if (typeof requested !== 'number' || !Number.isInteger(requested))
+    return null;
+  const min = product.min_amount ?? 100;
+  const max = product.max_amount ?? Number.MAX_SAFE_INTEGER;
+  if (requested < min || requested > max) return null;
+  return requested;
+}
+
+/**
+ * What the buyer will be charged today, or null when nothing chargeable was
+ * chosen (a variable SKU with a missing or out-of-bounds amount).
+ *
+ * `requested` is the amount the page submits, and matters only for a variable
+ * SKU. It used to be ignored, so `/checkout?sku=tip-jar&amount=5000` said "Total
+ * today $15.00" and "Pay $15" while create-order charged $50.
+ *
+ * Fixed SKUs round DOWN, exactly as the server does — never charge more than
+ * the price.
+ */
+export function previewAmountDue(
+  product: Product,
+  requested?: unknown
+): number | null {
+  if (product.amount_mode === 'variable') {
+    return variableAmount(product, requested);
+  }
   const pct = depositPercent(product);
   if (pct === null) return product.amount;
   const deposit = Math.floor((product.amount * pct) / 100);
@@ -104,9 +140,12 @@ export default function CheckoutSummary({
     );
   }
 
+  // A variable SKU has no package price: `product.amount` is only its default,
+  // and comparing the chosen amount to it would call a large tip a "deposit".
+  const isVariable = product.amount_mode === 'variable';
   const due = amountDueNow ?? previewAmountDue(product);
-  const isDeposit = due < product.amount;
-  const balance = product.amount - due;
+  const isDeposit = !isVariable && due !== null && due < product.amount;
+  const balance = due === null ? 0 : product.amount - due;
 
   return (
     <div
@@ -127,12 +166,14 @@ export default function CheckoutSummary({
         )}
 
         <dl className="mt-4 space-y-1 text-sm">
-          <div className="flex justify-between gap-4">
-            <dt className="text-base-content">Package price</dt>
-            <dd className="text-base-content">
-              {formatCents(product.amount, product.currency)}
-            </dd>
-          </div>
+          {!isVariable && (
+            <div className="flex justify-between gap-4">
+              <dt className="text-base-content">Package price</dt>
+              <dd className="text-base-content">
+                {formatCents(product.amount, product.currency)}
+              </dd>
+            </div>
+          )}
 
           {isDeposit && (
             <div className="flex justify-between gap-4">
@@ -151,7 +192,7 @@ export default function CheckoutSummary({
               {isDeposit ? 'Deposit due today' : 'Total today'}
             </dt>
             <dd className="text-base-content">
-              {formatCents(due, product.currency)}
+              {due === null ? '—' : formatCents(due, product.currency)}
             </dd>
           </div>
         </dl>

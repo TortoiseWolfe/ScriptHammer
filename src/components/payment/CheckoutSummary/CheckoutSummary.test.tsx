@@ -4,6 +4,7 @@ import CheckoutSummary, {
   formatCents,
   depositPercent,
   previewAmountDue,
+  variableAmount,
   cancellationTerms,
 } from './CheckoutSummary';
 import { landingPage, discovery, carePlan } from '../__fixtures__/products';
@@ -148,5 +149,63 @@ describe('the terms a buyer is promised before paying', () => {
     // Counterweight: a single always-rendered blob of text would satisfy every case above.
     expect(cancellationTerms(landingPage).join(' ')).not.toMatch(/renew/i);
     expect(cancellationTerms(carePlan).join(' ')).not.toMatch(/work begins/i);
+  });
+});
+
+describe('variable (pay-what-you-want) SKUs — the tip jar', () => {
+  // Seeded like tip-jar: a $15 default, bounded $1–$500.
+  const tipJar = {
+    ...discovery,
+    id: 'tip-jar',
+    name: 'Tip Jar',
+    amount: 1500,
+    amount_mode: 'variable' as const,
+    min_amount: 100,
+    max_amount: 50000,
+  };
+
+  it('previews the amount the buyer chose, not the catalog default', () => {
+    // The P0: /checkout?sku=tip-jar&amount=5000 said $15 and charged $50.
+    expect(previewAmountDue(tipJar, 5000)).toBe(5000);
+  });
+
+  it.each([
+    ['missing', undefined],
+    ['below min', 99],
+    ['above max', 50001],
+    ['fractional cents', 1234.5],
+    ['NaN', Number('abc')],
+    ['a string', '5000'],
+  ])('is null when create-order would refuse it (%s)', (_label, amount) => {
+    expect(previewAmountDue(tipJar, amount)).toBeNull();
+    expect(variableAmount(tipJar, amount)).toBeNull();
+  });
+
+  it('accepts both bounds inclusively, as the server does', () => {
+    expect(variableAmount(tipJar, 100)).toBe(100);
+    expect(variableAmount(tipJar, 50000)).toBe(50000);
+  });
+
+  it('ignores `requested` for a fixed SKU', () => {
+    expect(previewAmountDue(discovery, 5000)).toBe(25000);
+  });
+
+  it('shows the chosen amount as the total, with no package price or deposit', () => {
+    const { container } = render(
+      <CheckoutSummary product={tipJar} amountDueNow={5000} />
+    );
+    expect(screen.getByText(/Total today/)).toBeInTheDocument();
+    expect(screen.queryByText(/Package price/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Deposit due today/)).not.toBeInTheDocument();
+    expect(container).toHaveTextContent('$50.00');
+    expect(container).not.toHaveTextContent('$15.00');
+  });
+
+  it('shows no total when no valid amount was chosen', () => {
+    render(<CheckoutSummary product={tipJar} amountDueNow={null} />);
+    const dd = screen
+      .getByText(/Total today/)
+      .parentElement?.querySelector('dd');
+    expect(dd?.textContent).toBe('—');
   });
 });

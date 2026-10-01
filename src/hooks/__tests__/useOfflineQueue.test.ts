@@ -487,6 +487,74 @@ describe('useOfflineQueue', () => {
       expect(typeof result.current.syncQueue).toBe('function');
     });
 
+    it('syncs on mount when a pending message is queued', async () => {
+      mockGetQueue.mockResolvedValue([createMockQueuedMessage('msg-1')]);
+
+      renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(mockSyncQueue).toHaveBeenCalled();
+      });
+    });
+
+    it('does not sync on mount when only failed messages remain (#1262)', async () => {
+      mockGetQueue.mockResolvedValue([
+        { ...createMockQueuedMessage('msg-dead'), status: 'failed' as const },
+      ]);
+
+      renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(mockGetFailedMessages).toHaveBeenCalled();
+      });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      expect(mockSyncQueue).not.toHaveBeenCalled();
+    });
+
+    it('keeps retrying while a message is still pending (#1262)', async () => {
+      // The service makes one attempt per pass; a message it could not send
+      // goes back to `pending` and the hook must drive the next pass.
+      mockGetQueue.mockResolvedValue([createMockQueuedMessage('msg-1')]);
+      mockSyncQueue.mockResolvedValue({ success: 0, failed: 1 });
+
+      renderHook(() => useOfflineQueue());
+
+      await waitFor(
+        () => {
+          expect(mockSyncQueue.mock.calls.length).toBeGreaterThanOrEqual(2);
+        },
+        { timeout: 3000 }
+      );
+    });
+
+    it('stops retrying once the message is marked failed (#1262)', async () => {
+      // Before #1262 each finished sync changed syncQueue's identity, re-ran
+      // the mount effect, and synced again for as long as ANY unsynced row
+      // existed — including one already marked failed. The retry driver must
+      // stop when nothing is pending.
+      mockGetQueue.mockResolvedValue([createMockQueuedMessage('msg-1')]);
+      mockSyncQueue.mockImplementation(async () => {
+        mockGetQueue.mockResolvedValue([
+          { ...createMockQueuedMessage('msg-1'), status: 'failed' as const },
+        ]);
+        return { success: 0, failed: 1 };
+      });
+
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(mockSyncQueue).toHaveBeenCalledTimes(1);
+      });
+      await waitFor(() => {
+        expect(result.current.isSyncing).toBe(false);
+      });
+      // Longer than the follow-up delay, so a scheduled pass would have run.
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
+      expect(mockSyncQueue).toHaveBeenCalledTimes(1);
+    });
+
     it('should not sync empty queue', async () => {
       mockGetQueue.mockResolvedValue([]);
 
