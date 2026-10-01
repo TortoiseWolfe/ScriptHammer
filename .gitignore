@@ -326,3 +326,7 @@ docker-compose.override.yml
 # on every local run. If deploys ever move to a path that honours a lockfile, revisit this: then
 # it would genuinely pin what signature-verification and money-handling code imports.
 deno.lock
+
+# Python bytecode (scripts/*.py and scripts/tests run on the host)
+__pycache__/
+*.pyc

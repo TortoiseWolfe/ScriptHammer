@@ -13,7 +13,10 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 WARNING_THRESHOLD=20   # Yellow: 20% or less free
 CRITICAL_THRESHOLD=10  # Red: 10% or less free
 
-# Role to window mapping (must match tmux-session.sh)
+# The roles the status table, --update-names and --reset-names walk. The numbers are NOT how a
+# window is found: tmux-session.sh's ALL order has since moved on (Architect is 3 there, 1 here),
+# and windows opened by tmux-crew.py or by a partial tmux-session.sh run sit at no fixed index.
+# Every lookup goes through window_for, which finds the window by name.
 declare -A WINDOWS=(
   ["CTO"]=0 ["Architect"]=1 ["Coordinator"]=2 ["Security"]=3
   ["Toolsmith"]=4 ["DevOps"]=5 ["ProductOwner"]=6 ["Planner"]=7
@@ -89,6 +92,21 @@ Respond only: Ready."
   ["TechWriter"]="You are the Technical Writer terminal.
 /prime tech-writer
 Respond only: Ready."
+  ["BusinessAnalyst"]="You are the Business Analyst terminal.
+/prime business-analyst
+Respond only: Ready."
+  ["UXDesigner"]="You are the UX Designer terminal.
+/prime ux-designer
+Respond only: Ready."
+  ["UIDesigner"]="You are the UI Designer terminal.
+/prime ui-designer
+Respond only: Ready."
+  ["DockerCaptain"]="You are the Docker Captain terminal.
+/prime docker-captain
+Respond only: Ready."
+  ["ReleaseManager"]="You are the Release Manager terminal.
+/prime release-manager
+Respond only: Ready."
 )
 
 # ANSI colors
@@ -107,10 +125,29 @@ check_session() {
   fi
 }
 
+# Index of the window running ROLE, found by NAME. Matches the plain role name and the
+# "🔴👔 CTO [10%]" form that --update-names leaves behind. Prints nothing when the role has no
+# window; it does not fall back to the WINDOWS table, because a wrong index means /clear lands
+# on some other role's terminal.
+window_for() {
+  local ROLE="$1" IDX NAME
+  while IFS=' ' read -r IDX NAME; do
+    if [ "$NAME" = "$ROLE" ] || [[ "$NAME" == *" $ROLE ["*"%]" ]]; then
+      echo "$IDX"
+      return
+    fi
+  done < <(tmux list-windows -t "$SESSION" -F '#{window_index} #{window_name}' 2>/dev/null)
+}
+
 # Extract context percentage from a window
 check_context() {
   local ROLE="$1"
-  local WIN="${WINDOWS[$ROLE]}"
+  local WIN
+  WIN=$(window_for "$ROLE")
+  if [ -z "$WIN" ]; then
+    echo "-1"  # No window for this role
+    return
+  fi
 
   # Capture last 100 lines of pane (prompt may be anywhere)
   PANE=$(tmux capture-pane -t $SESSION:$WIN -p -S -100 2>/dev/null)
@@ -127,12 +164,13 @@ check_context() {
 # Clear and re-prime a terminal
 clear_terminal() {
   local ROLE="$1"
-  local WIN="${WINDOWS[$ROLE]}"
+  local WIN
+  WIN=$(window_for "$ROLE")
   local PRIMER="${PRIMERS[$ROLE]}"
 
   if [ -z "$WIN" ]; then
-    echo "Error: Unknown role '$ROLE'"
-    echo "Valid roles: ${!WINDOWS[*]}"
+    echo "Error: no window named '$ROLE' in session '$SESSION'"
+    echo "Valid roles: ${!PRIMERS[*]}"
     exit 1
   fi
 
@@ -201,7 +239,7 @@ show_status() {
 
   # Sort and display by percentage (lowest first)
   for ROLE in $(for r in "${!RESULTS[@]}"; do echo "$r ${RESULTS[$r]}"; done | sort -k2 -n | cut -d' ' -f1); do
-    WIN="${WINDOWS[$ROLE]}"
+    WIN=$(window_for "$ROLE")
     PCT="${RESULTS[$ROLE]}"
 
     if [ "$PCT" -eq -1 ]; then
@@ -226,7 +264,7 @@ show_status() {
       PCT_DISPLAY="$PCT"
     fi
 
-    printf "%s %2d %-22s ${COLOR}%3s%% free${NC}\n" "$STATUS" "$WIN" "$ROLE" "$PCT_DISPLAY"
+    printf "%s %2s %-22s ${COLOR}%3s%% free${NC}\n" "$STATUS" "${WIN:--}" "$ROLE" "$PCT_DISPLAY"
   done
 
   echo ""
@@ -265,11 +303,11 @@ update_window_names() {
   echo "Updating window names with context indicators..."
 
   for ROLE in "${!WINDOWS[@]}"; do
-    WIN="${WINDOWS[$ROLE]}"
+    WIN=$(window_for "$ROLE")
     PCT=$(check_context "$ROLE")
 
-    if [ "$PCT" -eq -1 ]; then
-      # Can't detect - skip this window
+    if [ -z "$WIN" ] || [ "$PCT" -eq -1 ]; then
+      # No such window, or can't detect - skip this window
       continue
     fi
 
@@ -298,7 +336,8 @@ reset_window_names() {
   echo "Resetting window names to defaults..."
 
   for ROLE in "${!WINDOWS[@]}"; do
-    WIN="${WINDOWS[$ROLE]}"
+    WIN=$(window_for "$ROLE")
+    [ -z "$WIN" ] && continue
     tmux rename-window -t $SESSION:$WIN "$ROLE"
   done
 
@@ -311,7 +350,7 @@ case "${1:-}" in
     if [ -z "$2" ]; then
       echo "Usage: $0 --clear ROLE"
       echo ""
-      echo "Valid roles: ${!WINDOWS[*]}"
+      echo "Valid roles: ${!PRIMERS[*]}"
       exit 1
     fi
     check_session
@@ -342,9 +381,9 @@ case "${1:-}" in
     echo "  OK:       >${WARNING_THRESHOLD}% free (green, no prefix)"
     echo ""
     echo "Valid roles:"
-    for ROLE in "${!WINDOWS[@]}"; do
-      printf "  %-22s (window %d)\n" "$ROLE" "${WINDOWS[$ROLE]}"
-    done | sort -t'(' -k2 -n
+    for ROLE in "${!PRIMERS[@]}"; do
+      printf "  %s\n" "$ROLE"
+    done | sort
     ;;
   *)
     check_session
