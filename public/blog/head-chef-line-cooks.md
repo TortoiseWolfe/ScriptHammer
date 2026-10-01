@@ -14,7 +14,7 @@ categories:
   - workflow
 excerpt: One expensive model decides, cheaper ones cook in their own copies of the repo, and tests check every plate. Learn how the first run cost about 41% less.
 featuredImage: /blog-images/head-chef-line-cooks/featured-og.png
-featuredImageAlt: A map of the AI workflow. An Opus head chef hands a goal to a line of stations (plan, cooks, tests, blind taste, GitHub), with Muse notes over Gmail and the OpenClaw tray on the side.
+featuredImageAlt: A map of the AI workflow. An Opus head chef hands a goal to a line of stations (plan, cooks, tests, blind taste, GitHub), with a free review panel behind a privacy gate, Muse notes over Gmail, OpenClaw on the side and a per-client ledger.
 ogImage: /blog-images/head-chef-line-cooks/featured-og.png
 ogTitle: 'Claude Code: I was paying the head chef to chop onions'
 ogDescription: One expensive AI model decides and tastes, cheap ones cook in their own copies of the repo, and tests check every plate. The first real run cost about 41% less than doing it all on the expensive model.
@@ -37,7 +37,7 @@ The cheap cooks were already in the plan I pay for. [Claude Code](https://www.an
 
 ## 🔨 How the kitchen works
 
-![A map of the workflow. The head chef, Claude Code on Opus, hands a goal to the line: an Opus planner writes specs, Haiku or Sonnet cooks work in separate git worktrees, tests in Docker decide pass or fail, a Jev check is logged on the side, and a blind Opus reviewer tastes before merge and push. Only results come back to the head chef. Muse exchanges notes through Gmail, and the OpenClaw tray runs short commands that I approve.](/blog-images/head-chef-line-cooks/kitchen-map.png)
+![A map of the workflow. The head chef, Claude Code on Opus, hands a goal to the line: an Opus planner writes specs, Haiku or Sonnet cooks work in separate git worktrees, tests in Docker decide pass or fail, a Jev check and a free review panel behind a privacy gate are logged on the side, and a blind Opus reviewer tastes before merge and push. Only results come back to the head chef. Muse exchanges notes through Gmail, OpenClaw runs on a free model and short commands that I approve, and a per-client ledger tracks tokens and time.](/blog-images/head-chef-line-cooks/kitchen-map.png)
 
 There's a head chef, which is my main Claude Code session on Opus. It holds the plan, not the work.
 
@@ -90,6 +90,22 @@ The fixes are boring:
 - **Research helpers run on Sonnet.** It's one setting.
 - **Every task starts a fresh session.**
 - **The head chef stays thin.** It holds the plan, and the cooks hold the work.
+
+## 🆕 Update, October 1: free experts join the line
+
+A day later, a few things moved.
+
+**Jev passed its first test.** Across two real runs it agreed with the Opus reviewer on 6 of 6 changes. It's still in shadow, and it now only ever sees a cleaned-up copy of the change. On client repos it doesn't run at all.
+
+**The line got a free tasting panel.** Seven free models now review every change next to Opus: two on Groq, one on Cloudflare, Gemini, Google's Antigravity CLI, a free model on OpenRouter, and one running on my own GPU. They work in parallel, take about half a minute, and cost nothing.
+
+Free usually means the provider keeps what you send, so a privacy gate sits in front. It scans for secrets and stops the review if it finds one. It strips emails, phone numbers, addresses and names I list. And it sorts repos into three groups. Public code can go to every expert. My own private code only goes to the ones that don't train on it. Client code never leaves my machine: only the model on my GPU sees it.
+
+The panel has to earn its place, the same way Jev did. For now it only records whether it agrees with Opus. On its first night, Gemini rejected a perfectly good change twice, and Groq and the local model got it right. After 15 changes with no wrong passes, it can take over the first round of review, and Opus only steps in when the panel objects.
+
+**And now I can see what each client costs me.** A small ledger reads Claude Code's own records and totals tokens, my time and commits per client. So when I quote the next job, I'm working from what the last one actually took, not from memory.
+
+The setup tutorial covers all of it step by step: **[Build Your AI Kitchen](https://tortoisewolfe.github.io/AI_Workflow/05-advanced-orchestration/setup-tutorial.html)**.
 
 ## 📝 Steal it
 
