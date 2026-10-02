@@ -24,6 +24,8 @@ twitterCard: summary_large_image
 
 # 📨 Your Client's Email Is Not a Spec: Turning Mail Into Tickets
 
+_Part 2 of the [AI Workflow series](https://tortoisewolfe.github.io/AI_Workflow/series.html#build-log)._
+
 A client emails you: _"A few hot issues with the new site..."_ Attached are three screenshots and one run-on paragraph. Somewhere in there is a broken feature, a request for something they never quite name, and an expectation about what "done" means that they assume is obvious and you have not actually agreed to.
 
 That email is not a specification. It is a **loosely-encoded intention** — and the gap between what the client meant and what you build is where freelance projects quietly go wrong. Not through malice or incompetence, but through the slow drift between a chatty message and a shipped deliverable that each party remembers differently.
@@ -253,3 +255,7 @@ The MCP server is a convenience. The discipline is the point, and you can practi
 5. **If it goes public, anonymize behind a hard gate**, and prefer composites over single real threads.
 
 Automate that loop with an MCP server and you draft tickets in seconds instead of minutes. But whether you automate it or not, the win is the same: the email the client _sent_ and the work you _ship_ get pinned to the same testable contract — and the quiet drift that sinks freelance projects has nowhere left to hide.
+
+---
+
+**Part 2 of the [AI Workflow series](https://tortoisewolfe.github.io/AI_Workflow/series.html#build-log).** ← Previous: [Handing an Agent the Keys](/blog/cursor-github-identity/) · Next: [Send It Back Without Taking It Over](/blog/reject-without-taking-over/) → · [Every part, in order](https://tortoisewolfe.github.io/AI_Workflow/series.html)

@@ -25,6 +25,8 @@ twitterCard: summary_large_image
 
 # 🔑 Handing an Agent the Keys: What I Let AI Touch, and What It Cost Me
 
+_Part 1 of the [AI Workflow series](https://tortoisewolfe.github.io/AI_Workflow/series.html#build-log)._
+
 A collaborator joins your project. They work in [Cursor](https://cursor.com/), the Artificial Intelligence (AI) code editor, and they want its agent to do the mechanical parts of collaboration — open an issue, push a branch, file a pull request. Reasonable. So they message you: _"What token should I use?"_
 
 That question has a good answer, and this post used to be just that answer. But the question does not stay put. It comes back at the database, then at the payment provider, then at the App Store, then at the scheduling system — and by the tenth time you are no longer answering a question, you are running a practice.
@@ -205,3 +207,7 @@ Manage or revoke GitHub fine-grained tokens at **[github.com/settings/tokens?typ
 The return on all of this is real: paperwork that fills itself, migrations that verify their own effects, and systems that get traced end to end because tracing them stopped being tedious. But the return only holds while the scoping does. An agent with the right keys is a genuinely new kind of colleague. An agent with all the keys is an incident with good intentions.
 
 If you are handing off work to a collaborator's agent, the companion piece is **[Send It Back Without Taking It Over](/blog/reject-without-taking-over/)** — how to reject a pull request without erasing the author's name from it. For giving an agent read access to something as messy as a client's inbox, see **[Your Client's Email Is Not a Spec](/blog/client-email-not-a-spec/)**. And for what happens when a credential is merely _wrong_ rather than over-scoped, **[The Storefront That Could Not Take Money](/blog/storefront-that-cannot-take-money/)** is a postmortem on a test-mode payment key that reached production.
+
+---
+
+**Part 1 of the [AI Workflow series](https://tortoisewolfe.github.io/AI_Workflow/series.html#build-log).** ← Before this: [the course](https://tortoisewolfe.github.io/AI_Workflow/series.html#course) · Next: [Your Client's Email Is Not a Spec](/blog/client-email-not-a-spec/) → · [Every part, in order](https://tortoisewolfe.github.io/AI_Workflow/series.html)
