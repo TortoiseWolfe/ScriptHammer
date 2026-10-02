@@ -21,6 +21,8 @@ ogDescription: One expensive AI model decides and tastes, cheap ones cook in the
 twitterCard: summary_large_image
 ---
 
+_Part 5 of the [AI Workflow series](https://tortoisewolfe.github.io/AI_Workflow/series.html#build-log)._
+
 Someone gave me good advice about my AI setup this week. Stop using the expensive model for grunt work. Let it plan and review, and let cheaper helpers do the typing.
 
 So I sat down to act on it, and in the first hundred minutes I burned 5% of my weekly limit doing it.
@@ -121,3 +123,7 @@ The four rules, if you only take one thing:
 2. Tests come before taste, and code checks the plate, not the cook's word.
 3. Keep the head chef thin and the cooks disposable.
 4. Anything I have to do by hand comes as one step, with the link.
+
+---
+
+**Part 5 of the [AI Workflow series](https://tortoisewolfe.github.io/AI_Workflow/series.html#build-log).** ← Previous: [I Graphed 15 Years of My Own Facebook](/blog/facebook-export-knowledge-graph/) · Next: [Build Your AI Kitchen, the setup tutorial](https://tortoisewolfe.github.io/AI_Workflow/05-advanced-orchestration/setup-tutorial.html) → · [Every part, in order](https://tortoisewolfe.github.io/AI_Workflow/series.html)

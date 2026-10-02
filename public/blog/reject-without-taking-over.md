@@ -24,6 +24,8 @@ twitterCard: summary_large_image
 
 # 🔀 Send It Back Without Taking It Over: Rejecting an Agent's PR
 
+_Part 3 of the [AI Workflow series](https://tortoisewolfe.github.io/AI_Workflow/series.html#build-log)._
+
 _Third in a series on the assembly line for AI-written code. [Post one](/blog/cursor-github-identity) got the agent's identity right; [post two](/blog/client-email-not-a-spec) turned a client's email into a scoped ticket. Now the agent has implemented that ticket and opened a pull request. This is the merge gate._
 
 The pull request lands. Your collaborator's [Cursor](https://cursor.com/) agent picked up the scoped ticket from the last post — fix the auth-form label spacing — implemented it, and opened a Pull Request (PR). You skim the diff. It's mostly right. There's one rough edge: the layout still crowds on mobile. And here is the moment the whole series turns on, because the tempting move is also the wrong one.
@@ -193,4 +195,4 @@ That matters because the tempting shortcut never stops being tempting. The next 
 
 The agent can write the code. It can even fix its own PR. What it cannot do is decide, on your behalf, that a merge is trustworthy — that judgment is the human's, exercised at the gate. Reject-and-return is how you exercise it without erasing the very thing that made the work traceable in the first place.
 
-_Next in the series: a green test suite that had been lying since the fork's first commit — and why fixing the root cause revealed nine real bugs it had been hiding._
+**Part 3 of the [AI Workflow series](https://tortoisewolfe.github.io/AI_Workflow/series.html#build-log).** ← Previous: [Your Client's Email Is Not a Spec](/blog/client-email-not-a-spec/) · Next: [I Graphed 15 Years of My Own Facebook](/blog/facebook-export-knowledge-graph/) → · [Every part, in order](https://tortoisewolfe.github.io/AI_Workflow/series.html)
