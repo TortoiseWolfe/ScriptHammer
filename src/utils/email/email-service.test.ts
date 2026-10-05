@@ -97,6 +97,14 @@ describe('EmailService', () => {
       expect(result.provider).toBe('EmailJS');
       expect(mockWeb3Forms.send).toHaveBeenCalled();
       expect(mockEmailJS.send).toHaveBeenCalled();
+      // The form says "sent via backup" from this flag, and only from it (#1321).
+      expect(result.fallback).toBe(true);
+    });
+
+    it('does not call the first provider a fallback', async () => {
+      const result = await emailService.send(testData);
+      expect(result.provider).toBe('Web3Forms');
+      expect(result.fallback).toBeUndefined();
     });
 
     it('should throw error when all providers fail', async () => {

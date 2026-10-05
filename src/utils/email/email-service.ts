@@ -80,7 +80,7 @@ export class EmailService {
     const failedProviders: string[] = [];
 
     // Try each provider in order
-    for (const provider of availableProviders) {
+    for (const [index, provider] of availableProviders.entries()) {
       try {
         logger.info('Attempting to send via provider', {
           provider: provider.name,
@@ -98,7 +98,8 @@ export class EmailService {
         logger.info('Successfully sent via provider', {
           provider: provider.name,
         });
-        return result;
+        // Say so when a fallback carried it; the form tells the visitor (#1321).
+        return index > 0 ? { ...result, fallback: true } : result;
       } catch (error) {
         // A refusal is an answer about THIS submission, not a broken provider
         // (#1319). Failing over would hand it to a provider that never runs the

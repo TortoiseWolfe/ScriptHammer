@@ -5,6 +5,7 @@ import ThemeScript from '@/components/ThemeScript';
 import AccessibilityScript from '@/components/AccessibilityScript';
 import StylesheetGuard from '@/components/subatomic/StylesheetGuard';
 import PaymentQueueSync from '@/components/payment/PaymentQueueSync';
+import ContactQueueSender from '@/components/forms/ContactQueueSender';
 import { GlobalNav } from '@/components/GlobalNav';
 import { Footer } from '@/components/Footer';
 import { AccessibilityProvider } from '@/contexts/AccessibilityContext';
@@ -174,6 +175,11 @@ export default function RootLayout({
             singleton, and a second mount hands back a stop function that
             disarms the first. */}
         <PaymentQueueSync />
+        {/* Sends contact messages saved while offline (#1321), from whatever page
+            the visitor is on once the connection is back. The page, not the
+            service worker, because each send needs a fresh Turnstile token.
+            Renders nothing while the queue is empty. */}
+        <ContactQueueSender />
         <JsonLdScript data={generateJsonLd()} />
         <ColorblindFilters />
         <ConsentProvider>
