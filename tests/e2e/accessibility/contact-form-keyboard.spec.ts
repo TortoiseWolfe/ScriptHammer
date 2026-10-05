@@ -11,6 +11,23 @@ import { dismissCookieBanner } from '../utils/test-user-factory';
  */
 test.describe('Contact Form - Keyboard Navigation', () => {
   test.beforeEach(async ({ page }) => {
+    // Nothing in this file may reach a real delivery endpoint (#1319). The Enter-key
+    // test submits a filled form, and the hosted lane builds against production, so
+    // unstubbed it delivered "John Doe / Test Subject" to the real inbox on every
+    // run — and read there as a bot probing the form.
+    for (const endpoint of [
+      '**/functions/v1/contact-message',
+      '**/api.web3forms.com/**',
+    ]) {
+      await page.route(endpoint, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true, id: 'e2e-stub' }),
+        })
+      );
+    }
+
     await page.goto('/contact');
     // Dismiss cookie banner to prevent it from intercepting focus/keyboard
     await dismissCookieBanner(page);

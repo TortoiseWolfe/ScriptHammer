@@ -15,6 +15,7 @@ import {
   RATE_LIMIT_CONFIG,
 } from './web3forms';
 import type { ContactFormData } from '@/schemas/contact.schema';
+import { EmailRefusedError } from '@/utils/email/types';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -531,6 +532,19 @@ describe('Web3Forms Utilities', () => {
  * default underneath it.
  */
 describe('formatErrorMessage', () => {
+  // (#1319) The contact function writes its refusals for the visitor. Each of these
+  // would otherwise fall to a vaguer branch: the 429's text contains no 'rate
+  // limit', and the challenge's matches nothing, so both became 'try again later'.
+  it.each([
+    'Please complete the verification challenge and try again.',
+    'Too many messages from this address. Please wait a few minutes and try again.',
+    'please use an email address we can reply to',
+  ])('shows a refusal verbatim: %s', (text) => {
+    expect(
+      formatErrorMessage(new EmailRefusedError(text, 'SupabaseResend', 403))
+    ).toBe(text);
+  });
+
   it('names a network failure', () => {
     expect(formatErrorMessage(new Error('Network request failed'))).toBe(
       'Network error. Please check your connection and try again.'

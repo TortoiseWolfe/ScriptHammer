@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { EmailService } from './email-service';
 import { Web3FormsProvider } from './providers/web3forms';
 import { EmailJSProvider } from './providers/emailjs';
+import { EmailRefusedError } from './types';
 import type { ContactFormData, EmailResult } from './types';
 
 // Mock providers
@@ -190,6 +191,26 @@ describe('EmailService', () => {
       // Should failover to EmailJS after retries exhausted
       expect(result.provider).toBe('EmailJS');
       expect(mockWeb3Forms.send).toHaveBeenCalledTimes(3); // Initial + 2 retries
+    });
+
+    // (#1319) A refusal is final for THIS submission. Resending it spends the
+    // visitor's per-IP budget on the same answer, and failing over hands a request
+    // that failed a challenge to a provider that never runs the challenge.
+    it('neither retries nor fails over when the provider REFUSES the submission', async () => {
+      const refusal = new EmailRefusedError(
+        'Please complete the verification challenge and try again.',
+        'Web3Forms',
+        403
+      );
+      vi.mocked(mockWeb3Forms.send).mockRejectedValue(refusal);
+
+      await expect(emailService.send(testData)).rejects.toBe(refusal);
+      expect(mockWeb3Forms.send).toHaveBeenCalledTimes(1);
+      expect(mockEmailJS.send).not.toHaveBeenCalled();
+
+      // The provider answered, so it is healthy: no failure recorded against it.
+      const status = await emailService.getStatus();
+      expect(status.find((s) => s.name === 'Web3Forms')?.failures).toBe(0);
     });
   });
 

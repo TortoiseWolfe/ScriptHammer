@@ -46,6 +46,34 @@ const ALLOWED_HEADERS = ALLOWED_HEADER_LIST.join(', ');
 
 const ALLOWED_METHODS = ['POST', 'OPTIONS'].join(', ');
 
+/** The configured site's origin, or '' when NEXT_PUBLIC_SITE_URL is unset or unparseable. */
+function siteOrigin(): string {
+  const siteUrl = Deno.env.get('NEXT_PUBLIC_SITE_URL') ?? '';
+
+  // NEXT_PUBLIC_SITE_URL may carry a basePath (GitHub Pages project site,
+  // e.g. https://user.github.io/ScriptHammer) because the checkout functions
+  // build success_url from it — but a browser Origin header is always
+  // scheme://host[:port], so compare against the URL's origin only.
+  try {
+    return siteUrl ? new URL(siteUrl).origin : '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Every browser origin these functions answer: the configured site, plus localhost dev
+ * (3000/3001) for ScriptHammer. Exported so a function can refuse a foreign origin outright
+ * rather than only withholding the CORS header (contact-message, #1319).
+ */
+export function allowedOrigins(): string[] {
+  return [
+    siteOrigin(),
+    'http://localhost:3000',
+    'http://localhost:3001',
+  ].filter(Boolean);
+}
+
 /**
  * Build CORS headers. Echoes the request's Origin if allowed; otherwise
  * falls back to the configured site URL. Wildcards are deliberately
@@ -53,27 +81,9 @@ const ALLOWED_METHODS = ['POST', 'OPTIONS'].join(', ');
  */
 export function corsHeaders(req: Request): HeadersInit {
   const requestOrigin = req.headers.get('origin') ?? '';
-  const siteUrl = Deno.env.get('NEXT_PUBLIC_SITE_URL') ?? '';
+  const allowed = allowedOrigins();
 
-  // NEXT_PUBLIC_SITE_URL may carry a basePath (GitHub Pages project site,
-  // e.g. https://user.github.io/ScriptHammer) because the checkout functions
-  // build success_url from it — but a browser Origin header is always
-  // scheme://host[:port], so compare against the URL's origin only.
-  let siteOrigin = '';
-  try {
-    siteOrigin = siteUrl ? new URL(siteUrl).origin : '';
-  } catch {
-    siteOrigin = '';
-  }
-
-  // Allow the configured site, plus localhost dev (3000/3001) for ScriptHammer.
-  const allowed = [
-    siteOrigin,
-    'http://localhost:3000',
-    'http://localhost:3001',
-  ].filter(Boolean);
-
-  const origin = allowed.includes(requestOrigin) ? requestOrigin : siteOrigin;
+  const origin = allowed.includes(requestOrigin) ? requestOrigin : siteOrigin();
 
   return {
     'Access-Control-Allow-Origin': origin,
