@@ -1,8 +1,48 @@
 'use client';
 
-import React, { forwardRef, useImperativeHandle, useRef } from 'react';
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import { Turnstile, type TurnstileInstance } from '@marsidev/react-turnstile';
 import { captchaConfig } from '@/config/captcha.config';
+
+/** The library's default id for the script it injects, stated so it can be removed. */
+export const TURNSTILE_SCRIPT_ID = 'cf-turnstile-script';
+const SCRIPT_FAILED_EVENT = 'turnstile-script:failed';
+
+/*
+ * Spot a failed Turnstile script without the library's `scriptOptions.onError`. Passing
+ * that option makes the library delete Cloudflare's onload callback, and Cloudflare then
+ * logs "Unable to find onload callback" on every page with a widget (measured, #1321).
+ *
+ * Resource load errors don't bubble, but a CAPTURING listener on `window` sees them. It is
+ * installed once, at import, so it is in place before the library injects the script.
+ */
+if (typeof window !== 'undefined') {
+  window.addEventListener(
+    'error',
+    (event) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.id === TURNSTILE_SCRIPT_ID) {
+        target.dataset.failed = 'true';
+        window.dispatchEvent(new Event(SCRIPT_FAILED_EVENT));
+      }
+    },
+    true
+  );
+}
+
+/** Remove the Turnstile script if it failed to load, so the next mount injects it again. */
+function clearFailedScript(): boolean {
+  const el = document.getElementById(TURNSTILE_SCRIPT_ID);
+  if (el?.dataset.failed !== 'true') return false;
+  el.remove();
+  return true;
+}
 
 export interface CaptchaWidgetProps {
   /**
@@ -75,6 +115,36 @@ const CaptchaWidget = forwardRef<CaptchaWidgetHandle, CaptchaWidgetProps>(
       },
     }));
 
+    // A FAILED SCRIPT LOAD MUST NOT BE PERMANENT (#1321). The library injects
+    // `<script id="cf-turnstile-script">` once and never again while that element
+    // exists, even when it failed. A visitor who opened the page offline, which is
+    // exactly when a contact message gets saved, therefore never got a token after
+    // the connection came back. Measured: the offline sender sat on "Sending..."
+    // forever.
+    //
+    // So a failed load is reported, and the widget remounts after removing the dead
+    // element, which makes the library inject the script afresh. That happens on the
+    // next `online` event, and on mount when an earlier widget's load already failed.
+    const [generation, setGeneration] = useState(0);
+    const callbacks = useRef({ onToken, onError });
+    callbacks.current = { onToken, onError };
+    useEffect(() => {
+      const failed = () => {
+        callbacks.current.onToken(null);
+        callbacks.current.onError?.();
+      };
+      const retry = () => {
+        if (clearFailedScript()) setGeneration((g) => g + 1);
+      };
+      if (navigator.onLine) retry();
+      window.addEventListener(SCRIPT_FAILED_EVENT, failed);
+      window.addEventListener('online', retry);
+      return () => {
+        window.removeEventListener(SCRIPT_FAILED_EVENT, failed);
+        window.removeEventListener('online', retry);
+      };
+    }, []);
+
     // `compact`, deliberately, and the numbers are why (#488).
     //
     // MEASURED on /sign-in at a 320px viewport, where the form column offers
@@ -111,6 +181,7 @@ const CaptchaWidget = forwardRef<CaptchaWidgetHandle, CaptchaWidgetProps>(
         data-testid="captcha-widget"
       >
         <Turnstile
+          key={generation}
           ref={instance}
           siteKey={captchaConfig.siteKey}
           onSuccess={(token) => onToken(token)}
