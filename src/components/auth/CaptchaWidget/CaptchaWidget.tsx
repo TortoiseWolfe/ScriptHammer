@@ -21,6 +21,13 @@ export interface CaptchaWidgetProps {
    * tab stop between the last field and submit.
    */
   appearance?: 'always' | 'interaction-only';
+  /**
+   * Called when the challenge itself fails, for example a blocked script, no network, or a
+   * domain the key doesn't allow. `onToken(null)` fires then too, but it also fires on
+   * expiry and reset, so a caller with no visible widget to fall back on needs this to
+   * tell "failed" from "not yet". The offline sender uses it (#1321).
+   */
+  onError?: () => void;
   /** Additional CSS classes */
   className?: string;
 }
@@ -56,7 +63,7 @@ export interface CaptchaWidgetHandle {
  */
 const CaptchaWidget = forwardRef<CaptchaWidgetHandle, CaptchaWidgetProps>(
   function CaptchaWidget(
-    { onToken, appearance = 'always', className = '' },
+    { onToken, appearance = 'always', onError, className = '' },
     ref
   ) {
     const instance = useRef<TurnstileInstance>(null);
@@ -111,7 +118,10 @@ const CaptchaWidget = forwardRef<CaptchaWidgetHandle, CaptchaWidgetProps>(
           // fresh solve rather than submitting a stale token that Supabase
           // would reject with a confusing error.
           onExpire={() => onToken(null)}
-          onError={() => onToken(null)}
+          onError={() => {
+            onToken(null);
+            onError?.();
+          }}
           options={{ theme: 'auto', size: 'compact', appearance }}
         />
       </div>

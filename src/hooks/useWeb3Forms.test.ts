@@ -3,6 +3,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import { useWeb3Forms } from './useWeb3Forms';
 import * as web3formsUtils from '@/utils/web3forms';
 import { emailService } from '@/utils/email/email-service';
+import * as offlineQueue from '@/utils/offline-queue';
 import type { ContactFormData } from '@/schemas/contact.schema';
 
 // Mock the utilities
@@ -30,16 +31,12 @@ vi.mock('@/utils/offline-queue', () => ({
   updateRetryCount: vi.fn().mockResolvedValue(true),
 }));
 
-// Mock background sync utilities
-vi.mock('@/utils/background-sync', () => ({
-  registerBackgroundSync: vi.fn().mockResolvedValue(true),
-  processQueue: vi.fn().mockResolvedValue(undefined),
-  startFormQueueFallback: vi.fn(() => () => {}),
-  getSyncStatus: vi.fn().mockResolvedValue({
-    supported: false,
-    registered: false,
-  }),
+// Mock the saved-message signal. Sending lives in ContactQueueSender (#1321).
+const queueSignal = vi.hoisted(() => ({
+  QUEUE_CHANGED_EVENT: 'contact-queue:changed',
+  notifyQueueChanged: vi.fn(),
 }));
+vi.mock('@/utils/background-sync', () => queueSignal);
 
 // Mock the offline queue hook
 vi.mock('./useOfflineQueue', () => ({
@@ -123,6 +120,30 @@ describe('useWeb3Forms Hook', () => {
         })
       );
       expect(emailService.send).toHaveBeenCalled();
+    });
+
+    // (#1321) The note compared the provider against 'Web3Forms', the primary
+    // before #784, so every normal send read "(sent via backup: SupabaseResend)".
+    // It now follows the service's own word for whether a fallback carried it.
+    it.each([
+      [{ provider: 'SupabaseResend' }, 'Email sent successfully'],
+      [
+        { provider: 'Web3Forms', fallback: true },
+        'Email sent successfully (sent via backup: Web3Forms)',
+      ],
+    ])('names a backup only when one was used: %o', async (extra, text) => {
+      vi.mocked(emailService.send).mockResolvedValue({
+        success: true,
+        timestamp: new Date().toISOString(),
+        ...extra,
+      });
+      const { result } = renderHook(() => useWeb3Forms());
+
+      await act(async () => {
+        await result.current.submitForm(validFormData);
+      });
+
+      expect(result.current.successMessage).toBe(text);
     });
 
     it('should handle submission errors', async () => {
@@ -316,8 +337,29 @@ describe('useWeb3Forms Hook', () => {
       expect(emailService.send).not.toHaveBeenCalled();
       // localStorage is used directly in the hook, not a mockable external function
       expect(result.current.wasQueuedOffline).toBe(true);
-      expect(result.current.successMessage).toContain('queued for sending');
+      // (#1321) Says what will actually happen. The old "will be sent
+      // automatically" was a promise no code path could keep.
+      expect(result.current.successMessage).toMatch(
+        /saved on this device.*next time you open this site/i
+      );
+      // ...and wakes the app-wide sender, which does the sending.
+      expect(queueSignal.notifyQueueChanged).toHaveBeenCalled();
     });
+  });
+
+  // (#1321) A saved message is sent by ContactQueueSender, from any page. The
+  // count here must follow that, or the form keeps announcing a message that
+  // has already gone.
+  it('refreshes the saved-message count when the queue changes', async () => {
+    vi.mocked(offlineQueue.getQueueSize).mockResolvedValue(2);
+    const { result } = renderHook(() => useWeb3Forms());
+    await waitFor(() => expect(result.current.queueCount).toBe(2));
+
+    vi.mocked(offlineQueue.getQueueSize).mockResolvedValue(0);
+    await act(async () => {
+      window.dispatchEvent(new Event(queueSignal.QUEUE_CHANGED_EVENT));
+    });
+    await waitFor(() => expect(result.current.queueCount).toBe(0));
   });
 
   describe('Validation Integration', () => {

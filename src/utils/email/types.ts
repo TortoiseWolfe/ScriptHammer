@@ -17,6 +17,8 @@ export interface EmailResult {
   messageId?: string;
   timestamp: string;
   error?: string;
+  /** True when a provider other than the first available one delivered it (#1321). */
+  fallback?: boolean;
 }
 
 export interface EmailProvider {

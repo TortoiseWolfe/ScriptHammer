@@ -1,94 +1,124 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 /**
- * Tests for the #32 foreground form-queue fallback (browsers without the
- * Background Sync API). processQueue is exercised via its offline-queue deps,
- * which we mock so no IndexedDB is touched.
+ * Sending messages saved while offline (#1321).
+ *
+ * The property that matters is the negative one. A message the visitor was told would be
+ * sent leaves the queue only when it WAS sent, or when they discard it. The old path deleted
+ * it after three failed replays through a provider production never configured.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-
-vi.mock('@/lib/logger', () => ({
-  createLogger: () => ({
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  }),
-}));
-
-const getQueuedItems = vi.fn();
-vi.mock('./offline-queue', () => ({
-  getQueuedItems: (...a: unknown[]) => getQueuedItems(...a),
+const queue = vi.hoisted(() => ({
+  getQueuedItems: vi.fn(),
   removeFromQueue: vi.fn(),
   updateRetryCount: vi.fn(),
 }));
-vi.mock('./web3forms', () => ({ submitWithRetry: vi.fn() }));
+vi.mock('./offline-queue', () => queue);
 
-import { startFormQueueFallback } from './background-sync';
+const service = vi.hoisted(() => ({ send: vi.fn() }));
+vi.mock('@/utils/email/email-service', () => ({ emailService: service }));
 
-function setSyncManager(present: boolean) {
-  if (present) {
-    (window as unknown as { SyncManager: unknown }).SyncManager =
-      function () {};
-  } else {
-    delete (window as unknown as { SyncManager?: unknown }).SyncManager;
-  }
-  Object.defineProperty(navigator, 'serviceWorker', {
-    value: {},
-    configurable: true,
-  });
-}
+import {
+  QUEUE_CHANGED_EVENT,
+  discardNextQueued,
+  sendNextQueued,
+} from './background-sync';
 
-describe('startFormQueueFallback (#32)', () => {
+const saved = (id: number, retryCount = 0) => ({
+  id,
+  data: {
+    name: 'Ada',
+    email: 'ada@lovelace.dev',
+    subject: 'Engines',
+    message: `Saved message ${id}`,
+    _gotcha: '',
+  },
+  timestamp: id,
+  retryCount,
+});
+
+describe('sendNextQueued', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    getQueuedItems.mockResolvedValue([]);
-    Object.defineProperty(navigator, 'onLine', {
-      value: true,
-      configurable: true,
+    queue.removeFromQueue.mockResolvedValue(true);
+    queue.updateRetryCount.mockResolvedValue(true);
+  });
+
+  it('reports an empty queue without sending anything', async () => {
+    queue.getQueuedItems.mockResolvedValue([]);
+    expect(await sendNextQueued('tok')).toEqual({ outcome: 'empty' });
+    expect(service.send).not.toHaveBeenCalled();
+  });
+
+  it('sends the OLDEST message with the token, then removes only that one', async () => {
+    queue.getQueuedItems.mockResolvedValue([saved(1), saved(2)]);
+    service.send.mockResolvedValue({ success: true });
+
+    const result = await sendNextQueued('tok-1');
+
+    expect(result).toEqual({ outcome: 'sent', remaining: 1 });
+    expect(service.send).toHaveBeenCalledTimes(1);
+    expect(service.send).toHaveBeenCalledWith({
+      name: 'Ada',
+      email: 'ada@lovelace.dev',
+      subject: 'Engines',
+      message: 'Saved message 1',
+      captchaToken: 'tok-1',
+    });
+    expect(queue.removeFromQueue).toHaveBeenCalledWith(1);
+  });
+
+  it('sends no token key when there is no token (no site key configured)', async () => {
+    queue.getQueuedItems.mockResolvedValue([saved(1)]);
+    service.send.mockResolvedValue({ success: true });
+
+    await sendNextQueued(null);
+    expect(service.send.mock.calls[0][0]).not.toHaveProperty('captchaToken');
+  });
+
+  it('announces the change so every count on the page follows', async () => {
+    queue.getQueuedItems.mockResolvedValue([saved(1)]);
+    service.send.mockResolvedValue({ success: true });
+    const heard = vi.fn();
+    window.addEventListener(QUEUE_CHANGED_EVENT, heard);
+
+    await sendNextQueued('tok');
+    window.removeEventListener(QUEUE_CHANGED_EVENT, heard);
+    expect(heard).toHaveBeenCalledTimes(1);
+  });
+
+  // The old path's MAX_RETRIES deleted the message here. It must stay, however many
+  // times it has already failed.
+  it('KEEPS a message that failed, however often it has failed before', async () => {
+    queue.getQueuedItems.mockResolvedValue([saved(1, 7)]);
+    service.send.mockRejectedValue(new Error('Network error'));
+
+    const result = await sendNextQueued('tok');
+
+    expect(result.outcome).toBe('failed');
+    expect(queue.removeFromQueue).not.toHaveBeenCalled();
+    expect(queue.updateRetryCount).toHaveBeenCalledWith(1, 8);
+  });
+
+  it('carries a reason the visitor can read', async () => {
+    queue.getQueuedItems.mockResolvedValue([saved(1)]);
+    service.send.mockRejectedValue(new Error('Network error'));
+
+    const result = await sendNextQueued('tok');
+    expect(result).toMatchObject({
+      outcome: 'failed',
+      message: expect.stringMatching(/network/i),
+      remaining: 1,
     });
   });
+});
 
-  afterEach(() => {
-    delete (window as unknown as { SyncManager?: unknown }).SyncManager;
-  });
+describe('discardNextQueued', () => {
+  it('removes the oldest message, and only when the visitor asks', async () => {
+    queue.getQueuedItems.mockResolvedValue([saved(3), saved(4)]);
+    queue.removeFromQueue.mockResolvedValue(true);
 
-  it('is a no-op when the Background Sync API is supported', () => {
-    setSyncManager(true);
-    const addSpy = vi.spyOn(window, 'addEventListener');
-    const stop = startFormQueueFallback();
-    expect(addSpy).not.toHaveBeenCalledWith('online', expect.any(Function));
-    stop();
-    addSpy.mockRestore();
-  });
-
-  it('installs online + visibility listeners when unsupported, and cleans up', () => {
-    setSyncManager(false);
-    const addSpy = vi.spyOn(window, 'addEventListener');
-    const docAddSpy = vi.spyOn(document, 'addEventListener');
-    const removeSpy = vi.spyOn(window, 'removeEventListener');
-
-    const stop = startFormQueueFallback();
-    expect(addSpy).toHaveBeenCalledWith('online', expect.any(Function));
-    expect(docAddSpy).toHaveBeenCalledWith(
-      'visibilitychange',
-      expect.any(Function)
-    );
-
-    stop();
-    expect(removeSpy).toHaveBeenCalledWith('online', expect.any(Function));
-
-    addSpy.mockRestore();
-    docAddSpy.mockRestore();
-    removeSpy.mockRestore();
-  });
-
-  it('flushes the queue on an online event', async () => {
-    setSyncManager(false);
-    const stop = startFormQueueFallback();
-    getQueuedItems.mockClear(); // ignore the initial drain on start
-
-    window.dispatchEvent(new Event('online'));
-    await vi.waitFor(() => expect(getQueuedItems).toHaveBeenCalled());
-    stop();
+    await discardNextQueued();
+    expect(queue.removeFromQueue).toHaveBeenCalledWith(3);
   });
 });
