@@ -40,6 +40,11 @@
  * three run before the limiter, so a refused bot never spends a real visitor's budget on a
  * shared IP. Each decision lives in `rules.ts`, which Vitest can load.
  *
+ * ONE MESSAGE, ONE EMAIL (#1322). The send carries an `Idempotency-Key` derived from the
+ * message's content (`rules.ts` says why content and not a token). A visitor whose response was
+ * lost can press Send again — with a fresh Turnstile token — and Resend returns the original
+ * response instead of delivering a second copy. Resend keeps keys for 24 hours.
+ *
  * TURNSTILE IS INERT UNTIL ITS SECRET EXISTS. A fork with no `TURNSTILE_SECRET` behaves exactly
  * as before, and the rollout order is safe: ship the page that sends tokens, then this
  * function, then the secret. Setting the secret first would refuse every visitor whose page
@@ -51,8 +56,10 @@ import { allowedOrigins, handleCors, jsonResponse } from '../_shared/cors.ts';
 import { limiterVerdict } from '../_shared/limiter-verdict.ts';
 import {
   captchaTokenFrom,
+  idempotencyKeyFor,
   isUndeliverableAddress,
   originVerdict,
+  resendOutcome,
   SITEVERIFY_URL,
   siteverifyVerdict,
   type CaptchaVerdict,
@@ -80,6 +87,15 @@ const TURNSTILE_SECRET = Deno.env.get('TURNSTILE_SECRET');
 /** The message a refused challenge shows; the form puts it in front of the visitor verbatim. */
 const CHALLENGE_MESSAGE =
   'Please complete the verification challenge and try again.';
+
+/**
+ * What a visitor reads when delivery cannot be confirmed (#1322). Pressing Send again is safe
+ * because the idempotency key makes a resend of the same text a no-op. The client carries the
+ * same sentence for the case where no response arrived at all
+ * (`src/utils/email/types.ts`, UNCONFIRMED_MESSAGE).
+ */
+const UNCONFIRMED_MESSAGE =
+  "We couldn't confirm your message was sent. Press Send again: if it already arrived, it won't be sent twice.";
 
 const LIMITS = { name: 100, email: 254, subject: 200, message: 5000 };
 
@@ -291,11 +307,20 @@ Deno.serve(async (req: Request) => {
     );
   }
 
+  const idempotencyKey = await idempotencyKeyFor({
+    name,
+    email,
+    subject,
+    message,
+  });
+
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${RESEND_API_KEY}`,
+      // Same content, same key: a resend returns the original response (#1322).
+      'Idempotency-Key': idempotencyKey,
     },
     body: JSON.stringify({
       from: CONTACT_FROM,
@@ -313,8 +338,22 @@ Deno.serve(async (req: Request) => {
   });
 
   const data = await res.json().catch(() => ({}));
+  const outcome = resendOutcome(res.ok, res.status, data);
 
-  if (!res.ok) {
+  if (outcome === 'already-sent') {
+    // This text was delivered earlier: a resend after a lost response. Nothing new went out,
+    // and the visitor's message did arrive, so this is a success.
+    console.info('contact-message: duplicate of an already-delivered message');
+    return jsonResponse(req, { success: true, id: null, duplicate: true }, 200);
+  }
+
+  if (outcome === 'in-flight') {
+    // The first send of this text is still in progress, so its outcome is unknown. Say exactly
+    // that, with a 409 the client reads as "could not confirm" and never as a refusal.
+    return jsonResponse(req, { error: UNCONFIRMED_MESSAGE }, 409);
+  }
+
+  if (outcome === 'rejected') {
     console.error('Resend rejected the contact message', data);
     return jsonResponse(req, { error: 'Could not send the message' }, 502);
   }

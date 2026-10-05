@@ -85,6 +85,24 @@ export class EmailRefusedError extends EmailProviderError {
   }
 }
 
+/**
+ * The provider may or may not have delivered (#1322): no response arrived, or the answer
+ * cannot be read as a definite "not sent". `fetch` cannot tell "never arrived" from "arrived,
+ * sent, and the response was lost".
+ *
+ * Failing over would deliver a second copy if the first one went out, so EmailService never
+ * does. It retries only when that is safe, which means no single-use Turnstile token is
+ * involved: the contact function's idempotency key turns a resend of the same text into a
+ * no-op. A token, though, is spent by the first attempt, so a retry carrying it would be
+ * refused as a failed challenge.
+ */
+export class EmailDeliveryUnknownError extends EmailProviderError {
+  constructor(message: string, provider: string, originalError?: unknown) {
+    super(message, provider, originalError);
+    this.name = 'EmailDeliveryUnknownError';
+  }
+}
+
 export class EmailServiceError extends Error {
   constructor(
     message: string,
@@ -92,5 +110,23 @@ export class EmailServiceError extends Error {
   ) {
     super(message);
     this.name = 'EmailServiceError';
+  }
+}
+
+/**
+ * Shown when delivery could not be confirmed. The contact function returns the same sentence
+ * for its own in-flight case (supabase/functions/contact-message/index.ts).
+ */
+export const UNCONFIRMED_MESSAGE =
+  "We couldn't confirm your message was sent. Press Send again: if it already arrived, it won't be sent twice.";
+
+/**
+ * The send may have happened, and the visitor needs to hear that honestly (#1322). It is
+ * neither "failed, try later" nor a refusal. The form shows the message as it is.
+ */
+export class EmailUnconfirmedError extends EmailServiceError {
+  constructor(failedProviders: string[]) {
+    super(UNCONFIRMED_MESSAGE, failedProviders);
+    this.name = 'EmailUnconfirmedError';
   }
 }

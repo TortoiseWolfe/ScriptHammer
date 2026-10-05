@@ -10,7 +10,11 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SupabaseResendProvider } from '../supabase-resend';
-import { EmailProviderError, EmailRefusedError } from '../../types';
+import {
+  EmailDeliveryUnknownError,
+  EmailProviderError,
+  EmailRefusedError,
+} from '../../types';
 
 const DATA = {
   name: 'Ada',
@@ -174,6 +178,86 @@ describe('SupabaseResendProvider', () => {
         .catch((e: unknown) => e);
       expect(failure).toBeInstanceOf(EmailProviderError);
       expect(failure).not.toBeInstanceOf(EmailRefusedError);
+      // The function's own JSON answer means it did not send, so failover stays
+      // allowed (#1322).
+      expect(failure).not.toBeInstanceOf(EmailDeliveryUnknownError);
     }
   );
+
+  // (#1322) "Did it send?" has three answers, and only a definite NO may fail over:
+  // the next provider cannot recognise a copy, so the visitor would get a duplicate.
+  describe('outcomes that cannot be read as "not sent"', () => {
+    it('no response at all (the request may have arrived and sent)', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('reset')));
+
+      await expect(new SupabaseResendProvider().send(DATA)).rejects.toThrow(
+        EmailDeliveryUnknownError
+      );
+    });
+
+    it('a 409: the first send of this text is still in flight', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 409,
+          json: async () => ({ error: 'still sending' }),
+        })
+      );
+
+      await expect(new SupabaseResendProvider().send(DATA)).rejects.toThrow(
+        EmailDeliveryUnknownError
+      );
+    });
+
+    it.each([502, 504])(
+      'a gateway %i without the function’s JSON (it may have run)',
+      async (status) => {
+        vi.stubGlobal(
+          'fetch',
+          vi.fn().mockResolvedValue({
+            ok: false,
+            status,
+            json: async () => {
+              throw new SyntaxError('<html>');
+            },
+          })
+        );
+
+        await expect(new SupabaseResendProvider().send(DATA)).rejects.toThrow(
+          EmailDeliveryUnknownError
+        );
+      }
+    );
+
+    it('a 200 that is not the function’s confirmation', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          status: 200,
+          json: async () => ({ message: 'captive portal' }),
+        })
+      );
+
+      await expect(new SupabaseResendProvider().send(DATA)).rejects.toThrow(
+        EmailDeliveryUnknownError
+      );
+    });
+  });
+
+  it('treats the function’s duplicate answer as delivered', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ success: true, id: null, duplicate: true }),
+      })
+    );
+
+    const result = await new SupabaseResendProvider().send(DATA);
+    expect(result.success).toBe(true);
+    expect(result.messageId).toBeUndefined();
+  });
 });

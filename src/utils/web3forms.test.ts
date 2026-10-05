@@ -15,7 +15,11 @@ import {
   RATE_LIMIT_CONFIG,
 } from './web3forms';
 import type { ContactFormData } from '@/schemas/contact.schema';
-import { EmailRefusedError } from '@/utils/email/types';
+import {
+  EmailRefusedError,
+  EmailUnconfirmedError,
+  UNCONFIRMED_MESSAGE,
+} from '@/utils/email/types';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -543,6 +547,14 @@ describe('formatErrorMessage', () => {
     expect(
       formatErrorMessage(new EmailRefusedError(text, 'SupabaseResend', 403))
     ).toBe(text);
+  });
+
+  // (#1322) Every vaguer branch would tell a visitor whose message may already have
+  // arrived that it failed.
+  it('shows an unconfirmed send verbatim', () => {
+    expect(
+      formatErrorMessage(new EmailUnconfirmedError(['SupabaseResend']))
+    ).toBe(UNCONFIRMED_MESSAGE);
   });
 
   it('names a network failure', () => {

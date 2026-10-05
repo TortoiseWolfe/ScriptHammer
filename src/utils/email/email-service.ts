@@ -3,11 +3,13 @@ import { Web3FormsProvider } from './providers/web3forms';
 import { EmailJSProvider } from './providers/emailjs';
 import {
   ContactFormData,
+  EmailDeliveryUnknownError,
   EmailProvider,
   EmailRefusedError,
   EmailResult,
   EmailServiceConfig,
   EmailServiceError,
+  EmailUnconfirmedError,
   EmailServiceOptions,
   ProviderStatus,
   RateLimitConfig,
@@ -110,6 +112,18 @@ export class EmailService {
           throw error;
         }
 
+        // The message may already have been delivered (#1322). The next provider
+        // has no way to recognise a copy, so failing over could send it twice.
+        // Tell the visitor the truth instead: pressing Send again is safe, because
+        // the contact function's idempotency key makes a resend of the same text a
+        // no-op. Not counted as a failure: nothing shows this provider is broken.
+        if (error instanceof EmailDeliveryUnknownError) {
+          logger.warn('Delivery could not be confirmed; not failing over', {
+            provider: provider.name,
+          });
+          throw new EmailUnconfirmedError([provider.name]);
+        }
+
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error';
 
@@ -168,7 +182,17 @@ export class EmailService {
     } catch (error) {
       // Resending a refused request gets the same refusal, and each attempt
       // spends one of the visitor's per-IP sends on the server (#1319).
-      if (retries <= 0 || error instanceof EmailRefusedError) {
+      //
+      // An unknown outcome is retried only without a Turnstile token (#1322). The
+      // first attempt spent the token, so a retry that carries it is refused as a
+      // failed challenge. A visitor whose message DID arrive would then be told to
+      // solve it again. Without a token, retrying is safe: the idempotency key makes
+      // a resend of the same text a no-op.
+      if (
+        retries <= 0 ||
+        error instanceof EmailRefusedError ||
+        (error instanceof EmailDeliveryUnknownError && data.captchaToken)
+      ) {
         throw error;
       }
 
