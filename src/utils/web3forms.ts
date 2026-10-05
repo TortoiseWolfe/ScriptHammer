@@ -2,7 +2,7 @@ import type {
   ContactFormData,
   Web3FormsResponse,
 } from '@/schemas/contact.schema';
-import { EmailRefusedError } from '@/utils/email/types';
+import { EmailRefusedError, EmailUnconfirmedError } from '@/utils/email/types';
 
 // Re-export the Web3FormsResponse type for external use
 export type { Web3FormsResponse };
@@ -309,7 +309,14 @@ export const formatErrorMessage = (error: Error): string => {
   // The contact function wrote a refusal's text for the visitor ("Please complete
   // the verification challenge…", "Too many messages…"), so it is shown as-is
   // (#1319). Every branch below would replace it with something vaguer.
-  if (error instanceof EmailRefusedError) {
+  //
+  // An unconfirmed send is shown as-is too (#1322). "Network error" or "try again
+  // later" would tell a visitor whose message may already have arrived that it
+  // failed. The honest sentence says resending is safe.
+  if (
+    error instanceof EmailRefusedError ||
+    error instanceof EmailUnconfirmedError
+  ) {
     return error.message;
   }
 

@@ -5,7 +5,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { EmailService } from './email-service';
 import { Web3FormsProvider } from './providers/web3forms';
 import { EmailJSProvider } from './providers/emailjs';
-import { EmailRefusedError } from './types';
+import {
+  EmailDeliveryUnknownError,
+  EmailRefusedError,
+  EmailUnconfirmedError,
+  UNCONFIRMED_MESSAGE,
+} from './types';
 import type { ContactFormData, EmailResult } from './types';
 
 // Mock providers
@@ -211,6 +216,53 @@ describe('EmailService', () => {
       // The provider answered, so it is healthy: no failure recorded against it.
       const status = await emailService.getStatus();
       expect(status.find((s) => s.name === 'Web3Forms')?.failures).toBe(0);
+    });
+
+    // (#1322) The message may already have arrived. Failing over could deliver a
+    // copy the next provider cannot recognise, so it never happens. The visitor is
+    // told the truth, and resending is safe because of the idempotency key.
+    describe('when delivery cannot be confirmed', () => {
+      const unknown = () =>
+        new EmailDeliveryUnknownError(
+          'Could not reach the contact function',
+          'Web3Forms'
+        );
+
+      it('never fails over, and says so in words the form shows as they are', async () => {
+        vi.mocked(mockWeb3Forms.send).mockRejectedValue(unknown());
+
+        const failure = await emailService.send(testData).catch((e) => e);
+        expect(failure).toBeInstanceOf(EmailUnconfirmedError);
+        expect(failure.message).toBe(UNCONFIRMED_MESSAGE);
+        expect(mockEmailJS.send).not.toHaveBeenCalled();
+
+        const status = await emailService.getStatus();
+        expect(status.find((s) => s.name === 'Web3Forms')?.failures).toBe(0);
+      });
+
+      // The first attempt spent the single-use token. A retry carrying it would
+      // be refused as a failed challenge, telling a visitor whose message arrived
+      // to solve it again.
+      it('does not retry when a Turnstile token was sent', async () => {
+        vi.mocked(mockWeb3Forms.send).mockRejectedValue(unknown());
+
+        await expect(
+          emailService.send({ ...testData, captchaToken: 'tok-1' })
+        ).rejects.toBeInstanceOf(EmailUnconfirmedError);
+        expect(mockWeb3Forms.send).toHaveBeenCalledTimes(1);
+      });
+
+      // Without a token a retry is safe: the same text maps to the same key.
+      it('retries when no token was sent, and still never fails over', async () => {
+        vi.mocked(mockWeb3Forms.send)
+          .mockRejectedValueOnce(unknown())
+          .mockResolvedValueOnce(mockResult);
+
+        const result = await emailService.send(testData);
+        expect(result.provider).toBe('Web3Forms');
+        expect(mockWeb3Forms.send).toHaveBeenCalledTimes(2);
+        expect(mockEmailJS.send).not.toHaveBeenCalled();
+      });
     });
   });
 

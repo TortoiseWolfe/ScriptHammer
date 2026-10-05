@@ -81,6 +81,72 @@ export function captchaTokenFrom(body: Record<string, unknown>): string | null {
   return trimmed;
 }
 
+/**
+ * Resend's `Idempotency-Key` for a message, derived from its content (#1322).
+ *
+ * WHY CONTENT, NOT A KEY THE BROWSER SENDS. `fetch` cannot tell "never arrived" from "arrived,
+ * sent, and the response was lost", so a visitor may resend a message that was delivered. A
+ * client-chosen key fails the case that matters most: with Turnstile on, a resend needs a fresh
+ * single-use token and a fresh submit, and nothing ties that submit to the first one but its
+ * text. Hashing the text makes every resend of the same message within Resend's 24-hour window
+ * return the original response without sending — automatic retries and a visitor pressing Send
+ * again alike — with nothing stored here.
+ *
+ * WHY NOT THE TOKEN. Keying on `sha256(captchaToken)` and replaying a spent token was considered
+ * and rejected: Turnstile reports a spent and an expired token the same way, so an old token would
+ * stay good for one send per 24 hours indefinitely, which is the expiry Turnstile exists to give.
+ *
+ * Global Web Crypto only, so this file still imports nothing.
+ */
+export async function idempotencyKeyFor(fields: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+}): Promise<string> {
+  const canonical = JSON.stringify([
+    fields.name,
+    fields.email,
+    fields.subject,
+    fields.message,
+  ]);
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(canonical)
+  );
+  const hex = Array.from(new Uint8Array(digest), (b) =>
+    b.toString(16).padStart(2, '0')
+  ).join('');
+  return `contact-message/${hex}`;
+}
+
+export type ResendOutcome = 'sent' | 'already-sent' | 'in-flight' | 'rejected';
+
+/**
+ * Read Resend's answer to a send that carried an `Idempotency-Key` (#1322).
+ *
+ * Both 409s are about THIS content having been sent before, and neither delivers a second copy:
+ * `invalid_idempotent_request` means the same key arrived with a different payload — the same
+ * text, sent earlier through a different origin's footer — so the message was already delivered.
+ * `concurrent_idempotent_requests` means the first send is still in progress, so the outcome is
+ * not known yet. Anything else that is not OK is a rejection, as before.
+ */
+export function resendOutcome(
+  ok: boolean,
+  status: number,
+  json: unknown
+): ResendOutcome {
+  if (ok) return 'sent';
+  const name = (json as { name?: unknown } | null)?.name;
+  if (status === 409 && name === 'invalid_idempotent_request') {
+    return 'already-sent';
+  }
+  if (status === 409 && name === 'concurrent_idempotent_requests') {
+    return 'in-flight';
+  }
+  return 'rejected';
+}
+
 export type CaptchaVerdict = 'pass' | 'rejected' | 'unavailable';
 
 /**
