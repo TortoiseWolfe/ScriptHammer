@@ -35,7 +35,15 @@ export interface UseWeb3FormsOptions {
  * Hook return type
  */
 export interface UseWeb3FormsReturn {
-  submitForm: (data: ContactFormData) => Promise<void>;
+  /**
+   * `captchaToken` is the Turnstile token when the form rendered the widget
+   * (#1319). It is forwarded on the online path only: a queued message is
+   * replayed later, long after a single-use, five-minute token has expired.
+   */
+  submitForm: (
+    data: ContactFormData,
+    captchaToken?: string | null
+  ) => Promise<void>;
   validateBeforeSubmit: (data: ContactFormData) => Promise<boolean>;
   reset: () => void;
   isSubmitting: boolean;
@@ -179,7 +187,10 @@ export const useWeb3Forms = (
    * Submit form data
    */
   const submitForm = useCallback(
-    async (data: ContactFormData): Promise<void> => {
+    async (
+      data: ContactFormData,
+      captchaToken?: string | null
+    ): Promise<void> => {
       // Reset previous state
       reset();
 
@@ -221,6 +232,7 @@ export const useWeb3Forms = (
           email: data.email,
           subject: data.subject,
           message: data.message,
+          ...(captchaToken ? { captchaToken } : {}),
         };
 
         const result = await emailService.send(emailData);

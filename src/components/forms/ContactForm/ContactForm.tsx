@@ -6,7 +6,10 @@ import { useWeb3Forms } from '@/hooks/useWeb3Forms';
 import { type Web3FormsResponse } from '@/utils/web3forms';
 import { contactSchema, type ContactFormData } from '@/schemas/contact.schema';
 import { projectConfig } from '@/config/project.config';
-import { useEffect } from 'react';
+import CaptchaWidget, {
+  type CaptchaWidgetHandle,
+} from '@/components/auth/CaptchaWidget';
+import { useEffect, useRef, useState } from 'react';
 
 export interface ContactFormProps {
   className?: string;
@@ -58,13 +61,28 @@ export const ContactForm: React.FC<ContactFormProps> = ({
   // Watch honeypot field
   const honeypotValue = watch('_gotcha');
 
+  // (#1319) The same Turnstile challenge sign-up uses (#353). Null until it
+  // solves, and always null when no site key is configured.
+  //
+  // There is deliberately NO client-side "solve it first" gate, unlike sign-up.
+  // The contact function is the enforcement point and answers a missing token
+  // with the same sentence such a gate would show, so a second copy here would
+  // only add a way for the two to disagree.
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const captchaRef = useRef<CaptchaWidgetHandle>(null);
+
   const onSubmit = async (data: ContactFormData) => {
     // Check honeypot
     if (data._gotcha) {
       return;
     }
 
-    await submitForm(data);
+    await submitForm(data, captchaToken);
+
+    // A Turnstile token is single-use, so whatever happened it is spent:
+    // delivered, refused, or queued offline. Re-issue one so the next message
+    // (or a retry) carries its own.
+    captchaRef.current?.reset();
   };
 
   // Reset form on success
@@ -364,6 +382,15 @@ export const ContactForm: React.FC<ContactFormProps> = ({
             <span>Bot detected</span>
           </div>
         )}
+
+        {/* (#1319) Bot protection. Renders nothing when no site key is set, and
+            stays out of sight (and the tab order) unless Cloudflare asks for a
+            human — see CaptchaWidget's `appearance`. */}
+        <CaptchaWidget
+          ref={captchaRef}
+          onToken={setCaptchaToken}
+          appearance="interaction-only"
+        />
 
         {/* Submit Button */}
         <div className="mt-6">

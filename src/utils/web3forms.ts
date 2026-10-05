@@ -2,6 +2,7 @@ import type {
   ContactFormData,
   Web3FormsResponse,
 } from '@/schemas/contact.schema';
+import { EmailRefusedError } from '@/utils/email/types';
 
 // Re-export the Web3FormsResponse type for external use
 export type { Web3FormsResponse };
@@ -305,6 +306,13 @@ export const clearRateLimitHistory = (): void => {
  * Format error message for user display
  */
 export const formatErrorMessage = (error: Error): string => {
+  // The contact function wrote a refusal's text for the visitor ("Please complete
+  // the verification challenge…", "Too many messages…"), so it is shown as-is
+  // (#1319). Every branch below would replace it with something vaguer.
+  if (error instanceof EmailRefusedError) {
+    return error.message;
+  }
+
   const message = error.message.toLowerCase();
 
   if (message.includes('network')) {

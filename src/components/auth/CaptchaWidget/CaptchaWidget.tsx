@@ -12,6 +12,15 @@ export interface CaptchaWidgetProps {
    * single-use and short-lived.
    */
   onToken: (token: string | null) => void;
+  /**
+   * When the widget is visible. `always` (the default, and what sign-up uses)
+   * shows it from load. `interaction-only` keeps it hidden — out of the layout
+   * AND out of the tab order — unless Cloudflare actually wants the visitor to
+   * do something, which is the right trade on a form most people use once
+   * (/contact/, #1319). Visible, it is a control like any other and takes its
+   * tab stop between the last field and submit.
+   */
+  appearance?: 'always' | 'interaction-only';
   /** Additional CSS classes */
   className?: string;
 }
@@ -46,7 +55,10 @@ export interface CaptchaWidgetHandle {
  * @category auth
  */
 const CaptchaWidget = forwardRef<CaptchaWidgetHandle, CaptchaWidgetProps>(
-  function CaptchaWidget({ onToken, className = '' }, ref) {
+  function CaptchaWidget(
+    { onToken, appearance = 'always', className = '' },
+    ref
+  ) {
     const instance = useRef<TurnstileInstance>(null);
 
     useImperativeHandle(ref, () => ({
@@ -100,7 +112,7 @@ const CaptchaWidget = forwardRef<CaptchaWidgetHandle, CaptchaWidgetProps>(
           // would reject with a confusing error.
           onExpire={() => onToken(null)}
           onError={() => onToken(null)}
-          options={{ theme: 'auto', size: 'compact' }}
+          options={{ theme: 'auto', size: 'compact', appearance }}
         />
       </div>
     );

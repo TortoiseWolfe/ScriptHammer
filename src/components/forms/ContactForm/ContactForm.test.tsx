@@ -9,6 +9,30 @@ vi.mock('@/hooks/useWeb3Forms', () => ({
   useWeb3Forms: vi.fn(),
 }));
 
+// (#1319) Turnstile is OFF by default here, as it is for every fork and local
+// dev; the one test that turns it on restores this in `finally`. siteKey is
+// widened so that test can set one.
+const mockCaptcha = vi.hoisted(() => ({
+  captchaConfig: {
+    provider: 'turnstile',
+    siteKey: undefined as string | undefined,
+    enabled: false,
+  },
+}));
+vi.mock('@/config/captcha.config', () => mockCaptcha);
+
+vi.mock('@marsidev/react-turnstile', () => ({
+  Turnstile: ({ onSuccess }: { onSuccess: (t: string) => void }) => (
+    <button
+      type="button"
+      data-testid="turnstile-stub"
+      onClick={() => onSuccess('tok-abc')}
+    >
+      solve
+    </button>
+  ),
+}));
+
 describe('ContactForm', () => {
   const mockSubmitForm = vi.fn();
   const mockReset = vi.fn();
@@ -212,15 +236,70 @@ describe('ContactForm', () => {
         // Submit form
         await user.click(submitButton);
 
+        // `null`: no site key in this suite's default config, so no widget and no
+        // token (#1319) — the path every fork and local dev takes.
         await waitFor(() => {
-          expect(mockSubmitForm).toHaveBeenCalledWith({
-            name: 'John Doe',
-            email: 'john@example.com',
-            subject: 'Test Subject',
-            message: 'This is a test message',
-            _gotcha: '',
-          });
+          expect(mockSubmitForm).toHaveBeenCalledWith(
+            {
+              name: 'John Doe',
+              email: 'john@example.com',
+              subject: 'Test Subject',
+              message: 'This is a test message',
+              _gotcha: '',
+            },
+            null
+          );
         });
+      });
+
+      // (#1319) The contact function verifies this token when TURNSTILE_SECRET is
+      // set, so a form that rendered the widget but dropped the token would be
+      // refused on every submit. And tokens are single-use: the second submit must
+      // NOT replay the first one's, which is what the reset is for.
+      it('sends the Turnstile token, then re-issues one for the next submit', async () => {
+        mockCaptcha.captchaConfig = {
+          provider: 'turnstile',
+          siteKey: '0xTEST',
+          enabled: true,
+        };
+        try {
+          const user = userEvent.setup();
+          render(<ContactForm />);
+
+          await user.type(screen.getByLabelText(/full name/i), 'Ada');
+          await user.type(
+            screen.getByLabelText(/email address/i),
+            'ada@lovelace.dev'
+          );
+          await user.type(screen.getByLabelText(/subject/i), 'Engines');
+          await user.type(
+            screen.getByLabelText(/message/i),
+            'About the analytical engine.'
+          );
+          await user.click(screen.getByTestId('turnstile-stub'));
+
+          const send = screen.getByRole('button', { name: /send message/i });
+          await user.click(send);
+          await waitFor(() =>
+            expect(mockSubmitForm).toHaveBeenLastCalledWith(
+              expect.objectContaining({ email: 'ada@lovelace.dev' }),
+              'tok-abc'
+            )
+          );
+
+          await user.click(send);
+          await waitFor(() => expect(mockSubmitForm).toHaveBeenCalledTimes(2));
+          expect(mockSubmitForm).toHaveBeenLastCalledWith(
+            expect.objectContaining({ email: 'ada@lovelace.dev' }),
+            null
+          );
+        } finally {
+          mockCaptcha.captchaConfig = {
+            provider: 'turnstile',
+            siteKey: undefined,
+            enabled: false,
+          };
+        }
       });
 
       it('should show loading state during submission', async () => {

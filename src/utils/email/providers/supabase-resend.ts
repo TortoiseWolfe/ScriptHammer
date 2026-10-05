@@ -3,6 +3,7 @@ import {
   EmailProvider,
   EmailResult,
   EmailProviderError,
+  EmailRefusedError,
 } from '../types';
 
 /**
@@ -27,6 +28,15 @@ import {
  */
 
 const FUNCTION_PATH = '/functions/v1/contact-message';
+
+/**
+ * The statuses the contact function itself uses to say "not this submission":
+ * 400 invalid fields, 403 a failed challenge or a foreign origin, 429 the per-IP
+ * limit. Each is final for this request (see EmailRefusedError). 401 is absent
+ * on purpose — that is the gateway rejecting OUR key, a configuration fault a
+ * fallback provider may well survive.
+ */
+const REFUSALS = new Set([400, 403, 429]);
 
 function endpoint(): string | null {
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -71,6 +81,7 @@ export class SupabaseResendProvider implements EmailProvider {
           email: data.email,
           subject: data.subject,
           message: data.message,
+          ...(data.captchaToken ? { captchaToken: data.captchaToken } : {}),
         }),
       });
     } catch (error) {
@@ -88,13 +99,19 @@ export class SupabaseResendProvider implements EmailProvider {
       .catch(() => ({}) as Record<string, unknown>);
 
     if (!response.ok || result?.success !== true) {
-      throw new EmailProviderError(
+      const message =
         typeof result?.error === 'string'
           ? result.error
-          : `Contact function returned ${response.status}`,
-        this.name,
-        result
-      );
+          : `Contact function returned ${response.status}`;
+      if (REFUSALS.has(response.status)) {
+        throw new EmailRefusedError(
+          message,
+          this.name,
+          response.status,
+          result
+        );
+      }
+      throw new EmailProviderError(message, this.name, result);
     }
 
     return {

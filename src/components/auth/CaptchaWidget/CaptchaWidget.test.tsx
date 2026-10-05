@@ -13,17 +13,23 @@ vi.mock('@marsidev/react-turnstile', () => ({
     onSuccess,
     onExpire,
     onError,
+    options,
     ref,
   }: {
     siteKey: string;
     onSuccess: (t: string) => void;
     onExpire: () => void;
     onError: () => void;
+    options?: { appearance?: string };
     ref?: { current: { reset: () => void } | null };
   }) => {
     if (ref) ref.current = { reset: mockReset };
     return (
-      <div data-testid="turnstile-stub" data-sitekey={siteKey}>
+      <div
+        data-testid="turnstile-stub"
+        data-sitekey={siteKey}
+        data-appearance={options?.appearance}
+      >
         <button onClick={() => onSuccess('tok-abc')}>solve</button>
         <button onClick={() => onExpire()}>expire</button>
         <button onClick={() => onError()}>error</button>
@@ -67,6 +73,26 @@ describe('CaptchaWidget', () => {
     expect(screen.getByTestId('turnstile-stub')).toHaveAttribute(
       'data-sitekey',
       '0x-site-key'
+    );
+  });
+
+  // (#1319) Sign-up keeps the always-visible widget; /contact/ asks for
+  // `interaction-only`, which Cloudflare renders at zero height and out of the
+  // tab order unless it needs the visitor. Measured against the always-pass
+  // test key: `always` took the Tab stop after the message field, this did not.
+  it('shows the widget always by default, and passes interaction-only through', () => {
+    configure('0x-site-key');
+    const { unmount } = render(<CaptchaWidget onToken={vi.fn()} />);
+    expect(screen.getByTestId('turnstile-stub')).toHaveAttribute(
+      'data-appearance',
+      'always'
+    );
+    unmount();
+
+    render(<CaptchaWidget onToken={vi.fn()} appearance="interaction-only" />);
+    expect(screen.getByTestId('turnstile-stub')).toHaveAttribute(
+      'data-appearance',
+      'interaction-only'
     );
   });
 

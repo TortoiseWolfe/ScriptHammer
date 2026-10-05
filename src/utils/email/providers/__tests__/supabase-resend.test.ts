@@ -10,7 +10,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SupabaseResendProvider } from '../supabase-resend';
-import { EmailProviderError } from '../../types';
+import { EmailProviderError, EmailRefusedError } from '../../types';
 
 const DATA = {
   name: 'Ada',
@@ -110,4 +110,70 @@ describe('SupabaseResendProvider', () => {
       EmailProviderError
     );
   });
+
+  // (#1319) The function checks the token with Cloudflare when TURNSTILE_SECRET is
+  // set. Dropped here, every submission from a page with the widget is refused.
+  it('forwards the Turnstile token, and sends no key at all without one', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, id: 'msg_1' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await new SupabaseResendProvider().send({ ...DATA, captchaToken: 'tok-1' });
+    await new SupabaseResendProvider().send(DATA);
+
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).captchaToken).toBe(
+      'tok-1'
+    );
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).not.toHaveProperty(
+      'captchaToken'
+    );
+  });
+
+  // A refusal must be distinguishable from a broken provider, or EmailService
+  // retries it and fails over to a provider that skips the check (#1319).
+  it.each([400, 403, 429])(
+    'reports a %i as a REFUSAL carrying the function’s own message',
+    async (status) => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status,
+          json: async () => ({ error: 'Please complete the challenge.' }),
+        })
+      );
+
+      const failure = await new SupabaseResendProvider()
+        .send(DATA)
+        .catch((e: unknown) => e);
+      expect(failure).toBeInstanceOf(EmailRefusedError);
+      expect((failure as EmailRefusedError).status).toBe(status);
+      expect((failure as Error).message).toBe('Please complete the challenge.');
+    }
+  );
+
+  // 401 is the gateway refusing OUR anon key: a configuration fault, not a verdict
+  // on the visitor, and a fallback provider may well survive it.
+  it.each([401, 500, 502, 503])(
+    'reports a %i as an ordinary provider failure, not a refusal',
+    async (status) => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status,
+          json: async () => ({ error: 'nope' }),
+        })
+      );
+
+      const failure = await new SupabaseResendProvider()
+        .send(DATA)
+        .catch((e: unknown) => e);
+      expect(failure).toBeInstanceOf(EmailProviderError);
+      expect(failure).not.toBeInstanceOf(EmailRefusedError);
+    }
+  );
 });

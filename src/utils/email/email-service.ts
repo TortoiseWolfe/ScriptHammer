@@ -4,6 +4,7 @@ import { EmailJSProvider } from './providers/emailjs';
 import {
   ContactFormData,
   EmailProvider,
+  EmailRefusedError,
   EmailResult,
   EmailServiceConfig,
   EmailServiceError,
@@ -97,6 +98,18 @@ export class EmailService {
         });
         return result;
       } catch (error) {
+        // A refusal is an answer about THIS submission, not a broken provider
+        // (#1319). Failing over would hand it to a provider that never runs the
+        // check that refused it, and the provider is healthy, so its failure
+        // count stays where it is.
+        if (error instanceof EmailRefusedError) {
+          logger.info('Provider refused the submission', {
+            provider: provider.name,
+            status: error.status,
+          });
+          throw error;
+        }
+
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error';
 
@@ -153,7 +166,9 @@ export class EmailService {
     try {
       return await provider.send(data);
     } catch (error) {
-      if (retries <= 0) {
+      // Resending a refused request gets the same refusal, and each attempt
+      // spends one of the visitor's per-IP sends on the server (#1319).
+      if (retries <= 0 || error instanceof EmailRefusedError) {
         throw error;
       }
 

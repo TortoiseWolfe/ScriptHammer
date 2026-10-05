@@ -3,6 +3,12 @@ export interface ContactFormData {
   email: string;
   subject: string;
   message: string;
+  /**
+   * A Turnstile token, when the page rendered the widget (#1319). Only the
+   * Supabase provider forwards it; the contact function checks it with
+   * Cloudflare when `TURNSTILE_SECRET` is set.
+   */
+  captchaToken?: string;
 }
 
 export interface EmailResult {
@@ -54,6 +60,28 @@ export class EmailProviderError extends Error {
   ) {
     super(message);
     this.name = 'EmailProviderError';
+  }
+}
+
+/**
+ * The provider answered, and the answer is NO: the submission itself was
+ * refused (invalid, a failed challenge, rate limited), not the delivery path
+ * (#1319).
+ *
+ * Retrying sends the same refused request again, and failing over hands it to a
+ * provider that never runs the check that refused it. So EmailService does
+ * neither, and the message — written by the contact function for a visitor — is
+ * shown as it is.
+ */
+export class EmailRefusedError extends EmailProviderError {
+  constructor(
+    message: string,
+    provider: string,
+    public status: number,
+    originalError?: unknown
+  ) {
+    super(message, provider, originalError);
+    this.name = 'EmailRefusedError';
   }
 }
 
