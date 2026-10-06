@@ -19,6 +19,53 @@ import { dismissCookieBanner } from '../utils/test-user-factory';
  * locally.
  */
 test.describe('Contact form - message saved offline', () => {
+  // A visitor who opens the page offline also fails to load Cloudflare's script. The
+  // library never re-injects a script whose element exists, so before the fix no token
+  // ever arrived and the card said "Sending..." forever (measured on production, #1321).
+  // Builds without a site key render no widget, and this then runs the plain path.
+  test('still sends when the spam-check script failed to load while offline', async ({
+    page,
+    context,
+  }) => {
+    const delivered: Record<string, unknown>[] = [];
+    await page.route('**/functions/v1/contact-message', async (route) => {
+      delivered.push(route.request().postDataJSON() as Record<string, unknown>);
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, id: 'e2e-stub' }),
+      });
+    });
+    await page.route('**/api.web3forms.com/**', (route) =>
+      route.fulfill({ status: 200, body: '{"success":true}' })
+    );
+    // The script request fails exactly as it does with no connection.
+    await page.route('https://challenges.cloudflare.com/**', (route) =>
+      route.abort('internetdisconnected')
+    );
+
+    await page.goto('/contact');
+    await dismissCookieBanner(page);
+    await context.setOffline(true);
+    await page.locator('#name').fill('Offline Visitor');
+    await page.locator('#email').fill('offline@example.com');
+    await page.locator('#subject').fill('Opened with no signal');
+    await page
+      .locator('#message')
+      .fill('The page itself was opened offline, so the check never loaded.');
+    await page.getByRole('button', { name: /queue for later/i }).click();
+    await expect(page.getByText(/saved on this device/i)).toBeVisible();
+
+    await page.unroute('https://challenges.cloudflare.com/**');
+    await context.setOffline(false);
+
+    await expect(page.getByText(/your saved message was sent/i)).toBeVisible({
+      timeout: 30_000,
+    });
+    expect(delivered).toHaveLength(1);
+    expect(delivered[0]).toMatchObject({ subject: 'Opened with no signal' });
+  });
+
   test('is sent once the connection is back, and the visitor sees that', async ({
     page,
     context,

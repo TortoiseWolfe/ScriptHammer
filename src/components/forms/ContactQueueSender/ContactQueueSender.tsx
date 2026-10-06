@@ -128,9 +128,13 @@ export default function ContactQueueSender() {
 
   if (phase === 'idle') return null;
 
+  // TOP right, under the nav. Not the bottom: the cookie banner is a full-width
+  // bar fixed there above everything (z-[60]), and on production it covered this
+  // card, including the "Verify you are human" checkbox a visitor might need to
+  // click (#1321, seen on the live site).
   return (
     <div
-      className="card bg-base-100 border-base-300 fixed right-4 bottom-4 z-40 w-[min(22rem,calc(100vw-2rem))] border shadow-lg"
+      className="card bg-base-100 border-base-300 fixed top-20 right-4 z-40 w-[min(22rem,calc(100vw-2rem))] border shadow-lg"
       data-testid="contact-queue-sender"
     >
       <div className="card-body gap-3 p-4" role="status" aria-live="polite">
