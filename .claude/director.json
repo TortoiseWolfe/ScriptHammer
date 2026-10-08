@@ -1,0 +1,24 @@
+{
+  "_comment": [
+    "Checks for ~/.claude/workflows/director.js, modelled on geolarp's; run each from a worktree root.",
+    "All four were proven green (exit 0) on origin/main 66329bfc (2026-10-08), each run one at a time as bash -c of its exact string.",
+    "Wall times on that commit with a warm Docker cache: CHECK_IMAGE 72s (a cold image build took roughly ten minutes), CHECK_STATIC 126s, CHECK_UNIT 82s (523 files, 5868 tests passed), CHECK_BUILD 85s.",
+    "Where Docker's credential helper can't run (WSL interop off), prefix each with `export DOCKER_CONFIG=<dir with {\"auths\":{}}>;`.",
+    "Empty .env: compose requires env_file .env; CI runs this job without secrets (Supabase is mocked), so the checks do too. Never copy the real .env into a worktree.",
+    "-v $G:$G:ro: a worktree's .git points into the main repo's git dir, which the git-reading tests need readable. Read-only, and `--ignore-scripts` skips `prepare`, which would otherwise write core.hooksPath into the shared config and race between parallel checks.",
+    "GIT_AUTHOR_*: compose sets GIT_COMMITTER_NAME=${GIT_AUTHOR_NAME}, which is empty when unset and breaks the hook tests' temp commits.",
+    "-v /app/node_modules -v /app/.next: throwaway volumes per run, seeded from the image, so parallel worktrees never share state. -p scripthammer-wf keeps one image for all worktrees and never touches the dev stack's volumes.",
+    "CHECK_UNIT runs pnpm test:coverage as CI does, so the coverage thresholds in vitest.config.ts gate it. CHECK_BUILD uses CI's NEXT_PUBLIC_DEPLOY_URL (https://scripthammer.com) so the generated robots.txt matches the committed one, and fails if the build leaves tracked changes.",
+    "NOT covered: Storybook build, Playwright E2E (both lanes), Pa11y and the accessibility workflow, component-structure and conformance workflows, the RLS and contract tests, and everything that needs a real Supabase or Cloudflare; the green checks say nothing about those."
+  ],
+  "base": "origin/main",
+  "panel": {
+    "class": "public"
+  },
+  "checks": {
+    "CHECK_STATIC": "[ -f .env ] || : > .env; G=$(git rev-parse --path-format=absolute --git-common-dir); GIT_AUTHOR_NAME=director-check GIT_AUTHOR_EMAIL=director-check@localhost docker compose -p scripthammer-wf run --rm --no-deps -T -v /app/node_modules -v /app/.next -v \"$G\":\"$G\":ro -e NEXT_PUBLIC_DEPLOY_URL=https://scripthammer.com --entrypoint sh scripthammer -c 'set -e; pnpm install --frozen-lockfile --ignore-scripts --prefer-offline; node scripts/detect-project.js >/dev/null; pnpm lint; pnpm type-check; pnpm validate:breakpoints; pnpm test:scripts; ./tests/rebrand/test-rebrand.sh; ./tests/appstore/test-claim-app-store.sh; pnpm check:icons; echo STATIC_OK'",
+    "CHECK_UNIT": "[ -f .env ] || : > .env; G=$(git rev-parse --path-format=absolute --git-common-dir); GIT_AUTHOR_NAME=director-check GIT_AUTHOR_EMAIL=director-check@localhost docker compose -p scripthammer-wf run --rm --no-deps -T -v /app/node_modules -v /app/.next -v \"$G\":\"$G\":ro -e NEXT_PUBLIC_DEPLOY_URL=https://scripthammer.com --entrypoint sh scripthammer -c 'set -e; pnpm install --frozen-lockfile --ignore-scripts --prefer-offline; node scripts/detect-project.js >/dev/null; pnpm test:coverage; echo UNIT_OK'",
+    "CHECK_BUILD": "[ -f .env ] || : > .env; G=$(git rev-parse --path-format=absolute --git-common-dir); GIT_AUTHOR_NAME=director-check GIT_AUTHOR_EMAIL=director-check@localhost docker compose -p scripthammer-wf run --rm --no-deps -T -v /app/node_modules -v /app/.next -v \"$G\":\"$G\":ro -e NEXT_PUBLIC_DEPLOY_URL=https://scripthammer.com --entrypoint sh scripthammer -c 'set -e; pnpm install --frozen-lockfile --ignore-scripts --prefer-offline; node scripts/detect-project.js >/dev/null; pnpm build; echo BUILD_OK' && git diff --exit-code --stat",
+    "CHECK_IMAGE": "[ -f .env ] || : > .env; docker compose -p scripthammer-wf build scripthammer"
+  }
+}
