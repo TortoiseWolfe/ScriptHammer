@@ -7,7 +7,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { usePaymentConsent } from './usePaymentConsent';
-import { createPaymentIntent } from '@/lib/payments/payment-service';
+import {
+  createPaymentIntent,
+  retryFailedPayment,
+} from '@/lib/payments/payment-service';
 import {
   createCheckoutSession as createStripeCheckout,
   createSubscriptionCheckout,
@@ -43,10 +46,14 @@ export interface UsePaymentButtonOptions {
   description?: string;
   metadata?: Record<string, unknown>;
   /**
-   * Link to a previous failed intent when this payment is part of a
-   * recovery flow (provider switch). Plumbed through to
-   * `createPaymentIntent` so the audit chain via `parent_intent_id` is
-   * preserved across providers.
+   * The declined intent, when this payment is a second attempt at it (the
+   * provider switch, #1337). The intent is then created by create-order's
+   * RETRY branch, not as a new purchase: it copies the parent's amount,
+   * currency and buyer, writes no second order, and links the child by
+   * `parent_intent_id`, which the webhook and the return page follow back to
+   * the purchase's order (#1308). The server's refusals apply too: a chain
+   * already paid (#1338), the retry cap, expiry, and the cooling period.
+   * `productId` is not needed on this path.
    */
   parentIntentId?: string;
   onSuccess?: (paymentIntentId: string) => void;
@@ -137,22 +144,28 @@ export function usePaymentButton(
   };
 
   // Shared: create the Supabase payment_intent that both providers build on.
+  //
+  // A second attempt at a declined payment is a RETRY of it, not a new purchase
+  // (#1337). Sent through createPaymentIntent it needed a product id the switch
+  // panel never has, so every switch threw before anything was created; and a new
+  // purchase would have written a second order for one payment.
   const newIntent = () =>
-    createPaymentIntent(
-      options.amount,
-      options.currency,
-      options.type,
-      options.customerEmail,
-      {
-        description: options.description,
-        metadata: options.metadata,
-        parent_intent_id: options.parentIntentId,
-        // REQUIRED now (#559 T025). The browser no longer writes payment_intents, so
-        // create-order prices the intent from this SKU; `amount` above is a request
-        // honoured only for a variable-amount row, within its bounds.
-        product_id: options.productId,
-      }
-    );
+    options.parentIntentId
+      ? retryFailedPayment(options.parentIntentId)
+      : createPaymentIntent(
+          options.amount,
+          options.currency,
+          options.type,
+          options.customerEmail,
+          {
+            description: options.description,
+            metadata: options.metadata,
+            // REQUIRED now (#559 T025). The browser no longer writes payment_intents,
+            // so create-order prices the intent from this SKU; `amount` above is a
+            // request honoured only for a variable-amount row, within its bounds.
+            product_id: options.productId,
+          }
+        );
 
   // Stripe path: one_time creates an intent then redirects to hosted
   // Checkout; recurring goes straight to subscription-mode Checkout on the

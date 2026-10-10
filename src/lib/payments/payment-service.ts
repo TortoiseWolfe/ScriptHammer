@@ -118,13 +118,10 @@ export async function createPaymentIntent(
     interval?: PaymentInterval;
     description?: string;
     metadata?: Record<string, unknown>;
-    /**
-     * Link to the original payment intent when this intent is created as
-     * part of a recovery flow (provider switch after a decline). Preserves
-     * the audit chain across providers without changing the offline-queue
-     * path. Optional; omitted for normal first-attempt payments.
-     */
-    parent_intent_id?: string;
+    // No parent_intent_id here (#1337). It used to be accepted and silently dropped:
+    // this function starts a NEW purchase, and create-order never read a parent from
+    // it. A second attempt at a declined intent is retryFailedPayment(), whose retry
+    // branch copies the parent and links the child itself.
     /**
      * Catalog SKU. REQUIRED (#559 T025).
      *

@@ -13,7 +13,7 @@ const meta: Meta<typeof SwitchProviderPanel> = {
     docs: {
       description: {
         component:
-          'Renders inside the failed-state block on /payment-result. Lets the user switch payment provider after a card decline. Reuses PaymentButton; preserves audit chain via parent_intent_id.',
+          'Renders inside the failed-state block on /payment-result. Lets the user switch payment provider after a card decline. Reuses PaymentButton, which creates the new intent as a retry of the declined one (#1337): same amount, no second order, linked by parent_intent_id.',
       },
     },
   },
