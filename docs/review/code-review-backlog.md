@@ -18,7 +18,7 @@ could not see (deployed config, live data).
 
 ## Summary
 
-**78 open findings: 3 P0, 18 P1, 37 P2, 20 P3.** The review found 83. Five have since been fixed and deleted, per the rule above: the Tip Jar preview (#1306, by #1328), the offline contact form (#1324), the `useOfflineQueue` sync loop and the PWAInstall re-registration (#1262, with this file's PR), and the 1000-row liveness sample (#1330). Every tier below has been reviewed once. Every
+**75 open findings: 1 P0, 17 P1, 37 P2, 20 P3.** The review found 83. Eight have since been fixed and deleted, per the rule above: the Tip Jar preview (#1306, by #1328), the offline contact form (#1324), the `useOfflineQueue` sync loop and the PWAInstall re-registration (#1262), the 1000-row liveness sample (#1330), the webhook dedupe (#1307, by #1335 and #1336), the PayPal subscription CHECK values (#1336), and the paid retry that never advanced its order (#1308). Every tier below has been reviewed once. Every
 reviewer only read code, traced each finding in the code before reporting it, and dropped
 anything it could not substantiate. Nothing here has been reproduced in a running app.
 
@@ -51,23 +51,6 @@ Themes worth fixing as a class rather than one by one:
 ## Backlog
 
 ## P0
-
-### #1307 — Webhooks dedupe before processing, so a failed payment event is never retried
-
-- **Where:** `supabase/functions/stripe-webhook/index.ts:116-127`, `supabase/functions/paypal-webhook/index.ts:85-97`, `supabase/functions/calcom-webhook/index.ts:95`
-- **Defect:** The `webhook_events` row is inserted with `processed=false` before the handler runs, and the duplicate check tests only whether the row exists.
-- **Failure scenario:** A transient DB error in `handlePaymentIntentSucceeded` returns 500. The provider retries, gets 200 "already processed", and the `payment_results` row and order advance are lost for good. `check-webhook-liveness.mjs` only reports these rows.
-- **Fix:** Short-circuit only when `processed=true`. Re-run or compare-and-swap-claim rows that are still `processed=false`.
-- **Confidence:** confirmed
-
-### #1308 — A paid retry intent never advances its order or sends the receipt
-
-- **Where:** `supabase/functions/create-order/index.ts:134` (retry branch), `supabase/functions/_shared/advance-order.ts`
-- **Defect:** A retry inserts a child `payment_intents` row but no `orders` row, and `advanceOrderAndNotify` looks orders up only by `intent_id = child.id`.
-- **Failure scenario:** After a failed first attempt the buyer retries and pays. The webhook logs "no order for intent", the order stays `pending`, no receipt is sent, and admin shows a paid order as unpaid.
-- **Fix:** Resolve the order through `parent_intent_id` to the root intent, or re-point the order when the retry is created.
-- **Confidence:** confirmed
-- **Severity note:** Raised from P1 to P0, because the buyer is charged and the order is never fulfilled.
 
 ### #1309 — Account deletion fails for anyone who ever started a checkout, after keys are already wiped
 
@@ -120,7 +103,7 @@ Themes worth fixing as a class rather than one by one:
 - **Fix:** On a change, derive keys with the old password and `rotateKeys(newPassword)`. After a reset, offer an explicit "reset messaging keys" path, and have the unlock modal detect this state.
 - **Confidence:** confirmed
 
-### "Use a different payment method" always fails: SwitchProviderPanel sends no productId
+### #1337 — "Use a different payment method" always fails: SwitchProviderPanel sends no productId
 
 - **Where:** `src/components/payment/SwitchProviderPanel/SwitchProviderPanel.tsx:158-167`
 - **Defect:** `<PaymentButton>` is rendered without `productId`, and `getParentIntentForRetry` doesn't select `product_id`. `createPaymentIntent` (`src/lib/payments/payment-service.ts:149-153`) then throws "A product_id is required…". `parent_intent_id` is also no longer forwarded to create-order.
@@ -176,14 +159,6 @@ Themes worth fixing as a class rather than one by one:
 - **Failure scenario:** Anonymous access to `/payment-demo`, or cross-user rows in payment history, ship green. Only the DB-level `tests/rls/payment-rls.test.ts` remains, and it can't see a client or query leak.
 - **Fix:** Use a fresh context with no storageState and assert the redirect. Seed a payment for user B and assert it is absent for A.
 - **Confidence:** confirmed
-
-### PayPal subscription webhook writes values the CHECK constraints reject
-
-- **Where:** `supabase/functions/paypal-webhook/index.ts:361`, `:365`, `:481`
-- **Defect:** `plan_interval` comes from `tenure_type` (`'regular'`/`'trial'`), which is not in `('month','year')`. `plan_amount` falls back to `0`, which fails `>= 100`. `APPROVAL_PENDING` maps to `'pending'`, which is not in the status CHECK.
-- **Failure scenario:** The webhook is the only writer of the `subscriptions` row. Every upsert fails with 23514 and returns 500, and the retry is then swallowed by the dedupe bug above. PayPal subscribers get no row and cannot cancel or resume in-app.
-- **Fix:** Read interval and amount from the plan or the catalog, and skip non-ACTIVE states the way the Stripe handler does.
-- **Confidence:** confirmed (code); plausible (live impact until exercised)
 
 ### Members can forge `created_at` and system messages on insert
 
