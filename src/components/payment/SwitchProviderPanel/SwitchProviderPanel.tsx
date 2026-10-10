@@ -12,9 +12,10 @@
  * the original order (#1308). This panel used to send it as a new purchase,
  * which needed a catalog product id it never had, so every switch failed.
  *
- * Reuses everything PaymentButton already does — Stripe / PayPal / Cash App
- * / Chime selection, GDPR consent gating, offline queueing — without
- * rebuilding any of it.
+ * Reuses PaymentButton's provider selection (Stripe / PayPal / Cash App /
+ * Chime) and GDPR consent gating without rebuilding them. NOT its offline
+ * queueing: a switch is a retry, retryFailedPayment never queues, and a retry
+ * that cannot reach create-order fails visibly rather than waiting.
  *
  * Reframes US3 (Update Payment Method, FR-011-FR-015) for ScriptHammer's
  * static-export architecture: there are no saved cards to "update", but

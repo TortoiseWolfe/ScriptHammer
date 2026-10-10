@@ -312,5 +312,47 @@ describe('usePaymentButton', () => {
       expect(result.current.error?.message).toBe(paid);
       expect(createCheckoutSession).not.toHaveBeenCalled();
     });
+
+    it('PayPal: a refusal from the retry branch fails createOrder, so no order is created', async () => {
+      // The SDK hands a rejected createOrder to its onError, which sets the error state;
+      // what the hook owns is that the refusal propagates and nothing reaches PayPal.
+      const paid =
+        'This payment has already gone through, so it has not been charged again.';
+      vi.mocked(retryFailedPayment).mockRejectedValueOnce(new Error(paid));
+      const { result } = renderHook(() => usePaymentButton(switchOptions));
+      await act(async () => {
+        await result.current.mountPayPalButtons('container-id');
+      });
+      const { createOrder } = vi.mocked(renderPayPalButtons).mock
+        .calls[0][1] as {
+        createOrder: () => Promise<string>;
+      };
+
+      await expect(createOrder()).rejects.toThrow(paid);
+      expect(createPayPalOrder).not.toHaveBeenCalled();
+    });
+
+    it('a switch with a recurring type is refused in both lanes, not silently run as a new subscription', async () => {
+      // Both recurring lanes run before the intent step, so the parent would be ignored.
+      const recurringSwitch = {
+        ...recurringOptions,
+        parentIntentId: 'parent-1',
+      };
+      const { result } = renderHook(() => usePaymentButton(recurringSwitch));
+      act(() => {
+        result.current.selectProvider('stripe');
+      });
+      await act(async () => {
+        await result.current.initiatePayment();
+      });
+      expect(result.current.error?.message).toMatch(/cannot be switched/);
+      expect(createSubscriptionCheckout).not.toHaveBeenCalled();
+
+      await act(async () => {
+        await result.current.mountPayPalButtons('container-id');
+      });
+      expect(renderPayPalButtons).not.toHaveBeenCalled();
+      expect(retryFailedPayment).not.toHaveBeenCalled();
+    });
   });
 });

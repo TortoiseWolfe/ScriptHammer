@@ -415,9 +415,19 @@ export async function retryFailedPayment(
     deduped: Boolean(payload.deduped),
   });
 
+  // The child, never the parent (#1337). The deduped branch reports the row that already
+  // won, and answers null when it cannot re-read it. This used to fall back to the
+  // PARENT's id, which handed the caller the intent that had just been declined — and
+  // the provider switch would then open checkout on it.
+  if (!payload.intent_id) {
+    throw new Error(
+      'The retry was accepted but no new payment came back. Please try again.'
+    );
+  }
+
   // The caller wants the intent row. SELECT is still granted to the browser; only
   // INSERT is being removed (#559 T027).
-  const id = payload.intent_id ?? intentId;
+  const id = payload.intent_id;
   const { data: intent, error } = await supabase
     .from('payment_intents')
     .select('*')
