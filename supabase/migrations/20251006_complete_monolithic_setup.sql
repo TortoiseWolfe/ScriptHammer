@@ -334,6 +334,13 @@ ALTER TABLE payment_intents DROP CONSTRAINT IF EXISTS payment_intents_amount_che
 ALTER TABLE payment_intents ADD CONSTRAINT payment_intents_amount_check
   CHECK (amount >= 100 AND amount <= 350000);  -- $1.00 .. $3,500.00
 
+-- #1307 stage 2: the time of the newest PROVIDER event applied to this row (Stripe event.created,
+-- PayPal create_time). The webhooks refuse a subscription snapshot older than it, so a replayed
+-- or out-of-order event cannot roll the row back. NULL means no event has stamped it yet.
+-- Readable by the owner through the table-level SELECT grant; writable only by service_role,
+-- because authenticated's UPDATE grant names three columns and not this one.
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS last_provider_event_at TIMESTAMPTZ;
+
 -- subscriptions.plan_amount had a floor and NO ceiling at all, so the $999.99
 -- limit never applied to subscriptions in the first place (T003).
 ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_plan_amount_check;

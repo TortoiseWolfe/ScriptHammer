@@ -42,7 +42,8 @@ const row = (over: Partial<EventRow> = {}): EventRow => ({
 });
 
 const SAFE = 'payment_intent.succeeded';
-const UNSAFE = 'invoice.payment_failed';
+// Not handled by any webhook, so not listed: the "not replay-safe" path still needs a witness.
+const UNSAFE = 'charge.refunded';
 
 describe('decideExisting: an event we have seen before', () => {
   it('answers 200 for an event already processed', () => {
@@ -98,8 +99,7 @@ describe('decideExisting: an event we have seen before', () => {
     if (d.kind === 'busy') expect(d.status).toBe(409);
   });
 
-  it('keeps acknowledging an unprocessed event whose handler is NOT replay-safe (stage 2)', () => {
-    // invoice.payment_failed increments a counter: re-running it would double-count (#1307).
+  it('keeps acknowledging an unprocessed event whose type is NOT listed replay-safe', () => {
     const d = decideExisting(row(), 'stripe', UNSAFE, NOW);
     expect(d).toMatchObject({ kind: 'done', status: 200 });
   });
@@ -110,28 +110,28 @@ describe('decideExisting: an event we have seen before', () => {
   });
 });
 
-describe('REPLAY_SAFE: only handlers the 2026-10-10 audit proved idempotent', () => {
-  it('lists the payment-completion events and the Cal.com booking', () => {
-    expect(REPLAY_SAFE.stripe).toEqual(['payment_intent.succeeded']);
+describe('REPLAY_SAFE: every handled type, now that each handler is idempotent (#1307)', () => {
+  it('lists the payment, checkout and subscription events and the Cal.com booking', () => {
+    // A source guard (scripts/__tests__/webhooks-claim-before-handling.test.js) checks this
+    // list against the types each webhook's switch actually handles.
+    expect([...REPLAY_SAFE.stripe].sort()).toEqual([
+      'checkout.session.completed',
+      'customer.subscription.created',
+      'customer.subscription.deleted',
+      'customer.subscription.updated',
+      'invoice.payment_failed',
+      'payment_intent.succeeded',
+    ]);
     expect([...REPLAY_SAFE.paypal].sort()).toEqual([
+      'BILLING.SUBSCRIPTION.ACTIVATED',
+      'BILLING.SUBSCRIPTION.CANCELLED',
+      'BILLING.SUBSCRIPTION.CREATED',
+      'BILLING.SUBSCRIPTION.PAYMENT.FAILED',
+      'BILLING.SUBSCRIPTION.UPDATED',
       'PAYMENT.CAPTURE.COMPLETED',
       'PAYMENT.SALE.COMPLETED',
     ]);
     expect(REPLAY_SAFE.calcom).toEqual(['BOOKING_CREATED']);
-  });
-
-  it('does NOT list the handlers the audit found unsafe', () => {
-    for (const t of [
-      'invoice.payment_failed',
-      'customer.subscription.updated',
-      'customer.subscription.created',
-      'checkout.session.completed',
-    ]) {
-      expect(REPLAY_SAFE.stripe).not.toContain(t);
-    }
-    expect(REPLAY_SAFE.paypal).not.toContain(
-      'BILLING.SUBSCRIPTION.PAYMENT.FAILED'
-    );
   });
 });
 

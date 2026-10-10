@@ -88,6 +88,68 @@ describe('webhooks claim an event before handling it (#1307)', () => {
     });
   }
 
+  /** The string literals listed under one provider in REPLAY_SAFE, read from the source. */
+  function replaySafeFor(provider) {
+    const src = code(CLAIM);
+    const block = src.slice(src.indexOf('export const REPLAY_SAFE'));
+    const list = block.match(new RegExp(`${provider}:\\s*\\[([^\\]]*)\\]`));
+    assert.ok(list, `REPLAY_SAFE has no ${provider} list`);
+    return [...list[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+  }
+
+  for (const [name, provider] of [
+    ['stripe-webhook', 'stripe'],
+    ['paypal-webhook', 'paypal'],
+  ]) {
+    it(`every event type ${name} handles is replay-safe (#1307 closes on this)`, () => {
+      // A type in the switch but not in REPLAY_SAFE is acknowledged on redelivery, so a failure
+      // of its handler is lost to retries: the #1307 defect, for that type.
+      const handled = [
+        ...code(path.join(FN, name, 'index.ts')).matchAll(
+          /case '([A-Z_.a-z]+)':/g
+        ),
+      ].map((m) => m[1]);
+      assert.ok(
+        handled.length >= 3,
+        `${name}: found only ${handled.length} case labels`
+      );
+      const safe = replaySafeFor(provider);
+      const missing = handled.filter((t) => !safe.includes(t));
+      assert.deepStrictEqual(
+        missing,
+        [],
+        `${name} handles types not in REPLAY_SAFE.${provider}`
+      );
+    });
+
+    it(`${name}'s subscription handlers use the replay-safe rules`, () => {
+      // Snapshots must go through snapshotDecision (provider-time ordering, no revival) and
+      // failures through failurePatch (absolute count, kept deadline). A handler that wrote the
+      // row its own way would make REPLAY_SAFE's listing of it a lie (#1307).
+      const src = code(path.join(FN, name, 'index.ts'));
+      assert.match(
+        src,
+        /snapshotDecision\(/,
+        `${name} no longer orders snapshots`
+      );
+      assert.match(
+        src,
+        /failurePatch\(/,
+        `${name} no longer uses the idempotent failure rule`
+      );
+      assert.match(
+        src,
+        /last_provider_event_at: eventAt/,
+        `${name} applies a snapshot without stamping the provider time it is ordered by`
+      );
+      assert.match(
+        src,
+        /last_provider_event_at: laterOf\(/,
+        `${name}'s cancellation no longer stamps the provider time, so an older snapshot could revive it`
+      );
+    });
+  }
+
   for (const [name, file] of WEBHOOKS) {
     it(`${name} claims, finishes and fails through the shared module`, () => {
       const src = code(file);

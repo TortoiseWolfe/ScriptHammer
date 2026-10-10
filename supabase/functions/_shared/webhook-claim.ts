@@ -23,12 +23,13 @@
  * WHY THE LOSER OF A CLAIM GETS 409, NOT A 2xx. A 2xx tells the provider the event was delivered.
  * If the winner then failed, nothing would ever retry it: the same loss, one line further on.
  *
- * WHY ONLY SOME EVENTS ARE HANDLED AGAIN. Re-running a handler is safe only when the handler is
- * idempotent. The 2026-10-10 audit in #1307 found several that are not: a failure counter that
- * increments again, subscription upserts a late replay can roll back, a pending row inserted twice.
- * REPLAY_SAFE lists the handlers that ARE. Every other type keeps the old acknowledgement for a
- * redelivery until its handler is fixed (#1307 stage 2), but its first failure is no longer
- * silent: it is marked permanently_failed and trips the alarm.
+ * WHY ONLY LISTED EVENTS ARE HANDLED AGAIN. Re-running a handler is safe only when the handler is
+ * idempotent. The 2026-10-10 audit in #1307 found several that were not: a failure counter that
+ * incremented again, subscription upserts a late replay could roll back, a pending row inserted
+ * twice. Stage 1 listed the handlers that already were safe; stage 2 fixed the rest
+ * (`subscription-events.ts`) and listed them. A type NOT in REPLAY_SAFE keeps the
+ * old acknowledgement for a redelivery, and its first failure is marked permanently_failed so it
+ * trips the alarm instead of vanishing. Add a type only after its handler is idempotent.
  *
  * `last_retry_at` is the start of the live claim; NULL means nobody holds one. The retry script
  * that used to write it was deleted with #1261, so this module is its only writer.
@@ -42,12 +43,32 @@ export type WebhookProvider = 'stripe' | 'paypal' | 'calcom';
 /** Event types whose handler is idempotent, so a retry may run it again (#1307 audit). */
 export const REPLAY_SAFE: Readonly<Record<WebhookProvider, readonly string[]>> =
   {
-    // payment_results has one succeeded row per intent (a replay is a caught 23505), and
-    // advanceOrderAndNotify is a compare-and-swap on orders.status.
-    stripe: ['payment_intent.succeeded'],
-    // Reads the existing payment_results row before writing, so a replay takes the update path;
-    // the order advance is the same compare-and-swap.
-    paypal: ['PAYMENT.CAPTURE.COMPLETED', 'PAYMENT.SALE.COMPLETED'],
+    stripe: [
+      // payment_results has one succeeded row per intent (a replay is a caught 23505), and
+      // advanceOrderAndNotify is a compare-and-swap on orders.status.
+      'payment_intent.succeeded',
+      // The same, plus an unpaid session's pending row is looked up before it is inserted.
+      'checkout.session.completed',
+      // Stage 2 (subscription-events.ts): snapshots are ordered by the provider's event time,
+      // a cancellation is terminal with canceled_at from the event, and a failure writes the
+      // provider's absolute count.
+      'customer.subscription.created',
+      'customer.subscription.updated',
+      'customer.subscription.deleted',
+      'invoice.payment_failed',
+    ],
+    paypal: [
+      // Reads the existing payment_results row before writing, so a replay takes the update
+      // path; the order advance is the same compare-and-swap.
+      'PAYMENT.CAPTURE.COMPLETED',
+      'PAYMENT.SALE.COMPLETED',
+      // Stage 2, as for Stripe's subscription events.
+      'BILLING.SUBSCRIPTION.CREATED',
+      'BILLING.SUBSCRIPTION.ACTIVATED',
+      'BILLING.SUBSCRIPTION.UPDATED',
+      'BILLING.SUBSCRIPTION.CANCELLED',
+      'BILLING.SUBSCRIPTION.PAYMENT.FAILED',
+    ],
     // The lead update is a compare-and-swap on status = 'link_opened'.
     calcom: ['BOOKING_CREATED'],
   };
