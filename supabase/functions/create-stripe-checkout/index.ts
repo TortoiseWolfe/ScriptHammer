@@ -16,8 +16,9 @@
  *   401 Unauthorized: { error: string } (missing / invalid JWT)
  *   403 Forbidden: { error: string } (caller does not own the intent)
  *   404 Not Found: { error: string } (intent does not exist)
+ *   409 Conflict: { error, code: 'already_paid' } (the purchase's retry chain is already paid, #1342)
  *   410 Gone: { error: string } (intent expired)
- *   500 Internal Server Error: { error: string } (Stripe call failed)
+ *   500 Internal Server Error: { error: string } (Stripe call failed, or the paid check could not be read)
  *
  * SECURITY MODEL
  *   - JWT verified via SUPABASE_ANON_KEY (auto-injected; NEXT_PUBLIC_ fallback)
@@ -34,6 +35,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAuthenticatedUserId, UnauthorizedError } from '../_shared/auth.ts';
+import { gateOnChainPaid } from '../_shared/payment-chain.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   apiVersion: '2024-06-20',
@@ -115,6 +117,17 @@ serve(async (req) => {
             'payment_intent type is not "one_time"; use create-stripe-subscription for recurring',
         },
         400
+      );
+    }
+
+    // NOT FOR A PURCHASE ALREADY PAID (#1342). Asked before a session exists, because once one does the buyer can pay it, and nothing after this point can stop that. Read errors
+    // refuse too (500): the alternative to "could not confirm it is unpaid" is charging on a guess.
+    const gate = await gateOnChainPaid(supabase, intent.id);
+    if (gate.kind === 'refuse') {
+      return jsonResponse(
+        req,
+        { error: gate.error, code: gate.code },
+        gate.status
       );
     }
 

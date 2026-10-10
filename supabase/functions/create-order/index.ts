@@ -41,10 +41,10 @@ import {
   resolveOppref,
   type ProductRow,
   buildRetryIntentRow,
-  chainAlreadyPaid,
   decideRetry,
   type ParentIntentRow,
 } from './resolve.ts';
+import { chainAlreadyPaid } from '../_shared/payment-chain.ts';
 
 const supabaseUrl =
   Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
