@@ -129,29 +129,125 @@ async function mgmt(path, token, body) {
 const sql = (ref, token, query) =>
   mgmt(`/v1/projects/${ref}/database/query`, token, { query });
 
+/**
+ * The query window: two minutes short of WINDOW_HOURS. The logs endpoint refuses a range longer
+ * than 24 hours and rounds both ends to the minute, so asking for exactly 24h can round over it.
+ */
+const WINDOW_MS = WINDOW_HOURS * 3600_000 - 120_000;
+
+/**
+ * SUPABASE'S LOG QUERY ENDPOINT (#1330).
+ *
+ * `analytics/endpoints/logs.all` was removed on 2026-09-23 (Supabase changelog 48235). From that
+ * day this check answered HTTP 410 every morning, and so the payment-webhook alarm was blind for
+ * 17 days. All it reported was its own failure to run.
+ *
+ * The replacement takes ClickHouse SQL over ONE table, `logs`. Each row says which service wrote
+ * it in its `source` column. The nested `metadata` / `request` / `response` arrays that the old
+ * dialect read through `unnest(...)` are now a flat string map, read as
+ * `log_attributes['response.status_code']`.
+ */
+export const logsPath = (ref, params) =>
+  `/v1/projects/${ref}/analytics/endpoints/logs?${new URLSearchParams(params)}`;
+
+export const FUNCTION_SOURCE = 'function_logs';
+export const EDGE_SOURCE = 'function_edge_logs';
+
+const EDGE_URL = "log_attributes['request.url']";
+const EDGE_STATUS = "log_attributes['response.status_code']";
+
+export const QUERIES = {
+  // Which services wrote logs in the window, and how many lines each. This is what lets a
+  // renamed source fail loudly, instead of a WHERE clause that matches nothing and reads as
+  // "nothing failed". See readSources().
+  sources: 'select source, count() as n from logs group by source',
+
+  // Filter in SQL, classify in JS. The old query fetched the first 1000 lines from EVERY
+  // function and filtered afterwards, so a busy day could push the lines that matter past the
+  // limit. This one only fetches lines that could be either kind of rejection; the regexes in
+  // gather() still decide which kind.
+  signatures:
+    `select event_message from logs where source = '${FUNCTION_SOURCE}' ` +
+    "and match(event_message, '(?i)signature|tolerance zone') limit 1000",
+
+  // One row. `keyed` is how many invocations carry the two attributes this check depends on. If
+  // they were renamed, the 5xx count would quietly drop to zero, so readEdge() refuses that.
+  edge:
+    `select count() as n, countIf(${EDGE_URL} != '' and ${EDGE_STATUS} != '') as keyed, ` +
+    `countIf(toInt32OrZero(${EDGE_STATUS}) >= 500 and ` +
+    `(${EDGE_URL} like '%stripe-webhook%' or ${EDGE_URL} like '%paypal-webhook%')) as server_errors ` +
+    `from logs where source = '${EDGE_SOURCE}'`,
+};
+
+/**
+ * Read the source census. Throws when the answer cannot be trusted. Never returns zeros for a
+ * question it could not ask. Pure.
+ *
+ * Every project logs API and auth traffic around the clock, so an empty census means a broken
+ * query, not a quiet day. A source that mentions functions under a name other than the two this
+ * check reads means the schema moved: counting zero under the old names would be a PASS made
+ * of not looking.
+ *
+ * A census with neither function source is a genuinely quiet day. No Edge Function ran, so
+ * none can have refused a delivery.
+ */
+export function readSources(rows) {
+  const counts = new Map(
+    (rows ?? []).map((r) => [String(r.source), Number(r.n) || 0])
+  );
+  if (counts.size === 0) {
+    throw new Error(
+      'the logs endpoint returned no rows for any source in the window. Every project logs ' +
+        'API traffic around the clock, so the query or the endpoint is broken; this is not a quiet day.'
+    );
+  }
+  const unknown = [...counts.keys()].filter(
+    (s) => /function/i.test(s) && s !== FUNCTION_SOURCE && s !== EDGE_SOURCE
+  );
+  if (unknown.length) {
+    throw new Error(
+      `log sources have been renamed: saw ${unknown.join(', ')}, but this check reads ` +
+        `${FUNCTION_SOURCE} and ${EDGE_SOURCE}. Reading the old names would count zero failures.`
+    );
+  }
+  return {
+    functionLines: counts.get(FUNCTION_SOURCE) ?? 0,
+    edgeInvocations: counts.get(EDGE_SOURCE) ?? 0,
+  };
+}
+
+/** Read the edge row's 5xx count, refusing it if the attributes it filters on are gone. Pure. */
+export function readEdge(row) {
+  const n = Number(row?.n ?? 0);
+  if (n > 0 && Number(row?.keyed ?? 0) === 0) {
+    throw new Error(
+      `${n} edge-function invocation(s) in the window, but none carries request.url and ` +
+        'response.status_code. The attribute names have moved, and reading them as empty ' +
+        'would count zero server errors.'
+    );
+  }
+  return Number(row?.server_errors ?? 0);
+}
+
 async function logs(ref, token, query, sinceIso, untilIso) {
-  const qs = new URLSearchParams({
-    sql: query,
-    iso_timestamp_start: sinceIso,
-    iso_timestamp_end: untilIso,
-  });
-  const out = await mgmt(`/v1/projects/${ref}/analytics/endpoints/logs.all?${qs}`, token);
-  if (out?.error) throw new Error(`log query rejected: ${JSON.stringify(out.error).slice(0, 200)}`);
+  const out = await mgmt(
+    logsPath(ref, {
+      sql: query,
+      iso_timestamp_start: sinceIso,
+      iso_timestamp_end: untilIso,
+    }),
+    token
+  );
+  if (out?.error) throw new Error(`log query rejected: ${JSON.stringify(out.error).slice(0, 300)}`);
   return out?.result ?? [];
 }
 
 async function gather(ref, token, nowMs) {
-  const since = new Date(nowMs - WINDOW_HOURS * 3600_000).toISOString();
+  const since = new Date(nowMs - WINDOW_MS).toISOString();
   const until = new Date(nowMs).toISOString();
 
-  const logRows = await logs(
-    ref,
-    token,
-    "select t.timestamp, m.level, t.event_message from function_logs t " +
-      'cross join unnest(t.metadata) as m limit 1000',
-    since,
-    until
-  );
+  const census = readSources(await logs(ref, token, QUERIES.sources, since, until));
+  const logRows = await logs(ref, token, QUERIES.signatures, since, until);
 
   // Match the message the Stripe SDK produces, not our own wording — the surrounding
   // console.error text is ours to change, the SDK's is not.
@@ -174,26 +270,11 @@ async function gather(ref, token, nowMs) {
     /Timestamp outside the tolerance zone/i.test(msg(r))
   ).length;
 
-  let serverErrors = 0;
-  try {
-    const edge = await logs(
-      ref,
-      token,
-      'select t.timestamp, r.url, res.status_code from function_edge_logs t ' +
-        'cross join unnest(t.metadata) as m ' +
-        'cross join unnest(m.request) as r ' +
-        'cross join unnest(m.response) as res ' +
-        "where res.status_code >= 500 and (r.url like '%stripe-webhook%' or r.url like '%paypal-webhook%') " +
-        'limit 200',
-      since,
-      until
-    );
-    serverErrors = edge.length;
-  } catch (err) {
-    // Edge-log schema has moved before. A shape change must not silently zero this signal.
-    console.log(`::warning::edge-log query failed, 5xx signal unavailable: ${err.message}`);
-    serverErrors = 0;
-  }
+  // No try/catch here any more. The old one turned a failed edge query into a warning and a 5xx
+  // count of zero, which is the silent degradation this file exists to end. If the edge query
+  // cannot be read, the check could not run, and it says so.
+  const [edgeRow] = await logs(ref, token, QUERIES.edge, since, until);
+  const serverErrors = readEdge(edgeRow);
 
   const [counts] = await sql(
     ref,
@@ -206,6 +287,7 @@ async function gather(ref, token, nowMs) {
   const newest = counts?.newest ? Date.parse(counts.newest) : null;
 
   return {
+    ...census,
     signatureFailures,
     staleSignatures,
     serverErrors,
@@ -244,6 +326,9 @@ async function main() {
     `| permanently_failed rows | ${facts.permanentlyFailed} |`,
     `| unprocessed rows | ${facts.unprocessed} |`,
     `| newest event age (days) | ${facts.newestEventAgeDays ?? 'n/a'} |`,
+    // What the check actually looked at. Zeros above mean something only next to these.
+    `| function log lines read | ${facts.functionLines} |`,
+    `| edge-function invocations read | ${facts.edgeInvocations} |`,
     '',
     `**${verdict}**`,
     ...(failures.length ? ['', ...failures.map((f) => `- ❌ ${f}`)] : []),

@@ -16,6 +16,12 @@ import assert from 'node:assert/strict';
 
 import {
   evaluate,
+  readSources,
+  readEdge,
+  logsPath,
+  QUERIES,
+  FUNCTION_SOURCE,
+  EDGE_SOURCE,
   WINDOW_HOURS,
   STALE_INFO_DAYS,
 } from '../ci/check-webhook-liveness.mjs';
@@ -125,6 +131,101 @@ describe('webhook liveness verdict (#1183)', () => {
     assert.ok(
       WINDOW_HOURS > 0 && WINDOW_HOURS <= 24,
       `WINDOW_HOURS must stay within ~24h of retention, got ${WINDOW_HOURS}`
+    );
+  });
+});
+
+/**
+ * The log queries (#1330). Supabase removed `logs.all` on 2026-09-23, and this check then failed
+ * every day for 17 days without anyone reading why. These tests pin the request and, more
+ * importantly, the two guards that stop a schema change from turning into a quiet PASS.
+ */
+describe('webhook liveness log queries (#1330)', () => {
+  it('asks the endpoint that replaced logs.all', () => {
+    const path = logsPath('ref123', { sql: 'select 1' });
+    assert.match(path, /^\/v1\/projects\/ref123\/analytics\/endpoints\/logs\?/);
+    assert.doesNotMatch(path, /logs\.all/);
+  });
+
+  it('speaks the new dialect: one `logs` table, no unnest', () => {
+    // Checks the query strings themselves, not the source file, whose comments name the old
+    // dialect on purpose.
+    for (const [name, q] of Object.entries(QUERIES)) {
+      assert.match(
+        q,
+        /\bfrom logs\b/,
+        `${name} must read the single logs table`
+      );
+      assert.doesNotMatch(
+        q,
+        /unnest\(/,
+        `${name} still uses the removed nested dialect`
+      );
+      assert.doesNotMatch(
+        q,
+        /\bfrom (function_logs|function_edge_logs)\b/,
+        name
+      );
+    }
+  });
+
+  // --- readSources: the census that makes "looked at nothing" visible -------------------
+
+  const census = [
+    { source: 'edge_logs', n: '5120' },
+    { source: 'postgres_logs', n: 880 },
+    { source: FUNCTION_SOURCE, n: '42' },
+    { source: EDGE_SOURCE, n: 17 },
+  ];
+
+  it('counts the two function sources, accepting ClickHouse 64-bit counts as strings', () => {
+    assert.deepEqual(readSources(census), {
+      functionLines: 42,
+      edgeInvocations: 17,
+    });
+  });
+
+  it('treats a day with no Edge Function at all as quiet, not broken', () => {
+    // No function ran, so none can have refused a delivery. Failing here would cry wolf.
+    const quiet = census.filter((r) => !/function/.test(r.source));
+    assert.deepEqual(readSources(quiet), {
+      functionLines: 0,
+      edgeInvocations: 0,
+    });
+  });
+
+  it('refuses an empty census: the query is broken, not the day quiet', () => {
+    assert.throws(() => readSources([]), /no rows for any source/);
+    assert.throws(() => readSources(undefined), /no rows for any source/);
+  });
+
+  it('refuses a renamed function source rather than counting zero under the old name', () => {
+    const renamed = [
+      ...census.filter((r) => !/function/.test(r.source)),
+      { source: 'edge_function_logs', n: 9 },
+    ];
+    assert.throws(
+      () => readSources(renamed),
+      /renamed: saw edge_function_logs/
+    );
+  });
+
+  // --- readEdge: the 5xx count, only when its attributes exist ----------------------------
+
+  it('returns the 5xx count when the invocations carry url and status', () => {
+    assert.equal(readEdge({ n: '30', keyed: '30', server_errors: '2' }), 2);
+    assert.equal(readEdge({ n: 30, keyed: 30, server_errors: 0 }), 0);
+  });
+
+  it('reads no invocations as zero errors', () => {
+    assert.equal(readEdge({ n: 0, keyed: 0, server_errors: 0 }), 0);
+    assert.equal(readEdge(undefined), 0);
+  });
+
+  it('refuses invocations that carry neither attribute: the names moved', () => {
+    assert.throws(
+      () => readEdge({ n: 30, keyed: 0, server_errors: 0 }),
+      /attribute names have moved/
     );
   });
 });
