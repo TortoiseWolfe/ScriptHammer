@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import CheckoutSummary from './CheckoutSummary';
-import { landingPage, discovery } from '../__fixtures__/products';
+import { landingPage, discovery, tipJar } from '../__fixtures__/products';
 
 const meta: Meta<typeof CheckoutSummary> = {
   title: 'Features/Payment/CheckoutSummary',
@@ -17,3 +17,6 @@ export const PaidInFull: Story = {
   args: { product: discovery, amountDueNow: 25000 },
 };
 export const Loading: Story = { args: { product: null, amountDueNow: null } };
+export const TipJar: Story = {
+  args: { product: tipJar, amountDueNow: 5000 },
+};

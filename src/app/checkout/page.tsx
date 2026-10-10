@@ -20,6 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import SignInForm from '@/components/auth/SignInForm';
 import SignUpForm from '@/components/auth/SignUpForm';
 import CheckoutSummary, {
+  parseAmountParam,
   previewAmountDue,
 } from '@/components/payment/CheckoutSummary';
 import BookingStep from '@/components/payment/BookingStep';
@@ -90,7 +91,11 @@ function CheckoutContent() {
   // re-validates it against the row's own min/max and refuses anything else
   // (resolveChargeAmount). For every fixed SKU the submitted amount is
   // DISCARDED rather than checked, so passing one here cannot move a price.
-  const amountParam = searchParams?.get('amount') ?? null;
+  //
+  // Parsed ONCE (#1306). The preview, the "Pay" label and the create-order body
+  // all read this one value; the preview used to read the SKU's seeded default
+  // instead, so the tip jar said "Pay $15" and then charged $50.
+  const chosenAmount = parseAmountParam(searchParams?.get('amount') ?? null);
 
   const [stage, setStage] = useState<Stage>({ kind: 'loading' });
   const [buyer, setBuyer] = useState<{ name?: string; email?: string }>({});
@@ -236,8 +241,8 @@ function CheckoutContent() {
               // Pay-what-you-want. Sent ONLY for a variable SKU so a tampered
               // `?amount=` on a fixed one never even reaches the function, and
               // rejected there anyway if it is out of bounds.
-              ...(product.amount_mode === 'variable' && amountParam
-                ? { amount: Number(amountParam) }
+              ...(product.amount_mode === 'variable' && chosenAmount !== null
+                ? { amount: chosenAmount }
                 : {}),
               // The OpenAI Ads click id, only if this visitor arrived from an ad AND granted
               // marketing consent — readOppref returns null otherwise, and create-order drops
@@ -301,7 +306,7 @@ function CheckoutContent() {
     // `attachments: []` no matter how many files the buyer uploaded, and nothing
     // would look wrong: the uploads succeed, the thumbnails appear, the order is
     // created. Only the operator, later, finds nothing attached.
-    [stage, attemptNonce, attachments, amountParam]
+    [stage, attemptNonce, attachments, chosenAmount]
   );
 
   // ---- render ------------------------------------------------------------
@@ -389,7 +394,31 @@ function CheckoutContent() {
 
   const product = stage.product;
   const busy = stage.kind === 'submitting';
-  const due = previewAmountDue(product);
+  const due = previewAmountDue(product, chosenAmount);
+
+  // A variable SKU with no usable ?amount= has nothing to charge. create-order
+  // refuses it with a 400 -- but only after the buyer has filled in the whole
+  // form (#1306). Say so first, before the account gate or the form.
+  if (due === null) {
+    return shell(
+      <div className="flex flex-col items-center gap-6 text-center">
+        <div role="status" className="alert alert-info max-w-lg">
+          <div>
+            <p className="font-semibold">Choose an amount</p>
+            <p className="text-sm">
+              Pick how much to give, then come back here to pay.
+            </p>
+          </div>
+        </div>
+        <Link
+          href={getInternalUrl('/tip')}
+          className="btn btn-primary min-h-11 min-w-11"
+        >
+          Go to the tip jar
+        </Link>
+      </div>
+    );
+  }
 
   // ---- the account gate -------------------------------------------------
   // Rendered in place of the intake form, never as a redirect, so `?sku=` and the
