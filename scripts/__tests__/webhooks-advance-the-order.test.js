@@ -79,9 +79,10 @@ describe('the payment webhooks advance the order (#1151)', () => {
     // A webhook that throws makes the provider retry. That is RIGHT for a transient failure, a
     // read or write that may succeed next time, which the webhook claim retries up to
     // MAX_ATTEMPTS before marking the event permanently_failed (#1307). It is WRONG for a
-    // permanent condition, retried for nothing: a retried intent has no order row (#1126).
-    // So the only throws allowed are the two database errors, and the missing-order path must
-    // stay a return. This used to forbid every throw, which is how a failed read passed for "no
+    // permanent condition, retried for nothing: an intent nothing ordered, or a retry chain
+    // whose links do not match (#1126, #1308).
+    // So the only throws allowed are database errors, and the missing-order path must stay a
+    // return. This used to forbid every throw, which is how a failed read passed for "no
     // order" and a paid order went unadvanced with the event marked processed.
     const src = code(HELPER);
     const thrown = [
@@ -89,8 +90,9 @@ describe('the payment webhooks advance the order (#1151)', () => {
     ].map((m) => m[1]);
     assert.deepStrictEqual(
       thrown.sort(),
-      ['orderError', 'updateError'],
-      'advance-order.ts throws something other than its two database errors. A throw on a ' +
+      ['intentError', 'orderError', 'updateError'],
+      'advance-order.ts throws something other than its three database errors (the order read, ' +
+        'the intent read the retry walk makes (#1308), and the status write). A throw on a ' +
         'permanent condition turns it into a provider retry for nothing (#1151, #1126).'
     );
     assert.match(
