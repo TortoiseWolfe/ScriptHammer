@@ -662,5 +662,104 @@ describe('useOfflineQueue', () => {
 
       expect(offlineQueueService.syncQueue).not.toHaveBeenCalled();
     });
+
+    it('does not sync on mount when only failed messages remain (#1262)', async () => {
+      // getQueue() returns every unsynced row, including ones already marked
+      // failed, so one dead message used to trigger a sync on every mount.
+      vi.mocked(offlineQueueService.getQueue).mockResolvedValue([
+        mockFailedMessage,
+      ]);
+
+      renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalledTimes(2);
+      });
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(offlineQueueService.syncQueue).not.toHaveBeenCalled();
+    });
+
+    it('keeps retrying while a message is still pending (#1262)', async () => {
+      // The service makes one attempt per pass; a message it could not send
+      // goes back to `pending`, and the hook must drive the next pass.
+      vi.mocked(offlineQueueService.getQueue).mockResolvedValue([
+        mockQueuedMessage,
+      ]);
+      vi.mocked(offlineQueueService.syncQueue).mockResolvedValue({
+        success: 0,
+        failed: 1,
+      });
+
+      renderHook(() => useOfflineQueue());
+
+      await waitFor(
+        () => {
+          expect(
+            vi.mocked(offlineQueueService.syncQueue).mock.calls.length
+          ).toBeGreaterThanOrEqual(2);
+        },
+        { timeout: 3000 }
+      );
+    });
+
+    it('stops retrying once the message is marked failed (#1262)', async () => {
+      // Before #1262 each finished sync changed syncQueue's identity, re-ran
+      // the mount effect, and synced again for as long as ANY unsynced row
+      // existed, including one already marked failed.
+      vi.mocked(offlineQueueService.getQueue).mockResolvedValue([
+        mockQueuedMessage,
+      ]);
+      vi.mocked(offlineQueueService.syncQueue).mockImplementation(async () => {
+        vi.mocked(offlineQueueService.getQueue).mockResolvedValue([
+          { ...mockQueuedMessage, status: 'failed' },
+        ]);
+        return { success: 0, failed: 1 };
+      });
+
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.syncQueue).toHaveBeenCalledTimes(1);
+      });
+      await waitFor(() => {
+        expect(result.current.isSyncing).toBe(false);
+      });
+      // Longer than the follow-up delay, so a scheduled pass would have run.
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
+      expect(offlineQueueService.syncQueue).toHaveBeenCalledTimes(1);
+    });
+
+    it('schedules no follow-up from a pass that finishes after unmount (#1262)', async () => {
+      // Navigating away mid-sync unmounts the hook while the service call is
+      // still out. When it returned with the message still pending, the hook
+      // scheduled another pass that nothing could cancel, and kept calling the
+      // service every 500ms from a component nobody rendered. In this suite
+      // that timer fired inside the NEXT test and failed it.
+      vi.mocked(offlineQueueService.getQueue).mockResolvedValue([
+        mockQueuedMessage,
+      ]);
+      let finish: (r: { success: number; failed: number }) => void = () => {};
+      vi.mocked(offlineQueueService.syncQueue).mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            finish = resolve;
+          })
+      );
+
+      const { unmount } = renderHook(() => useOfflineQueue());
+      await waitFor(() => {
+        expect(offlineQueueService.syncQueue).toHaveBeenCalledTimes(1);
+      });
+
+      unmount();
+      finish({ success: 0, failed: 1 });
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+
+      expect(offlineQueueService.syncQueue).toHaveBeenCalledTimes(1);
+    });
   });
 });

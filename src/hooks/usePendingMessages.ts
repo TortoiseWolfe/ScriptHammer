@@ -60,7 +60,7 @@ export function usePendingMessages(
   const onSyncedRef = useRef(onSynced);
   onSyncedRef.current = onSynced;
 
-  const { queue, syncQueue } = useOfflineQueue();
+  const { queue, syncQueue, refresh } = useOfflineQueue();
 
   // Reset all local state when the conversation changes.
   useEffect(() => {
@@ -83,8 +83,14 @@ export function usePendingMessages(
         });
         return next;
       });
+      // The row is already in IndexedDB when this runs (sendMessage awaits the
+      // enqueue). Read it now so it is marked "seen" before it can sync away.
+      // Otherwise it is only seen if a queue poll happens to land in between,
+      // and an entry never seen is never pruned: it renders beside the real
+      // message once that arrives (#1262).
+      void refresh();
     },
-    [conversationId]
+    [conversationId, refresh]
   );
 
   const removePending = useCallback((id: string) => {

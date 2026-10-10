@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { projectConfig } from '@/config/project.config';
 import { createLogger } from '@/lib/logger';
@@ -36,73 +36,96 @@ export default function PWAInstall() {
     return false;
   });
 
+  // Read through a ref so the listeners below are registered once. The
+  // callback's identity changes when stored consent loads after hydration, and
+  // keying the effects on it re-ran them: a second SW registration and a second
+  // update interval that was never cleared (#1262).
+  const trackPWAEventRef = useRef(trackPWAEvent);
+  useEffect(() => {
+    trackPWAEventRef.current = trackPWAEvent;
+  }, [trackPWAEvent]);
+
   useEffect(() => {
     // Register service worker (enabled in development for testing)
-    if ('serviceWorker' in navigator) {
-      // Skip in test environments
-      if (process.env.NODE_ENV === 'test') return;
-
-      const registerSW = () => {
-        // Use dynamic basePath from project config
-        const swPath = projectConfig.swPath;
-
-        logger.debug('Registering Service Worker', { path: swPath });
-
-        // Add timestamp to force update
-        const swUrl = `${swPath}?v=${Date.now()}`;
-
-        navigator.serviceWorker.register(swUrl).then(
-          (registration) => {
-            // Defensive: register() is spec'd to resolve with a
-            // ServiceWorkerRegistration, but in some hosting setups
-            // (wrong MIME type, partial response, certain CSP rules) the
-            // promise resolves with `undefined` instead of rejecting. The
-            // optional-chained logger fields above always survived; the
-            // unchecked `registration.update()` calls below were exploding
-            // on every page load and surfacing as a pageerror noise. See
-            // the diagnostic round on PR #65 for the full trace.
-            if (!registration) {
-              logger.warn(
-                'Service Worker register() resolved with undefined — likely sw.js MIME or CSP issue'
-              );
-              return;
-            }
-
-            logger.info('Service Worker registered', {
-              scope: registration.scope,
-              state: registration.active?.state || 'installing',
-            });
-
-            // Force update check
-            registration.update().catch((err) => {
-              logger.debug('SW update failed', { error: err });
-            });
-
-            // Check for updates periodically
-            setInterval(() => {
-              registration.update().catch((err) => {
-                logger.debug('SW update check failed', { error: err });
-              });
-            }, 60000); // Check every minute
-          },
-          (error) => {
-            logger.error('Service Worker registration failed', { error });
-          }
-        );
-      };
-
-      // By the time this effect runs, `load` has almost certainly already
-      // fired (React mounts after DOMContentLoaded). Register immediately
-      // if so; otherwise defer until load.
-      if (document.readyState === 'complete') {
-        registerSW();
-      } else {
-        window.addEventListener('load', registerSW, { once: true });
-      }
-    } else {
+    if (!('serviceWorker' in navigator)) {
       logger.debug('Service Worker not supported in this browser');
+      return;
+    }
+    // Skip in test environments
+    if (process.env.NODE_ENV === 'test') return;
+
+    let updateTimer: ReturnType<typeof setInterval> | undefined;
+    let cancelled = false;
+
+    const registerSW = () => {
+      // Use dynamic basePath from project config
+      const swPath = projectConfig.swPath;
+
+      logger.debug('Registering Service Worker', { path: swPath });
+
+      // A stable URL (#1262). This used to append `?v=${Date.now()}`, and a new
+      // script URL is a new worker: every full page load installed one,
+      // re-precached, and ran the update lifecycle. `registration.update()`
+      // below is what picks up a changed sw.js — it bypasses the HTTP cache for
+      // the worker script by default.
+      navigator.serviceWorker.register(swPath).then(
+        (registration) => {
+          // Defensive: register() is spec'd to resolve with a
+          // ServiceWorkerRegistration, but in some hosting setups
+          // (wrong MIME type, partial response, certain CSP rules) the
+          // promise resolves with `undefined` instead of rejecting. The
+          // optional-chained logger fields above always survived; the
+          // unchecked `registration.update()` calls below were exploding
+          // on every page load and surfacing as a pageerror noise. See
+          // the diagnostic round on PR #65 for the full trace.
+          if (!registration) {
+            logger.warn(
+              'Service Worker register() resolved with undefined — likely sw.js MIME or CSP issue'
+            );
+            return;
+          }
+          if (cancelled) return;
+
+          logger.info('Service Worker registered', {
+            scope: registration.scope,
+            state: registration.active?.state || 'installing',
+          });
+
+          // Force update check
+          registration.update().catch((err) => {
+            logger.debug('SW update failed', { error: err });
+          });
+
+          // Check for updates periodically; cleared on unmount.
+          updateTimer = setInterval(() => {
+            registration.update().catch((err) => {
+              logger.debug('SW update check failed', { error: err });
+            });
+          }, 60000); // Check every minute
+        },
+        (error) => {
+          logger.error('Service Worker registration failed', { error });
+        }
+      );
+    };
+
+    // By the time this effect runs, `load` has almost certainly already
+    // fired (React mounts after DOMContentLoaded). Register immediately
+    // if so; otherwise defer until load.
+    if (document.readyState === 'complete') {
+      registerSW();
+    } else {
+      window.addEventListener('load', registerSW, { once: true });
     }
 
+    return () => {
+      cancelled = true;
+      window.removeEventListener('load', registerSW);
+      if (updateTimer !== undefined) clearInterval(updateTimer);
+    };
+  }, []);
+
+  useEffect(() => {
     // Check if app is already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
       setIsInstalled(true);
@@ -117,29 +140,31 @@ export default function PWAInstall() {
       setShowInstallButton(true);
 
       // Track that the install prompt is available
-      trackPWAEvent('install_prompt_shown');
+      trackPWAEventRef.current('install_prompt_shown');
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
     // Check if the app was successfully installed
-    window.addEventListener('appinstalled', () => {
+    const handleAppInstalled = () => {
       logger.info('PWA installed');
       setIsInstalled(true);
       setShowInstallButton(false);
       setDeferredPrompt(null);
 
       // Track successful installation
-      trackPWAEvent('installed');
-    });
+      trackPWAEventRef.current('installed');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
       window.removeEventListener(
         'beforeinstallprompt',
         handleBeforeInstallPrompt
       );
+      window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, [trackPWAEvent]);
+  }, []);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
