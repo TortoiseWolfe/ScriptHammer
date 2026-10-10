@@ -52,6 +52,7 @@ export const STALE_INFO_DAYS = 30;
  * @param {number} f.permanentlyFailed  webhook_events rows the retry ledger gave up on
  * @param {number} f.unprocessed        webhook_events rows still not processed
  * @param {number|null} f.newestEventAgeDays  age of the newest webhook_events row, or null if none
+ * @param {number} [f.doubleCharged]  orders with more than one succeeded charge across their retry chain
  * @returns {{verdict: 'PASS'|'FAIL', failures: string[], notes: string[]}}
  */
 export function evaluate(f) {
@@ -82,6 +83,17 @@ export function evaluate(f) {
     );
   }
 
+  // A SECOND CHARGE FOR ONE ORDER (#1338). advance-order's compare-and-swap loses quietly for the
+  // second payment ("already advanced"), so nothing else would ever say a buyer paid twice.
+  if (f.doubleCharged > 0) {
+    failures.push(
+      `${f.doubleCharged} order(s) charged more than once across their retry chain. ` +
+        `Each needs a refund. Find them with DOUBLE_CHARGE_SQL in check-webhook-liveness.mjs, ` +
+        `refund the duplicate at the provider, then set that payment_results row to ` +
+        `status = 'refunded'; only 'succeeded' rows count, so that clears the alarm.`
+    );
+  }
+
   if (f.permanentlyFailed > 0) {
     failures.push(
       `${f.permanentlyFailed} webhook_events row(s) marked permanently_failed. ` +
@@ -108,6 +120,19 @@ export function evaluate(f) {
 
   return { verdict: failures.length ? 'FAIL' : 'PASS', failures, notes };
 }
+
+/** Orders charged more than once across their retry chain (#1338). Exported so a test pins it. */
+export const DOUBLE_CHARGE_SQL =
+  'with recursive chain as (' +
+  'select o.id as order_id, o.intent_id, 0 as depth from orders o ' +
+  'union all ' +
+  'select c.order_id, pi.id, c.depth + 1 from chain c ' +
+  'join payment_intents pi on pi.parent_intent_id = c.intent_id where c.depth < 4' +
+  ') select count(*)::int as double_charged from (' +
+  'select c.order_id from chain c ' +
+  "join payment_results pr on pr.intent_id = c.intent_id and pr.status = 'succeeded' " +
+  'group by c.order_id having count(distinct pr.intent_id) > 1' +
+  ') d';
 
 /* ------------------------------------------------------------------ I/O */
 
@@ -284,6 +309,16 @@ async function gather(ref, token, nowMs) {
       'max(created_at) as newest from webhook_events'
   );
 
+  // Orders whose retry chain holds more than one succeeded payment (#1338). The unique index
+  // allows one succeeded payment_results row per INTENT, so a second charge on a DIFFERENT intent
+  // shows up as a second intent in the same chain. Depth-bounded: create-order chains are at most
+  // RETRY_LIMIT deep (tests/unit/create-order-retry.test.ts pins the bound above it).
+  //
+  // THE GAP IT CANNOT SEE: a second charge on the SAME intent (one checkout session paid twice).
+  // Its succeeded write hits the unique index and is absorbed as a replay, so it leaves no second
+  // row. create-order's chainAlreadyPaid is what stops the retry that would cause it.
+  const [doubles] = await sql(ref, token, DOUBLE_CHARGE_SQL);
+
   const newest = counts?.newest ? Date.parse(counts.newest) : null;
 
   return {
@@ -292,6 +327,7 @@ async function gather(ref, token, nowMs) {
     staleSignatures,
     serverErrors,
     permanentlyFailed: Number(counts?.permanently_failed ?? 0),
+    doubleCharged: Number(doubles?.double_charged ?? 0),
     unprocessed: Number(counts?.unprocessed ?? 0),
     newestEventAgeDays:
       newest === null ? null : Math.floor((nowMs - newest) / 86_400_000),
@@ -324,6 +360,7 @@ async function main() {
     `| stale-but-valid signatures | ${facts.staleSignatures ?? 0} |`,
     `| 5xx from a payment webhook | ${facts.serverErrors} |`,
     `| permanently_failed rows | ${facts.permanentlyFailed} |`,
+    `| orders charged more than once | ${facts.doubleCharged} |`,
     `| unprocessed rows | ${facts.unprocessed} |`,
     `| newest event age (days) | ${facts.newestEventAgeDays ?? 'n/a'} |`,
     // What the check actually looked at. Zeros above mean something only next to these.

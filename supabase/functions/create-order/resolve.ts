@@ -578,6 +578,7 @@ export interface ParentIntentRow {
 
 export type RetryRefusalCode =
   | 'retry_not_found'
+  | 'retry_already_paid'
   | 'retry_limit'
   | 'retry_expired'
   | 'retry_cooling';
@@ -632,7 +633,9 @@ export function childIdempotencyKey(
 export function decideRetry(
   parent: ParentIntentRow | null,
   callerUserId: string,
-  nowMs: number
+  nowMs: number,
+  /** Whether any intent in the parent's chain already has a succeeded payment (chainAlreadyPaid). */
+  opts: { alreadyPaid?: boolean } = {}
 ): RetryDecision {
   // Ownership is checked HERE or nowhere: the service-role client bypasses RLS. The
   // same 404 as "no such intent", because distinguishing them lets anyone probe which
@@ -643,6 +646,18 @@ export function decideRetry(
       status: 404,
       code: 'retry_not_found',
       error: 'Cannot retry — original payment intent not found.',
+    };
+  }
+  // A PAID PURCHASE IS NOT RETRIED (#1338). Checked after ownership, so a stranger learns nothing
+  // about whether someone else paid. Without it a buyer whose first attempt succeeded late, or
+  // whose page showed a failure that was not one, could press Retry and be charged twice.
+  if (opts.alreadyPaid) {
+    return {
+      kind: 'refuse',
+      status: 409,
+      code: 'retry_already_paid',
+      error:
+        'This payment has already gone through, so it has not been charged again.',
     };
   }
   if (parent.retry_count >= RETRY_LIMIT) {
@@ -679,6 +694,75 @@ export function decideRetry(
     retryCount,
     rowKey: childIdempotencyKey(parent.id, retryCount),
   };
+}
+
+/** create-order's chains are at most RETRY_LIMIT deep; one more also bounds a cycle. */
+const MAX_CHAIN_HOPS = RETRY_LIMIT + 1;
+
+/**
+ * Whether any intent in a retry chain already has a SUCCEEDED payment (#1338). Throws on a read
+ * error, so the retry fails closed instead of risking a second charge.
+ *
+ * THE WHOLE CHAIN, not just the neighbours. Retry keys are fixed per parent
+ * (`rty:<parent>:<n>`), so a chain is a line P -> C1 -> C2 -> C3. If C2 was paid and the buyer
+ * presses Retry on P in an old tab, the insert dedupes to C1 and hands C1 back for checkout, so
+ * checking only {P, C1} would let C1 be charged a second time (caught by the blind review). So:
+ * walk up to the purchase, then collect every descendant of it, level by level, within the same
+ * bound.
+ *
+ * Only `succeeded` counts. `pending` (an unpaid session, an abandoned PayPal approval) and
+ * `failed` are what a legitimate retry follows, so counting them would refuse every retry.
+ */
+export async function chainAlreadyPaid(
+  supabase: any,
+  intentId: string
+): Promise<boolean> {
+  // 1. Up to the purchase.
+  let root = intentId;
+  let current: string | null = intentId;
+  for (let hop = 0; hop < MAX_CHAIN_HOPS && current; hop++) {
+    const {
+      data,
+      error,
+    }: { data: { parent_intent_id: string | null } | null; error: unknown } =
+      await supabase
+        .from('payment_intents')
+        .select('id, parent_intent_id')
+        .eq('id', current)
+        .maybeSingle();
+    if (error) throw error;
+    current = data?.parent_intent_id ?? null;
+    if (current) root = current;
+  }
+
+  // 2. Every descendant of the purchase, one level per query.
+  // Seeded with the purchase ONLY. Seeding it with intentId too marked that intent visited before
+  // the walk reached it, so its own descendants were never explored (a test caught it).
+  const ids = new Set<string>([root]);
+  let frontier = [root];
+  for (let level = 0; level < MAX_CHAIN_HOPS && frontier.length; level++) {
+    const {
+      data: children,
+      error: childError,
+    }: { data: { id: string }[] | null; error: unknown } = await supabase
+      .from('payment_intents')
+      .select('id')
+      .in('parent_intent_id', frontier);
+    if (childError) throw childError;
+    frontier = (children ?? []).map((c) => c.id).filter((id) => !ids.has(id));
+    for (const id of frontier) ids.add(id);
+  }
+  // In case the upward walk hit its bound before the purchase, the intent itself still counts.
+  ids.add(intentId);
+
+  const { data: paid, error: paidError } = await supabase
+    .from('payment_results')
+    .select('id')
+    .in('intent_id', [...ids])
+    .eq('status', 'succeeded')
+    .limit(1);
+  if (paidError) throw paidError;
+  return (paid ?? []).length > 0;
 }
 
 /**
