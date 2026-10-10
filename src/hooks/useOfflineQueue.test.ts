@@ -310,6 +310,20 @@ describe('useOfflineQueue', () => {
       );
       expect(result.current.isSyncing).toBe(false);
     });
+    it('should reload the queue after a sync', async () => {
+      const { result } = renderHook(() => useOfflineQueue());
+
+      // Mount reads the queue twice: loadQueue, then the empty-queue check.
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalledTimes(2);
+      });
+
+      await act(async () => {
+        await result.current.syncQueue();
+      });
+
+      expect(offlineQueueService.getQueue).toHaveBeenCalledTimes(3);
+    });
   });
 
   describe('Retry Failed Messages', () => {
@@ -534,6 +548,33 @@ describe('useOfflineQueue', () => {
         expect.any(Function)
       );
     });
+    it('should update isOnline when going back online', async () => {
+      Object.defineProperty(navigator, 'onLine', {
+        writable: true,
+        value: false,
+        configurable: true,
+      });
+
+      const { result } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(result.current.isOnline).toBe(false);
+      });
+
+      Object.defineProperty(navigator, 'onLine', {
+        writable: true,
+        value: true,
+        configurable: true,
+      });
+
+      await act(async () => {
+        window.dispatchEvent(new Event('online'));
+      });
+
+      await waitFor(() => {
+        expect(result.current.isOnline).toBe(true);
+      });
+    });
   });
 
   describe('Queue Polling', () => {
@@ -562,6 +603,64 @@ describe('useOfflineQueue', () => {
       unmount();
 
       expect(clearIntervalSpy).toHaveBeenCalled();
+    });
+    it('should reload the queue and sync on each 30-second tick', async () => {
+      const setIntervalSpy = vi.spyOn(global, 'setInterval');
+
+      renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalledTimes(2);
+      });
+
+      const pollCall = setIntervalSpy.mock.calls.find(
+        (call) => call[1] === 30000
+      );
+      expect(pollCall).toBeDefined();
+      const tick = pollCall![0] as unknown as () => void;
+
+      await act(async () => {
+        tick();
+      });
+
+      await waitFor(() => {
+        expect(
+          vi.mocked(offlineQueueService.getQueue).mock.calls.length
+        ).toBeGreaterThanOrEqual(3);
+        expect(offlineQueueService.syncQueue).toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('Auto-sync on mount', () => {
+    it('syncs on mount when the queue already holds messages', async () => {
+      vi.mocked(offlineQueueService.getQueue).mockResolvedValue([
+        mockQueuedMessage,
+      ]);
+
+      const { unmount } = renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.syncQueue).toHaveBeenCalled();
+      });
+
+      unmount();
+    });
+
+    it('does not sync on mount when the queue is empty', async () => {
+      // Counterweight to the case above: without it, a hook that synced on
+      // every mount would pass.
+      renderHook(() => useOfflineQueue());
+
+      await waitFor(() => {
+        expect(offlineQueueService.getQueue).toHaveBeenCalledTimes(2);
+      });
+      // The decision runs in the microtask after the second read resolves.
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      expect(offlineQueueService.syncQueue).not.toHaveBeenCalled();
     });
   });
 });
