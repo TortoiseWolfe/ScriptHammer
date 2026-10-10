@@ -53,7 +53,7 @@ Here's what ships in our authentication system:
 
 ### 🛡️ Security Hardening
 
-- 🚦 **Server-Side Rate Limiting**: 5 failed attempts per 15-minute window, enforced in PostgreSQL (client can't bypass)
+- 🚦 **Server-Side Rate Limiting**: Supabase Auth enforces it where the request lands — a captcha on every password sign-in, sign-up and reset, plus per-network request ceilings
 - 🔒 **OAuth CSRF Protection**: Supabase's built-in OAuth2 `state` parameter prevents session hijacking
 - 📝 **Audit Logging**: Every authentication event logged to database with Internet Protocol (IP) address and user agent
 - 🗄️ **Row-Level Security**: Database policies ensure users only see their own data
@@ -78,12 +78,15 @@ Email/password authentication starts with user registration. Here's our `SignUpF
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { validateEmail } from '@/lib/auth/email-validator';
-import { checkRateLimit } from '@/lib/auth/rate-limit-check';
+import { authRateLimitMessage } from '@/lib/auth/auth-rate-limit';
+import CaptchaWidget from '@/components/auth/CaptchaWidget';
 
 export function SignUpForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  // Set by the Turnstile widget once the challenge is solved
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,23 +100,22 @@ export function SignUpForm() {
         return;
       }
 
-      // Server-side rate limit check (enforced in PostgreSQL)
-      const rateLimit = await checkRateLimit(email, 'sign_up');
-      if (!rateLimit.allowed) {
-        alert(`Too many attempts. Try again after ${rateLimit.locked_until}`);
-        return;
-      }
-
-      // Create user with Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
+      // Create user with Supabase Auth. The captcha token rides along and
+      // Supabase Auth verifies it server-side, so skipping this form skips nothing.
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
+          captchaToken: captchaToken ?? undefined,
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // A 429 from Supabase Auth becomes a sentence, not an error code
+        alert(authRateLimitMessage(error) ?? error.message);
+        return;
+      }
 
       // User created - verification email sent
       alert('Check your email for the verification link!');
@@ -141,6 +143,7 @@ export function SignUpForm() {
         minLength={8}
         required
       />
+      <CaptchaWidget onToken={setCaptchaToken} />
       <button type="submit" disabled={loading}>
         {loading ? 'Creating account...' : 'Sign Up'}
       </button>
@@ -351,143 +354,54 @@ export default function AuthCallbackPage() {
 }
 ```
 
-## 🚦 Part 3: Server-Side Rate Limiting
+## 🚦 Part 3: Rate Limiting Lives on the Auth Server
 
-⚠️ **Critical**: Client-side rate limiting is useless—attackers can bypass JavaScript. We implemented **PostgreSQL-based rate limiting** that's impossible to bypass:
+⚠️ **Critical**: a limit only counts if it runs where the request lands. Anyone can call Supabase Auth directly with your public anon key, so a check the browser runs first is advice, not protection.
 
-### Database Function for Rate Limiting
+### ✅ What Protects the Forms
 
-```sql
--- supabase/migrations/20251006_complete_monolithic_setup.sql
-CREATE TABLE rate_limit_attempts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  identifier TEXT NOT NULL, -- Email or IP address
-  attempt_type TEXT NOT NULL CHECK (attempt_type IN ('sign_in', 'sign_up', 'password_reset')),
-  ip_address INET,
-  user_agent TEXT,
-  window_start TIMESTAMPTZ NOT NULL DEFAULT now(),
-  attempt_count INTEGER NOT NULL DEFAULT 1,
-  locked_until TIMESTAMPTZ, -- Lockout expiration
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+Supabase Auth enforces two limits itself:
 
-CREATE UNIQUE INDEX idx_rate_limit_unique
-  ON rate_limit_attempts(identifier, attempt_type);
+1. **A captcha on every password grant.** Sign-in, sign-up and password reset each carry a [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/) token, and Supabase Auth verifies it on the server before doing anything else. A script that skips the form has no token, so Supabase Auth refuses it.
+2. **Per-network request ceilings.** Supabase Auth caps how often one network address can call its sign-in, sign-up, reset and email endpoints, and answers with HyperText Transfer Protocol (HTTP) status 429 when a caller goes over.
 
--- Function: Check if user is rate limited
-CREATE OR REPLACE FUNCTION check_rate_limit(
-  p_identifier TEXT,
-  p_attempt_type TEXT,
-  p_ip_address INET DEFAULT NULL
-)
-RETURNS JSON AS $$
-DECLARE
-  v_record rate_limit_attempts%ROWTYPE;
-  v_max_attempts INTEGER := 5;
-  v_window_minutes INTEGER := 15;
-  v_now TIMESTAMPTZ := now();
-BEGIN
-  -- Lock row to prevent race conditions
-  SELECT * INTO v_record
-  FROM rate_limit_attempts
-  WHERE identifier = p_identifier AND attempt_type = p_attempt_type
-  FOR UPDATE SKIP LOCKED;
-
-  -- Check if locked out
-  IF v_record.locked_until IS NOT NULL AND v_record.locked_until > v_now THEN
-    RETURN json_build_object(
-      'allowed', FALSE,
-      'remaining', 0,
-      'locked_until', v_record.locked_until,
-      'reason', 'rate_limited'
-    );
-  END IF;
-
-  -- Reset window if expired
-  IF v_record.id IS NULL OR (v_now - v_record.window_start) > (v_window_minutes || ' minutes')::INTERVAL THEN
-    INSERT INTO rate_limit_attempts (identifier, attempt_type, ip_address, window_start, attempt_count)
-    VALUES (p_identifier, p_attempt_type, p_ip_address, v_now, 0)
-    ON CONFLICT (identifier, attempt_type) DO UPDATE
-      SET window_start = v_now, attempt_count = 0, locked_until = NULL, updated_at = v_now;
-    RETURN json_build_object('allowed', TRUE, 'remaining', v_max_attempts, 'locked_until', NULL);
-  END IF;
-
-  -- Check attempt count
-  IF v_record.attempt_count < v_max_attempts THEN
-    RETURN json_build_object(
-      'allowed', TRUE,
-      'remaining', v_max_attempts - v_record.attempt_count,
-      'locked_until', NULL
-    );
-  ELSE
-    -- Lock out user
-    UPDATE rate_limit_attempts
-    SET locked_until = v_now + (v_window_minutes || ' minutes')::INTERVAL, updated_at = v_now
-    WHERE identifier = p_identifier AND attempt_type = p_attempt_type;
-
-    RETURN json_build_object(
-      'allowed', FALSE,
-      'remaining', 0,
-      'locked_until', v_now + (v_window_minutes || ' minutes')::INTERVAL,
-      'reason', 'rate_limited'
-    );
-  END IF;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
-```
-
-### Client-Side Rate Limit Check
+The app's remaining job is to turn a 429 into a sentence a person can act on:
 
 ```typescript
-// src/lib/auth/rate-limit-check.ts
-import { supabase } from '@/lib/supabase/client';
+// src/lib/auth/auth-rate-limit.ts
+export const EMAIL_QUOTA_MESSAGE =
+  'Too many emails have been sent recently. Check your inbox, or try again later.';
 
-export interface RateLimitResult {
-  allowed: boolean;
-  remaining: number;
-  locked_until: string | null;
-  reason?: 'rate_limited';
-}
+export const REQUEST_RATE_MESSAGE =
+  'Too many attempts. Please wait a few minutes, then try again.';
 
-export async function checkRateLimit(
-  identifier: string,
-  attemptType: 'sign_in' | 'sign_up' | 'password_reset',
-  ipAddress?: string
-): Promise<RateLimitResult> {
-  const { data, error } = await supabase.rpc('check_rate_limit', {
-    p_identifier: identifier,
-    p_attempt_type: attemptType,
-    p_ip_address: ipAddress || null,
-  });
-
-  if (error) {
-    console.error('Rate limit check failed:', error);
-    // Fail open (allow request) rather than fail closed (block everyone)
-    return { allowed: true, remaining: 5, locked_until: null };
-  }
-
-  return data as unknown as RateLimitResult;
-}
-
-export async function recordFailedAttempt(
-  identifier: string,
-  attemptType: 'sign_in' | 'sign_up' | 'password_reset',
-  ipAddress?: string
-): Promise<void> {
-  await supabase.rpc('record_failed_attempt', {
-    p_identifier: identifier,
-    p_attempt_type: attemptType,
-    p_ip_address: ipAddress || null,
-  });
+// The message for a rate-limit refusal, or null for any other error
+export function authRateLimitMessage(error: unknown): string | null {
+  if (!error || typeof error !== 'object') return null;
+  const { status, code } = error as { status?: unknown; code?: unknown };
+  const limited =
+    status === 429 ||
+    (typeof code === 'string' && /^over_[a-z_]+_rate_limit$/.test(code));
+  if (!limited) return null;
+  return code === 'over_email_send_rate_limit'
+    ? EMAIL_QUOTA_MESSAGE
+    : REQUEST_RATE_MESSAGE;
 }
 ```
 
-This approach has three critical advantages:
+💡 **Why the email message stays vague**: Supabase Auth uses one code, `over_email_send_rate_limit`, for both the project's hourly email cap and the wait between two emails to the same address. On the reset form, "we emailed this address recently" would confirm the address has an account.
 
-1. **Impossible to Bypass**: Enforced in PostgreSQL, not JavaScript
-2. **No External Services**: No Redis or Upstash needed
-3. **Audit Trail**: Every attempt logged with IP and user agent
+### ❌ The Lockout We Removed, and Why
+
+An earlier version of this post taught a lockout of our own: a `rate_limit_attempts` table keyed on the email address, two PostgreSQL functions (`check_rate_limit` and `record_failed_attempt`), and a browser wrapper that called them before every sign-in. It looked like defense in depth. It had three defects, and we found and fixed each one in ScriptHammer:
+
+1. **The browser consulted it, so it stopped nobody.** An attacker who called Supabase Auth directly never met the limiter. Only well-behaved users did.
+2. **Anyone could use it as a weapon.** The limiter was keyed on the address being signed in to, and anyone holding the public anon key could call both functions. Five anonymous calls with your email address locked you out of sign-in for 15 minutes, and the check told anyone whether an address was under attack (issue #1245).
+3. **It failed open under concurrency.** The row lock used `FOR UPDATE SKIP LOCKED`. When two requests arrived together, the second saw no row, treated itself as a first attempt, reset the count and cleared a lockout already in force. The limiter was strictest against one patient caller and absent against a burst (issue #1237).
+
+The table still exists, but only the service role writes to it now. The contact-form and booking-lead Edge Functions use it for their own per-sender ceilings, through one atomic `consume_rate_limit` function. Brute-force protection for sign-in belongs to Supabase Auth.
+
+📝 **The lesson for your fork**: before you build a limiter, ask who can call the thing it protects. If the answer includes "anyone with the anon key", the limit has to live on the server that answers them, and you must never key it on something an attacker can type.
 
 ## 🗄️ Part 4: Row-Level Security (RLS) Policies
 
@@ -806,15 +720,12 @@ For server-side authentication (SSR), use `@supabase/ssr` with `httpOnly` cookie
 
 ### Lesson 2: Test Isolation & Cleanup
 
-Our tests initially failed because of leftover database state. When testing rate limiting or OAuth flows, **always clean up database records in `beforeEach`**:
+Our tests initially failed because of leftover database state. When testing OAuth flows or anything else that writes rows, **always clean up database records in `beforeEach`**:
 
 ```typescript
 beforeEach(async () => {
-  // Clean up rate limit attempts
-  await supabase
-    .from('rate_limit_attempts')
-    .delete()
-    .eq('identifier', testEmail);
+  // Service-role client: delete the rows a previous run left for this test user
+  await adminClient.from('auth_audit_logs').delete().eq('user_id', testUserId);
 });
 ```
 
@@ -836,32 +747,16 @@ const userBClient = createClient(supabaseUrl, supabaseAnonKey, {
 });
 ```
 
-### Lesson 4: Fail Open on Rate Errors
+### Lesson 4: Put the Limit Where the Request Lands
 
-When the rate limit database query fails, **fail open** (allow the request) rather than **fail closed** (block everyone):
-
-```typescript
-export async function checkRateLimit(...args) {
-  const { data, error } = await supabase.rpc('check_rate_limit', ...);
-
-  if (error) {
-    console.error('Rate limit check failed:', error);
-    // Fail open - allow request rather than blocking everyone
-    return { allowed: true, remaining: 5, locked_until: null };
-  }
-
-  return data;
-}
-```
-
-This prevents a database outage from locking out all users.
+Our first limiter failed open on purpose: if its database call errored, the browser let the sign-in through, so an outage would not lock everyone out. That instinct is right for a convenience and wrong for a protection, and it was a sign the limiter sat in the wrong place. Moving the limit to Supabase Auth removed the question: no client-side check is left to fail, open or closed. The app's only remaining job is the one in Part 3, turning a 429 into a plain message.
 
 ## ✅ Conclusion: Authentication Done Right
 
 Building production authentication isn't about copying Auth0's API. It's about understanding the security principles:
 
-1. **Defense in Depth**: Rate limiting in PostgreSQL, RLS policies at database level, CSRF tokens for OAuth
-2. **Fail Safely**: Fail open on errors, provide clear error messages, don't lock out legitimate users
+1. **Defense in Depth**: Captcha and rate limits enforced by Supabase Auth, RLS policies at database level, and OAuth's built-in `state` parameter against CSRF
+2. **Fail Safely**: Enforce limits on the server, turn refusals into clear messages, and never key a lockout on something an attacker can type
 3. **Test Realistically**: Integration tests with real Supabase, E2E tests in real browsers, database cleanup between tests
 
 The result? An authentication system that ships to production, passes security audits, and users don't even notice—because it just works.
