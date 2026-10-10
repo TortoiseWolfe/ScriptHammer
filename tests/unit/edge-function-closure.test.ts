@@ -50,12 +50,15 @@ describe('edge function deploy closure (#1188)', () => {
     expect(relativeSpecifiers(src)).toEqual([]);
   });
 
-  it('stripe-webhook is FIVE files, not the four counted by hand', () => {
+  it('stripe-webhook is SIX files, not the four first counted by hand', () => {
+    // Four by hand (#1188), five once a continuation-line import was found, six since the
+    // webhook claim (#1307). A deploy that uploads fewer ships an importer without its module.
     const { files, missing } = resolveClosure(read, 'stripe-webhook');
     expect(missing).toEqual([]);
     expect(files).toEqual([
       '_shared/ad-conversions.ts',
       '_shared/advance-order.ts',
+      '_shared/webhook-claim.ts',
       '_shared/webhook-types.ts',
       'stripe-webhook/index.ts',
       'stripe-webhook/resolve.ts',

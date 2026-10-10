@@ -115,9 +115,13 @@ describe('edge-deploy planner (#1188)', () => {
     delete env.SUPABASE_ACCESS_TOKEN;
     delete env.SUPABASE_SERVICE_ROLE_KEY;
 
+    // Against HEAD, not origin/main. This test is about the credential, and planning against
+    // origin/main also demanded that stripe-webhook be UNCHANGED from main, so every PR that
+    // touched that function failed here for a reason unrelated to credentials (#1307). A clean
+    // checkout always matches its own HEAD.
     const res = spawnSync(
       'node',
-      ['--import', 'tsx', PLANNER, '--slug', 'stripe-webhook'],
+      ['--import', 'tsx', PLANNER, '--slug', 'stripe-webhook', '--ref', 'HEAD'],
       { cwd: ROOT, encoding: 'utf8', env, timeout: 120_000 }
     );
 
@@ -130,13 +134,13 @@ describe('edge-deploy planner (#1188)', () => {
     assert.strictEqual(
       res.status,
       0,
-      `planning stripe-webhook from origin/main should succeed with no credential.\n` +
+      `planning stripe-webhook from HEAD should succeed with no credential.\n` +
         `${res.stdout}\n${res.stderr}`.slice(0, 600)
     );
     assert.match(
       res.stdout,
-      /5 file\(s\)/,
-      'stripe-webhook is five files — the count a human got wrong (#1188)'
+      /6 file\(s\)/,
+      'stripe-webhook is six files (#1307 added the claim); a human once counted four (#1188)'
     );
   });
 });
