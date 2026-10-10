@@ -16,6 +16,7 @@ import assert from 'node:assert/strict';
 
 import {
   evaluate,
+  DOUBLE_CHARGE_SQL,
   readSources,
   readEdge,
   logsPath,
@@ -227,5 +228,27 @@ describe('webhook liveness log queries (#1330)', () => {
       () => readEdge({ n: 30, keyed: 0, server_errors: 0 }),
       /attribute names have moved/
     );
+  });
+});
+
+describe('webhook liveness: a second charge for one order (#1338)', () => {
+  it('fails on any order charged more than once', () => {
+    const r = evaluate(withFacts({ doubleCharged: 1 }));
+    assert.equal(r.verdict, 'FAIL');
+    assert.match(r.failures.join('\n'), /charged more than once/);
+  });
+
+  it('passes with none, and when the fact is absent (older callers)', () => {
+    assert.equal(evaluate(withFacts({ doubleCharged: 0 })).verdict, 'PASS');
+    assert.equal(evaluate(healthy).verdict, 'PASS');
+  });
+
+  it('counts distinct paid intents per order across a depth-bounded chain', () => {
+    // The unique index allows one succeeded row per intent, so "more than one intent" is the
+    // signal; a bound keeps a corrupt cycle from looping.
+    assert.match(DOUBLE_CHARGE_SQL, /with recursive chain/);
+    assert.match(DOUBLE_CHARGE_SQL, /count\(distinct pr\.intent_id\) > 1/);
+    assert.match(DOUBLE_CHARGE_SQL, /c\.depth < 4/);
+    assert.match(DOUBLE_CHARGE_SQL, /status = 'succeeded'/);
   });
 });

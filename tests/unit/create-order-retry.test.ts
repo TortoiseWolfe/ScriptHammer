@@ -4,6 +4,7 @@ import {
   RETRY_LIMIT,
   buildRetryIntentRow,
   childIdempotencyKey,
+  chainAlreadyPaid,
   decideRetry,
   type ParentIntentRow,
 } from '../../supabase/functions/create-order/resolve';
@@ -244,5 +245,186 @@ describe('buildRetryIntentRow', () => {
       'k'
     );
     expect(row.metadata).toEqual({});
+  });
+});
+
+/* ---------------------------------------------------------------------------------------------
+ * #1338: a retry of an intent that has already been PAID is refused.
+ *
+ * decideRetry checked ownership, the limit, expiry and the cooling period, never whether the
+ * purchase had already gone through. A buyer whose first attempt succeeded late, or whose page
+ * showed a failure that was not one, could press Retry and be charged twice.
+ * ------------------------------------------------------------------------------------------- */
+
+describe('decideRetry — an already-paid purchase (#1338)', () => {
+  it('refuses with retry_already_paid when the chain has a succeeded payment', () => {
+    const d = decideRetry(makeParent(), OWNER, NOW, { alreadyPaid: true });
+    expect(d).toMatchObject({
+      kind: 'refuse',
+      status: 409,
+      code: 'retry_already_paid',
+    });
+  });
+
+  it('checks ownership FIRST, so a stranger cannot learn whether someone paid', () => {
+    const d = decideRetry(makeParent(), 'someone-else', NOW, {
+      alreadyPaid: true,
+    });
+    expect(d).toMatchObject({ kind: 'refuse', code: 'retry_not_found' });
+  });
+
+  it('proceeds as before when nothing has been paid', () => {
+    expect(
+      decideRetry(makeParent(), OWNER, NOW, { alreadyPaid: false }).kind
+    ).toBe('proceed');
+    expect(decideRetry(makeParent(), OWNER, NOW).kind).toBe('proceed');
+  });
+});
+
+describe('chainAlreadyPaid', () => {
+  type Row = Record<string, unknown>;
+  /**
+   * payment_intents by id (maybeSingle) and by a set of parents (.in); payment_results filtered
+   * by the intent set AND by status, so deleting the status filter fails a test.
+   */
+  function stub({
+    intents = {} as Record<string, Row>,
+    results = [] as { intent_id: string; status: string }[],
+    /** Fails the ANCESTOR read only; childError and paidError fail the other two. */
+    error = null as unknown,
+    childError = null as unknown,
+    paidError = null as unknown,
+  } = {}) {
+    const from = (table: string) => {
+      const f: { eq: Record<string, unknown>; in: Record<string, unknown[]> } =
+        {
+          eq: {},
+          in: {},
+        };
+      const chain: Record<string, unknown> = {};
+      chain.select = () => chain;
+      chain.eq = (c: string, v: unknown) => {
+        f.eq[c] = v;
+        return chain;
+      };
+      chain.in = (c: string, v: unknown[]) => {
+        f.in[c] = v;
+        return chain;
+      };
+      chain.limit = () => chain;
+      chain.maybeSingle = async () => {
+        if (error) return { data: null, error };
+        return { data: intents[String(f.eq.id)] ?? null, error: null };
+      };
+      chain.then = (res: (v: unknown) => unknown) => {
+        if (table === 'payment_intents') {
+          if (childError)
+            return Promise.resolve({ data: null, error: childError }).then(res);
+          const parents = f.in.parent_intent_id ?? [];
+          const kids = Object.values(intents).filter((r) =>
+            parents.includes(r.parent_intent_id)
+          );
+          return Promise.resolve({ data: kids, error: null }).then(res);
+        }
+        if (paidError)
+          return Promise.resolve({ data: null, error: paidError }).then(res);
+        const ids = f.in.intent_id ?? [];
+        const hits = results
+          .filter(
+            (r) =>
+              ids.includes(r.intent_id) &&
+              (f.eq.status === undefined || r.status === f.eq.status)
+          )
+          .map((r) => ({ id: `pr-${r.intent_id}` }));
+        return Promise.resolve({ data: hits, error: null }).then(res);
+      };
+      return chain;
+    };
+    return { from };
+  }
+
+  const P = { id: 'int-1', parent_intent_id: null };
+  const C1 = { id: 'int-2', parent_intent_id: 'int-1' };
+  const C2 = { id: 'int-3', parent_intent_id: 'int-2' };
+  const chain = { 'int-1': P, 'int-2': C1, 'int-3': C2 };
+  const paid = (intent_id: string) => [{ intent_id, status: 'succeeded' }];
+
+  it('is false when nothing in the chain succeeded', async () => {
+    expect(await chainAlreadyPaid(stub({ intents: chain }), 'int-2')).toBe(
+      false
+    );
+  });
+
+  it('counts only SUCCEEDED: a failed or pending attempt is what a retry follows', async () => {
+    // Without the status filter every legitimate retry would be refused for good.
+    for (const status of ['failed', 'pending']) {
+      const sb = stub({
+        intents: chain,
+        results: [{ intent_id: 'int-1', status }],
+      });
+      expect(await chainAlreadyPaid(sb, 'int-1')).toBe(false);
+    }
+  });
+
+  it('sees a succeeded payment on an ancestor', async () => {
+    expect(
+      await chainAlreadyPaid(
+        stub({ intents: chain, results: paid('int-1') }),
+        'int-3'
+      )
+    ).toBe(true);
+  });
+
+  it('sees a succeeded payment on a direct child', async () => {
+    expect(
+      await chainAlreadyPaid(
+        stub({ intents: chain, results: paid('int-2') }),
+        'int-1'
+      )
+    ).toBe(true);
+  });
+
+  it('sees a succeeded GRANDCHILD when the purchase is retried (blind review, #1338)', async () => {
+    // P -> C1 -> C2, C2 paid, buyer presses Retry on P in an old tab. The insert would dedupe to
+    // C1 and hand it back for checkout, so C1 could be charged a second time.
+    expect(
+      await chainAlreadyPaid(
+        stub({ intents: chain, results: paid('int-3') }),
+        'int-1'
+      )
+    ).toBe(true);
+  });
+
+  it('sees a paid sibling branch reached through the purchase', async () => {
+    // Retrying C1 when C2 (its child) was paid: found by walking up to P and back down.
+    expect(
+      await chainAlreadyPaid(
+        stub({ intents: chain, results: paid('int-3') }),
+        'int-2'
+      )
+    ).toBe(true);
+  });
+
+  it('throws on a read error, so the retry fails closed rather than risking a second charge', async () => {
+    // Each of the three reads separately: the ancestor walk, the descendants, and the payments.
+    for (const sb of [
+      stub({ error: { code: '08006' } }),
+      stub({ intents: chain, childError: { code: '08006' } }),
+      stub({ intents: chain, paidError: { code: '08006' } }),
+    ]) {
+      await expect(chainAlreadyPaid(sb, 'int-1')).rejects.toMatchObject({
+        code: '08006',
+      });
+    }
+  });
+});
+
+describe('the liveness double-charge query covers every chain create-order builds', () => {
+  it('walks deeper than RETRY_LIMIT', async () => {
+    const { DOUBLE_CHARGE_SQL } = await import(
+      '../../scripts/ci/check-webhook-liveness.mjs'
+    );
+    const depth = Number(/c\.depth < (\d+)/.exec(DOUBLE_CHARGE_SQL)?.[1]);
+    expect(depth).toBeGreaterThan(RETRY_LIMIT);
   });
 });
