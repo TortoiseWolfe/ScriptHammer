@@ -139,27 +139,36 @@ const bornOf = (dir) =>
   );
 
 /**
- * Rewrite one entry's first-seen timestamp in a built directory's ledger.
+ * Rewrite first-seen timestamps in a built directory's ledger.
  *
  * Retention is now measured in days, and a test cannot wait days. Backdating the
  * ledger is the only thing being simulated — the script reads it exactly as it would
  * read a genuinely old one.
+ *
+ * PASS EVERY FILE OF ONE GENERATION IN ONE CALL. A deploy dates all of its files with
+ * the same `NOW`, and the boundary rule (#1331) treats one exact timestamp as one
+ * generation. Backdating a generation's files in separate calls left them a
+ * millisecond apart on a loaded CI runner. That split the generation and failed both
+ * #1331 tests in CI while they passed locally.
  */
-function backdate(dir, rel, days) {
+function backdate(dir, rels, days) {
+  const list = Array.isArray(rels) ? rels : [rels];
   const p = path.join(dir, 'asset-ledger/ASSET_AGES.txt');
   const when = new Date(Date.now() - days * 86400000).toISOString();
+  const hit = new Set();
   const out = fs
     .readFileSync(p, 'utf8')
     .split('\n')
     .map((l) => {
       const m = l.match(/^(\d+)\s+(\S+T\S+Z)\s+(.+)$/);
-      return m && m[3] === rel ? `${m[1]} ${when} ${m[3]}` : l;
+      if (!m || !list.includes(m[3])) return l;
+      hit.add(m[3]);
+      return `${m[1]} ${when} ${m[3]}`;
     })
     .join('\n');
-  assert.ok(
-    out.includes(when),
-    `backdate() failed to match ${rel} in the ledger`
-  );
+  for (const rel of list) {
+    assert.ok(hit.has(rel), `backdate() failed to match ${rel} in the ledger`);
+  }
   fs.writeFileSync(p, out);
 }
 
@@ -340,9 +349,11 @@ describe('retain-previous-assets: chaining across a burst (#548)', () => {
       ['a', 40],
       ['b', 30],
     ]) {
-      for (const f of [`css/gen-${g}.css`, `chunks/gen-${g}.js`]) {
-        backdate(dirs[1], `_next/static/${f}`, days);
-      }
+      backdate(
+        dirs[1],
+        [`_next/static/css/gen-${g}.css`, `_next/static/chunks/gen-${g}.js`],
+        days
+      );
     }
 
     await retain(dirs[2], dirs[1], 14);
@@ -372,9 +383,11 @@ describe('retain-previous-assets: chaining across a burst (#548)', () => {
       ['b', 15.5],
       ['c', 9],
     ]) {
-      for (const f of [`css/gen-${g}.css`, `chunks/gen-${g}.js`]) {
-        backdate(dirs[2], `_next/static/${f}`, days);
-      }
+      backdate(
+        dirs[2],
+        [`_next/static/css/gen-${g}.css`, `_next/static/chunks/gen-${g}.js`],
+        days
+      );
     }
 
     await retain(dirs[3], dirs[2], 14);
