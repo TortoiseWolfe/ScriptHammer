@@ -15,6 +15,7 @@ import {
   canceledAtFromPayPal,
   canceledAtFromStripe,
   failurePatch,
+  laterOf,
   mapPayPalSubscription,
   paypalEventAt,
   snapshotDecision,
@@ -40,18 +41,18 @@ describe('event time', () => {
 
 describe('snapshotDecision: a subscription snapshot applies only if it is not older', () => {
   it('applies to a row that does not exist yet', () => {
-    expect(snapshotDecision(null, T1, 'active')).toEqual({ apply: true });
+    expect(snapshotDecision(null, T1)).toEqual({ apply: true });
   });
 
   it('applies a newer snapshot, and an equal-time one', () => {
     const stored = { status: 'active', last_provider_event_at: T1 };
-    expect(snapshotDecision(stored, T2, 'past_due')).toEqual({ apply: true });
-    expect(snapshotDecision(stored, T1, 'past_due')).toEqual({ apply: true });
+    expect(snapshotDecision(stored, T2)).toEqual({ apply: true });
+    expect(snapshotDecision(stored, T1)).toEqual({ apply: true });
   });
 
   it('refuses an OLDER snapshot, whether it is a replay or an out-of-order first delivery', () => {
     const stored = { status: 'past_due', last_provider_event_at: T2 };
-    expect(snapshotDecision(stored, T1, 'active')).toEqual({
+    expect(snapshotDecision(stored, T1)).toEqual({
       apply: false,
       reason: 'older_than_stored_state',
     });
@@ -59,23 +60,27 @@ describe('snapshotDecision: a subscription snapshot applies only if it is not ol
 
   it('applies when the stored row has no provider time yet (written before this column)', () => {
     expect(
-      snapshotDecision(
-        { status: 'active', last_provider_event_at: null },
-        T1,
-        'past_due'
-      )
+      snapshotDecision({ status: 'active', last_provider_event_at: null }, T1)
     ).toEqual({ apply: true });
   });
 
-  it('never revives an ended subscription, however new the snapshot', () => {
-    // A provider does not reactivate a canceled subscription id; a resubscribe is a new id.
-    const stored = { status: 'canceled', last_provider_event_at: T1 };
-    expect(snapshotDecision(stored, T2, 'active')).toEqual({
-      apply: false,
-      reason: 'subscription_already_ended',
-    });
-    // A terminal snapshot on a terminal row is fine (canceled -> expired, or the same state).
-    expect(snapshotDecision(stored, T2, 'expired')).toEqual({ apply: true });
+  it('lets a NEWER provider snapshot correct a canceled the provider never sent', () => {
+    // A user may set their own row to 'canceled' (the RLS policy allows it) while Stripe keeps
+    // billing, and Stripe `paused` maps to 'canceled' locally. Neither stamps a provider time,
+    // so the provider's next snapshot must still win. An earlier draft refused every snapshot
+    // for a 'canceled' row, which the blind review rejected.
+    expect(
+      snapshotDecision({ status: 'canceled', last_provider_event_at: null }, T2)
+    ).toEqual({ apply: true });
+    expect(
+      snapshotDecision({ status: 'canceled', last_provider_event_at: T1 }, T2)
+    ).toEqual({ apply: true });
+  });
+
+  it('refuses an older snapshot after a stamped cancellation, so it cannot revive the row', () => {
+    expect(
+      snapshotDecision({ status: 'canceled', last_provider_event_at: T2 }, T1)
+    ).toEqual({ apply: false, reason: 'older_than_stored_state' });
   });
 
   it('is NOT fooled by an unrelated write: only provider time decides', () => {
@@ -83,7 +88,7 @@ describe('snapshotDecision: a subscription snapshot applies only if it is not ol
     // the row was written later (say by the retry button), but by no NEWER provider event, so a
     // replayed recovery snapshot must still apply.
     const stored = { status: 'past_due', last_provider_event_at: T1 };
-    expect(snapshotDecision(stored, T2, 'active')).toEqual({ apply: true });
+    expect(snapshotDecision(stored, T2)).toEqual({ apply: true });
   });
 });
 
@@ -150,6 +155,18 @@ describe('failurePatch: a failed renewal payment', () => {
     );
   });
 
+  it('keeps a PASSED deadline for a further attempt on the same invoice', () => {
+    // Provider count 3 is the third attempt on one failing invoice. A late retry after the
+    // deadline must not grant a fresh week of grace.
+    const r = failurePatch(
+      row({ status: 'past_due', grace_period_expires: '2026-10-01' }),
+      opts({ providerCount: 3 })
+    );
+    expect(r.kind === 'patch' && r.patch.grace_period_expires).toBe(
+      '2026-10-01'
+    );
+  });
+
   it('starts a new grace period once the old deadline has passed', () => {
     const r = failurePatch(
       row({ status: 'past_due', grace_period_expires: '2026-10-01' }),
@@ -200,6 +217,14 @@ describe('failurePatch: a failed renewal payment', () => {
       opts({ eventAt: T1 })
     );
     expect(r.kind === 'patch' && r.patch.last_provider_event_at).toBe(T2);
+  });
+});
+
+describe('laterOf', () => {
+  it('never moves a stamp backwards', () => {
+    expect(laterOf(T2, T1)).toBe(T2);
+    expect(laterOf(T1, T2)).toBe(T2);
+    expect(laterOf(null, T1)).toBe(T1);
   });
 });
 

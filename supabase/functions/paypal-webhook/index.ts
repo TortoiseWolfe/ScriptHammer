@@ -13,6 +13,7 @@ import {
 import {
   canceledAtFromPayPal,
   failurePatch,
+  laterOf,
   mapPayPalSubscription,
   paypalEventAt,
   snapshotDecision,
@@ -411,7 +412,7 @@ async function handleSubscriptionEvent(
   }
 
   // ORDERED BY THE PROVIDER'S CLOCK (#1307 stage 2): an older snapshot, replayed or delivered
-  // out of order, must not roll the row back, and a cancelled subscription is never revived.
+  // out of order, must not roll the row back. See snapshotDecision.
   const eventAt = paypalEventAt(event.create_time, Date.now());
   const { data: stored, error: storedError } = await supabase
     .from('subscriptions')
@@ -419,7 +420,7 @@ async function handleSubscriptionEvent(
     .eq('provider_subscription_id', resource.id)
     .maybeSingle();
   if (storedError) throw storedError;
-  const decision = snapshotDecision(stored, eventAt, mapped.status);
+  const decision = snapshotDecision(stored, eventAt);
   if (!decision.apply) {
     console.log(
       `PayPal subscription ${resource.id}: ${event.event_type} not applied (${decision.reason})`
@@ -486,11 +487,23 @@ async function handleSubscriptionCancelled(
 
   // NO ORDERING GUARD, deliberately: cancellation is terminal and canceled_at comes from the
   // event, so applying it again is harmless, and skipping it could leave a dead subscription
-  // holding the user's one live slot. snapshotDecision then refuses to revive the row.
+  // holding the user's one live slot. It STAMPS the provider time, so an older snapshot arriving
+  // later is refused by snapshotDecision instead of reviving the row.
+  const { data: stored, error: storedError } = await supabase
+    .from('subscriptions')
+    .select('last_provider_event_at')
+    .eq('provider_subscription_id', resource.id)
+    .maybeSingle();
+  if (storedError) throw storedError;
+
   const { data: sub, error } = await supabase
     .from('subscriptions')
     .update({
       status: 'canceled',
+      last_provider_event_at: laterOf(
+        stored?.last_provider_event_at ?? null,
+        paypalEventAt(event.create_time, Date.now())
+      ),
       // From the event, not now(), so a replay cannot move the date (#1307). This used to write
       // status_update_time into cancellation_reason, a timestamp where a reason belongs.
       canceled_at: canceledAtFromPayPal(
@@ -550,8 +563,16 @@ async function handleSubscriptionPaymentFailed(
   // Idempotent, so a replay is safe (#1307): PayPal's own failed_payments_count, a live grace
   // deadline kept, no revival of an ended subscription, and no failure applied to one a newer
   // snapshot shows active again.
+  const providerCount = resource.billing_info?.failed_payments_count;
+  if (!(providerCount > 0)) {
+    // The rule then adds one, which a replay would repeat. Whether PayPal has already counted
+    // this failure when it sends the event is undocumented; this line records it if not.
+    console.warn(
+      `PayPal subscription ${providerSubId}: failed_payments_count is ${providerCount}; counting +1`
+    );
+  }
   const decision = failurePatch(existing, {
-    providerCount: resource.billing_info?.failed_payments_count,
+    providerCount,
     eventAt: paypalEventAt(event.create_time, Date.now()),
     nowMs: Date.now(),
     graceDays: GRACE_PERIOD_DAYS,

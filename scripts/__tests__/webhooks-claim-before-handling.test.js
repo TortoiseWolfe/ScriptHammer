@@ -142,6 +142,11 @@ describe('webhooks claim an event before handling it (#1307)', () => {
         /last_provider_event_at: eventAt/,
         `${name} applies a snapshot without stamping the provider time it is ordered by`
       );
+      assert.match(
+        src,
+        /last_provider_event_at: laterOf\(/,
+        `${name}'s cancellation no longer stamps the provider time, so an older snapshot could revive it`
+      );
     });
   }
 

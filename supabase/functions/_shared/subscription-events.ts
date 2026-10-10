@@ -24,7 +24,12 @@
  * Imports nothing, so `tests/unit/subscription-events.test.ts` can drive it.
  */
 
-/** Statuses a subscription does not leave: a provider never revives a canceled subscription id. */
+/**
+ * Statuses a FAILURE must not move a subscription out of. Not used to refuse snapshots: a local
+ * 'canceled' is not always the provider's word (a user may set their own row to canceled while
+ * the provider keeps billing, and Stripe `paused` maps to canceled), so for snapshots only the
+ * provider's event time decides.
+ */
 const TERMINAL = new Set(['canceled', 'expired']);
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -51,6 +56,11 @@ function olderThanStored(eventAt: string, storedAt: string | null): boolean {
   return e !== null && s !== null && e < s;
 }
 
+/** The later of a stored provider time and an event's, so a stamp never moves backwards. Pure. */
+export function laterOf(storedAt: string | null, eventAt: string): string {
+  return olderThanStored(eventAt, storedAt) ? (storedAt as string) : eventAt;
+}
+
 /** A Stripe event's time (`event.created`, seconds) as ISO. */
 export function stripeEventAt(createdSecs: number): string {
   return fromSecs(createdSecs) ?? new Date(0).toISOString();
@@ -71,26 +81,21 @@ export interface StoredSubscription {
 
 export type SnapshotDecision =
   | { apply: true }
-  | {
-      apply: false;
-      reason: 'subscription_already_ended' | 'older_than_stored_state';
-    };
+  | { apply: false; reason: 'older_than_stored_state' };
 
 /**
  * Whether a provider SNAPSHOT of a subscription may overwrite the stored row. Pure.
  *
  * Applies to every delivery, first or replayed: an out-of-order first delivery of an older
- * snapshot is exactly as wrong as a replay of one.
+ * snapshot is exactly as wrong as a replay of one. Only provider time decides. A cancellation
+ * stamps its own time (see the cancel handlers), so a late, older `active` cannot revive it,
+ * while a newer one still corrects a 'canceled' the provider never sent.
  */
 export function snapshotDecision(
   stored: StoredSubscription | null,
-  eventAt: string,
-  newStatus: string
+  eventAt: string
 ): SnapshotDecision {
   if (!stored) return { apply: true };
-  if (TERMINAL.has(stored.status) && !TERMINAL.has(newStatus)) {
-    return { apply: false, reason: 'subscription_already_ended' };
-  }
   if (olderThanStored(eventAt, stored.last_provider_event_at)) {
     return { apply: false, reason: 'older_than_stored_state' };
   }
@@ -120,9 +125,15 @@ export type FailureDecision =
  *   - The count is the PROVIDER'S absolute count of failed attempts (Stripe
  *     `invoice.attempt_count`, PayPal `billing_info.failed_payments_count`), so a replay cannot
  *     add one again. Only when the provider sends none does it fall back to adding one.
- *   - A grace deadline still in the future is kept, so repeated failures cannot extend grace.
- *     `grace_period_expires` is a YYYY-MM-DD string, and a `past_due` row (a snapshot overwrote
- *     the status) with a live deadline is still in grace.
+ *   - A grace deadline is kept while it is live, and for further attempts on the same invoice even
+ *     after it passes, so retries cannot extend grace. `grace_period_expires` is a YYYY-MM-DD
+ *     string, and a `past_due` row (a snapshot overwrote the status) keeps it too.
+ *   - `failed_payment_count` therefore means failed attempts on the current invoice (Stripe) or
+ *     consecutive failures (PayPal); nothing in `src/` uses it for logic, only display.
+ *   - The patch stamps the provider time. A trade-off, chosen deliberately: an OLDER snapshot that
+ *     arrives after this failure (a renewal `updated` replayed an hour late) is then refused, so
+ *     its period dates wait for the next snapshot, which normally follows the failure within a
+ *     second. Not stamping would instead let that late snapshot show the subscription active.
  *   - An ended subscription is never revived, and one that a NEWER snapshot shows active again
  *     has recovered, so a late failure is not applied to it.
  *   - `canceling` (cancel at period end) keeps its status; only the count and deadline change.
@@ -146,16 +157,19 @@ export function failurePatch(
     return { kind: 'skip', reason: 'recovered_since' };
   }
   const today = new Date(opts.nowMs).toISOString().split('T')[0];
+  // Keep the existing deadline while it is live, and also once it has passed if this is a further
+  // attempt on the SAME failing invoice (provider count above 1): a late retry must not grant a
+  // fresh week. A count of 1 is a new episode, which starts a new deadline.
+  const sameEpisode =
+    typeof opts.providerCount === 'number' && opts.providerCount > 1;
   const inGrace =
     Boolean(row.grace_period_expires) &&
-    (row.grace_period_expires as string) >= today;
+    ((row.grace_period_expires as string) >= today || sameEpisode);
   const count =
     typeof opts.providerCount === 'number' && opts.providerCount > 0
       ? Math.floor(opts.providerCount)
       : (row.failed_payment_count ?? 0) + 1;
-  const newest = olderThanStored(opts.eventAt, row.last_provider_event_at)
-    ? (row.last_provider_event_at as string)
-    : opts.eventAt;
+  const newest = laterOf(row.last_provider_event_at, opts.eventAt);
   return {
     kind: 'patch',
     patch: {

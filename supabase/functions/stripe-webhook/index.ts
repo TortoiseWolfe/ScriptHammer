@@ -14,6 +14,7 @@ import {
 import {
   canceledAtFromStripe,
   failurePatch,
+  laterOf,
   snapshotDecision,
   stripeEventAt,
 } from '../_shared/subscription-events.ts';
@@ -598,15 +599,15 @@ async function handleSubscriptionEvent(
   };
 
   // ORDERED BY THE PROVIDER'S CLOCK (#1307 stage 2). A snapshot older than the one already
-  // applied, whether replayed or delivered out of order, would roll the row back; and a canceled
-  // subscription id is never revived. See snapshotDecision.
+  // applied, whether replayed or delivered out of order, would roll the row back. See
+  // snapshotDecision.
   const { data: stored, error: storedError } = await supabase
     .from('subscriptions')
     .select('status, last_provider_event_at')
     .eq('provider_subscription_id', subscription.id)
     .maybeSingle();
   if (storedError) throw storedError;
-  const decision = snapshotDecision(stored, eventAt, localStatus);
+  const decision = snapshotDecision(stored, eventAt);
   if (!decision.apply) {
     console.log(
       `subscription ${subscription.id}: ${event.type} not applied (${decision.reason})`
@@ -657,11 +658,23 @@ async function handleSubscriptionDeleted(
   // NO ORDERING GUARD HERE, deliberately. Cancellation is terminal at Stripe and canceled_at now
   // comes from the event, so applying it again is harmless, and skipping it could leave a dead
   // subscription holding the user's one live slot (the review that rejected the first stage-2
-  // draft found exactly that). snapshotDecision then refuses to revive the row.
+  // draft found exactly that). It does STAMP the provider time, so an older snapshot arriving
+  // later is refused by snapshotDecision instead of reviving the row.
+  const { data: stored, error: storedError } = await supabase
+    .from('subscriptions')
+    .select('last_provider_event_at')
+    .eq('provider_subscription_id', subscription.id)
+    .maybeSingle();
+  if (storedError) throw storedError;
+
   const { data: sub, error } = await supabase
     .from('subscriptions')
     .update({
       status: 'canceled',
+      last_provider_event_at: laterOf(
+        stored?.last_provider_event_at ?? null,
+        stripeEventAt(event.created)
+      ),
       // From the event, not now(): a replay days later must not move the date (#1307).
       canceled_at: canceledAtFromStripe(subscription, event.created),
       cancellation_reason: subscription.cancellation_details?.reason || null,
@@ -727,6 +740,11 @@ async function handleInvoicePaymentFailed(
   // deadline is kept, an ended subscription is never revived, and one a newer snapshot shows
   // active has recovered. GRACE_PERIOD_DAYS mirrors subscriptionConfig.gracePeriodDays in
   // src/config/payment.ts (Deno can't import that browser module, so it is duplicated here).
+  if (!(invoice.attempt_count > 0)) {
+    // The rule falls back to adding one, which a replay would repeat. Stripe documents
+    // attempt_count as always set on a failed invoice; this line says so if it ever is not.
+    console.warn(`invoice ${invoice.id} carries no attempt_count; counting +1`);
+  }
   const decision = failurePatch(existing, {
     providerCount: invoice.attempt_count,
     eventAt: stripeEventAt(event.created),
