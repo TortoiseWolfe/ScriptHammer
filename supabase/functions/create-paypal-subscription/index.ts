@@ -53,6 +53,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAuthenticatedUserId, UnauthorizedError } from '../_shared/auth.ts';
+import { getPayPalAccessToken } from '../_shared/paypal.ts';
 import {
   resolvePayPalSubscription,
   type PayPalSubscriptionProductRow,
@@ -72,37 +73,6 @@ interface RequestBody {
 }
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-/**
- * Fetch a PayPal OAuth2 access token via client-credentials. Kept inline so
- * each PayPal function stays self-contained. Throws on non-2xx.
- */
-async function getPayPalAccessToken(): Promise<string> {
-  const clientId =
-    Deno.env.get('PAYPAL_CLIENT_ID') ??
-    Deno.env.get('NEXT_PUBLIC_PAYPAL_CLIENT_ID') ??
-    '';
-  const clientSecret = Deno.env.get('PAYPAL_CLIENT_SECRET') ?? '';
-
-  const res = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
-    method: 'POST',
-    headers: {
-      Authorization: 'Basic ' + btoa(`${clientId}:${clientSecret}`),
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: 'grant_type=client_credentials',
-  });
-
-  if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(
-      `PayPal OAuth token request failed: ${res.status} ${detail}`
-    );
-  }
-
-  const json = await res.json();
-  return json.access_token;
-}
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -171,7 +141,9 @@ serve(async (req) => {
     }
     const planId = decision.planId;
 
-    const accessToken = await getPayPalAccessToken();
+    const accessToken = await getPayPalAccessToken(PAYPAL_API, (name) =>
+      Deno.env.get(name)
+    );
 
     // Create the PayPal Billing Subscription. `custom_id` carries the
     // caller's user_id so `paypal-webhook` can attribute the resulting

@@ -39,6 +39,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAuthenticatedUserId, UnauthorizedError } from '../_shared/auth.ts';
+import { getPayPalAccessToken } from '../_shared/paypal.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   apiVersion: '2024-06-20',
@@ -55,38 +56,6 @@ const PAYPAL_API =
 
 interface RequestBody {
   subscription_id?: string;
-}
-
-/**
- * Obtain a PayPal OAuth2 access token via client_credentials.
- * Kept self-contained inside this function so the PayPal functions don't
- * depend on shared state. Throws if credentials are missing or the call fails.
- */
-async function getPayPalAccessToken(): Promise<string> {
-  const clientId = Deno.env.get('PAYPAL_CLIENT_ID');
-  const clientSecret = Deno.env.get('PAYPAL_CLIENT_SECRET');
-  if (!clientId || !clientSecret) {
-    throw new Error(
-      'PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET missing in function env'
-    );
-  }
-
-  const res = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
-    method: 'POST',
-    headers: {
-      Authorization: 'Basic ' + btoa(`${clientId}:${clientSecret}`),
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: 'grant_type=client_credentials',
-  });
-
-  if (!res.ok) {
-    const detail = await res.text();
-    throw new Error(`PayPal token request failed (${res.status}): ${detail}`);
-  }
-
-  const json = await res.json();
-  return json.access_token as string;
 }
 
 serve(async (req) => {
@@ -146,7 +115,9 @@ serve(async (req) => {
         cancel_at_period_end: true,
       });
     } else if (subscription.provider === 'paypal') {
-      const accessToken = await getPayPalAccessToken();
+      const accessToken = await getPayPalAccessToken(PAYPAL_API, (name) =>
+        Deno.env.get(name)
+      );
       const res = await fetch(
         `${PAYPAL_API}/v1/billing/subscriptions/${subscription.provider_subscription_id}/cancel`,
         {
