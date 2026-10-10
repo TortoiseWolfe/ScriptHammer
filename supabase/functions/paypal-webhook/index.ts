@@ -12,6 +12,7 @@ import {
 } from '../_shared/webhook-claim.ts';
 import {
   errorMessage,
+  isOurIntentRef,
   type WebhookHandlerResult,
 } from '../_shared/webhook-types.ts';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -97,7 +98,10 @@ serve(async (req) => {
     });
     if (claim.kind === 'respond') {
       return new Response(
-        JSON.stringify({ received: true, message: claim.message }),
+        JSON.stringify({
+          received: claim.status === 200,
+          message: claim.message,
+        }),
         {
           status: claim.status,
           headers: { 'Content-Type': 'application/json' },
@@ -170,7 +174,7 @@ serve(async (req) => {
     }
 
     // Throws if the row was not marked, so a success whose bookkeeping failed is retried.
-    await finishWebhookEvent(supabase, claim.id, {
+    await finishWebhookEvent(supabase, claim.id, claim.attempt, {
       related_payment_id: processResult.related_payment_id,
       related_subscription_id: processResult.related_subscription_id,
     });
@@ -242,8 +246,12 @@ async function handlePaymentCompleted(
   webhookEventId: string
 ): Promise<WebhookHandlerResult> {
   const resource = event.resource;
+  // A PayPal Invoicing capture carries `INV2-...` here, and other integrations on the merchant
+  // account set custom_id. Not ours, and permanent: check before a lookup that would throw.
   const intentId = resource.custom_id || resource.invoice_id;
-  if (!intentId) return { handled: false, reason: 'no_intent_reference' };
+  if (!isOurIntentRef(intentId)) {
+    return { handled: false, reason: 'not_our_intent' };
+  }
 
   // .maybeSingle() and a checked error. .single() ERRORS on zero rows and the error was never
   // read, so "could not read the intent" looked like "no such intent" and the capture was marked
@@ -443,9 +451,18 @@ async function handleSubscriptionCancelled(
     })
     .eq('provider_subscription_id', resource.id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
+  // .single() ERRORED on zero rows, so a cancellation for a subscription this database never
+  // recorded was a 500. Under the claim that is a permanent condition: a give-up and a daily red
+  // alarm for nothing. Acknowledge it, as stripe-webhook does (#1307 prerequisite 6).
+  if (!sub) {
+    console.warn(
+      `BILLING.SUBSCRIPTION.CANCELLED for a subscription not in the database: ${resource.id}`
+    );
+    return { handled: false, reason: 'unknown_subscription' };
+  }
   return { handled: true, related_subscription_id: sub.id };
 }
 

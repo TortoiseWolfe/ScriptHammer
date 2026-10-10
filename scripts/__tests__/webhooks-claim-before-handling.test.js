@@ -68,6 +68,26 @@ describe('webhooks claim an event before handling it (#1307)', () => {
     );
   });
 
+  for (const name of ['stripe-webhook', 'paypal-webhook']) {
+    it(`${name} checks an intent reference is ours before every payment_intents lookup`, () => {
+      // A lookup error now throws and the claim retries it (#1307). A reference that was never
+      // ours (a PayPal Invoicing `INV2-...`) makes the uuid lookup ERROR, so without the check a
+      // permanent condition becomes MAX_ATTEMPTS retries and then a daily red alarm.
+      const src = code(path.join(FN, name, 'index.ts'));
+      const lookups = (src.match(/from\(\s*'payment_intents'\s*\)/g) || [])
+        .length;
+      const checks = (src.match(/isOurIntentRef\(/g) || []).length;
+      assert.ok(
+        lookups > 0,
+        `${name} no longer looks up payment_intents; update this guard`
+      );
+      assert.ok(
+        checks >= lookups,
+        `${name} has ${lookups} payment_intents lookup(s) but only ${checks} isOurIntentRef check(s)`
+      );
+    });
+  }
+
   for (const [name, file] of WEBHOOKS) {
     it(`${name} claims, finishes and fails through the shared module`, () => {
       const src = code(file);

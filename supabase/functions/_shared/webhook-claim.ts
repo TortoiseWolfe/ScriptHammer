@@ -56,10 +56,12 @@ export const REPLAY_SAFE: Readonly<Record<WebhookProvider, readonly string[]>> =
 export const MAX_ATTEMPTS = 5;
 
 /**
- * How long a claim holds before another delivery may take the event over. Longer than an Edge
- * Function can run, so a slow handler is never run twice at once.
+ * How long a claim holds before another delivery may take the event over. Supabase lets an Edge
+ * Function run for 150 s of wall clock on the free plan and 400 s on paid plans; ten minutes
+ * clears both, so a slow handler is not run twice at once. If one ever outlives its lease, the
+ * attempt guard on finish and fail below keeps the stale holder from overwriting the new one.
  */
-export const CLAIM_LEASE_MS = 5 * 60_000;
+export const CLAIM_LEASE_MS = 10 * 60_000;
 
 /** The longest `processing_error` kept: enough for a stack's first lines, not a whole payload. */
 const ERROR_LIMIT = 500;
@@ -68,7 +70,8 @@ export interface EventRow {
   id: string;
   processed: boolean;
   permanently_failed: boolean | null;
-  processing_attempts: number | null;
+  /** `NOT NULL DEFAULT 0` in the schema. */
+  processing_attempts: number;
   last_retry_at: string | null;
 }
 
@@ -126,7 +129,7 @@ export function decideExisting(
       message: 'Event is being processed by another delivery; retry later',
     };
   }
-  return { kind: 'reclaim', attempts: row.processing_attempts ?? 0 };
+  return { kind: 'reclaim', attempts: row.processing_attempts };
 }
 
 /** After a handler failed on attempt `attempt`: retry, or give up and let the alarm have it. Pure. */
@@ -188,16 +191,13 @@ export async function claimWebhookEvent(
   // COMPARE-AND-SWAP on the attempt count this request read. Two deliveries that both read N
   // cannot both write N + 1: the second matches no row and backs off with a 409.
   const next = decision.attempts + 1;
-  const swap = supabase
+  const { data: won, error: swapError } = await supabase
     .from('webhook_events')
     .update({ processing_attempts: next, last_retry_at: nowIso })
     .eq('id', existing.id)
-    .eq('processed', false);
-  const { data: won, error: swapError } = await (
-    existing.processing_attempts === null
-      ? swap.is('processing_attempts', null)
-      : swap.eq('processing_attempts', decision.attempts)
-  ).select('id');
+    .eq('processed', false)
+    .eq('processing_attempts', decision.attempts)
+    .select('id');
   if (swapError) throw swapError;
   if (!won || won.length === 0) {
     return {
@@ -209,10 +209,15 @@ export async function claimWebhookEvent(
   return { kind: 'claimed', id: existing.id, attempt: next };
 }
 
-/** Mark a claimed event processed. Throws if the row was not updated. */
+/**
+ * Mark a claimed event processed. Throws if the row was not updated: the write failed, or this
+ * request's claim was taken over (`attempt` is no longer the row's count), in which case the
+ * provider's retry finds whatever the newer holder recorded.
+ */
 export async function finishWebhookEvent(
   supabase: any,
   id: string,
+  attempt: number,
   related: {
     related_payment_id?: string;
     related_subscription_id?: string;
@@ -233,10 +238,13 @@ export async function finishWebhookEvent(
       }),
     })
     .eq('id', id)
+    .eq('processing_attempts', attempt)
     .select('id');
   if (error) throw error;
   if (!data || data.length === 0) {
-    throw new Error(`webhook_events ${id} was not marked processed (0 rows)`);
+    throw new Error(
+      `webhook_events ${id} was not marked processed: the row is gone or attempt ${attempt} no longer holds the claim`
+    );
   }
 }
 
@@ -254,22 +262,30 @@ export async function failWebhookEvent(
   const outcome = afterFailure(attempt, replaySafe);
   const message =
     cause instanceof Error ? cause.message : JSON.stringify(cause ?? null);
-  const { error } = await supabase
+  // Guarded by `attempt`, like finish: a holder whose claim was taken over must not null the new
+  // holder's lease, or mark permanently_failed an event that holder is about to process.
+  const { data, error } = await supabase
     .from('webhook_events')
     .update({
       processing_error: String(message).slice(0, ERROR_LIMIT),
       last_retry_at: null,
       ...(outcome.giveUp && { permanently_failed: true }),
     })
-    .eq('id', id);
-  if (error) {
+    .eq('id', id)
+    .eq('processing_attempts', attempt)
+    .select('id');
+  if (error || !data || data.length === 0) {
     console.error(
-      `webhook-claim: could not record the failure of ${id}`,
       error
+        ? `webhook-claim: could not record the failure of ${id}`
+        : `webhook-claim: attempt ${attempt} on ${id} no longer holds the claim`,
+      error ?? ''
     );
-    // Answering 200 without the permanently_failed mark would lose the event in silence: no
-    // retry, and nothing for the liveness alarm to see. Keep the provider retrying instead.
-    if (outcome.giveUp) return { giveUp: false, status: 500 };
+    // A 200 without the permanently_failed mark would leave a replay-safe event neither processed
+    // nor given up, with no retry coming. Keep the provider retrying; the next delivery reclaims
+    // it. (A type that is not replay-safe is still acknowledged on redelivery by decideExisting
+    // until #1307 stage 2, so for those this only narrows the loss.)
+    return { giveUp: false, status: 500 };
   }
   return outcome;
 }

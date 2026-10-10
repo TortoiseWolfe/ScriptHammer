@@ -104,7 +104,7 @@ Deno.serve(async (req: Request) => {
 
   if (outcome.kind === 'unattributed') {
     try {
-      await finishWebhookEvent(admin, claim.id);
+      await finishWebhookEvent(admin, claim.id, claim.attempt);
     } catch (finishError) {
       console.error(
         'calcom-webhook could not mark the event processed',
@@ -148,7 +148,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    await finishWebhookEvent(admin, claim.id);
+    await finishWebhookEvent(admin, claim.id, claim.attempt);
   } catch (finishError) {
     console.error(
       'calcom-webhook could not mark the event processed',

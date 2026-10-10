@@ -13,6 +13,7 @@ import {
 } from '../_shared/webhook-claim.ts';
 import {
   errorMessage,
+  isOurIntentRef,
   PG_UNIQUE_VIOLATION,
   resolveCheckoutIntentId,
   type WebhookHandlerResult,
@@ -131,7 +132,10 @@ serve(async (req) => {
     if (claim.kind === 'respond') {
       console.log(`Event ${event.id}: ${claim.message}`);
       return new Response(
-        JSON.stringify({ received: true, message: claim.message }),
+        JSON.stringify({
+          received: claim.status === 200,
+          message: claim.message,
+        }),
         {
           status: claim.status,
           headers: { 'Content-Type': 'application/json' },
@@ -221,7 +225,7 @@ serve(async (req) => {
     }
 
     // Throws if the row was not marked, so a success whose bookkeeping failed is retried.
-    await finishWebhookEvent(supabase, claim.id, {
+    await finishWebhookEvent(supabase, claim.id, claim.attempt, {
       related_payment_id: processResult.related_payment_id,
       related_subscription_id: processResult.related_subscription_id,
     });
@@ -249,14 +253,13 @@ async function handlePaymentIntentSucceeded(
 ): Promise<WebhookHandlerResult> {
   const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
-  // A Stripe PI with no intent_id was not created by create-order (a subscription invoice, a
-  // dashboard charge). It is not ours to record, and no retry will change that.
+  // A Stripe PI without one of OUR intent ids was not created by create-order (a subscription
+  // invoice, a dashboard charge, another integration). It is not ours to record, and no retry
+  // will change that, so it must not reach a lookup that could throw (see isOurIntentRef).
   const intentId = paymentIntent.metadata?.intent_id;
-  if (!intentId) {
-    console.log(
-      `Stripe PI ${paymentIntent.id} carries no intent_id — not ours`
-    );
-    return { handled: false, reason: 'no_intent_metadata' };
+  if (!isOurIntentRef(intentId)) {
+    console.log(`Stripe PI ${paymentIntent.id} carries no intent_id of ours`);
+    return { handled: false, reason: 'not_our_intent' };
   }
 
   // .maybeSingle(), not .single(). .single() ERRORS on zero rows, and the error was never read,
@@ -374,9 +377,9 @@ async function handlePaymentCheckout(
   // session.metadata is EMPTY on every session this app creates — the intent id travels in
   // client_reference_id. See resolveCheckoutIntentId for what that cost.
   const intentId = resolveCheckoutIntentId(session);
-  if (!intentId) {
+  if (!isOurIntentRef(intentId)) {
     console.warn(
-      `Checkout session ${session.id} carries neither metadata.intent_id nor client_reference_id`
+      `Checkout session ${session.id} carries no intent reference of ours (metadata.intent_id or client_reference_id)`
     );
     return { handled: false, reason: 'no_intent_reference' };
   }

@@ -281,6 +281,16 @@ describe('claimWebhookEvent', () => {
     expect(claim).toMatchObject({ kind: 'respond', status: 409 });
   });
 
+  it('writes nothing while another delivery holds the lease', async () => {
+    const { client, calls } = makeSupabase({
+      insert: { data: null, error: { code: '23505' } },
+      select: { data: row({ last_retry_at: ago(1000) }), error: null },
+    });
+    const claim = await claimWebhookEvent(client, 'stripe', RECORD, NOW);
+    expect(claim).toMatchObject({ kind: 'respond', status: 409 });
+    expect(calls.filter((c) => c.op === 'update')).toHaveLength(0);
+  });
+
   it('throws on an insert error that is not a duplicate', async () => {
     const { client } = makeSupabase({
       insert: { data: null, error: { code: '57014', message: 'timeout' } },
@@ -313,11 +323,12 @@ describe('claimWebhookEvent', () => {
 });
 
 describe('finishWebhookEvent', () => {
-  it('marks the event processed and records what it touched', async () => {
+  it('marks the event processed, guarded by the attempt that holds the claim', async () => {
     const { client, calls } = makeSupabase({});
     await finishWebhookEvent(
       client,
       'we-1',
+      3,
       { related_payment_id: 'pr-1' },
       NOW
     );
@@ -327,7 +338,10 @@ describe('finishWebhookEvent', () => {
       processing_error: null,
       related_payment_id: 'pr-1',
     });
-    expect(calls[0].filters).toEqual([['eq', 'id', 'we-1']]);
+    expect(calls[0].filters).toEqual([
+      ['eq', 'id', 'we-1'],
+      ['eq', 'processing_attempts', 3],
+    ]);
   });
 
   it('throws when the write fails, so the success is retried rather than left unprocessed', async () => {
@@ -335,25 +349,25 @@ describe('finishWebhookEvent', () => {
       update: [{ data: null, error: { code: '08006' } }],
     });
     await expect(
-      finishWebhookEvent(client, 'we-1', {}, NOW)
+      finishWebhookEvent(client, 'we-1', 1, {}, NOW)
     ).rejects.toMatchObject({ code: '08006' });
   });
 
-  it('throws when no row was updated', async () => {
+  it('throws when no row was updated: the row is gone or the claim was taken over', async () => {
     const { client } = makeSupabase({ update: [{ data: [], error: null }] });
-    await expect(finishWebhookEvent(client, 'we-1', {}, NOW)).rejects.toThrow(
-      /not marked processed/
-    );
+    await expect(
+      finishWebhookEvent(client, 'we-1', 1, {}, NOW)
+    ).rejects.toThrow(/not marked processed/);
   });
 });
 
 describe('failWebhookEvent', () => {
-  it('records the error and releases the claim so the retry can take it at once', async () => {
+  it('records the error and releases the claim, guarded by its attempt', async () => {
     const { client, calls } = makeSupabase({});
     const out = await failWebhookEvent(
       client,
       'we-1',
-      1,
+      2,
       true,
       new Error('db blip')
     );
@@ -362,6 +376,10 @@ describe('failWebhookEvent', () => {
       processing_error: 'db blip',
       last_retry_at: null,
     });
+    expect(calls[0].filters).toEqual([
+      ['eq', 'id', 'we-1'],
+      ['eq', 'processing_attempts', 2],
+    ]);
   });
 
   it('marks the event permanently_failed when it gives up', async () => {
@@ -381,8 +399,8 @@ describe('failWebhookEvent', () => {
   });
 
   it('keeps the provider retrying if it could not record the give-up', async () => {
-    // Answering 200 without the permanently_failed mark would lose the event in silence: no
-    // retry, and nothing for the liveness alarm to see.
+    // Answering 200 without the permanently_failed mark would leave a replay-safe event neither
+    // processed nor given up, with no retry coming.
     const { client } = makeSupabase({
       update: [{ data: null, error: { code: '08006' } }],
     });
@@ -391,6 +409,20 @@ describe('failWebhookEvent', () => {
       'we-1',
       MAX_ATTEMPTS,
       true,
+      new Error('boom')
+    );
+    expect(out).toEqual({ giveUp: false, status: 500 });
+  });
+
+  it('does not give up on behalf of a newer holder: a stale claim changes nothing', async () => {
+    // The update matched no row, because another delivery reclaimed the event and bumped its
+    // attempt count. This request must neither null that holder's lease nor report a give-up.
+    const { client } = makeSupabase({ update: [{ data: [], error: null }] });
+    const out = await failWebhookEvent(
+      client,
+      'we-1',
+      1,
+      false,
       new Error('boom')
     );
     expect(out).toEqual({ giveUp: false, status: 500 });
