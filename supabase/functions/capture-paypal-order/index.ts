@@ -14,12 +14,16 @@
  *
  * RESPONSE
  *   200 OK: { status: string }   // raw PayPal capture status; caller checks status === 'COMPLETED'
+ *     + already_captured: true when this order's row was already succeeded (no second capture)
+ *     + recorded: false when PayPal captured but our row could not be written (#1342)
  *   400 Bad Request: { error: string } (validation / missing body fields)
  *   401 Unauthorized: { error: string } (missing / invalid JWT)
  *   403 Forbidden: { error: string } (caller does not own the underlying intent)
  *   404 Not Found: { error: string } (no payment_results row for this order_id)
  *   405 Method Not Allowed: { error: string }
- *   500 Internal Server Error: { error: string } (PayPal call failed)
+ *   409 Conflict: { error, code: 'already_paid' } (another attempt in the chain is paid, #1342)
+ *   500 Internal Server Error: { error, code? } (PayPal call failed, or code 'paid_check_failed':
+ *     the paid check could not be read, so nothing was captured)
  *
  * SECURITY MODEL
  *   - JWT verified via SUPABASE_ANON_KEY (auto-injected; NEXT_PUBLIC_ fallback) (getAuthenticatedUserId)
@@ -40,6 +44,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAuthenticatedUserId, UnauthorizedError } from '../_shared/auth.ts';
 import { getPayPalAccessToken } from '../_shared/paypal.ts';
+import { gateOnChainPaid } from '../_shared/payment-chain.ts';
 
 const supabaseUrl =
   Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
@@ -86,7 +91,7 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { data: result, error: fetchError } = await supabase
       .from('payment_results')
-      .select('id, intent_id, payment_intents!inner(template_user_id)')
+      .select('id, intent_id, status, payment_intents!inner(template_user_id)')
       .eq('transaction_id', orderId)
       .single();
 
@@ -106,6 +111,25 @@ serve(async (req) => {
         req,
         { error: 'Caller does not own this payment_result' },
         403
+      );
+    }
+
+    // ALREADY CAPTURED (#1342): this order's own row is succeeded, from a double-clicked approval
+    // or a webhook that got there first. The buyer has paid. Say so, without asking PayPal to
+    // capture again, and before the chain check below, which would call it "already paid".
+    if (result.status === 'succeeded') {
+      return jsonResponse(req, { status: 'COMPLETED', already_captured: true });
+    }
+
+    // NOT IF ANOTHER ATTEMPT IN THE CHAIN WAS PAID (#1342). Approving an order moves no money;
+    // capturing it does, so this is the last point a second charge can be stopped rather than
+    // refunded. Read errors refuse too (500).
+    const gate = await gateOnChainPaid(supabase, result.intent_id);
+    if (gate.kind === 'refuse') {
+      return jsonResponse(
+        req,
+        { error: gate.error, code: gate.code },
+        gate.status
       );
     }
 
@@ -137,7 +161,7 @@ serve(async (req) => {
 
     // Record the redirect-flow outcome. The asynchronous webhook path may also
     // update this row, but the buyer-redirect capture is recorded here.
-    await supabase
+    const { error: recordError } = await supabase
       .from('payment_results')
       .update({
         status: status === 'COMPLETED' ? 'succeeded' : 'failed',
@@ -145,6 +169,28 @@ serve(async (req) => {
         updated_at: new Date().toISOString(),
       })
       .eq('transaction_id', orderId);
+
+    // The write's result used to be discarded (#1342). PayPal HAS captured by this line; only the
+    // record can fail, and the failure is now logged rather than lost.
+    //
+    // DO NOT READ A UNIQUE VIOLATION HERE AS "REFUND IT". It means another payment_results row for
+    // THIS intent is already succeeded, and today that has two causes:
+    //   - a second order on this intent captured in the window since the check above, which IS
+    //     a second charge; or
+    //   - paypal-webhook writing the intent's OLDEST PayPal row instead of the captured order's
+    //     (#1342 stage 2), when the buyer paid exactly once.
+    // Check the order in PayPal before refunding anything. And a race across two DIFFERENT intents
+    // in one chain is not seen here at all: the index is per intent, so both writes succeed.
+    //
+    // The response's `recorded: false` is for the server's logs and callers that read it; the
+    // buyer's page reads only `status`, which stays truthful because PayPal did capture.
+    if (recordError) {
+      console.error(
+        `capture-paypal-order: PayPal captured order ${orderId} (${status}) but recording it failed`,
+        recordError
+      );
+      return jsonResponse(req, { status, recorded: false });
+    }
 
     return jsonResponse(req, { status });
   } catch (err) {

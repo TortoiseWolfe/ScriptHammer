@@ -17,8 +17,9 @@
  *   401 Unauthorized: { error: string } (missing / invalid JWT)
  *   403 Forbidden: { error: string } (caller does not own the intent)
  *   404 Not Found: { error: string } (intent does not exist)
+ *   409 Conflict: { error, code: 'already_paid' } (the purchase's retry chain is already paid, #1342)
  *   410 Gone: { error: string } (intent expired)
- *   500 Internal Server Error: { error: string } (PayPal call failed)
+ *   500 Internal Server Error: { error: string } (PayPal call failed, or the paid check could not be read)
  *
  * SECURITY MODEL
  *   - JWT verified via SUPABASE_ANON_KEY (auto-injected; NEXT_PUBLIC_ fallback) (getAuthenticatedUserId)
@@ -36,6 +37,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAuthenticatedUserId, UnauthorizedError } from '../_shared/auth.ts';
 import { getPayPalAccessToken } from '../_shared/paypal.ts';
+import { gateOnChainPaid } from '../_shared/payment-chain.ts';
 
 const supabaseUrl =
   Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
@@ -116,6 +118,18 @@ serve(async (req) => {
             'payment_intent type is not "one_time"; use create-paypal-subscription for recurring',
         },
         400
+      );
+    }
+
+    // NOT FOR A PURCHASE ALREADY PAID (#1342). Asked before an order exists, because
+    // an approved order is one capture away from a second charge. Read errors refuse too (500): the alternative to
+    // "could not confirm it is unpaid" is charging on a guess.
+    const gate = await gateOnChainPaid(supabase, intent.id);
+    if (gate.kind === 'refuse') {
+      return jsonResponse(
+        req,
+        { error: gate.error, code: gate.code },
+        gate.status
       );
     }
 
