@@ -26,6 +26,7 @@
  *   signature_failures   #1180 — the wrong signing secret
  *   server_errors        the .single()-on-zero-rows 500, which Stripe retries for three days
  *   permanently_failed   anything the retry ledger has given up on
+ *   second_charges       a second charge on one intent, which the webhooks give up on (#1342)
  *
  * REPORTS ONLY. It issues no writes and touches no Stripe object.
  *
@@ -98,13 +99,16 @@ export function evaluate(f) {
   // A SECOND CHARGE ON ONE INTENT (#1342). The unique index admits one success per intent, so
   // DOUBLE_CHARGE_SQL above (distinct paid intents per order) cannot see it; the webhooks now
   // recognise it at the collision and give the event up with this prefix instead of absorbing it.
+  // Counted per CHARGE, not per event (blind review): Stripe sends two events for one charge, and
+  // both give up with the same processing_error, so one extra charge is two rows.
   if (f.secondCharges > 0) {
     failures.push(
-      `${f.secondCharges} payment(s) charged twice on one intent. Each needs a refund. Find them ` +
-        `with SECOND_CHARGE_SQL in check-webhook-liveness.mjs: processing_error names the intent, ` +
-        `the charge recorded and the second one. Refund the second at the provider, then mark the ` +
-        `event done: processed = true, permanently_failed = false, and prefix processing_error ` +
-        `with 'refunded ' so the row stays legible and leaves both counts.`
+      `${f.secondCharges} second charge(s) on one intent. Each needs a refund. Find them with ` +
+        `SECOND_CHARGE_SQL in check-webhook-liveness.mjs: one row per charge, its processing_error ` +
+        `naming the intent, the charge recorded and the second one. Refund the second at the ` +
+        `provider, then mark EVERY event naming it done, so both of Stripe's leave the count: ` +
+        `update webhook_events set processed = true, permanently_failed = false, ` +
+        `processing_error = 'refunded ' || processing_error where processing_error = '<that text>'.`
     );
   }
 
@@ -144,17 +148,28 @@ export function evaluate(f) {
  * _shared/second-charge.ts's SECOND_CHARGE_PREFIX: the webhooks write it, this counts it. Second
  * charges are kept OUT of the generic permanently_failed count, so one fact reads as one line.
  */
+//
+// left(..., 14) rather than LIKE: in LIKE an underscore matches any character, so 'second_charge:%'
+// is not quite the literal prefix (blind review).
+const IS_SECOND_CHARGE =
+  "left(coalesce(processing_error, ''), 14) = 'second_charge:'";
+
 export const COUNTS_SQL =
-  "select count(*) filter (where permanently_failed and coalesce(processing_error, '') not like 'second_charge:%') as permanently_failed, " +
-  "count(*) filter (where permanently_failed and processing_error like 'second_charge:%') as second_charges, " +
+  `select count(*) filter (where permanently_failed and not ${IS_SECOND_CHARGE}) as permanently_failed, ` +
+  `count(distinct processing_error) filter (where permanently_failed and ${IS_SECOND_CHARGE}) as second_charges, ` +
   'count(*) filter (where not processed) as unprocessed, ' +
   'max(created_at) as newest from webhook_events';
 
-/** The rows behind the second-charge failure, for whoever is issuing the refund (#1342). */
+/**
+ * The charges behind the second-charge failure, one row per CHARGE, for whoever is issuing the
+ * refund (#1342). Each lists every event that gave up on it, which is what the clearing update in
+ * the failure text has to mark.
+ */
 export const SECOND_CHARGE_SQL =
-  'select id, provider, provider_event_id, event_type, created_at, processing_error ' +
-  "from webhook_events where permanently_failed and processing_error like 'second_charge:%' " +
-  'order by created_at';
+  'select processing_error, count(*) as events, array_agg(provider_event_id) as provider_event_ids, ' +
+  'min(created_at) as first_seen from webhook_events ' +
+  `where permanently_failed and ${IS_SECOND_CHARGE} ` +
+  'group by processing_error order by first_seen';
 
 /** Orders charged more than once across their retry chain (#1338). Exported so a test pins it. */
 export const DOUBLE_CHARGE_SQL =

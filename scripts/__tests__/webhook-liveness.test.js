@@ -283,12 +283,13 @@ describe('webhook liveness: a second charge on ONE intent (#1342 stage 2)', () =
       prefix,
       'SECOND_CHARGE_PREFIX not found in _shared/second-charge.ts'
     );
+    const exact = `left(coalesce(processing_error, ''), ${prefix.length}) = '${prefix}'`;
     assert.ok(
-      COUNTS_SQL.includes(`processing_error like '${prefix}%'`),
-      'the counts query does not count the prefix the webhooks write'
+      COUNTS_SQL.includes(exact),
+      'the counts query does not count the exact prefix the webhooks write'
     );
     assert.ok(
-      SECOND_CHARGE_SQL.includes(`processing_error like '${prefix}%'`),
+      SECOND_CHARGE_SQL.includes(exact),
       'the lookup query does not find the rows the alarm counts'
     );
   });
@@ -297,7 +298,9 @@ describe('webhook liveness: a second charge on ONE intent (#1342 stage 2)', () =
     const r = evaluate(withFacts({ secondCharges: 1 }));
     assert.equal(r.verdict, 'FAIL');
     const text = r.failures.join('\n');
-    assert.match(text, /charged twice on one intent/);
+    assert.match(text, /second charge\(s\) on one intent/);
+    // Clearing has to reach every event naming the charge: Stripe sends two per charge.
+    assert.match(text, /EVERY event naming it/);
     assert.match(text, /refund/i);
     assert.match(text, /SECOND_CHARGE_SQL/);
   });
@@ -307,12 +310,20 @@ describe('webhook liveness: a second charge on ONE intent (#1342 stage 2)', () =
     assert.equal(evaluate(healthy).verdict, 'PASS');
   });
 
+  it("counts CHARGES, not events: both of Stripe's events for one charge are one alarm (blind review)", () => {
+    assert.match(
+      COUNTS_SQL,
+      /count\(distinct processing_error\) filter \(where permanently_failed and left\(coalesce\(processing_error, ''\), 14\) = 'second_charge:'\) as second_charges/
+    );
+    assert.match(SECOND_CHARGE_SQL, /group by processing_error/);
+  });
+
   it('keeps second charges OUT of the generic permanently_failed count', () => {
     // One fact, one line: a second charge reported as both "refund this" and "a delivery we gave
     // up on" would read as two problems, and clearing one would leave the other.
     assert.match(
       COUNTS_SQL,
-      /filter \(where permanently_failed and coalesce\(processing_error, ''\) not like '[^']+%'\) as permanently_failed/
+      /count\(\*\) filter \(where permanently_failed and not left\(coalesce\(processing_error, ''\), 14\) = 'second_charge:'\) as permanently_failed/
     );
   });
 });

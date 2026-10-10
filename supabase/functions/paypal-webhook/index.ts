@@ -278,8 +278,7 @@ async function handlePaymentCompleted(
   if (!intent) return { handled: false };
 
   // #239: RECONCILE onto the captured ORDER's payment_results row (#1342: not the intent's
-  // oldest; see below) — do NOT
-  // blind-INSERT. create-paypal-order already wrote a 'pending' row for this
+  // oldest; see below) — do NOT blind-INSERT. create-paypal-order already wrote a 'pending' row for this
   // intent (transaction_id = PayPal ORDER id), and the buyer-redirect capture
   // (capture-paypal-order) may have already flipped it to 'succeeded'. This
   // webhook carries the PayPal CAPTURE id (resource.id) — a DIFFERENT value from
@@ -348,7 +347,14 @@ async function handlePaymentCompleted(
     // same capture, recorded under its capture id by the insert below on an earlier delivery, or
     // it is a DIFFERENT order captured for the same intent: a second charge, which
     // assertSameCharge throws for, and the catch gives up on at once (#1342).
-    if (updateError?.code === PG_UNIQUE_VIOLATION) {
+    //
+    // ONLY WITH AN ORDER ID (blind review). Without one, this row is the intent's oldest by the
+    // fallback above, which may be an abandoned order while the one paid order holds the
+    // succeeded row. The capture id can never match a row keyed by an order id, so the check
+    // would call the buyer's only payment a second charge and point at refunding it. Without an
+    // order id the collision keeps its old meaning: a plain error, retried, then
+    // permanently_failed for a human to read.
+    if (updateError?.code === PG_UNIQUE_VIOLATION && orderId) {
       await assertSameCharge(supabase, intent.id, ownIds);
       await advanceOrderAndNotify(supabase, {
         intentId: intent.id,

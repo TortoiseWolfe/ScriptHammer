@@ -112,6 +112,17 @@ describe('the payment webhooks detect a second charge on one intent (#1342)', ()
     );
   });
 
+  it('paypal-webhook classifies an UPDATE collision only when it knows the captured order', () => {
+    // Without an order id the update targets the intent's oldest row, which may be an abandoned
+    // order, and the capture id can never match the paid order's row: classifying there would call
+    // the buyer's only payment a second charge (blind review).
+    assert.match(
+      code(PAYPAL),
+      /updateError\?\.code === PG_UNIQUE_VIOLATION && orderId\b/,
+      'paypal-webhook classifies an update collision even when it fell back to the oldest row'
+    );
+  });
+
   it('paypal-webhook checks the transaction on its unique violations, before advancing', () => {
     const src = code(PAYPAL);
     const sites = segmentsAfter(src, /\.code === PG_UNIQUE_VIOLATION/);
