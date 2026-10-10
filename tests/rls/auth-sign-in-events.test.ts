@@ -517,12 +517,22 @@ describe.skipIf(!hasRlsTestEnvironment())(
           p_event_data: { marker },
           p_success: false,
         };
+        // The holder's row and the call's must be the same clock hour, or this passes by
+        // touching different rows. Starting within 5 s of the top of the hour, wait it out.
+        const msToHour = 3_600_000 - (Date.now() % 3_600_000);
+        if (msToHour < 5_000)
+          await new Promise((r) => setTimeout(r, msToHour + 500));
         await clearAnonMarkerRows();
         await fillAnonRowsTo(ANON_HOURLY_CEILING);
         const droppedBefore = await droppedRecently();
         const holder = new Client(DB);
         await holder.connect();
         try {
+          // The two advisory keys are hashtext() values: distinct today, and pinned so here.
+          const keys = await holder.query(
+            `select hashtext('log_auth_event:overflow') <> hashtext('log_auth_event:anonymous') as distinct_keys`
+          );
+          expect(keys.rows[0].distinct_keys).toBe(true);
           await holder.query('begin');
           await holder.query(
             `insert into auth_audit_overflow (hour, dropped)
