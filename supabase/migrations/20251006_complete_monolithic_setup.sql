@@ -614,8 +614,9 @@ CREATE INDEX IF NOT EXISTS idx_auth_audit_logs_anonymous_recent
 
 -- What that ceiling turned away, counted per hour (#1284). The ceiling bounds the disk, but on
 -- its own it would also hide a flood: past 30 an hour a real failed sign-in is not stored, and
--- nothing would say so. One row per clock hour carries how many were turned away, so the
--- dashboard can show the flood the audit rows no longer can. A separate table rather than a
+-- nothing would say so. One row per clock hour carries at least how many were turned away
+-- (never exact: counting must not make callers wait, see log_auth_event), so the dashboard
+-- can show the flood the audit rows no longer can. A separate table rather than a
 -- row in auth_audit_logs, because that table is append-only and this one is a counter.
 -- At most 24 rows a day; pruned with the audit log at 90 days.
 CREATE TABLE IF NOT EXISTS auth_audit_overflow (
@@ -1452,7 +1453,9 @@ BEGIN
   -- sign-in to report. Accepting it let any free account raise failed_this_week, and the
   -- dashboard alert it drives, without limit, because the anonymous ceiling below does not
   -- apply to a signed-in caller (#1284 review). Every client-written failed sign-in is now
-  -- anonymous, and so inside that ceiling.
+  -- anonymous, and so inside that ceiling. The cost: someone already signed in who mistypes
+  -- another account's password sends their session along, and that one failure goes
+  -- unrecorded (the logger swallows the refusal). Rare, and not worth an unbounded path.
   IF p_event_type = 'sign_in_failed' AND auth.uid() IS NOT NULL THEN
     RAISE EXCEPTION 'log_auth_event: a failed sign-in is logged without a session'
       USING ERRCODE = '42501';
@@ -1470,12 +1473,12 @@ BEGIN
   -- busiest hour production ever saw was 90: 4,526 of the 4,540 rows in its hours over 30 were
   -- plus-addressed gmail aliases, which is how the E2E user factory names accounts.
   --
-  -- PAST THE CEILING AN EVENT IS COUNTED, NOT DROPPED. A flood crowds real failed sign-ins out
+  -- PAST THE CEILING AN EVENT IS COUNTED, NOT STORED. A flood crowds real failed sign-ins out
   -- of the table until the hour turns, and a cap that did only that would also hide the flood
   -- (the commit security review's finding). So the call adds one to this hour's row in
-  -- auth_audit_overflow and returns without error, since the event is recorded, as a number;
-  -- admin_auth_stats reports the week's total, and the dashboard says the failure counts are
-  -- incomplete. It cannot RAISE: that would roll the count back with everything else.
+  -- auth_audit_overflow, when it can do so without waiting (see below), and returns without
+  -- error; admin_auth_stats reports the week's total as a lower bound, and the dashboard says
+  -- the failure counts are incomplete. It cannot RAISE: that would roll the count back.
   --
   -- WHAT THIS STILL DOES NOT BOUND: rows a signed-in user writes against their own id, of the
   -- types left to them (password change, sign-out and the like). Those are attributable to an
@@ -1495,22 +1498,33 @@ BEGIN
       RAISE EXCEPTION 'log_auth_event: event_data is % bytes; the limit without a session is 512',
         pg_column_size(p_event_data) USING ERRCODE = '22001';
     END IF;
-    -- Checked once without the lock, so a flood is counted without queueing on it, then again
-    -- under it, so concurrent callers cannot all read 29 and each write the 30th. Only the
-    -- second check decides that a row may be written.
+    -- Checked once without the lock, so a flood never queues on it, then again under it, so
+    -- concurrent callers cannot all read 29 and each write the 30th. Only the second check
+    -- decides that a row may be written.
+    --
+    -- THE COUNT NEVER WAITS EITHER. An increment that locked the hour's row would make every
+    -- call past the ceiling, site-wide, run one at a time behind the last one's commit, each
+    -- holding a pooled connection while it waited — so a flood could starve the whole data
+    -- API, not just this function (#1284 review). Instead a call counts only if it wins a
+    -- try-lock, which never blocks; one that loses returns uncounted. The number is a LOWER
+    -- BOUND, which is all the dashboard needs: above zero, the failure counts are short.
     IF (SELECT count(*) FROM auth_audit_logs
         WHERE user_id IS NULL AND created_at > now() - interval '1 hour') >= 30 THEN
-      INSERT INTO auth_audit_overflow (hour, dropped)
-      VALUES (date_trunc('hour', now()), 1)
-      ON CONFLICT (hour) DO UPDATE SET dropped = auth_audit_overflow.dropped + 1;
+      IF pg_try_advisory_xact_lock(hashtext('log_auth_event:overflow')) THEN
+        INSERT INTO auth_audit_overflow (hour, dropped)
+        VALUES (date_trunc('hour', now()), 1)
+        ON CONFLICT (hour) DO UPDATE SET dropped = auth_audit_overflow.dropped + 1;
+      END IF;
       RETURN;
     END IF;
     PERFORM pg_advisory_xact_lock(hashtext('log_auth_event:anonymous'));
     IF (SELECT count(*) FROM auth_audit_logs
         WHERE user_id IS NULL AND created_at > now() - interval '1 hour') >= 30 THEN
-      INSERT INTO auth_audit_overflow (hour, dropped)
-      VALUES (date_trunc('hour', now()), 1)
-      ON CONFLICT (hour) DO UPDATE SET dropped = auth_audit_overflow.dropped + 1;
+      IF pg_try_advisory_xact_lock(hashtext('log_auth_event:overflow')) THEN
+        INSERT INTO auth_audit_overflow (hour, dropped)
+        VALUES (date_trunc('hour', now()), 1)
+        ON CONFLICT (hour) DO UPDATE SET dropped = auth_audit_overflow.dropped + 1;
+      END IF;
       RETURN;
     END IF;
   END IF;
@@ -1973,8 +1987,9 @@ BEGIN
   -- failed_this_week and top_failed_logins are still client-reported: nothing server-side sees a
   -- failed password, so ANYONE can raise them, up to log_auth_event's ceiling of 30 anonymous
   -- rows an hour (~5,000 a week, against an alert at 50). They are not verified, and the
-  -- dashboard says so. reports_dropped_this_week is what that ceiling turned away; above zero,
-  -- the failure counts are incomplete as well as unverified.
+  -- dashboard says so. reports_dropped_this_week is at least how many that ceiling turned away
+  -- (a lower bound: a call that would have to wait to count does not count); above zero, the
+  -- failure counts are incomplete as well as unverified.
   RETURN (
     SELECT json_build_object(
       'reports_dropped_this_week', (SELECT COALESCE(sum(dropped), 0) FROM auth_audit_overflow WHERE hour > now() - interval '7 days'),

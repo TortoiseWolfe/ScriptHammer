@@ -141,10 +141,12 @@ describe.skipIf(!hasRlsTestEnvironment())(
       return count ?? 0;
     }
 
-    // auth_audit_overflow rows from the last two clock hours: the ones this file can touch.
-    // Snapshotted before and restored after, so other suites see the counter as it was.
-    const recentHours = () =>
-      new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    // auth_audit_overflow rows from two hours before this file started: the ones it can touch.
+    // Snapshotted before and restored after, so other suites see the counter as it was. Fixed
+    // once, not recomputed at teardown: a run that crosses the top of an hour would otherwise
+    // delete a narrower window than it snapshotted, and the re-insert would collide.
+    const windowStart = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    const recentHours = () => windowStart;
     let overflowSnapshot: { hour: string; dropped: number }[] = [];
 
     async function droppedRecently(): Promise<number> {
@@ -202,12 +204,19 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .from('auth_audit_logs')
         .delete()
         .eq('event_data->>marker', marker);
-      await service
+      const cleared = await service
         .from('auth_audit_overflow')
         .delete()
         .gte('hour', recentHours());
-      if (overflowSnapshot.length)
-        await service.from('auth_audit_overflow').insert(overflowSnapshot);
+      if (cleared.error)
+        throw new Error(`overflow cleanup: ${cleared.error.message}`);
+      if (overflowSnapshot.length) {
+        const restored = await service
+          .from('auth_audit_overflow')
+          .insert(overflowSnapshot);
+        if (restored.error)
+          throw new Error(`overflow restore: ${restored.error.message}`);
+      }
       if (admin)
         await service
           .from('user_profiles')
@@ -313,8 +322,13 @@ describe.skipIf(!hasRlsTestEnvironment())(
             p_event_data: { marker },
             p_success: success,
           });
-          expect(error?.code).toBe('42501');
-          expect(await anySuccessName(member.id)).toBe(before);
+          // The whole error goes in the message: this failed once in twelve local runs with
+          // nothing captured, and never again. A recurrence should name its own cause.
+          expect(error?.code, JSON.stringify(error)).toBe('42501');
+          expect(
+            await anySuccessName(member.id),
+            'a sign-in row appeared for this user during a refused call'
+          ).toBe(before);
         });
       }
 
@@ -368,7 +382,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
           p_event_data: { marker },
           p_success: false,
         });
-        expect(error?.code).toBe('42501');
+        expect(error?.code, JSON.stringify(error)).toBe('42501');
         expect(await rowsFor(member.id, ['sign_in_failed'])).toBe(before);
       });
 
@@ -492,6 +506,54 @@ describe.skipIf(!hasRlsTestEnvironment())(
     });
 
     describe('the overflow counter', () => {
+      it('counting never makes a caller wait: with the counter held, a call past the ceiling returns at once, uncounted', async () => {
+        // A counter that took the hour's row lock would queue every call past the ceiling,
+        // site-wide, behind the last one's commit, each holding a pooled connection while it
+        // waited (#1284 review). This holds BOTH the hour's row and the lock the function
+        // counts under, then times a call.
+        const anon = createAnonClient();
+        const failed = {
+          p_event_type: 'sign_in_failed',
+          p_event_data: { marker },
+          p_success: false,
+        };
+        await clearAnonMarkerRows();
+        await fillAnonRowsTo(ANON_HOURLY_CEILING);
+        const droppedBefore = await droppedRecently();
+        const holder = new Client(DB);
+        await holder.connect();
+        try {
+          await holder.query('begin');
+          await holder.query(
+            `insert into auth_audit_overflow (hour, dropped)
+             values (date_trunc('hour', now()), 1)
+             on conflict (hour) do update set dropped = auth_audit_overflow.dropped`
+          );
+          await holder.query(
+            `select pg_advisory_xact_lock(hashtext('log_auth_event:overflow'))`
+          );
+
+          const started = Date.now();
+          const outcome = await Promise.race([
+            anon.rpc('log_auth_event', failed).then((r) => r.error),
+            new Promise<'waited'>((r) => setTimeout(() => r('waited'), 1500)),
+          ]);
+          expect(outcome).toBeNull();
+          expect(Date.now() - started).toBeLessThan(1500);
+          expect(await droppedRecently()).toBe(droppedBefore);
+        } finally {
+          await holder.query('rollback');
+          await holder.end();
+        }
+
+        // CONTROL: released, the same call is counted. Without this, a function that never
+        // counted at all would pass every assertion above.
+        const counted = await anon.rpc('log_auth_event', failed);
+        expect(counted.error).toBeNull();
+        expect(await droppedRecently()).toBe(droppedBefore + 1);
+        await clearAnonMarkerRows();
+      });
+
       it('only an admin can read it, and no client role can write it', async () => {
         // It must exist for the reads below to mean anything; the tests above wrote to it.
         expect(await droppedRecently()).toBeGreaterThan(0);

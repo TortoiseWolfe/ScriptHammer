@@ -109,7 +109,7 @@ function scoreAuth(s: AdminAuthStats): Attention {
   if (s.reports_dropped_this_week > 0) {
     if (level === 'ok') level = 'warn';
     reasons.push(
-      `${s.reports_dropped_this_week} anonymous reports dropped by the hourly limit this week; failed-login counts are incomplete`
+      `At least ${s.reports_dropped_this_week} anonymous reports dropped by the hourly limit this week; failed-login counts are incomplete`
     );
   }
 

@@ -304,7 +304,7 @@ describe('AdminDashboardOverview', () => {
       };
       render(<AdminDashboardOverview overview={ov} />);
       expect(screen.getByTestId('attention-banner')).toHaveTextContent(
-        '12 anonymous reports dropped by the hourly limit this week; failed-login counts are incomplete'
+        'At least 12 anonymous reports dropped by the hourly limit this week; failed-login counts are incomplete'
       );
       const section = screen
         .getAllByRole('region')

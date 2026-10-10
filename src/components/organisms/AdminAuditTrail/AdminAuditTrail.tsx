@@ -174,7 +174,7 @@ export function AdminAuditTrail({
             <AdminStatCard
               label="Dropped Reports (7d)"
               value={stats.reports_dropped_this_week}
-              description="Past the hourly limit; failure counts are incomplete"
+              description="At least this many, past the hourly limit; failure counts are incomplete"
               testId="stat-dropped-reports"
             />
           )}
