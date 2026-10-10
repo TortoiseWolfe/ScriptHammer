@@ -4,9 +4,15 @@ import CheckoutSummary, {
   formatCents,
   depositPercent,
   previewAmountDue,
+  parseAmountParam,
   cancellationTerms,
 } from './CheckoutSummary';
-import { landingPage, discovery, carePlan } from '../__fixtures__/products';
+import {
+  landingPage,
+  discovery,
+  carePlan,
+  tipJar,
+} from '../__fixtures__/products';
 
 describe('CheckoutSummary', () => {
   it('shows a deposit split, pairing each amount with its own label', () => {
@@ -44,6 +50,23 @@ describe('CheckoutSummary', () => {
     render(<CheckoutSummary product={landingPage} amountDueNow={999} />);
     expect(screen.getByText('$9.99')).toBeInTheDocument();
   });
+
+  it('shows a tip as the whole total, with no package price or deposit rows (#1306)', () => {
+    // $5 is below the $15 seeded default. Before #1306 that rendered as a
+    // "Deposit due today" with a $10 "Balance on delivery".
+    render(<CheckoutSummary product={tipJar} amountDueNow={500} />);
+    expect(screen.queryByText(/Package price/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Balance on delivery/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Deposit due today/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Total today/)).toBeInTheDocument();
+    expect(screen.getByText('$5.00')).toBeInTheDocument();
+  });
+
+  it('never shows the seeded default for a tip with no amount', () => {
+    render(<CheckoutSummary product={tipJar} amountDueNow={null} />);
+    expect(screen.getByText('Choose an amount')).toBeInTheDocument();
+    expect(screen.queryByText('$15.00')).not.toBeInTheDocument();
+  });
 });
 
 describe('preview mirrors the server exactly', () => {
@@ -69,6 +92,40 @@ describe('preview mirrors the server exactly', () => {
   it('formats cents as currency', () => {
     expect(formatCents(120000)).toBe('$1,200.00');
     expect(formatCents(0)).toBe('$0.00');
+  });
+  it('charges the chosen amount for a variable SKU, not its seeded default (#1306)', () => {
+    expect(previewAmountDue(tipJar, 5000)).toBe(5000);
+  });
+
+  it('accepts the bounds themselves', () => {
+    expect(previewAmountDue(tipJar, 100)).toBe(100);
+    expect(previewAmountDue(tipJar, 50000)).toBe(50000);
+  });
+
+  it.each([
+    ['missing', null],
+    ['below min', 99],
+    ['above max', 50001],
+    ['fractional', 1500.5],
+    ['NaN', Number.NaN],
+  ])('refuses a %s variable amount rather than clamping it', (_l, amount) => {
+    expect(previewAmountDue(tipJar, amount)).toBeNull();
+  });
+
+  it('floors a variable SKU with no min_amount at $1, like the server', () => {
+    expect(previewAmountDue({ ...tipJar, min_amount: null }, 99)).toBeNull();
+    expect(previewAmountDue({ ...tipJar, min_amount: null }, 100)).toBe(100);
+  });
+
+  it('ignores a chosen amount on a fixed SKU', () => {
+    expect(previewAmountDue(discovery, 5000)).toBe(25000);
+  });
+
+  it('parses ?amount= once: absent and blank are null, anything else a number', () => {
+    expect(parseAmountParam(null)).toBeNull();
+    expect(parseAmountParam('')).toBeNull();
+    expect(parseAmountParam('5000')).toBe(5000);
+    expect(Number.isNaN(parseAmountParam('abc'))).toBe(true);
   });
 });
 
