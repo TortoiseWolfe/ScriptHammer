@@ -128,24 +128,9 @@ export default function SignInForm({
 
       setError(authRateLimitMessage(signInError) ?? signInError.message);
     } else {
-      // Log successful sign-in (T033). The `user` from useAuth() is still
-      // null at this point — Supabase's onAuthStateChange hasn't propagated
-      // to AuthContext yet — so read user_id directly from getUser() to
-      // avoid silently dropping the audit log entry on success.
-      const { supabase: supabaseClient } = await import(
-        '@/lib/supabase/client'
-      );
-      const {
-        data: { user: freshUser },
-      } = await supabaseClient.auth.getUser();
-      if (freshUser) {
-        // #241: 'sign_in_success' — what admin_auth_stats.logins_today counts.
-        await logAuthEvent({
-          user_id: freshUser.id,
-          event_type: 'sign_in_success',
-          event_data: { email, provider: 'email' },
-        });
-      }
+      // No audit call here (#1284). The database records the sign-in itself
+      // when GoTrue issues the session, for every sign-in path rather than
+      // this form alone, and log_auth_event now refuses one from a browser.
 
       // Derive encryption keys from password (Feature 032)
       try {

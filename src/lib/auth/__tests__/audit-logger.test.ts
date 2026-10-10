@@ -47,7 +47,7 @@ describe('logAuthEvent (#241 audit log write path)', () => {
   it('writes via the log_auth_event RPC, never a direct table insert', async () => {
     await logAuthEvent({
       user_id: 'user-1',
-      event_type: 'sign_in_success',
+      event_type: 'password_change',
       event_data: { email: 'a@b.com', provider: 'email' },
     });
 
@@ -55,7 +55,7 @@ describe('logAuthEvent (#241 audit log write path)', () => {
     const [fn, args] = rpc.mock.calls[0];
     expect(fn).toBe('log_auth_event');
     expect(args).toMatchObject({
-      p_event_type: 'sign_in_success',
+      p_event_type: 'password_change',
       p_user_id: 'user-1',
       p_event_data: { email: 'a@b.com', provider: 'email' },
       p_success: true,
@@ -84,7 +84,7 @@ describe('logAuthEvent (#241 audit log write path)', () => {
   });
 
   it('defaults p_success to true when success is not provided', async () => {
-    await logAuthEvent({ user_id: 'u', event_type: 'sign_in_success' });
+    await logAuthEvent({ user_id: 'u', event_type: 'password_change' });
     const [, args] = rpc.mock.calls[0];
     expect(args.p_success).toBe(true);
   });

@@ -89,12 +89,18 @@ function scoreAuth(s: AdminAuthStats): Attention {
 
   // Failed-login volume. 50/week is "someone's running a credential list";
   // 10/week is "worth a glance".
+  //
+  // The input is client-reported (#1284): nothing server-side sees a failed
+  // password, so these rows are whatever browsers chose to send, bounded by
+  // log_auth_event's hourly ceiling but not verified. Anyone can raise this
+  // alert, so it says so rather than reading as evidence of an attack.
+  const failed = `${s.failed_this_week} failed login attempts this week (reported by browsers, unverified)`;
   if (s.failed_this_week >= 50) {
     level = 'alert';
-    reasons.push(`${s.failed_this_week} failed login attempts this week`);
+    reasons.push(failed);
   } else if (s.failed_this_week >= 10) {
     level = 'warn';
-    reasons.push(`${s.failed_this_week} failed login attempts this week`);
+    reasons.push(failed);
   }
 
   return { level, reasons };

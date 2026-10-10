@@ -691,8 +691,10 @@ describe.skipIf(!hasRlsTestEnvironment())(
     describe('log_auth_event pins a signed-in caller to their own id (#1245 review)', () => {
       it('an unattributed event from a signed-in user is recorded against that user, not against no one', async () => {
         const marker = fresh('attrib');
+        // Any event a signed-in user may still log. This used 'sign_in_success', which no
+        // client may write since #1284 (tests/rls/auth-sign-in-events.test.ts).
         const { error } = await aliceClient.rpc('log_auth_event', {
-          p_event_type: 'sign_in_success',
+          p_event_type: 'password_change',
           p_event_data: { marker },
         });
         expect(error).toBeNull();

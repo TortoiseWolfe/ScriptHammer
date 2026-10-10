@@ -280,8 +280,9 @@ describe('AdminDashboardOverview', () => {
         auth: { ...healthyOverview.auth, failed_this_week: 60 },
       };
       render(<AdminDashboardOverview overview={ov} />);
+      // #1284: the count is client-reported, and the alert must not read as verified.
       expect(screen.getByTestId('attention-banner')).toHaveTextContent(
-        '60 failed login attempts this week'
+        '60 failed login attempts this week (reported by browsers, unverified)'
       );
       const section = screen
         .getAllByRole('region')

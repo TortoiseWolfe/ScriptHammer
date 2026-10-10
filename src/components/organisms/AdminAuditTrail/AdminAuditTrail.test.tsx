@@ -74,6 +74,30 @@ describe('AdminAuditTrail', () => {
     expect(screen.queryByText('Rate Limited')).not.toBeInTheDocument();
   });
 
+  it('says where each sign-in number comes from (#1284)', () => {
+    // Sign-ins are written by the database; failures are whatever browsers report, and the
+    // failure count drives the dashboard's alert, so it must not read as verified.
+    render(<AdminAuditTrail stats={mockStats} events={mockEvents} />);
+    expect(screen.getByTestId('stat-logins-today')).toHaveTextContent(
+      'Recorded by the server'
+    );
+    expect(screen.getByTestId('stat-failed-week')).toHaveTextContent(
+      'Reported by browsers, unverified'
+    );
+  });
+
+  it("offers the database's 'sign_in' rows in the event filter (#1284)", () => {
+    render(
+      <AdminAuditTrail
+        stats={mockStats}
+        events={mockEvents}
+        eventTypeFilter=""
+        onEventTypeChange={vi.fn()}
+      />
+    );
+    expect(screen.getByRole('option', { name: 'sign_in' })).toBeInTheDocument();
+  });
+
   it('renders event table with rows', () => {
     render(<AdminAuditTrail stats={mockStats} events={mockEvents} />);
     expect(screen.getByText('sign_in_success')).toBeInTheDocument();
@@ -139,6 +163,12 @@ describe('AdminAuditTrail trends', () => {
     expect(screen.queryByTestId('stat-bursts')).not.toBeInTheDocument();
     expect(screen.getByTestId('stat-range-failed')).toHaveTextContent('18');
     expect(screen.getByTestId('stat-range-success')).toHaveTextContent('412');
+    expect(screen.getByTestId('stat-range-failed')).toHaveTextContent(
+      'Reported by browsers, unverified'
+    );
+    expect(screen.getByTestId('stat-range-success')).toHaveTextContent(
+      'Recorded by the server'
+    );
   });
 
   it('renders DateRangeFilter and emits range changes', () => {
