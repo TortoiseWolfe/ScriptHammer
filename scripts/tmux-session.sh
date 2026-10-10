@@ -1,6 +1,6 @@
 #!/bin/bash
 # ScriptHammer tmux session launcher
-# Usage: ./tmux-session.sh [--all|--council|--wireframe|--implement|--coord|ROLE...] [--audit]
+# Usage: ./tmux-session.sh [--all|--council|--wireframe|--implement|--coord|ROLE...] [--audit] [--all-opus]
 
 SESSION="scripthammer"
 # Derive project dir from script location (scripts/ is one level down from root)
@@ -9,10 +9,13 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 # Check for --audit flag and filter it out of arguments
 AUDIT_MODE=false
+ALL_OPUS=false
 FILTERED_ARGS=()
 for arg in "$@"; do
   if [ "$arg" = "--audit" ]; then
     AUDIT_MODE=true
+  elif [ "$arg" = "--all-opus" ]; then
+    ALL_OPUS=true
   else
     FILTERED_ARGS+=("$arg")
   fi
@@ -71,6 +74,22 @@ QC=(PreviewHost WireframeQA Validator Inspector Auditor)
 # ALL follows assembly line: Strategy(0-2) → Design(3-5) → Wireframes(6-13) → Code(14-16) → Test(17-19) → Docs(20-21) → Release(22-25)
 ALL=(CTO ProductOwner BusinessAnalyst Architect UXDesigner UIDesigner Planner WireframeGenerator1 WireframeGenerator2 WireframeGenerator3 PreviewHost WireframeQA Validator Inspector Developer Toolsmith Security TestEngineer QALead Auditor Author TechWriter DevOps DockerCaptain ReleaseManager Coordinator)
 
+# Model per role. Opus costs several times more per turn than Sonnet, and Sonnet more than
+# Haiku, and all three draw on the same plan limit. Judgment roles (the council, the
+# reviewers, the Coordinator) stay on Opus; roles that build or write from a spec run on
+# Sonnet; PreviewHost only serves previews, so it runs on Haiku. The Operator runs outside
+# tmux on the default model. --all-opus restores the old everything-on-Opus behaviour.
+declare -A MODELS=(
+  [CTO]=opus [ProductOwner]=opus [Architect]=opus [UXDesigner]=opus [Toolsmith]=opus
+  [Security]=opus [DevOps]=opus [WireframeQA]=opus [Validator]=opus [Inspector]=opus
+  [QALead]=opus [Auditor]=opus [Coordinator]=opus
+  [BusinessAnalyst]=sonnet [UIDesigner]=sonnet [Planner]=sonnet
+  [WireframeGenerator1]=sonnet [WireframeGenerator2]=sonnet [WireframeGenerator3]=sonnet
+  [Developer]=sonnet [TestEngineer]=sonnet [Author]=sonnet [TechWriter]=sonnet
+  [DockerCaptain]=sonnet [ReleaseManager]=sonnet
+  [PreviewHost]=haiku
+)
+
 # Parse arguments
 ROLES=()
 case "${1:-}" in
@@ -97,6 +116,7 @@ case "${1:-}" in
     echo ""
     echo "Options:"
     echo "  --audit      Broadcast 7-question survey to all terminals after launch"
+    echo "  --all-opus   Run every role on Opus (default: per-role models, see MODELS)"
     echo ""
     echo "Individual roles: CTO, Architect, Coordinator, Security, Toolsmith, DevOps,"
     echo "  ProductOwner, UXDesigner, Planner, WireframeGenerator1, WireframeGenerator2,"
@@ -148,7 +168,9 @@ done
 echo "Starting Claude in ${#ROLES[@]} windows..."
 WINDOW_NUM=0
 for ROLE in "${ROLES[@]}"; do
-  tmux send-keys -t $SESSION:$WINDOW_NUM "claude --dangerously-skip-permissions" Enter
+  MODEL="${MODELS[$ROLE]:-opus}"
+  [ "$ALL_OPUS" = true ] && MODEL=opus
+  tmux send-keys -t $SESSION:$WINDOW_NUM "claude --model $MODEL --dangerously-skip-permissions" Enter
   ((WINDOW_NUM++))
 done
 

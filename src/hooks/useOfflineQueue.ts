@@ -123,6 +123,11 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
   // either sent or failed.
   const followUpRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const syncQueueRef = useRef<() => Promise<void>>(async () => {});
+  // False once unmounted. A pass still in flight at unmount finishes afterwards,
+  // and without this it scheduled a follow-up the unmount cleanup had already
+  // missed: a timer outliving the component, calling the service every
+  // FOLLOW_UP_DELAY_MS while a message stayed pending, from a hook nobody renders.
+  const mountedRef = useRef(true);
 
   // Sync queue with server. Guard only on the in-flight flag, not on
   // navigator.onLine — the latter is unreliable under Playwright emulation
@@ -157,7 +162,7 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
       setIsSyncing(false);
     }
 
-    if (stillPending) {
+    if (stillPending && mountedRef.current) {
       followUpRef.current = setTimeout(() => {
         followUpRef.current = null;
         void syncQueueRef.current();
@@ -166,13 +171,16 @@ export function useOfflineQueue(): UseOfflineQueueReturn {
   }, [loadQueue]);
   syncQueueRef.current = syncQueue;
 
-  // Cancel a scheduled follow-up pass on unmount.
-  useEffect(
-    () => () => {
+  // Cancel a scheduled follow-up pass on unmount, and stop an in-flight one
+  // from scheduling another. Set to true here, not only at creation, because
+  // StrictMode runs this effect's cleanup and then the effect again.
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
       if (followUpRef.current !== null) clearTimeout(followUpRef.current);
-    },
-    []
-  );
+    };
+  }, []);
 
   // Retry all failed messages
   const retryFailed = useCallback(async () => {

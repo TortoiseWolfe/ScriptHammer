@@ -388,7 +388,10 @@ export class SEOAnalyzer {
     if (keywords.length > 0) {
       const mainKeyword = keywords[0].toLowerCase();
       const title = (post.seo?.title || post.title).toLowerCase();
-      if (!title.includes(mainKeyword)) {
+      // Tags are slugs ("claude-code"); titles are prose ("Claude Code"). Accept either
+      // spelling, or every multi-word tag would count as missing from any natural title.
+      const spellings = [mainKeyword, mainKeyword.replace(/[-_]+/g, ' ')];
+      if (!spellings.some((k) => title.includes(k))) {
         score -= 20;
         suggestions.push({
           category: 'keywords',

@@ -38,42 +38,37 @@ export function depositPercent(product: Product): number | null {
 }
 
 /**
- * What a pay-what-you-want SKU (the tip jar) will be charged, or null when the
- * server would refuse the amount.
- *
- * Mirrors the variable branch of `resolveChargeAmount` in create-order: a whole
- * number of cents within [min_amount ?? $1, max_amount]. The server does not
- * clamp, it refuses, so neither does this.
+ * `?amount=` as a number, read ONCE so the preview, the "Pay" label and the
+ * create-order request cannot disagree (#1306). `null` when absent or blank;
+ * otherwise `Number()`, so a malformed value becomes NaN and
+ * `previewAmountDue` refuses it.
  */
-export function variableAmount(
-  product: Product,
-  requested: unknown
-): number | null {
-  if (typeof requested !== 'number' || !Number.isInteger(requested))
-    return null;
-  const min = product.min_amount ?? 100;
-  const max = product.max_amount ?? Number.MAX_SAFE_INTEGER;
-  if (requested < min || requested > max) return null;
-  return requested;
+export function parseAmountParam(raw: string | null): number | null {
+  if (raw === null || raw.trim() === '') return null;
+  return Number(raw);
 }
 
 /**
- * What the buyer will be charged today, or null when nothing chargeable was
- * chosen (a variable SKU with a missing or out-of-bounds amount).
+ * What will be charged now, or `null` when the server would refuse.
  *
- * `requested` is the amount the page submits, and matters only for a variable
- * SKU. It used to be ignored, so `/checkout?sku=tip-jar&amount=5000` said "Total
- * today $15.00" and "Pay $15" while create-order charged $50.
- *
- * Fixed SKUs round DOWN, exactly as the server does — never charge more than
+ * Fixed SKUs: round DOWN, exactly as the server does — never charge more than
  * the price.
+ *
+ * Variable SKUs (the tip jar) charge the amount the buyer chose, never the
+ * row's seeded `amount` (#1306). The bounds are the server's own
+ * (`resolveChargeAmount` in create-order): a whole number of cents within
+ * `[min_amount ?? 100, max_amount]`. Anything else is `null` — refused, never
+ * clamped, because the server refuses rather than clamps.
  */
 export function previewAmountDue(
   product: Product,
-  requested?: unknown
+  chosenAmount: number | null = null
 ): number | null {
   if (product.amount_mode === 'variable') {
-    return variableAmount(product, requested);
+    if (chosenAmount === null || !Number.isInteger(chosenAmount)) return null;
+    const min = product.min_amount ?? 100;
+    const max = product.max_amount ?? Number.MAX_SAFE_INTEGER;
+    return chosenAmount >= min && chosenAmount <= max ? chosenAmount : null;
   }
   const pct = depositPercent(product);
   if (pct === null) return product.amount;
@@ -140,8 +135,7 @@ export default function CheckoutSummary({
     );
   }
 
-  // A variable SKU has no package price: `product.amount` is only its default,
-  // and comparing the chosen amount to it would call a large tip a "deposit".
+  // A tip has no package price and no deposit: it is the whole charge (#1306).
   const isVariable = product.amount_mode === 'variable';
   const due = amountDueNow ?? previewAmountDue(product);
   const isDeposit = !isVariable && due !== null && due < product.amount;
@@ -192,7 +186,9 @@ export default function CheckoutSummary({
               {isDeposit ? 'Deposit due today' : 'Total today'}
             </dt>
             <dd className="text-base-content">
-              {due === null ? '—' : formatCents(due, product.currency)}
+              {due === null
+                ? 'Choose an amount'
+                : formatCents(due, product.currency)}
             </dd>
           </div>
         </dl>

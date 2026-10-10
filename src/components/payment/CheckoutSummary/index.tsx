@@ -2,7 +2,7 @@ export {
   default,
   formatCents,
   depositPercent,
+  parseAmountParam,
   previewAmountDue,
-  variableAmount,
 } from './CheckoutSummary';
 export type { CheckoutSummaryProps } from './CheckoutSummary';

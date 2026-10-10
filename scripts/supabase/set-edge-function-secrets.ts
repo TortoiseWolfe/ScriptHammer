@@ -247,6 +247,10 @@ const EDGE_SECRET_KEYS = [
   'OPENAI_ADS_PIXEL_ID',
   'OPENAI_ADS_API_KEY',
   'OPENAI_CONVERSIONS_API_KEY',
+  // contact-message's bot check (#1319). The same Turnstile secret Supabase Auth holds for
+  // sign-up (#353), which the functions cannot read from there. Setting it is what switches
+  // the check on, so push it only after the page that sends tokens is live.
+  'TURNSTILE_SECRET',
 ] as const;
 
 /**

@@ -18,15 +18,14 @@ could not see (deployed config, live data).
 
 ## Summary
 
-**83 findings: 4 P0, 21 P1, 38 P2, 20 P3.** Every tier below has been reviewed once. Every
+**78 open findings: 3 P0, 18 P1, 37 P2, 20 P3.** The review found 83. Five have since been fixed and deleted, per the rule above: the Tip Jar preview (#1306, by #1328), the offline contact form (#1324), the `useOfflineQueue` sync loop and the PWAInstall re-registration (#1262, with this file's PR), and the 1000-row liveness sample (#1330). Every tier below has been reviewed once. Every
 reviewer only read code, traced each finding in the code before reporting it, and dropped
 anything it could not substantiate. Nothing here has been reproduced in a running app.
 
 Themes worth fixing as a class rather than one by one:
 
 - **Payments lose or duplicate money-state.** Webhook dedupe swallows retries, retry intents
-  have no order, idempotency keys are missing on one path and stuck on another, and the Tip
-  Jar shows a price different from the one it charges.
+  have no order, and idempotency keys are missing on one path and stuck on another.
 - **Supabase `{ error }` is treated as success.** postgrest-js resolves errors instead of
   throwing, and many call sites check only for a throw (`isSupabaseOnline`,
   `getConversationMeta`, `refreshSession`, RLS-filtered deletes that return 0 rows).
@@ -52,15 +51,6 @@ Themes worth fixing as a class rather than one by one:
 ## Backlog
 
 ## P0
-
-### #1306 — Tip Jar checkout shows the catalog default but charges the chosen tip (fixed on this branch)
-
-- **Where:** `src/components/payment/CheckoutSummary/CheckoutSummary.tsx:41` (`previewAmountDue`); used at `src/app/checkout/page.tsx:392`, `:499`
-- **Defect:** `previewAmountDue` ignores `amount_mode === 'variable'` and always returns `product.amount` (1500 for `tip-jar`), while the request sends `?amount=` and create-order honours it.
-- **Failure scenario:** On `/checkout?sku=tip-jar&amount=5000` the page says "Total today $15.00 — the price shown here is the price charged" and the button says "Pay $15". Stripe then charges $50.
-- **Fix:** For variable SKUs, preview the requested amount clamped by the same `min_amount`/`max_amount` rules create-order uses, in both the summary and the button.
-- **Confidence:** confirmed
-- **Severity note:** Raised from the reviewer's P1 to P0, because the customer is charged an amount different from the one shown.
 
 ### #1307 — Webhooks dedupe before processing, so a failed payment event is never retried
 
@@ -154,22 +144,6 @@ Themes worth fixing as a class rather than one by one:
 - **Fix:** Use a functional update, or keep a ref to the latest `value`.
 - **Confidence:** confirmed
 
-### useOfflineQueue re-runs its sync forever while any unsynced message exists
-
-- **Where:** `src/hooks/useOfflineQueue.ts:109-133` (the `syncQueue` deps), `:236-257` (the mount/poll effect)
-- **Defect:** `syncQueue` depends on `isSyncing`, so its identity changes on every sync. The mount effect re-runs each time and syncs again if `getQueue()` is non-empty. `getQueue()` includes permanently `failed` rows, because `markAsFailed` never sets `synced`.
-- **Failure scenario:** One failed message, or a signed-out visitor with a queued row, causes back-to-back syncs for as long as the component is mounted: `getSession`, IndexedDB churn and re-renders. The hook is used on `/contact`, `QueueStatusIndicator` and `ConversationView`.
-- **Fix:** Guard in-flight state with a ref so `syncQueue` stays stable, and auto-sync only when a `pending` row exists.
-- **Confidence:** confirmed
-
-### Offline contact-form submissions are never auto-sent on Chromium
-
-- **Where:** `src/utils/background-sync.ts:17,23-44,175-178`; `public/sw.js:403-405`
-- **Defect:** The code registers the tag `form-submission-sync`, but the SW only handles `sync-offline-queue`, and that handler just posts `SYNC_OFFLINE_QUEUE`, which no client listens for. The foreground fallback is skipped whenever `SyncManager` exists, and `retryQueue` has no UI caller.
-- **Failure scenario:** On Chrome, Edge or Android, the user submits offline and is told the message "will be sent automatically", but it never is.
-- **Fix:** Use one tag name and add a client SW message listener that calls `processQueue()`, or run the foreground fallback on every browser.
-- **Confidence:** confirmed
-
 ### With "Remember me" off, any spurious SIGNED_OUT wipes the keys and the offline queue
 
 - **Where:** `src/contexts/AuthContext.tsx:48-68` (`isAuthTokenValidInLocalStorage`), `:269-313`
@@ -252,14 +226,6 @@ Themes worth fixing as a class rather than one by one:
 - **Fix:** Create and cache each tile's material once, when it is promoted.
 - **Confidence:** confirmed
 
-### Webhook liveness samples 1000 unfiltered log rows, so it can miss signature failures
-
-- **Where:** `scripts/ci/check-webhook-liveness.mjs:147-165`
-- **Defect:** The `function_logs` query has `limit 1000` with no `WHERE` or `ORDER BY`, and signature rejections are counted in JS over whichever rows come back.
-- **Failure scenario:** On a busy day the page holds no rejection lines, so the check reports PASS while Stripe keeps refusing deliveries (#1180, with the check green).
-- **Fix:** Filter the rejection messages in SQL, count them there, and fail if the result hits the cap.
-- **Confidence:** confirmed (query shape); depends on log volume
-
 ## P2
 
 ### Queued payments have no persisted idempotency key, so every retry can create another order
@@ -317,14 +283,6 @@ Themes worth fixing as a class rather than one by one:
 - **Failure scenario:** With site data blocked (Safari "Block all cookies"), the storage getter throws `SecurityError`, `global-error.tsx` catches it, and every route shows the error page.
 - **Fix:** Wrap these calls in try/catch or use a shared safe-storage helper.
 - **Confidence:** confirmed (from code; the throw is standard browser behaviour)
-
-### PWAInstall effect re-runs on consent load and leaks SW registrations, intervals and listeners
-
-- **Where:** `src/components/PWAInstall/PWAInstall.tsx:39-142` (interval `:82`, `appinstalled` `:126`)
-- **Defect:** The effect depends on `trackPWAEvent`, which changes identity when stored consent loads. Each run re-registers the SW with a new `?v=Date.now()` URL and starts an uncleared 60s `update()` interval. It also adds an `appinstalled` listener that is never removed.
-- **Failure scenario:** Every user who accepted analytics gets a forced SW reinstall (`skipWaiting` plus cache purge), two permanent intervals, and double `installed` tracking.
-- **Fix:** Register the SW in a mount-only effect and clear its interval on cleanup. Read `trackPWAEvent` via a ref, and remove a named `appinstalled` handler in cleanup.
-- **Confidence:** confirmed
 
 ### Install button left showing with a dead or used prompt (GlobalNav vs PWAInstall)
 

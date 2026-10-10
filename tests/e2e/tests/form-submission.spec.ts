@@ -3,18 +3,24 @@ import { dismissCookieBanner } from '../utils/test-user-factory';
 
 test.describe('Form Submission', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to the contact page which has a form
-    // Nothing in this file may reach the real Web3Forms endpoint. 'form submission
-    // with valid data' below clicks submit with a filled form, and once the lane bakes
-    // an access key that becomes a live outbound request. Fulfil it locally instead;
-    // individual tests can register a narrower route, which takes precedence.
-    await page.route('**/api.web3forms.com/**', (route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ success: true, message: 'ok' }),
-      })
-    );
+    // Nothing in this file may reach a real delivery endpoint. Two tests click submit
+    // on a filled form. This stub used to cover only Web3Forms — the FALLBACK since
+    // #784 — so the primary, the contact-message function, went live: the hosted
+    // lane builds against production, and every run delivered "Loading state check"
+    // to the real inbox (#1319). Fulfil both locally; individual tests can register
+    // their own route, which takes precedence.
+    for (const endpoint of [
+      '**/functions/v1/contact-message',
+      '**/api.web3forms.com/**',
+    ]) {
+      await page.route(endpoint, (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true, id: 'e2e-stub' }),
+        })
+      );
+    }
 
     await page.goto('/contact');
     await dismissCookieBanner(page);
@@ -238,21 +244,30 @@ test.describe('Form Submission', () => {
     // submit on an EMPTY form, so validation blocked the request before any network
     // call could happen. `response` was always null and its assertion never ran.
     //
-    // Hold the Web3Forms response open so the submitting state lasts long enough to
-    // observe. This route is registered after the beforeEach one and therefore wins:
-    // Playwright matches handlers in reverse registration order.
+    // Hold the delivery response open so the submitting state lasts long enough to
+    // observe. These routes are registered after the beforeEach ones and therefore
+    // win: Playwright matches handlers in reverse registration order.
+    //
+    // BOTH legs. This held only Web3Forms, so the request that actually ran — the
+    // contact-message function, primary since #784 — reached production and its
+    // real latency is what kept the button busy (#1319).
     let release: () => void = () => {};
     const held = new Promise<void>((resolve) => {
       release = resolve;
     });
-    await page.route('**/api.web3forms.com/**', async (route) => {
-      await held;
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ success: true, message: 'ok' }),
+    for (const endpoint of [
+      '**/functions/v1/contact-message',
+      '**/api.web3forms.com/**',
+    ]) {
+      await page.route(endpoint, async (route) => {
+        await held;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true, id: 'e2e-stub' }),
+        });
       });
-    });
+    }
 
     await page.locator('#name').fill('Test Person');
     await page.locator('#email').fill('test@example.com');

@@ -2,7 +2,9 @@ import {
   ContactFormData,
   EmailProvider,
   EmailResult,
+  EmailDeliveryUnknownError,
   EmailProviderError,
+  EmailRefusedError,
 } from '../types';
 
 /**
@@ -27,6 +29,15 @@ import {
  */
 
 const FUNCTION_PATH = '/functions/v1/contact-message';
+
+/**
+ * The statuses the contact function itself uses to say "not this submission":
+ * 400 invalid fields, 403 a failed challenge or a foreign origin, 429 the per-IP
+ * limit. Each is final for this request (see EmailRefusedError). 401 is absent
+ * on purpose — that is the gateway rejecting OUR key, a configuration fault a
+ * fallback provider may well survive.
+ */
+const REFUSALS = new Set([400, 403, 429]);
 
 function endpoint(): string | null {
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -71,12 +82,15 @@ export class SupabaseResendProvider implements EmailProvider {
           email: data.email,
           subject: data.subject,
           message: data.message,
+          ...(data.captchaToken ? { captchaToken: data.captchaToken } : {}),
         }),
       });
     } catch (error) {
-      // A network failure must surface as a provider error so the service fails
-      // over rather than reporting a send that never happened.
-      throw new EmailProviderError(
+      // No response at all. That is NOT proof nothing was sent (#1322): the request
+      // may have reached the function, delivered, and lost only its reply. So it must
+      // surface as a failure, never a success, and as an UNKNOWN one, which
+      // EmailService will not fail over from.
+      throw new EmailDeliveryUnknownError(
         'Could not reach the contact function',
         this.name,
         error
@@ -88,13 +102,34 @@ export class SupabaseResendProvider implements EmailProvider {
       .catch(() => ({}) as Record<string, unknown>);
 
     if (!response.ok || result?.success !== true) {
-      throw new EmailProviderError(
-        typeof result?.error === 'string'
-          ? result.error
-          : `Contact function returned ${response.status}`,
-        this.name,
-        result
-      );
+      const fromFunction = typeof result?.error === 'string';
+      const message = fromFunction
+        ? (result.error as string)
+        : `Contact function returned ${response.status}`;
+      if (REFUSALS.has(response.status)) {
+        throw new EmailRefusedError(
+          message,
+          this.name,
+          response.status,
+          result
+        );
+      }
+      // Unknown outcomes (#1322):
+      // - 409 is the function saying the first send of this text is still in flight.
+      // - A 5xx WITHOUT the function's JSON is the gateway, which can time out after
+      //   the function has already sent.
+      // - A 200 that is not the function's confirmation (a proxy or captive portal)
+      //   tells us nothing about whether it ran.
+      // The function's own 5xx answers all happen before a send or at a failed one,
+      // so those stay ordinary failures that may fail over.
+      if (
+        response.status === 409 ||
+        (response.status >= 500 && !fromFunction) ||
+        response.ok
+      ) {
+        throw new EmailDeliveryUnknownError(message, this.name, result);
+      }
+      throw new EmailProviderError(message, this.name, result);
     }
 
     return {

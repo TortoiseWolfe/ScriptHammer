@@ -21,6 +21,8 @@ ogDescription: I parsed 15 years of my own Facebook into a knowledge graph I can
 twitterCard: summary_large_image
 ---
 
+_Part 4 of the [AI Workflow series](https://tortoisewolfe.github.io/AI_Workflow/series.html#build-log)._
+
 In November 2025 two people in a Cleveland TN group asked who builds websites around here.
 
 I answered both of them. I said scripthammer.com, I write custom software, websites or mobile applications.. and then I never followed up with either one.
@@ -240,3 +242,7 @@ That gets you `json/records.jsonl`, one JSON object per record, every field flat
 The graph is the fun part though.. point graphify at the corpus and go look at what you forgot.
 
 I'm going to go answer those two now, nine months late.
+
+---
+
+**Part 4 of the [AI Workflow series](https://tortoisewolfe.github.io/AI_Workflow/series.html#build-log).** ← Previous: [Send It Back Without Taking It Over](/blog/reject-without-taking-over/) · Next: [I Was Paying the Head Chef to Chop Onions](/blog/head-chef-line-cooks/) → · [Every part, in order](https://tortoisewolfe.github.io/AI_Workflow/series.html)

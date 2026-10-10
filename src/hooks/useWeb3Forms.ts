@@ -13,9 +13,8 @@ import {
 import { useOfflineQueue } from './useOfflineQueue';
 import { addToQueue, getQueueSize } from '@/utils/offline-queue';
 import {
-  registerBackgroundSync,
-  processQueue,
-  startFormQueueFallback,
+  QUEUE_CHANGED_EVENT,
+  notifyQueueChanged,
 } from '@/utils/background-sync';
 
 const logger = createLogger('hooks:web3Forms');
@@ -35,7 +34,15 @@ export interface UseWeb3FormsOptions {
  * Hook return type
  */
 export interface UseWeb3FormsReturn {
-  submitForm: (data: ContactFormData) => Promise<void>;
+  /**
+   * `captchaToken` is the Turnstile token when the form rendered the widget
+   * (#1319). It is forwarded on the online path only: a queued message is
+   * replayed later, long after a single-use, five-minute token has expired.
+   */
+  submitForm: (
+    data: ContactFormData,
+    captchaToken?: string | null
+  ) => Promise<void>;
   validateBeforeSubmit: (data: ContactFormData) => Promise<boolean>;
   reset: () => void;
   isSubmitting: boolean;
@@ -78,31 +85,25 @@ export const useWeb3Forms = (
   // Forms-specific offline queue using IndexedDB
   const [formsQueueCount, setFormsQueueCount] = useState(0);
 
-  // Load initial queue size
+  // Keep the saved-message count current. The sending happens in
+  // ContactQueueSender, mounted once in the root layout (#1321): only a rendered
+  // page can get the fresh Turnstile token each send needs. It announces every
+  // change with QUEUE_CHANGED_EVENT, so this count follows a send made from any page.
   useEffect(() => {
     const loadQueueSize = async () => {
-      const size = await getQueueSize();
-      setFormsQueueCount(size);
+      setFormsQueueCount(await getQueueSize());
     };
-    loadQueueSize();
-  }, []);
-
-  // #32: on browsers without the Background Sync API (Firefox/Safari), drain the
-  // form queue via foreground online/visibility listeners — otherwise queued
-  // submissions never auto-send there. No-op where SyncManager is available.
-  useEffect(() => {
-    const stop = startFormQueueFallback();
-    return stop;
+    void loadQueueSize();
+    window.addEventListener(QUEUE_CHANGED_EVENT, loadQueueSize);
+    return () => window.removeEventListener(QUEUE_CHANGED_EVENT, loadQueueSize);
   }, []);
 
   const queueCount = formsQueueCount + messagingQueueCount;
 
-  // Manual retry affordance (#32): flush the queue on demand, then refresh the
-  // count so the UI reflects what drained.
+  // Manual retry affordance (#32): ask the sender to try now. It owns the token.
   const retryQueue = useCallback(async () => {
-    await processQueue();
-    const newSize = await getQueueSize();
-    setFormsQueueCount(newSize);
+    notifyQueueChanged();
+    setFormsQueueCount(await getQueueSize());
   }, []);
 
   const addToOfflineQueue = useCallback(
@@ -110,11 +111,9 @@ export const useWeb3Forms = (
       try {
         const success = await addToQueue(data);
         if (success) {
-          const newSize = await getQueueSize();
-          setFormsQueueCount(newSize);
-
-          // Register background sync to process when online
-          await registerBackgroundSync();
+          setFormsQueueCount(await getQueueSize());
+          // Wakes ContactQueueSender, which sends once the connection is back.
+          notifyQueueChanged();
 
           return { id: `form-${Date.now()}`, queued: true };
         }
@@ -179,7 +178,10 @@ export const useWeb3Forms = (
    * Submit form data
    */
   const submitForm = useCallback(
-    async (data: ContactFormData): Promise<void> => {
+    async (
+      data: ContactFormData,
+      captchaToken?: string | null
+    ): Promise<void> => {
       // Reset previous state
       reset();
 
@@ -200,7 +202,9 @@ export const useWeb3Forms = (
             setIsSuccess(true);
             setWasQueuedOffline(true);
             setSuccessMessage(
-              'Message queued for sending when online. It will be sent automatically when connection is restored.'
+              // Says what will actually happen (#1321). The old text promised an
+              // automatic send that no code path could deliver.
+              'Message saved on this device. It will be sent the next time you open this site with a connection.'
             );
 
             // Auto-reset after delay
@@ -221,16 +225,19 @@ export const useWeb3Forms = (
           email: data.email,
           subject: data.subject,
           message: data.message,
+          ...(captchaToken ? { captchaToken } : {}),
         };
 
         const result = await emailService.send(emailData);
 
         // Update state
         setIsSuccess(true);
-        const providerNote =
-          result.provider !== 'Web3Forms'
-            ? ` (sent via backup: ${result.provider})`
-            : '';
+        // Only when a fallback really carried it (#1321). This compared against
+        // 'Web3Forms', the primary before #784, so every normal send read
+        // "(sent via backup: SupabaseResend)".
+        const providerNote = result.fallback
+          ? ` (sent via backup: ${result.provider})`
+          : '';
         setSuccessMessage(
           customSuccessMessage || `Email sent successfully${providerNote}`
         );

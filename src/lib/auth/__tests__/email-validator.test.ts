@@ -3,7 +3,11 @@
 // Purpose: Test comprehensive email validation (MUST FAIL until implementation)
 
 import { describe, it, expect } from 'vitest';
-import { validateEmail, type EmailValidationResult } from '../email-validator';
+import {
+  validateEmail,
+  isValidEmail,
+  type EmailValidationResult,
+} from '../email-validator';
 
 describe('Email Validator - REQ-SEC-006', () => {
   describe('Valid Email Addresses', () => {
@@ -268,6 +272,35 @@ describe('Email Validator - REQ-SEC-006', () => {
       expect(result).toHaveProperty('normalized');
       expect(result).toHaveProperty('errors');
       expect(result).toHaveProperty('warnings');
+    });
+    it('should name an unparseable address as an invalid email', () => {
+      const result = validateEmail('notanemail');
+
+      expect(result.valid).toBe(false);
+      expect(result.errors[0]).toContain('Invalid email');
+    });
+  });
+
+  describe('isValidEmail', () => {
+    it('should accept valid email addresses', () => {
+      expect(isValidEmail('user@example.com')).toBe(true);
+      expect(isValidEmail('test.user@example.com')).toBe(true);
+      expect(isValidEmail('user+tag@example.co.uk')).toBe(true);
+      expect(isValidEmail('123@test.org')).toBe(true);
+    });
+
+    it('should reject invalid email formats', () => {
+      expect(isValidEmail('notanemail')).toBe(false);
+      expect(isValidEmail('@example.com')).toBe(false);
+      expect(isValidEmail('user@')).toBe(false);
+      expect(isValidEmail('user @example.com')).toBe(false);
+      expect(isValidEmail('')).toBe(false);
+    });
+
+    it('should handle edge cases', () => {
+      expect(isValidEmail('a@b.io')).toBe(true); // Min valid
+      expect(isValidEmail('user..name@example.com')).toBe(false); // Double dot
+      expect(isValidEmail('user@example..com')).toBe(false); // Double dot in domain
     });
   });
 });

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import QueueStatusIndicator from './QueueStatusIndicator';
 import * as useOfflineQueueModule from '@/hooks/useOfflineQueue';
@@ -59,8 +59,8 @@ describe('QueueStatusIndicator', () => {
     expect(container.firstChild).toBeInTheDocument();
   });
 
-  it('calls onRetry when retry button is clicked', () => {
-    // Mock with failed messages to trigger retry button
+  it('calls onRetry and retryFailed when the retry button is clicked', () => {
+    const retryFailed = vi.fn().mockResolvedValue(undefined);
     mockUseOfflineQueue.mockReturnValue({
       queue: [],
       queueCount: 0,
@@ -68,16 +68,20 @@ describe('QueueStatusIndicator', () => {
       isSyncing: false,
       isOnline: true,
       syncQueue: vi.fn(),
-      retryFailed: vi.fn(),
+      retryFailed,
       clearSynced: vi.fn(),
       getFailedMessages: vi.fn().mockResolvedValue([]),
     });
 
     const onRetry = vi.fn();
-    const { container } = render(
-      <QueueStatusIndicator showRetryButton={true} onRetry={onRetry} />
+    render(<QueueStatusIndicator showRetryButton={true} onRetry={onRetry} />);
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Retry failed messages' })
     );
-    expect(container.firstChild).toBeInTheDocument();
+
+    expect(onRetry).toHaveBeenCalledTimes(1);
+    expect(retryFailed).toHaveBeenCalledTimes(1);
   });
 
   // Add component-specific tests based on actual functionality

@@ -10,7 +10,11 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { KeyDerivationService } from '../key-derivation';
-import { ARGON2_CONFIG, CRYPTO_PARAMS } from '@/types/messaging';
+import {
+  ARGON2_CONFIG,
+  CRYPTO_PARAMS,
+  KeyDerivationError,
+} from '@/types/messaging';
 
 describe('KeyDerivationService', () => {
   let service: KeyDerivationService;
@@ -158,8 +162,24 @@ describe('KeyDerivationService', () => {
     });
 
     it('should throw KeyDerivationError if Argon2 fails', async () => {
-      const { KeyDerivationError } = await import('@/types/messaging');
-      expect(KeyDerivationError).toBeDefined();
+      // A REAL Argon2 failure, not a mock: hash-wasm refuses a salt shorter
+      // than 8 bytes. argon2Hash must wrap that in KeyDerivationError rather
+      // than let a library error escape. The old version of this test only
+      // asserted that the class existed.
+      const error = await service
+        .deriveKeyPair({
+          password: 'TestPassword123!',
+          salt: new Uint8Array(4),
+        })
+        .catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(KeyDerivationError);
+      expect((error as KeyDerivationError).message).toBe(
+        'Argon2 hashing failed. Please try again.'
+      );
+      expect(String((error as KeyDerivationError).cause)).toMatch(
+        /Salt should be at least 8 bytes long/
+      );
     });
   });
 

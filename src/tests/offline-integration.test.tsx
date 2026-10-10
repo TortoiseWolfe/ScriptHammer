@@ -12,7 +12,6 @@ import {
 } from '@testing-library/react';
 import { ContactForm } from '@/components/forms/ContactForm/ContactForm';
 import * as offlineQueue from '@/utils/offline-queue';
-import * as backgroundSync from '@/utils/background-sync';
 import * as web3forms from '@/utils/web3forms';
 import { useOfflineQueue } from '@/hooks/useOfflineQueue';
 
@@ -110,9 +109,6 @@ describe('Offline Queue Integration', () => {
     vi.mocked(offlineQueue.removeFromQueue).mockResolvedValue(true);
     vi.mocked(offlineQueue.clearQueue).mockResolvedValue(true);
     vi.mocked(offlineQueue.updateRetryCount).mockResolvedValue(true);
-
-    vi.mocked(backgroundSync.isBackgroundSyncSupported).mockReturnValue(true);
-    vi.mocked(backgroundSync.registerBackgroundSync).mockResolvedValue(true);
 
     vi.mocked(web3forms.submitWithRetry).mockResolvedValue({
       success: true,
@@ -338,7 +334,7 @@ describe('Offline Queue Integration', () => {
 
       await waitFor(() => {
         const successMessage = screen.getByText(
-          /message queued for sending when online/i
+          /message saved on this device/i
         );
         expect(successMessage).toBeInTheDocument();
       });
@@ -696,9 +692,6 @@ describe('Offline Queue Integration', () => {
       vi.mocked(offlineQueue.addToQueue).mockResolvedValue(true);
       vi.mocked(offlineQueue.getQueueSize).mockResolvedValue(0);
 
-      // Mock background sync as not supported
-      vi.mocked(backgroundSync.registerBackgroundSync).mockResolvedValue(false);
-
       render(<ContactForm />);
 
       // Fill form using helper
@@ -753,7 +746,7 @@ describe('Offline Queue Integration', () => {
       // Should still queue the message even without background sync
       await waitFor(() => {
         expect(
-          screen.getByText(/message queued for sending when online/i)
+          screen.getByText(/message saved on this device/i)
         ).toBeInTheDocument();
       });
     });

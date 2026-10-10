@@ -48,3 +48,20 @@ export const carePlan: Product = {
   metadata: {},
   active: false,
 };
+
+/**
+ * The pay-what-you-want SKU (#1306). `amount` is only the default the tip jar
+ * pre-fills; the charge is whatever the buyer chose, within min/max.
+ */
+export const tipJar: Product = {
+  ...landingPage,
+  id: 'tip-jar',
+  lane: 'product',
+  name: 'Tip Jar',
+  tagline: null,
+  amount: 1500,
+  amount_mode: 'variable',
+  min_amount: 100,
+  max_amount: 50000,
+  metadata: {},
+};

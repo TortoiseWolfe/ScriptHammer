@@ -32,11 +32,38 @@
  *
  * The IP comes from `clientIp` below; why its choice of header entry is safe is recorded
  * there (#1237, measured).
+ *
+ * BOT CHECKS BEFORE THE LIMITER (#1319). A per-IP limit throttles one address; it cannot see a
+ * script spread across many. So, in order: a foreign `Origin` is refused before the body is
+ * read; a reply-to on a reserved domain is refused with the field errors; and when
+ * `TURNSTILE_SECRET` is set, a Turnstile token is required and checked with Cloudflare. All
+ * three run before the limiter, so a refused bot never spends a real visitor's budget on a
+ * shared IP. Each decision lives in `rules.ts`, which Vitest can load.
+ *
+ * ONE MESSAGE, ONE EMAIL (#1322). The send carries an `Idempotency-Key` derived from the
+ * message's content (`rules.ts` says why content and not a token). A visitor whose response was
+ * lost can press Send again — with a fresh Turnstile token — and Resend returns the original
+ * response instead of delivering a second copy. Resend keeps keys for 24 hours.
+ *
+ * TURNSTILE IS INERT UNTIL ITS SECRET EXISTS. A fork with no `TURNSTILE_SECRET` behaves exactly
+ * as before, and the rollout order is safe: ship the page that sends tokens, then this
+ * function, then the secret. Setting the secret first would refuse every visitor whose page
+ * predates the widget.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { handleCors, jsonResponse } from '../_shared/cors.ts';
+import { allowedOrigins, handleCors, jsonResponse } from '../_shared/cors.ts';
 import { limiterVerdict } from '../_shared/limiter-verdict.ts';
+import {
+  captchaTokenFrom,
+  idempotencyKeyFor,
+  isUndeliverableAddress,
+  originVerdict,
+  resendOutcome,
+  SITEVERIFY_URL,
+  siteverifyVerdict,
+  type CaptchaVerdict,
+} from './rules.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 
@@ -50,6 +77,25 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
  */
 const CONTACT_TO = Deno.env.get('CONTACT_TO');
 const CONTACT_FROM = Deno.env.get('CONTACT_FROM');
+
+/**
+ * The server half of `NEXT_PUBLIC_CAPTCHA_SITE_KEY` — the same Turnstile widget sign-up uses
+ * (#353). Optional: unset means no token is asked for (see the header).
+ */
+const TURNSTILE_SECRET = Deno.env.get('TURNSTILE_SECRET');
+
+/** The message a refused challenge shows; the form puts it in front of the visitor verbatim. */
+const CHALLENGE_MESSAGE =
+  'Please complete the verification challenge and try again.';
+
+/**
+ * What a visitor reads when delivery cannot be confirmed (#1322). Pressing Send again is safe
+ * because the idempotency key makes a resend of the same text a no-op. The client carries the
+ * same sentence for the case where no response arrived at all
+ * (`src/utils/email/types.ts`, UNCONFIRMED_MESSAGE).
+ */
+const UNCONFIRMED_MESSAGE =
+  "We couldn't confirm your message was sent. Press Send again: if it already arrived, it won't be sent twice.";
 
 const LIMITS = { name: 100, email: 254, subject: 200, message: 5000 };
 
@@ -83,6 +129,34 @@ function clientIp(req: Request): string | null {
     if (first) return first;
   }
   return req.headers.get('cf-connecting-ip') ?? null;
+}
+
+/** Ask Cloudflare whether a Turnstile token is genuine. Never throws. */
+async function verifyCaptcha(
+  token: string,
+  ip: string | null
+): Promise<CaptchaVerdict> {
+  try {
+    const res = await fetch(SITEVERIFY_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        secret: TURNSTILE_SECRET,
+        response: token,
+        ...(ip ? { remoteip: ip } : {}),
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    const json = await res.json().catch(() => null);
+    const verdict = siteverifyVerdict(res.ok, json);
+    if (verdict !== 'pass') {
+      console.warn('turnstile verdict', verdict, json?.['error-codes']);
+    }
+    return verdict;
+  } catch (error) {
+    console.error('turnstile siteverify unreachable', error);
+    return 'unavailable';
+  }
 }
 
 /** Service-role client — the limiter functions are SECURITY DEFINER. */
@@ -119,6 +193,17 @@ Deno.serve(async (req: Request) => {
     );
   }
 
+  // Before the body is read: a page on another site has no business here (rules.ts says why).
+  const origin = originVerdict(req.headers.get('origin'), allowedOrigins());
+  if (!origin.ok) {
+    console.warn('contact-message refused a foreign origin', origin.origin);
+    return jsonResponse(
+      req,
+      { error: 'This form only accepts messages from its own site.' },
+      403
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -142,19 +227,43 @@ Deno.serve(async (req: Request) => {
   if (name.length > LIMITS.name) problems.push('name is too long');
   if (!email || !isEmail(email)) problems.push('a valid email is required');
   if (email.length > LIMITS.email) problems.push('email is too long');
+  if (email && isEmail(email) && isUndeliverableAddress(email)) {
+    problems.push('please use an email address we can reply to');
+  }
   if (!subject) problems.push('subject is required');
   if (subject.length > LIMITS.subject) problems.push('subject is too long');
   if (!message) problems.push('message is required');
   if (message.length > LIMITS.message) problems.push('message is too long');
 
   if (problems.length > 0) {
-    return jsonResponse(req, { error: problems.join('; ') }, 400);
+    // A sentence, because the form shows a refusal verbatim (#1319).
+    const text = problems.join('; ');
+    return jsonResponse(
+      req,
+      { error: `${text.charAt(0).toUpperCase()}${text.slice(1)}.` },
+      400
+    );
+  }
+
+  const ip = clientIp(req);
+
+  // ── bot check (#1319) ───────────────────────────────────────────────────────
+  // Before the limiter, so a request that fails it never counts against an IP a
+  // real visitor may share. Inert without the secret (see the header).
+  if (TURNSTILE_SECRET) {
+    const token = captchaTokenFrom(body);
+    const verdict = token ? await verifyCaptcha(token, ip) : 'rejected';
+    if (verdict === 'unavailable') {
+      return jsonResponse(req, { error: 'Could not send the message' }, 503);
+    }
+    if (verdict !== 'pass') {
+      return jsonResponse(req, { error: CHALLENGE_MESSAGE }, 403);
+    }
   }
 
   // ── rate limit (#784) ──────────────────────────────────────────────────────
   // AFTER validation so malformed junk cannot burn a legitimate sender's budget,
   // and BEFORE the send so a limited caller costs us no Resend quota.
-  const ip = clientIp(req);
   const admin = adminClient();
 
   if (!ip || !admin) {
@@ -198,11 +307,20 @@ Deno.serve(async (req: Request) => {
     );
   }
 
+  const idempotencyKey = await idempotencyKeyFor({
+    name,
+    email,
+    subject,
+    message,
+  });
+
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${RESEND_API_KEY}`,
+      // Same content, same key: a resend returns the original response (#1322).
+      'Idempotency-Key': idempotencyKey,
     },
     body: JSON.stringify({
       from: CONTACT_FROM,
@@ -213,13 +331,29 @@ Deno.serve(async (req: Request) => {
         `From: ${name} <${email}>\n` +
         `Subject: ${subject}\n\n` +
         `${message}\n\n` +
-        `— sent from the contact form at ${req.headers.get('origin') ?? 'unknown origin'}`,
+        // Only an allowlisted origin is printed (rules.ts). This used to echo the
+        // header verbatim, so a caller could name any page they liked as the source.
+        `— sent from the contact form via ${origin.label}`,
     }),
   });
 
   const data = await res.json().catch(() => ({}));
+  const outcome = resendOutcome(res.ok, res.status, data);
 
-  if (!res.ok) {
+  if (outcome === 'already-sent') {
+    // This text was delivered earlier: a resend after a lost response. Nothing new went out,
+    // and the visitor's message did arrive, so this is a success.
+    console.info('contact-message: duplicate of an already-delivered message');
+    return jsonResponse(req, { success: true, id: null, duplicate: true }, 200);
+  }
+
+  if (outcome === 'in-flight') {
+    // The first send of this text is still in progress, so its outcome is unknown. Say exactly
+    // that, with a 409 the client reads as "could not confirm" and never as a refusal.
+    return jsonResponse(req, { error: UNCONFIRMED_MESSAGE }, 409);
+  }
+
+  if (outcome === 'rejected') {
     console.error('Resend rejected the contact message', data);
     return jsonResponse(req, { error: 'Could not send the message' }, 502);
   }
