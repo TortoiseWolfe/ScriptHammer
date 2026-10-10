@@ -11,6 +11,13 @@ import {
   replaySafe,
 } from '../_shared/webhook-claim.ts';
 import {
+  canceledAtFromPayPal,
+  failurePatch,
+  mapPayPalSubscription,
+  paypalEventAt,
+  snapshotDecision,
+} from '../_shared/subscription-events.ts';
+import {
   errorMessage,
   isOurIntentRef,
   type WebhookHandlerResult,
@@ -383,19 +390,51 @@ async function handleSubscriptionEvent(
     return { handled: false, reason: 'missing_custom_id' };
   }
 
+  // THE PLAN COMES FROM THE CATALOG, where create-paypal-subscription chose it. The event's own
+  // fields gave plan_interval 'regular' (tenure_type) and plan_amount 0 before the first payment,
+  // and both violate the subscriptions CHECKs, so every such event failed (#1311,
+  // RescueDogs#349). limit(1): two products sharing one plan id would describe the same plan.
+  const { data: product, error: productError } = await supabase
+    .from('products')
+    .select('interval, amount')
+    .eq('paypal_plan_id', resource.plan_id ?? '')
+    .limit(1)
+    .maybeSingle();
+  if (productError) throw productError;
+
+  const mapped = mapPayPalSubscription(resource, product);
+  if (mapped.kind === 'skip') {
+    console.warn(
+      `PayPal subscription ${resource.id} (${resource.status}) not stored: ${mapped.reason}`
+    );
+    return { handled: false, reason: mapped.reason };
+  }
+
+  // ORDERED BY THE PROVIDER'S CLOCK (#1307 stage 2): an older snapshot, replayed or delivered
+  // out of order, must not roll the row back, and a cancelled subscription is never revived.
+  const eventAt = paypalEventAt(event.create_time, Date.now());
+  const { data: stored, error: storedError } = await supabase
+    .from('subscriptions')
+    .select('status, last_provider_event_at')
+    .eq('provider_subscription_id', resource.id)
+    .maybeSingle();
+  if (storedError) throw storedError;
+  const decision = snapshotDecision(stored, eventAt, mapped.status);
+  if (!decision.apply) {
+    console.log(
+      `PayPal subscription ${resource.id}: ${event.event_type} not applied (${decision.reason})`
+    );
+    return { handled: false, reason: decision.reason };
+  }
+
   const subscriptionData = {
     provider: 'paypal',
     provider_subscription_id: resource.id,
     template_user_id: templateUserId,
     customer_email: resource.subscriber?.email_address || '',
-    plan_amount: Math.round(
-      parseFloat(resource.billing_info?.last_payment?.amount?.value || '0') *
-        100
-    ),
-    plan_interval:
-      resource.billing_info?.cycle_executions?.[0]?.tenure_type?.toLowerCase() ||
-      'month',
-    status: mapPayPalSubscriptionStatus(resource.status),
+    plan_amount: mapped.plan_amount,
+    plan_interval: mapped.plan_interval,
+    status: mapped.status,
     current_period_start: resource.billing_info?.last_payment?.time
       ? new Date(resource.billing_info.last_payment.time)
           .toISOString()
@@ -407,11 +446,13 @@ async function handleSubscriptionEvent(
           .split('T')[0]
       : null,
     next_billing_date:
-      resource.status === 'ACTIVE' && resource.billing_info?.next_billing_time
+      mapped.status === 'active' && resource.billing_info?.next_billing_time
         ? new Date(resource.billing_info.next_billing_time)
             .toISOString()
             .split('T')[0]
         : null,
+    // The provider's time for this snapshot, so an older one can never overwrite it (#1307).
+    last_provider_event_at: eventAt,
   };
 
   const { data: sub, error } = await supabase
@@ -442,12 +483,22 @@ async function handleSubscriptionCancelled(
   webhookEventId: string
 ): Promise<WebhookHandlerResult> {
   const resource = event.resource;
+
+  // NO ORDERING GUARD, deliberately: cancellation is terminal and canceled_at comes from the
+  // event, so applying it again is harmless, and skipping it could leave a dead subscription
+  // holding the user's one live slot. snapshotDecision then refuses to revive the row.
   const { data: sub, error } = await supabase
     .from('subscriptions')
     .update({
       status: 'canceled',
-      canceled_at: new Date().toISOString(),
-      cancellation_reason: resource.status_update_time || null,
+      // From the event, not now(), so a replay cannot move the date (#1307). This used to write
+      // status_update_time into cancellation_reason, a timestamp where a reason belongs.
+      canceled_at: canceledAtFromPayPal(
+        resource,
+        event.create_time,
+        Date.now()
+      ),
+      cancellation_reason: resource.status_change_note || null,
     })
     .eq('provider_subscription_id', resource.id)
     .select()
@@ -481,44 +532,41 @@ async function handleSubscriptionPaymentFailed(
   const resource = event.resource;
   const providerSubId = resource.id;
 
-  const { data: existing } = await supabase
+  // .maybeSingle() and a checked error: .single() errored on zero rows and the error was never
+  // read, so "could not read" looked like "no subscription" (#1307).
+  const { data: existing, error: readError } = await supabase
     .from('subscriptions')
-    .select('id, failed_payment_count')
+    .select(
+      'id, status, failed_payment_count, grace_period_expires, last_provider_event_at'
+    )
     .eq('provider_subscription_id', providerSubId)
-    .single();
+    .maybeSingle();
+  if (readError) throw readError;
 
   if (!existing) {
     return { handled: false };
   }
 
-  const gracePeriodExpires = new Date(
-    Date.now() + GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000
-  )
-    .toISOString()
-    .split('T')[0];
+  // Idempotent, so a replay is safe (#1307): PayPal's own failed_payments_count, a live grace
+  // deadline kept, no revival of an ended subscription, and no failure applied to one a newer
+  // snapshot shows active again.
+  const decision = failurePatch(existing, {
+    providerCount: resource.billing_info?.failed_payments_count,
+    eventAt: paypalEventAt(event.create_time, Date.now()),
+    nowMs: Date.now(),
+    graceDays: GRACE_PERIOD_DAYS,
+  });
+  if (decision.kind === 'skip') {
+    return { handled: false, reason: decision.reason };
+  }
 
   const { data: sub, error } = await supabase
     .from('subscriptions')
-    .update({
-      status: 'grace_period',
-      failed_payment_count: (existing.failed_payment_count ?? 0) + 1,
-      grace_period_expires: gracePeriodExpires,
-    })
-    .eq('provider_subscription_id', providerSubId)
+    .update(decision.patch)
+    .eq('id', existing.id)
     .select()
     .single();
 
   if (error) throw error;
   return { handled: true, related_subscription_id: sub.id };
-}
-
-function mapPayPalSubscriptionStatus(status: string): string {
-  const statusMap: Record<string, string> = {
-    ACTIVE: 'active',
-    SUSPENDED: 'past_due',
-    CANCELLED: 'canceled',
-    EXPIRED: 'expired',
-    APPROVAL_PENDING: 'pending',
-  };
-  return statusMap[status] || 'canceled';
 }

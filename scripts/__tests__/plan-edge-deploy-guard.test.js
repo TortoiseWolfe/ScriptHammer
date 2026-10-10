@@ -139,8 +139,8 @@ describe('edge-deploy planner (#1188)', () => {
     );
     assert.match(
       res.stdout,
-      /6 file\(s\)/,
-      'stripe-webhook is six files (#1307 added the claim); a human once counted four (#1188)'
+      /7 file\(s\)/,
+      'stripe-webhook is seven files (#1307 added the claim and the subscription rules); a human once counted four (#1188)'
     );
   });
 });

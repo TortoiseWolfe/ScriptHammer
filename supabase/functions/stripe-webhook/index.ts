@@ -12,6 +12,12 @@ import {
   replaySafe,
 } from '../_shared/webhook-claim.ts';
 import {
+  canceledAtFromStripe,
+  failurePatch,
+  snapshotDecision,
+  stripeEventAt,
+} from '../_shared/subscription-events.ts';
+import {
   errorMessage,
   isOurIntentRef,
   PG_UNIQUE_VIOLATION,
@@ -400,6 +406,23 @@ async function handlePaymentCheckout(
     return { handled: false };
   }
 
+  // An UNPAID session records a pending row, and nothing unique stopped a replay inserting a
+  // second one (#1307 prerequisite 5; the unique index covers only 'succeeded'). Look first.
+  if (session.payment_status !== 'paid') {
+    const { data: pending, error: pendingError } = await supabase
+      .from('payment_results')
+      .select('id')
+      .eq('intent_id', intent.id)
+      .eq('provider', 'stripe')
+      .eq('status', 'pending')
+      .limit(1)
+      .maybeSingle();
+    if (pendingError) throw pendingError;
+    if (pending) {
+      return { handled: false, reason: 'pending_already_recorded' };
+    }
+  }
+
   const { data: paymentResult, error } = await supabase
     .from('payment_results')
     .insert({
@@ -484,6 +507,7 @@ async function handleSubscriptionEvent(
   webhookEventId: string
 ): Promise<WebhookHandlerResult> {
   const subscription = event.data.object as Stripe.Subscription;
+  const eventAt = stripeEventAt(event.created);
 
   // template_user_id and customer_email come from the metadata that
   // create-stripe-subscription sets via subscription_data.metadata when
@@ -569,7 +593,26 @@ async function handleSubscriptionEvent(
       ? new Date(subscription.canceled_at * 1000).toISOString()
       : null,
     cancellation_reason: subscription.cancellation_details?.reason ?? null,
+    // The provider's time for this snapshot, so an older one can never overwrite it (#1307).
+    last_provider_event_at: eventAt,
   };
+
+  // ORDERED BY THE PROVIDER'S CLOCK (#1307 stage 2). A snapshot older than the one already
+  // applied, whether replayed or delivered out of order, would roll the row back; and a canceled
+  // subscription id is never revived. See snapshotDecision.
+  const { data: stored, error: storedError } = await supabase
+    .from('subscriptions')
+    .select('status, last_provider_event_at')
+    .eq('provider_subscription_id', subscription.id)
+    .maybeSingle();
+  if (storedError) throw storedError;
+  const decision = snapshotDecision(stored, eventAt, localStatus);
+  if (!decision.apply) {
+    console.log(
+      `subscription ${subscription.id}: ${event.type} not applied (${decision.reason})`
+    );
+    return { handled: false, reason: decision.reason };
+  }
 
   // Upsert subscription (create or update)
   const { data: sub, error } = await supabase
@@ -611,11 +654,16 @@ async function handleSubscriptionDeleted(
 ): Promise<WebhookHandlerResult> {
   const subscription = event.data.object as Stripe.Subscription;
 
+  // NO ORDERING GUARD HERE, deliberately. Cancellation is terminal at Stripe and canceled_at now
+  // comes from the event, so applying it again is harmless, and skipping it could leave a dead
+  // subscription holding the user's one live slot (the review that rejected the first stage-2
+  // draft found exactly that). snapshotDecision then refuses to revive the row.
   const { data: sub, error } = await supabase
     .from('subscriptions')
     .update({
       status: 'canceled',
-      canceled_at: new Date().toISOString(),
+      // From the event, not now(): a replay days later must not move the date (#1307).
+      canceled_at: canceledAtFromStripe(subscription, event.created),
       cancellation_reason: subscription.cancellation_details?.reason || null,
     })
     .eq('provider_subscription_id', subscription.id)
@@ -660,42 +708,39 @@ async function handleInvoicePaymentFailed(
 
   const providerSubId = invoice.subscription as string;
 
-  // Read the current row so we can increment the failure count safely. The
-  // supabase-js client has no SQL-expression template tag, so the previous
-  // `supabase.sql\`failed_payment_count + 1\`` never incremented — it must be a
-  // plain read-then-write. Webhook events for one subscription are delivered
-  // serially, so this is not racy in practice.
+  // Read the current row: its status, failure count, grace deadline and provider time.
   const { data: existing, error: readError } = await supabase
     .from('subscriptions')
-    .select('id, failed_payment_count')
+    .select(
+      'id, status, failed_payment_count, grace_period_expires, last_provider_event_at'
+    )
     .eq('provider_subscription_id', providerSubId)
     .maybeSingle();
-  // A read error is not "no subscription" (#1307). This handler is not replay-safe yet, so the
-  // throw marks the event permanently_failed and the liveness alarm reports it.
+  // A read error is not "no subscription" (#1307): throw, and the claim retries.
   if (readError) throw readError;
 
   if (!existing) {
     return { handled: false };
   }
 
-  // Start the grace clock now (the canonical YYYY-MM-DD TEXT date format used
-  // elsewhere in this file). GRACE_PERIOD_DAYS mirrors
-  // subscriptionConfig.gracePeriodDays in src/config/payment.ts (Deno can't
-  // import that browser module, so the value is duplicated here).
-  const gracePeriodExpires = new Date(
-    Date.now() + GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000
-  )
-    .toISOString()
-    .split('T')[0];
+  // Idempotent, so a replay is safe (#1307): the count is Stripe's own attempt_count, a live grace
+  // deadline is kept, an ended subscription is never revived, and one a newer snapshot shows
+  // active has recovered. GRACE_PERIOD_DAYS mirrors subscriptionConfig.gracePeriodDays in
+  // src/config/payment.ts (Deno can't import that browser module, so it is duplicated here).
+  const decision = failurePatch(existing, {
+    providerCount: invoice.attempt_count,
+    eventAt: stripeEventAt(event.created),
+    nowMs: Date.now(),
+    graceDays: GRACE_PERIOD_DAYS,
+  });
+  if (decision.kind === 'skip') {
+    return { handled: false, reason: decision.reason };
+  }
 
   const { data: sub, error } = await supabase
     .from('subscriptions')
-    .update({
-      status: 'grace_period',
-      failed_payment_count: (existing.failed_payment_count ?? 0) + 1,
-      grace_period_expires: gracePeriodExpires,
-    })
-    .eq('provider_subscription_id', providerSubId)
+    .update(decision.patch)
+    .eq('id', existing.id)
     .select()
     .single();
 
