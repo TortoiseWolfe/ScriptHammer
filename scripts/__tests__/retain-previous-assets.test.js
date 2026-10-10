@@ -318,28 +318,82 @@ describe('retain-previous-assets: chaining across a burst (#548)', () => {
     );
   });
 
-  it('drops an asset once it is older than RETAIN_DAYS, so _next/static stays bounded', async () => {
+  it('drops a build once a newer one was already live at the cutoff, so _next/static stays bounded', async () => {
     // The window is the only thing bounding chained retention. Without it every
     // deploy would accumulate forever, which is the obvious failure mode of the
     // fix and therefore worth a test of its own.
+    //
+    // WHAT BOUNDS IT IS THE BUILD LIVE AT THE CUTOFF (#1331), not the cutoff alone. A
+    // shipped 40 days ago and B replaced it 30 days ago; C deploys now. Nobody can still
+    // hold A's pages, because B served the whole fortnight. B served until a second ago.
+    // This test used to backdate only A and keep B new. Under the old rule, backdating
+    // B as well dropped B too: after a quiet fortnight the next deploy evicted the build
+    // that was live a moment earlier.
     const dirs = ['a4', 'b4', 'c4'].map((n, i) =>
       makeGeneration(path.join(WORK, n), `gen-${'abc'[i]}`)
     );
     await retain(dirs[1], dirs[0], 14);
     assert.ok(fs.existsSync(path.join(dirs[1], '_next/static/css/gen-a.css')));
 
-    // Age A's stylesheet past the window in B's published ledger, exactly as real
-    // elapsed time would. B's own file stays new.
-    backdate(dirs[1], '_next/static/css/gen-a.css', 40);
+    // Age both generations in B's published ledger, exactly as real elapsed time would.
+    for (const [g, days] of [
+      ['a', 40],
+      ['b', 30],
+    ]) {
+      for (const f of [`css/gen-${g}.css`, `chunks/gen-${g}.js`]) {
+        backdate(dirs[1], `_next/static/${f}`, days);
+      }
+    }
 
     await retain(dirs[2], dirs[1], 14);
     assert.ok(
       !fs.existsSync(path.join(dirs[2], '_next/static/css/gen-a.css')),
-      'an asset older than RETAIN_DAYS must not be carried forward'
+      'a build replaced before the cutoff must not be carried forward'
     );
     assert.ok(
       fs.existsSync(path.join(dirs[2], '_next/static/css/gen-b.css')),
-      'an asset still inside the window must survive'
+      'the build live at the cutoff must survive, however long ago it shipped (#1331)'
+    );
+  });
+
+  it('keeps the build that served pages across a deploy gap (#1331)', async () => {
+    // Measured on production. No deploy went out from 09-24 to 09-30, and the 10-10 deploy
+    // dropped the 09-24 build 15.5 days after it shipped, but only 9.2 days after it
+    // stopped serving. Post-deploy smoke then reported 9.2 days of coverage against 14.
+    // Generations at -16, -15.5 and -9 days: -16 was replaced before the cutoff and goes,
+    // -15.5 was live AT the cutoff and stays.
+    const dirs = ['a9', 'b9', 'c9', 'd9'].map((n, i) =>
+      makeGeneration(path.join(WORK, n), `gen-${'abcd'[i]}`)
+    );
+    await retain(dirs[1], dirs[0], 14);
+    await retain(dirs[2], dirs[1], 14);
+    for (const [g, days] of [
+      ['a', 16],
+      ['b', 15.5],
+      ['c', 9],
+    ]) {
+      for (const f of [`css/gen-${g}.css`, `chunks/gen-${g}.js`]) {
+        backdate(dirs[2], `_next/static/${f}`, days);
+      }
+    }
+
+    await retain(dirs[3], dirs[2], 14);
+    const has = (g) =>
+      fs.existsSync(path.join(dirs[3], `_next/static/css/gen-${g}.css`));
+    assert.ok(!has('a'), 'a build replaced before the cutoff must go');
+    assert.ok(
+      has('b'),
+      'the build live at the cutoff must stay: it served pages until 9 days ago'
+    );
+    assert.ok(has('c'), 'a build inside the window must stay');
+
+    // The same question post-deploy smoke asks (check-retained-assets.mjs): does the
+    // published ledger reach back a full RETAIN_DAYS? Before the fix it reached 9.
+    const oldest = Math.min(...bornOf(dirs[3]).values());
+    const spanDays = (Date.now() - oldest) / 86400000;
+    assert.ok(
+      spanDays >= 14,
+      `the ledger must span the window, spans ${spanDays.toFixed(1)} day(s)`
     );
   });
 
