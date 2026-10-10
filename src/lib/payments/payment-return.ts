@@ -7,7 +7,7 @@
  *
  * THE BUG THIS EXISTS TO PREVENT. /payment-result read only `?id=`, while Stripe's
  * success_url sends `?session_id=…&status=succeeded`
- * (create-stripe-checkout/index.ts:145) and its cancel_url sends `?status=cancelled`
+ * (create-stripe-checkout/index.ts's success_url) and its cancel_url sends `?status=cancelled`
  * with no id at all. So a completed purchase landed on the "no payment ID" screen,
  * and a buyer who backed out saw the same thing as a broken link.
  */

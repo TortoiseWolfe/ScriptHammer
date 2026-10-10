@@ -1,5 +1,5 @@
 /**
- * Every Edge Function that moves money asks whether the purchase is already paid FIRST (#1342).
+ * Every ONE-OFF payment function asks whether the purchase is already paid FIRST (#1342).
  *
  * WHY A SOURCE-LEVEL GUARD. Nothing in CI executes an Edge Function (`vitest.config.ts` excludes
  * `supabase/functions/**` and no workflow runs `deno test`). The gate itself is covered
@@ -74,6 +74,18 @@ describe('the money-moving Edge Functions refuse a paid purchase first (#1342)',
         /if \(\w+\.kind === 'refuse'\)\s*\{?\s*return jsonResponse\(/,
         `${name} calls the gate but does not return its refusal before moving money`
       );
+      // AFTER ownership (blind review). The gate answers "paid" or "not paid" about whatever
+      // intent it is given; asked before the 403, it would tell a stranger whether someone
+      // else's purchase went through.
+      const ownershipAt = src.search(/\b403\b/);
+      assert.ok(
+        ownershipAt > 0,
+        `${name}: the ownership refusal (403) was not found`
+      );
+      assert.ok(
+        ownershipAt < gateAt,
+        `${name} asks whether the purchase is paid BEFORE checking the caller owns it`
+      );
     });
   }
 
@@ -92,6 +104,11 @@ describe('the money-moving Edge Functions refuse a paid purchase first (#1342)',
       ownRow < gateAt,
       'the own-row check must come before the chain gate'
     );
+    // And after ownership: "this order was already captured" is about someone's payment too.
+    assert.ok(
+      src.search(/\b403\b/) < ownRow,
+      'the own-row shortcut answers before the caller is shown to own the order'
+    );
   });
 
   it('capture-paypal-order reads the result of recording the capture', () => {
@@ -103,6 +120,13 @@ describe('the money-moving Edge Functions refuse a paid purchase first (#1342)',
       /^\s*await supabase\s*\.from\('payment_results'\)\s*\.update\(/m,
       'the capture writes its result and ignores whether the write worked'
     );
+    // Not just the old shape: assigning the error and never looking at it is the same bug.
+    assert.match(
+      src,
+      /if \(recordError\)/,
+      'the capture no longer checks the result of recording the capture'
+    );
+    assert.match(src, /recorded: false/, 'a failed record no longer says so');
   });
 
   it('create-order uses the shared gate code, not a second copy of it', () => {

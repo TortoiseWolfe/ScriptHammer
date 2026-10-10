@@ -1,6 +1,8 @@
 /**
- * Whether a purchase is already paid, across its whole retry chain, and the gate every Edge
- * Function that moves money asks first (#1342).
+ * Whether a purchase is already paid, across its whole retry chain, and the gate the ONE-OFF
+ * payment functions ask before moving money (#1342): create-stripe-checkout, create-paypal-order
+ * and capture-paypal-order. The subscription functions are not gated; a subscription has no
+ * retry chain.
  *
  * Dependency-free on purpose: it takes the Supabase client as a parameter, so vitest can drive it
  * with a stub (`tests/unit/payment-chain.test.ts`). Nothing in CI executes an Edge Function, so a

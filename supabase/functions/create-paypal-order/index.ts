@@ -121,8 +121,9 @@ serve(async (req) => {
       );
     }
 
-    // NOT FOR A PURCHASE ALREADY PAID (#1342). Asked before an order exists, because an approved order is one capture away from a second charge. Read errors
-    // refuse too (500): the alternative to "could not confirm it is unpaid" is charging on a guess.
+    // NOT FOR A PURCHASE ALREADY PAID (#1342). Asked before an order exists, because
+    // an approved order is one capture away from a second charge. Read errors refuse too (500): the alternative to
+    // "could not confirm it is unpaid" is charging on a guess.
     const gate = await gateOnChainPaid(supabase, intent.id);
     if (gate.kind === 'refuse') {
       return jsonResponse(

@@ -20,9 +20,10 @@
  *   401 Unauthorized: { error: string } (missing / invalid JWT)
  *   403 Forbidden: { error: string } (caller does not own the underlying intent)
  *   404 Not Found: { error: string } (no payment_results row for this order_id)
- *   409 Conflict: { error, code: 'already_paid' } (another attempt in the chain is paid, #1342)
  *   405 Method Not Allowed: { error: string }
- *   500 Internal Server Error: { error: string } (PayPal call failed)
+ *   409 Conflict: { error, code: 'already_paid' } (another attempt in the chain is paid, #1342)
+ *   500 Internal Server Error: { error, code? } (PayPal call failed, or code 'paid_check_failed':
+ *     the paid check could not be read, so nothing was captured)
  *
  * SECURITY MODEL
  *   - JWT verified via SUPABASE_ANON_KEY (auto-injected; NEXT_PUBLIC_ fallback) (getAuthenticatedUserId)
@@ -170,9 +171,19 @@ serve(async (req) => {
       .eq('transaction_id', orderId);
 
     // The write's result used to be discarded (#1342). PayPal HAS captured by this line; only the
-    // record can fail. A unique violation means another attempt in this chain was recorded as
-    // paid between the check above and now: a second charge, which needs a refund. The buyer did
-    // pay, so the status stays truthful, but it is no longer reported as if all were well.
+    // record can fail, and the failure is now logged rather than lost.
+    //
+    // DO NOT READ A UNIQUE VIOLATION HERE AS "REFUND IT". It means another payment_results row for
+    // THIS intent is already succeeded, and today that has two causes:
+    //   - a second order on this intent captured in the window since the check above, which IS
+    //     a second charge; or
+    //   - paypal-webhook writing the intent's OLDEST PayPal row instead of the captured order's
+    //     (#1342 stage 2), when the buyer paid exactly once.
+    // Check the order in PayPal before refunding anything. And a race across two DIFFERENT intents
+    // in one chain is not seen here at all: the index is per intent, so both writes succeed.
+    //
+    // The response's `recorded: false` is for the server's logs and callers that read it; the
+    // buyer's page reads only `status`, which stays truthful because PayPal did capture.
     if (recordError) {
       console.error(
         `capture-paypal-order: PayPal captured order ${orderId} (${status}) but recording it failed`,

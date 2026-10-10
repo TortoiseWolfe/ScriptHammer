@@ -103,7 +103,7 @@ export async function createCheckoutSession(
  * Handle the return from Stripe Checkout.
  *
  * Stripe's `success_url` carries only its own `session_id`
- * (create-stripe-checkout/index.ts:145), while every lookup on our side is keyed
+ * (create-stripe-checkout/index.ts's success_url), while every lookup on our side is keyed
  * on the payment_intent id. This bridges the two, so it returns `intentId` and not
  * just a boolean — /payment-result needs the id to resolve the real status.
  *
