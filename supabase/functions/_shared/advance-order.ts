@@ -60,11 +60,16 @@ export async function advanceOrderAndNotify(
 ): Promise<AdvanceOrderResult> {
   const { intentId, amount, currency, provider } = input;
 
-  const { data: order } = await supabase
+  const { data: order, error: orderError } = await supabase
     .from('orders')
     .select('id, buyer_email, product_id, status')
     .eq('intent_id', intentId)
     .maybeSingle();
+
+  // A READ ERROR IS NOT "NO ORDER" (#1307). Treating it as one marked the webhook event
+  // processed while a paid order was never advanced or receipted. Throw, and the webhook claim
+  // retries the event; that is safe because every write below is a compare-and-swap.
+  if (orderError) throw orderError;
 
   // A RETRIED INTENT LEGITIMATELY HAS NO ORDER ROW. `create-order`'s `op: 'retry'` path
   // deliberately skips the insert (#1126), so this is reachable with nothing wrong. It must NOT
@@ -95,11 +100,14 @@ export async function advanceOrderAndNotify(
     .eq('status', PENDING)
     .select('id');
 
+  // A FAILED STATUS WRITE THROWS (#1307). This used to log and continue, on the reasoning that
+  // failing the webhook would trade a bookkeeping gap for a retry storm. The gap was the worse
+  // trade: a paid order never advanced and the buyer never got a receipt. The webhook claim now
+  // bounds retries (MAX_ATTEMPTS, then permanently_failed and the liveness alarm), and the
+  // compare-and-swap makes a retry harmless.
   if (updateError) {
-    // Log and continue. The payment IS recorded in payment_results either way, and failing the
-    // webhook over a status write would trade a bookkeeping gap for a retry storm.
     console.error(`advance-order: failed to advance ${order.id}:`, updateError);
-    return { advanced: false, orderId: order.id };
+    throw updateError;
   }
 
   if (!updated || updated.length === 0) {

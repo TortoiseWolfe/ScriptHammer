@@ -5,7 +5,14 @@
 
 import { advanceOrderAndNotify } from '../_shared/advance-order.ts';
 import {
+  claimWebhookEvent,
+  failWebhookEvent,
+  finishWebhookEvent,
+  replaySafe,
+} from '../_shared/webhook-claim.ts';
+import {
   errorMessage,
+  isOurIntentRef,
   type WebhookHandlerResult,
 } from '../_shared/webhook-types.ts';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -82,86 +89,95 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data: existingEvent } = await supabase
-      .from('webhook_events')
-      .select('id')
-      .eq('provider', 'paypal')
-      .eq('provider_event_id', event.id)
-      .single();
-
-    if (existingEvent) {
+    // CLAIM BEFORE HANDLING (#1307). See _shared/webhook-claim.ts.
+    const claim = await claimWebhookEvent(supabase, 'paypal', {
+      provider_event_id: event.id,
+      event_type: event.event_type,
+      event_data: event.resource,
+      signature: transmissionSig,
+    });
+    if (claim.kind === 'respond') {
       return new Response(
-        JSON.stringify({ received: true, message: 'Event already processed' }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({
+          received: claim.status === 200,
+          message: claim.message,
+        }),
+        {
+          status: claim.status,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+    const webhookEvent = { id: claim.id };
+
+    let processResult;
+    try {
+      switch (event.event_type) {
+        case 'PAYMENT.CAPTURE.COMPLETED':
+        case 'PAYMENT.SALE.COMPLETED':
+          processResult = await handlePaymentCompleted(
+            supabase,
+            event,
+            webhookEvent.id
+          );
+          break;
+        case 'BILLING.SUBSCRIPTION.CREATED':
+        case 'BILLING.SUBSCRIPTION.ACTIVATED':
+        case 'BILLING.SUBSCRIPTION.UPDATED':
+          processResult = await handleSubscriptionEvent(
+            supabase,
+            event,
+            webhookEvent.id
+          );
+          break;
+        case 'BILLING.SUBSCRIPTION.CANCELLED':
+          processResult = await handleSubscriptionCancelled(
+            supabase,
+            event,
+            webhookEvent.id
+          );
+          break;
+        case 'BILLING.SUBSCRIPTION.PAYMENT.FAILED':
+          processResult = await handleSubscriptionPaymentFailed(
+            supabase,
+            event,
+            webhookEvent.id
+          );
+          break;
+        default:
+          processResult = { handled: false };
+      }
+    } catch (handlerError) {
+      // Retry (500) while replay-safe and under the cap; otherwise give up with 200 and leave
+      // the row permanently_failed for the liveness alarm.
+      const outcome = await failWebhookEvent(
+        supabase,
+        claim.id,
+        claim.attempt,
+        replaySafe('paypal', event.event_type),
+        handlerError
+      );
+      console.error(
+        `PayPal handler failed for ${event.id} (attempt ${claim.attempt}, gave up: ${outcome.giveUp}):`,
+        handlerError
+      );
+      return new Response(
+        JSON.stringify({
+          error: errorMessage(handlerError) || 'Internal server error',
+          gave_up: outcome.giveUp,
+        }),
+        {
+          status: outcome.status,
+          headers: { 'Content-Type': 'application/json' },
+        }
       );
     }
 
-    const { data: webhookEvent, error: webhookError } = await supabase
-      .from('webhook_events')
-      .insert({
-        provider: 'paypal',
-        provider_event_id: event.id,
-        event_type: event.event_type,
-        event_data: event.resource,
-        signature: transmissionSig,
-        signature_verified: true,
-        processed: false,
-      })
-      .select()
-      .single();
-
-    if (webhookError) throw webhookError;
-
-    let processResult;
-    switch (event.event_type) {
-      case 'PAYMENT.CAPTURE.COMPLETED':
-      case 'PAYMENT.SALE.COMPLETED':
-        processResult = await handlePaymentCompleted(
-          supabase,
-          event,
-          webhookEvent.id
-        );
-        break;
-      case 'BILLING.SUBSCRIPTION.CREATED':
-      case 'BILLING.SUBSCRIPTION.ACTIVATED':
-      case 'BILLING.SUBSCRIPTION.UPDATED':
-        processResult = await handleSubscriptionEvent(
-          supabase,
-          event,
-          webhookEvent.id
-        );
-        break;
-      case 'BILLING.SUBSCRIPTION.CANCELLED':
-        processResult = await handleSubscriptionCancelled(
-          supabase,
-          event,
-          webhookEvent.id
-        );
-        break;
-      case 'BILLING.SUBSCRIPTION.PAYMENT.FAILED':
-        processResult = await handleSubscriptionPaymentFailed(
-          supabase,
-          event,
-          webhookEvent.id
-        );
-        break;
-      default:
-        processResult = { handled: false };
-    }
-
-    await supabase
-      .from('webhook_events')
-      .update({
-        processed: true,
-        processed_at: new Date().toISOString(),
-        ...(processResult.related_payment_id && {
-          related_payment_id: processResult.related_payment_id,
-        }),
-        ...(processResult.related_subscription_id && {
-          related_subscription_id: processResult.related_subscription_id,
-        }),
-      })
-      .eq('id', webhookEvent.id);
+    // Throws if the row was not marked, so a success whose bookkeeping failed is retried.
+    await finishWebhookEvent(supabase, claim.id, claim.attempt, {
+      related_payment_id: processResult.related_payment_id,
+      related_subscription_id: processResult.related_subscription_id,
+    });
 
     return new Response(
       JSON.stringify({ received: true, processed: processResult }),
@@ -230,11 +246,22 @@ async function handlePaymentCompleted(
   webhookEventId: string
 ): Promise<WebhookHandlerResult> {
   const resource = event.resource;
-  const { data: intent } = await supabase
+  // A PayPal Invoicing capture carries `INV2-...` here, and other integrations on the merchant
+  // account set custom_id. Not ours, and permanent: check before a lookup that would throw.
+  const intentId = resource.custom_id || resource.invoice_id;
+  if (!isOurIntentRef(intentId)) {
+    return { handled: false, reason: 'not_our_intent' };
+  }
+
+  // .maybeSingle() and a checked error. .single() ERRORS on zero rows and the error was never
+  // read, so "could not read the intent" looked like "no such intent" and the capture was marked
+  // processed unrecorded. A read error now throws, which the claim turns into a retry (#1307).
+  const { data: intent, error: intentError } = await supabase
     .from('payment_intents')
     .select('*')
-    .eq('id', resource.custom_id || resource.invoice_id)
-    .single();
+    .eq('id', intentId)
+    .maybeSingle();
+  if (intentError) throw intentError;
 
   if (!intent) return { handled: false };
 
@@ -255,7 +282,10 @@ async function handlePaymentCompleted(
     ? Math.round(parseFloat(resource.transaction_fee.value) * 100)
     : null;
 
-  const { data: existing } = await supabase
+  // A read error here used to fall through to the INSERT below as if no row existed. That is a
+  // second succeeded row on a retry; the per-intent unique index would refuse it, but the
+  // answer to "could not read" is to retry, not to guess.
+  const { data: existing, error: existingError } = await supabase
     .from('payment_results')
     .select('id')
     .eq('intent_id', intent.id)
@@ -263,6 +293,7 @@ async function handlePaymentCompleted(
     .order('created_at', { ascending: true })
     .limit(1)
     .maybeSingle();
+  if (existingError) throw existingError;
 
   if (existing) {
     // Authoritative webhook confirmation: mark succeeded + fill the amounts and
@@ -420,9 +451,18 @@ async function handleSubscriptionCancelled(
     })
     .eq('provider_subscription_id', resource.id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
+  // .single() ERRORED on zero rows, so a cancellation for a subscription this database never
+  // recorded was a 500. Under the claim that is a permanent condition: a give-up and a daily red
+  // alarm for nothing. Acknowledge it, as stripe-webhook does (#1307 prerequisite 6).
+  if (!sub) {
+    console.warn(
+      `BILLING.SUBSCRIPTION.CANCELLED for a subscription not in the database: ${resource.id}`
+    );
+    return { handled: false, reason: 'unknown_subscription' };
+  }
   return { handled: true, related_subscription_id: sub.id };
 }
 

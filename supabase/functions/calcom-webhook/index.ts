@@ -12,18 +12,21 @@
  *   200  { handled: false, reason } — a real delivery this system has nothing to do about:
  *        a trigger we do not subscribe to, a booking with no lead_ref, an unknown lead, or
  *        a redelivery we have already processed. All of these are NORMAL.
- *   500  reserved for our own failure, where a retry might genuinely help.
+ *   409  another delivery of this booking holds the claim right now (#1307). Retry later.
+ *   500  reserved for our own failure, where a retry might genuinely help. After
+ *        MAX_ATTEMPTS failures the event is marked permanently_failed and answered 200.
  *
  * A booking made straight from a Cal.com link that never touched this site carries no
  * `lead_ref`, and that is an ordinary thing for somebody to do. Answering it with an error
  * would make the operator's webhook log red for people booking calls correctly.
  *
- * IDEMPOTENCY IS A COMPARE-AND-SWAP ON THE LEDGER, not a read-then-write. `webhook_events`
- * has a unique `(provider, provider_event_id)`, so a second delivery of the SAME booking
- * loses the insert race and is answered 200/handled:false. Note precisely what that does and
- * does not buy: it stops one event being processed twice. It does not make two DIFFERENT
- * events describing one booking safe — the lead update below is written to be repeatable for
- * that reason.
+ * IDEMPOTENCY IS A CLAIM ON THE LEDGER, not a read-then-write (`_shared/webhook-claim.ts`,
+ * #1307). `webhook_events` has a unique `(provider, provider_event_id)`, so a second delivery
+ * of the SAME booking loses the insert race. If the first was processed it is answered 200;
+ * if the first FAILED, the second reclaims it and runs the lead update again. That is safe
+ * only because the lead update is a compare-and-swap, which is also what makes two DIFFERENT
+ * events describing one booking harmless. Before #1307 a failed first attempt was answered
+ * "already processed" on every retry, and the lead stayed unscheduled.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -32,6 +35,11 @@ import {
   resolveBooking,
   verifySignature,
 } from './resolve.ts';
+import {
+  claimWebhookEvent,
+  failWebhookEvent,
+  finishWebhookEvent,
+} from '../_shared/webhook-claim.ts';
 
 const SECRET = Deno.env.get('CALCOM_WEBHOOK_SECRET') ?? '';
 
@@ -75,35 +83,35 @@ Deno.serve(async (req: Request) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
   );
 
-  // Claim the event first. The unique (provider, provider_event_id) is what makes a
-  // redelivery lose this race rather than repeat the work behind it.
-  const { error: claimError } = await admin.from('webhook_events').insert({
-    provider: 'calcom',
-    provider_event_id: outcome.eventId,
-    event_type: 'BOOKING_CREATED',
-    event_data: event,
-    signature: signature ?? '',
-    signature_verified: true,
-    processed: false,
-  });
-
-  if (claimError) {
-    // 23505 is the unique violation, i.e. we have seen this booking before. That is the
-    // mechanism working, so it is a 200 — not an error, and certainly not a 500 that would
-    // have Cal.com redeliver it again.
-    if (claimError.code === '23505') {
-      return json({ handled: false, reason: 'already processed' }, 200);
-    }
+  // CLAIM BEFORE HANDLING (#1307). A redelivery of a booking whose lead update failed is handled
+  // again (the update is a compare-and-swap, so that is safe) instead of being answered "already
+  // processed" while the lead stays unscheduled. See _shared/webhook-claim.ts.
+  let claim;
+  try {
+    claim = await claimWebhookEvent(admin, 'calcom', {
+      provider_event_id: outcome.eventId,
+      event_type: 'BOOKING_CREATED',
+      event_data: event,
+      signature: signature ?? '',
+    });
+  } catch (claimError) {
     console.error('calcom-webhook could not record the event', claimError);
     return json({ error: 'Could not record the event' }, 500);
   }
+  if (claim.kind === 'respond') {
+    return json({ handled: false, reason: claim.message }, claim.status);
+  }
 
   if (outcome.kind === 'unattributed') {
-    await admin
-      .from('webhook_events')
-      .update({ processed: true, processed_at: new Date().toISOString() })
-      .eq('provider', 'calcom')
-      .eq('provider_event_id', outcome.eventId);
+    try {
+      await finishWebhookEvent(admin, claim.id, claim.attempt);
+    } catch (finishError) {
+      console.error(
+        'calcom-webhook could not mark the event processed',
+        finishError
+      );
+      return json({ error: 'Could not record the event' }, 500);
+    }
     return json({ handled: false, reason: outcome.reason }, 200);
   }
 
@@ -126,14 +134,28 @@ Deno.serve(async (req: Request) => {
 
   if (updateError) {
     console.error('calcom-webhook could not advance the lead', updateError);
-    return json({ error: 'Could not advance the lead' }, 500);
+    const failed = await failWebhookEvent(
+      admin,
+      claim.id,
+      claim.attempt,
+      true,
+      updateError
+    );
+    return json(
+      { error: 'Could not advance the lead', gave_up: failed.giveUp },
+      failed.status
+    );
   }
 
-  await admin
-    .from('webhook_events')
-    .update({ processed: true, processed_at: new Date().toISOString() })
-    .eq('provider', 'calcom')
-    .eq('provider_event_id', outcome.eventId);
+  try {
+    await finishWebhookEvent(admin, claim.id, claim.attempt);
+  } catch (finishError) {
+    console.error(
+      'calcom-webhook could not mark the event processed',
+      finishError
+    );
+    return json({ error: 'Could not record the event' }, 500);
+  }
 
   const advanced = (updated ?? []).length > 0;
   return json(

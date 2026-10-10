@@ -102,3 +102,21 @@ export function resolveCheckoutIntentId(session: {
 
 /** Postgres unique_violation. Both payment handlers can now write the same row. */
 export const PG_UNIQUE_VIOLATION = '23505';
+
+/** The shape Postgres accepts for a `uuid`: 8-4-4-4-12 hex, any version. */
+const UUID_SHAPE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Whether a reference in a provider payload can be one of OUR `payment_intents` ids (#1307).
+ *
+ * A provider event can carry a reference that was never ours: a PayPal Invoicing capture puts
+ * `INV2-...` in `invoice_id`, another integration on the same merchant account sets `custom_id`.
+ * `payment_intents.id` is a `uuid`, so querying with one of those is a 22P02 error, not an empty
+ * result. Now that a lookup error THROWS and the claim retries the event, that would be a
+ * permanent condition retried MAX_ATTEMPTS times and then a daily red alarm. Check the shape
+ * first, and treat anything else as not ours.
+ */
+export function isOurIntentRef(value: unknown): value is string {
+  return typeof value === 'string' && UUID_SHAPE.test(value);
+}

@@ -23,6 +23,7 @@ import { advanceOrderAndNotify } from '../../supabase/functions/_shared/advance-
 /** Minimal PostgREST-shaped stub: records what was asked, returns what the test wants. */
 function makeSupabase({
   order = null as Record<string, unknown> | null,
+  orderError = null as unknown,
   updatedRows = [{ id: 'ord-1' }] as unknown[] | null,
   updateError = null as unknown,
   product = { name: 'Office Hours' } as Record<string, unknown> | null,
@@ -44,7 +45,9 @@ function makeSupabase({
     chain.limit = () => chain;
     chain.maybeSingle = async () => {
       calls.push({ table, op: 'select', filters });
-      return { data: table === 'orders' ? order : product, error: null };
+      return table === 'orders'
+        ? { data: order, error: orderError }
+        : { data: product, error: null };
     };
     chain.update = (patch: Record<string, unknown>) => {
       calls.push({ table, op: 'update', filters });
@@ -128,6 +131,32 @@ describe('advanceOrderAndNotify (#1151)', () => {
     const r = await advanceOrderAndNotify(client, INPUT);
     expect(r.advanced).toBe(false);
     expect(r.reason).toBe('no-order');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('a FAILED order read throws, rather than passing for "no order" (#1307)', async () => {
+    // A read error used to be indistinguishable from a missing order: the webhook marked the
+    // event processed and the paid order was never advanced or receipted. Throwing lets the
+    // webhook claim retry the event, which is safe because everything here is a CAS.
+    const { client } = makeSupabase({
+      order: null,
+      orderError: { code: '08006', message: 'connection lost' },
+    });
+    await expect(advanceOrderAndNotify(client, INPUT)).rejects.toMatchObject({
+      code: '08006',
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('a FAILED status write throws, so the payment is retried rather than left unadvanced (#1307)', async () => {
+    const { client } = makeSupabase({
+      order: ORDER,
+      updatedRows: null,
+      updateError: { code: '40001', message: 'serialization failure' },
+    });
+    await expect(advanceOrderAndNotify(client, INPUT)).rejects.toMatchObject({
+      code: '40001',
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
