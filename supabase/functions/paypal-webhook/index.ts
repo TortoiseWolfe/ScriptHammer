@@ -4,6 +4,7 @@
  */
 
 import { advanceOrderAndNotify } from '../_shared/advance-order.ts';
+import { assertSameCharge, retryable } from '../_shared/second-charge.ts';
 import {
   claimWebhookEvent,
   failWebhookEvent,
@@ -21,6 +22,7 @@ import {
 import {
   errorMessage,
   isOurIntentRef,
+  PG_UNIQUE_VIOLATION,
   type WebhookHandlerResult,
 } from '../_shared/webhook-types.ts';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -162,7 +164,9 @@ serve(async (req) => {
         supabase,
         claim.id,
         claim.attempt,
-        replaySafe('paypal', event.event_type),
+        // Never a retry for a second charge: it gives up at once, permanently_failed, which
+        // Webhook Liveness reports as needing a refund (#1342).
+        retryable(replaySafe('paypal', event.event_type), handlerError),
         handlerError
       );
       console.error(
@@ -273,7 +277,8 @@ async function handlePaymentCompleted(
 
   if (!intent) return { handled: false };
 
-  // #239: RECONCILE onto the ONE payment_results row for this intent — do NOT
+  // #239: RECONCILE onto the captured ORDER's payment_results row (#1342: not the intent's
+  // oldest; see below) — do NOT
   // blind-INSERT. create-paypal-order already wrote a 'pending' row for this
   // intent (transaction_id = PayPal ORDER id), and the buyer-redirect capture
   // (capture-paypal-order) may have already flipped it to 'succeeded'. This
@@ -290,15 +295,32 @@ async function handlePaymentCompleted(
     ? Math.round(parseFloat(resource.transaction_fee.value) * 100)
     : null;
 
+  // THE CAPTURED ORDER'S ROW (#1342), not the intent's oldest. create-paypal-order writes one
+  // pending row per ORDER (transaction_id = the order id); this event carries the CAPTURE id as
+  // resource.id and the order id under supplementary_data.related_ids. Taking the oldest row,
+  // whichever order was captured, folded a second order's capture into the first order's row,
+  // so a buyer who paid twice left one succeeded row and no trace. A capture carrying no order id
+  // (not from the Orders API) keeps the old rule, because there is nothing better to match on.
+  const orderId: string | undefined =
+    resource.supplementary_data?.related_ids?.order_id;
+  /** Every id this payment may be recorded under: its order (by create-paypal-order) and its capture. */
+  const ownIds = [orderId, resource.id].filter(
+    (v): v is string => typeof v === 'string' && v.length > 0
+  );
+
   // A read error here used to fall through to the INSERT below as if no row existed. That is a
   // second succeeded row on a retry; the per-intent unique index would refuse it, but the
   // answer to "could not read" is to retry, not to guess.
-  const { data: existing, error: existingError } = await supabase
+  const lookup = supabase
     .from('payment_results')
     .select('id')
     .eq('intent_id', intent.id)
-    .eq('provider', 'paypal')
-    .order('created_at', { ascending: true })
+    .eq('provider', 'paypal');
+  const { data: existing, error: existingError } = await (
+    orderId
+      ? lookup.eq('transaction_id', orderId)
+      : lookup.order('created_at', { ascending: true })
+  )
     .limit(1)
     .maybeSingle();
   if (existingError) throw existingError;
@@ -322,6 +344,20 @@ async function handlePaymentCompleted(
       .select()
       .single();
 
+    // Another row for this intent is already succeeded (the index allows one). Either it is this
+    // same capture, recorded under its capture id by the insert below on an earlier delivery, or
+    // it is a DIFFERENT order captured for the same intent: a second charge, which
+    // assertSameCharge throws for, and the catch gives up on at once (#1342).
+    if (updateError?.code === PG_UNIQUE_VIOLATION) {
+      await assertSameCharge(supabase, intent.id, ownIds);
+      await advanceOrderAndNotify(supabase, {
+        intentId: intent.id,
+        amount: chargedAmount,
+        currency: chargedCurrency,
+        provider: 'paypal',
+      });
+      return { handled: false, reason: 'payment_already_recorded' };
+    }
     if (updateError) throw updateError;
 
     // Same transition as the Stripe path (#1151). Both PayPal exits below mean the capture
@@ -355,6 +391,17 @@ async function handlePaymentCompleted(
     .select()
     .single();
 
+  // Same two meanings as the update above: this capture again, or a second charge (#1342).
+  if (insertError?.code === PG_UNIQUE_VIOLATION) {
+    await assertSameCharge(supabase, intent.id, ownIds);
+    await advanceOrderAndNotify(supabase, {
+      intentId: intent.id,
+      amount: chargedAmount,
+      currency: chargedCurrency,
+      provider: 'paypal',
+    });
+    return { handled: false, reason: 'payment_already_recorded' };
+  }
   if (insertError) throw insertError;
 
   // Same transition as the Stripe path (#1151). Both PayPal exits below mean the capture

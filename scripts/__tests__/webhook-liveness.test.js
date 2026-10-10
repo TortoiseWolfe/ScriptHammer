@@ -13,10 +13,15 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   evaluate,
   DOUBLE_CHARGE_SQL,
+  SECOND_CHARGE_SQL,
+  COUNTS_SQL,
   readSources,
   readEdge,
   logsPath,
@@ -250,5 +255,64 @@ describe('webhook liveness: a second charge for one order (#1338)', () => {
     assert.match(DOUBLE_CHARGE_SQL, /count\(distinct pr\.intent_id\) > 1/);
     assert.match(DOUBLE_CHARGE_SQL, /c\.depth < 4/);
     assert.match(DOUBLE_CHARGE_SQL, /status = 'succeeded'/);
+  });
+});
+
+describe('webhook liveness: a second charge on ONE intent (#1342 stage 2)', () => {
+  // The prefix both webhooks write into processing_error when they give up on a second charge.
+  // Read from the TypeScript source, because this .mjs cannot import it; the two must agree or
+  // the alarm counts nothing.
+  const helper = fs.readFileSync(
+    path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      '..',
+      '..',
+      'supabase',
+      'functions',
+      '_shared',
+      'second-charge.ts'
+    ),
+    'utf8'
+  );
+  const prefix = /export const SECOND_CHARGE_PREFIX = '([^']+)'/.exec(
+    helper
+  )?.[1];
+
+  it('the webhooks and this check agree on the prefix', () => {
+    assert.ok(
+      prefix,
+      'SECOND_CHARGE_PREFIX not found in _shared/second-charge.ts'
+    );
+    assert.ok(
+      COUNTS_SQL.includes(`processing_error like '${prefix}%'`),
+      'the counts query does not count the prefix the webhooks write'
+    );
+    assert.ok(
+      SECOND_CHARGE_SQL.includes(`processing_error like '${prefix}%'`),
+      'the lookup query does not find the rows the alarm counts'
+    );
+  });
+
+  it('fails on any second charge, saying it needs a refund and how to find it', () => {
+    const r = evaluate(withFacts({ secondCharges: 1 }));
+    assert.equal(r.verdict, 'FAIL');
+    const text = r.failures.join('\n');
+    assert.match(text, /charged twice on one intent/);
+    assert.match(text, /refund/i);
+    assert.match(text, /SECOND_CHARGE_SQL/);
+  });
+
+  it('passes with none, and when the fact is absent (older callers)', () => {
+    assert.equal(evaluate(withFacts({ secondCharges: 0 })).verdict, 'PASS');
+    assert.equal(evaluate(healthy).verdict, 'PASS');
+  });
+
+  it('keeps second charges OUT of the generic permanently_failed count', () => {
+    // One fact, one line: a second charge reported as both "refund this" and "a delivery we gave
+    // up on" would read as two problems, and clearing one would leave the other.
+    assert.match(
+      COUNTS_SQL,
+      /filter \(where permanently_failed and coalesce\(processing_error, ''\) not like '[^']+%'\) as permanently_failed/
+    );
   });
 });

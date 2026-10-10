@@ -53,6 +53,7 @@ export const STALE_INFO_DAYS = 30;
  * @param {number} f.unprocessed        webhook_events rows still not processed
  * @param {number|null} f.newestEventAgeDays  age of the newest webhook_events row, or null if none
  * @param {number} [f.doubleCharged]  orders with more than one succeeded charge across their retry chain
+ * @param {number} [f.secondCharges]  webhook events a webhook gave up on as a second charge on ONE intent
  * @returns {{verdict: 'PASS'|'FAIL', failures: string[], notes: string[]}}
  */
 export function evaluate(f) {
@@ -94,6 +95,19 @@ export function evaluate(f) {
     );
   }
 
+  // A SECOND CHARGE ON ONE INTENT (#1342). The unique index admits one success per intent, so
+  // DOUBLE_CHARGE_SQL above (distinct paid intents per order) cannot see it; the webhooks now
+  // recognise it at the collision and give the event up with this prefix instead of absorbing it.
+  if (f.secondCharges > 0) {
+    failures.push(
+      `${f.secondCharges} payment(s) charged twice on one intent. Each needs a refund. Find them ` +
+        `with SECOND_CHARGE_SQL in check-webhook-liveness.mjs: processing_error names the intent, ` +
+        `the charge recorded and the second one. Refund the second at the provider, then mark the ` +
+        `event done: processed = true, permanently_failed = false, and prefix processing_error ` +
+        `with 'refunded ' so the row stays legible and leaves both counts.`
+    );
+  }
+
   if (f.permanentlyFailed > 0) {
     failures.push(
       `${f.permanentlyFailed} webhook_events row(s) marked permanently_failed. ` +
@@ -106,11 +120,15 @@ export function evaluate(f) {
   // so a growing unprocessed count means something threw before the update. Reported so the
   // number is visible, not gated, because the count includes historical rows nobody will revisit.
   if (f.unprocessed > 0) {
-    notes.push(`${f.unprocessed} unprocessed webhook_events row(s) (historical included).`);
+    notes.push(
+      `${f.unprocessed} unprocessed webhook_events row(s) (historical included).`
+    );
   }
 
   if (f.newestEventAgeDays === null) {
-    notes.push('No webhook_events rows at all — no provider traffic has ever been recorded.');
+    notes.push(
+      'No webhook_events rows at all — no provider traffic has ever been recorded.'
+    );
   } else if (f.newestEventAgeDays >= STALE_INFO_DAYS) {
     notes.push(
       `Newest webhook_events row is ${f.newestEventAgeDays} day(s) old. ` +
@@ -120,6 +138,23 @@ export function evaluate(f) {
 
   return { verdict: failures.length ? 'FAIL' : 'PASS', failures, notes };
 }
+
+/**
+ * The webhook_events counts the verdict reads. Exported so a test pins the prefix against
+ * _shared/second-charge.ts's SECOND_CHARGE_PREFIX: the webhooks write it, this counts it. Second
+ * charges are kept OUT of the generic permanently_failed count, so one fact reads as one line.
+ */
+export const COUNTS_SQL =
+  "select count(*) filter (where permanently_failed and coalesce(processing_error, '') not like 'second_charge:%') as permanently_failed, " +
+  "count(*) filter (where permanently_failed and processing_error like 'second_charge:%') as second_charges, " +
+  'count(*) filter (where not processed) as unprocessed, ' +
+  'max(created_at) as newest from webhook_events';
+
+/** The rows behind the second-charge failure, for whoever is issuing the refund (#1342). */
+export const SECOND_CHARGE_SQL =
+  'select id, provider, provider_event_id, event_type, created_at, processing_error ' +
+  "from webhook_events where permanently_failed and processing_error like 'second_charge:%' " +
+  'order by created_at';
 
 /** Orders charged more than once across their retry chain (#1338). Exported so a test pins it. */
 export const DOUBLE_CHARGE_SQL =
@@ -146,7 +181,9 @@ async function mgmt(path, token, body) {
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   if (!res.ok) {
-    throw new Error(`${path} -> HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    throw new Error(
+      `${path} -> HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`
+    );
   }
   return res.json();
 }
@@ -263,7 +300,10 @@ async function logs(ref, token, query, sinceIso, untilIso) {
     }),
     token
   );
-  if (out?.error) throw new Error(`log query rejected: ${JSON.stringify(out.error).slice(0, 300)}`);
+  if (out?.error)
+    throw new Error(
+      `log query rejected: ${JSON.stringify(out.error).slice(0, 300)}`
+    );
   return out?.result ?? [];
 }
 
@@ -271,7 +311,9 @@ async function gather(ref, token, nowMs) {
   const since = new Date(nowMs - WINDOW_MS).toISOString();
   const until = new Date(nowMs).toISOString();
 
-  const census = readSources(await logs(ref, token, QUERIES.sources, since, until));
+  const census = readSources(
+    await logs(ref, token, QUERIES.sources, since, until)
+  );
   const logRows = await logs(ref, token, QUERIES.signatures, since, until);
 
   // Match the message the Stripe SDK produces, not our own wording — the surrounding
@@ -287,9 +329,10 @@ async function gather(ref, token, nowMs) {
   // without writing anything, so a broad matcher would make that probe trip this gate for 24h.
   // It is also what a replay looks like, so it is surfaced rather than ignored.
   const msg = (r) => r.event_message ?? '';
-  const signatureFailures = logRows.filter(
-    (r) =>
-      /No signatures found matching|Unable to extract timestamp and signatures/i.test(msg(r))
+  const signatureFailures = logRows.filter((r) =>
+    /No signatures found matching|Unable to extract timestamp and signatures/i.test(
+      msg(r)
+    )
   ).length;
   const staleSignatures = logRows.filter((r) =>
     /Timestamp outside the tolerance zone/i.test(msg(r))
@@ -301,22 +344,16 @@ async function gather(ref, token, nowMs) {
   const [edgeRow] = await logs(ref, token, QUERIES.edge, since, until);
   const serverErrors = readEdge(edgeRow);
 
-  const [counts] = await sql(
-    ref,
-    token,
-    "select count(*) filter (where permanently_failed) as permanently_failed, " +
-      'count(*) filter (where not processed) as unprocessed, ' +
-      'max(created_at) as newest from webhook_events'
-  );
+  const [counts] = await sql(ref, token, COUNTS_SQL);
 
   // Orders whose retry chain holds more than one succeeded payment (#1338). The unique index
   // allows one succeeded payment_results row per INTENT, so a second charge on a DIFFERENT intent
   // shows up as a second intent in the same chain. Depth-bounded: create-order chains are at most
   // RETRY_LIMIT deep (tests/unit/create-order-retry.test.ts pins the bound above it).
   //
-  // THE GAP IT CANNOT SEE: a second charge on the SAME intent (one checkout session paid twice).
-  // Its succeeded write hits the unique index and is absorbed as a replay, so it leaves no second
-  // row. create-order's chainAlreadyPaid is what stops the retry that would cause it.
+  // THE GAP IT CANNOT SEE: a second charge on the SAME intent (two sessions for one intent, both
+  // paid). Its succeeded write hits the unique index and leaves no second row. That one is counted
+  // separately, as secondCharges: since #1342 the webhooks recognise it at the collision.
   const [doubles] = await sql(ref, token, DOUBLE_CHARGE_SQL);
 
   const newest = counts?.newest ? Date.parse(counts.newest) : null;
@@ -327,6 +364,7 @@ async function gather(ref, token, nowMs) {
     staleSignatures,
     serverErrors,
     permanentlyFailed: Number(counts?.permanently_failed ?? 0),
+    secondCharges: Number(counts?.second_charges ?? 0),
     doubleCharged: Number(doubles?.double_charged ?? 0),
     unprocessed: Number(counts?.unprocessed ?? 0),
     newestEventAgeDays:
@@ -341,7 +379,9 @@ async function main() {
   // A missing credential FAILS. A liveness check that reports success because it could not
   // look is the exact defect this file exists to end — and it is how #1180 stayed invisible.
   if (!token || !ref) {
-    console.log('::error::SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF are both required.');
+    console.log(
+      '::error::SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF are both required.'
+    );
     process.exit(1);
   }
 
@@ -361,6 +401,7 @@ async function main() {
     `| 5xx from a payment webhook | ${facts.serverErrors} |`,
     `| permanently_failed rows | ${facts.permanentlyFailed} |`,
     `| orders charged more than once | ${facts.doubleCharged} |`,
+    `| second charges on one intent | ${facts.secondCharges} |`,
     `| unprocessed rows | ${facts.unprocessed} |`,
     `| newest event age (days) | ${facts.newestEventAgeDays ?? 'n/a'} |`,
     // What the check actually looked at. Zeros above mean something only next to these.
@@ -385,7 +426,9 @@ async function main() {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch((err) => {
-    console.log(`::error::webhook liveness check could not run: ${err.message}`);
+    console.log(
+      `::error::webhook liveness check could not run: ${err.message}`
+    );
     process.exit(1);
   });
 }
