@@ -168,6 +168,16 @@ export function AdminAuditTrail({
             trend="up"
             testId="stat-signups"
           />
+          {/* Only when the database's hourly cap on anonymous reports turned some away
+              (#1284): those were counted, not stored, so the failure counts are short. */}
+          {stats && stats.reports_dropped_this_week > 0 && (
+            <AdminStatCard
+              label="Dropped Reports (7d)"
+              value={stats.reports_dropped_this_week}
+              description="Past the hourly limit; failure counts are incomplete"
+              testId="stat-dropped-reports"
+            />
+          )}
         </div>
       </section>
 

@@ -116,9 +116,9 @@ export default function SignInForm({
         return;
       }
 
-      // Log failed sign-in attempt (T033). #241: use 'sign_in_failed' — the
-      // event_type the admin failed-attempt stats + burst detector actually
-      // read (they never matched the old 'sign_in'+success:false shape).
+      // Log failed sign-in attempt (T033). #241: 'sign_in_failed' is the
+      // event_type the admin failed-attempt stats read. There is no session
+      // yet, which log_auth_event requires of this event since #1284.
       await logAuthEvent({
         event_type: 'sign_in_failed',
         event_data: { email, provider: 'email' },

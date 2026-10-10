@@ -75,6 +75,8 @@ describe.skipIf(!hasRlsTestEnvironment())(
       expect(Object.keys(data as object).sort()).toEqual([
         'failed_this_week',
         'logins_today',
+        // #1284: what the anonymous ceiling counted instead of storing.
+        'reports_dropped_this_week',
         'signups_this_month',
         'top_failed_logins',
       ]);

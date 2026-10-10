@@ -146,6 +146,13 @@ describe.skipIf(!hasRlsTestEnvironment())(
       expect(rows?.length).toBe(1);
       expect(rows?.[0].event_type).toBe('sign_in_failed');
       expect(rows?.[0].success).toBe(false);
+
+      // The row has no user, so deleting the test user does not take it with it. Left behind,
+      // one a run counts toward log_auth_event's anonymous hourly ceiling (#1284).
+      await svc
+        .from('auth_audit_logs')
+        .delete()
+        .eq('event_data->>email', marker);
     });
 
     it('#241: log_auth_event refuses to attribute an event to another user', async () => {

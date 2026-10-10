@@ -4,6 +4,11 @@ export interface AdminAuthStats {
   logins_today: number;
   failed_this_week: number;
   signups_this_month: number;
+  /**
+   * Anonymous events turned away by log_auth_event's hourly ceiling in the last 7 days, counted
+   * instead of stored (#1284). Above zero, failed_this_week is incomplete as well as unverified.
+   */
+  reports_dropped_this_week: number;
   top_failed_logins: { user_id: string; attempts: number }[];
 }
 

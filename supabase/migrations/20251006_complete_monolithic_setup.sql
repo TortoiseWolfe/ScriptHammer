@@ -612,6 +612,19 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_user_event ON auth_audit_logs(user_id,
 CREATE INDEX IF NOT EXISTS idx_auth_audit_logs_anonymous_recent
   ON auth_audit_logs(created_at) WHERE user_id IS NULL;
 
+-- What that ceiling turned away, counted per hour (#1284). The ceiling bounds the disk, but on
+-- its own it would also hide a flood: past 30 an hour a real failed sign-in is not stored, and
+-- nothing would say so. One row per clock hour carries how many were turned away, so the
+-- dashboard can show the flood the audit rows no longer can. A separate table rather than a
+-- row in auth_audit_logs, because that table is append-only and this one is a counter.
+-- At most 24 rows a day; pruned with the audit log at 90 days.
+CREATE TABLE IF NOT EXISTS auth_audit_overflow (
+  hour    TIMESTAMPTZ PRIMARY KEY,
+  dropped INTEGER NOT NULL CHECK (dropped > 0)
+);
+ALTER TABLE auth_audit_overflow ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE auth_audit_overflow IS 'Anonymous auth events past log_auth_event''s hourly ceiling, counted per hour instead of stored (#1284). Written only by log_auth_event; read by admin_auth_stats.';
+
 -- The "(90-day retention)" half of this comment was untrue for ten months: the
 -- function existed, nothing called it (#585). It now names its own enforcer, so
 -- the claim is checkable rather than asserted.
@@ -840,6 +853,10 @@ BEGIN
     -- the remaining iterations on empty DELETEs.
     EXIT WHEN v_batch < v_size;
   END LOOP;
+
+  -- The overflow counter keeps the same 90 days (#1284). One row an hour, so no batching, and
+  -- not added to the total, which the retention job reports as audit rows.
+  DELETE FROM auth_audit_overflow WHERE hour < v_cutoff;
 
   RETURN v_total;
 END;
@@ -1431,22 +1448,39 @@ BEGIN
       USING ERRCODE = '42501';
   END IF;
 
+  -- A failed sign-in happens before any session exists, so a caller that HAS one has no failed
+  -- sign-in to report. Accepting it let any free account raise failed_this_week, and the
+  -- dashboard alert it drives, without limit, because the anonymous ceiling below does not
+  -- apply to a signed-in caller (#1284 review). Every client-written failed sign-in is now
+  -- anonymous, and so inside that ceiling.
+  IF p_event_type = 'sign_in_failed' AND auth.uid() IS NOT NULL THEN
+    RAISE EXCEPTION 'log_auth_event: a failed sign-in is logged without a session'
+      USING ERRCODE = '42501';
+  END IF;
+
   -- Anonymous callers keep EXECUTE on purpose — failed sign-ins, sign-up failures and reset
   -- requests happen before any session exists, and revoking it would silently zero that
   -- telemetry (#241). What anon may WRITE is bounded instead: only those three event types,
   -- never a success except a reset request (#1245), a smaller payload, and a site-wide ceiling
-  -- on how many (#1284).
+  -- on how many rows (#1284).
   --
   -- WHY THE CEILING IS SITE-WIDE: nothing a caller without a session sends can be tied to anyone,
   -- so there is no honest key to throttle per caller. 30 an hour holds a sustained flood to
-  -- ~65,000 rows over the 90-day retention, against 7,439 rows in the whole table today; the
-  -- busiest hour production ever saw was 90, all of it the shared E2E lane in July. The cost is
-  -- that a flood also crowds out real failed-login rows until the hour turns, and those feed
-  -- failed_this_week, which the dashboard labels as client-reported for exactly this reason.
+  -- ~65,000 rows over the 90-day retention, against 7,439 rows in the whole table today. The
+  -- busiest hour production ever saw was 90: 4,526 of the 4,540 rows in its hours over 30 were
+  -- plus-addressed gmail aliases, which is how the E2E user factory names accounts.
+  --
+  -- PAST THE CEILING AN EVENT IS COUNTED, NOT DROPPED. A flood crowds real failed sign-ins out
+  -- of the table until the hour turns, and a cap that did only that would also hide the flood
+  -- (the commit security review's finding). So the call adds one to this hour's row in
+  -- auth_audit_overflow and returns without error, since the event is recorded, as a number;
+  -- admin_auth_stats reports the week's total, and the dashboard says the failure counts are
+  -- incomplete. It cannot RAISE: that would roll the count back with everything else.
   --
   -- WHAT THIS STILL DOES NOT BOUND: rows a signed-in user writes against their own id, of the
-  -- types left to them. Those are attributable to an account, unlike the anonymous ones; a
-  -- per-caller throttle needs the server-derived key the Edge Function stage of #1245 provides.
+  -- types left to them (password change, sign-out and the like). Those are attributable to an
+  -- account, unlike the anonymous ones, and no dashboard count reads them; a per-caller
+  -- throttle needs the server-derived key the Edge Function stage of #1245 provides.
   IF auth.uid() IS NULL AND auth.role() IS DISTINCT FROM 'service_role' THEN
     IF p_event_type NOT IN ('sign_in_failed', 'sign_up', 'password_reset_request') THEN
       RAISE EXCEPTION 'log_auth_event: % cannot be logged without a session', p_event_type
@@ -1461,18 +1495,23 @@ BEGIN
       RAISE EXCEPTION 'log_auth_event: event_data is % bytes; the limit without a session is 512',
         pg_column_size(p_event_data) USING ERRCODE = '22001';
     END IF;
-    -- Checked once without the lock, so a flood is refused without queueing on it, then again
-    -- under it, so concurrent callers cannot all read 29 and each write the 30th.
+    -- Checked once without the lock, so a flood is counted without queueing on it, then again
+    -- under it, so concurrent callers cannot all read 29 and each write the 30th. Only the
+    -- second check decides that a row may be written.
     IF (SELECT count(*) FROM auth_audit_logs
         WHERE user_id IS NULL AND created_at > now() - interval '1 hour') >= 30 THEN
-      RAISE EXCEPTION 'log_auth_event: the hourly limit for events without a session is reached'
-        USING ERRCODE = '54000';
+      INSERT INTO auth_audit_overflow (hour, dropped)
+      VALUES (date_trunc('hour', now()), 1)
+      ON CONFLICT (hour) DO UPDATE SET dropped = auth_audit_overflow.dropped + 1;
+      RETURN;
     END IF;
     PERFORM pg_advisory_xact_lock(hashtext('log_auth_event:anonymous'));
     IF (SELECT count(*) FROM auth_audit_logs
         WHERE user_id IS NULL AND created_at > now() - interval '1 hour') >= 30 THEN
-      RAISE EXCEPTION 'log_auth_event: the hourly limit for events without a session is reached'
-        USING ERRCODE = '54000';
+      INSERT INTO auth_audit_overflow (hour, dropped)
+      VALUES (date_trunc('hour', now()), 1)
+      ON CONFLICT (hour) DO UPDATE SET dropped = auth_audit_overflow.dropped + 1;
+      RETURN;
     END IF;
   END IF;
 
@@ -1776,6 +1815,12 @@ CREATE POLICY "Admin can view all audit logs" ON auth_audit_logs
     is_admin()  -- #240: live column authority (was: JWT claim, which could drift/linger)
   );
 
+-- The only policy on the overflow counter (#1284): admins read it, through the SECURITY
+-- INVOKER admin_auth_stats(). Its one writer is the SECURITY DEFINER log_auth_event().
+DROP POLICY IF EXISTS "Admin can view audit overflow" ON auth_audit_overflow;
+CREATE POLICY "Admin can view audit overflow" ON auth_audit_overflow
+  FOR SELECT USING (is_admin());
+
 DROP POLICY IF EXISTS "Admin can view all orders" ON orders;
 CREATE POLICY "Admin can view all orders" ON orders
   FOR SELECT USING (
@@ -1925,10 +1970,14 @@ BEGIN
   -- 'sign_in_success' rows are left out on purpose, here and in admin_audit_trends and
   -- admin_overview: any signed-in account could write those.
   --
-  -- failed_this_week and top_failed_logins are still client-reported (nothing server-side sees
-  -- a failed password), bounded by log_auth_event's anonymous ceiling rather than verified.
+  -- failed_this_week and top_failed_logins are still client-reported: nothing server-side sees a
+  -- failed password, so ANYONE can raise them, up to log_auth_event's ceiling of 30 anonymous
+  -- rows an hour (~5,000 a week, against an alert at 50). They are not verified, and the
+  -- dashboard says so. reports_dropped_this_week is what that ceiling turned away; above zero,
+  -- the failure counts are incomplete as well as unverified.
   RETURN (
     SELECT json_build_object(
+      'reports_dropped_this_week', (SELECT COALESCE(sum(dropped), 0) FROM auth_audit_overflow WHERE hour > now() - interval '7 days'),
       'logins_today', (SELECT count(*) FROM auth_audit_logs WHERE event_type = 'sign_in' AND success = TRUE AND created_at > now() - interval '1 day'),
       'failed_this_week', (SELECT count(*) FROM auth_audit_logs WHERE event_type = 'sign_in_failed' AND created_at > now() - interval '7 days'),
       'signups_this_month', (SELECT count(*) FROM auth_audit_logs WHERE event_type = 'sign_up' AND success = TRUE AND created_at > now() - interval '30 days'),
@@ -2885,6 +2934,10 @@ GRANT INSERT (
 -- break a working read. Table-wide SELECT is the honest choice.
 REVOKE ALL ON auth_audit_logs FROM anon, authenticated;
 GRANT SELECT ON auth_audit_logs TO authenticated;
+-- The overflow counter (#1284) is born under the same default ACL, so it gets the same REVOKE;
+-- SELECT stays for the admin policy above, and nothing a client runs may write it.
+REVOKE ALL ON auth_audit_overflow FROM anon, authenticated;
+GRANT SELECT ON auth_audit_overflow TO authenticated;
 GRANT SELECT ON products TO authenticated;
 
 -- #1073, table 7 of 10. The line below already said SELECT, and it did nothing.

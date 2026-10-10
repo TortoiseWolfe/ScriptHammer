@@ -11,6 +11,7 @@ const mockStats: AdminAuthStats = {
   logins_today: 28,
   failed_this_week: 5,
   signups_this_month: 12,
+  reports_dropped_this_week: 0,
   top_failed_logins: [],
 };
 
@@ -72,6 +73,22 @@ describe('AdminAuditTrail', () => {
     expect(screen.getByText('Signups (30d)')).toBeInTheDocument();
     // #1285: no lockout tile — after #1245 there are no sign-in lockouts to count.
     expect(screen.queryByText('Rate Limited')).not.toBeInTheDocument();
+  });
+
+  it('shows how many anonymous reports the hourly cap dropped, only when it dropped some (#1284)', () => {
+    const { rerender } = render(
+      <AdminAuditTrail stats={mockStats} events={mockEvents} />
+    );
+    expect(
+      screen.queryByTestId('stat-dropped-reports')
+    ).not.toBeInTheDocument();
+    rerender(
+      <AdminAuditTrail
+        stats={{ ...mockStats, reports_dropped_this_week: 7 }}
+        events={mockEvents}
+      />
+    );
+    expect(screen.getByTestId('stat-dropped-reports')).toHaveTextContent('7');
   });
 
   it('says where each sign-in number comes from (#1284)', () => {

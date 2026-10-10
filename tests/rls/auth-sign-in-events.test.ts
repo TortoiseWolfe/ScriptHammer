@@ -10,15 +10,19 @@
  *   - the browser missed nearly every real sign-in. Measured on production, 2026-10-10:
  *     14 sessions created in 30 days, ONE client-written success row.
  *
- * The row now comes from a trigger on `auth.users.last_sign_in_at`, which GoTrue sets when it
- * issues a new session and which no client can write. These tests sign in for real, against
- * real GoTrue, so they pin GoTrue's behaviour as well as ours: if a token refresh ever started
- * touching `last_sign_in_at`, the refresh test is what would say so.
+ * The row now comes from a trigger on `auth.users.last_sign_in_at`, which GoTrue sets to a new
+ * value when it issues a new session and which no client can write. These tests sign in for
+ * real, against real GoTrue, so they pin GoTrue's behaviour as well as ours. A token refresh
+ * DOES rewrite the column, with its existing value (GoTrue v2.177.0); the trigger's WHEN clause
+ * is what keeps that from counting, and the refresh test fails if a refresh ever counts, for
+ * either reason.
  *
  * Anonymous telemetry (failed sign-ins, reset requests) stays client-written, because nothing
  * server-side sees a failed password. What changes is that it is bounded: a smaller payload,
  * and a site-wide hourly ceiling, since a caller with no session cannot be told apart from
- * another one.
+ * another one. Past the ceiling an event is counted in auth_audit_overflow instead of stored,
+ * so a flood stays visible. A failed sign-in may no longer come from a caller WITH a session,
+ * which is the one path that escaped the ceiling.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { Client } from 'pg';
@@ -137,6 +141,31 @@ describe.skipIf(!hasRlsTestEnvironment())(
       return count ?? 0;
     }
 
+    // auth_audit_overflow rows from the last two clock hours: the ones this file can touch.
+    // Snapshotted before and restored after, so other suites see the counter as it was.
+    const recentHours = () =>
+      new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    let overflowSnapshot: { hour: string; dropped: number }[] = [];
+
+    async function droppedRecently(): Promise<number> {
+      const { data, error } = await service
+        .from('auth_audit_overflow')
+        .select('dropped')
+        .gte('hour', recentHours());
+      if (error) throw new Error(`could not read overflow: ${error.message}`);
+      return (data ?? []).reduce(
+        (n: number, r: { dropped: number }) => n + r.dropped,
+        0
+      );
+    }
+
+    async function droppedThisWeek(): Promise<number> {
+      const { data, error } = await adminClient.rpc('admin_auth_stats');
+      if (error) throw new Error(`admin_auth_stats failed: ${error.message}`);
+      return (data as { reports_dropped_this_week: number })
+        .reports_dropped_this_week;
+    }
+
     beforeAll(async () => {
       service = createServiceClient();
       member = await createTestUser(
@@ -160,6 +189,12 @@ describe.skipIf(!hasRlsTestEnvironment())(
         admin.email,
         admin.password
       );
+      const { data, error: snapErr } = await service
+        .from('auth_audit_overflow')
+        .select('hour, dropped')
+        .gte('hour', recentHours());
+      if (snapErr) throw new Error(`overflow snapshot: ${snapErr.message}`);
+      overflowSnapshot = data ?? [];
     });
 
     afterAll(async () => {
@@ -167,6 +202,12 @@ describe.skipIf(!hasRlsTestEnvironment())(
         .from('auth_audit_logs')
         .delete()
         .eq('event_data->>marker', marker);
+      await service
+        .from('auth_audit_overflow')
+        .delete()
+        .gte('hour', recentHours());
+      if (overflowSnapshot.length)
+        await service.from('auth_audit_overflow').insert(overflowSnapshot);
       if (admin)
         await service
           .from('user_profiles')
@@ -317,6 +358,20 @@ describe.skipIf(!hasRlsTestEnvironment())(
         expect(await dashboardSignIns()).toEqual(before);
       });
 
+      it('a signed-in user cannot log a failed sign-in, the one path that escaped the ceiling', async () => {
+        // A failed sign-in happens before any session exists. Accepted from a session, these
+        // rows were attributed to the caller and so outside the anonymous ceiling: one free
+        // account could raise failed_this_week, and the alert it drives, without limit.
+        const before = await rowsFor(member.id, ['sign_in_failed']);
+        const { error } = await memberClient.rpc('log_auth_event', {
+          p_event_type: 'sign_in_failed',
+          p_event_data: { marker },
+          p_success: false,
+        });
+        expect(error?.code).toBe('42501');
+        expect(await rowsFor(member.id, ['sign_in_failed'])).toBe(before);
+      });
+
       it('CONTROL: a signed-in user can still log their own non-sign-in events', async () => {
         // Without this, a function that refused everything would pass every test above.
         const { error } = await memberClient.rpc('log_auth_event', {
@@ -346,20 +401,26 @@ describe.skipIf(!hasRlsTestEnvironment())(
         expect(allowed.error).toBeNull();
       });
 
-      it('anonymous rows stop at a site-wide hourly ceiling, and service_role is exempt', async () => {
+      it('past a site-wide hourly ceiling an anonymous event is counted, not stored; service_role is exempt', async () => {
         const anon = createAnonClient();
         await clearAnonMarkerRows();
         await fillAnonRowsTo(ANON_HOURLY_CEILING);
         const atCeiling = await anonRowsThisHour();
         expect(atCeiling).toBe(ANON_HOURLY_CEILING);
+        const droppedBefore = await droppedRecently();
+        const weekBefore = await droppedThisWeek();
 
-        const refused = await anon.rpc('log_auth_event', {
+        // No error: the event IS recorded, as a number. Raising would roll the count back.
+        const counted = await anon.rpc('log_auth_event', {
           p_event_type: 'sign_in_failed',
           p_event_data: { marker },
           p_success: false,
         });
-        expect(refused.error?.code).toBe('54000');
+        expect(counted.error).toBeNull();
         expect(await anonRowsThisHour()).toBe(atCeiling);
+        expect(await droppedRecently()).toBe(droppedBefore + 1);
+        // ...and it reaches the dashboard, which is the point: a flood stays visible.
+        expect(await droppedThisWeek()).toBe(weekBefore + 1);
 
         const server = await service.rpc('log_auth_event', {
           p_event_type: 'sign_in_failed',
@@ -380,12 +441,13 @@ describe.skipIf(!hasRlsTestEnvironment())(
         expect(accepted.error).toBeNull();
       });
 
-      it('two callers overlapping at the last slot: the second waits for the first, then is refused', async () => {
+      it('two callers overlapping at the last slot: the second waits for the first, then is counted', async () => {
         // Without the lock, the second caller counts 29 while the first has not committed, and
         // both write. A first draft raced eight PostgREST calls at once instead; it stayed green
         // with the lock deleted, because nothing made them overlap. This makes them.
         await clearAnonMarkerRows();
         await fillAnonRowsTo(ANON_HOURLY_CEILING - 1);
+        const droppedBefore = await droppedRecently();
         const asAnon = `select set_config('request.jwt.claims', '{"role":"anon"}', true)`;
         const call = `select log_auth_event('sign_in_failed', null, $1::jsonb, false)`;
         const payload = [JSON.stringify({ marker })];
@@ -417,13 +479,84 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
           await holder.query('commit');
           const err = await pending;
-          await caller.query('rollback');
-          expect(err?.code).toBe('54000');
+          await caller.query('commit');
+          expect(err).toBeNull();
           expect(await anonRowsThisHour()).toBe(ANON_HOURLY_CEILING);
+          expect(await droppedRecently()).toBe(droppedBefore + 1);
         } finally {
           await holder.end();
           await caller.end();
           await clearAnonMarkerRows();
+        }
+      });
+    });
+
+    describe('the overflow counter', () => {
+      it('only an admin can read it, and no client role can write it', async () => {
+        // It must exist for the reads below to mean anything; the tests above wrote to it.
+        expect(await droppedRecently()).toBeGreaterThan(0);
+
+        const asMember = await memberClient
+          .from('auth_audit_overflow')
+          .select('hour');
+        expect(asMember.error).toBeNull();
+        expect(asMember.data).toEqual([]);
+
+        const asAdmin = await adminClient
+          .from('auth_audit_overflow')
+          .select('hour')
+          .gte('hour', recentHours());
+        expect(asAdmin.error).toBeNull();
+        expect(asAdmin.data?.length).toBeGreaterThan(0);
+
+        const write = await memberClient
+          .from('auth_audit_overflow')
+          .insert({ hour: new Date().toISOString(), dropped: 1 });
+        expect(write.error?.code).toBe('42501');
+      });
+
+      it('is pruned with the audit log at 90 days, and not before', async () => {
+        // Inside a transaction that is rolled back, so the retention run touches nothing else.
+        const db = new Client(DB);
+        await db.connect();
+        try {
+          await db.query('begin');
+          await db.query(
+            `insert into auth_audit_overflow (hour, dropped) values
+               (date_trunc('hour', now() - interval '91 days'), 3),
+               (date_trunc('hour', now() - interval '89 days'), 4)
+             on conflict (hour) do nothing`
+          );
+          await db.query('select cleanup_old_audit_logs()');
+          const { rows } = await db.query(
+            `select dropped from auth_audit_overflow
+              where hour < now() - interval '88 days' order by hour`
+          );
+          expect(rows).toEqual([{ dropped: 4 }]);
+        } finally {
+          await db.query('rollback');
+          await db.end();
+        }
+      });
+
+      it('anon holds nothing on it and authenticated holds only SELECT', async () => {
+        // Read from the catalog: Supabase's default ACL grants both roles everything on a new
+        // table, and RLS does not gate TRUNCATE, so only the REVOKE makes this true.
+        const db = new Client(DB);
+        await db.connect();
+        try {
+          const { rows } = await db.query(
+            `select grantee, privilege_type
+               from information_schema.role_table_grants
+              where table_schema = 'public' and table_name = 'auth_audit_overflow'
+                and grantee in ('anon', 'authenticated')
+              order by grantee, privilege_type`
+          );
+          expect(rows).toEqual([
+            { grantee: 'authenticated', privilege_type: 'SELECT' },
+          ]);
+        } finally {
+          await db.end();
         }
       });
     });
