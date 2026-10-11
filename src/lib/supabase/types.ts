@@ -75,6 +75,21 @@ export type Database = {
         };
         Relationships: [];
       };
+      auth_audit_overflow: {
+        Row: {
+          dropped: number;
+          hour: string;
+        };
+        Insert: {
+          dropped: number;
+          hour: string;
+        };
+        Update: {
+          dropped?: number;
+          hour?: string;
+        };
+        Relationships: [];
+      };
       conversation_keys: {
         Row: {
           conversation_id: string;

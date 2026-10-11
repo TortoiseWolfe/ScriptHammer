@@ -11,8 +11,8 @@ import { createLogger } from '@/lib/logger';
 const logger = createLogger('lib:auth:audit-logger');
 
 export type AuditEventType =
-  | 'sign_in'
-  | 'sign_in_success' // #241: successful sign-in (what admin_auth_stats reads)
+  | 'sign_in' // written by the database when GoTrue issues a session (#1284)
+  | 'sign_in_success' // the browser's old name for it; on rows written before #1284 only
   | 'sign_in_failed' // #241: failed sign-in (what the failed-attempt detector reads)
   | 'sign_out'
   | 'sign_up'
@@ -22,6 +22,13 @@ export type AuditEventType =
   | 'oauth_link'
   | 'oauth_unlink'
   | 'payment_retry';
+
+/**
+ * Events no browser may log (#1284). The database records a sign-in itself, from
+ * auth.users.last_sign_in_at, and `log_auth_event` refuses both names with 42501 — so
+ * a client that could log them would only be writing a row the server throws away.
+ */
+export type ServerRecordedEventType = 'sign_in' | 'sign_in_success';
 
 export interface AuditLogEntry {
   user_id?: string;
@@ -33,17 +40,23 @@ export interface AuditLogEntry {
   error_message?: string;
 }
 
+/** What `logAuthEvent` accepts: any entry except one the server records itself. */
+export type ClientAuditLogEntry = AuditLogEntry & {
+  event_type: Exclude<AuditEventType, ServerRecordedEventType>;
+};
+
 /**
  * Log an authentication or security event to the audit trail
  *
  * @param entry - Audit log entry details
  *
  * @example
- * // Log successful sign-in
+ * // Log a failed sign-in (a successful one is recorded by the database, #1284)
  * await logAuthEvent({
- *   user_id: user.id,
- *   event_type: 'sign_in',
- *   event_data: { provider: 'email' }
+ *   event_type: 'sign_in_failed',
+ *   event_data: { email, provider: 'email' },
+ *   success: false,
+ *   error_message: error.message
  * });
  *
  * @example
@@ -55,7 +68,7 @@ export interface AuditLogEntry {
  *   error_message: 'Current password incorrect'
  * });
  */
-export async function logAuthEvent(entry: AuditLogEntry): Promise<void> {
+export async function logAuthEvent(entry: ClientAuditLogEntry): Promise<void> {
   try {
     // Get user agent from browser.
     //

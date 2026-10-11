@@ -224,23 +224,25 @@ VALUES
   ('55555555-5555-5555-5555-555555555504', '11111111-1111-1111-1111-111111111108', 'sign_up', true, NULL, now() - interval '20 days'),
   ('55555555-5555-5555-5555-555555555505', '11111111-1111-1111-1111-111111111107', 'sign_up', true, NULL, now() - interval '15 days'),
 
-  -- Successful logins spread over the week (for logins_today and sparkline)
-  ('55555555-5555-5555-5555-555555555510', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, NULL, now() - interval '6 days'),
-  ('55555555-5555-5555-5555-555555555511', '11111111-1111-1111-1111-111111111102', 'sign_in_success', true, NULL, now() - interval '6 days' + interval '1 hour'),
-  ('55555555-5555-5555-5555-555555555512', '11111111-1111-1111-1111-111111111103', 'sign_in_success', true, NULL, now() - interval '5 days'),
-  ('55555555-5555-5555-5555-555555555513', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, NULL, now() - interval '5 days' + interval '3 hours'),
-  ('55555555-5555-5555-5555-555555555514', '11111111-1111-1111-1111-111111111104', 'sign_in_success', true, NULL, now() - interval '4 days'),
-  ('55555555-5555-5555-5555-555555555515', '11111111-1111-1111-1111-111111111102', 'sign_in_success', true, NULL, now() - interval '4 days' + interval '2 hours'),
-  ('55555555-5555-5555-5555-555555555516', '11111111-1111-1111-1111-111111111105', 'sign_in_success', true, NULL, now() - interval '3 days'),
-  ('55555555-5555-5555-5555-555555555517', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, NULL, now() - interval '3 days' + interval '4 hours'),
-  ('55555555-5555-5555-5555-555555555518', '11111111-1111-1111-1111-111111111103', 'sign_in_success', true, NULL, now() - interval '2 days'),
-  ('55555555-5555-5555-5555-555555555519', '11111111-1111-1111-1111-111111111102', 'sign_in_success', true, NULL, now() - interval '2 days' + interval '1 hour'),
-  ('55555555-5555-5555-5555-555555555520', '11111111-1111-1111-1111-111111111108', 'sign_in_success', true, NULL, now() - interval '1 day'),
-  ('55555555-5555-5555-5555-555555555521', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, NULL, now() - interval '1 day' + interval '2 hours'),
+  -- Successful logins spread over the week (for logins_today and sparkline). 'sign_in' is the
+  -- name the database writes when GoTrue issues a session, and the only one the readers count
+  -- (#1284); 'sign_in_success' rows, the browser's old name, no longer show on the dashboard.
+  ('55555555-5555-5555-5555-555555555510', '11111111-1111-1111-1111-111111111101', 'sign_in', true, NULL, now() - interval '6 days'),
+  ('55555555-5555-5555-5555-555555555511', '11111111-1111-1111-1111-111111111102', 'sign_in', true, NULL, now() - interval '6 days' + interval '1 hour'),
+  ('55555555-5555-5555-5555-555555555512', '11111111-1111-1111-1111-111111111103', 'sign_in', true, NULL, now() - interval '5 days'),
+  ('55555555-5555-5555-5555-555555555513', '11111111-1111-1111-1111-111111111101', 'sign_in', true, NULL, now() - interval '5 days' + interval '3 hours'),
+  ('55555555-5555-5555-5555-555555555514', '11111111-1111-1111-1111-111111111104', 'sign_in', true, NULL, now() - interval '4 days'),
+  ('55555555-5555-5555-5555-555555555515', '11111111-1111-1111-1111-111111111102', 'sign_in', true, NULL, now() - interval '4 days' + interval '2 hours'),
+  ('55555555-5555-5555-5555-555555555516', '11111111-1111-1111-1111-111111111105', 'sign_in', true, NULL, now() - interval '3 days'),
+  ('55555555-5555-5555-5555-555555555517', '11111111-1111-1111-1111-111111111101', 'sign_in', true, NULL, now() - interval '3 days' + interval '4 hours'),
+  ('55555555-5555-5555-5555-555555555518', '11111111-1111-1111-1111-111111111103', 'sign_in', true, NULL, now() - interval '2 days'),
+  ('55555555-5555-5555-5555-555555555519', '11111111-1111-1111-1111-111111111102', 'sign_in', true, NULL, now() - interval '2 days' + interval '1 hour'),
+  ('55555555-5555-5555-5555-555555555520', '11111111-1111-1111-1111-111111111108', 'sign_in', true, NULL, now() - interval '1 day'),
+  ('55555555-5555-5555-5555-555555555521', '11111111-1111-1111-1111-111111111101', 'sign_in', true, NULL, now() - interval '1 day' + interval '2 hours'),
   -- Today logins
-  ('55555555-5555-5555-5555-555555555522', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, NULL, now() - interval '3 hours'),
-  ('55555555-5555-5555-5555-555555555523', '11111111-1111-1111-1111-111111111102', 'sign_in_success', true, NULL, now() - interval '2 hours'),
-  ('55555555-5555-5555-5555-555555555524', '11111111-1111-1111-1111-111111111103', 'sign_in_success', true, NULL, now() - interval '1 hour'),
+  ('55555555-5555-5555-5555-555555555522', '11111111-1111-1111-1111-111111111101', 'sign_in', true, NULL, now() - interval '3 hours'),
+  ('55555555-5555-5555-5555-555555555523', '11111111-1111-1111-1111-111111111102', 'sign_in', true, NULL, now() - interval '2 hours'),
+  ('55555555-5555-5555-5555-555555555524', '11111111-1111-1111-1111-111111111103', 'sign_in', true, NULL, now() - interval '1 hour'),
 
   -- Failed logins spread over the week
   ('55555555-5555-5555-5555-555555555530', '11111111-1111-1111-1111-111111111104', 'sign_in_failed', false, NULL, now() - interval '6 days'),
@@ -260,10 +262,10 @@ VALUES
   ('55555555-5555-5555-5555-555555555546', '11111111-1111-1111-1111-111111111101', 'sign_in_failed', false, NULL, now() - interval '2 days' + interval '14 hours' + interval '5 minutes'),
 
   -- More scattered events for variety
-  ('55555555-5555-5555-5555-555555555550', '11111111-1111-1111-1111-111111111101', 'sign_in_success', true, NULL, now() - interval '10 days'),
-  ('55555555-5555-5555-5555-555555555551', '11111111-1111-1111-1111-111111111102', 'sign_in_success', true, NULL, now() - interval '9 days'),
-  ('55555555-5555-5555-5555-555555555552', '11111111-1111-1111-1111-111111111103', 'sign_in_success', true, NULL, now() - interval '8 days'),
-  ('55555555-5555-5555-5555-555555555553', '11111111-1111-1111-1111-111111111108', 'sign_in_success', true, NULL, now() - interval '7 days'),
+  ('55555555-5555-5555-5555-555555555550', '11111111-1111-1111-1111-111111111101', 'sign_in', true, NULL, now() - interval '10 days'),
+  ('55555555-5555-5555-5555-555555555551', '11111111-1111-1111-1111-111111111102', 'sign_in', true, NULL, now() - interval '9 days'),
+  ('55555555-5555-5555-5555-555555555552', '11111111-1111-1111-1111-111111111103', 'sign_in', true, NULL, now() - interval '8 days'),
+  ('55555555-5555-5555-5555-555555555553', '11111111-1111-1111-1111-111111111108', 'sign_in', true, NULL, now() - interval '7 days'),
   ('55555555-5555-5555-5555-555555555554', '11111111-1111-1111-1111-111111111101', 'sign_in_failed',  false, NULL, now() - interval '11 days'),
   ('55555555-5555-5555-5555-555555555555', '11111111-1111-1111-1111-111111111102', 'sign_in_failed',  false, NULL, now() - interval '9 days')
 ON CONFLICT (id) DO NOTHING;

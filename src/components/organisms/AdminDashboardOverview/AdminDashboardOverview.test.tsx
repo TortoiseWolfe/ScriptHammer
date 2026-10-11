@@ -22,6 +22,7 @@ const healthyOverview: AdminOverview = {
     logins_today: 28,
     failed_this_week: 5,
     signups_this_month: 12,
+    reports_dropped_this_week: 0,
     top_failed_logins: [],
   },
   users: {
@@ -280,13 +281,43 @@ describe('AdminDashboardOverview', () => {
         auth: { ...healthyOverview.auth, failed_this_week: 60 },
       };
       render(<AdminDashboardOverview overview={ov} />);
+      // #1284: the count is client-reported, and the alert must not read as verified.
       expect(screen.getByTestId('attention-banner')).toHaveTextContent(
-        '60 failed login attempts this week'
+        '60 failed login attempts this week (reported by browsers, unverified)'
       );
       const section = screen
         .getAllByRole('region')
         .find((s) => s.getAttribute('data-domain') === 'auth');
       expect(section?.getAttribute('data-attention')).toBe('alert');
+    });
+
+    it('still shows a flood the hourly cap turned away (#1284)', () => {
+      // Past 30 anonymous reports an hour the database counts instead of storing, so
+      // failed_this_week can read 0 during a flood. The dropped count is what says otherwise.
+      const ov: AdminOverview = {
+        ...healthyOverview,
+        auth: {
+          ...healthyOverview.auth,
+          failed_this_week: 0,
+          reports_dropped_this_week: 12,
+        },
+      };
+      render(<AdminDashboardOverview overview={ov} />);
+      expect(screen.getByTestId('attention-banner')).toHaveTextContent(
+        'At least 12 anonymous reports dropped by the hourly limit this week; failed-login counts are incomplete'
+      );
+      const section = screen
+        .getAllByRole('region')
+        .find((s) => s.getAttribute('data-domain') === 'auth');
+      expect(section?.getAttribute('data-attention')).toBe('warn');
+    });
+
+    it('CONTROL: with nothing dropped and few failures, auth needs no attention', () => {
+      render(<AdminDashboardOverview overview={healthyOverview} />);
+      const section = screen
+        .getAllByRole('region')
+        .find((s) => s.getAttribute('data-domain') === 'auth');
+      expect(section?.getAttribute('data-attention')).toBe('ok');
     });
 
     it('sorts sections by attention level, alert first', () => {

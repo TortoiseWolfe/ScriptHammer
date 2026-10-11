@@ -37,6 +37,8 @@ export interface AdminAuditTrailProps {
 }
 
 const EVENT_TYPES = [
+  // 'sign_in' is the database's record (#1284); 'sign_in_success' is the browser's, on older rows.
+  'sign_in',
   'sign_in_success',
   'sign_in_failed',
   'sign_up',
@@ -47,6 +49,9 @@ const EVENT_TYPES = [
   'mfa_challenge',
   'token_refresh',
 ];
+
+const RECORDED_BY_SERVER = 'Recorded by the server';
+const REPORTED_BY_BROWSERS = 'Reported by browsers, unverified';
 
 function formatTime(dateStr: string): string {
   return new Date(dateStr).toLocaleString('en-US', {
@@ -142,14 +147,18 @@ export function AdminAuditTrail({
           Authentication Statistics
         </h2>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {/* Where each number comes from (#1284): sign-ins are written by the database,
+              failures by whichever browser reports them, and nothing can verify those. */}
           <AdminStatCard
             label="Logins Today"
             value={stats?.logins_today ?? 0}
+            description={RECORDED_BY_SERVER}
             testId="stat-logins-today"
           />
           <AdminStatCard
             label="Failed This Week"
             value={stats?.failed_this_week ?? 0}
+            description={REPORTED_BY_BROWSERS}
             trend={stats && stats.failed_this_week > 0 ? 'down' : undefined}
             testId="stat-failed-week"
           />
@@ -159,6 +168,16 @@ export function AdminAuditTrail({
             trend="up"
             testId="stat-signups"
           />
+          {/* Only when the database's hourly cap on anonymous reports turned some away
+              (#1284): those were counted, not stored, so the failure counts are short. */}
+          {stats && stats.reports_dropped_this_week > 0 && (
+            <AdminStatCard
+              label="Dropped Reports (7d)"
+              value={stats.reports_dropped_this_week}
+              description="At least this many, past the hourly limit; failure counts are incomplete"
+              testId="stat-dropped-reports"
+            />
+          )}
         </div>
       </section>
 
@@ -189,11 +208,13 @@ export function AdminAuditTrail({
             <AdminStatCard
               label="Failed Sign-ins"
               value={trends.totals?.sign_in_failed ?? 0}
+              description={REPORTED_BY_BROWSERS}
               testId="stat-range-failed"
             />
             <AdminStatCard
               label="Successful Sign-ins"
               value={trends.totals?.sign_in_success ?? 0}
+              description={RECORDED_BY_SERVER}
               testId="stat-range-success"
             />
           </div>

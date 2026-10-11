@@ -178,4 +178,34 @@ describe('SignInForm', () => {
       expect(rpcNames()).not.toContain('record_failed_attempt');
     });
   });
+
+  // #1284. The database records a successful sign-in itself, from auth.users.last_sign_in_at,
+  // and log_auth_event refuses one from a browser, so a call from here could only be refused.
+  describe('a successful sign-in is recorded by the database, not this form (#1284)', () => {
+    beforeEach(() => {
+      auth.signIn.mockReset();
+      auth.signIn.mockResolvedValue({ error: null });
+      vi.mocked(supabase.rpc).mockClear();
+      // The old success path read its user id from here; given a user, it logged a row.
+      vi.mocked(supabase.auth.getUser).mockResolvedValueOnce({
+        data: { user: { id: 'user-1' } },
+        error: null,
+      } as Awaited<ReturnType<typeof supabase.auth.getUser>>);
+    });
+
+    it('sends no audit event', async () => {
+      render(<SignInForm />);
+      fireEvent.change(screen.getByLabelText(/email/i), {
+        target: { value: 'someone@example.com' },
+      });
+      fireEvent.change(screen.getByLabelText(/password/i), {
+        target: { value: 'CorrectHorse1!' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+      await vi.waitFor(() => expect(auth.signIn).toHaveBeenCalledTimes(1));
+      // Let the success branch run to its end before asserting what it did not do.
+      await new Promise((r) => setTimeout(r, 50));
+      expect(rpcNames()).not.toContain('log_auth_event');
+    });
+  });
 });

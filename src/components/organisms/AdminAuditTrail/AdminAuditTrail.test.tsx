@@ -11,6 +11,7 @@ const mockStats: AdminAuthStats = {
   logins_today: 28,
   failed_this_week: 5,
   signups_this_month: 12,
+  reports_dropped_this_week: 0,
   top_failed_logins: [],
 };
 
@@ -72,6 +73,46 @@ describe('AdminAuditTrail', () => {
     expect(screen.getByText('Signups (30d)')).toBeInTheDocument();
     // #1285: no lockout tile — after #1245 there are no sign-in lockouts to count.
     expect(screen.queryByText('Rate Limited')).not.toBeInTheDocument();
+  });
+
+  it('shows how many anonymous reports the hourly cap dropped, only when it dropped some (#1284)', () => {
+    const { rerender } = render(
+      <AdminAuditTrail stats={mockStats} events={mockEvents} />
+    );
+    expect(
+      screen.queryByTestId('stat-dropped-reports')
+    ).not.toBeInTheDocument();
+    rerender(
+      <AdminAuditTrail
+        stats={{ ...mockStats, reports_dropped_this_week: 7 }}
+        events={mockEvents}
+      />
+    );
+    expect(screen.getByTestId('stat-dropped-reports')).toHaveTextContent('7');
+  });
+
+  it('says where each sign-in number comes from (#1284)', () => {
+    // Sign-ins are written by the database; failures are whatever browsers report, and the
+    // failure count drives the dashboard's alert, so it must not read as verified.
+    render(<AdminAuditTrail stats={mockStats} events={mockEvents} />);
+    expect(screen.getByTestId('stat-logins-today')).toHaveTextContent(
+      'Recorded by the server'
+    );
+    expect(screen.getByTestId('stat-failed-week')).toHaveTextContent(
+      'Reported by browsers, unverified'
+    );
+  });
+
+  it("offers the database's 'sign_in' rows in the event filter (#1284)", () => {
+    render(
+      <AdminAuditTrail
+        stats={mockStats}
+        events={mockEvents}
+        eventTypeFilter=""
+        onEventTypeChange={vi.fn()}
+      />
+    );
+    expect(screen.getByRole('option', { name: 'sign_in' })).toBeInTheDocument();
   });
 
   it('renders event table with rows', () => {
@@ -139,6 +180,12 @@ describe('AdminAuditTrail trends', () => {
     expect(screen.queryByTestId('stat-bursts')).not.toBeInTheDocument();
     expect(screen.getByTestId('stat-range-failed')).toHaveTextContent('18');
     expect(screen.getByTestId('stat-range-success')).toHaveTextContent('412');
+    expect(screen.getByTestId('stat-range-failed')).toHaveTextContent(
+      'Reported by browsers, unverified'
+    );
+    expect(screen.getByTestId('stat-range-success')).toHaveTextContent(
+      'Recorded by the server'
+    );
   });
 
   it('renders DateRangeFilter and emits range changes', () => {
