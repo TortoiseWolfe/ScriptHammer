@@ -119,6 +119,18 @@ describe('create-stripe-checkout retires earlier sessions before it opens one (#
       /\.from\('stripe_checkout_sessions'\)[\s\S]{0,300}?(\.(gte|gt|lte|lt|filter|or)\(\s*'?created_at|created_at\.(gte|gt|lt|lte))/,
       'the recorded-session lookup is bounded in time again, and will miss an old paid session'
     );
+    // And the function cannot grow a lookup of its own beside the builder's (blind review of
+    // #1347): its only use of the table is recording the session it has just opened.
+    const uses = [
+      ...code(INDEX).matchAll(
+        /\.from\('stripe_checkout_sessions'\)\s*\.(\w+)\(/g
+      ),
+    ].map((m) => m[1]);
+    assert.deepStrictEqual(
+      uses,
+      ['insert'],
+      `create-stripe-checkout uses stripe_checkout_sessions other than to record a session: ${uses}`
+    );
   });
 
   it('skips only "no such session", through the tested helper', () => {

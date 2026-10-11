@@ -184,6 +184,17 @@ describe('the refusal reads like the other doors', () => {
     // A literal in its own module (no imports, for vitest and tsc); pinned here.
     expect(ALREADY_PAID_AT_STRIPE).toBe(ALREADY_PAID_MESSAGE);
   });
+
+  it('says a failed check charged nothing, which is true for both callers', async () => {
+    // The buyer reads it (approvePayPalOrder shows the error). It said "a new one was not opened",
+    // which a PayPal buyer whose capture was refused reads as nonsense (blind review of #1347).
+    const r = await retirePriorSessions(fake({ failRecorded: true }).deps, [
+      'int-1',
+    ]);
+    expect(r.kind === 'refuse' && r.error).toBe(
+      'Could not check an earlier checkout for this payment, so nothing was charged. Please try again.'
+    );
+  });
 });
 
 describe('retrieveOrNull: only "no such session" is skipped (blind review)', () => {

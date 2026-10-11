@@ -109,6 +109,38 @@ describe("capture-paypal-order retires the chain's Stripe sessions around the ca
     );
   });
 
+  it('walks the chain again for the sweep, and a failed walk cannot answer 500', () => {
+    // A Retry pressed during the capture is a new intent in the chain; the list read before the
+    // capture does not have it (blind review). The walk throws on a read error, and a throw that
+    // reached the handler's catch would answer 500 for a payment PayPal has taken.
+    const src = code(INDEX);
+    const retires = all(src, /await retirePriorSessions\(/);
+    const between = src.slice(at(src, CAPTURE, 'the capture'), retires[1]);
+    const rewalk =
+      /try\s*\{\s*(\w+) = await chainIntentIds\(supabase, result\.intent_id\);\s*\}\s*catch/.exec(
+        between
+      );
+    assert.ok(
+      rewalk,
+      'the sweep does not walk the chain again, inside a try, after the capture'
+    );
+    assert.match(
+      src.slice(retires[1]),
+      new RegExp(
+        `^await retirePriorSessions\\(\\s*sessionDepsFor\\([^;]*?,\\s*${rewalk[1]}\\s*\\)`
+      ),
+      `the sweep is not given the chain walked after the capture (${rewalk[1]})`
+    );
+  });
+
+  it('reads Stripe sessions only through the shared builder', () => {
+    assert.doesNotMatch(
+      code(INDEX),
+      /\.from\('stripe_checkout_sessions'\)/,
+      'capture-paypal-order queries stripe_checkout_sessions itself, beside sessionDepsFor'
+    );
+  });
+
   it('never lets the sweep change the answer: the payment has already gone through', () => {
     const src = code(INDEX);
     const sweepVar = /const (\w+) = await retirePriorSessions\(/g;

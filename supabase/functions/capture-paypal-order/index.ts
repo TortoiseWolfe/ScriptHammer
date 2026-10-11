@@ -262,10 +262,27 @@ serve(async (req) => {
     // since the retirement above would otherwise stay payable beside a capture that has now
     // succeeded. The payment has gone through, so nothing here changes the answer: it is logged,
     // and a COMPLETE session found now is a second charge, said so loudly.
+    //
+    // The chain is walked AGAIN: a Retry pressed during the capture is a new intent, and a session
+    // opened on it is not in the list read before. A failed walk falls back to that list, inside
+    // its own try, because a throw here would answer 500 for a payment PayPal has taken.
+    //
+    // Only on COMPLETED. Any other status is recorded as failed above, so by our own record the
+    // purchase is unpaid and a Stripe session is still a way to pay it. A PENDING capture, which
+    // PayPal may complete later, is the gap in that: #1349.
     if (status === 'COMPLETED') {
+      let sweepIds = chainIds;
+      try {
+        sweepIds = await chainIntentIds(supabase, result.intent_id);
+      } catch (chainError) {
+        console.error(
+          `capture-paypal-order: could not re-read the retry chain after capturing ${orderId}; sweeping the chain read before it`,
+          chainError
+        );
+      }
       const sweep = await retirePriorSessions(
         sessionDepsFor(supabase, getStripe),
-        chainIds
+        sweepIds
       );
       if (sweep.kind === 'refuse' && sweep.code === 'already_paid') {
         console.error(
