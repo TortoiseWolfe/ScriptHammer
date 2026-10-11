@@ -124,6 +124,12 @@ describe("capture-paypal-order retires the chain's Stripe sessions around the ca
       rewalk,
       'the sweep does not walk the chain again, inside a try, after the capture'
     );
+    // A catch that rethrew, or returned, would be the 500 this exists to prevent (blind review).
+    assert.doesNotMatch(
+      between.slice(rewalk.index + rewalk[0].length),
+      /\b(throw|return)\b/,
+      'the re-walk catch leaves the handler instead of falling back'
+    );
     assert.match(
       src.slice(retires[1]),
       new RegExp(
