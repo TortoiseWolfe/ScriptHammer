@@ -13,9 +13,15 @@ vi.unmock('@/lib/supabase/client');
 
 describe('the app Supabase client', () => {
   const restUrl = 'http://abcdefgh.supabase.test';
+  // A 503 with Retry-After: 0: retryable, and retried at once when retries are on, so turning
+  // them on fails the count below in milliseconds. The control in the second case uses the same
+  // answer, so it vouches for exactly what this one checks.
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     if (new URL(String(input)).pathname.startsWith('/rest/v1/')) {
-      throw new TypeError('Failed to fetch');
+      return new Response('{}', {
+        status: 503,
+        headers: { 'Content-Type': 'application/json', 'Retry-After': '0' },
+      });
     }
     return new Response('{}', { status: 200 });
   });
@@ -25,7 +31,7 @@ describe('the app Supabase client', () => {
     vi.unstubAllEnvs();
   });
 
-  it('answers a read the network refused with one request, not four', async () => {
+  it('answers a failed read with one request, not four', async () => {
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', restUrl);
     vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'anon-key');
     // supabase-js takes the global fetch when the client is built, so stub it first.
@@ -39,9 +45,7 @@ describe('the app Supabase client', () => {
       new URL(String(input)).pathname.startsWith('/rest/v1/')
     );
     expect(reads).toHaveLength(1);
-    // Room for the library's ~7 s of retries, so turning them on fails on the count above, with
-    // a message that says why, rather than as a timeout that reads like a flake.
-  }, 15_000);
+  });
 
   it("is testing something: the library's own default does retry", async () => {
     // Without this, the test above would pass vacuously the day postgrest-js stops retrying by

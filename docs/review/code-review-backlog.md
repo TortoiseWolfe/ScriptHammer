@@ -123,7 +123,7 @@ Themes worth fixing as a class rather than one by one:
 
 - **Where:** `src/contexts/AuthContext.tsx:48-68` (`isAuthTokenValidInLocalStorage`), `:272-316`
 - **Defect:** The spurious-SIGNED_OUT check reads only `localStorage`. Since #375, session-only users keep their token in `sessionStorage` (`src/lib/supabase/client.ts:142-146`), so for them every transient SIGNED_OUT counts as real.
-- **Failure scenario:** A transient Realtime/RLS 401 makes AuthContext null the user and call `clearKeys()`, which deletes the IndexedDB private key and `messaging_queued_messages`. Unsent offline messages are lost and the user is redirected to `/`.
+- **Failure scenario:** Under auth-js 2.72, a failed token refresh (not Realtime or RLS, which auth-js never reacts to; #1298) fires SIGNED_OUT with the token still valid, and AuthContext nulls the user and calls `clearKeys()`, which deletes the IndexedDB private key and `messaging_queued_messages`. Unsent offline messages are lost and the user is redirected to `/`.
 - **Fix:** Read the token through the same store logic the adapter uses (`createAuthStorage().getItem(key)`).
 - **Confidence:** confirmed
 
@@ -598,7 +598,7 @@ Grouped, because they share one fix pattern: assert the positive outcome with no
 
 ### `refreshSession`/`retry` in AuthContext ignore returned errors
 
-- **Where:** `src/contexts/AuthContext.tsx:411-415`, `:419-424`
+- **Where:** `src/contexts/AuthContext.tsx:411-415`, `:422-427`
 - **Defect:** Both destructure only `data`, and Supabase returns errors rather than throwing them.
 - **Failure scenario:** A network blip during `refreshSession()` after a profile update shows the user as signed out while the token and keys remain.
 - **Fix:** Check `error`, keep the current session on failure, and set the error state.
