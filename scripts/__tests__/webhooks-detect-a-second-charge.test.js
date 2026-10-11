@@ -119,7 +119,7 @@ describe('the payment webhooks detect a second charge on one intent (#1342)', ()
     assert.match(
       code(PAYPAL),
       /updateError\?\.code === PG_UNIQUE_VIOLATION && orderId\b/,
-      'paypal-webhook classifies an update collision even when it fell back to the oldest row'
+      'paypal-webhook runs the second-charge check on an update collision with no order id, where the row is only the oldest guess'
     );
   });
 

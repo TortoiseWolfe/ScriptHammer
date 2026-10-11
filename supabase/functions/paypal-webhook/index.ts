@@ -379,8 +379,9 @@ async function handlePaymentCompleted(
     return { handled: true, related_payment_id: updated.id };
   }
 
-  // Defensive fallback: no row exists for this intent (payment never went
-  // through create-paypal-order). Insert one so the payment is still recorded.
+  // Defensive fallback: no row matched — this order's row, or, with no order id,
+  // any PayPal row for the intent (the payment never went through
+  // create-paypal-order). Insert one so the payment is still recorded.
   const { data: inserted, error: insertError } = await supabase
     .from('payment_results')
     .insert({

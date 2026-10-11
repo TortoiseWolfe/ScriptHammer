@@ -54,7 +54,7 @@ export const STALE_INFO_DAYS = 30;
  * @param {number} f.unprocessed        webhook_events rows still not processed
  * @param {number|null} f.newestEventAgeDays  age of the newest webhook_events row, or null if none
  * @param {number} [f.doubleCharged]  orders with more than one succeeded charge across their retry chain
- * @param {number} [f.secondCharges]  webhook events a webhook gave up on as a second charge on ONE intent
+ * @param {number} [f.secondCharges]  distinct second charges on ONE intent (one per charge, however many events gave up on it)
  * @returns {{verdict: 'PASS'|'FAIL', failures: string[], notes: string[]}}
  */
 export function evaluate(f) {
@@ -143,17 +143,17 @@ export function evaluate(f) {
   return { verdict: failures.length ? 'FAIL' : 'PASS', failures, notes };
 }
 
-/**
- * The webhook_events counts the verdict reads. Exported so a test pins the prefix against
- * _shared/second-charge.ts's SECOND_CHARGE_PREFIX: the webhooks write it, this counts it. Second
- * charges are kept OUT of the generic permanently_failed count, so one fact reads as one line.
- */
-//
 // left(..., 14) rather than LIKE: in LIKE an underscore matches any character, so 'second_charge:%'
 // is not quite the literal prefix (blind review).
 const IS_SECOND_CHARGE =
   "left(coalesce(processing_error, ''), 14) = 'second_charge:'";
 
+/**
+ * The webhook_events counts the verdict reads. Exported so a test pins the prefix against
+ * _shared/second-charge.ts's SECOND_CHARGE_PREFIX: the webhooks write it, this counts it. Second
+ * charges are counted per CHARGE and kept OUT of the generic permanently_failed count, so one
+ * fact reads as one line.
+ */
 export const COUNTS_SQL =
   `select count(*) filter (where permanently_failed and not ${IS_SECOND_CHARGE}) as permanently_failed, ` +
   `count(distinct processing_error) filter (where permanently_failed and ${IS_SECOND_CHARGE}) as second_charges, ` +
