@@ -115,7 +115,7 @@ describe('create-stripe-checkout retires earlier sessions before it opens one (#
     // a fresh, payable session. A chain's sessions are few, and they are retrieved in parallel.
     assert.doesNotMatch(
       code(INDEX),
-      /\.from\('stripe_checkout_sessions'\)[\s\S]{0,200}?\.gte\(\s*'created_at'/,
+      /\.from\('stripe_checkout_sessions'\)[\s\S]{0,300}?(\.(gte|gt|lte|lt|filter|or)\(\s*'?created_at|created_at\.(gte|gt|lt|lte))/,
       'the recorded-session lookup is bounded in time again, and will miss an old paid session'
     );
   });
@@ -133,6 +133,18 @@ describe('create-stripe-checkout retires earlier sessions before it opens one (#
       src,
       /resource_missing/,
       'the function classifies Stripe errors itself again'
+    );
+    // Nor may the raw retrieve it wraps catch anything: a catch there that answered "expired" would
+    // get round the helper with no test noticing (blind review).
+    const inner = /retrieve: retrieveOrNull\(([\s\S]*?)\n\s{8}\}\),/.exec(src);
+    assert.ok(
+      inner,
+      'could not find the raw retrieve passed to retrieveOrNull'
+    );
+    assert.doesNotMatch(
+      inner[1],
+      /\bcatch\b/,
+      'the raw retrieve catches errors itself, around the helper'
     );
   });
 
