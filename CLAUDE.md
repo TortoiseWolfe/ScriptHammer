@@ -838,7 +838,9 @@ tracked in fact. If you intend to untrack something, `git rm --cached` is the ac
 
 Direct pushes are rejected for everyone, admins included (#414). Work on a branch and open a PR — there is no other route in.
 
-Required checks are **`Test (20.x)`, `accessibility`, `E2E (local) result`, `Conformance result`, `Component Structure result`, `Auth Config Drift result`, and `Signup Mailer result`** — seven, as of 2026-08-21 (#572). Every one comes from a workflow with no trigger `paths:` filter, which is what makes them safe to require.
+Required checks are **`Test`, `accessibility`, `E2E (local) result`, `Conformance result`, `Component Structure result`, `Auth Config Drift result`, and `Signup Mailer result`** — seven, as of 2026-08-21 (#572). Every one comes from a workflow with no trigger `paths:` filter, which is what makes them safe to require.
+
+`Test` was `Test (20.x)` until #1353. The job was a one-version matrix, and GitHub appends a matrix value to a job's name, so every Node upgrade renamed a required check and left branch protection waiting on the old name forever. It has no matrix now; the Node version is in its setup step, and changing it no longer touches protection.
 
 `E2E (local) result` joined them when #739 closed. It is safe to require for the same reason: `e2e-local.yml` has no trigger `paths` filter, filtering happens in its `changes` job, and the aggregate reports green when nothing ran (see the two-lanes section above).
 

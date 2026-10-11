@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Decide whether a diff needs `Test (20.x)`'s three expensive steps (#1218).
+ * Decide whether a diff needs `Test`'s three expensive steps (#1218).
  *
  * WHY. Coverage, the app build and the Storybook build are ~9 of the ~10 minutes this job
  * takes, and it is the highest-frequency required check in the repo. Measured on #1217,
@@ -8,7 +8,7 @@
  * Storybook 0.6. Net cost is $0.00 — a public repo on standard runners is unmetered — so
  * what this buys is queue time and feedback latency, not money.
  *
- * WHY NOT A TRIGGER `paths:` FILTER. `Test (20.x)` is a REQUIRED context, and it is the
+ * WHY NOT A TRIGGER `paths:` FILTER. `Test` is a REQUIRED context, and it is the
  * job itself: there is no always-reporting aggregate to hide behind. A required check that
  * never reports is PENDING FOREVER, not skipped, so a `paths:` filter would make every
  * docs-only PR permanently unmergeable. For the same reason the gate is applied per-STEP

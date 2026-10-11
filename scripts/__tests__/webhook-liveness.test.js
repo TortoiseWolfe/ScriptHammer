@@ -2,7 +2,7 @@
  * Guards scripts/ci/check-webhook-liveness.mjs (#1183).
  *
  * The check itself runs on a schedule against production, where nobody watches it fail. So the
- * VERDICT function is driven here, under the required `Test (20.x)` check, in both directions —
+ * VERDICT function is driven here, under the required `Test` check, in both directions —
  * including the real pre-fix #1180 state, so the gate is pinned to the incident it exists for.
  *
  * Two of these tests assert that a signal does NOT fail the run. That is deliberate and is the

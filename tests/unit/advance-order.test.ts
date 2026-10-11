@@ -5,7 +5,7 @@
  * `supabase/functions/**` and no workflow runs `deno test`, so a test written next to the Edge
  * Function would never execute — the same shape as `send-payment-email` itself, which has a
  * contract test and no caller. `advance-order.ts` imports nothing, so it can be imported here
- * and exercised inside the required `Test (20.x)` check.
+ * and exercised inside the required `Test` check.
  *
  * WHAT IS WORTH ASSERTING. Not "does it update a row" — that is one line. The behaviours that
  * carry risk, and every one of them is a way to hurt a paying customer:

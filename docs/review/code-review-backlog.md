@@ -478,7 +478,7 @@ Grouped, because they share one fix pattern: assert the positive outcome with no
 
 - **Where:** `scripts/ci/ci-docs-only.mjs:62-70`; `.github/workflows/ci.yml:174-176`
 - **Defect:** `*.md` and `docs/**` count as inert, but `tests/unit/no-build-in-dev-container.test.ts` and `src/config/__tests__/site-claims.test.ts` assert on markdown.
-- **Failure scenario:** A docs-only PR that tells readers to run a production build in the dev container (the #293 anti-pattern this scan exists to catch) passes the required `Test (20.x)`, because the scan never runs on it.
+- **Failure scenario:** A docs-only PR that tells readers to run a production build in the dev container (the #293 anti-pattern this scan exists to catch) passes the required `Test`, because the scan never runs on it.
 - **Fix:** Always run the markdown-reading vitest files.
 - **Confidence:** confirmed
 

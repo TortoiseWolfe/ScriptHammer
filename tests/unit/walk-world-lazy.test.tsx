@@ -27,7 +27,7 @@
  * WHY NOT THE E2E THAT ALREADY EXISTS. `tests/e2e/twin-walk-visible.spec.ts` drives this
  * exact URL — and `test.skip`s on software GL. CI runners are software-rendered, so it has
  * never run there, and the whole E2E workflow sits behind a budget gate besides. This file
- * needs no GPU and no backend, so it runs in `Test (20.x)`, which is required.
+ * needs no GPU and no backend, so it runs in `Test`, which is required.
  *
  * WHAT THIS FILE DOES **NOT** COVER — read before trusting a green run.
  *

@@ -1,7 +1,7 @@
 /**
- * `Test (20.x)` skips its build steps on an inert diff — and only then (#1218).
+ * `Test` skips its build steps on an inert diff — and only then (#1218).
  *
- * THE SHAPE THAT WOULD BE CATASTROPHIC. `Test (20.x)` is a REQUIRED context and it is the
+ * THE SHAPE THAT WOULD BE CATASTROPHIC. `Test` is a REQUIRED context and it is the
  * job itself; there is no always-reporting aggregate wrapping it. A trigger `paths:`
  * filter, or moving the decision into a separate job consumed via `needs:`, would make the
  * required check never report on a docs-only PR — and a required check that never reports
@@ -44,7 +44,7 @@ describe('docs-only gating in ci.yml (#1218)', () => {
   it('has NO trigger paths filter — the required check must always report', () => {
     assert.ok(
       !/^\s*(paths|paths-ignore):/m.test(triggers),
-      'ci.yml must not filter its triggers by path. `Test (20.x)` is required and is the ' +
+      'ci.yml must not filter its triggers by path. `Test` is required and is the ' +
         'job itself, so a filtered trigger means it never reports on a docs PR — pending ' +
         'forever, not skipped, and that PR can never merge (#1218).'
     );
