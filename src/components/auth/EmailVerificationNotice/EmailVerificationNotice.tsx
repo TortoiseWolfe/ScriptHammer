@@ -53,9 +53,10 @@ export default function EmailVerificationNotice({
       options: {
         captchaToken: captchaToken ?? undefined,
         // Land where sign-in links are handled (#1255). With no redirect the link went
-        // to the site root, which no longer reads a session from the URL. auth-js 2.72's
-        // resend() sends no PKCE challenge, so this link confirms the address but cannot
-        // sign anyone in; /auth/callback says so and offers sign-in.
+        // to the site root, which no longer reads a session from the URL. Since auth-js
+        // 2.117 (#1298) resend() sends a PKCE challenge, so the link signs the person in
+        // when opened in this browser within GoTrue's five-minute flow state. Anywhere
+        // else it still confirms the address, and /auth/callback offers sign-in.
         emailRedirectTo: getRedirectUrl('/auth/callback'),
       },
     });

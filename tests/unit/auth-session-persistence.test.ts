@@ -142,8 +142,10 @@ describe('auth-token removal guard survives the store change (#375)', () => {
 /**
  * The PKCE code verifier (#1255) is not a session, and must not be stored like one.
  *
- * auth-js writes it under `<storageKey>-code-verifier` when a flow starts (sign-up, password
- * reset, OAuth) and reads it back when the emailed or redirected link lands. Two properties of
+ * auth-js writes it under a key ending `-code-verifier` when a flow starts (sign-up, a resent
+ * confirmation, password reset, OAuth) and reads it back when the emailed or redirected link
+ * lands. Since 2.117 there are three such keys per flow (#1298); the legacy one is used here, and
+ * tests/unit/auth/resend-pkce.test.ts checks the ones the real library writes. Two properties of
  * the session store would break that:
  *
  * - "Remember me" OFF puts auth keys in sessionStorage, which belongs to ONE tab. An emailed link

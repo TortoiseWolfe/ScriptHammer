@@ -65,7 +65,7 @@ Themes worth fixing as a class rather than one by one:
 
 ### `isSupabaseOnline()` never reports offline, so queued payments burn their retries
 
-- **Where:** `src/lib/supabase/client.ts:407-418`; callers `src/lib/payments/connection-listener.ts:43`, `src/lib/payments/payment-service.ts:187`
+- **Where:** `src/lib/supabase/client.ts:422-433`; callers `src/lib/payments/connection-listener.ts:43`, `src/lib/payments/payment-service.ts:187`
 - **Defect:** postgrest-js resolves a failed fetch as `{ error: { code: '', message: 'TypeError: Failed to fetch' } }`. The function returns `!error || error.code !== 'PGRST301'`, which is `true` for that. `PGRST301` means "JWT could not be decoded", not "offline".
 - **Failure scenario:** Offline with a queued payment, every 30s tick sees "online" and calls `sync()`. The fetch fails, and one of the 5 retries is spent per tick, because backoff tops out at 16s, under the 30s tick. After ~2.5 min the row is `failed` and never drains on its own. The offline branch in `createPaymentIntent` is effectively unreachable. It matches only "fetch"/"network" in the message, and Safari says "Load failed", so on Safari nothing is queued at all.
 - **Fix:** Return false when `navigator.onLine === false`, or on an error with empty `code` or `status === 0`. Key the `createPaymentIntent` catch on `error instanceof TypeError`, not on the message text.
@@ -119,17 +119,17 @@ Themes worth fixing as a class rather than one by one:
 - **Fix:** Use a functional update, or keep a ref to the latest `value`.
 - **Confidence:** confirmed
 
-### With "Remember me" off, any spurious SIGNED_OUT wipes the keys and the offline queue
+### With "Remember me" off, any spurious SIGNED_OUT wipes the keys and the offline queue (#1351)
 
-- **Where:** `src/contexts/AuthContext.tsx:48-68` (`isAuthTokenValidInLocalStorage`), `:269-313`
+- **Where:** `src/contexts/AuthContext.tsx:48-68` (`isAuthTokenValidInLocalStorage`), `:272-316`
 - **Defect:** The spurious-SIGNED_OUT check reads only `localStorage`. Since #375, session-only users keep their token in `sessionStorage` (`src/lib/supabase/client.ts:142-146`), so for them every transient SIGNED_OUT counts as real.
-- **Failure scenario:** A transient Realtime/RLS 401 makes AuthContext null the user and call `clearKeys()`, which deletes the IndexedDB private key and `messaging_queued_messages`. Unsent offline messages are lost and the user is redirected to `/`.
+- **Failure scenario:** Under auth-js 2.72, a failed token refresh (not Realtime or RLS, which auth-js never reacts to; #1298) fires SIGNED_OUT with the token still valid, and AuthContext nulls the user and calls `clearKeys()`, which deletes the IndexedDB private key and `messaging_queued_messages`. Unsent offline messages are lost and the user is redirected to `/`.
 - **Fix:** Read the token through the same store logic the adapter uses (`createAuthStorage().getItem(key)`).
 - **Confidence:** confirmed
 
-### Account deletion leaves a signed-in ghost session and token behind
+### Account deletion leaves a signed-in ghost session and token behind (#1351)
 
-- **Where:** `src/services/messaging/gdpr-service.ts:616`, `src/lib/supabase/client.ts:261-268`, `src/contexts/AuthContext.tsx:269-276`
+- **Where:** `src/services/messaging/gdpr-service.ts:616`, `src/lib/supabase/client.ts:267-274`, `src/contexts/AuthContext.tsx:272-279`
 - **Defect:** The code calls `supabase.auth.signOut()` directly, bypassing `AuthContext.signOut`. The storage adapter therefore refuses to remove the token, and AuthContext then treats the SIGNED_OUT as spurious.
 - **Failure scenario:** After deletion, the client-side push to `/sign-in` still shows the deleted user as signed in. The dead token stays, and every later page load runs the ~7s refresh-retry loop before ending in `AUTH_FAILED`.
 - **Fix:** Route deletion through `AuthContext.signOut()` (or `setAllowAuthTokenRemoval`), use `scope: 'local'`, and do a full reload.
@@ -323,9 +323,9 @@ Themes worth fixing as a class rather than one by one:
 - **Fix:** Tie the verdict to a user id, and reset both values when the id changes.
 - **Confidence:** plausible (depends on the cross-tab auth event not setting `isLoading`)
 
-### Real server-side revocation is hidden by the token-removal guard
+### Real server-side revocation is hidden by the token-removal guard (#1351)
 
-- **Where:** `src/lib/supabase/client.ts:261-268`, `src/contexts/AuthContext.tsx:269-276`
+- **Where:** `src/lib/supabase/client.ts:267-274`, `src/contexts/AuthContext.tsx:272-279`
 - **Defect:** The adapter blocks every `auth-token` removal outside explicit sign-out, including auth-js `_removeSession()` after a refresh token is revoked. The stale token then makes the real SIGNED_OUT look spurious.
 - **Failure scenario:** After a password reset elsewhere, "sign out everywhere", or a ban, the UI stays authenticated, the #1257 remote-sign-out key wipe doesn't run, and later loads end in `AUTH_FAILED`.
 - **Fix:** Allow removal once `getUser()` confirms the session is invalid, instead of inferring validity from `expires_at`.
@@ -598,7 +598,7 @@ Grouped, because they share one fix pattern: assert the positive outcome with no
 
 ### `refreshSession`/`retry` in AuthContext ignore returned errors
 
-- **Where:** `src/contexts/AuthContext.tsx:408-412`, `:419-424`
+- **Where:** `src/contexts/AuthContext.tsx:411-415`, `:422-427`
 - **Defect:** Both destructure only `data`, and Supabase returns errors rather than throwing them.
 - **Failure scenario:** A network blip during `refreshSession()` after a profile update shows the user as signed out while the token and keys remain.
 - **Fix:** Check `error`, keep the current session on failure, and set the error state.

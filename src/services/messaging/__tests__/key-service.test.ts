@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js';
 
 // Valid test UUIDs
 const CURRENT_USER_ID = '00000000-0000-0000-0000-000000000001';
@@ -57,6 +57,22 @@ function ownKey(over: Record<string, unknown> = {}) {
     count: null,
     status: 200,
     statusText: 'OK',
+    success: true as const,
+  };
+}
+
+/**
+ * A 404 RPC as supabase-js resolves it. Its type names the PostgrestError CLASS, but the client
+ * resolves the parsed JSON body, a plain object, so that is what this hands back.
+ */
+function rpcNotFound(error: Record<string, string>) {
+  return {
+    data: null,
+    error: error as unknown as PostgrestError,
+    count: null,
+    status: 404,
+    statusText: 'Not Found',
+    success: false as const,
   };
 }
 
@@ -395,19 +411,15 @@ describe('KeyManagementService', () => {
       // answer would let the UI offer to re-initialize and orphan every existing
       // message.
       mockGetPrivateKey.mockResolvedValue({} as CryptoKey);
-      vi.mocked(mockSupabase.rpc).mockResolvedValue({
-        data: null,
-        error: {
+      vi.mocked(mockSupabase.rpc).mockResolvedValue(
+        rpcNotFound({
           message: 'function get_own_encryption_key() does not exist',
           details: '',
           hint: '',
           code: '42883',
           name: 'PostgrestError',
-        },
-        count: null,
-        status: 404,
-        statusText: 'Not Found',
-      });
+        })
+      );
 
       expect(
         await keyManagementService.restoreKeysFromCache(CURRENT_USER_ID)
@@ -420,19 +432,15 @@ describe('KeyManagementService', () => {
       // initialize; initializing OVERWRITES the keypair and permanently orphans
       // every message encrypted to the old one. So this path must surface the
       // error.
-      vi.mocked(mockSupabase.rpc).mockResolvedValue({
-        data: null,
-        error: {
+      vi.mocked(mockSupabase.rpc).mockResolvedValue(
+        rpcNotFound({
           message: 'function get_own_encryption_key() does not exist',
           details: '',
           hint: '',
           code: '42883',
           name: 'PostgrestError',
-        },
-        count: null,
-        status: 404,
-        statusText: 'Not Found',
-      });
+        })
+      );
 
       await expect(keyManagementService.deriveKeys('password')).rejects.toThrow(
         /Failed to read own encryption key/

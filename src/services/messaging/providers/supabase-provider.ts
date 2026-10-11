@@ -581,12 +581,15 @@ export class SupabaseMessagingProvider implements MessagingDataProvider {
       return;
     }
 
-    // 1:1 — pick the participant column for this user.
-    let updateColumn: string;
+    // 1:1 — pick the participant column for this user. Spelled out per column rather than as a
+    // computed key, which the client's types read as "any column" and refuse.
+    let update:
+      | { archived_by_participant_1: boolean }
+      | { archived_by_participant_2: boolean };
     if (conversation.participant_1_id === userId) {
-      updateColumn = 'archived_by_participant_1';
+      update = { archived_by_participant_1: value };
     } else if (conversation.participant_2_id === userId) {
-      updateColumn = 'archived_by_participant_2';
+      update = { archived_by_participant_2: value };
     } else {
       throw new ValidationError(
         'You are not a participant in this conversation',
@@ -596,7 +599,7 @@ export class SupabaseMessagingProvider implements MessagingDataProvider {
 
     const { error: updateError } = await msgClient
       .from('conversations')
-      .update({ [updateColumn]: value })
+      .update(update)
       .eq('id', conversationId)
       .select();
 

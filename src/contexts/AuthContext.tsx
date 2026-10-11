@@ -33,11 +33,11 @@ const logger = createLogger('contexts:auth');
  * Check whether a Supabase auth-token in localStorage is still valid
  * (parseable JSON with a non-expired access_token).
  *
- * Used to distinguish a SPURIOUS SIGNED_OUT (Supabase fired the event due
- * to a transient 401/406 from Realtime / RLS, but the auth-token is still
- * good — recovery happens on the next TOKEN_REFRESHED) from a REAL
- * sign-out (cross-tab signout cleared the token, or refresh-token was
- * revoked, or expires_at has passed).
+ * Used to tell a SPURIOUS SIGNED_OUT from a REAL one (cross-tab sign-out
+ * cleared the token, the refresh token was revoked, or expires_at passed).
+ * The spurious kind came from auth-js 2.72 removing a still-valid session
+ * when a token refresh failed. 2.117 (#1298) no longer does that, so this
+ * now mistakes real sign-outs for spurious ones; #1351 removes it.
  *
  * Returns false on: missing token, JSON parse error, missing expires_at,
  * or expires_at <= now (with a small grace window).
@@ -252,20 +252,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      // Spurious SIGNED_OUT detection. Supabase fires SIGNED_OUT on
-      // transient 401/406 errors from Realtime / RLS, even when the user
-      // is still authenticated and the auth-token in localStorage is
-      // still valid. The next TOKEN_REFRESHED / SIGNED_IN event recovers
-      // automatically. If we ran setUser(null) on the spurious event,
-      // every consumer (useConversationList, EncryptionKeyGate, navbar)
-      // would see user=null and flicker — same UX wart in production
-      // and in E2E. So we distinguish: real signout vs transient hiccup.
+      // Spurious SIGNED_OUT detection. auth-js 2.72 fired SIGNED_OUT when a
+      // token refresh failed, even though the access token in storage was
+      // still valid, and the next TOKEN_REFRESHED / SIGNED_IN recovered. Had
+      // we run setUser(null) on that event, every consumer
+      // (useConversationList, EncryptionKeyGate, navbar) would have seen
+      // user=null and flickered. (Realtime and RLS were blamed; auth-js
+      // reacts to neither.)
       //
       // Heuristic: SIGNED_OUT fired without isLocalSignOut.current AND
       // the auth-token JSON in localStorage still parses to a non-expired
       // access_token → it's spurious; ignore. Otherwise it's real
       // (cross-tab signout, refresh-token revoked, token expired) →
       // proceed with state clearing.
+      //
+      // Since 2.117 (#1298) auth-js keeps a session whose access token is still
+      // valid, so what this suppresses now is a real sign-out. #1351 removes it,
+      // together with the storage adapter's removal guard.
       if (_event === 'SIGNED_OUT' && !isLocalSignOut.current) {
         const tokenStillValid = isAuthTokenValidInLocalStorage();
         if (tokenStillValid) {
