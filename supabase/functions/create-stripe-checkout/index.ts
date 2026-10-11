@@ -41,7 +41,7 @@ import { getAuthenticatedUserId, UnauthorizedError } from '../_shared/auth.ts';
 import { chainIntentIds, gateOnChainPaid } from '../_shared/payment-chain.ts';
 import {
   retirePriorSessions,
-  retrieveOrNull,
+  sessionDepsFor,
 } from '../_shared/checkout-sessions.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
@@ -162,31 +162,9 @@ serve(async (req) => {
       );
     }
     const retire = await retirePriorSessions(
-      {
-        recorded: async (ids) => {
-          const { data, error } = await supabase
-            .from('stripe_checkout_sessions')
-            .select('session_id')
-            // Every age, deliberately: a complete session the webhook never recorded must be found
-            // however old it is. A chain's sessions are few, and they are retrieved in parallel.
-            .in('intent_id', ids);
-          if (error) throw error;
-          return (data ?? []).map((r: { session_id: string }) => r.session_id);
-        },
-        // Only "no such session" (a test/live key switch, another account) is skipped; every
-        // other Stripe error still refuses (retrieveOrNull, tested).
-        retrieve: retrieveOrNull(async (id) => {
-          const s = await stripe.checkout.sessions.retrieve(id);
-          return {
-            id: s.id,
-            status: s.status,
-            payment_status: s.payment_status,
-          };
-        }),
-        expire: async (id) => {
-          await stripe.checkout.sessions.expire(id);
-        },
-      },
+      // The table and Stripe, wired once in _shared/checkout-sessions.ts (#1347): every age of
+      // recorded session, and only "no such session" skipped.
+      sessionDepsFor(supabase, () => stripe),
       chainIds
     );
     if (retire.kind === 'refuse') {

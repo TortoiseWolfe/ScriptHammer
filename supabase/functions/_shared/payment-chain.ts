@@ -58,8 +58,8 @@ export async function chainAlreadyPaid(
 /**
  * Every intent in `intentId`'s retry chain: up to the purchase, then every descendant of it, level
  * by level, within MAX_CHAIN_HOPS. Throws on a read error. The walk chainAlreadyPaid answers over,
- * and the set create-stripe-checkout expires earlier sessions across (#1345): an abandoned session
- * on the purchase stays open while its retry child is given a new one.
+ * and the set whose Stripe sessions create-stripe-checkout and capture-paypal-order retire (#1345,
+ * #1347): an abandoned session on the purchase stays open while its retry child is given a new one.
  */
 export async function chainIntentIds(
   supabase: any,
