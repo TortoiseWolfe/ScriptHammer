@@ -3,6 +3,7 @@ import {
   decidePriorSession,
   retirePriorSessions,
   retrieveOrNull,
+  sessionDepsFor,
   ALREADY_PAID_AT_STRIPE,
   type PriorSession,
   type SessionDeps,
@@ -228,6 +229,172 @@ describe('retrieveOrNull: only "no such session" is skipped (blind review)', () 
       kind: 'refuse',
       status: 500,
       code: 'session_check_failed',
+    });
+  });
+});
+
+describe('sessionDepsFor: the one place the table and Stripe are wired (#1347)', () => {
+  // Both create-stripe-checkout and capture-paypal-order retire a chain's Stripe sessions. One
+  // builder, so the two cannot drift: the lookup's any-age rule and the not-found-only skip live
+  // here, where these tests see them.
+
+  /** stripe_checkout_sessions, answering the intents it is asked about. */
+  function table(
+    rows: { session_id: string; intent_id: string }[],
+    fail = false
+  ) {
+    const seen: {
+      table?: string;
+      select?: string;
+      in?: [string, string[]];
+      other: string[];
+    } = {
+      other: [],
+    };
+    const chain: Record<string, unknown> = {};
+    chain.select = (s: string) => ((seen.select = s), chain);
+    chain.in = (c: string, v: string[]) => ((seen.in = [c, v]), chain);
+    for (const m of [
+      'eq',
+      'gte',
+      'gt',
+      'lt',
+      'lte',
+      'filter',
+      'order',
+      'limit',
+    ])
+      chain[m] = () => (seen.other.push(m), chain);
+    chain.then = (res: (v: unknown) => unknown) =>
+      Promise.resolve(
+        fail
+          ? { data: null, error: { code: '08006' } }
+          : {
+              data: rows
+                .filter((r) => seen.in?.[1].includes(r.intent_id))
+                .map((r) => ({ session_id: r.session_id })),
+              error: null,
+            }
+      ).then(res);
+    return {
+      seen,
+      supabase: { from: (t: string) => ((seen.table = t), chain) },
+    };
+  }
+
+  /** A Stripe client fake, counting how often it was built. */
+  function stripeFake(
+    sessions: Record<string, PriorSession | 'missing' | 'down'>
+  ) {
+    const built = { n: 0 };
+    const expired: string[] = [];
+    const getStripe = () => {
+      built.n++;
+      return {
+        checkout: {
+          sessions: {
+            retrieve: async (id: string) => {
+              const s = sessions[id];
+              if (s === 'missing')
+                throw Object.assign(new Error('No such checkout.session'), {
+                  code: 'resource_missing',
+                });
+              if (s === 'down' || s === undefined)
+                throw Object.assign(new Error('connection reset'), {
+                  code: 'api_connection_error',
+                });
+              return { ...s, extra: 'ignored' };
+            },
+            expire: async (id: string) => {
+              expired.push(id);
+            },
+          },
+        },
+      };
+    };
+    return { getStripe, built, expired };
+  }
+
+  it('reads every recorded session of the chain, of ANY age, and nothing else', async () => {
+    const t = table([
+      { session_id: 'cs_1', intent_id: 'int-1' },
+      { session_id: 'cs_2', intent_id: 'int-2' },
+      { session_id: 'cs_x', intent_id: 'int-other' },
+    ]);
+    const deps = sessionDepsFor(t.supabase, () => {
+      throw new Error('not needed');
+    });
+    expect(await deps.recorded(['int-1', 'int-2'])).toEqual(['cs_1', 'cs_2']);
+    expect(t.seen).toMatchObject({
+      table: 'stripe_checkout_sessions',
+      select: 'session_id',
+      in: ['intent_id', ['int-1', 'int-2']],
+    });
+    // No time bound and no other filter: an old complete session must still be found (#1345).
+    expect(t.seen.other).toEqual([]);
+  });
+
+  it('throws when the record cannot be read', async () => {
+    const deps = sessionDepsFor(table([], true).supabase, () => {
+      throw new Error('x');
+    });
+    await expect(deps.recorded(['int-1'])).rejects.toMatchObject({
+      code: '08006',
+    });
+  });
+
+  it('maps Stripe sessions to what is decided on, skips only a missing one, and expires through Stripe', async () => {
+    const s = stripeFake({
+      cs_open: { id: 'cs_open', status: 'open', payment_status: 'unpaid' },
+      cs_gone: 'missing',
+    });
+    const deps = sessionDepsFor(table([]).supabase, s.getStripe);
+    expect(await deps.retrieve('cs_open')).toEqual({
+      id: 'cs_open',
+      status: 'open',
+      payment_status: 'unpaid',
+    });
+    expect(await deps.retrieve('cs_gone')).toBeNull();
+    await deps.expire('cs_open');
+    expect(s.expired).toEqual(['cs_open']);
+  });
+
+  it('a Stripe outage refuses, through retirePriorSessions', async () => {
+    const t = table([{ session_id: 'cs_1', intent_id: 'int-1' }]);
+    const deps = sessionDepsFor(
+      t.supabase,
+      stripeFake({ cs_1: 'down' }).getStripe
+    );
+    expect(await retirePriorSessions(deps, ['int-1'])).toMatchObject({
+      kind: 'refuse',
+      status: 500,
+      code: 'session_check_failed',
+    });
+  });
+
+  it('never builds a Stripe client when the chain has no recorded sessions', async () => {
+    // A PayPal-only fork has no Stripe key and no sessions; capturing its payment must not need one.
+    const s = stripeFake({});
+    const deps = sessionDepsFor(table([]).supabase, () => {
+      s.built.n++;
+      throw new Error('STRIPE_SECRET_KEY is not set');
+    });
+    expect(await retirePriorSessions(deps, ['int-1'])).toEqual({
+      kind: 'proceed',
+      expired: [],
+    });
+    expect(s.built.n).toBe(0);
+  });
+
+  it('refuses when sessions ARE recorded but no Stripe client can be built', async () => {
+    // Recorded sessions and no key: guessing they are closed would be the bug. Fail closed.
+    const t = table([{ session_id: 'cs_1', intent_id: 'int-1' }]);
+    const deps = sessionDepsFor(t.supabase, () => {
+      throw new Error('STRIPE_SECRET_KEY is not set');
+    });
+    expect(await retirePriorSessions(deps, ['int-1'])).toMatchObject({
+      kind: 'refuse',
+      status: 500,
     });
   });
 });

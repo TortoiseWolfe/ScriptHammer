@@ -21,9 +21,11 @@
  *   403 Forbidden: { error: string } (caller does not own the underlying intent)
  *   404 Not Found: { error: string } (no payment_results row for this order_id)
  *   405 Method Not Allowed: { error: string }
- *   409 Conflict: { error, code: 'already_paid' } (another attempt in the chain is paid, #1342)
- *   500 Internal Server Error: { error, code? } (PayPal call failed, or code 'paid_check_failed':
- *     the paid check could not be read, so nothing was captured)
+ *   409 Conflict: { error, code: 'already_paid' } (another attempt in the chain is paid, #1342,
+ *     or a Stripe session for the chain is complete at Stripe, #1347)
+ *   500 Internal Server Error: { error, code? } (PayPal call failed; 'paid_check_failed': the paid
+ *     check could not be read; 'session_check_failed': the chain's Stripe sessions could not be
+ *     checked or closed, #1347. In both coded cases nothing was captured)
  *
  * SECURITY MODEL
  *   - JWT verified via SUPABASE_ANON_KEY (auto-injected; NEXT_PUBLIC_ fallback) (getAuthenticatedUserId)
@@ -44,7 +46,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAuthenticatedUserId, UnauthorizedError } from '../_shared/auth.ts';
 import { getPayPalAccessToken } from '../_shared/paypal.ts';
-import { gateOnChainPaid } from '../_shared/payment-chain.ts';
+import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
+import { chainIntentIds, gateOnChainPaid } from '../_shared/payment-chain.ts';
+import {
+  retirePriorSessions,
+  sessionDepsFor,
+} from '../_shared/checkout-sessions.ts';
 
 const supabaseUrl =
   Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
@@ -57,6 +64,27 @@ const PAYPAL_API =
 
 interface RequestBody {
   order_id?: string;
+}
+
+/**
+ * A Stripe client, built only when this purchase has recorded Stripe sessions to close (#1347).
+ * A PayPal-only fork has no Stripe key and no sessions, and its captures never reach this. With
+ * sessions recorded and no key, it throws, and the retirement refuses with 500: assuming the
+ * sessions are closed would be the double charge this exists to stop.
+ */
+let stripeClient: Stripe | null = null;
+function getStripe(): Stripe {
+  const key = Deno.env.get('STRIPE_SECRET_KEY');
+  if (!key) {
+    throw new Error(
+      'STRIPE_SECRET_KEY is not set, but this purchase has Stripe sessions to close'
+    );
+  }
+  stripeClient ??= new Stripe(key, {
+    apiVersion: '2024-06-20',
+    httpClient: Stripe.createFetchHttpClient(),
+  });
+  return stripeClient;
 }
 
 serve(async (req) => {
@@ -133,6 +161,45 @@ serve(async (req) => {
       );
     }
 
+    // AND NO STRIPE SESSION LEFT PAYABLE BESIDE IT (#1347). The gate above sees what the webhooks
+    // have recorded. A Stripe session for this purchase that is still open could be paid after
+    // this capture, and one already complete at Stripe (its webhook not yet landed) means the
+    // buyer has paid there. So, before capturing: expire the chain's open Stripe sessions, and
+    // refuse if one is complete. Same rules, and the same code, as create-stripe-checkout.
+    let chainIds: string[];
+    try {
+      chainIds = await chainIntentIds(supabase, result.intent_id);
+    } catch (chainError) {
+      console.error(
+        'capture-paypal-order: could not read the retry chain',
+        chainError
+      );
+      return jsonResponse(
+        req,
+        {
+          error: 'Could not prepare this payment. Please try again.',
+          code: 'session_check_failed',
+        },
+        500
+      );
+    }
+    const retire = await retirePriorSessions(
+      sessionDepsFor(supabase, getStripe),
+      chainIds
+    );
+    if (retire.kind === 'refuse') {
+      return jsonResponse(
+        req,
+        { error: retire.error, code: retire.code },
+        retire.status
+      );
+    }
+    if (retire.expired.length) {
+      console.log(
+        `capture-paypal-order: expired ${retire.expired.length} Stripe session(s) for ${result.intent_id}'s chain before capturing ${orderId}: ${retire.expired.join(', ')}`
+      );
+    }
+
     // Capture the order via the PayPal Orders v2 API.
     const accessToken = await getPayPalAccessToken(PAYPAL_API, (name) =>
       Deno.env.get(name)
@@ -177,8 +244,8 @@ serve(async (req) => {
     // THIS intent is already succeeded, and today that has two causes:
     //   - a second order on this intent captured in the window since the check above, which IS
     //     a second charge; or
-    //   - paypal-webhook writing the intent's OLDEST PayPal row instead of the captured order's
-    //     (#1342 stage 2), when the buyer paid exactly once.
+    //   - paypal-webhook's fallback for a capture carrying no order id, which writes the intent's
+    //     OLDEST PayPal row instead of the captured order's (#1346), when the buyer paid once.
     // Check the order in PayPal before refunding anything. And a race across two DIFFERENT intents
     // in one chain is not seen here at all: the index is per intent, so both writes succeed.
     //
@@ -189,9 +256,35 @@ serve(async (req) => {
         `capture-paypal-order: PayPal captured order ${orderId} (${status}) but recording it failed`,
         recordError
       );
-      return jsonResponse(req, { status, recorded: false });
     }
 
+    // SWEEP AGAIN, BEST EFFORT (#1347). A Stripe session opened for this purchase in the seconds
+    // since the retirement above would otherwise stay payable beside a capture that has now
+    // succeeded. The payment has gone through, so nothing here changes the answer: it is logged,
+    // and a COMPLETE session found now is a second charge, said so loudly.
+    if (status === 'COMPLETED') {
+      const sweep = await retirePriorSessions(
+        sessionDepsFor(supabase, getStripe),
+        chainIds
+      );
+      if (sweep.kind === 'refuse' && sweep.code === 'already_paid') {
+        console.error(
+          `capture-paypal-order: a Stripe session for ${result.intent_id}'s chain is COMPLETE beside PayPal capture ${orderId}: a second charge, which needs a refund`
+        );
+      } else if (sweep.kind === 'refuse') {
+        console.error(
+          `capture-paypal-order: could not sweep Stripe sessions after capturing ${orderId}`
+        );
+      } else if (sweep.expired.length) {
+        console.log(
+          `capture-paypal-order: expired ${sweep.expired.length} Stripe session(s) opened during capture ${orderId}: ${sweep.expired.join(', ')}`
+        );
+      }
+    }
+
+    if (recordError) {
+      return jsonResponse(req, { status, recorded: false });
+    }
     return jsonResponse(req, { status });
   } catch (err) {
     if (err instanceof UnauthorizedError) {

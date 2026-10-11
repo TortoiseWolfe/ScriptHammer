@@ -98,12 +98,13 @@ describe('create-stripe-checkout retires earlier sessions before it opens one (#
     assert.match(
       src,
       new RegExp(
-        `await retirePriorSessions\\([\\s\\S]*?\\},\\s*${name}\\s*\\)`
+        `await retirePriorSessions\\(\\s*sessionDepsFor\\([^;]*?,\\s*${name}\\s*\\)`
       ),
-      `retirePriorSessions is not given the walked chain (${name})`
+      `retirePriorSessions is not given the walked chain (${name}), through sessionDepsFor`
     );
+    // The lookup itself lives in the shared builder (#1347), tested in checkout-sessions.test.ts.
     assert.match(
-      src,
+      code(HELPER),
       /\.from\('stripe_checkout_sessions'\)\s*\.select\('session_id'\)\s*\.in\('intent_id',/,
       'the recorded sessions are not looked up for the chain'
     );
@@ -114,7 +115,7 @@ describe('create-stripe-checkout retires earlier sessions before it opens one (#
     // recorded by an outage longer than a day (#1180 lasted 31), and the buyer pressing Retry got
     // a fresh, payable session. A chain's sessions are few, and they are retrieved in parallel.
     assert.doesNotMatch(
-      code(INDEX),
+      code(HELPER),
       /\.from\('stripe_checkout_sessions'\)[\s\S]{0,300}?(\.(gte|gt|lte|lt|filter|or)\(\s*'?created_at|created_at\.(gte|gt|lt|lte))/,
       'the recorded-session lookup is bounded in time again, and will miss an old paid session'
     );
@@ -122,21 +123,27 @@ describe('create-stripe-checkout retires earlier sessions before it opens one (#
 
   it('skips only "no such session", through the tested helper', () => {
     // The classification lives in retrieveOrNull, where tests/unit/checkout-sessions.test.ts can
-    // see it; inline in the function, widening its catch would turn an outage into a skip.
-    const src = code(INDEX);
+    // see it; inline in the function, widening its catch would turn an outage into a skip. Since
+    // #1347 the whole wiring is the shared sessionDepsFor, which capture-paypal-order uses too.
     assert.match(
-      src,
-      /retrieve: retrieveOrNull\(/,
-      'retrieve does not go through retrieveOrNull'
+      code(INDEX),
+      /sessionDepsFor\(/,
+      'the function wires the table and Stripe itself instead of through sessionDepsFor'
     );
     assert.doesNotMatch(
-      src,
+      code(INDEX),
       /resource_missing/,
       'the function classifies Stripe errors itself again'
     );
+    const src = code(HELPER);
+    assert.match(
+      src,
+      /retrieve: retrieveOrNull\(/,
+      'sessionDepsFor does not retrieve through retrieveOrNull'
+    );
     // Nor may the raw retrieve it wraps catch anything: a catch there that answered "expired" would
     // get round the helper with no test noticing (blind review).
-    const inner = /retrieve: retrieveOrNull\(([\s\S]*?)\n\s{8}\}\),/.exec(src);
+    const inner = /retrieve: retrieveOrNull\(([\s\S]*?)\n\s*\}\),/.exec(src);
     assert.ok(
       inner,
       'could not find the raw retrieve passed to retrieveOrNull'

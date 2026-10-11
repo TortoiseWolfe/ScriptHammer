@@ -96,6 +96,55 @@ export function retrieveOrNull(
   };
 }
 
+/** The part of the Stripe SDK the retirement uses, so a fake can stand in for it in tests. */
+export interface StripeSessionsApi {
+  checkout: {
+    sessions: {
+      retrieve(sessionId: string): Promise<{
+        id: string;
+        status: PriorSession['status'];
+        payment_status: PriorSession['payment_status'];
+      }>;
+      expire(sessionId: string): Promise<unknown>;
+    };
+  };
+}
+
+/**
+ * The table and Stripe, wired once, for every function that retires a chain's sessions (#1347):
+ * create-stripe-checkout before it opens a session, capture-paypal-order around a capture. One
+ * builder so the two cannot drift apart. The lookup's any-age rule and the not-found-only skip live
+ * here, where tests/unit/checkout-sessions.test.ts drives them.
+ *
+ * `getStripe` is called only when a recorded session has to be asked about, so a chain with no
+ * Stripe sessions never needs a Stripe key. That is a PayPal-only fork, or a PayPal-only purchase.
+ * If sessions ARE recorded and no client can be built, the error refuses with 500, like any other.
+ */
+export function sessionDepsFor(
+  supabase: any,
+  getStripe: () => StripeSessionsApi
+): SessionDeps {
+  return {
+    recorded: async (intentIds) => {
+      const { data, error } = await supabase
+        .from('stripe_checkout_sessions')
+        .select('session_id')
+        // Every age, deliberately: a complete session the webhook never recorded must be found
+        // however old it is (#1345). A chain's sessions are few, and they are retrieved in parallel.
+        .in('intent_id', intentIds);
+      if (error) throw error;
+      return (data ?? []).map((r: { session_id: string }) => r.session_id);
+    },
+    retrieve: retrieveOrNull(async (id) => {
+      const s = await getStripe().checkout.sessions.retrieve(id);
+      return { id: s.id, status: s.status, payment_status: s.payment_status };
+    }),
+    expire: async (id) => {
+      await getStripe().checkout.sessions.expire(id);
+    },
+  };
+}
+
 export type RetireResult =
   | { kind: 'proceed'; expired: string[] }
   | {
