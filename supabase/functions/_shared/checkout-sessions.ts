@@ -20,7 +20,9 @@
  *     The client's isProcessing guard keeps a double click from reaching it;
  *   - sessions opened before this shipped were never recorded, so for up to 24 hours after the
  *     deploy an old open session can still sit beside a new one;
- *   - an open Stripe session alongside a PayPal payment for the same chain (#1347).
+ *   - an open Stripe session alongside a PayPal payment for the same chain (#1347);
+ *   - a Stripe ACCOUNT switch within 24 hours of a session opening: the old account's session is
+ *     not found under the new keys, so it is skipped here, yet the buyer can still pay it there.
  */
 
 /** The fields of a Stripe Checkout Session this decides on. */
@@ -60,7 +62,11 @@ export function decidePriorSession(s: PriorSession): PriorDecision {
 }
 
 export interface SessionDeps {
-  /** Session ids recorded for any of these intents (stripe_checkout_sessions), recent enough to be open. */
+  /**
+   * Every session id recorded for any of these intents (stripe_checkout_sessions), of ANY age: a
+   * complete session the webhook never recorded must be found however old it is, or a long webhook
+   * outage would let a buyer who has paid be handed a new session (blind review).
+   */
   recorded(intentIds: string[]): Promise<string[]>;
   /**
    * The session as Stripe has it, or null when Stripe has no such session: recorded under other
@@ -69,6 +75,25 @@ export interface SessionDeps {
    */
   retrieve(sessionId: string): Promise<PriorSession | null>;
   expire(sessionId: string): Promise<void>;
+}
+
+/**
+ * Wraps a raw Stripe retrieve as SessionDeps.retrieve: ONLY "no such session" becomes null, and
+ * every other error is rethrown, so retirePriorSessions refuses with 500. Here rather than inline in
+ * the function so a test can see it: widened to swallow every error, a Stripe outage would read as
+ * "nothing to retire" and open a new session beside an open one, the bug this exists to stop.
+ */
+export function retrieveOrNull(
+  retrieve: (sessionId: string) => Promise<PriorSession>
+): (sessionId: string) => Promise<PriorSession | null> {
+  return async (sessionId) => {
+    try {
+      return await retrieve(sessionId);
+    } catch (e) {
+      if ((e as { code?: unknown })?.code === 'resource_missing') return null;
+      throw e;
+    }
+  };
 }
 
 export type RetireResult =

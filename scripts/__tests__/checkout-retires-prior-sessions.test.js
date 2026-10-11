@@ -109,13 +109,30 @@ describe('create-stripe-checkout retires earlier sessions before it opens one (#
     );
   });
 
-  it('looks only at sessions young enough to be open', () => {
-    // Stripe sessions last at most 24 hours; without the bound every checkout re-fetches every
-    // session the chain ever had, one Stripe call each.
-    assert.match(
+  it('finds a complete session of ANY age, so a long webhook outage cannot hand a paid buyer a new one', () => {
+    // A 25-hour bound was tried (blind review): it hid a session that was paid at Stripe but never
+    // recorded by an outage longer than a day (#1180 lasted 31), and the buyer pressing Retry got
+    // a fresh, payable session. A chain's sessions are few, and they are retrieved in parallel.
+    assert.doesNotMatch(
       code(INDEX),
-      /\.in\('intent_id', ids\)\s*\.gte\(\s*'created_at',/,
-      'the recorded-session lookup is unbounded in time'
+      /\.from\('stripe_checkout_sessions'\)[\s\S]{0,200}?\.gte\(\s*'created_at'/,
+      'the recorded-session lookup is bounded in time again, and will miss an old paid session'
+    );
+  });
+
+  it('skips only "no such session", through the tested helper', () => {
+    // The classification lives in retrieveOrNull, where tests/unit/checkout-sessions.test.ts can
+    // see it; inline in the function, widening its catch would turn an outage into a skip.
+    const src = code(INDEX);
+    assert.match(
+      src,
+      /retrieve: retrieveOrNull\(/,
+      'retrieve does not go through retrieveOrNull'
+    );
+    assert.doesNotMatch(
+      src,
+      /resource_missing/,
+      'the function classifies Stripe errors itself again'
     );
   });
 

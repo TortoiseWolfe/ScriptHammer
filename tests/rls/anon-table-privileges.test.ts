@@ -151,7 +151,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
       ).toBeGreaterThan(0);
     });
 
-    it('anon holds nothing on any of the ten', () => {
+    it('anon holds nothing on any of them', () => {
       // The headline. Eight of these tables could be emptied by a visitor with no
       // account at all, because a TRUNCATE consults no policy.
       const held = TABLES.filter((t) => grants[t].anon.length > 0).map(

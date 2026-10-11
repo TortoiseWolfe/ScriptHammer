@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   decidePriorSession,
   retirePriorSessions,
+  retrieveOrNull,
   ALREADY_PAID_AT_STRIPE,
   type PriorSession,
   type SessionDeps,
@@ -181,5 +182,52 @@ describe('the refusal reads like the other doors', () => {
   it('is the same sentence the paid gate and create-order use', () => {
     // A literal in its own module (no imports, for vitest and tsc); pinned here.
     expect(ALREADY_PAID_AT_STRIPE).toBe(ALREADY_PAID_MESSAGE);
+  });
+});
+
+describe('retrieveOrNull: only "no such session" is skipped (blind review)', () => {
+  const open: PriorSession = {
+    id: 'cs_1',
+    status: 'open',
+    payment_status: 'unpaid',
+  };
+
+  it('passes a session through', async () => {
+    expect(await retrieveOrNull(async () => open)('cs_1')).toEqual(open);
+  });
+
+  it("turns Stripe's resource_missing into null", async () => {
+    const gone = retrieveOrNull(async () => {
+      throw Object.assign(new Error('No such checkout.session'), {
+        code: 'resource_missing',
+      });
+    });
+    expect(await gone('cs_1')).toBeNull();
+  });
+
+  it('rethrows every other error, so an outage refuses rather than opening a second session', async () => {
+    // Widened to swallow everything, a Stripe outage would read as "nothing to retire" and a new
+    // session would open beside an open one: the bug itself.
+    const outage = retrieveOrNull(async () => {
+      throw Object.assign(new Error('connection reset'), {
+        code: 'api_connection_error',
+      });
+    });
+    await expect(outage('cs_1')).rejects.toThrow('connection reset');
+    const r = await retirePriorSessions(
+      {
+        recorded: async () => ['cs_1'],
+        retrieve: outage,
+        expire: async () => {
+          throw new Error('must not be reached');
+        },
+      },
+      ['int-1']
+    );
+    expect(r).toMatchObject({
+      kind: 'refuse',
+      status: 500,
+      code: 'session_check_failed',
+    });
   });
 });

@@ -39,7 +39,10 @@ import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAuthenticatedUserId, UnauthorizedError } from '../_shared/auth.ts';
 import { chainIntentIds, gateOnChainPaid } from '../_shared/payment-chain.ts';
-import { retirePriorSessions } from '../_shared/checkout-sessions.ts';
+import {
+  retirePriorSessions,
+  retrieveOrNull,
+} from '../_shared/checkout-sessions.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   apiVersion: '2024-06-20',
@@ -160,38 +163,26 @@ serve(async (req) => {
     }
     const retire = await retirePriorSessions(
       {
-        // Only sessions young enough to still be open: Stripe Checkout sessions last at most 24
-        // hours, so an older one is expired or complete, and a complete one that old with no
-        // success recorded is a webhook failure Webhook Liveness already reports. Without the
-        // bound, every checkout would re-fetch every session the chain ever had (blind review).
         recorded: async (ids) => {
           const { data, error } = await supabase
             .from('stripe_checkout_sessions')
             .select('session_id')
-            .in('intent_id', ids)
-            .gte(
-              'created_at',
-              new Date(Date.now() - 25 * 3600_000).toISOString()
-            );
+            // Every age, deliberately: a complete session the webhook never recorded must be found
+            // however old it is. A chain's sessions are few, and they are retrieved in parallel.
+            .in('intent_id', ids);
           if (error) throw error;
           return (data ?? []).map((r: { session_id: string }) => r.session_id);
         },
-        retrieve: async (id) => {
-          try {
-            const s = await stripe.checkout.sessions.retrieve(id);
-            return {
-              id: s.id,
-              status: s.status,
-              payment_status: s.payment_status,
-            };
-          } catch (e) {
-            // Recorded under other keys (a test/live switch, another account): skipped, because
-            // failing here would refuse this chain every checkout until its intent expired.
-            if ((e as { code?: string })?.code === 'resource_missing')
-              return null;
-            throw e;
-          }
-        },
+        // Only "no such session" (a test/live key switch, another account) is skipped; every
+        // other Stripe error still refuses (retrieveOrNull, tested).
+        retrieve: retrieveOrNull(async (id) => {
+          const s = await stripe.checkout.sessions.retrieve(id);
+          return {
+            id: s.id,
+            status: s.status,
+            payment_status: s.payment_status,
+          };
+        }),
         expire: async (id) => {
           await stripe.checkout.sessions.expire(id);
         },
