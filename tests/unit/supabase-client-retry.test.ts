@@ -42,4 +42,33 @@ describe('the app Supabase client', () => {
     // Room for the library's ~7 s of retries, so turning them on fails on the count above, with
     // a message that says why, rather than as a timeout that reads like a flake.
   }, 15_000);
+
+  it("is testing something: the library's own default does retry", async () => {
+    // Without this, the test above would pass vacuously the day postgrest-js stops retrying by
+    // default, and `db.retry: false` would be guarding nothing.
+    const { createClient: createLibraryClient } = await import(
+      '@supabase/supabase-js'
+    );
+    const calls: string[] = [];
+    // A 503 with Retry-After: 0, which the library retries at once rather than after its 1-2-4 s
+    // backoff, so this needs no timers.
+    const unavailable = vi.fn(async (input: RequestInfo | URL) => {
+      calls.push(new URL(String(input)).pathname);
+      return new Response('{}', {
+        status: 503,
+        headers: { 'Content-Type': 'application/json', 'Retry-After': '0' },
+      });
+    });
+    const library = createLibraryClient(restUrl, 'anon-key', {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { fetch: unavailable },
+    });
+
+    const { error } = await library.from('payment_intents').select('id');
+
+    expect(error).not.toBeNull();
+    expect(
+      calls.filter((p) => p.startsWith('/rest/v1/')).length
+    ).toBeGreaterThan(1);
+  });
 });

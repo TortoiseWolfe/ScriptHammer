@@ -92,7 +92,7 @@ export class PaymentQueueAdapter extends BaseOfflineQueue<PaymentQueueItem> {
    */
   async queueSubscriptionUpdate(
     subscriptionId: string,
-    updates: SubscriptionUpdate
+    updates: Omit<SubscriptionUpdate, 'id'>
   ): Promise<PaymentQueueItem> {
     return await this.queue({
       type: 'subscription_update',
@@ -243,7 +243,7 @@ export class PaymentQueueAdapter extends BaseOfflineQueue<PaymentQueueItem> {
     const { error } = await supabase
       .from('subscriptions')
       .update(updates)
-      .eq('id', id as string);
+      .eq('id', id);
 
     if (error) {
       throw new Error(`Failed to update subscription: ${error.message}`);

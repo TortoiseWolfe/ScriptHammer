@@ -47,17 +47,28 @@ function client(answer: (path: string) => { status: number; body: unknown }) {
       headers: { 'Content-Type': 'application/json' },
     });
   });
+  // The adapter, with every deletion the library ASKS for recorded, so a test can check each one
+  // happened rather than guess which keys the library will choose to delete.
+  const adapter = createAuthStorage();
+  const removed: string[] = [];
+  const storage = {
+    ...adapter,
+    removeItem: (key: string) => {
+      removed.push(key);
+      adapter.removeItem(key);
+    },
+  };
   const supabase = createClient('http://abcdefgh.supabase.test', 'anon-key', {
     auth: {
       flowType: 'pkce',
-      storage: createAuthStorage(),
+      storage,
       persistSession: true,
       autoRefreshToken: false,
       detectSessionInUrl: false,
     },
     global: { fetch },
   });
-  return { supabase, calls };
+  return { supabase, calls, removed };
 }
 
 const verifierKeys = (store: Storage) =>
@@ -107,8 +118,8 @@ describe('resend() is PKCE-bound (#1298)', () => {
     }
   });
 
-  it('lets the library delete the verifier once the code is spent', async () => {
-    const { supabase } = client((path) =>
+  it('honours every verifier deletion the library makes once the code is spent', async () => {
+    const { supabase, removed } = client((path) =>
       path.endsWith('/auth/v1/token')
         ? {
             status: 400,
@@ -121,13 +132,33 @@ describe('resend() is PKCE-bound (#1298)', () => {
       email: 'person@example.test',
       options: { emailRedirectTo: 'http://localhost/auth/callback/' },
     });
-    const written = verifierKeys(window.localStorage);
-    expect(written.length).toBeGreaterThan(0);
+    expect(verifierKeys(window.localStorage).length).toBeGreaterThan(0);
 
-    // 2.117 deletes the flow's verifier after an exchange, whether it succeeded or not.
+    // 2.117 deletes the verifier it used after an exchange, whether it succeeded or not. Without a
+    // flow id in the link that is the legacy key; the per-flow slots stay, capped at five.
     await supabase.auth.exchangeCodeForSession('a-code');
 
-    const left = verifierKeys(window.localStorage);
-    expect(left.length).toBeLessThan(written.length);
+    const asked = removed.filter((k) => k.includes('code-verifier'));
+    expect(asked.length).toBeGreaterThan(0);
+    for (const key of asked) {
+      expect(window.localStorage.getItem(key)).toBeNull();
+      expect(window.sessionStorage.getItem(key)).toBeNull();
+    }
+  });
+
+  it('leaves no verifier behind on sign-out, although the session guard is closed', async () => {
+    const { supabase } = client(ok);
+    await supabase.auth.resend({
+      type: 'signup',
+      email: 'person@example.test',
+      options: { emailRedirectTo: 'http://localhost/auth/callback/' },
+    });
+    // The slot, the index and the legacy key: all three shapes 2.117 writes.
+    expect(verifierKeys(window.localStorage).length).toBe(3);
+
+    await supabase.auth.signOut({ scope: 'local' });
+
+    expect(verifierKeys(window.localStorage)).toEqual([]);
+    expect(verifierKeys(window.sessionStorage)).toEqual([]);
   });
 });

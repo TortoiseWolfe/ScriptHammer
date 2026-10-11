@@ -62,15 +62,15 @@ function ownKey(over: Record<string, unknown> = {}) {
 }
 
 /**
- * A failed RPC as supabase-js resolves it. Its type names the PostgrestError CLASS, but the client
+ * A 404 RPC as supabase-js resolves it. Its type names the PostgrestError CLASS, but the client
  * resolves the parsed JSON body, a plain object, so that is what this hands back.
  */
-function rpcFailure(error: Record<string, string>, status: number) {
+function rpcNotFound(error: Record<string, string>) {
   return {
     data: null,
     error: error as unknown as PostgrestError,
     count: null,
-    status,
+    status: 404,
     statusText: 'Not Found',
     success: false as const,
   };
@@ -412,16 +412,13 @@ describe('KeyManagementService', () => {
       // message.
       mockGetPrivateKey.mockResolvedValue({} as CryptoKey);
       vi.mocked(mockSupabase.rpc).mockResolvedValue(
-        rpcFailure(
-          {
-            message: 'function get_own_encryption_key() does not exist',
-            details: '',
-            hint: '',
-            code: '42883',
-            name: 'PostgrestError',
-          },
-          404
-        )
+        rpcNotFound({
+          message: 'function get_own_encryption_key() does not exist',
+          details: '',
+          hint: '',
+          code: '42883',
+          name: 'PostgrestError',
+        })
       );
 
       expect(
@@ -436,16 +433,13 @@ describe('KeyManagementService', () => {
       // every message encrypted to the old one. So this path must surface the
       // error.
       vi.mocked(mockSupabase.rpc).mockResolvedValue(
-        rpcFailure(
-          {
-            message: 'function get_own_encryption_key() does not exist',
-            details: '',
-            hint: '',
-            code: '42883',
-            name: 'PostgrestError',
-          },
-          404
-        )
+        rpcNotFound({
+          message: 'function get_own_encryption_key() does not exist',
+          details: '',
+          hint: '',
+          code: '42883',
+          name: 'PostgrestError',
+        })
       );
 
       await expect(keyManagementService.deriveKeys('password')).rejects.toThrow(

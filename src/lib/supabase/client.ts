@@ -236,10 +236,12 @@ export function getSessionPersistence(): boolean {
  * 2. `setItem` clears the other store, so the token has exactly ONE home. A
  *    stale copy left behind is the privacy leak #375 is about — an unticked
  *    box that still leaves a session on the machine.
- * 3. `removeItem` keeps the auth-token guard. Supabase auth-js clears the
- *    session on transient 406/403s from Realtime/RLS; without the guard that
- *    wipes the token, fires SIGNED_OUT, and bounces a user with a perfectly
- *    valid access_token back to /sign-in.
+ * 3. `removeItem` keeps the auth-token guard: outside an explicit sign-out it
+ *    refuses to delete the session. It was built against auth-js 2.72, which
+ *    removed a session whose access token was still valid when a token refresh
+ *    failed, firing SIGNED_OUT at a signed-in user. (Realtime and RLS were blamed;
+ *    auth-js reacts to neither.) 2.117 (#1298) keeps such a session, so what the
+ *    guard blocks now is a real sign-out; removing it is #1351.
  *
  * The PKCE code verifier is the exception to all three — see `isCodeVerifierKey`.
  */
@@ -337,17 +339,11 @@ export function createClient(): SupabaseClient<Database> {
         flowType: 'pkce',
         // Custom storage adapter that prevents auth-token removal except
         // during an explicit sign-out (toggled via setAllowAuthTokenRemoval).
-        // Supabase auth-js clears the session on transient 406/403 errors
-        // from Realtime / RLS — without this guard, that transient error
-        // wipes the auth-token, fires SIGNED_OUT, and forces the user back
-        // to /sign-in even though the access_token was still valid. With
-        // the guard, the token persists across the spurious event; the
-        // next TOKEN_REFRESHED / SIGNED_IN fires shortly and recovers.
-        //
-        // That cause was never Realtime or RLS: auth-js reacts to neither. It was a failed
-        // token refresh, which 2.72 answered by removing a session whose access token was
-        // still valid. 2.117 (#1298) keeps such a session, so the guard now blocks only
-        // real sign-outs. Removing it is #1351.
+        // It was built against auth-js 2.72, which removed a session whose
+        // access token was still valid when a token refresh failed, firing
+        // SIGNED_OUT at a signed-in user. 2.117 (#1298) keeps such a session,
+        // so the guard now blocks only real sign-outs (revocation, account
+        // deletion); removing it is #1351. See createAuthStorage, rule 3.
         // This applies in production AND E2E — the test path now exercises
         // exactly the same auth flow real users see.
         //
@@ -382,8 +378,7 @@ export function createClient(): SupabaseClient<Database> {
         // postgrest-js retries a GET on 503, 520 or a rejected fetch by default since 2.102,
         // three times over about seven seconds (#1298). Off, so the upgrade changes nothing
         // here: the offline paths (cached message history, the offline queues) expect a read
-        // to fail at once when the network is gone, and the session lookup in AuthContext
-        // already retries on its own schedule. Turning it on is its own decision.
+        // to fail at once when the network is gone. Turning it on is its own decision.
         retry: false,
       },
     }

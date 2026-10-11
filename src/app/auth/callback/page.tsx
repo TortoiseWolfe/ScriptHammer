@@ -82,7 +82,7 @@ function AuthCallbackContent() {
 
     if (link.code || link.hasTokens) {
       // A real link this browser cannot redeem: opened in another browser, after the
-      // flow expired, or a resent confirmation. The page explains it; nothing to redirect.
+      // flow expired, or sent from the dashboard. The page explains it; nothing to redirect.
       logger.info('Sign-in link could not be redeemed in this browser');
       return;
     }
