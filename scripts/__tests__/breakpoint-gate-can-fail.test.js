@@ -3,7 +3,7 @@
  *
  * WHAT WENT WRONG. #396 catalogues "gates that could not fail" and listed this script
  * as instance 4 — "a gate that exists and is never invoked". It is invoked now
- * (`ci.yml:65`, inside the required `Test (20.x)` lane, plus `validate-ci.sh:89`), but
+ * (`ci.yml:65`, inside the required `Test` lane, plus `validate-ci.sh:89`), but
  * fixing the invocation turned it into a different member of the same family: it ran
  * and could not fail.
  *

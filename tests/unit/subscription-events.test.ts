@@ -3,7 +3,7 @@
  *
  * Stage 1 made a failed event retryable only for handlers that were already safe to run twice.
  * These are the rules that make the subscription handlers safe too, kept pure in
- * `_shared/subscription-events.ts` so they run here under `Test (20.x)`; nothing in CI executes
+ * `_shared/subscription-events.ts` so they run here under `Test`; nothing in CI executes
  * an Edge Function.
  *
  * Several cases below are the exact timelines a blind review used to reject an earlier design,

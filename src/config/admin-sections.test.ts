@@ -13,7 +13,7 @@ import { ADMIN_SECTIONS, ADMIN_SECTION_FLOOR } from './admin-sections';
  * E2E-only fix would have changed nothing about what CI can see, which is the defect this
  * repo catalogues under #396: a guard pointed somewhere it cannot observe.
  *
- * This file runs under `pnpm test:coverage`, which the REQUIRED `Test (20.x)` check
+ * This file runs under `pnpm test:coverage`, which the REQUIRED `Test` check
  * executes. It is the part of #912 that actually gates.
  *
  * WHAT IT CAUGHT. The E2E array listed six tabs while the nav rendered seven —

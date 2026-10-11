@@ -20,7 +20,7 @@
  * A TYPE-ONLY declaration, because this file is imported from two type worlds.
  *
  * It runs under Deno (the Edge Functions), but `tests/unit/advance-order.test.ts` imports it so
- * the logic is covered by the required `Test (20.x)` check — `supabase/functions/**` is excluded
+ * the logic is covered by the required `Test` check — `supabase/functions/**` is excluded
  * from vitest and nothing runs `deno test`, so without that import none of this would ever
  * execute in CI. That import pulls the file into the app's tsconfig, which has no Deno types.
  *

@@ -34,7 +34,7 @@
  * `last_retry_at` is the start of the live claim; NULL means nobody holds one. The retry script
  * that used to write it was deleted with #1261, so this module is its only writer.
  *
- * Imports nothing, so `tests/unit/webhook-claim.test.ts` can drive it under `Test (20.x)`; vitest
+ * Imports nothing, so `tests/unit/webhook-claim.test.ts` can drive it under `Test`; vitest
  * excludes `supabase/functions/**`, and nothing runs `deno test`.
  */
 

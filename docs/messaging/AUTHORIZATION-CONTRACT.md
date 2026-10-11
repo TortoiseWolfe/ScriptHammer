@@ -226,7 +226,7 @@ That was structural rather than careless. The migration is deliberately monolith
 append-only (CLAUDE.md: _"NEVER create separate migration files"_), so it only grows — any
 insertion shifts every citation below it, and nothing ever compared a citation to its
 target. Names cannot rot that way, and `scripts/__tests__/contract-citations.test.js`
-resolves every cited name against the migration on each run of the required `Test (20.x)`
+resolves every cited name against the migration on each run of the required `Test`
 check, so a rename fails CI instead of quietly misleading the next reader.
 
 Write citations in the forms that test understands: `` `"Policy name" ON table` ``,

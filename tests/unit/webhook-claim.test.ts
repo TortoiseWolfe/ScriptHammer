@@ -2,7 +2,7 @@
  * The webhook claim, tested where CI will actually run it (#1307).
  *
  * `vitest.config.ts` excludes `supabase/functions/**` and nothing runs `deno test`, so the claim
- * lives in a dependency-free `_shared` module and is driven from here, under `Test (20.x)`.
+ * lives in a dependency-free `_shared` module and is driven from here, under `Test`.
  *
  * WHAT IS WORTH ASSERTING. Each of these is a way to lose or duplicate a payment:
  *

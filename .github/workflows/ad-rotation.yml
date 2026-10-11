@@ -55,7 +55,7 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: 20.x
+          node-version: '22'
           # v5 defaults this to TRUE, detects pnpm from `packageManager`, then fails with
           # `Unable to locate executable file: pnpm` in a job that installs nothing.
           # Pinned by scripts/__tests__/setup-node-v5-caches-a-manager-it-lacks.test.js.

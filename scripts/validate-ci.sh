@@ -99,7 +99,7 @@ run_check "Breakpoint config" "pnpm validate:breakpoints"
 # 3. Unit tests — FULL RUN ONLY, never under --quick.
 #
 # --quick is what .husky/pre-push invokes, on every single push. This step is
-# ~3m45s and `Test (20.x)` re-runs the identical suite minutes later; it is the
+# ~3m45s and `Test` re-runs the identical suite minutes later; it is the
 # largest single duplication in the loop (#573). The fast checks above (lint,
 # type-check, breakpoints — ~37s combined) stay, because catching a typo before
 # burning a CI slot is worth 37 seconds. Re-running 4282 tests to learn what CI

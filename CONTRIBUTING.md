@@ -464,7 +464,9 @@ Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
    - Request re-review when ready
 
 5. **Merge Requirements**
-   - The two required status checks pass: `Test (20.x)` and `accessibility`
+   - The seven required status checks pass: `Test`, `accessibility`, `E2E (local) result`,
+     `Conformance result`, `Component Structure result`, `Auth Config Drift result` and
+     `Signup Mailer result`
    - `main` is protected, so a PR is the only route in — direct pushes are rejected
      for everyone, admins included
 

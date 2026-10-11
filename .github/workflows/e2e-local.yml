@@ -263,7 +263,7 @@ jobs:
           version: 10.16.1
       - uses: actions/setup-node@v5
         with:
-          node-version: 20.x
+          node-version: '22'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
 
@@ -467,7 +467,7 @@ jobs:
           version: 10.16.1
       - uses: actions/setup-node@v5
         with:
-          node-version: 20.x
+          node-version: '22'
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
 

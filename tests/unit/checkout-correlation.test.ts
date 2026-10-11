@@ -20,7 +20,7 @@
  * Same placement rationale as advance-order.test.ts: `vitest.config.ts` excludes
  * `supabase/functions/**` and no workflow runs `deno test`, so a test beside the function would
  * never execute. `webhook-types.ts` imports nothing, so it runs inside the required
- * `Test (20.x)` check.
+ * `Test` check.
  */
 
 import { describe, it, expect } from 'vitest';
