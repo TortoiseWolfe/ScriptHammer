@@ -195,8 +195,12 @@ export function setSessionPersistence(remember: boolean): void {
 }
 
 /**
- * auth-js keeps a PKCE flow's verifier under `<storageKey>-code-verifier` (#1255). It is a
- * one-time secret for a flow in progress, not a session, and neither session rule fits it:
+ * auth-js keeps a PKCE flow's verifier in storage (#1255). Since 2.117 (#1298) that is one slot
+ * per flow, `<storageKey>-flow-<id>-code-verifier`, an index of them,
+ * `<storageKey>-flows-code-verifier`, and the legacy `<storageKey>-code-verifier` beside them. All
+ * three end in `-code-verifier`; tests/unit/auth/resend-pkce.test.ts checks that against the real
+ * library rather than against this list. It is a one-time secret for a flow in progress, not a
+ * session, and neither session rule fits it:
  *
  * - It must be readable from a NEW tab. An emailed sign-in or reset link opens in one, and with
  *   "Remember me" off the session store is sessionStorage, which belongs to the tab that wrote
@@ -320,11 +324,12 @@ export function createClient(): SupabaseClient<Database> {
     {
       auth: {
         // PKCE binds every sign-in link to the browser that started the flow (#1255).
-        // Starting one — sign-up, password reset, OAuth — stores a random verifier here,
-        // and the link that comes back carries a `?code=` GoTrue exchanges only together
-        // with it. The exchange is a POST from this page, so a static export needs no
-        // server. The implicit flow this replaced put the session itself in the link, and
-        // whoever clicked someone else's link was signed into their account.
+        // Starting one — sign-up, a resent confirmation (#1298), password reset, OAuth —
+        // stores a random verifier here, and the link that comes back carries a `?code=`
+        // GoTrue exchanges only together with it. The exchange is a POST from this page,
+        // so a static export needs no server. The implicit flow this replaced put the
+        // session itself in the link, and whoever clicked someone else's link was signed
+        // into their account.
         //
         // The cost is real and deliberate: an emailed link opened in a different browser,
         // or more than five minutes after it was requested (GoTrue's flow-state lifetime),
@@ -338,6 +343,11 @@ export function createClient(): SupabaseClient<Database> {
         // to /sign-in even though the access_token was still valid. With
         // the guard, the token persists across the spurious event; the
         // next TOKEN_REFRESHED / SIGNED_IN fires shortly and recovers.
+        //
+        // That cause was never Realtime or RLS: auth-js reacts to neither. It was a failed
+        // token refresh, which 2.72 answered by removing a session whose access token was
+        // still valid. 2.117 (#1298) keeps such a session, so the guard now blocks only
+        // real sign-outs. Removing it is #1351.
         // This applies in production AND E2E — the test path now exercises
         // exactly the same auth flow real users see.
         //
@@ -364,7 +374,17 @@ export function createClient(): SupabaseClient<Database> {
         // Read once, when this document builds the client — which is also the only time
         // auth-js looks. Only the two pages a sign-in lands on, and only for a code: see
         // shouldDetectSessionInUrl. Everywhere else a URL cannot sign anyone in or out.
+        // auth-js 2.117 also takes a predicate here, but calls it at that same moment, once
+        // per client, so it would decide nothing a boolean from the same URL does not.
         detectSessionInUrl: shouldDetectSessionInUrl(window.location.href),
+      },
+      db: {
+        // postgrest-js retries a GET on 503, 520 or a rejected fetch by default since 2.102,
+        // three times over about seven seconds (#1298). Off, so the upgrade changes nothing
+        // here: the offline paths (cached message history, the offline queues) expect a read
+        // to fail at once when the network is gone, and the session lookup in AuthContext
+        // already retries on its own schedule. Turning it on is its own decision.
+        retry: false,
       },
     }
   );

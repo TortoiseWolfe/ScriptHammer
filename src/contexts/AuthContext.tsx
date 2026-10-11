@@ -266,6 +266,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // access_token → it's spurious; ignore. Otherwise it's real
       // (cross-tab signout, refresh-token revoked, token expired) →
       // proceed with state clearing.
+      //
+      // Realtime and RLS never caused it: auth-js reacts to neither. A failed token
+      // refresh did, in 2.72. Since 2.117 (#1298) auth-js keeps a session whose access
+      // token is still valid, so what this now suppresses is a real sign-out. #1351
+      // removes it, together with the storage adapter's removal guard.
       if (_event === 'SIGNED_OUT' && !isLocalSignOut.current) {
         const tokenStillValid = isAuthTokenValidInLocalStorage();
         if (tokenStillValid) {

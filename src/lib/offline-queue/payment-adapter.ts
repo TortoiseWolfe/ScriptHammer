@@ -17,7 +17,10 @@ import {
   DEFAULT_QUEUE_CONFIG,
 } from './types';
 import { supabase } from '@/lib/supabase/client';
-import type { Json } from '@/lib/supabase/types';
+import type { Database, Json } from '@/lib/supabase/types';
+
+type SubscriptionUpdate =
+  Database['public']['Tables']['subscriptions']['Update'];
 
 /**
  * Payment queue for offline payment operations
@@ -89,7 +92,7 @@ export class PaymentQueueAdapter extends BaseOfflineQueue<PaymentQueueItem> {
    */
   async queueSubscriptionUpdate(
     subscriptionId: string,
-    updates: Record<string, unknown>
+    updates: SubscriptionUpdate
   ): Promise<PaymentQueueItem> {
     return await this.queue({
       type: 'subscription_update',
@@ -233,7 +236,9 @@ export class PaymentQueueAdapter extends BaseOfflineQueue<PaymentQueueItem> {
   private async executeSubscriptionUpdate(
     data: Record<string, unknown>
   ): Promise<void> {
-    const { id, ...updates } = data;
+    // Written by queueSubscriptionUpdate, which takes the table's own Update type. The queue
+    // stores it as JSON, so the type is restored here rather than re-derived.
+    const { id, ...updates } = data as SubscriptionUpdate & { id: string };
 
     const { error } = await supabase
       .from('subscriptions')

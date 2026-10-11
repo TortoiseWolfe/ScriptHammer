@@ -119,7 +119,7 @@ Themes worth fixing as a class rather than one by one:
 - **Fix:** Use a functional update, or keep a ref to the latest `value`.
 - **Confidence:** confirmed
 
-### With "Remember me" off, any spurious SIGNED_OUT wipes the keys and the offline queue
+### With "Remember me" off, any spurious SIGNED_OUT wipes the keys and the offline queue (#1351)
 
 - **Where:** `src/contexts/AuthContext.tsx:48-68` (`isAuthTokenValidInLocalStorage`), `:269-313`
 - **Defect:** The spurious-SIGNED_OUT check reads only `localStorage`. Since #375, session-only users keep their token in `sessionStorage` (`src/lib/supabase/client.ts:142-146`), so for them every transient SIGNED_OUT counts as real.
@@ -127,7 +127,7 @@ Themes worth fixing as a class rather than one by one:
 - **Fix:** Read the token through the same store logic the adapter uses (`createAuthStorage().getItem(key)`).
 - **Confidence:** confirmed
 
-### Account deletion leaves a signed-in ghost session and token behind
+### Account deletion leaves a signed-in ghost session and token behind (#1351)
 
 - **Where:** `src/services/messaging/gdpr-service.ts:616`, `src/lib/supabase/client.ts:261-268`, `src/contexts/AuthContext.tsx:269-276`
 - **Defect:** The code calls `supabase.auth.signOut()` directly, bypassing `AuthContext.signOut`. The storage adapter therefore refuses to remove the token, and AuthContext then treats the SIGNED_OUT as spurious.
@@ -323,7 +323,7 @@ Themes worth fixing as a class rather than one by one:
 - **Fix:** Tie the verdict to a user id, and reset both values when the id changes.
 - **Confidence:** plausible (depends on the cross-tab auth event not setting `isLoading`)
 
-### Real server-side revocation is hidden by the token-removal guard
+### Real server-side revocation is hidden by the token-removal guard (#1351)
 
 - **Where:** `src/lib/supabase/client.ts:261-268`, `src/contexts/AuthContext.tsx:269-276`
 - **Defect:** The adapter blocks every `auth-token` removal outside explicit sign-out, including auth-js `_removeSession()` after a refresh token is revoked. The stale token then makes the real SIGNED_OUT look spurious.
