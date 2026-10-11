@@ -191,6 +191,19 @@ export async function observe(ref, token, intended = INTENDED) {
   for (const r of rls) {
     if (out[r.table_name]) out[r.table_name].rls = r.relrowsecurity;
   }
+  // A TABLE PRODUCTION DOES NOT HAVE IS ABSENT FROM THE OBSERVATION, not present-and-empty.
+  //
+  // `pg_class` answers for every table that exists, so a name with no row there is not
+  // "RLS state unreadable", it is "no such table". The entries above are pre-filled for
+  // every intended name, which turned that case into `rls: null`, and `evaluate()` reported
+  // it as "could not read RLS state -- treat as a failed observation". That reads like a
+  // credential or API fault. On 2026-10-11 it sent a triage down the path of a rotated
+  // token for a table the migration had gained the previous evening and nobody had applied
+  // (`stripe_checkout_sessions`, #1345), while the other 20 tables read fine with the same
+  // token. `evaluate()` already had a branch for exactly this, "NOT FOUND in production",
+  // and it was unreachable from here: only a hand-built observation could ever hit it.
+  const present = new Set(rls.map((r) => r.table_name));
+  for (const name of names) if (!present.has(name)) delete out[name];
   const note = (bag, priv) => {
     if (!bag.includes(priv)) bag.push(priv);
   };
@@ -422,8 +435,11 @@ export function evaluate(observed, intended = INTENDED) {
     const got = observed?.[table];
     if (!got) {
       problems.push(
-        `${table}: NOT FOUND in production. Either the table was renamed/dropped, or this ` +
-          'check is pointed at the wrong project. Not treated as "no drift".'
+        `${table}: NOT FOUND in production. The migration declares it and production has no ` +
+          'such table. Most often the migration gained it and nobody has applied the change ' +
+          'to production yet (it is applied by hand; no workflow runs it). Otherwise the ' +
+          'table was renamed/dropped, or this check is pointed at the wrong project. Not ' +
+          'treated as "no drift".'
       );
       continue;
     }
