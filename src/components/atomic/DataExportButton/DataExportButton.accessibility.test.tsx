@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import userEvent from '@testing-library/user-event';
 import DataExportButton from './DataExportButton';
@@ -78,32 +78,32 @@ describe('DataExportButton Accessibility', () => {
   });
 
   it('should be keyboard accessible', async () => {
-    // Add delay to mock so loading state persists
+    // The export stays in flight until the test ends it (#1355). It used to resolve on a 100 ms
+    // timer, which raced the keypress: on a busy runner the export finished first and the
+    // loading state was already gone when it was asserted.
+    let finishExport = () => {};
     mockExportUserData.mockImplementation(
       () =>
-        new Promise((resolve) =>
-          setTimeout(
-            () =>
-              resolve({
-                export_date: '2025-11-22T12:00:00Z',
-                user_id: 'user-123',
-                profile: {
-                  username: 'testuser',
-                  display_name: 'Test User',
-                  email: 'test@example.com',
-                },
-                connections: [],
-                conversations: [],
-                statistics: {
-                  total_conversations: 0,
-                  total_messages_sent: 0,
-                  total_messages_received: 0,
-                  total_connections: 0,
-                },
-              }),
-            100
-          )
-        )
+        new Promise((resolve) => {
+          finishExport = () =>
+            resolve({
+              export_date: '2025-11-22T12:00:00Z',
+              user_id: 'user-123',
+              profile: {
+                username: 'testuser',
+                display_name: 'Test User',
+                email: 'test@example.com',
+              },
+              connections: [],
+              conversations: [],
+              statistics: {
+                total_conversations: 0,
+                total_messages_sent: 0,
+                total_messages_received: 0,
+                total_connections: 0,
+              },
+            });
+        })
     );
 
     const { container } = render(<DataExportButton />);
@@ -123,6 +123,9 @@ describe('DataExportButton Accessibility', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       /exporting your data/i
     );
+
+    finishExport();
+    await waitFor(() => expect(button).not.toBeDisabled());
   });
 
   it('should have proper contrast ratio', () => {

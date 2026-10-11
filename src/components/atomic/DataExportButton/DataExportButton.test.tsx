@@ -60,9 +60,15 @@ describe('DataExportButton', () => {
       },
     };
 
+    // The export stays in flight until the test ends it (#1355). It used to resolve on a 100 ms
+    // timer, which raced the keypress: on a busy runner the export finished first and the
+    // loading state was already gone when it was asserted.
+    let finishExport = () => {};
     mockExportUserData.mockImplementation(
       () =>
-        new Promise((resolve) => setTimeout(() => resolve(mockExportData), 100))
+        new Promise((resolve) => {
+          finishExport = () => resolve(mockExportData);
+        })
     );
 
     render(<DataExportButton />);
@@ -80,6 +86,7 @@ describe('DataExportButton', () => {
     );
 
     // Wait for export to complete
+    finishExport();
     await waitFor(() => {
       expect(button).not.toBeDisabled();
     });
