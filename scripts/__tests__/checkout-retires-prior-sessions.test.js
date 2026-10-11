@@ -109,7 +109,7 @@ describe('create-stripe-checkout retires earlier sessions before it opens one (#
     );
     assert.match(
       after,
-      /if \(recordError\)\s*\{[\s\S]*?stripe\.checkout\.sessions\.expire\(session\.id\)/,
+      /if \(recordError\)\s*\{[\s\S]*?stripe\.checkout\.sessions\s*\.expire\(session\.id\)/,
       'an unrecorded session is left open, where the next call cannot find it'
     );
   });
