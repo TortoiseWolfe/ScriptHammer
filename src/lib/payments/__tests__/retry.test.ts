@@ -214,6 +214,19 @@ describe('retryFailedPayment — success and dedupe', () => {
     expect(auditCalls[0]).toMatchObject({ deduped: true, newIntentId: null });
   });
 
+  it('a success with no child id throws, rather than handing back the declined parent (#1337)', async () => {
+    // create-order's deduped branch answers intent_id: null when it cannot re-read the row
+    // that won. The old fallback returned the PARENT, and the provider switch would then
+    // have opened checkout on the intent that had just been declined.
+    fetchMock.mockReturnValue(
+      respond(200, { intent_id: null, retry_count: 1, deduped: true })
+    );
+    intentRow = { id: PARENT_ID };
+    await expect(retryFailedPayment(PARENT_ID)).rejects.toThrow(
+      /no new payment came back/i
+    );
+  });
+
   it('throws if the intent cannot be read back, rather than returning a hollow object', async () => {
     fetchMock.mockReturnValue(respond(200, { intent_id: CHILD_ID }));
     intentRow = null;

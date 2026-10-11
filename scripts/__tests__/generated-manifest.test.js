@@ -90,7 +90,7 @@ function defaultBasePath() {
   // READ FROM CONFIGURATION, not from `fs.existsSync(public/CNAME)` (#980). That file is
   // generated now and gitignored, so it is absent on the clean checkout CI runs on — and
   // keying off it would have flipped this expectation to `/ScriptHammer/` while the
-  // committed manifest correctly says `/`, deadlocking the required Test (20.x) check on
+  // committed manifest correctly says `/`, deadlocking the required Test check on
   // every PR. The header above records this exact loop happening once already (#931).
   try {
     const deployment = JSON.parse(

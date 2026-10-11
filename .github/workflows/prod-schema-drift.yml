@@ -14,7 +14,7 @@
 # both about keeping those away from PR jobs that then run an arbitrary dependency graph.
 # `intake-orphan-sweep.yml` is the existing precedent for a scheduled job that legitimately
 # holds one. The comparator itself IS gated on every PR — scripts/__tests__/prod-schema-drift.test.js
-# runs under the required `Test (20.x)` check and drives evaluate() in both directions,
+# runs under the required `Test` check and drives evaluate() in both directions,
 # including the real pre-fix #897 state.
 #
 # REPORTS ONLY. It never issues DDL. Applying the migration to production is a separate
@@ -65,8 +65,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
-
+          node-version: '22'
       # IS THERE A PROJECT TO INTERROGATE? (#985)
       #
       # A fresh fork has no Supabase project, so this asked a live API about nothing

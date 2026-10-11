@@ -4,7 +4,7 @@
  * WHY A SOURCE-LEVEL GUARD. `vitest.config.ts` excludes `supabase/functions/**` and no workflow
  * runs `deno test`, so **nothing in CI ever executes an Edge Function**. `advance-order.ts`
  * itself is covered behaviourally in `tests/unit/advance-order.test.ts` (it imports nothing, so
- * it can be pulled into the required `Test (20.x)` check) — but the WIRING has no such route.
+ * it can be pulled into the required `Test` check) — but the WIRING has no such route.
  * Delete a call site and every check in this repo stays green while a buyer's order silently
  * stops advancing.
  *

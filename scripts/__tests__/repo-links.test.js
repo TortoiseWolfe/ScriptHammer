@@ -28,7 +28,7 @@
  *
  * The registry paths are ALREADY gated, and the honest reason to include them is
  * redundancy, not a hole: `pnpm build` runs as a step inside the required
- * `Test (20.x)` job, `/docs/[slug]` prerenders all 7 entries, and rendering
+ * `Test` job, `/docs/[slug]` prerenders all 7 entries, and rendering
  * reads the file — so a bad registry path already fails a required check. What
  * this adds there is a clear message instead of a stack trace from a static
  * export. The FIRST THREE are genuinely ungated.

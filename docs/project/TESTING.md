@@ -237,7 +237,7 @@ These tests intentionally fail with `expect(true).toBe(false)` until features ar
 > have been green for every one of those days. Its replacement is
 > `tests/unit/stripe-webhook-resolve.test.ts` (behaviour) plus
 > `scripts/__tests__/stripe-webhook-verifies-one-secret.test.js` (wiring), both inside the
-> required `Test (20.x)` check.
+> required `Test` check.
 
 - `tests/contract/email-notifications.test.ts` (17 tests) - Email Edge Function
 - `tests/contract/paypal-webhook.test.ts` (15 tests) - PayPal webhook handling

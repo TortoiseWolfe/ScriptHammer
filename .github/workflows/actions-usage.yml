@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
           # setup-node@v5 DEFAULTS `package-manager-cache: true`, detects this repo's
           # pnpm from `packageManager`/the lockfile, and then fails with
           # `Unable to locate executable file: pnpm` because this job installs nothing.

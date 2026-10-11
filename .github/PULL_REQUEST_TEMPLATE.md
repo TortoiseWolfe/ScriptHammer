@@ -38,7 +38,7 @@ Closes #
 - [ ] No secrets, keys or `.env` values in the diff
 
 <!--
-  Seven checks must be green to merge: `Test (20.x)`, `accessibility`,
+  Seven checks must be green to merge: `Test`, `accessibility`,
   `E2E (local) result`, `Conformance result`, `Component Structure result`,
   `Auth Config Drift result` and `Signup Mailer result`. They run in parallel, so the wait
   is set by the slowest (the E2E lane, ~27 min), not by the number of them.

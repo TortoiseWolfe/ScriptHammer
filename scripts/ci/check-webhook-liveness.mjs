@@ -31,7 +31,7 @@
  * REPORTS ONLY. It issues no writes and touches no Stripe object.
  *
  * `evaluate()` is pure and is driven in both directions — including the real pre-fix #1180 state —
- * by scripts/__tests__/webhook-liveness.test.js, under the required `Test (20.x)` check. A checker
+ * by scripts/__tests__/webhook-liveness.test.js, under the required `Test` check. A checker
  * whose verdict function is never exercised is the defect this file exists to end.
  */
 

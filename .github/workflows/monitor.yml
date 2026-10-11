@@ -55,7 +55,7 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'pnpm'
 
       - run: pnpm install
@@ -177,7 +177,7 @@ jobs:
       # merely left unspecified. v4 did not behave this way.
       - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
           package-manager-cache: false
 
       # Test PWA features

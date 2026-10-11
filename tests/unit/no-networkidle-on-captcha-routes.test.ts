@@ -34,7 +34,7 @@
  * When #506 put `NEXT_PUBLIC_CAPTCHA_SITE_KEY` into `e2e.yml` — rendering the
  * widget in CI for the first time — `auth/session-persistence.spec.ts` timed
  * out in `beforeEach` on all three attempts and took a shard red. The prose was
- * one file away from the change and was not consulted. `Test (20.x)` is a
+ * one file away from the change and was not consulted. `Test` is a
  * required check; this is.
  *
  * ## Scope

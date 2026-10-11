@@ -8,7 +8,7 @@
  *
  * NO DOMAIN LITERAL APPEARS IN THIS FILE. Writing this repo's own hostname into a test
  * would be rewritten in every fork by #983's `resolve_brand_domain`, which substitutes that
- * hostname across every rewritable tracked file — turning the required `Test (20.x)` red on
+ * hostname across every rewritable tracked file — turning the required `Test` red on
  * every fork for a reason no forker could diagnose. Fixtures use reserved `.example` names,
  * and the one test that checks real configuration reads it rather than asserting it.
  */
