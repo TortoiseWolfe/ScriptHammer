@@ -1,12 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { usePaymentButton } from '@/hooks/usePaymentButton';
-import { createPaymentIntent } from '@/lib/payments/payment-service';
+import {
+  createPaymentIntent,
+  retryFailedPayment,
+} from '@/lib/payments/payment-service';
 import {
   createCheckoutSession,
   createSubscriptionCheckout,
 } from '@/lib/payments/stripe';
-import { renderPayPalButtons } from '@/lib/payments/paypal';
+import { renderPayPalButtons, createPayPalOrder } from '@/lib/payments/paypal';
 import { createPayPalSubscription } from '@/lib/payments/paypal';
 
 // Mock dependencies
@@ -20,6 +23,8 @@ vi.mock('@/hooks/usePaymentConsent', () => ({
 
 vi.mock('@/lib/payments/payment-service', () => ({
   createPaymentIntent: vi.fn(() => Promise.resolve({ id: 'intent-123' })),
+  // The retry branch's child of 'parent-1': a second attempt at the same purchase.
+  retryFailedPayment: vi.fn(() => Promise.resolve({ id: 'child-456' })),
 }));
 
 vi.mock('@/lib/payments/stripe', () => ({
@@ -117,6 +122,7 @@ describe('usePaymentButton', () => {
     });
 
     expect(createPaymentIntent).toHaveBeenCalledTimes(1);
+    expect(retryFailedPayment).not.toHaveBeenCalled();
     expect(createCheckoutSession).toHaveBeenCalledWith('intent-123');
     expect(createSubscriptionCheckout).not.toHaveBeenCalled();
     expect(result.current.error).toBeNull();
@@ -246,5 +252,107 @@ describe('usePaymentButton', () => {
       })
     );
     expect(result.current.error).toBeNull();
+  });
+
+  // #1337. "Use a different payment method" is a second attempt at the SAME purchase.
+  // Sent through createPaymentIntent it needed a catalog product id the panel never has,
+  // so every switch threw before anything was created; and had it worked, a fresh
+  // purchase would have meant a second order for one payment. create-order's retry
+  // branch copies the declined intent's amount, currency and buyer, writes no order, and
+  // links the child by parent_intent_id, which the webhook and the return page follow.
+  describe('a provider switch after a decline (#1337)', () => {
+    const switchOptions = { ...defaultOptions, parentIntentId: 'parent-1' };
+
+    it('Stripe: the intent is the retry child of the declined one, and checkout opens on it', async () => {
+      const { result } = renderHook(() => usePaymentButton(switchOptions));
+      act(() => {
+        result.current.selectProvider('stripe');
+      });
+      await act(async () => {
+        await result.current.initiatePayment();
+      });
+
+      expect(retryFailedPayment).toHaveBeenCalledWith('parent-1');
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+      expect(createCheckoutSession).toHaveBeenCalledWith('child-456');
+      expect(result.current.error).toBeNull();
+    });
+
+    it('PayPal: the order is created for the retry child', async () => {
+      const { result } = renderHook(() => usePaymentButton(switchOptions));
+      await act(async () => {
+        await result.current.mountPayPalButtons('container-id');
+      });
+      const { createOrder } = vi.mocked(renderPayPalButtons).mock
+        .calls[0][1] as {
+        createOrder: () => Promise<string>;
+      };
+      await act(async () => {
+        await createOrder();
+      });
+
+      expect(retryFailedPayment).toHaveBeenCalledWith('parent-1');
+      expect(createPaymentIntent).not.toHaveBeenCalled();
+      expect(createPayPalOrder).toHaveBeenCalledWith('child-456');
+    });
+
+    it("a refusal from the retry branch reaches the buyer in the server's words, and nothing opens", async () => {
+      // e.g. #1338: the declined attempt went through after all.
+      const paid =
+        'This payment has already gone through, so it has not been charged again.';
+      vi.mocked(retryFailedPayment).mockRejectedValueOnce(new Error(paid));
+      const { result } = renderHook(() => usePaymentButton(switchOptions));
+      act(() => {
+        result.current.selectProvider('stripe');
+      });
+      await act(async () => {
+        await result.current.initiatePayment();
+      });
+
+      expect(result.current.error?.message).toBe(paid);
+      expect(createCheckoutSession).not.toHaveBeenCalled();
+    });
+
+    it('PayPal: a refusal from the retry branch fails createOrder, so no order is created', async () => {
+      // The SDK hands a rejected createOrder to its onError, which sets the error state;
+      // what the hook owns is that the refusal propagates and nothing reaches PayPal.
+      const paid =
+        'This payment has already gone through, so it has not been charged again.';
+      vi.mocked(retryFailedPayment).mockRejectedValueOnce(new Error(paid));
+      const { result } = renderHook(() => usePaymentButton(switchOptions));
+      await act(async () => {
+        await result.current.mountPayPalButtons('container-id');
+      });
+      const { createOrder } = vi.mocked(renderPayPalButtons).mock
+        .calls[0][1] as {
+        createOrder: () => Promise<string>;
+      };
+
+      await expect(createOrder()).rejects.toThrow(paid);
+      expect(createPayPalOrder).not.toHaveBeenCalled();
+    });
+
+    it('a switch with a recurring type is refused in both lanes, not silently run as a new subscription', async () => {
+      // Both recurring lanes run before the intent step, so the parent would be ignored.
+      const recurringSwitch = {
+        ...recurringOptions,
+        parentIntentId: 'parent-1',
+      };
+      const { result } = renderHook(() => usePaymentButton(recurringSwitch));
+      act(() => {
+        result.current.selectProvider('stripe');
+      });
+      await act(async () => {
+        await result.current.initiatePayment();
+      });
+      expect(result.current.error?.message).toMatch(/cannot be switched/);
+      expect(createSubscriptionCheckout).not.toHaveBeenCalled();
+
+      await act(async () => {
+        await result.current.mountPayPalButtons('container-id');
+      });
+      expect(renderPayPalButtons).not.toHaveBeenCalled();
+      expect(retryFailedPayment).not.toHaveBeenCalled();
+    });
   });
 });

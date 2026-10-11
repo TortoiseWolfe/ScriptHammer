@@ -18,7 +18,7 @@ could not see (deployed config, live data).
 
 ## Summary
 
-**75 open findings: 1 P0, 17 P1, 37 P2, 20 P3.** The review found 83. Eight have since been fixed and deleted, per the rule above: the Tip Jar preview (#1306, by #1328), the offline contact form (#1324), the `useOfflineQueue` sync loop and the PWAInstall re-registration (#1262), the 1000-row liveness sample (#1330), the webhook dedupe (#1307, by #1335 and #1336), the PayPal subscription CHECK values (#1336), and the paid retry that never advanced its order (#1308). Every tier below has been reviewed once. Every
+**74 open findings: 1 P0, 16 P1, 37 P2, 20 P3.** The review found 83. Nine have since been fixed and deleted, per the rule above: the Tip Jar preview (#1306, by #1328), the offline contact form (#1324), the `useOfflineQueue` sync loop and the PWAInstall re-registration (#1262), the 1000-row liveness sample (#1330), the webhook dedupe (#1307, by #1335 and #1336), the PayPal subscription CHECK values (#1336), the paid retry that never advanced its order (#1308), and the provider switch that never created a payment (#1337). Every tier below has been reviewed once. Every
 reviewer only read code, traced each finding in the code before reporting it, and dropped
 anything it could not substantiate. Nothing here has been reproduced in a running app.
 
@@ -101,14 +101,6 @@ Themes worth fixing as a class rather than one by one:
 - **Defect:** Both call `supabase.auth.updateUser({ password })` and never re-key or warn. For email users, E2E keys are derived from the login password. Spec 032 SC-005 requires re-encryption or a warning.
 - **Failure scenario:** After a password change, sign-in's `deriveKeys(newPassword)` throws `KeyMismatchError` (only logged), and `/messages` asks for the "messaging password". The current password is rejected and there is no recovery path. After a forgot-password reset the old password is gone, so messaging is locked for good.
 - **Fix:** On a change, derive keys with the old password and `rotateKeys(newPassword)`. After a reset, offer an explicit "reset messaging keys" path, and have the unlock modal detect this state.
-- **Confidence:** confirmed
-
-### #1337 — "Use a different payment method" always fails: SwitchProviderPanel sends no productId
-
-- **Where:** `src/components/payment/SwitchProviderPanel/SwitchProviderPanel.tsx:158-167`
-- **Defect:** `<PaymentButton>` is rendered without `productId`, and `getParentIntentForRetry` doesn't select `product_id`. `createPaymentIntent` (`src/lib/payments/payment-service.ts:149-153`) then throws "A product_id is required…". `parent_intent_id` is also no longer forwarded to create-order.
-- **Failure scenario:** After a declined payment, every attempt to switch provider fails, so the recovery flow can never succeed.
-- **Fix:** Select `product_id`, pass it as `productId`, and forward `parent_intent_id` in the create-order body.
 - **Confidence:** confirmed
 
 ### Cookie modal applies analytics/marketing consent on toggle; Close/Esc don't undo it

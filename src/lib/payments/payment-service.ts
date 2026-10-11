@@ -118,13 +118,10 @@ export async function createPaymentIntent(
     interval?: PaymentInterval;
     description?: string;
     metadata?: Record<string, unknown>;
-    /**
-     * Link to the original payment intent when this intent is created as
-     * part of a recovery flow (provider switch after a decline). Preserves
-     * the audit chain across providers without changing the offline-queue
-     * path. Optional; omitted for normal first-attempt payments.
-     */
-    parent_intent_id?: string;
+    // No parent_intent_id here (#1337). It used to be accepted and silently dropped:
+    // this function starts a NEW purchase, and create-order never read a parent from
+    // it. A second attempt at a declined intent is retryFailedPayment(), whose retry
+    // branch copies the parent and links the child itself.
     /**
      * Catalog SKU. REQUIRED (#559 T025).
      *
@@ -418,9 +415,19 @@ export async function retryFailedPayment(
     deduped: Boolean(payload.deduped),
   });
 
+  // The child, never the parent (#1337). The deduped branch reports the row that already
+  // won, and answers null when it cannot re-read it. This used to fall back to the
+  // PARENT's id, which handed the caller the intent that had just been declined — and
+  // the provider switch would then open checkout on it.
+  if (!payload.intent_id) {
+    throw new Error(
+      'The retry was accepted but no new payment came back. Please try again.'
+    );
+  }
+
   // The caller wants the intent row. SELECT is still granted to the browser; only
   // INSERT is being removed (#559 T027).
-  const id = payload.intent_id ?? intentId;
+  const id = payload.intent_id;
   const { data: intent, error } = await supabase
     .from('payment_intents')
     .select('*')
