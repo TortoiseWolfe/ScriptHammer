@@ -16,9 +16,12 @@
  *   401 Unauthorized: { error: string } (missing / invalid JWT)
  *   403 Forbidden: { error: string } (caller does not own the intent)
  *   404 Not Found: { error: string } (intent does not exist)
- *   409 Conflict: { error, code: 'already_paid' } (the purchase's retry chain is already paid, #1342)
+ *   409 Conflict: { error, code: 'already_paid' } (the purchase's retry chain is already paid, #1342,
+ *     or an earlier session for it is complete at Stripe, #1345)
  *   410 Gone: { error: string } (intent expired)
- *   500 Internal Server Error: { error: string } (Stripe call failed, or the paid check could not be read)
+ *   500 Internal Server Error: { error, code? } (Stripe call failed; the paid check could not be read;
+ *     'session_check_failed': an earlier session could not be checked or closed (#1345);
+ *     'session_record_failed': this session could not be recorded, so it was expired)
  *
  * SECURITY MODEL
  *   - JWT verified via SUPABASE_ANON_KEY (auto-injected; NEXT_PUBLIC_ fallback)
@@ -35,7 +38,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAuthenticatedUserId, UnauthorizedError } from '../_shared/auth.ts';
-import { gateOnChainPaid } from '../_shared/payment-chain.ts';
+import { chainIntentIds, gateOnChainPaid } from '../_shared/payment-chain.ts';
+import {
+  retirePriorSessions,
+  retrieveOrNull,
+} from '../_shared/checkout-sessions.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
   apiVersion: '2024-06-20',
@@ -132,11 +139,80 @@ serve(async (req) => {
       );
     }
 
+    // NO SECOND OPEN SESSION FOR ONE PURCHASE (#1345). The gate above sees only what the webhooks
+    // have recorded. A session already paid at Stripe whose webhook has not landed, or one still
+    // open and payable, is invisible to it, and two open sessions could both be paid. So ask Stripe
+    // about every session recorded for the chain: expire the open ones, refuse if one is complete.
+    // Any failure refuses (500): proceeding would leave an earlier session open beside this one.
+    let chainIds: string[];
+    try {
+      chainIds = await chainIntentIds(supabase, intent.id);
+    } catch (chainError) {
+      console.error(
+        'create-stripe-checkout: could not read the retry chain',
+        chainError
+      );
+      return jsonResponse(
+        req,
+        {
+          error: 'Could not prepare this payment. Please try again.',
+          code: 'session_check_failed',
+        },
+        500
+      );
+    }
+    const retire = await retirePriorSessions(
+      {
+        recorded: async (ids) => {
+          const { data, error } = await supabase
+            .from('stripe_checkout_sessions')
+            .select('session_id')
+            // Every age, deliberately: a complete session the webhook never recorded must be found
+            // however old it is. A chain's sessions are few, and they are retrieved in parallel.
+            .in('intent_id', ids);
+          if (error) throw error;
+          return (data ?? []).map((r: { session_id: string }) => r.session_id);
+        },
+        // Only "no such session" (a test/live key switch, another account) is skipped; every
+        // other Stripe error still refuses (retrieveOrNull, tested).
+        retrieve: retrieveOrNull(async (id) => {
+          const s = await stripe.checkout.sessions.retrieve(id);
+          return {
+            id: s.id,
+            status: s.status,
+            payment_status: s.payment_status,
+          };
+        }),
+        expire: async (id) => {
+          await stripe.checkout.sessions.expire(id);
+        },
+      },
+      chainIds
+    );
+    if (retire.kind === 'refuse') {
+      return jsonResponse(
+        req,
+        { error: retire.error, code: retire.code },
+        retire.status
+      );
+    }
+    // The only trace of why a buyer's other tab stopped working, besides the Stripe dashboard:
+    // stripe-webhook acknowledges checkout.session.expired without recording it.
+    if (retire.expired.length) {
+      console.log(
+        `create-stripe-checkout: expired ${retire.expired.length} earlier session(s) for ${intent.id}'s chain: ${retire.expired.join(', ')}`
+      );
+    }
+
     // Create the Stripe Checkout Session.
     // The metadata.intent_id is critical — stripe-webhook reads it to
     // correlate `payment_intent.succeeded` back to our row.
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
+      // CARD ONLY, and #1345 depends on it: retiring earlier sessions refuses on any COMPLETE one,
+      // which is right only because a card session completes paid. A delayed method (bank debit)
+      // completes unpaid and may later fail, which would leave the chain refused for good.
+      // scripts/__tests__/checkout-retires-prior-sessions.test.js pins this line.
       payment_method_types: ['card'],
       line_items: [
         {
@@ -168,6 +244,35 @@ serve(async (req) => {
       // in the Stripe dashboard.
       client_reference_id: intent.id,
     });
+
+    // RECORD IT, OR CLOSE IT (#1345). A session nothing has recorded is one the next call cannot
+    // find to expire. This one's URL is never returned, so nobody is sent to it; expiring it is a
+    // safety net, best effort and logged, and the buyer is asked to try again.
+    const { error: recordError } = await supabase
+      .from('stripe_checkout_sessions')
+      .insert({ session_id: session.id, intent_id: intent.id });
+    if (recordError) {
+      console.error(
+        `create-stripe-checkout: could not record session ${session.id}`,
+        recordError
+      );
+      await stripe.checkout.sessions
+        .expire(session.id)
+        .catch((e: unknown) =>
+          console.error(
+            `create-stripe-checkout: could not expire unrecorded session ${session.id}`,
+            e
+          )
+        );
+      return jsonResponse(
+        req,
+        {
+          error: 'Could not start this payment. Please try again.',
+          code: 'session_record_failed',
+        },
+        500
+      );
+    }
 
     // Return the hosted Checkout URL alongside the id: Stripe.js removed
     // redirectToCheckout (changelog 2025-09-30 "clover"), so the client

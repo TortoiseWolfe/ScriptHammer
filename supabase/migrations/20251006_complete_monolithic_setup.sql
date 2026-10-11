@@ -134,6 +134,26 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_results_one_succeeded_per_intent
 
 COMMENT ON TABLE payment_results IS 'Outcome of payment attempts with webhook verification';
 
+-- The Stripe Checkout sessions create-stripe-checkout has opened, by intent (#1345). Before it
+-- opens a new one it asks Stripe about every session recorded for the purchase's retry chain:
+-- an open one is expired, a complete one means the buyer has paid and the new one is refused.
+-- Without this record two sessions created while a purchase was unpaid could both be paid, a
+-- second charge the webhooks can detect (#1342) but nothing could prevent: Stripe offers no
+-- way to find a purchase's open sessions by our intent id.
+--
+-- A table of its own rather than a 'pending' payment_results row keyed by the session id: that
+-- table's readers (the return page, the admin stats, the webhooks' reconciliation) take its rows
+-- as payment outcomes. Written and read only by the service role; no client policy.
+CREATE TABLE IF NOT EXISTS stripe_checkout_sessions (
+  session_id TEXT PRIMARY KEY,
+  intent_id UUID NOT NULL REFERENCES payment_intents(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_stripe_checkout_sessions_intent_id
+  ON stripe_checkout_sessions(intent_id);
+ALTER TABLE stripe_checkout_sessions ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE stripe_checkout_sessions IS 'Stripe Checkout sessions opened per intent, so a new one can expire the chain''s earlier open sessions (#1345). Service role only.';
+
 -- Subscriptions
 CREATE TABLE IF NOT EXISTS subscriptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -2648,6 +2668,10 @@ REVOKE INSERT, UPDATE, DELETE, TRUNCATE, TRIGGER, REFERENCES ON payment_intents 
 -- already says `TO service_role`, which is how the webhook writes. `anon` gets nothing.
 REVOKE ALL ON payment_results FROM anon, authenticated;
 GRANT SELECT ON payment_results TO authenticated;
+
+-- stripe_checkout_sessions (#1345) is born under the same default ACL. No client reads or writes
+-- it, so nothing is granted back.
+REVOKE ALL ON stripe_checkout_sessions FROM anon, authenticated;
 
 -- #1073, table 9 of 10. Same GRANT-cannot-narrow trap: the line below named three
 -- privileges and withheld none of the other four, TRUNCATE among them, so either

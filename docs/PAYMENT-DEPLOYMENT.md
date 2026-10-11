@@ -4,15 +4,15 @@ This guide helps template forkers deploy the payment integration system to their
 
 ## Status of the integration
 
-| Component                                                                                 | Status                                                                                                                                                                                               |
-| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Database schema (`payment_intents`, `payment_results`, `subscriptions`, `webhook_events`) | ✅ shipped in the monolithic migration                                                                                                                                                               |
-| RLS policies (20+ across the 4 tables)                                                    | ✅ verified by `pnpm test:rls`                                                                                                                                                                       |
-| Service layer (`src/lib/payments/payment-service.ts`)                                     | ✅ shipped                                                                                                                                                                                           |
-| Components (`PaymentButton`, `PaymentStatusDisplay`, `SubscriptionManager`, etc.)         | ✅ shipped (full 5-file pattern)                                                                                                                                                                     |
-| `/payment-demo` and `/payment-result` routes                                              | ✅ shipped                                                                                                                                                                                           |
-| **Outbound Edge Functions** (browser → provider checkout creation)                        | ✅ all 8 deployed + live-proven: Stripe one-off (PR #155), PayPal one-off (PR #160), Stripe subscription + cancel/resume (PR #167), PayPal subscription (PR #171). Full payment epic (#100) complete |
-| **Inbound Edge Functions** (provider webhooks → DB)                                       | ✅ shipped (`stripe-webhook`, `paypal-webhook`, `send-payment-email`); `stripe-webhook` live-proven end-to-end (PR #167). `send-payment-email` stays inert until `RESEND_API_KEY` is set             |
+| Component                                                                                                             | Status                                                                                                                                                                                               |
+| --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Database schema (`payment_intents`, `payment_results`, `subscriptions`, `webhook_events`, `stripe_checkout_sessions`) | ✅ shipped in the monolithic migration                                                                                                                                                               |
+| RLS policies (20+ across the 4 tables)                                                                                | ✅ verified by `pnpm test:rls`                                                                                                                                                                       |
+| Service layer (`src/lib/payments/payment-service.ts`)                                                                 | ✅ shipped                                                                                                                                                                                           |
+| Components (`PaymentButton`, `PaymentStatusDisplay`, `SubscriptionManager`, etc.)                                     | ✅ shipped (full 5-file pattern)                                                                                                                                                                     |
+| `/payment-demo` and `/payment-result` routes                                                                          | ✅ shipped                                                                                                                                                                                           |
+| **Outbound Edge Functions** (browser → provider checkout creation)                                                    | ✅ all 8 deployed + live-proven: Stripe one-off (PR #155), PayPal one-off (PR #160), Stripe subscription + cancel/resume (PR #167), PayPal subscription (PR #171). Full payment epic (#100) complete |
+| **Inbound Edge Functions** (provider webhooks → DB)                                                                   | ✅ shipped (`stripe-webhook`, `paypal-webhook`, `send-payment-email`); `stripe-webhook` live-proven end-to-end (PR #167). `send-payment-email` stays inert until `RESEND_API_KEY` is set             |
 
 **Operator note:** every payment leg works once sandbox keys are configured — Stripe tab (one-off + Subscribe), PayPal tab (one-off + Subscribe), and subscription cancel/resume on `/payment?tab=subscriptions` — each driven against the real sandbox. PayPal subscriptions need `NEXT_PUBLIC_PAYPAL_PLAN_ID` set to a PayPal billing Plan; without it the recurring PayPal button shows a clear "not configured" error instead of falling back to a one-time order.
 
@@ -64,12 +64,13 @@ This applies `supabase/migrations/20251006_complete_monolithic_setup.sql`, which
 - `payment_results`
 - `subscriptions`
 - `webhook_events`
+- `stripe_checkout_sessions` (#1345: the Checkout sessions opened per intent, so a new one can expire the earlier ones. Apply it BEFORE deploying `create-stripe-checkout`, which refuses every checkout with a 500 while the table is missing)
 - All RLS policies
 - Required indexes
 
 ### Verify
 
-In Supabase Dashboard → Table Editor, confirm all four tables exist. Run `pnpm test:rls` locally to confirm policies pass.
+In Supabase Dashboard → Table Editor, confirm all five tables exist. Run `pnpm test:rls` locally to confirm policies pass.
 
 ## Step 3 — Environment variables
 
