@@ -44,6 +44,27 @@ export async function chainAlreadyPaid(
   supabase: any,
   intentId: string
 ): Promise<boolean> {
+  const ids = await chainIntentIds(supabase, intentId);
+  const { data: paid, error: paidError } = await supabase
+    .from('payment_results')
+    .select('id')
+    .in('intent_id', ids)
+    .eq('status', 'succeeded')
+    .limit(1);
+  if (paidError) throw paidError;
+  return (paid ?? []).length > 0;
+}
+
+/**
+ * Every intent in `intentId`'s retry chain: up to the purchase, then every descendant of it, level
+ * by level, within MAX_CHAIN_HOPS. Throws on a read error. The walk chainAlreadyPaid answers over,
+ * and the set create-stripe-checkout expires earlier sessions across (#1345): an abandoned session
+ * on the purchase stays open while its retry child is given a new one.
+ */
+export async function chainIntentIds(
+  supabase: any,
+  intentId: string
+): Promise<string[]> {
   // 1. Up to the purchase.
   let root = intentId;
   let current: string | null = intentId;
@@ -81,15 +102,7 @@ export async function chainAlreadyPaid(
   }
   // In case the upward walk hit its bound before the purchase, the intent itself still counts.
   ids.add(intentId);
-
-  const { data: paid, error: paidError } = await supabase
-    .from('payment_results')
-    .select('id')
-    .in('intent_id', [...ids])
-    .eq('status', 'succeeded')
-    .limit(1);
-  if (paidError) throw paidError;
-  return (paid ?? []).length > 0;
+  return [...ids];
 }
 
 export type PaidGate =

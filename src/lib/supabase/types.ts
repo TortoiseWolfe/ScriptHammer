@@ -734,6 +734,32 @@ export type Database = {
         };
         Relationships: [];
       };
+      stripe_checkout_sessions: {
+        Row: {
+          created_at: string;
+          intent_id: string;
+          session_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          intent_id: string;
+          session_id: string;
+        };
+        Update: {
+          created_at?: string;
+          intent_id?: string;
+          session_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'stripe_checkout_sessions_intent_id_fkey';
+            columns: ['intent_id'];
+            isOneToOne: false;
+            referencedRelation: 'payment_intents';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       subscriptions: {
         Row: {
           canceled_at: string | null;

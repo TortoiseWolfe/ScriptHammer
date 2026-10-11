@@ -3,6 +3,7 @@ import {
   ALREADY_PAID_MESSAGE,
   MAX_CHAIN_HOPS,
   chainAlreadyPaid,
+  chainIntentIds,
   gateOnChainPaid,
 } from '../../supabase/functions/_shared/payment-chain';
 import { RETRY_LIMIT } from '../../supabase/functions/create-order/resolve';
@@ -140,6 +141,16 @@ describe('chainAlreadyPaid', () => {
         'int-2'
       )
     ).toBe(true);
+  });
+
+  it('chainIntentIds returns the WHOLE chain from any member (#1345)', async () => {
+    // create-stripe-checkout expires every open session in the chain, so it needs the same set
+    // the paid check walks: up to the purchase, then every descendant.
+    for (const from of ['int-1', 'int-2', 'int-3']) {
+      expect(
+        (await chainIntentIds(stub({ intents: chain }), from)).sort()
+      ).toEqual(['int-1', 'int-2', 'int-3']);
+    }
   });
 
   it('throws on a read error, so the retry fails closed rather than risking a second charge', async () => {
