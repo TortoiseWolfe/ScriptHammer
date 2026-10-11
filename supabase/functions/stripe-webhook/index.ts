@@ -4,6 +4,7 @@
  */
 
 import { advanceOrderAndNotify } from '../_shared/advance-order.ts';
+import { assertSameCharge, retryable } from '../_shared/second-charge.ts';
 import { reportAdConversion } from '../_shared/ad-conversions.ts';
 import {
   claimWebhookEvent,
@@ -212,7 +213,9 @@ serve(async (req) => {
         supabase,
         claim.id,
         claim.attempt,
-        replaySafe('stripe', event.type),
+        // Never a retry for a second charge: it gives up at once, permanently_failed, which
+        // Webhook Liveness reports as needing a refund (#1342).
+        retryable(replaySafe('stripe', event.type), handlerError),
         handlerError
       );
       console.error(
@@ -308,6 +311,10 @@ async function handlePaymentIntentSucceeded(
   // be retried for three days and count toward the endpoint being disabled; the payment is
   // already recorded, so acknowledge it and still advance (advance-order is compare-and-swap).
   if (error?.code === PG_UNIQUE_VIOLATION) {
+    // ...unless the row that won is a DIFFERENT charge (#1342). The index admits one success per
+    // intent, so a second payment for the same intent lands here too, and used to be acknowledged
+    // as a replay. Throws SecondChargeError for that, which gives up on the event at once.
+    await assertSameCharge(supabase, intent.id, [paymentIntent.id]);
     console.log(
       `payment_result for intent ${intent.id} already recorded by the other event — advancing only`
     );
@@ -442,6 +449,11 @@ async function handlePaymentCheckout(
   // See the matching note in handlePaymentIntentSucceeded: whichever event arrives second
   // collides on the one-succeeded-per-intent index, and must not 500.
   if (error?.code === PG_UNIQUE_VIOLATION) {
+    // Only a 'succeeded' insert can collide (the index covers nothing else), so this session was
+    // paid. Same rule as above: the other event of THIS charge, or a second charge (#1342).
+    await assertSameCharge(supabase, intent.id, [
+      session.payment_intent as string,
+    ]);
     console.log(
       `payment_result for intent ${intent.id} already recorded by the other event — advancing only`
     );
