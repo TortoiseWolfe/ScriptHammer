@@ -8,8 +8,8 @@
  *   paid gate  ->  retire the chain's earlier sessions  ->  create  ->  record
  *
  * Retire after creating and the new session is the one expired; create without recording and
- * the next call cannot find it, which is the bug again. And a session that cannot be recorded is
- * expired at once, so no open session ever exists that nothing can find.
+ * the next call cannot find it, which is the bug again. A session that cannot be recorded is
+ * never handed out, and is expired as a best-effort safety net.
  */
 
 'use strict';
@@ -90,11 +90,42 @@ describe('create-stripe-checkout retires earlier sessions before it opens one (#
     // An abandoned session on the purchase stays open for 24 hours while its retry child gets a
     // new one; looking only at this intent would leave the purchase's session payable.
     const src = code(INDEX);
-    assert.match(src, /await chainIntentIds\(/, 'the chain is not walked');
+    // The chain's ids must be what retirePriorSessions is GIVEN (blind review): walking the chain
+    // and then passing [intent.id] passed every check that only asked whether the walk happened.
+    const walked = /(\w+) = await chainIntentIds\(/.exec(src);
+    assert.ok(walked, 'the chain is not walked');
+    const name = walked[1];
+    assert.match(
+      src,
+      new RegExp(
+        `await retirePriorSessions\\([\\s\\S]*?\\},\\s*${name}\\s*\\)`
+      ),
+      `retirePriorSessions is not given the walked chain (${name})`
+    );
     assert.match(
       src,
       /\.from\('stripe_checkout_sessions'\)\s*\.select\('session_id'\)\s*\.in\('intent_id',/,
       'the recorded sessions are not looked up for the chain'
+    );
+  });
+
+  it('looks only at sessions young enough to be open', () => {
+    // Stripe sessions last at most 24 hours; without the bound every checkout re-fetches every
+    // session the chain ever had, one Stripe call each.
+    assert.match(
+      code(INDEX),
+      /\.in\('intent_id', ids\)\s*\.gte\(\s*'created_at',/,
+      'the recorded-session lookup is unbounded in time'
+    );
+  });
+
+  it('opens card-only sessions, which refusing on "complete" depends on', () => {
+    // A card session completes paid. A delayed method completes unpaid and may later fail, and
+    // retiring would then refuse the chain for good.
+    assert.match(
+      code(INDEX),
+      /payment_method_types: \['card'\]/,
+      'sessions are no longer card-only, so a complete session may not be a paid one'
     );
   });
 

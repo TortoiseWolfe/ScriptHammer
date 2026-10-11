@@ -121,6 +121,25 @@ describe('retirePriorSessions', () => {
     expect(f.expired).toEqual([]);
   });
 
+  it('skips a recorded session Stripe does not have, instead of refusing the chain for good', async () => {
+    // Recorded under other keys (test to live, or another account). It can be neither open nor
+    // paid here; failing on it would 500 every checkout for that purchase until its intent expired.
+    const f = fake({
+      recorded: ['cs_gone', 'cs_open'],
+      states: {
+        cs_open: { id: 'cs_open', status: 'open', payment_status: 'unpaid' },
+      },
+    });
+    f.deps.retrieve = async (id) =>
+      id === 'cs_gone'
+        ? null
+        : { id: 'cs_open', status: 'open', payment_status: 'unpaid' };
+    expect(await retirePriorSessions(f.deps, ['int-1'])).toEqual({
+      kind: 'proceed',
+      expired: ['cs_open'],
+    });
+  });
+
   it('proceeds with nothing to do when no session was ever recorded', async () => {
     expect(await retirePriorSessions(fake().deps, ['int-1'])).toEqual({
       kind: 'proceed',

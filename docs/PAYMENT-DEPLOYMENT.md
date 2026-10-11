@@ -64,12 +64,13 @@ This applies `supabase/migrations/20251006_complete_monolithic_setup.sql`, which
 - `payment_results`
 - `subscriptions`
 - `webhook_events`
+- `stripe_checkout_sessions` (#1345: the Checkout sessions opened per intent, so a new one can expire the earlier ones. Apply it BEFORE deploying `create-stripe-checkout`, which refuses every checkout with a 500 while the table is missing)
 - All RLS policies
 - Required indexes
 
 ### Verify
 
-In Supabase Dashboard → Table Editor, confirm all four tables exist. Run `pnpm test:rls` locally to confirm policies pass.
+In Supabase Dashboard → Table Editor, confirm all five tables exist. Run `pnpm test:rls` locally to confirm policies pass.
 
 ## Step 3 — Environment variables
 

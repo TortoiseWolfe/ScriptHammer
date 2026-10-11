@@ -1,5 +1,6 @@
 /**
- * The effective privileges the client roles hold on the ten tables of #1073.
+ * The effective privileges the client roles hold on the ten tables of #1073, and on the tables
+ * added since that hold nothing for a client (stripe_checkout_sessions, #1345).
  *
  * WHY THIS EXISTS. Supabase's platform defaults grant `anon` and `authenticated` ALL
  * privileges on every table in `public`. A narrower `GRANT` sits on top of a wider one and
@@ -43,7 +44,7 @@ const DB = {
 /**
  * What `authenticated` may hold on each table, and why.
  *
- * `anon` holds NOTHING on all ten — asserted separately below, because it is the headline
+ * `anon` holds NOTHING on any of them — asserted separately below, because it is the headline
  * and deserves to fail on its own terms rather than inside a per-table diff.
  *
  * The rule for what stays is the one the `conversation_keys` block in the migration states:
@@ -64,8 +65,10 @@ const ALLOWED: Record<string, string[]> = {
   // INSERT is column-scoped since #1247 (checked below): created_at and id are the database's.
   group_keys: ['SELECT'],
   // No SELECT policy exists at all; the writers are edge functions holding the service
-  // role key. The only table here where neither client role keeps anything.
+  // role key.
   webhook_events: [],
+  // Written and read only by create-stripe-checkout with the service role (#1345).
+  stripe_checkout_sessions: [],
   orders: ['SELECT'],
   payment_results: ['SELECT'],
   // SELECT only. UPDATE is column-scoped to the cancellation surface (checked below),
@@ -125,7 +128,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
     });
 
     it('every table under test actually exists', () => {
-      // ANTI-VACUITY, and it is not decoration here. Seven of the twenty role/table pairs
+      // ANTI-VACUITY, and it is not decoration here. Nine of the twenty-two role/table pairs
       // below expect an EMPTY privilege list, and a renamed table, a wrong schema or a
       // typo in a table name produces exactly that — so without this check those
       // assertions would pass by inspecting nothing. That failure mode is the same
@@ -143,7 +146,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
       const total = TABLES.flatMap((t) => grants[t].authenticated).length;
       expect(
         total,
-        'no client-role grants found on ANY of the ten tables — the query is wrong, ' +
+        'no client-role grants found on ANY of these tables — the query is wrong, ' +
           'not the database'
       ).toBeGreaterThan(0);
     });

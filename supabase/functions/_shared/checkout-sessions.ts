@@ -14,6 +14,13 @@
  * So before a new session is opened, every session recorded for the purchase's retry chain is asked
  * of Stripe, the source of truth. An open one is expired. A complete one means the buyer has paid,
  * whether or not our webhook has recorded it yet, so the new session is refused.
+ *
+ * WHAT IT DOES NOT COVER, stated so nobody reads more into it:
+ *   - two create calls for one purchase in the same instant can both retire, then both create.
+ *     The client's isProcessing guard keeps a double click from reaching it;
+ *   - sessions opened before this shipped were never recorded, so for up to 24 hours after the
+ *     deploy an old open session can still sit beside a new one;
+ *   - an open Stripe session alongside a PayPal payment for the same chain (#1347).
  */
 
 /** The fields of a Stripe Checkout Session this decides on. */
@@ -53,9 +60,14 @@ export function decidePriorSession(s: PriorSession): PriorDecision {
 }
 
 export interface SessionDeps {
-  /** Session ids recorded for any of these intents (stripe_checkout_sessions). */
+  /** Session ids recorded for any of these intents (stripe_checkout_sessions), recent enough to be open. */
   recorded(intentIds: string[]): Promise<string[]>;
-  retrieve(sessionId: string): Promise<PriorSession>;
+  /**
+   * The session as Stripe has it, or null when Stripe has no such session: recorded under other
+   * keys (a test/live switch, another account). Null is skipped, not failed. A missing session can
+   * be neither open nor paid here, and failing on it would refuse that chain every checkout for good.
+   */
+  retrieve(sessionId: string): Promise<PriorSession | null>;
   expire(sessionId: string): Promise<void>;
 }
 
@@ -91,9 +103,13 @@ export async function retirePriorSessions(
 ): Promise<RetireResult> {
   try {
     const ids = await deps.recorded(intentIds);
+    // Asked in parallel; decided in order, before anything is expired.
+    const sessions = await Promise.all(ids.map((id) => deps.retrieve(id)));
     const toExpire: string[] = [];
-    for (const id of ids) {
-      const decision = decidePriorSession(await deps.retrieve(id));
+    for (const [i, s] of sessions.entries()) {
+      const id = ids[i];
+      if (s === null) continue;
+      const decision = decidePriorSession(s);
       if (decision === 'refuse_paid') {
         return {
           kind: 'refuse',

@@ -160,21 +160,37 @@ serve(async (req) => {
     }
     const retire = await retirePriorSessions(
       {
+        // Only sessions young enough to still be open: Stripe Checkout sessions last at most 24
+        // hours, so an older one is expired or complete, and a complete one that old with no
+        // success recorded is a webhook failure Webhook Liveness already reports. Without the
+        // bound, every checkout would re-fetch every session the chain ever had (blind review).
         recorded: async (ids) => {
           const { data, error } = await supabase
             .from('stripe_checkout_sessions')
             .select('session_id')
-            .in('intent_id', ids);
+            .in('intent_id', ids)
+            .gte(
+              'created_at',
+              new Date(Date.now() - 25 * 3600_000).toISOString()
+            );
           if (error) throw error;
           return (data ?? []).map((r: { session_id: string }) => r.session_id);
         },
         retrieve: async (id) => {
-          const s = await stripe.checkout.sessions.retrieve(id);
-          return {
-            id: s.id,
-            status: s.status,
-            payment_status: s.payment_status,
-          };
+          try {
+            const s = await stripe.checkout.sessions.retrieve(id);
+            return {
+              id: s.id,
+              status: s.status,
+              payment_status: s.payment_status,
+            };
+          } catch (e) {
+            // Recorded under other keys (a test/live switch, another account): skipped, because
+            // failing here would refuse this chain every checkout until its intent expired.
+            if ((e as { code?: string })?.code === 'resource_missing')
+              return null;
+            throw e;
+          }
         },
         expire: async (id) => {
           await stripe.checkout.sessions.expire(id);
@@ -189,12 +205,23 @@ serve(async (req) => {
         retire.status
       );
     }
+    // The only trace of why a buyer's other tab stopped working, besides the Stripe dashboard:
+    // stripe-webhook acknowledges checkout.session.expired without recording it.
+    if (retire.expired.length) {
+      console.log(
+        `create-stripe-checkout: expired ${retire.expired.length} earlier session(s) for ${intent.id}'s chain: ${retire.expired.join(', ')}`
+      );
+    }
 
     // Create the Stripe Checkout Session.
     // The metadata.intent_id is critical — stripe-webhook reads it to
     // correlate `payment_intent.succeeded` back to our row.
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
+      // CARD ONLY, and #1345 depends on it: retiring earlier sessions refuses on any COMPLETE one,
+      // which is right only because a card session completes paid. A delayed method (bank debit)
+      // completes unpaid and may later fail, which would leave the chain refused for good.
+      // scripts/__tests__/checkout-retires-prior-sessions.test.js pins this line.
       payment_method_types: ['card'],
       line_items: [
         {
@@ -227,9 +254,9 @@ serve(async (req) => {
       client_reference_id: intent.id,
     });
 
-    // RECORD IT, OR CLOSE IT (#1345). An open session nothing has recorded is one the next call
-    // cannot find to expire, which is the bug this exists to stop; so a session that cannot be
-    // recorded is expired at once and the buyer asked to try again.
+    // RECORD IT, OR CLOSE IT (#1345). A session nothing has recorded is one the next call cannot
+    // find to expire. This one's URL is never returned, so nobody is sent to it; expiring it is a
+    // safety net, best effort and logged, and the buyer is asked to try again.
     const { error: recordError } = await supabase
       .from('stripe_checkout_sessions')
       .insert({ session_id: session.id, intent_id: intent.id });
