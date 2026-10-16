@@ -109,6 +109,26 @@ The panel has to earn its place, the same way Jev did. For now it only records w
 
 The setup tutorial covers all of it step by step: **[Build Your AI Kitchen](https://tortoisewolfe.github.io/AI_Workflow/05-advanced-orchestration/setup-tutorial.html)**.
 
+## 🆕 Update, October 16: the CEO left the reception desk
+
+Two weeks on, the kitchen got a new front door, and a bill.
+
+**The front desk is now a free model.** OpenClaw used to answer the door by asking Claude. Now it runs on a free model, and Claude is never in its chain. I don't need the CEO sitting at the receptionist desk all day. The desk reads what comes in, sends it to the right station and replies. It holds no keys and no tools, so there is nothing in its hands to misuse.
+
+**Gemini ran dry by mid-morning on day one.** Its free quota was gone before lunch, so one free model can't be the whole desk. The chain now has more free fallbacks behind it, and when one runs out, the next takes the door.
+
+**The cooks got a lighter apron.** Every side job I start used to read about 58K tokens of instructions before doing anything, and it re-read them on every turn. I cut what a job doesn't need, and a job's first turn went from about 58K to 34K tokens.
+
+**Claude isn't the only cook now.** Copilot built the gauges page below. Codex hit its free limit and sits out until October 31.
+
+**The budget lesson.** By Friday morning I had used 41% of my weekly limit. That's about 20% a day, against the 15% a day that would make the week last. At that pace the week runs out a few days early. So the priciest model steps down first: Fable goes back to Opus, work that doesn't need judgment goes to Sonnet or Haiku, and anything another engine can do goes there.
+
+I wanted to see that without opening a report, so the kitchen now has a wall of brass dials. It shows aggregate numbers only: free-tier calls, and how much context each Claude model carries on every turn. Where nothing can read a number yet, the dial says "no reader yet" instead of guessing.
+
+[![The usage gauges page: a grid of brass dials, one per free provider, each marked uncalibrated, idle or not claimed, with a note that no percentage is shown until a reading can be checked.](/blog-images/head-chef-line-cooks/fleet-gauges.png)](https://tortoisewolfe.github.io/AI_Workflow/gauges.html)
+
+That's a screenshot from the morning I built it. **[The live gauges page](https://tortoisewolfe.github.io/AI_Workflow/gauges.html)** has today's numbers.
+
 ## 📝 Steal it
 
 Everything is public:
