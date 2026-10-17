@@ -199,17 +199,17 @@ heading never becoming visible (or flicking visible then disappearing),
 and the failure-time page snapshot showed an empty "Logged in as: - User
 ID:" with Sign In links in the nav.
 
-**Root cause**: `getAuthenticatedUserId()` in `src/lib/payments/payment-service.ts`
-called `supabase.auth.getUser()` which hits `/auth/v1/user`. Under CI shard
-load Supabase rate-limited that endpoint with 403, and supabase-js treated
-the 403 as "session gone" — firing SIGNED_OUT. AuthContext cleared `user`
-mid-render, the payment-demo Step 4 block (gated on `user?.id`) unmounted,
-and the test's `toBeVisible` timed out.
+**Original diagnosis (corrected by #1351)**: `getAuthenticatedUserId()` in
+`src/lib/payments/payment-service.ts` called `supabase.auth.getUser()`, adding
+a request to `/auth/v1/user`. The test failure coincided with a 403 response
+and a cleared AuthContext, but a generic 403 is not evidence that auth-js
+emitted `SIGNED_OUT`; auth-js does not react to Realtime or RLS errors. The
+previous explanation attributed causation without proving it.
 
-**Fix**: switch `getAuthenticatedUserId()` to `supabase.auth.getSession()`
-— reads from localStorage, no server round-trip, can't 403. RLS still
-enforces auth at DB-query time. This mirrors the pattern already in
-`src/services/messaging/key-service.ts` for the same reason.
+**Change**: `getAuthenticatedUserId()` now uses `supabase.auth.getSession()`
+to avoid the unnecessary request. RLS still enforces auth at DB-query time.
+Independently, #1351 removes the stale SIGNED_OUT suppression and lets auth-js
+clear the session on real sign-out or revocation.
 
 ### payment-isolation on webkit (resolved via JWT TTL bump)
 

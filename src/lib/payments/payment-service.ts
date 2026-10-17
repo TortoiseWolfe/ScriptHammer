@@ -82,14 +82,9 @@ export class PaymentRetryExpiredError extends Error {
  * Get authenticated user ID
  * @throws Error if user not authenticated
  *
- * Uses getSession() instead of getUser() to avoid a server round-trip.
- * getUser() validates the JWT against /auth/v1/user, which under CI
- * shard load can 403 and cause supabase-js to emit a spurious SIGNED_OUT
- * event. That wiped AuthContext.user mid-render and unmounted the
- * payment-demo Step 4 block (gated on user?.id), flaking payment-isolation
- * tests. The RLS policies on payment tables still validate the JWT from
- * the access token, so we do not lose enforcement by skipping the server
- * round-trip here.
+ * Uses getSession() instead of getUser() to avoid an unnecessary server
+ * round-trip. The RLS policies on payment tables still validate the JWT from
+ * the access token, so skipping this extra request does not weaken enforcement.
  */
 async function getAuthenticatedUserId(): Promise<string> {
   const {

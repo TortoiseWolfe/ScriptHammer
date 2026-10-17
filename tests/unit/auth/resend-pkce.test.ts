@@ -12,8 +12,7 @@
  * - the request must carry a challenge, or the mailed link cannot sign anyone in;
  * - every verifier key the library writes must land in localStorage with "Remember me" off, or an
  *   emailed link opened in a new tab finds nothing (sessionStorage belongs to one tab);
- * - the library must be able to delete them, although they contain `auth-token`, which the
- *   session's removal guard refuses.
+ * - the library must be able to delete them after redemption.
  */
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
@@ -23,7 +22,6 @@ vi.unmock('@/lib/supabase/client');
 
 import {
   createAuthStorage,
-  setAllowAuthTokenRemoval,
   setSessionPersistence,
 } from '@/lib/supabase/client';
 
@@ -79,7 +77,6 @@ const ok = () => ({ status: 200, body: {} });
 beforeEach(() => {
   window.localStorage.clear();
   window.sessionStorage.clear();
-  setAllowAuthTokenRemoval(false);
   setSessionPersistence(false); // the harder case: auth keys go to sessionStorage
 });
 

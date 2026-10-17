@@ -7,20 +7,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import userEvent from '@testing-library/user-event';
-import { useRouter } from 'next/navigation';
 import AccountDeletionModal from './AccountDeletionModal';
-import * as gdprService from '@/services/messaging/gdpr-service';
 
 expect.extend(toHaveNoViolations);
 
-// Mock Next.js router
-vi.mock('next/navigation', () => ({
-  useRouter: vi.fn(),
-}));
-
 // Mock GDPR service using vi.hoisted for proper hoisting
-const { mockDeleteUserAccount } = vi.hoisted(() => ({
+const { mockDeleteUserAccount, mockSignOut } = vi.hoisted(() => ({
   mockDeleteUserAccount: vi.fn(),
+  mockSignOut: vi.fn(),
 }));
 
 vi.mock('@/services/messaging/gdpr-service', () => ({
@@ -29,14 +23,13 @@ vi.mock('@/services/messaging/gdpr-service', () => ({
   },
 }));
 
-describe('AccountDeletionModal Accessibility', () => {
-  const mockRouter = {
-    push: vi.fn(),
-  };
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({ signOut: mockSignOut }),
+}));
 
+describe('AccountDeletionModal Accessibility', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useRouter).mockReturnValue(mockRouter as any);
   });
 
   it('should have no accessibility violations when open', async () => {
