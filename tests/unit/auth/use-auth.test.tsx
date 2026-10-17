@@ -58,7 +58,6 @@ vi.mock('@/lib/supabase/client', () => {
   return {
     createClient: vi.fn(() => mockSupabaseClient),
     supabase: mockSupabaseClient,
-    setAllowAuthTokenRemoval: vi.fn(),
     // This mock supplies a WORKING client, so the provider must take the real
     // session path. Without this the provider short-circuits as "not configured"
     // and every assertion below silently measures nothing.
@@ -192,7 +191,7 @@ describe('useAuth', () => {
 
     await result.current.signOut();
 
-    expect(supabase.auth.signOut).toHaveBeenCalled();
+    expect(supabase.auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
   });
 
   it('should handle auth state changes', async () => {
@@ -344,8 +343,21 @@ describe('useAuth', () => {
       expect(loc.href).toBe('/RescueDogs/');
     });
 
-    it('redirects a real cross-tab SIGNED_OUT to the basePath root', async () => {
+    it('clears a valid stored session on SIGNED_OUT and redirects to the basePath root', async () => {
       const loc = stubLocation('/RescueDogs/profile/');
+      const mockUser = { id: 'user-123', email: 'test@example.com' };
+      const mockSession = {
+        user: mockUser,
+        access_token: 'valid-token',
+        refresh_token: 'refresh',
+      };
+      localStorage.setItem(
+        'sb-abcdefgh-auth-token',
+        JSON.stringify({
+          access_token: mockSession.access_token,
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+        })
+      );
 
       let authStateCallback: any;
       vi.mocked(supabase.auth.onAuthStateChange).mockImplementation(
@@ -365,9 +377,16 @@ describe('useAuth', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      // No sb-*-auth-token in localStorage, so this SIGNED_OUT is "real"
+      await authStateCallback('SIGNED_IN', mockSession);
+      await waitFor(() => expect(result.current.user).toEqual(mockUser));
+
+      // A still-valid access token cannot turn a real sign-out into a no-op.
       await authStateCallback('SIGNED_OUT', null);
 
+      await waitFor(() => {
+        expect(result.current.user).toBeNull();
+        expect(result.current.session).toBeNull();
+      });
       expect(loc.href).toBe('/RescueDogs/');
     });
 
@@ -393,9 +412,8 @@ describe('useAuth', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      // During email confirmation no auth-token exists yet, so a transient
-      // SIGNED_OUT passes the validity guard — it must not hijack the
-      // callback page (the pre-#154 bounce to the domain root).
+      // The callback page owns its own error/redirect handling; SIGNED_OUT
+      // must not hijack it (the pre-#154 bounce to the domain root).
       await authStateCallback('SIGNED_OUT', null);
 
       expect(loc.href).toBe(hrefBefore);

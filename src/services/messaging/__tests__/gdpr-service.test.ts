@@ -611,7 +611,7 @@ describe('GDPRService', () => {
   });
 
   describe('deleteUserAccount()', () => {
-    it('should delete all user data and sign out (T190)', async () => {
+    it('should delete all user data and leave sign-out to AuthContext (T190, #1351)', async () => {
       // Mock authenticated user
       mockSupabase.auth.getSession.mockResolvedValue({
         data: {
@@ -694,8 +694,9 @@ describe('GDPRService', () => {
       // The client must NOT try to delete the profile itself any more.
       expect(mockSupabase.from).not.toHaveBeenCalledWith('user_profiles');
 
-      // Verify sign out
-      expect(mockSupabase.auth.signOut).toHaveBeenCalled();
+      // AccountDeletionModal performs the shared AuthContext sign-out after
+      // deletion, keeping React state and auth storage in sync.
+      expect(mockSupabase.auth.signOut).not.toHaveBeenCalled();
     });
 
     it('throws when the function reports failure in its BODY, not just on transport (#859)', async () => {

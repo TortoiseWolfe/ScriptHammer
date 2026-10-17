@@ -17,7 +17,6 @@ import React, {
 import { User, Session } from '@supabase/supabase-js';
 import {
   supabase,
-  setAllowAuthTokenRemoval,
   isSupabaseConfigured,
 } from '@/lib/supabase/client';
 import { getInternalUrl, getRedirectUrl } from '@/config/project.config';
@@ -28,48 +27,6 @@ import { createLogger } from '@/lib/logger';
 import IdleTimeoutModal from '@/components/molecular/IdleTimeoutModal';
 
 const logger = createLogger('contexts:auth');
-
-/**
- * Check whether a Supabase auth-token in localStorage is still valid
- * (parseable JSON with a non-expired access_token).
- *
- * Used to tell a SPURIOUS SIGNED_OUT from a REAL one (cross-tab sign-out
- * cleared the token, the refresh token was revoked, or expires_at passed).
- * The spurious kind came from auth-js 2.72 removing a still-valid session
- * when a token refresh failed. 2.117 (#1298) no longer does that, so this
- * now mistakes real sign-outs for spurious ones; #1351 removes it.
- *
- * Returns false on: missing token, JSON parse error, missing expires_at,
- * or expires_at <= now (with a small grace window).
- *
- * Safe to call from event handlers — synchronous, no I/O beyond reading
- * localStorage.
- */
-function isAuthTokenValidInLocalStorage(): boolean {
-  if (typeof localStorage === 'undefined') return false;
-  try {
-    const key = Object.keys(localStorage).find(
-      (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
-    );
-    if (!key) return false;
-    const raw = localStorage.getItem(key);
-    if (!raw) return false;
-    const parsed = JSON.parse(raw) as {
-      access_token?: string;
-      expires_at?: number;
-    };
-    if (!parsed?.access_token || typeof parsed.expires_at !== 'number') {
-      return false;
-    }
-    // expires_at is a UNIX timestamp in seconds; allow 60-second grace
-    // so we don't treat a token within its last minute as "still valid"
-    // (the next API call would 401 anyway).
-    const nowSec = Math.floor(Date.now() / 1000);
-    return parsed.expires_at > nowSec + 60;
-  } catch {
-    return false;
-  }
-}
 
 /**
  * Auth error types for user feedback
@@ -252,41 +209,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      // Spurious SIGNED_OUT detection. auth-js 2.72 fired SIGNED_OUT when a
-      // token refresh failed, even though the access token in storage was
-      // still valid, and the next TOKEN_REFRESHED / SIGNED_IN recovered. Had
-      // we run setUser(null) on that event, every consumer
-      // (useConversationList, EncryptionKeyGate, navbar) would have seen
-      // user=null and flickered. (Realtime and RLS were blamed; auth-js
-      // reacts to neither.)
-      //
-      // Heuristic: SIGNED_OUT fired without isLocalSignOut.current AND
-      // the auth-token JSON in localStorage still parses to a non-expired
-      // access_token → it's spurious; ignore. Otherwise it's real
-      // (cross-tab signout, refresh-token revoked, token expired) →
-      // proceed with state clearing.
-      //
-      // Since 2.117 (#1298) auth-js keeps a session whose access token is still
-      // valid, so what this suppresses now is a real sign-out. #1351 removes it,
-      // together with the storage adapter's removal guard.
-      if (_event === 'SIGNED_OUT' && !isLocalSignOut.current) {
-        const tokenStillValid = isAuthTokenValidInLocalStorage();
-        if (tokenStillValid) {
-          logger.info(
-            'Spurious SIGNED_OUT suppressed (auth-token still valid in localStorage)'
-          );
-          return;
-        }
-      }
-
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
 
       // FR-009: real cross-tab sign-out — redirect to home.
-      // Reaching this branch means: SIGNED_OUT fired AND it's not a local
-      // sign-out AND the auth-token is gone/expired (we cleared it in
-      // another tab, or the refresh token was revoked server-side).
       if (_event === 'SIGNED_OUT' && !isLocalSignOut.current) {
         // The session ended somewhere else — revoked, expired, or another tab.
         // That is precisely when this device must stop being able to decrypt,
@@ -304,10 +231,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           });
         }
         // Never hijack a page a sign-in link lands on: during email
-        // confirmation no auth-token exists yet, so a transient SIGNED_OUT
-        // passes the validity guard above — and the callback page owns its
-        // own error/redirect handling (issue #154). The reset page is the
-        // second such page (#1255): a reset link that cannot be redeemed here
+        // confirmation can fire SIGNED_OUT before a session exists, and the callback
+        // page owns its own error/redirect handling (issue #154). The reset page is
+        // the second such page (#1255): a reset link that cannot be redeemed here
         // fires SIGNED_OUT, and the page explains why rather than vanishing.
         if (!isAuthLandingPath(window.location.pathname)) {
           logger.info('Cross-tab sign-out detected, redirecting to home');
@@ -389,10 +315,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
     setError(null);
 
-    // Allow the E2E storage adapter to remove auth tokens during sign-out
-    setAllowAuthTokenRemoval(true);
-
-    // Then attempt Supabase signOut (don't await, don't throw)
+    // Supabase sign-out removes tokens from either persistence store.
     try {
       await supabase.auth.signOut({ scope: 'local' });
     } catch (err) {
@@ -400,8 +323,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logger.error('Supabase signOut failed (local state cleared)', {
         error: err,
       });
-    } finally {
-      setAllowAuthTokenRemoval(false);
     }
 
     // FR-005: Force page reload to clear any stale React state

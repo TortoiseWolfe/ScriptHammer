@@ -3085,9 +3085,9 @@ export async function resetEncryptionKeys(
 
   // Clear stale cached keys from IndexedDB AND force a page reload
   // to destroy in-memory key state. Without the reload, the E2E
-  // SIGNED_OUT suppression keeps wrong-salt keys in memory — the
-  // EncryptionKeyGate sees them and skips the ReAuthModal, leaving the
-  // user with keys that don't match the DB public key.
+  // The reload destroys in-memory keys too; otherwise the EncryptionKeyGate
+  // can skip the ReAuthModal and leave the user with keys that don't match
+  // the DB public key.
   await page.evaluate(async () => {
     await new Promise<void>((resolve) => {
       try {

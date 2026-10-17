@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { gdprService } from '@/services/messaging/gdpr-service';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface AccountDeletionModalProps {
   /** Whether the modal is open */
@@ -30,7 +30,7 @@ export default function AccountDeletionModal({
   onDeleteComplete,
   onDeleteError,
 }: AccountDeletionModalProps) {
-  const router = useRouter();
+  const { signOut } = useAuth();
   const [confirmationText, setConfirmationText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,10 +63,8 @@ export default function AccountDeletionModal({
 
     try {
       await gdprService.deleteUserAccount();
+      await signOut();
       onDeleteComplete?.();
-
-      // Redirect to sign-in page after successful deletion
-      router.push('/sign-in?message=account_deleted');
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to delete account';

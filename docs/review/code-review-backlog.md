@@ -18,7 +18,7 @@ could not see (deployed config, live data).
 
 ## Summary
 
-**74 open findings: 1 P0, 16 P1, 37 P2, 20 P3.** The review found 83. Nine have since been fixed and deleted, per the rule above: the Tip Jar preview (#1306, by #1328), the offline contact form (#1324), the `useOfflineQueue` sync loop and the PWAInstall re-registration (#1262), the 1000-row liveness sample (#1330), the webhook dedupe (#1307, by #1335 and #1336), the PayPal subscription CHECK values (#1336), the paid retry that never advanced its order (#1308), and the provider switch that never created a payment (#1337). Every tier below has been reviewed once. Every
+**71 open findings: 1 P0, 13 P1, 37 P2, 20 P3.** The review found 83. Twelve have since been fixed and deleted, per the rule above: the Tip Jar preview (#1306, by #1328), the offline contact form (#1324), the `useOfflineQueue` sync loop and the PWAInstall re-registration (#1262), the 1000-row liveness sample (#1330), the webhook dedupe (#1307, by #1335 and #1336), the PayPal subscription CHECK values (#1336), the paid retry that never advanced its order (#1308), the provider switch that never created a payment (#1337), and the three auth sign-out findings (#1351). Every tier below has been reviewed once. Every
 reviewer only read code, traced each finding in the code before reporting it, and dropped
 anything it could not substantiate. Nothing here has been reproduced in a running app.
 
@@ -29,9 +29,6 @@ Themes worth fixing as a class rather than one by one:
 - **Supabase `{ error }` is treated as success.** postgrest-js resolves errors instead of
   throwing, and many call sites check only for a throw (`isSupabaseOnline`,
   `getConversationMeta`, `refreshSession`, RLS-filtered deletes that return 0 rows).
-- **Auth sign-out heuristics.** The token-removal guard plus the spurious-SIGNED_OUT check
-  mis-handles session-only users, account deletion and real revocation, and each path can
-  wipe or strand messaging keys.
 - **Tests and CI checks that cannot fail.** See the grouped entries under P1 and P2.
 
 ## Coverage
@@ -117,22 +114,6 @@ Themes worth fixing as a class rather than one by one:
 - **Defect:** The loop calls `onChange([...value, result.attachment])` with a `value` captured when the callback was created, so each iteration overwrites the previous one.
 - **Failure scenario:** When 3 screenshots are selected, all 3 upload but the order posts only the third. The other two are orphaned in the bucket until the 7-day sweep. The existing test uses a single file.
 - **Fix:** Use a functional update, or keep a ref to the latest `value`.
-- **Confidence:** confirmed
-
-### With "Remember me" off, any spurious SIGNED_OUT wipes the keys and the offline queue (#1351)
-
-- **Where:** `src/contexts/AuthContext.tsx:48-68` (`isAuthTokenValidInLocalStorage`), `:272-316`
-- **Defect:** The spurious-SIGNED_OUT check reads only `localStorage`. Since #375, session-only users keep their token in `sessionStorage` (`src/lib/supabase/client.ts:142-146`), so for them every transient SIGNED_OUT counts as real.
-- **Failure scenario:** Under auth-js 2.72, a failed token refresh (not Realtime or RLS, which auth-js never reacts to; #1298) fires SIGNED_OUT with the token still valid, and AuthContext nulls the user and calls `clearKeys()`, which deletes the IndexedDB private key and `messaging_queued_messages`. Unsent offline messages are lost and the user is redirected to `/`.
-- **Fix:** Read the token through the same store logic the adapter uses (`createAuthStorage().getItem(key)`).
-- **Confidence:** confirmed
-
-### Account deletion leaves a signed-in ghost session and token behind (#1351)
-
-- **Where:** `src/services/messaging/gdpr-service.ts:616`, `src/lib/supabase/client.ts:267-274`, `src/contexts/AuthContext.tsx:272-279`
-- **Defect:** The code calls `supabase.auth.signOut()` directly, bypassing `AuthContext.signOut`. The storage adapter therefore refuses to remove the token, and AuthContext then treats the SIGNED_OUT as spurious.
-- **Failure scenario:** After deletion, the client-side push to `/sign-in` still shows the deleted user as signed in. The dead token stays, and every later page load runs the ~7s refresh-retry loop before ending in `AUTH_FAILED`.
-- **Fix:** Route deletion through `AuthContext.signOut()` (or `setAllowAuthTokenRemoval`), use `scope: 'local'`, and do a full reload.
 - **Confidence:** confirmed
 
 ### "Remove" on an accepted connection does nothing but reports success
@@ -322,14 +303,6 @@ Themes worth fixing as a class rather than one by one:
 - **Failure scenario:** A non-admin signs in from another tab while an admin page is open. The console stays rendered with the already-loaded audit data visible. RLS blocks new fetches but not what is already on screen.
 - **Fix:** Tie the verdict to a user id, and reset both values when the id changes.
 - **Confidence:** plausible (depends on the cross-tab auth event not setting `isLoading`)
-
-### Real server-side revocation is hidden by the token-removal guard (#1351)
-
-- **Where:** `src/lib/supabase/client.ts:267-274`, `src/contexts/AuthContext.tsx:272-279`
-- **Defect:** The adapter blocks every `auth-token` removal outside explicit sign-out, including auth-js `_removeSession()` after a refresh token is revoked. The stale token then makes the real SIGNED_OUT look spurious.
-- **Failure scenario:** After a password reset elsewhere, "sign out everywhere", or a ban, the UI stays authenticated, the #1257 remote-sign-out key wipe doesn't run, and later loads end in `AUTH_FAILED`.
-- **Fix:** Allow removal once `getUser()` confirms the session is invalid, instead of inferring validity from `expires_at`.
-- **Confidence:** plausible
 
 ### Offline/fetch-failure history fallback always fails with "Conversation not found"
 

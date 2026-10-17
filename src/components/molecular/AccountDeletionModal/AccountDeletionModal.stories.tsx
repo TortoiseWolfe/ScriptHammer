@@ -6,11 +6,13 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { fn } from 'storybook/test';
 import { useState } from 'react';
+import { withAuthProvider } from '../../../../.storybook/decorators';
 import AccountDeletionModal from './AccountDeletionModal';
 
 const meta: Meta<typeof AccountDeletionModal> = {
   title: 'Components/Molecular/AccountDeletionModal',
   component: AccountDeletionModal,
+  decorators: [withAuthProvider],
   parameters: {
     layout: 'centered',
     docs: {
