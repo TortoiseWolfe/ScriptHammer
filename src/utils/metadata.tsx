@@ -86,7 +86,9 @@ export function generateMetadata(options: MetadataOptions = {}): Metadata {
 
   const fullTitle =
     title === projectConfig.projectName
-      ? `${title} - Modern Web Starter`
+      ? projectConfig.projectTagline
+        ? `${title} - ${projectConfig.projectTagline}`
+        : title
       : `${title} | ${projectConfig.projectName}`;
 
   // Undefined when the caller did not claim a path — see MetadataOptions.path.
