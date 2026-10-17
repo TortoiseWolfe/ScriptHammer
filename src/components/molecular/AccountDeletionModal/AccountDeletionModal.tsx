@@ -63,7 +63,8 @@ export default function AccountDeletionModal({
 
     try {
       await gdprService.deleteUserAccount();
-      await signOut();
+      // signOut clears local state and the auth-js storage, then navigates.
+      await signOut('/sign-in?message=account_deleted');
       onDeleteComplete?.();
     } catch (err) {
       const errorMessage =

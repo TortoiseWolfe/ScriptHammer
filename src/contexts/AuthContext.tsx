@@ -15,10 +15,7 @@ import React, {
   useMemo,
 } from 'react';
 import { User, Session } from '@supabase/supabase-js';
-import {
-  supabase,
-  isSupabaseConfigured,
-} from '@/lib/supabase/client';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase/client';
 import { getInternalUrl, getRedirectUrl } from '@/config/project.config';
 import { isAuthLandingPath } from '@/lib/auth/url-session';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
@@ -79,7 +76,8 @@ export interface AuthContextType extends AuthState {
     password: string,
     captchaToken?: string
   ) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
+  /** Signs out, then hard-navigates to `redirectTo` (default: home). */
+  signOut: (redirectTo?: string) => Promise<void>;
   refreshSession: () => Promise<void>;
   retry: () => Promise<void>;
   clearError: () => void;
@@ -306,7 +304,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
-  const signOut = useCallback(async () => {
+  const signOut = useCallback(async (redirectTo: string = '/') => {
     // Mark as local sign-out to prevent double redirect from onAuthStateChange
     isLocalSignOut.current = true;
 
@@ -326,7 +324,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // FR-005: Force page reload to clear any stale React state
-    window.location.href = getInternalUrl('/');
+    window.location.href = getInternalUrl(redirectTo);
   }, []);
 
   const refreshSession = useCallback(async () => {

@@ -343,6 +343,22 @@ describe('useAuth', () => {
       expect(loc.href).toBe('/RescueDogs/');
     });
 
+    it('redirects signOut to a caller-supplied page, basePath-prefixed (#1351)', async () => {
+      const loc = stubLocation('/RescueDogs/account/');
+
+      const { result } = renderHook(() => useAuth(), {
+        wrapper: AuthProvider,
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      await result.current.signOut('/sign-in?message=account_deleted');
+
+      expect(loc.href).toBe('/RescueDogs/sign-in?message=account_deleted');
+    });
+
     it('clears a valid stored session on SIGNED_OUT and redirects to the basePath root', async () => {
       const loc = stubLocation('/RescueDogs/profile/');
       const mockUser = { id: 'user-123', email: 'test@example.com' };

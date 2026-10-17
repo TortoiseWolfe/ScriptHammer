@@ -111,7 +111,9 @@ describe('AccountDeletionModal', () => {
 
     await waitFor(() => {
       expect(gdprService.gdprService.deleteUserAccount).toHaveBeenCalled();
-      expect(mockSignOut).toHaveBeenCalled();
+      expect(mockSignOut).toHaveBeenCalledWith(
+        '/sign-in?message=account_deleted'
+      );
       expect(onDeleteComplete).toHaveBeenCalled();
     });
   });
