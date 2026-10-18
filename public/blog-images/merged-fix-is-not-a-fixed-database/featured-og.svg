@@ -1,0 +1,50 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A Merged Security Fix Is Not a Fixed Database — a fix merged in code but not yet applied to the live database">
+  <defs>
+    <linearGradient id="mf-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#27272a"/>
+    </linearGradient>
+    <linearGradient id="mf-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="mf-amber" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#mf-bg)"/>
+
+  <g opacity="0.06" stroke="#a78bfa" stroke-width="1">
+    <path d="M0 158 H1200 M0 316 H1200 M0 474 H1200"/>
+    <path d="M240 0 V630 M480 0 V630 M720 0 V630 M960 0 V630"/>
+  </g>
+
+  <rect x="90" y="118" width="72" height="8" rx="4" fill="url(#mf-accent)"/>
+
+  <!-- Merged shield (solid) beside an unapplied database (dashed), top-right -->
+  <g transform="translate(852 140)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M40 0 L80 14 V54 Q80 90 40 110 Q0 90 0 54 V14 Z" fill="#1e1b2e" stroke="url(#mf-accent)" stroke-width="7"/>
+    <path d="M22 54 l14 14 l26 -30" stroke="#34d399" stroke-width="7" fill="none"/>
+    <path d="M92 60 H140" stroke="url(#mf-amber)" stroke-width="6" fill="none" stroke-dasharray="3 10"/>
+    <g transform="translate(150 6)" fill="none" stroke="url(#mf-amber)" stroke-width="6" stroke-dasharray="9 7">
+      <ellipse cx="40" cy="14" rx="40" ry="14"/>
+      <path d="M0 14 V90 Q0 104 40 104 Q80 104 80 90 V14"/>
+      <path d="M0 52 Q0 66 40 66 Q80 66 80 52"/>
+    </g>
+  </g>
+
+  <!-- Title -->
+  <text x="90" y="252" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="78" font-weight="800" fill="#fafafa">Merged Is Not</text>
+  <text x="90" y="344" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="78" font-weight="800" fill="url(#mf-accent)">Applied</text>
+
+  <!-- Subtitle -->
+  <text x="94" y="416" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="33" font-weight="500" fill="#d4d4d8">A security fix has three places to land,</text>
+  <text x="94" y="458" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="33" font-weight="500" fill="#d4d4d8">and a merge reaches only the first</text>
+
+  <g font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
+    <text x="90" y="560" font-size="28" font-weight="700" fill="#a78bfa">ScriptHammer</text>
+    <text x="368" y="560" font-size="24" font-weight="400" fill="#71717a">the assembly line for AI-written code · 5</text>
+  </g>
+</svg>
