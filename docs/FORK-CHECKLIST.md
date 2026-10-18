@@ -250,7 +250,7 @@ whole list is here rather than the four that usually matter.
 | `NEXT_PUBLIC_SUPABASE_URL`      | Variable | No accounts, payments or messaging. The site builds and shows a "not configured" banner.                                         |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Variable | Same. Both are VARIABLES — put them in Secrets and they arrive empty, the deploy goes green, and the site ships with no backend. |
 
-#### Makes the site advertise the wrong address
+#### Makes the site advertise the wrong address or project identity
 
 | Value                                  | Tab      | Without it                                                                                                                                                                                                       |
 | -------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -259,6 +259,7 @@ whole list is here rather than the four that usually matter.
 | `NEXT_PUBLIC_BASE_URL`                 | Variable | Same family.                                                                                                                                                                                                     |
 | `NEXT_PUBLIC_PROJECT_NAME`             | Variable | Overrides the name detect-project.js derives from the git remote. Usually unnecessary.                                                                                                                           |
 | `NEXT_PUBLIC_PROJECT_OWNER`            | Variable | Overrides the owner detect-project.js derives from the git remote.                                                                                                                                               |
+| `NEXT_PUBLIC_PROJECT_TAGLINE`          | Variable | Overrides the home-page title tagline; unset, the template tagline remains.                                                                                                                                      |
 | `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Variable | The Search Console meta tag is skipped, so verification never ships and nothing says so (#917).                                                                                                                  |
 
 #### Author identity on posts and the about surface
