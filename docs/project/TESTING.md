@@ -676,8 +676,9 @@ Too many emails have been sent recently. Check your inbox, or try again later.
 - `tests/e2e/security/brute-force.spec.ts` seeds a victim through the admin API and asserts that
   neither anonymous limiter RPCs nor six wrong passwords, from another browser or their own, keep
   them out.
-- Both run in `signup-mailer.yml`'s `captcha-blocked` project against the local stack, and skip
-  wherever captcha protects the backend.
+- Both run in `signup-mailer.yml`'s `captcha-blocked` project against local Supabase with
+  Cloudflare's published always-pass Turnstile test keys. The guard skips them on protected
+  backends unless that explicit local test configuration is active.
 
 **Increase Supabase rate limits via Management API** if a hosted run is being throttled:
 

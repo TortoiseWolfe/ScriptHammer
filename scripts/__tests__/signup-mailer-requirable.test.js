@@ -178,4 +178,24 @@ describe('Signup Mailer can be a required check (#870)', () => {
       assert.ok(needsSignupMailer([f]), `${f} must require the suite — ${why}`);
     }
   });
+
+  it('uses Cloudflare test keys for real local CAPTCHA submissions', () => {
+    const src = workflow();
+    const compose = fs.readFileSync(
+      path.join(ROOT, 'docker-compose.yml'),
+      'utf8'
+    );
+    assert.match(src, /GOTRUE_SECURITY_CAPTCHA_ENABLED:\s*'true'/);
+    assert.match(src, /GOTRUE_SECURITY_CAPTCHA_PROVIDER:\s*turnstile/);
+    assert.match(
+      src,
+      /GOTRUE_SECURITY_CAPTCHA_SECRET:\s*1x0000000000000000000000000000000AA/
+    );
+    assert.match(
+      src,
+      /NEXT_PUBLIC_CAPTCHA_SITE_KEY:\s*1x00000000000000000000AA/
+    );
+    assert.match(src, /E2E_LOCAL_TURNSTILE_TESTS:\s*'true'/);
+    assert.match(compose, /GOTRUE_SECURITY_CAPTCHA_SECRET:/);
+  });
 });

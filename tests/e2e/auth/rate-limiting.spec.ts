@@ -70,7 +70,7 @@ async function signIn(page: Page) {
 
 test.describe('Rate limiting: Supabase Auth refuses, the page says so (#1245)', () => {
   test.beforeEach(async () => {
-    // The forms cannot be submitted without a Turnstile token where captcha is on.
+    // The local signup-mailer lane supplies test-key tokens; protected backends elsewhere skip.
     await skipIfBackendCaptchaProtected(
       'What sign-in and reset show when Supabase Auth answers 429'
     );

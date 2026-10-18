@@ -11,9 +11,9 @@ import { defineConfig, devices } from '@playwright/test';
  *
  * 2. **captcha-blocked** (#353) — specs that submit the real sign-in form. The
  *    cloud project has `SECURITY_CAPTCHA_ENABLED`, which is global to auth, and
- *    Cloudflare withholds Turnstile tokens from automation by design, so those
- *    specs can never pass there. Locally captcha is off, so they run for real
- *    rather than sitting skipped.
+ *    production Turnstile keys withhold tokens from automation. Locally this
+ *    lane uses Cloudflare's published test-key pair, so the widget and server
+ *    verification run for real without sending mail outside Mailpit.
  *
  * The same principle covers both: neither family is testable against production
  * config, and skipping them on cloud without a home here would be silent
@@ -65,7 +65,8 @@ export default defineConfig({
     {
       // Specs whose subject IS the sign-in form, recovered from the cloud run
       // where CAPTCHA makes them unrunnable (#353). `captcha-guard` probes the
-      // backend, so here — captcha off — they execute instead of skipping.
+      // backend. The local test-key pair lets them exercise protected form
+      // submissions instead of skipping.
       //
       // These need no globalSetup: an account they sign in to is created per
       // test through the admin API and deleted after. brute-force.spec.ts pins
@@ -77,8 +78,8 @@ export default defineConfig({
         '**/auth/rate-limiting.spec.ts',
         // Recovers the admin-confirmation case, which seeds through the admin
         // API and then signs in through the form. The other cases in that file
-        // skip unconditionally (#361) and are covered by the signup-mailer
-        // specs, so including the file adds exactly the one runnable test.
+        // submit only against local Supabase/Mailpit with the test-key pair,
+        // so the form and admin-confirmation cases are exercised here.
         '**/auth/sign-up.spec.ts',
       ],
       use: { ...devices['Desktop Chrome'] },

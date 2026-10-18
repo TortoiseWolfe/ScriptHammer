@@ -20,44 +20,33 @@ import {
   dismissCookieBanner,
   waitForAuthenticatedState,
 } from '../utils/test-user-factory';
-import { skipIfBackendCaptchaProtected } from '../utils/captcha-guard';
+import {
+  isLocalTurnstileTestEnabled,
+  skipIfBackendCaptchaProtected,
+} from '../utils/captcha-guard';
 
 /**
- * (#361) Skip any test that would SUBMIT the sign-up form against the cloud
- * project — unconditionally.
+ * (#361) Submit sign-up forms only in the dedicated local Mailpit run. It
+ * enables the published Turnstile test keys for a real widget/token/server
+ * verification path, while preventing real confirmation mail from reaching
+ * the shared cloud project's sender.
  *
- * Submitting makes Supabase send a REAL confirmation email through Resend. The
- * generated address plus-routes to `scripthammer.e2e@gmail.com`, a mailbox that
+ * Submitting against the shared cloud project makes Supabase send a REAL
+ * confirmation email through Resend. The generated address plus-routes to
+ * `scripthammer.e2e@gmail.com`, a mailbox that
  * does not exist, so every one HARD BOUNCES ("Recipient not found") and is then
  * suppressed. Measured 2026-07-26 across the account's entire history: 121 of
  * 154 sends bounced, a **78.6% bounce rate**, and 120 of those came from this
  * one file. ESPs warn above 2-5% and suspend accounts over sustained rates, so
  * this was actively burning the project's sending reputation on every push.
  *
- * Real-form sign-up coverage is NOT lost — it is better covered by
- * `signup-mailer.yml` (#347), which drives the same form against LOCAL Supabase
- * with a Mailpit catcher, so the mail is actually delivered and asserted rather
- * than fired at the internet.
- *
- * The CAPTCHA condition below (#353) is kept because it documents a second,
- * independent reason these can never run against a protected cloud sign-up:
- * Playwright cannot solve a real challenge, and the token is verified
- * server-side against the real secret, so no Turnstile "test key" helps.
- *
- * Being EXPLICIT matters. The generic `.alert-error` branches further down would
- * otherwise swallow the skip into a vague "Sign-up error" (test 1) or accept it
- * as the expected duplicate-email error (test 2) — a test that silently stops
- * testing, or passes for the wrong reason, while CI stays green.
+ * Test keys are public and accepted only by the local GoTrue configuration;
+ * cloud submissions remain explicitly skipped to protect sending reputation.
  */
-async function skipIfSubmitsRealSignup(page: import('@playwright/test').Page) {
-  const captchaPresent = await page
-    .locator('[data-testid="captcha-widget"]')
-    .count();
+async function skipIfSubmitsRealSignup() {
   test.skip(
-    true,
-    captchaPresent > 0
-      ? 'Sign-up is CAPTCHA-protected (#353) and submitting sends real mail that hard-bounces (#361); covered by signup-mailer.yml against local Supabase.'
-      : 'Submitting sends a real confirmation email that hard-bounces and burns sending reputation (#361); covered by signup-mailer.yml against local Supabase.'
+    !isLocalTurnstileTestEnabled(),
+    'Real sign-up submissions run only against local Supabase with Mailpit and the published Turnstile test keys (signup-mailer.yml).'
   );
 }
 
@@ -125,7 +114,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
 
     await page.goto('/sign-up');
     await dismissCookieBanner(page);
-    await skipIfSubmitsRealSignup(page);
+    await skipIfSubmitsRealSignup();
 
     // Page heading is "Create Account"
     await expect(
@@ -154,10 +143,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
 
     if (hasError) {
       const errorText = await page.locator('.alert-error').textContent();
-      console.log('Sign-up error:', errorText);
-      // Rate limiting or other temporary issues shouldn't fail the test permanently
-      test.skip(true, `Sign-up error: ${errorText}`);
-      return;
+      throw new Error(`Sign-up failed: ${errorText}`);
     }
 
     if (!redirected) {
@@ -173,10 +159,9 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
   test('should show error when signing up with existing email', async ({
     page,
   }) => {
-    // Skip if admin client not available
+    // The local signup-mailer run must be able to seed users through the admin API.
     if (!isAdminClientAvailable()) {
-      test.skip(true, 'SUPABASE_SERVICE_ROLE_KEY not configured');
-      return;
+      throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
     }
 
     // Create a user first
@@ -184,15 +169,14 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
     const user = await createTestUser(existingEmail, DEFAULT_TEST_PASSWORD);
 
     if (!user) {
-      test.skip(true, 'Could not create test user');
-      return;
+      throw new Error('Could not create test user for duplicate-email test');
     }
 
     createdEmails.push(existingEmail);
 
     await page.goto('/sign-up');
     await dismissCookieBanner(page);
-    await skipIfSubmitsRealSignup(page);
+    await skipIfSubmitsRealSignup();
 
     // Try to sign up with the same email
     await page.getByLabel('Email').fill(existingEmail);
@@ -337,12 +321,10 @@ test.describe('Sign-up with Admin Confirmation', () => {
   test('should create user, auto-confirm, and sign-in', async ({ page }) => {
     // Skip if admin client not available
     if (!isAdminClientAvailable()) {
-      test.skip(true, 'SUPABASE_SERVICE_ROLE_KEY not configured');
-      return;
+      throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
     }
-    // Seeding happens through the admin API (unaffected by CAPTCHA), but the
-    // second half of this test signs in through the REAL form, which cannot be
-    // submitted without a Turnstile token.
+    // Seeding uses the admin API; sign-in uses the REAL form and the local
+    // Turnstile test key to submit against protected GoTrue.
     await skipIfBackendCaptchaProtected(
       'Admin-confirmed user can sign in through the sign-in form'
     );
@@ -354,8 +336,7 @@ test.describe('Sign-up with Admin Confirmation', () => {
     });
 
     if (!user) {
-      test.skip(true, 'Could not create test user');
-      return;
+      throw new Error('Could not create test user for admin-confirmation test');
     }
 
     try {
