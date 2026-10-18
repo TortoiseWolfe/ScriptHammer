@@ -566,7 +566,7 @@ let overflowed = 0;
  * backstop additionally needs to compare candidates against each other, which a
  * single streaming loop cannot do.
  */
-const candidates = [];
+const pool = [];
 for (const ref of wanted) {
   // Strip any basePath so the on-disk location matches the build output.
   const path = ref.startsWith('http') ? new URL(ref).pathname : ref;
@@ -586,12 +586,40 @@ for (const ref of wanted) {
   // Unknown to the live ledger means first sighting: it is dated now, so it gets a
   // full window rather than being dropped for having no history.
   const born = liveFirstSeen.get(rel) ?? NOW;
-  const ageDays = (NOW - born) / DAY_MS;
-  if (ageDays > RETAIN_DAYS) {
+  pool.push({ rel, dest, born, age: (liveAges.get(rel) ?? 0) + 1 });
+}
+
+/**
+ * WHICH OLD BUILDS ARE STILL BEING HELD (#1331).
+ *
+ * `born` is the deploy whose build last PRODUCED a file. `publishManifest()` dates every
+ * built file NOW, and a carried file keeps its date. So a generation was live from its
+ * `born` until the NEXT deploy, and a visitor who loaded a page at the cutoff holds the
+ * newest generation born BEFORE the cutoff, however long ago it shipped.
+ *
+ * Evicting on `born` alone dropped exactly that generation whenever deploys paused.
+ * Measured: no deploy from 2026-09-24 15:33 to 09-30 23:36, and the 10-10 deploy dropped
+ * the build that had served every page until 09-30. That left 9.2 days of coverage
+ * against 14. The worst case is worse still: after a quiet fortnight, the next deploy
+ * dropped the build that had been live a second earlier.
+ *
+ * So the cutoff moves back to the boundary generation, and only builds OLDER than it go.
+ * With steady deploys that is one extra generation for under a day; after a gap, it is
+ * the build that was live across the gap. Still bounded: everything older drops, and
+ * the file-count backstop below still applies.
+ */
+const cutoff = NOW - RETAIN_DAYS * DAY_MS;
+const boundary = pool.reduce(
+  (b, c) => (c.born < cutoff && c.born > b ? c.born : b),
+  -Infinity
+);
+const candidates = [];
+for (const c of pool) {
+  if (c.born < boundary) {
     tooOld++;
     continue;
   }
-  candidates.push({ rel, dest, born, age: (liveAges.get(rel) ?? 0) + 1 });
+  candidates.push(c);
 }
 
 // Newest first, so the backstop drops the assets fewest visitors can still be holding.
@@ -627,7 +655,7 @@ for (const { rel, dest, born, age } of candidates) {
 
 console.log(
   `\nretained ${retained} previous-build asset(s); ${alreadyPresent} already in the new build; ` +
-    `${failed} unreachable; ${tooOld} past ${RETAIN_DAYS} day(s)` +
+    `${failed} unreachable; ${tooOld} older than the build live ${RETAIN_DAYS} day(s) ago` +
     (overflowed
       ? `; ${overflowed} past the ${RETAIN_MAX_FILES}-file backstop`
       : '')

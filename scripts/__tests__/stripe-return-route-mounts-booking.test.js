@@ -25,7 +25,7 @@
  *
  * WHY IT LIVES HERE. `vitest.config.ts` excludes `supabase/functions/**`, and no workflow runs
  * `deno test` — so the Edge Function's own tests never execute in CI. `pnpm test:scripts` runs
- * inside the required `Test (20.x)` check (`ci.yml:89`), so this gates. It reads the function
+ * inside the required `Test` check (`ci.yml:89`), so this gates. It reads the function
  * source as text rather than importing it, which is what makes that possible.
  */
 

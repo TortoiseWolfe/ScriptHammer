@@ -89,12 +89,28 @@ function scoreAuth(s: AdminAuthStats): Attention {
 
   // Failed-login volume. 50/week is "someone's running a credential list";
   // 10/week is "worth a glance".
+  //
+  // The input is client-reported (#1284): nothing server-side sees a failed
+  // password, so these rows are whatever browsers chose to send. Anyone can
+  // raise this alert — the database caps anonymous rows at 30 an hour, which
+  // is ~5,000 a week against a threshold of 50 — so it says so rather than
+  // reading as evidence of an attack.
+  const failed = `${s.failed_this_week} failed login attempts this week (reported by browsers, unverified)`;
   if (s.failed_this_week >= 50) {
     level = 'alert';
-    reasons.push(`${s.failed_this_week} failed login attempts this week`);
+    reasons.push(failed);
   } else if (s.failed_this_week >= 10) {
     level = 'warn';
-    reasons.push(`${s.failed_this_week} failed login attempts this week`);
+    reasons.push(failed);
+  }
+
+  // Past that cap an event is counted rather than stored, so a flood stays
+  // visible even when it has pushed real failures out of the table (#1284).
+  if (s.reports_dropped_this_week > 0) {
+    if (level === 'ok') level = 'warn';
+    reasons.push(
+      `At least ${s.reports_dropped_this_week} anonymous reports dropped by the hourly limit this week; failed-login counts are incomplete`
+    );
   }
 
   return { level, reasons };

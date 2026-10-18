@@ -5,24 +5,34 @@
  * `supabase/functions/**` and no workflow runs `deno test`, so a test written next to the Edge
  * Function would never execute — the same shape as `send-payment-email` itself, which has a
  * contract test and no caller. `advance-order.ts` imports nothing, so it can be imported here
- * and exercised inside the required `Test (20.x)` check.
+ * and exercised inside the required `Test` check.
  *
  * WHAT IS WORTH ASSERTING. Not "does it update a row" — that is one line. The behaviours that
  * carry risk, and every one of them is a way to hurt a paying customer:
  *
- *   - a missing order must NOT throw, or Stripe retries the event forever (#1126: a retried
- *     intent legitimately has no order row)
+ *   - a missing order must NOT throw, or the provider retries the event for nothing (an intent
+ *     nothing ordered, or a retry chain whose links do not match; a faithful retry now finds its
+ *     purchase's order, #1308)
  *   - a second event for the same order must NOT email again — two Stripe events describe one
  *     purchase, and `webhook_events` de-duplication does not cover that
  *   - a failing email must NOT fail the caller, or a Resend outage becomes a retry storm
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { advanceOrderAndNotify } from '../../supabase/functions/_shared/advance-order';
+import {
+  advanceOrderAndNotify,
+  isFaithfulRetry,
+} from '../../supabase/functions/_shared/advance-order';
 
 /** Minimal PostgREST-shaped stub: records what was asked, returns what the test wants. */
 function makeSupabase({
   order = null as Record<string, unknown> | null,
+  orderError = null as unknown,
+  /** Orders keyed by intent_id. When given, it replaces `order` for the lookup. */
+  ordersByIntent = null as Record<string, Record<string, unknown>> | null,
+  /** payment_intents rows keyed by id, for the retry walk (#1308). */
+  intents = {} as Record<string, Record<string, unknown>>,
+  intentError = null as unknown,
   updatedRows = [{ id: 'ord-1' }] as unknown[] | null,
   updateError = null as unknown,
   product = { name: 'Office Hours' } as Record<string, unknown> | null,
@@ -44,7 +54,17 @@ function makeSupabase({
     chain.limit = () => chain;
     chain.maybeSingle = async () => {
       calls.push({ table, op: 'select', filters });
-      return { data: table === 'orders' ? order : product, error: null };
+      if (table === 'orders') {
+        const row = ordersByIntent
+          ? (ordersByIntent[String(filters.intent_id)] ?? null)
+          : order;
+        return { data: row, error: orderError };
+      }
+      if (table === 'payment_intents') {
+        if (intentError) return { data: null, error: intentError };
+        return { data: intents[String(filters.id)] ?? null, error: null };
+      }
+      return { data: product, error: null };
     };
     chain.update = (patch: Record<string, unknown>) => {
       calls.push({ table, op: 'update', filters });
@@ -122,13 +142,134 @@ describe('advanceOrderAndNotify (#1151)', () => {
   });
 
   it('a missing order is not an error — or Stripe retries forever', async () => {
-    // #1126: `create-order`'s `op: 'retry'` path deliberately skips the insert, so an intent
-    // with no order row is reachable with nothing wrong.
+    // An intent nothing ordered (a payment made outside the checkout) reaches here with nothing
+    // wrong. A retry no longer does: the walk finds its purchase's order (#1308).
     const { client } = makeSupabase({ order: null });
     const r = await advanceOrderAndNotify(client, INPUT);
     expect(r.advanced).toBe(false);
     expect(r.reason).toBe('no-order');
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('a FAILED order read throws, rather than passing for "no order" (#1307)', async () => {
+    // A read error used to be indistinguishable from a missing order: the webhook marked the
+    // event processed and the paid order was never advanced or receipted. Throwing lets the
+    // webhook claim retry the event, which is safe because everything here is a CAS.
+    const { client } = makeSupabase({
+      order: null,
+      orderError: { code: '08006', message: 'connection lost' },
+    });
+    await expect(advanceOrderAndNotify(client, INPUT)).rejects.toMatchObject({
+      code: '08006',
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('a FAILED status write throws, so the payment is retried rather than left unadvanced (#1307)', async () => {
+    const { client } = makeSupabase({
+      order: ORDER,
+      updatedRows: null,
+      updateError: { code: '40001', message: 'serialization failure' },
+    });
+    await expect(advanceOrderAndNotify(client, INPUT)).rejects.toMatchObject({
+      code: '40001',
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // --- #1308: a payment made on a RETRY advances the order of the purchase it retried ---------
+
+  const ROOT = {
+    id: 'int-1',
+    parent_intent_id: null,
+    amount: 3900,
+    currency: 'usd',
+    template_user_id: 'user-1',
+  };
+  const RETRY = { ...ROOT, id: 'int-2', parent_intent_id: 'int-1' };
+
+  it('a paid RETRY advances the order of the intent it retried (#1308)', async () => {
+    // create-order's retry branch inserts a child intent and NO order row, so the webhook used
+    // to find no order for the child and stop: the buyer was charged and the order stayed
+    // pending with no receipt.
+    const { client, calls } = makeSupabase({
+      ordersByIntent: { 'int-1': ORDER },
+      intents: { 'int-1': ROOT, 'int-2': RETRY },
+    });
+    const r = await advanceOrderAndNotify(client, {
+      ...INPUT,
+      intentId: 'int-2',
+    });
+    expect(r).toMatchObject({ advanced: true, orderId: 'ord-1' });
+    const update = calls.find(
+      (c) => c.table === 'orders' && c.op === 'update'
+    )!;
+    expect(update.filters).toMatchObject({ id: 'ord-1', status: 'pending' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('walks a chain of retries back to the purchase', async () => {
+    const RETRY2 = { ...ROOT, id: 'int-3', parent_intent_id: 'int-2' };
+    const { client } = makeSupabase({
+      ordersByIntent: { 'int-1': ORDER },
+      intents: { 'int-1': ROOT, 'int-2': RETRY, 'int-3': RETRY2 },
+    });
+    const r = await advanceOrderAndNotify(client, {
+      ...INPUT,
+      intentId: 'int-3',
+    });
+    expect(r).toMatchObject({ advanced: true, orderId: 'ord-1' });
+  });
+
+  it('does not follow a link whose price, currency or buyer differs', async () => {
+    // A legitimate retry copies all three from its parent (buildRetryIntentRow). Anything else
+    // would let a cheap payment mark an expensive order paid, so the walk refuses it.
+    for (const bad of [
+      { amount: 100 },
+      { currency: 'eur' },
+      { template_user_id: 'someone-else' },
+    ]) {
+      const { client, calls } = makeSupabase({
+        ordersByIntent: { 'int-1': ORDER },
+        intents: { 'int-1': ROOT, 'int-2': { ...RETRY, ...bad } },
+      });
+      const r = await advanceOrderAndNotify(client, {
+        ...INPUT,
+        intentId: 'int-2',
+      });
+      expect(r).toMatchObject({ advanced: false, reason: 'no-order' });
+      expect(calls.some((c) => c.op === 'update')).toBe(false);
+    }
+  });
+
+  it('stops after a bounded number of hops, even on a cycle', async () => {
+    const { client } = makeSupabase({
+      ordersByIntent: {},
+      intents: {
+        'int-a': { ...ROOT, id: 'int-a', parent_intent_id: 'int-b' },
+        'int-b': { ...ROOT, id: 'int-b', parent_intent_id: 'int-a' },
+      },
+    });
+    const r = await advanceOrderAndNotify(client, {
+      ...INPUT,
+      intentId: 'int-a',
+    });
+    expect(r).toMatchObject({ advanced: false, reason: 'no-order' });
+  });
+
+  it('a FAILED intent read throws rather than passing for "no order"', async () => {
+    const { client } = makeSupabase({
+      ordersByIntent: {},
+      intentError: { code: '08006' },
+    });
+    await expect(
+      advanceOrderAndNotify(client, { ...INPUT, intentId: 'int-2' })
+    ).rejects.toMatchObject({ code: '08006' });
+  });
+
+  it('isFaithfulRetry compares price, currency and buyer', () => {
+    expect(isFaithfulRetry(RETRY, ROOT)).toBe(true);
+    expect(isFaithfulRetry({ ...RETRY, amount: 3901 }, ROOT)).toBe(false);
   });
 
   it('a second event for the same order does NOT email again', async () => {

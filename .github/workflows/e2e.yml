@@ -28,7 +28,7 @@ on:
       - '.vscode/**'
       # Repo tooling — no Playwright spec references these, e2e.yml never invokes
       # them, and none is in the prebuild/build chain. They are gated by
-      # `test:scripts` inside the required `Test (20.x)` check instead.
+      # `test:scripts` inside the required `Test` check instead.
       - 'scripts/audit-components.js'
       - 'scripts/validate-structure.js'
       - 'scripts/rebrand.sh'
@@ -297,7 +297,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 20.x
+          node-version: '22'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -395,7 +395,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 20.x
+          node-version: '22'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -498,7 +498,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 20.x
+          node-version: '22'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -595,7 +595,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 20.x
+          node-version: '22'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -683,7 +683,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 20.x
+          node-version: '22'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -824,7 +824,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 20.x
+          node-version: '22'
           cache: 'pnpm'
 
       - name: Install dependencies
@@ -1021,7 +1021,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 20.x
+          node-version: '22'
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -1178,7 +1178,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 20.x
+          node-version: '22'
           cache: 'pnpm'
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -1341,7 +1341,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 20.x
+          node-version: '22'
           cache: 'pnpm'
 
       - name: Install dependencies

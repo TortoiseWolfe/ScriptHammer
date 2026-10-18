@@ -84,8 +84,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: 20.x
-
+          node-version: '22'
       # IS THERE A SENDING ACCOUNT TO ASK ABOUT? (#985)
       #
       # A fresh fork has no Resend account, so this asked a live API about nothing and

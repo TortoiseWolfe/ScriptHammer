@@ -528,12 +528,8 @@ export class GDPRService {
    * @throws AuthenticationError if user is not signed in
    * @throws ConnectionError if deletion fails
    *
-   * @example
-   * ```typescript
-   * // After user confirms by typing "DELETE"
-   * await gdprService.deleteUserAccount();
-   * // User is signed out and all data is permanently deleted
-   * ```
+   * The caller must sign out through AuthContext after this resolves so local
+   * React state and the auth-js storage adapter are cleared together (#1351).
    */
   async deleteUserAccount(): Promise<void> {
     const supabase = createClient();
@@ -612,8 +608,6 @@ export class GDPRService {
         );
       }
 
-      // Step 3: Sign out (user no longer exists)
-      await supabase.auth.signOut();
     } catch (error) {
       if (
         error instanceof AuthenticationError ||

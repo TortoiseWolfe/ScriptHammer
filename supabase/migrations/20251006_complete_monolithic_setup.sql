@@ -134,6 +134,26 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_results_one_succeeded_per_intent
 
 COMMENT ON TABLE payment_results IS 'Outcome of payment attempts with webhook verification';
 
+-- The Stripe Checkout sessions create-stripe-checkout has opened, by intent (#1345). Before it
+-- opens a new one it asks Stripe about every session recorded for the purchase's retry chain:
+-- an open one is expired, a complete one means the buyer has paid and the new one is refused.
+-- Without this record two sessions created while a purchase was unpaid could both be paid, a
+-- second charge the webhooks can detect (#1342) but nothing could prevent: Stripe offers no
+-- way to find a purchase's open sessions by our intent id.
+--
+-- A table of its own rather than a 'pending' payment_results row keyed by the session id: that
+-- table's readers (the return page, the admin stats, the webhooks' reconciliation) take its rows
+-- as payment outcomes. Written and read only by the service role; no client policy.
+CREATE TABLE IF NOT EXISTS stripe_checkout_sessions (
+  session_id TEXT PRIMARY KEY,
+  intent_id UUID NOT NULL REFERENCES payment_intents(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_stripe_checkout_sessions_intent_id
+  ON stripe_checkout_sessions(intent_id);
+ALTER TABLE stripe_checkout_sessions ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE stripe_checkout_sessions IS 'Stripe Checkout sessions opened per intent, so a new one can expire the chain''s earlier open sessions (#1345). Service role only.';
+
 -- Subscriptions
 CREATE TABLE IF NOT EXISTS subscriptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -333,6 +353,13 @@ COMMENT ON COLUMN webhook_events.livemode IS
 ALTER TABLE payment_intents DROP CONSTRAINT IF EXISTS payment_intents_amount_check;
 ALTER TABLE payment_intents ADD CONSTRAINT payment_intents_amount_check
   CHECK (amount >= 100 AND amount <= 350000);  -- $1.00 .. $3,500.00
+
+-- #1307 stage 2: the time of the newest PROVIDER event applied to this row (Stripe event.created,
+-- PayPal create_time). The webhooks refuse a subscription snapshot older than it, so a replayed
+-- or out-of-order event cannot roll the row back. NULL means no event has stamped it yet.
+-- Readable by the owner through the table-level SELECT grant; writable only by service_role,
+-- because authenticated's UPDATE grant names three columns and not this one.
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS last_provider_event_at TIMESTAMPTZ;
 
 -- subscriptions.plan_amount had a floor and NO ceiling at all, so the $999.99
 -- limit never applied to subscriptions in the first place (T003).
@@ -600,6 +627,24 @@ CREATE INDEX IF NOT EXISTS idx_auth_audit_logs_event_type ON auth_audit_logs(eve
 CREATE INDEX IF NOT EXISTS idx_auth_audit_logs_created_at ON auth_audit_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_auth_audit_logs_ip_address ON auth_audit_logs(ip_address);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_user_event ON auth_audit_logs(user_id, event_type, created_at DESC);
+-- Serves log_auth_event()'s hourly ceiling on rows with no session (#1284): partial, so it
+-- holds only those rows and the check reads at most the ceiling's worth of them.
+CREATE INDEX IF NOT EXISTS idx_auth_audit_logs_anonymous_recent
+  ON auth_audit_logs(created_at) WHERE user_id IS NULL;
+
+-- What that ceiling turned away, counted per hour (#1284). The ceiling bounds the disk, but on
+-- its own it would also hide a flood: past 30 an hour a real failed sign-in is not stored, and
+-- nothing would say so. One row per clock hour carries at least how many were turned away
+-- (never exact: counting must not make callers wait, see log_auth_event), so the dashboard
+-- can show the flood the audit rows no longer can. A separate table rather than a
+-- row in auth_audit_logs, because that table is append-only and this one is a counter.
+-- At most 24 rows a day; pruned with the audit log at 90 days.
+CREATE TABLE IF NOT EXISTS auth_audit_overflow (
+  hour    TIMESTAMPTZ PRIMARY KEY,
+  dropped INTEGER NOT NULL CHECK (dropped > 0)
+);
+ALTER TABLE auth_audit_overflow ENABLE ROW LEVEL SECURITY;
+COMMENT ON TABLE auth_audit_overflow IS 'Anonymous auth events past log_auth_event''s hourly ceiling, counted per hour instead of stored (#1284). Written only by log_auth_event; read by admin_auth_stats.';
 
 -- The "(90-day retention)" half of this comment was untrue for ten months: the
 -- function existed, nothing called it (#585). It now names its own enforcer, so
@@ -738,6 +783,40 @@ EXCEPTION
 END;
 $$;
 
+-- record_sign_in(): the database's own record of a successful sign-in (#1284).
+--
+-- GoTrue sets auth.users.last_sign_in_at each time it issues a NEW session — password, OAuth,
+-- magic link, email verification — and not when it refreshes one. No client can write that
+-- column, so a row written here is a sign-in count no browser can inflate, and it covers every
+-- path, the way the 'sign_up' row above does (#49).
+--
+-- The browser used to write these rows itself, as 'sign_in_success' through log_auth_event().
+-- Any signed-in account could call that as often as it liked, and the browser missed nearly
+-- every real sign-in anyway: measured on production 2026-10-10, 14 sessions created in 30 days
+-- against ONE client-written success row. 'sign_in' is the server's name for the event; no
+-- production row carried it before this, so it separates the two without reading event_data.
+--
+-- event_data names the source and nothing else. raw_app_meta_data->>'provider' is the provider
+-- the account was CREATED with, not the one used for this sign-in, so recording it would be a
+-- plausible wrong value.
+CREATE OR REPLACE FUNCTION record_sign_in()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  INSERT INTO public.auth_audit_logs (user_id, event_type, success, event_data)
+  VALUES (NEW.id, 'sign_in', TRUE, jsonb_build_object('source', 'auth.users'));
+  RETURN NEW;
+EXCEPTION
+  WHEN OTHERS THEN
+    -- Never fail a sign-in because its audit row could not be written.
+    RAISE WARNING 'Failed to record sign-in for %: %', NEW.id, SQLERRM;
+    RETURN NEW;
+END;
+$$;
+
 -- Cleanup old audit logs (90 days) — #585
 --
 -- THIS FUNCTION EXISTED FROM THE INITIAL MIGRATION AND WAS NEVER CALLED. For ten
@@ -748,9 +827,10 @@ $$;
 -- caller, correct those documents in the same change — a retention claim with no
 -- job behind it is precisely the defect this ticket was.
 --
--- Batched on purpose: auth_audit_logs carries FIVE indexes (lines 288-292), so
--- every deleted row costs five index updates, and the original unbounded DELETE
--- built one working set as large as the whole backlog. Note the call is still a
+-- Batched on purpose: auth_audit_logs carries six indexes besides its primary
+-- key, plus a partial one over rows with no user (the CREATE INDEX lines after
+-- the table), so every deleted row costs six or seven index updates, and the
+-- original unbounded DELETE built one working set as large as the whole backlog. Note the call is still a
 -- SINGLE transaction — plpgsql functions cannot COMMIT — so this bounds
 -- per-statement work, not transaction duration. That is enough here: the rows are
 -- 90+ days old in an append-only table, so no live writer contends for them.
@@ -794,6 +874,10 @@ BEGIN
     -- the remaining iterations on empty DELETEs.
     EXIT WHEN v_batch < v_size;
   END LOOP;
+
+  -- The overflow counter keeps the same 90 days (#1284). One row an hour, so no batching, and
+  -- not added to the total, which the retention job reports as audit rows.
+  DELETE FROM auth_audit_overflow WHERE hour < v_cutoff;
 
   RETURN v_total;
 END;
@@ -997,6 +1081,19 @@ CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW
     EXECUTE FUNCTION create_user_profile();
+
+-- `UPDATE OF` alone fires whenever the column is in the SET list, even unchanged, so the WHEN
+-- clause is what makes this one row per new session (#1284). It is not hypothetical: GoTrue's
+-- token refresh rewrites last_sign_in_at with its existing value (measured on v2.177.0 —
+-- with the clause removed, every refresh counted as a login). tests/rls/auth-sign-in-events
+-- pins both halves.
+DROP TRIGGER IF EXISTS on_auth_user_signed_in ON auth.users;
+CREATE TRIGGER on_auth_user_signed_in
+    AFTER UPDATE OF last_sign_in_at ON auth.users
+    FOR EACH ROW
+    WHEN (NEW.last_sign_in_at IS NOT NULL
+          AND NEW.last_sign_in_at IS DISTINCT FROM OLD.last_sign_in_at)
+    EXECUTE FUNCTION record_sign_in();
 
 -- ============================================================================
 -- PART 6: STORAGE BUCKETS (Feature 022: Avatar Upload)
@@ -1323,8 +1420,9 @@ CREATE POLICY "Service role can insert audit logs" ON auth_audit_logs
 -- may only attribute an event to themselves (user_id = auth.uid()) or leave it
 -- unattributed (user_id IS NULL — the legitimate case for a FAILED login, where
 -- no session exists yet). The event_type CHECK on the table is the vocabulary
--- guard; callers must use 'sign_in_success' / 'sign_in_failed' (what the admin
--- stats + failed-attempt detector read), not 'sign_in'.
+-- guard. Successful sign-ins are no longer a client's to report at all: the
+-- database records them (record_sign_in, #1284), so a client logs only
+-- 'sign_in_failed' and the non-sign-in events.
 CREATE OR REPLACE FUNCTION public.log_auth_event(
   p_event_type   TEXT,
   p_user_id      UUID DEFAULT NULL,
@@ -1360,16 +1458,52 @@ BEGIN
       USING ERRCODE = '42501';
   END IF;
 
+  -- The same for sign-ins, under either name and whatever p_success says (#1284). The database
+  -- writes 'sign_in' when GoTrue issues a session (record_sign_in); 'sign_in_success' was the
+  -- browser's name for the same event, and every reader now ignores it. Left writable, either
+  -- one would let a signed-in account set the dashboard's login count to anything — measured
+  -- before this change: five calls moved logins_today from 2 to 7.
+  IF p_event_type IN ('sign_in', 'sign_in_success')
+     AND auth.role() IS DISTINCT FROM 'service_role' THEN
+    RAISE EXCEPTION 'log_auth_event: sign-ins are recorded server-side'
+      USING ERRCODE = '42501';
+  END IF;
+
+  -- A failed sign-in happens before any session exists, so a caller that HAS one has no failed
+  -- sign-in to report. Accepting it let any free account raise failed_this_week, and the
+  -- dashboard alert it drives, without limit, because the anonymous ceiling below does not
+  -- apply to a signed-in caller (#1284 review). Every client-written failed sign-in is now
+  -- anonymous, and so inside that ceiling. The cost: someone already signed in who mistypes
+  -- another account's password sends their session along, and that one failure goes
+  -- unrecorded (the logger swallows the refusal). Rare, and not worth an unbounded path.
+  IF p_event_type = 'sign_in_failed' AND auth.uid() IS NOT NULL THEN
+    RAISE EXCEPTION 'log_auth_event: a failed sign-in is logged without a session'
+      USING ERRCODE = '42501';
+  END IF;
+
   -- Anonymous callers keep EXECUTE on purpose — failed sign-ins, sign-up failures and reset
   -- requests happen before any session exists, and revoking it would silently zero that
-  -- telemetry (#241). What anon may WRITE is bounded instead (#1245): only those three event
-  -- types, and never a success except a reset request.
+  -- telemetry (#241). What anon may WRITE is bounded instead: only those three event types,
+  -- never a success except a reset request (#1245), a smaller payload, and a site-wide ceiling
+  -- on how many rows (#1284).
   --
-  -- WHAT THIS DOES NOT BOUND, stated so nobody reads more into it: the NUMBER of rows. Anon can
-  -- still insert failed-sign-in rows without limit (each capped below), and a signed-in user can
-  -- still log repeated sign-ins against their own id, which the dashboard's logins_today counts
-  -- as rows. Both need a server-derived throttle or counts read from GoTrue's own audit log —
-  -- #1284, not claimed here.
+  -- WHY THE CEILING IS SITE-WIDE: nothing a caller without a session sends can be tied to anyone,
+  -- so there is no honest key to throttle per caller. 30 an hour holds a sustained flood to
+  -- ~65,000 rows over the 90-day retention, against 7,439 rows in the whole table today. The
+  -- busiest hour production ever saw was 90: 4,526 of the 4,540 rows in its hours over 30 were
+  -- plus-addressed gmail aliases, which is how the E2E user factory names accounts.
+  --
+  -- PAST THE CEILING AN EVENT IS COUNTED, NOT STORED. A flood crowds real failed sign-ins out
+  -- of the table until the hour turns, and a cap that did only that would also hide the flood
+  -- (the commit security review's finding). So the call adds one to this hour's row in
+  -- auth_audit_overflow, when it can do so without waiting (see below), and returns without
+  -- error; admin_auth_stats reports the week's total as a lower bound, and the dashboard says
+  -- the failure counts are incomplete. It cannot RAISE: that would roll the count back.
+  --
+  -- WHAT THIS STILL DOES NOT BOUND: rows a signed-in user writes against their own id, of the
+  -- types left to them (password change, sign-out and the like). Those are attributable to an
+  -- account, unlike the anonymous ones, and no dashboard count reads them; a per-caller
+  -- throttle needs the server-derived key the Edge Function stage of #1245 provides.
   IF auth.uid() IS NULL AND auth.role() IS DISTINCT FROM 'service_role' THEN
     IF p_event_type NOT IN ('sign_in_failed', 'sign_up', 'password_reset_request') THEN
       RAISE EXCEPTION 'log_auth_event: % cannot be logged without a session', p_event_type
@@ -1378,6 +1512,40 @@ BEGIN
     IF COALESCE(p_success, TRUE) AND p_event_type <> 'password_reset_request' THEN
       RAISE EXCEPTION 'log_auth_event: an anonymous caller cannot log a successful %', p_event_type
         USING ERRCODE = '42501';
+    END IF;
+    -- What these calls send is an email and a provider: 111 bytes at most in production.
+    IF p_event_data IS NOT NULL AND pg_column_size(p_event_data) > 512 THEN
+      RAISE EXCEPTION 'log_auth_event: event_data is % bytes; the limit without a session is 512',
+        pg_column_size(p_event_data) USING ERRCODE = '22001';
+    END IF;
+    -- Checked once without the lock, so a flood never queues on it, then again under it, so
+    -- concurrent callers cannot all read 29 and each write the 30th. Only the second check
+    -- decides that a row may be written.
+    --
+    -- THE COUNT NEVER WAITS EITHER. An increment that locked the hour's row would make every
+    -- call past the ceiling, site-wide, run one at a time behind the last one's commit, each
+    -- holding a pooled connection while it waited — so a flood could starve the whole data
+    -- API, not just this function (#1284 review). Instead a call counts only if it wins a
+    -- try-lock, which never blocks; one that loses returns uncounted. The number is a LOWER
+    -- BOUND, which is all the dashboard needs: above zero, the failure counts are short.
+    IF (SELECT count(*) FROM auth_audit_logs
+        WHERE user_id IS NULL AND created_at > now() - interval '1 hour') >= 30 THEN
+      IF pg_try_advisory_xact_lock(hashtext('log_auth_event:overflow')) THEN
+        INSERT INTO auth_audit_overflow (hour, dropped)
+        VALUES (date_trunc('hour', now()), 1)
+        ON CONFLICT (hour) DO UPDATE SET dropped = auth_audit_overflow.dropped + 1;
+      END IF;
+      RETURN;
+    END IF;
+    PERFORM pg_advisory_xact_lock(hashtext('log_auth_event:anonymous'));
+    IF (SELECT count(*) FROM auth_audit_logs
+        WHERE user_id IS NULL AND created_at > now() - interval '1 hour') >= 30 THEN
+      IF pg_try_advisory_xact_lock(hashtext('log_auth_event:overflow')) THEN
+        INSERT INTO auth_audit_overflow (hour, dropped)
+        VALUES (date_trunc('hour', now()), 1)
+        ON CONFLICT (hour) DO UPDATE SET dropped = auth_audit_overflow.dropped + 1;
+      END IF;
+      RETURN;
     END IF;
   END IF;
 
@@ -1681,6 +1849,12 @@ CREATE POLICY "Admin can view all audit logs" ON auth_audit_logs
     is_admin()  -- #240: live column authority (was: JWT claim, which could drift/linger)
   );
 
+-- The only policy on the overflow counter (#1284): admins read it, through the SECURITY
+-- INVOKER admin_auth_stats(). Its one writer is the SECURITY DEFINER log_auth_event().
+DROP POLICY IF EXISTS "Admin can view audit overflow" ON auth_audit_overflow;
+CREATE POLICY "Admin can view audit overflow" ON auth_audit_overflow
+  FOR SELECT USING (is_admin());
+
 DROP POLICY IF EXISTS "Admin can view all orders" ON orders;
 CREATE POLICY "Admin can view all orders" ON orders
   FOR SELECT USING (
@@ -1826,9 +2000,20 @@ BEGIN
       USING ERRCODE = '42501';
   END IF;
 
+  -- Sign-ins are the database's 'sign_in' rows only (record_sign_in, #1284). The browser's old
+  -- 'sign_in_success' rows are left out on purpose, here and in admin_audit_trends and
+  -- admin_overview: any signed-in account could write those.
+  --
+  -- failed_this_week and top_failed_logins are still client-reported: nothing server-side sees a
+  -- failed password, so ANYONE can raise them, up to log_auth_event's ceiling of 30 anonymous
+  -- rows an hour (~5,000 a week, against an alert at 50). They are not verified, and the
+  -- dashboard says so. reports_dropped_this_week is at least how many that ceiling turned away
+  -- (a lower bound: a call that would have to wait to count does not count); above zero, the
+  -- failure counts are incomplete as well as unverified.
   RETURN (
     SELECT json_build_object(
-      'logins_today', (SELECT count(*) FROM auth_audit_logs WHERE event_type IN ('sign_in', 'sign_in_success') AND success = TRUE AND created_at > now() - interval '1 day'),
+      'reports_dropped_this_week', (SELECT COALESCE(sum(dropped), 0) FROM auth_audit_overflow WHERE hour > now() - interval '7 days'),
+      'logins_today', (SELECT count(*) FROM auth_audit_logs WHERE event_type = 'sign_in' AND success = TRUE AND created_at > now() - interval '1 day'),
       'failed_this_week', (SELECT count(*) FROM auth_audit_logs WHERE event_type = 'sign_in_failed' AND created_at > now() - interval '7 days'),
       'signups_this_month', (SELECT count(*) FROM auth_audit_logs WHERE event_type = 'sign_up' AND success = TRUE AND created_at > now() - interval '30 days'),
       'top_failed_logins', (
@@ -2214,10 +2399,11 @@ BEGIN
       USING ERRCODE = '42501';
   END IF;
 
-  -- Totals: single scan over the range, FILTER for multi-count
+  -- Totals: single scan over the range, FILTER for multi-count. Successes are the database's
+  -- 'sign_in' rows only (#1284); the key stays 'sign_in_success' because the dashboard reads it.
   SELECT
     COUNT(*) FILTER (WHERE event_type = 'sign_in_failed'),
-    COUNT(*) FILTER (WHERE event_type IN ('sign_in', 'sign_in_success') AND success = TRUE)
+    COUNT(*) FILTER (WHERE event_type = 'sign_in' AND success = TRUE)
   INTO v_failed, v_succeeded
   FROM auth_audit_logs
   WHERE created_at >= p_start AND created_at < p_end;
@@ -2244,7 +2430,7 @@ BEGIN
           SELECT
             date_trunc('day', created_at)                                                           AS day,
             COUNT(*) FILTER (WHERE event_type = 'sign_in_failed')                                   AS failed,
-            COUNT(*) FILTER (WHERE event_type IN ('sign_in', 'sign_in_success') AND success = TRUE) AS succeeded
+            COUNT(*) FILTER (WHERE event_type = 'sign_in' AND success = TRUE)                       AS succeeded
           FROM auth_audit_logs
           WHERE created_at >= p_start AND created_at < p_end
           GROUP BY date_trunc('day', created_at)
@@ -2554,7 +2740,7 @@ BEGIN
       LEFT JOIN (
         SELECT date_trunc('day', created_at) AS day, COUNT(*) AS n
         FROM auth_audit_logs
-        WHERE event_type IN ('sign_in', 'sign_in_success') AND success = TRUE
+        WHERE event_type = 'sign_in' AND success = TRUE  -- the database's rows only (#1284)
           AND created_at >= v_start AND created_at < v_end + interval '1 day'
         GROUP BY 1
       ) a ON a.day = days.day
@@ -2641,6 +2827,10 @@ REVOKE INSERT, UPDATE, DELETE, TRUNCATE, TRIGGER, REFERENCES ON payment_intents 
 -- already says `TO service_role`, which is how the webhook writes. `anon` gets nothing.
 REVOKE ALL ON payment_results FROM anon, authenticated;
 GRANT SELECT ON payment_results TO authenticated;
+
+-- stripe_checkout_sessions (#1345) is born under the same default ACL. No client reads or writes
+-- it, so nothing is granted back.
+REVOKE ALL ON stripe_checkout_sessions FROM anon, authenticated;
 
 -- #1073, table 9 of 10. Same GRANT-cannot-narrow trap: the line below named three
 -- privileges and withheld none of the other four, TRUNCATE among them, so either
@@ -2783,6 +2973,10 @@ GRANT INSERT (
 -- break a working read. Table-wide SELECT is the honest choice.
 REVOKE ALL ON auth_audit_logs FROM anon, authenticated;
 GRANT SELECT ON auth_audit_logs TO authenticated;
+-- The overflow counter (#1284) is born under the same default ACL, so it gets the same REVOKE;
+-- SELECT stays for the admin policy above, and nothing a client runs may write it.
+REVOKE ALL ON auth_audit_overflow FROM anon, authenticated;
+GRANT SELECT ON auth_audit_overflow TO authenticated;
 GRANT SELECT ON products TO authenticated;
 
 -- #1073, table 7 of 10. The line below already said SELECT, and it did nothing.

@@ -18,9 +18,8 @@
  *
  * a tautology whose sibling comment concedes it does not test its own name.
  *
- * So the guard lives here, against the real adapter, where it can fail on the
- * pre-#375 behaviour. Verified by reverting: with the old always-localStorage
- * adapter, the "session mode" cases below go red.
+ * These checks use the real adapter, where they fail against the pre-#375
+ * always-localStorage behaviour.
  *
  * @module tests/unit/auth-session-persistence.test
  */
@@ -36,7 +35,6 @@ import {
   createAuthStorage,
   setSessionPersistence,
   getSessionPersistence,
-  setAllowAuthTokenRemoval,
 } from '@/lib/supabase/client';
 
 /** The shape Supabase uses for its session key. */
@@ -46,7 +44,6 @@ const PREF_KEY = 'sh-auth-persistence';
 beforeEach(() => {
   window.localStorage.clear();
   window.sessionStorage.clear();
-  setAllowAuthTokenRemoval(false);
 });
 
 describe('session persistence preference (#375)', () => {
@@ -104,27 +101,11 @@ describe('session persistence preference (#375)', () => {
   });
 });
 
-describe('auth-token removal guard survives the store change (#375)', () => {
-  it('blocks auth-token removal unless explicitly allowed', () => {
-    // The guard exists because auth-js clears the session on transient 406/403s
-    // from Realtime/RLS, which fires SIGNED_OUT and bounces a user with a valid
-    // access_token back to /sign-in. Routing storage must not weaken it.
-    const storage = createAuthStorage();
-    storage.setItem(AUTH_KEY, 'token');
-
-    storage.removeItem(AUTH_KEY);
-
-    expect(storage.getItem(AUTH_KEY)).toBe('token');
-  });
-
-  it('removes from BOTH stores on an explicit sign-out', () => {
-    // A token can be in either store depending on the preference, so sign-out
-    // has to clear both or it leaves one behind — the same leak from the other
-    // direction.
+describe('auth-token removal (#1351)', () => {
+  it('removes a session from both stores without an explicit sign-out flag', () => {
     window.localStorage.setItem(AUTH_KEY, 'stale-local');
     window.sessionStorage.setItem(AUTH_KEY, 'stale-session');
 
-    setAllowAuthTokenRemoval(true);
     createAuthStorage().removeItem(AUTH_KEY);
 
     expect(window.localStorage.getItem(AUTH_KEY)).toBeNull();
@@ -142,14 +123,15 @@ describe('auth-token removal guard survives the store change (#375)', () => {
 /**
  * The PKCE code verifier (#1255) is not a session, and must not be stored like one.
  *
- * auth-js writes it under `<storageKey>-code-verifier` when a flow starts (sign-up, password
- * reset, OAuth) and reads it back when the emailed or redirected link lands. Two properties of
+ * auth-js writes it under a key ending `-code-verifier` when a flow starts (sign-up, a resent
+ * confirmation, password reset, OAuth) and reads it back when the emailed or redirected link
+ * lands. Since 2.117 there are three such keys per flow (#1298); the legacy one is used here, and
+ * tests/unit/auth/resend-pkce.test.ts checks the ones the real library writes. Two properties of
  * the session store would break that:
  *
  * - "Remember me" OFF puts auth keys in sessionStorage, which belongs to ONE tab. An emailed link
  *   opens in a new tab, finds no verifier, and the sign-in silently fails.
- * - The removal guard matches any key containing `auth-token`, which this one does. auth-js
- *   deletes the verifier once redeemed; the guard would keep a spent secret forever.
+ * - The key contains `auth-token`, but auth-js must still be able to delete it once redeemed.
  */
 describe('PKCE code verifier storage (#1255)', () => {
   const VERIFIER_KEY = `${AUTH_KEY}-code-verifier`;
@@ -165,17 +147,17 @@ describe('PKCE code verifier storage (#1255)', () => {
     expect(storage.getItem(VERIFIER_KEY)).toBe('verifier');
   });
 
-  it('is deleted once redeemed, although the session guard is closed', () => {
+  it('is deleted once redeemed, regardless of the session store', () => {
     const storage = createAuthStorage();
     storage.setItem(VERIFIER_KEY, 'verifier');
 
     storage.removeItem(VERIFIER_KEY);
 
     expect(window.localStorage.getItem(VERIFIER_KEY)).toBeNull();
-    // Control: the same call on the session itself is still refused.
+    // Control: session tokens are also removable from either store.
     storage.setItem(AUTH_KEY, 'token');
     storage.removeItem(AUTH_KEY);
-    expect(storage.getItem(AUTH_KEY)).toBe('token');
+    expect(storage.getItem(AUTH_KEY)).toBeNull();
   });
 
   it('is not moved into sessionStorage when the preference changes', () => {

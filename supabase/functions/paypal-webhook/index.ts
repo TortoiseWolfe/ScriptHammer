@@ -4,8 +4,25 @@
  */
 
 import { advanceOrderAndNotify } from '../_shared/advance-order.ts';
+import { assertSameCharge, retryable } from '../_shared/second-charge.ts';
+import {
+  claimWebhookEvent,
+  failWebhookEvent,
+  finishWebhookEvent,
+  replaySafe,
+} from '../_shared/webhook-claim.ts';
+import {
+  canceledAtFromPayPal,
+  failurePatch,
+  laterOf,
+  mapPayPalSubscription,
+  paypalEventAt,
+  snapshotDecision,
+} from '../_shared/subscription-events.ts';
 import {
   errorMessage,
+  isOurIntentRef,
+  PG_UNIQUE_VIOLATION,
   type WebhookHandlerResult,
 } from '../_shared/webhook-types.ts';
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
@@ -82,86 +99,97 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data: existingEvent } = await supabase
-      .from('webhook_events')
-      .select('id')
-      .eq('provider', 'paypal')
-      .eq('provider_event_id', event.id)
-      .single();
-
-    if (existingEvent) {
+    // CLAIM BEFORE HANDLING (#1307). See _shared/webhook-claim.ts.
+    const claim = await claimWebhookEvent(supabase, 'paypal', {
+      provider_event_id: event.id,
+      event_type: event.event_type,
+      event_data: event.resource,
+      signature: transmissionSig,
+    });
+    if (claim.kind === 'respond') {
       return new Response(
-        JSON.stringify({ received: true, message: 'Event already processed' }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({
+          received: claim.status === 200,
+          message: claim.message,
+        }),
+        {
+          status: claim.status,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+    const webhookEvent = { id: claim.id };
+
+    let processResult;
+    try {
+      switch (event.event_type) {
+        case 'PAYMENT.CAPTURE.COMPLETED':
+        case 'PAYMENT.SALE.COMPLETED':
+          processResult = await handlePaymentCompleted(
+            supabase,
+            event,
+            webhookEvent.id
+          );
+          break;
+        case 'BILLING.SUBSCRIPTION.CREATED':
+        case 'BILLING.SUBSCRIPTION.ACTIVATED':
+        case 'BILLING.SUBSCRIPTION.UPDATED':
+          processResult = await handleSubscriptionEvent(
+            supabase,
+            event,
+            webhookEvent.id
+          );
+          break;
+        case 'BILLING.SUBSCRIPTION.CANCELLED':
+          processResult = await handleSubscriptionCancelled(
+            supabase,
+            event,
+            webhookEvent.id
+          );
+          break;
+        case 'BILLING.SUBSCRIPTION.PAYMENT.FAILED':
+          processResult = await handleSubscriptionPaymentFailed(
+            supabase,
+            event,
+            webhookEvent.id
+          );
+          break;
+        default:
+          processResult = { handled: false };
+      }
+    } catch (handlerError) {
+      // Retry (500) while replay-safe and under the cap; otherwise give up with 200 and leave
+      // the row permanently_failed for the liveness alarm.
+      const outcome = await failWebhookEvent(
+        supabase,
+        claim.id,
+        claim.attempt,
+        // Never a retry for a second charge: it gives up at once, permanently_failed, which
+        // Webhook Liveness reports as needing a refund (#1342).
+        retryable(replaySafe('paypal', event.event_type), handlerError),
+        handlerError
+      );
+      console.error(
+        `PayPal handler failed for ${event.id} (attempt ${claim.attempt}, gave up: ${outcome.giveUp}):`,
+        handlerError
+      );
+      return new Response(
+        JSON.stringify({
+          error: errorMessage(handlerError) || 'Internal server error',
+          gave_up: outcome.giveUp,
+        }),
+        {
+          status: outcome.status,
+          headers: { 'Content-Type': 'application/json' },
+        }
       );
     }
 
-    const { data: webhookEvent, error: webhookError } = await supabase
-      .from('webhook_events')
-      .insert({
-        provider: 'paypal',
-        provider_event_id: event.id,
-        event_type: event.event_type,
-        event_data: event.resource,
-        signature: transmissionSig,
-        signature_verified: true,
-        processed: false,
-      })
-      .select()
-      .single();
-
-    if (webhookError) throw webhookError;
-
-    let processResult;
-    switch (event.event_type) {
-      case 'PAYMENT.CAPTURE.COMPLETED':
-      case 'PAYMENT.SALE.COMPLETED':
-        processResult = await handlePaymentCompleted(
-          supabase,
-          event,
-          webhookEvent.id
-        );
-        break;
-      case 'BILLING.SUBSCRIPTION.CREATED':
-      case 'BILLING.SUBSCRIPTION.ACTIVATED':
-      case 'BILLING.SUBSCRIPTION.UPDATED':
-        processResult = await handleSubscriptionEvent(
-          supabase,
-          event,
-          webhookEvent.id
-        );
-        break;
-      case 'BILLING.SUBSCRIPTION.CANCELLED':
-        processResult = await handleSubscriptionCancelled(
-          supabase,
-          event,
-          webhookEvent.id
-        );
-        break;
-      case 'BILLING.SUBSCRIPTION.PAYMENT.FAILED':
-        processResult = await handleSubscriptionPaymentFailed(
-          supabase,
-          event,
-          webhookEvent.id
-        );
-        break;
-      default:
-        processResult = { handled: false };
-    }
-
-    await supabase
-      .from('webhook_events')
-      .update({
-        processed: true,
-        processed_at: new Date().toISOString(),
-        ...(processResult.related_payment_id && {
-          related_payment_id: processResult.related_payment_id,
-        }),
-        ...(processResult.related_subscription_id && {
-          related_subscription_id: processResult.related_subscription_id,
-        }),
-      })
-      .eq('id', webhookEvent.id);
+    // Throws if the row was not marked, so a success whose bookkeeping failed is retried.
+    await finishWebhookEvent(supabase, claim.id, claim.attempt, {
+      related_payment_id: processResult.related_payment_id,
+      related_subscription_id: processResult.related_subscription_id,
+    });
 
     return new Response(
       JSON.stringify({ received: true, processed: processResult }),
@@ -230,16 +258,27 @@ async function handlePaymentCompleted(
   webhookEventId: string
 ): Promise<WebhookHandlerResult> {
   const resource = event.resource;
-  const { data: intent } = await supabase
+  // A PayPal Invoicing capture carries `INV2-...` here, and other integrations on the merchant
+  // account set custom_id. Not ours, and permanent: check before a lookup that would throw.
+  const intentId = resource.custom_id || resource.invoice_id;
+  if (!isOurIntentRef(intentId)) {
+    return { handled: false, reason: 'not_our_intent' };
+  }
+
+  // .maybeSingle() and a checked error. .single() ERRORS on zero rows and the error was never
+  // read, so "could not read the intent" looked like "no such intent" and the capture was marked
+  // processed unrecorded. A read error now throws, which the claim turns into a retry (#1307).
+  const { data: intent, error: intentError } = await supabase
     .from('payment_intents')
     .select('*')
-    .eq('id', resource.custom_id || resource.invoice_id)
-    .single();
+    .eq('id', intentId)
+    .maybeSingle();
+  if (intentError) throw intentError;
 
   if (!intent) return { handled: false };
 
-  // #239: RECONCILE onto the ONE payment_results row for this intent — do NOT
-  // blind-INSERT. create-paypal-order already wrote a 'pending' row for this
+  // #239: RECONCILE onto the captured ORDER's payment_results row (#1342: not the intent's
+  // oldest; see below) — do NOT blind-INSERT. create-paypal-order already wrote a 'pending' row for this
   // intent (transaction_id = PayPal ORDER id), and the buyer-redirect capture
   // (capture-paypal-order) may have already flipped it to 'succeeded'. This
   // webhook carries the PayPal CAPTURE id (resource.id) — a DIFFERENT value from
@@ -255,14 +294,35 @@ async function handlePaymentCompleted(
     ? Math.round(parseFloat(resource.transaction_fee.value) * 100)
     : null;
 
-  const { data: existing } = await supabase
+  // THE CAPTURED ORDER'S ROW (#1342), not the intent's oldest. create-paypal-order writes one
+  // pending row per ORDER (transaction_id = the order id); this event carries the CAPTURE id as
+  // resource.id and the order id under supplementary_data.related_ids. Taking the oldest row,
+  // whichever order was captured, folded a second order's capture into the first order's row,
+  // so a buyer who paid twice left one succeeded row and no trace. A capture carrying no order id
+  // (not from the Orders API) keeps the old rule, because there is nothing better to match on.
+  const orderId: string | undefined =
+    resource.supplementary_data?.related_ids?.order_id;
+  /** Every id this payment may be recorded under: its order (by create-paypal-order) and its capture. */
+  const ownIds = [orderId, resource.id].filter(
+    (v): v is string => typeof v === 'string' && v.length > 0
+  );
+
+  // A read error here used to fall through to the INSERT below as if no row existed. That is a
+  // second succeeded row on a retry; the per-intent unique index would refuse it, but the
+  // answer to "could not read" is to retry, not to guess.
+  const lookup = supabase
     .from('payment_results')
     .select('id')
     .eq('intent_id', intent.id)
-    .eq('provider', 'paypal')
-    .order('created_at', { ascending: true })
+    .eq('provider', 'paypal');
+  const { data: existing, error: existingError } = await (
+    orderId
+      ? lookup.eq('transaction_id', orderId)
+      : lookup.order('created_at', { ascending: true })
+  )
     .limit(1)
     .maybeSingle();
+  if (existingError) throw existingError;
 
   if (existing) {
     // Authoritative webhook confirmation: mark succeeded + fill the amounts and
@@ -283,6 +343,27 @@ async function handlePaymentCompleted(
       .select()
       .single();
 
+    // Another row for this intent is already succeeded (the index allows one). Either it is this
+    // same capture, recorded under its capture id by the insert below on an earlier delivery, or
+    // it is a DIFFERENT order captured for the same intent: a second charge, which
+    // assertSameCharge throws for, and the catch gives up on at once (#1342).
+    //
+    // ONLY WITH AN ORDER ID (blind review). Without one, this row is the intent's oldest by the
+    // fallback above, which may be an abandoned order while the one paid order holds the
+    // succeeded row. The capture id can never match a row keyed by an order id, so the check
+    // would call the buyer's only payment a second charge and point at refunding it. Without an
+    // order id the collision keeps its old meaning: a plain error, retried, then
+    // permanently_failed for a human to read.
+    if (updateError?.code === PG_UNIQUE_VIOLATION && orderId) {
+      await assertSameCharge(supabase, intent.id, ownIds);
+      await advanceOrderAndNotify(supabase, {
+        intentId: intent.id,
+        amount: chargedAmount,
+        currency: chargedCurrency,
+        provider: 'paypal',
+      });
+      return { handled: false, reason: 'payment_already_recorded' };
+    }
     if (updateError) throw updateError;
 
     // Same transition as the Stripe path (#1151). Both PayPal exits below mean the capture
@@ -298,8 +379,9 @@ async function handlePaymentCompleted(
     return { handled: true, related_payment_id: updated.id };
   }
 
-  // Defensive fallback: no row exists for this intent (payment never went
-  // through create-paypal-order). Insert one so the payment is still recorded.
+  // Defensive fallback: no row matched — this order's row, or, with no order id,
+  // any PayPal row for the intent (the payment never went through
+  // create-paypal-order). Insert one so the payment is still recorded.
   const { data: inserted, error: insertError } = await supabase
     .from('payment_results')
     .insert({
@@ -316,6 +398,17 @@ async function handlePaymentCompleted(
     .select()
     .single();
 
+  // Same two meanings as the update above: this capture again, or a second charge (#1342).
+  if (insertError?.code === PG_UNIQUE_VIOLATION) {
+    await assertSameCharge(supabase, intent.id, ownIds);
+    await advanceOrderAndNotify(supabase, {
+      intentId: intent.id,
+      amount: chargedAmount,
+      currency: chargedCurrency,
+      provider: 'paypal',
+    });
+    return { handled: false, reason: 'payment_already_recorded' };
+  }
   if (insertError) throw insertError;
 
   // Same transition as the Stripe path (#1151). Both PayPal exits below mean the capture
@@ -352,19 +445,51 @@ async function handleSubscriptionEvent(
     return { handled: false, reason: 'missing_custom_id' };
   }
 
+  // THE PLAN COMES FROM THE CATALOG, where create-paypal-subscription chose it. The event's own
+  // fields gave plan_interval 'regular' (tenure_type) and plan_amount 0 before the first payment,
+  // and both violate the subscriptions CHECKs, so every such event failed (#1311,
+  // RescueDogs#349). limit(1): two products sharing one plan id would describe the same plan.
+  const { data: product, error: productError } = await supabase
+    .from('products')
+    .select('interval, amount')
+    .eq('paypal_plan_id', resource.plan_id ?? '')
+    .limit(1)
+    .maybeSingle();
+  if (productError) throw productError;
+
+  const mapped = mapPayPalSubscription(resource, product);
+  if (mapped.kind === 'skip') {
+    console.warn(
+      `PayPal subscription ${resource.id} (${resource.status}) not stored: ${mapped.reason}`
+    );
+    return { handled: false, reason: mapped.reason };
+  }
+
+  // ORDERED BY THE PROVIDER'S CLOCK (#1307 stage 2): an older snapshot, replayed or delivered
+  // out of order, must not roll the row back. See snapshotDecision.
+  const eventAt = paypalEventAt(event.create_time, Date.now());
+  const { data: stored, error: storedError } = await supabase
+    .from('subscriptions')
+    .select('status, last_provider_event_at')
+    .eq('provider_subscription_id', resource.id)
+    .maybeSingle();
+  if (storedError) throw storedError;
+  const decision = snapshotDecision(stored, eventAt);
+  if (!decision.apply) {
+    console.log(
+      `PayPal subscription ${resource.id}: ${event.event_type} not applied (${decision.reason})`
+    );
+    return { handled: false, reason: decision.reason };
+  }
+
   const subscriptionData = {
     provider: 'paypal',
     provider_subscription_id: resource.id,
     template_user_id: templateUserId,
     customer_email: resource.subscriber?.email_address || '',
-    plan_amount: Math.round(
-      parseFloat(resource.billing_info?.last_payment?.amount?.value || '0') *
-        100
-    ),
-    plan_interval:
-      resource.billing_info?.cycle_executions?.[0]?.tenure_type?.toLowerCase() ||
-      'month',
-    status: mapPayPalSubscriptionStatus(resource.status),
+    plan_amount: mapped.plan_amount,
+    plan_interval: mapped.plan_interval,
+    status: mapped.status,
     current_period_start: resource.billing_info?.last_payment?.time
       ? new Date(resource.billing_info.last_payment.time)
           .toISOString()
@@ -376,11 +501,13 @@ async function handleSubscriptionEvent(
           .split('T')[0]
       : null,
     next_billing_date:
-      resource.status === 'ACTIVE' && resource.billing_info?.next_billing_time
+      mapped.status === 'active' && resource.billing_info?.next_billing_time
         ? new Date(resource.billing_info.next_billing_time)
             .toISOString()
             .split('T')[0]
         : null,
+    // The provider's time for this snapshot, so an older one can never overwrite it (#1307).
+    last_provider_event_at: eventAt,
   };
 
   const { data: sub, error } = await supabase
@@ -411,18 +538,49 @@ async function handleSubscriptionCancelled(
   webhookEventId: string
 ): Promise<WebhookHandlerResult> {
   const resource = event.resource;
+
+  // NO ORDERING GUARD, deliberately: cancellation is terminal and canceled_at comes from the
+  // event, so applying it again is harmless, and skipping it could leave a dead subscription
+  // holding the user's one live slot. It STAMPS the provider time, so an older snapshot arriving
+  // later is refused by snapshotDecision instead of reviving the row.
+  const { data: stored, error: storedError } = await supabase
+    .from('subscriptions')
+    .select('last_provider_event_at')
+    .eq('provider_subscription_id', resource.id)
+    .maybeSingle();
+  if (storedError) throw storedError;
+
   const { data: sub, error } = await supabase
     .from('subscriptions')
     .update({
       status: 'canceled',
-      canceled_at: new Date().toISOString(),
-      cancellation_reason: resource.status_update_time || null,
+      last_provider_event_at: laterOf(
+        stored?.last_provider_event_at ?? null,
+        paypalEventAt(event.create_time, Date.now())
+      ),
+      // From the event, not now(), so a replay cannot move the date (#1307). This used to write
+      // status_update_time into cancellation_reason, a timestamp where a reason belongs.
+      canceled_at: canceledAtFromPayPal(
+        resource,
+        event.create_time,
+        Date.now()
+      ),
+      cancellation_reason: resource.status_change_note || null,
     })
     .eq('provider_subscription_id', resource.id)
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw error;
+  // .single() ERRORED on zero rows, so a cancellation for a subscription this database never
+  // recorded was a 500. Under the claim that is a permanent condition: a give-up and a daily red
+  // alarm for nothing. Acknowledge it, as stripe-webhook does (#1307 prerequisite 6).
+  if (!sub) {
+    console.warn(
+      `BILLING.SUBSCRIPTION.CANCELLED for a subscription not in the database: ${resource.id}`
+    );
+    return { handled: false, reason: 'unknown_subscription' };
+  }
   return { handled: true, related_subscription_id: sub.id };
 }
 
@@ -441,44 +599,49 @@ async function handleSubscriptionPaymentFailed(
   const resource = event.resource;
   const providerSubId = resource.id;
 
-  const { data: existing } = await supabase
+  // .maybeSingle() and a checked error: .single() errored on zero rows and the error was never
+  // read, so "could not read" looked like "no subscription" (#1307).
+  const { data: existing, error: readError } = await supabase
     .from('subscriptions')
-    .select('id, failed_payment_count')
+    .select(
+      'id, status, failed_payment_count, grace_period_expires, last_provider_event_at'
+    )
     .eq('provider_subscription_id', providerSubId)
-    .single();
+    .maybeSingle();
+  if (readError) throw readError;
 
   if (!existing) {
     return { handled: false };
   }
 
-  const gracePeriodExpires = new Date(
-    Date.now() + GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000
-  )
-    .toISOString()
-    .split('T')[0];
+  // Idempotent, so a replay is safe (#1307): PayPal's own failed_payments_count, a live grace
+  // deadline kept, no revival of an ended subscription, and no failure applied to one a newer
+  // snapshot shows active again.
+  const providerCount = resource.billing_info?.failed_payments_count;
+  if (!(providerCount > 0)) {
+    // The rule then adds one, which a replay would repeat. Whether PayPal has already counted
+    // this failure when it sends the event is undocumented; this line records it if not.
+    console.warn(
+      `PayPal subscription ${providerSubId}: failed_payments_count is ${providerCount}; counting +1`
+    );
+  }
+  const decision = failurePatch(existing, {
+    providerCount,
+    eventAt: paypalEventAt(event.create_time, Date.now()),
+    nowMs: Date.now(),
+    graceDays: GRACE_PERIOD_DAYS,
+  });
+  if (decision.kind === 'skip') {
+    return { handled: false, reason: decision.reason };
+  }
 
   const { data: sub, error } = await supabase
     .from('subscriptions')
-    .update({
-      status: 'grace_period',
-      failed_payment_count: (existing.failed_payment_count ?? 0) + 1,
-      grace_period_expires: gracePeriodExpires,
-    })
-    .eq('provider_subscription_id', providerSubId)
+    .update(decision.patch)
+    .eq('id', existing.id)
     .select()
     .single();
 
   if (error) throw error;
   return { handled: true, related_subscription_id: sub.id };
-}
-
-function mapPayPalSubscriptionStatus(status: string): string {
-  const statusMap: Record<string, string> = {
-    ACTIVE: 'active',
-    SUSPENDED: 'past_due',
-    CANCELLED: 'canceled',
-    EXPIRED: 'expired',
-    APPROVAL_PENDING: 'pending',
-  };
-  return statusMap[status] || 'canceled';
 }

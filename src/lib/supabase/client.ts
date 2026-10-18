@@ -14,16 +14,6 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { shouldDetectSessionInUrl } from '@/lib/auth/url-session';
 
 /**
- * Flag for the E2E storage adapter: when true, auth-token removal is
- * allowed (intentional sign-out). When false, removeItem is blocked
- * for auth-token keys to prevent spurious session wipes.
- */
-let _allowAuthTokenRemoval = false;
-export function setAllowAuthTokenRemoval(value: boolean): void {
-  _allowAuthTokenRemoval = value;
-}
-
-/**
  * Creates a disabled mock client for when Supabase is not configured.
  * Returns a client that won't crash but all operations return errors.
  */
@@ -195,14 +185,17 @@ export function setSessionPersistence(remember: boolean): void {
 }
 
 /**
- * auth-js keeps a PKCE flow's verifier under `<storageKey>-code-verifier` (#1255). It is a
- * one-time secret for a flow in progress, not a session, and neither session rule fits it:
+ * auth-js keeps a PKCE flow's verifier in storage (#1255). Since 2.117 (#1298) that is one slot
+ * per flow, `<storageKey>-flow-<id>-code-verifier`, an index of them,
+ * `<storageKey>-flows-code-verifier`, and the legacy `<storageKey>-code-verifier` beside them. All
+ * three end in `-code-verifier`; tests/unit/auth/resend-pkce.test.ts checks that against the real
+ * library rather than against this list. It is a one-time secret for a flow in progress, not a
+ * session, and neither session rule fits it:
  *
  * - It must be readable from a NEW tab. An emailed sign-in or reset link opens in one, and with
  *   "Remember me" off the session store is sessionStorage, which belongs to the tab that wrote
  *   it. So the verifier always lives in localStorage.
- * - It must be deletable. auth-js removes it once redeemed, and the key contains `auth-token`,
- *   so the removal guard below would keep a spent secret forever.
+ * - It must be deletable. auth-js removes it once redeemed.
  */
 function isCodeVerifierKey(key: string): boolean {
   return key.endsWith('-code-verifier');
@@ -224,7 +217,7 @@ export function getSessionPersistence(): boolean {
  * component code that records the preference. A unit test against this adapter
  * is the only guard that can actually fail on the pre-#375 behaviour.
  *
- * Behaviour it must preserve, all three load-bearing:
+ * Behaviour it must preserve:
  *
  * 1. `getItem` falls back to the other store. A token written before the
  *    preference changed would otherwise be orphaned and the user silently
@@ -232,12 +225,10 @@ export function getSessionPersistence(): boolean {
  * 2. `setItem` clears the other store, so the token has exactly ONE home. A
  *    stale copy left behind is the privacy leak #375 is about — an unticked
  *    box that still leaves a session on the machine.
- * 3. `removeItem` keeps the auth-token guard. Supabase auth-js clears the
- *    session on transient 406/403s from Realtime/RLS; without the guard that
- *    wipes the token, fires SIGNED_OUT, and bounces a user with a perfectly
- *    valid access_token back to /sign-in.
+ * 3. `removeItem` clears both stores. The session may be in either one, and Supabase
+ *    must be able to remove it on sign-out or revocation (#1351).
  *
- * The PKCE code verifier is the exception to all three — see `isCodeVerifierKey`.
+ * The PKCE code verifier stays in localStorage so emailed links can use it in a new tab.
  */
 export function createAuthStorage() {
   return {
@@ -259,12 +250,6 @@ export function createAuthStorage() {
       }
     },
     removeItem: (key: string): void => {
-      if (
-        key.includes('auth-token') &&
-        !isCodeVerifierKey(key) &&
-        !_allowAuthTokenRemoval
-      )
-        return;
       window.localStorage.removeItem(key);
       window.sessionStorage.removeItem(key);
     },
@@ -320,30 +305,22 @@ export function createClient(): SupabaseClient<Database> {
     {
       auth: {
         // PKCE binds every sign-in link to the browser that started the flow (#1255).
-        // Starting one — sign-up, password reset, OAuth — stores a random verifier here,
-        // and the link that comes back carries a `?code=` GoTrue exchanges only together
-        // with it. The exchange is a POST from this page, so a static export needs no
-        // server. The implicit flow this replaced put the session itself in the link, and
-        // whoever clicked someone else's link was signed into their account.
+        // Starting one — sign-up, a resent confirmation (#1298), password reset, OAuth —
+        // stores a random verifier here, and the link that comes back carries a `?code=`
+        // GoTrue exchanges only together with it. The exchange is a POST from this page,
+        // so a static export needs no server. The implicit flow this replaced put the
+        // session itself in the link, and whoever clicked someone else's link was signed
+        // into their account.
         //
         // The cost is real and deliberate: an emailed link opened in a different browser,
         // or more than five minutes after it was requested (GoTrue's flow-state lifetime),
         // cannot sign anyone in. The landing pages explain that instead of failing quietly.
         flowType: 'pkce',
-        // Custom storage adapter that prevents auth-token removal except
-        // during an explicit sign-out (toggled via setAllowAuthTokenRemoval).
-        // Supabase auth-js clears the session on transient 406/403 errors
-        // from Realtime / RLS — without this guard, that transient error
-        // wipes the auth-token, fires SIGNED_OUT, and forces the user back
-        // to /sign-in even though the access_token was still valid. With
-        // the guard, the token persists across the spurious event; the
-        // next TOKEN_REFRESHED / SIGNED_IN fires shortly and recovers.
-        // This applies in production AND E2E — the test path now exercises
-        // exactly the same auth flow real users see.
+        // Custom storage selects the Remember Me store while allowing auth-js to
+        // remove sessions on sign-out and revocation (#1351).
         //
-        // The store is now chosen per the "Remember me" preference (#375)
-        // rather than always being localStorage. The removal guard above is
-        // unchanged in meaning — it just has to clear both stores now.
+        // The store is chosen per the "Remember me" preference (#375), so removal
+        // clears both stores in case the preference changed during the session.
         storage:
           typeof window !== 'undefined' ? createAuthStorage() : undefined,
         // Auto-refresh must stay on so Supabase Realtime can authenticate
@@ -364,7 +341,16 @@ export function createClient(): SupabaseClient<Database> {
         // Read once, when this document builds the client — which is also the only time
         // auth-js looks. Only the two pages a sign-in lands on, and only for a code: see
         // shouldDetectSessionInUrl. Everywhere else a URL cannot sign anyone in or out.
+        // auth-js 2.117 also takes a predicate here, but calls it at that same moment, once
+        // per client, so it would decide nothing a boolean from the same URL does not.
         detectSessionInUrl: shouldDetectSessionInUrl(window.location.href),
+      },
+      db: {
+        // postgrest-js retries a GET on 503, 520 or a rejected fetch by default since 2.102,
+        // three times over about seven seconds (#1298). Off, so the upgrade changes nothing
+        // here: the offline paths (cached message history, the offline queues) expect a read
+        // to fail at once when the network is gone. Turning it on is its own decision.
+        retry: false,
       },
     }
   );

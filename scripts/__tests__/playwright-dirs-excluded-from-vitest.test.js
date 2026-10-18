@@ -5,7 +5,7 @@
  * purpose — `playwright-env-forwarding.test.js` walks `tests/e2e/**` and would have
  * required the runner's env filter to be extended for a spec that reads no env at all.
  * `vitest.config.ts` excluded `tests/e2e/**` and nothing else, so Vitest collected a
- * Playwright spec and the REQUIRED `Test (20.x)` check went red with:
+ * Playwright spec and the REQUIRED `Test` check went red with:
  *
  *   Playwright Test did not expect test.beforeEach() to be called here.
  *   Most common reasons include: ... You have two different versions of @playwright/test.
@@ -96,7 +96,7 @@ describe('Playwright directories are excluded from Vitest (#1209)', () => {
       assert.ok(
         candidates.some((c) => realLines.some((l) => l.includes(`'${c}/**'`))),
         `vitest.config.ts does not exclude '${dir}/**', so Vitest will collect the ` +
-          'Playwright specs there and the REQUIRED Test (20.x) check fails with ' +
+          'Playwright specs there and the REQUIRED Test check fails with ' +
           '"did not expect test.beforeEach() to be called here" — a message that blames ' +
           'a duplicate @playwright/test install and never mentions the directory (#1209).'
       );

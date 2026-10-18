@@ -1,5 +1,6 @@
 import { test, expect, type Route } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
+import { setNetworkOffline } from '../utils/network';
 
 /**
  * A contact message written offline is sent once the connection is back (#1321).
@@ -25,7 +26,6 @@ test.describe('Contact form - message saved offline', () => {
   // Builds without a site key render no widget, and this then runs the plain path.
   test('still sends when the spam-check script failed to load while offline', async ({
     page,
-    context,
   }) => {
     const delivered: Record<string, unknown>[] = [];
     await page.route('**/functions/v1/contact-message', async (route) => {
@@ -46,7 +46,7 @@ test.describe('Contact form - message saved offline', () => {
 
     await page.goto('/contact');
     await dismissCookieBanner(page);
-    await context.setOffline(true);
+    await setNetworkOffline(page, true);
     await page.locator('#name').fill('Offline Visitor');
     await page.locator('#email').fill('offline@example.com');
     await page.locator('#subject').fill('Opened with no signal');
@@ -57,7 +57,7 @@ test.describe('Contact form - message saved offline', () => {
     await expect(page.getByText(/saved on this device/i)).toBeVisible();
 
     await page.unroute('https://challenges.cloudflare.com/**');
-    await context.setOffline(false);
+    await setNetworkOffline(page, false);
 
     await expect(page.getByText(/your saved message was sent/i)).toBeVisible({
       timeout: 30_000,
@@ -68,7 +68,6 @@ test.describe('Contact form - message saved offline', () => {
 
   test('is sent once the connection is back, and the visitor sees that', async ({
     page,
-    context,
   }) => {
     const delivered: Record<string, unknown>[] = [];
     const fulfil = async (route: Route) => {
@@ -86,7 +85,7 @@ test.describe('Contact form - message saved offline', () => {
     await page.goto('/contact');
     await dismissCookieBanner(page);
 
-    await context.setOffline(true);
+    await setNetworkOffline(page, true);
     const queueButton = page.getByRole('button', { name: /queue for later/i });
     await expect(queueButton).toBeVisible();
 
@@ -102,7 +101,7 @@ test.describe('Contact form - message saved offline', () => {
     await expect(page.getByText(/saved on this device/i)).toBeVisible();
     expect(delivered).toHaveLength(0);
 
-    await context.setOffline(false);
+    await setNetworkOffline(page, false);
 
     await expect(page.getByText(/your saved message was sent/i)).toBeVisible({
       timeout: 30_000,

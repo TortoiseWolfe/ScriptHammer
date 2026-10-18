@@ -26,11 +26,12 @@
  *   signature_failures   #1180 — the wrong signing secret
  *   server_errors        the .single()-on-zero-rows 500, which Stripe retries for three days
  *   permanently_failed   anything the retry ledger has given up on
+ *   second_charges       a second charge on one intent, which the webhooks give up on (#1342)
  *
  * REPORTS ONLY. It issues no writes and touches no Stripe object.
  *
  * `evaluate()` is pure and is driven in both directions — including the real pre-fix #1180 state —
- * by scripts/__tests__/webhook-liveness.test.js, under the required `Test (20.x)` check. A checker
+ * by scripts/__tests__/webhook-liveness.test.js, under the required `Test` check. A checker
  * whose verdict function is never exercised is the defect this file exists to end.
  */
 
@@ -52,6 +53,8 @@ export const STALE_INFO_DAYS = 30;
  * @param {number} f.permanentlyFailed  webhook_events rows the retry ledger gave up on
  * @param {number} f.unprocessed        webhook_events rows still not processed
  * @param {number|null} f.newestEventAgeDays  age of the newest webhook_events row, or null if none
+ * @param {number} [f.doubleCharged]  orders with more than one succeeded charge across their retry chain
+ * @param {number} [f.secondCharges]  distinct second charges on ONE intent (one per charge, however many events gave up on it)
  * @returns {{verdict: 'PASS'|'FAIL', failures: string[], notes: string[]}}
  */
 export function evaluate(f) {
@@ -82,6 +85,33 @@ export function evaluate(f) {
     );
   }
 
+  // A SECOND CHARGE FOR ONE ORDER (#1338). advance-order's compare-and-swap loses quietly for the
+  // second payment ("already advanced"), so nothing else would ever say a buyer paid twice.
+  if (f.doubleCharged > 0) {
+    failures.push(
+      `${f.doubleCharged} order(s) charged more than once across their retry chain. ` +
+        `Each needs a refund. Find them with DOUBLE_CHARGE_SQL in check-webhook-liveness.mjs, ` +
+        `refund the duplicate at the provider, then set that payment_results row to ` +
+        `status = 'refunded'; only 'succeeded' rows count, so that clears the alarm.`
+    );
+  }
+
+  // A SECOND CHARGE ON ONE INTENT (#1342). The unique index admits one success per intent, so
+  // DOUBLE_CHARGE_SQL above (distinct paid intents per order) cannot see it; the webhooks now
+  // recognise it at the collision and give the event up with this prefix instead of absorbing it.
+  // Counted per CHARGE, not per event (blind review): Stripe sends two events for one charge, and
+  // both give up with the same processing_error, so one extra charge is two rows.
+  if (f.secondCharges > 0) {
+    failures.push(
+      `${f.secondCharges} second charge(s) on one intent. Each needs a refund. Find them with ` +
+        `SECOND_CHARGE_SQL in check-webhook-liveness.mjs: one row per charge, its processing_error ` +
+        `naming the intent, the charge recorded and the second one. Refund the second at the ` +
+        `provider, then mark EVERY event naming it done, so both of Stripe's leave the count: ` +
+        `update webhook_events set processed = true, permanently_failed = false, ` +
+        `processing_error = 'refunded ' || processing_error where processing_error = '<that text>'.`
+    );
+  }
+
   if (f.permanentlyFailed > 0) {
     failures.push(
       `${f.permanentlyFailed} webhook_events row(s) marked permanently_failed. ` +
@@ -94,11 +124,15 @@ export function evaluate(f) {
   // so a growing unprocessed count means something threw before the update. Reported so the
   // number is visible, not gated, because the count includes historical rows nobody will revisit.
   if (f.unprocessed > 0) {
-    notes.push(`${f.unprocessed} unprocessed webhook_events row(s) (historical included).`);
+    notes.push(
+      `${f.unprocessed} unprocessed webhook_events row(s) (historical included).`
+    );
   }
 
   if (f.newestEventAgeDays === null) {
-    notes.push('No webhook_events rows at all — no provider traffic has ever been recorded.');
+    notes.push(
+      'No webhook_events rows at all — no provider traffic has ever been recorded.'
+    );
   } else if (f.newestEventAgeDays >= STALE_INFO_DAYS) {
     notes.push(
       `Newest webhook_events row is ${f.newestEventAgeDays} day(s) old. ` +
@@ -108,6 +142,47 @@ export function evaluate(f) {
 
   return { verdict: failures.length ? 'FAIL' : 'PASS', failures, notes };
 }
+
+// left(..., 14) rather than LIKE: in LIKE an underscore matches any character, so 'second_charge:%'
+// is not quite the literal prefix (blind review).
+const IS_SECOND_CHARGE =
+  "left(coalesce(processing_error, ''), 14) = 'second_charge:'";
+
+/**
+ * The webhook_events counts the verdict reads. Exported so a test pins the prefix against
+ * _shared/second-charge.ts's SECOND_CHARGE_PREFIX: the webhooks write it, this counts it. Second
+ * charges are counted per CHARGE and kept OUT of the generic permanently_failed count, so one
+ * fact reads as one line.
+ */
+export const COUNTS_SQL =
+  `select count(*) filter (where permanently_failed and not ${IS_SECOND_CHARGE}) as permanently_failed, ` +
+  `count(distinct processing_error) filter (where permanently_failed and ${IS_SECOND_CHARGE}) as second_charges, ` +
+  'count(*) filter (where not processed) as unprocessed, ' +
+  'max(created_at) as newest from webhook_events';
+
+/**
+ * The charges behind the second-charge failure, one row per CHARGE, for whoever is issuing the
+ * refund (#1342). Each lists every event that gave up on it, which is what the clearing update in
+ * the failure text has to mark.
+ */
+export const SECOND_CHARGE_SQL =
+  'select processing_error, count(*) as events, array_agg(provider_event_id) as provider_event_ids, ' +
+  'min(created_at) as first_seen from webhook_events ' +
+  `where permanently_failed and ${IS_SECOND_CHARGE} ` +
+  'group by processing_error order by first_seen';
+
+/** Orders charged more than once across their retry chain (#1338). Exported so a test pins it. */
+export const DOUBLE_CHARGE_SQL =
+  'with recursive chain as (' +
+  'select o.id as order_id, o.intent_id, 0 as depth from orders o ' +
+  'union all ' +
+  'select c.order_id, pi.id, c.depth + 1 from chain c ' +
+  'join payment_intents pi on pi.parent_intent_id = c.intent_id where c.depth < 4' +
+  ') select count(*)::int as double_charged from (' +
+  'select c.order_id from chain c ' +
+  "join payment_results pr on pr.intent_id = c.intent_id and pr.status = 'succeeded' " +
+  'group by c.order_id having count(distinct pr.intent_id) > 1' +
+  ') d';
 
 /* ------------------------------------------------------------------ I/O */
 
@@ -121,7 +196,9 @@ async function mgmt(path, token, body) {
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   if (!res.ok) {
-    throw new Error(`${path} -> HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    throw new Error(
+      `${path} -> HTTP ${res.status}: ${(await res.text()).slice(0, 300)}`
+    );
   }
   return res.json();
 }
@@ -129,29 +206,130 @@ async function mgmt(path, token, body) {
 const sql = (ref, token, query) =>
   mgmt(`/v1/projects/${ref}/database/query`, token, { query });
 
+/**
+ * The query window: two minutes short of WINDOW_HOURS. The logs endpoint refuses a range longer
+ * than 24 hours and rounds both ends to the minute, so asking for exactly 24h can round over it.
+ */
+const WINDOW_MS = WINDOW_HOURS * 3600_000 - 120_000;
+
+/**
+ * SUPABASE'S LOG QUERY ENDPOINT (#1330).
+ *
+ * `analytics/endpoints/logs.all` was removed on 2026-09-23 (Supabase changelog 48235). From that
+ * day this check answered HTTP 410 every morning, and so the payment-webhook alarm was blind for
+ * 17 days. All it reported was its own failure to run.
+ *
+ * The replacement takes ClickHouse SQL over ONE table, `logs`. Each row says which service wrote
+ * it in its `source` column. The nested `metadata` / `request` / `response` arrays that the old
+ * dialect read through `unnest(...)` are now a flat string map, read as
+ * `log_attributes['response.status_code']`.
+ */
+export const logsPath = (ref, params) =>
+  `/v1/projects/${ref}/analytics/endpoints/logs?${new URLSearchParams(params)}`;
+
+export const FUNCTION_SOURCE = 'function_logs';
+export const EDGE_SOURCE = 'function_edge_logs';
+
+const EDGE_URL = "log_attributes['request.url']";
+const EDGE_STATUS = "log_attributes['response.status_code']";
+
+export const QUERIES = {
+  // Which services wrote logs in the window, and how many lines each. This is what lets a
+  // renamed source fail loudly, instead of a WHERE clause that matches nothing and reads as
+  // "nothing failed". See readSources().
+  sources: 'select source, count() as n from logs group by source',
+
+  // Filter in SQL, classify in JS. The old query fetched the first 1000 lines from EVERY
+  // function and filtered afterwards, so a busy day could push the lines that matter past the
+  // limit. This one only fetches lines that could be either kind of rejection; the regexes in
+  // gather() still decide which kind.
+  signatures:
+    `select event_message from logs where source = '${FUNCTION_SOURCE}' ` +
+    "and match(event_message, '(?i)signature|tolerance zone') limit 1000",
+
+  // One row. `keyed` is how many invocations carry the two attributes this check depends on. If
+  // they were renamed, the 5xx count would quietly drop to zero, so readEdge() refuses that.
+  edge:
+    `select count() as n, countIf(${EDGE_URL} != '' and ${EDGE_STATUS} != '') as keyed, ` +
+    `countIf(toInt32OrZero(${EDGE_STATUS}) >= 500 and ` +
+    `(${EDGE_URL} like '%stripe-webhook%' or ${EDGE_URL} like '%paypal-webhook%')) as server_errors ` +
+    `from logs where source = '${EDGE_SOURCE}'`,
+};
+
+/**
+ * Read the source census. Throws when the answer cannot be trusted. Never returns zeros for a
+ * question it could not ask. Pure.
+ *
+ * Every project logs API and auth traffic around the clock, so an empty census means a broken
+ * query, not a quiet day. A source that mentions functions under a name other than the two this
+ * check reads means the schema moved: counting zero under the old names would be a PASS made
+ * of not looking.
+ *
+ * A census with neither function source is a genuinely quiet day. No Edge Function ran, so
+ * none can have refused a delivery.
+ */
+export function readSources(rows) {
+  const counts = new Map(
+    (rows ?? []).map((r) => [String(r.source), Number(r.n) || 0])
+  );
+  if (counts.size === 0) {
+    throw new Error(
+      'the logs endpoint returned no rows for any source in the window. Every project logs ' +
+        'API traffic around the clock, so the query or the endpoint is broken; this is not a quiet day.'
+    );
+  }
+  const unknown = [...counts.keys()].filter(
+    (s) => /function/i.test(s) && s !== FUNCTION_SOURCE && s !== EDGE_SOURCE
+  );
+  if (unknown.length) {
+    throw new Error(
+      `log sources have been renamed: saw ${unknown.join(', ')}, but this check reads ` +
+        `${FUNCTION_SOURCE} and ${EDGE_SOURCE}. Reading the old names would count zero failures.`
+    );
+  }
+  return {
+    functionLines: counts.get(FUNCTION_SOURCE) ?? 0,
+    edgeInvocations: counts.get(EDGE_SOURCE) ?? 0,
+  };
+}
+
+/** Read the edge row's 5xx count, refusing it if the attributes it filters on are gone. Pure. */
+export function readEdge(row) {
+  const n = Number(row?.n ?? 0);
+  if (n > 0 && Number(row?.keyed ?? 0) === 0) {
+    throw new Error(
+      `${n} edge-function invocation(s) in the window, but none carries request.url and ` +
+        'response.status_code. The attribute names have moved, and reading them as empty ' +
+        'would count zero server errors.'
+    );
+  }
+  return Number(row?.server_errors ?? 0);
+}
+
 async function logs(ref, token, query, sinceIso, untilIso) {
-  const qs = new URLSearchParams({
-    sql: query,
-    iso_timestamp_start: sinceIso,
-    iso_timestamp_end: untilIso,
-  });
-  const out = await mgmt(`/v1/projects/${ref}/analytics/endpoints/logs.all?${qs}`, token);
-  if (out?.error) throw new Error(`log query rejected: ${JSON.stringify(out.error).slice(0, 200)}`);
+  const out = await mgmt(
+    logsPath(ref, {
+      sql: query,
+      iso_timestamp_start: sinceIso,
+      iso_timestamp_end: untilIso,
+    }),
+    token
+  );
+  if (out?.error)
+    throw new Error(
+      `log query rejected: ${JSON.stringify(out.error).slice(0, 300)}`
+    );
   return out?.result ?? [];
 }
 
 async function gather(ref, token, nowMs) {
-  const since = new Date(nowMs - WINDOW_HOURS * 3600_000).toISOString();
+  const since = new Date(nowMs - WINDOW_MS).toISOString();
   const until = new Date(nowMs).toISOString();
 
-  const logRows = await logs(
-    ref,
-    token,
-    "select t.timestamp, m.level, t.event_message from function_logs t " +
-      'cross join unnest(t.metadata) as m limit 1000',
-    since,
-    until
+  const census = readSources(
+    await logs(ref, token, QUERIES.sources, since, until)
   );
+  const logRows = await logs(ref, token, QUERIES.signatures, since, until);
 
   // Match the message the Stripe SDK produces, not our own wording — the surrounding
   // console.error text is ours to change, the SDK's is not.
@@ -166,50 +344,43 @@ async function gather(ref, token, nowMs) {
   // without writing anything, so a broad matcher would make that probe trip this gate for 24h.
   // It is also what a replay looks like, so it is surfaced rather than ignored.
   const msg = (r) => r.event_message ?? '';
-  const signatureFailures = logRows.filter(
-    (r) =>
-      /No signatures found matching|Unable to extract timestamp and signatures/i.test(msg(r))
+  const signatureFailures = logRows.filter((r) =>
+    /No signatures found matching|Unable to extract timestamp and signatures/i.test(
+      msg(r)
+    )
   ).length;
   const staleSignatures = logRows.filter((r) =>
     /Timestamp outside the tolerance zone/i.test(msg(r))
   ).length;
 
-  let serverErrors = 0;
-  try {
-    const edge = await logs(
-      ref,
-      token,
-      'select t.timestamp, r.url, res.status_code from function_edge_logs t ' +
-        'cross join unnest(t.metadata) as m ' +
-        'cross join unnest(m.request) as r ' +
-        'cross join unnest(m.response) as res ' +
-        "where res.status_code >= 500 and (r.url like '%stripe-webhook%' or r.url like '%paypal-webhook%') " +
-        'limit 200',
-      since,
-      until
-    );
-    serverErrors = edge.length;
-  } catch (err) {
-    // Edge-log schema has moved before. A shape change must not silently zero this signal.
-    console.log(`::warning::edge-log query failed, 5xx signal unavailable: ${err.message}`);
-    serverErrors = 0;
-  }
+  // No try/catch here any more. The old one turned a failed edge query into a warning and a 5xx
+  // count of zero, which is the silent degradation this file exists to end. If the edge query
+  // cannot be read, the check could not run, and it says so.
+  const [edgeRow] = await logs(ref, token, QUERIES.edge, since, until);
+  const serverErrors = readEdge(edgeRow);
 
-  const [counts] = await sql(
-    ref,
-    token,
-    "select count(*) filter (where permanently_failed) as permanently_failed, " +
-      'count(*) filter (where not processed) as unprocessed, ' +
-      'max(created_at) as newest from webhook_events'
-  );
+  const [counts] = await sql(ref, token, COUNTS_SQL);
+
+  // Orders whose retry chain holds more than one succeeded payment (#1338). The unique index
+  // allows one succeeded payment_results row per INTENT, so a second charge on a DIFFERENT intent
+  // shows up as a second intent in the same chain. Depth-bounded: create-order chains are at most
+  // RETRY_LIMIT deep (tests/unit/create-order-retry.test.ts pins the bound above it).
+  //
+  // THE GAP IT CANNOT SEE: a second charge on the SAME intent (two sessions for one intent, both
+  // paid). Its succeeded write hits the unique index and leaves no second row. That one is counted
+  // separately, as secondCharges: since #1342 the webhooks recognise it at the collision.
+  const [doubles] = await sql(ref, token, DOUBLE_CHARGE_SQL);
 
   const newest = counts?.newest ? Date.parse(counts.newest) : null;
 
   return {
+    ...census,
     signatureFailures,
     staleSignatures,
     serverErrors,
     permanentlyFailed: Number(counts?.permanently_failed ?? 0),
+    secondCharges: Number(counts?.second_charges ?? 0),
+    doubleCharged: Number(doubles?.double_charged ?? 0),
     unprocessed: Number(counts?.unprocessed ?? 0),
     newestEventAgeDays:
       newest === null ? null : Math.floor((nowMs - newest) / 86_400_000),
@@ -223,7 +394,9 @@ async function main() {
   // A missing credential FAILS. A liveness check that reports success because it could not
   // look is the exact defect this file exists to end — and it is how #1180 stayed invisible.
   if (!token || !ref) {
-    console.log('::error::SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF are both required.');
+    console.log(
+      '::error::SUPABASE_ACCESS_TOKEN and SUPABASE_PROJECT_REF are both required.'
+    );
     process.exit(1);
   }
 
@@ -242,8 +415,13 @@ async function main() {
     `| stale-but-valid signatures | ${facts.staleSignatures ?? 0} |`,
     `| 5xx from a payment webhook | ${facts.serverErrors} |`,
     `| permanently_failed rows | ${facts.permanentlyFailed} |`,
+    `| orders charged more than once | ${facts.doubleCharged} |`,
+    `| second charges on one intent | ${facts.secondCharges} |`,
     `| unprocessed rows | ${facts.unprocessed} |`,
     `| newest event age (days) | ${facts.newestEventAgeDays ?? 'n/a'} |`,
+    // What the check actually looked at. Zeros above mean something only next to these.
+    `| function log lines read | ${facts.functionLines} |`,
+    `| edge-function invocations read | ${facts.edgeInvocations} |`,
     '',
     `**${verdict}**`,
     ...(failures.length ? ['', ...failures.map((f) => `- ❌ ${f}`)] : []),
@@ -263,7 +441,9 @@ async function main() {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch((err) => {
-    console.log(`::error::webhook liveness check could not run: ${err.message}`);
+    console.log(
+      `::error::webhook liveness check could not run: ${err.message}`
+    );
     process.exit(1);
   });
 }

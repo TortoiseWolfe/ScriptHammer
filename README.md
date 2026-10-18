@@ -279,7 +279,7 @@ git checkout -b feature/your-thing
 docker compose exec scripthammer pnpm test
 ```
 
-Two checks have to pass before anything merges: `Test (20.x)` and `accessibility`. Nobody has to approve your PR, so ask for a review if the change warrants one rather than waiting for one. The details are in [CONTRIBUTING.md](./CONTRIBUTING.md).
+Seven checks have to pass before anything merges, listed under "Merge Requirements" in [CONTRIBUTING.md](./CONTRIBUTING.md). Nobody has to approve your PR, so ask for a review if the change warrants one rather than waiting for one. The details are in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ---
 

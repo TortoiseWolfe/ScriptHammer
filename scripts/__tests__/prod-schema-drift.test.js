@@ -209,6 +209,50 @@ describe('production schema-drift comparator (#903)', () => {
     assert.match(evaluate(obs, INTENDED).join('\n'), /RLS is DISABLED/);
   });
 
+  it('observe() leaves a table production lacks OUT, so the report says NOT FOUND (2026-10-11)', async () => {
+    // The unit case above feeds evaluate() an empty object. The real path goes through
+    // observe(), which used to pre-fill every intended name with `rls: null`, so a table
+    // absent from production arrived as "could not read RLS state" and the NOT FOUND branch
+    // was unreachable. That message sent a triage after a rotated credential for a table
+    // that simply had not been created yet. Drive observe() itself, with the Management API
+    // stubbed: every table answers from pg_class except one.
+    const { observe, evaluate, INTENDED } = await load();
+    const tables = Object.keys(INTENDED.tables);
+    const missing = tables[0];
+    const realFetch = globalThis.fetch;
+    globalThis.fetch = async (_url, init) => {
+      const sql = JSON.parse(init.body).query;
+      const rows = /FROM pg_class\s+WHERE relname IN/.test(sql)
+        ? tables
+            .filter((t) => t !== missing)
+            .map((t) => ({
+              table_name: t,
+              relrowsecurity: INTENDED.tables[t].rls,
+            }))
+        : [];
+      return { ok: true, status: 200, json: async () => rows };
+    };
+    let observed;
+    try {
+      observed = await observe('ref', 'token', INTENDED);
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+    assert.ok(!(missing in observed), 'an absent table must not be pre-filled');
+    assert.ok(
+      tables.filter((t) => t !== missing).every((t) => t in observed),
+      'a table that exists must still be observed'
+    );
+    const problems = evaluate(observed, INTENDED).join('\n');
+    assert.match(problems, new RegExp(`${missing}: NOT FOUND in production`));
+    assert.match(problems, /nobody has applied the change to production yet/);
+    assert.doesNotMatch(
+      problems,
+      new RegExp(`${missing}: could not read RLS state`),
+      'an absent table must not read as a credential or API fault'
+    );
+  });
+
   it('treats an unreadable RLS state as a failed observation', async () => {
     const { evaluate, INTENDED } = await load();
     const obs = healthy(INTENDED);

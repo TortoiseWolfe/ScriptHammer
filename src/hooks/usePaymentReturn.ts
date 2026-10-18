@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase/client';
 import { getPaymentStatus } from '@/lib/payments/payment-service';
 import { handleStripeRedirect } from '@/lib/payments/stripe';
 import { UUID_RE } from '@/lib/payments/payment-return';
+import { findOrderThroughRetries } from '@/lib/payments/retry-chain';
 import type { Product } from '@/types/commerce';
 
 /**
@@ -70,16 +71,17 @@ export function usePaymentReturn(sessionId: string | null): PaymentReturnState {
       const result = await getPaymentStatus(intentId);
       if (cancelled) return;
 
-      const { data: order } = await supabase
-        .from('orders')
-        .select('id, buyer_email, product_id')
-        .eq('intent_id', intentId)
-        .maybeSingle();
+      // A RETRY has no order row of its own; its purchase does (#1308). Following the chain is
+      // what lets someone who paid on a retry see their receipt instead of "still confirming".
+      const order = await findOrderThroughRetries<{
+        id: string;
+        buyer_email: string | null;
+        product_id: string | null;
+      }>(supabase, intentId, 'id, buyer_email, product_id');
       if (cancelled) return;
 
       if (!result || !order) {
-        // A RETRIED INTENT LEGITIMATELY HAS NO ORDER ROW. `create-order`'s `op: 'retry'` path
-        // deliberately skips the insert, so this is reachable without anything being wrong.
+        // Not yet recorded by the webhook, or an intent nothing ordered.
         setState({
           kind: 'error',
           message:

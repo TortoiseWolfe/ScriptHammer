@@ -578,6 +578,7 @@ export interface ParentIntentRow {
 
 export type RetryRefusalCode =
   | 'retry_not_found'
+  | 'retry_already_paid'
   | 'retry_limit'
   | 'retry_expired'
   | 'retry_cooling';
@@ -632,7 +633,9 @@ export function childIdempotencyKey(
 export function decideRetry(
   parent: ParentIntentRow | null,
   callerUserId: string,
-  nowMs: number
+  nowMs: number,
+  /** Whether any intent in the parent's chain already has a succeeded payment (chainAlreadyPaid, _shared/payment-chain.ts). */
+  opts: { alreadyPaid?: boolean } = {}
 ): RetryDecision {
   // Ownership is checked HERE or nowhere: the service-role client bypasses RLS. The
   // same 404 as "no such intent", because distinguishing them lets anyone probe which
@@ -643,6 +646,20 @@ export function decideRetry(
       status: 404,
       code: 'retry_not_found',
       error: 'Cannot retry — original payment intent not found.',
+    };
+  }
+  // A PAID PURCHASE IS NOT RETRIED (#1338). Checked after ownership, so a stranger learns nothing
+  // about whether someone else paid. Without it a buyer whose first attempt succeeded late, or
+  // whose page showed a failure that was not one, could press Retry and be charged twice.
+  if (opts.alreadyPaid) {
+    return {
+      kind: 'refuse',
+      status: 409,
+      code: 'retry_already_paid',
+      // The same sentence as _shared/payment-chain.ts's ALREADY_PAID_MESSAGE. A literal, because
+      // this file is dependency-free for vitest and tsc; create-order-retry.test.ts pins them equal.
+      error:
+        'This payment has already gone through, so it has not been charged again.',
     };
   }
   if (parent.retry_count >= RETRY_LIMIT) {

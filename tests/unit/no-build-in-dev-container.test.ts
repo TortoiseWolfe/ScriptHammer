@@ -29,7 +29,7 @@
  * (isolated by `NEXT_DIST_DIR`, which turned out not to be enough),
  * `package.json`'s `test:pwa:build` (not isolated at all), and `rebrand.sh`,
  * which printed the offending command to every fork as step 2 of its own
- * instructions. Prose does not fail a build. This does, in `Test (20.x)`, which
+ * instructions. Prose does not fail a build. This does, in `Test`, which
  * is a required check.
  *
  * ## Documentation is scanned too, but only where it INSTRUCTS (#835)

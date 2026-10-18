@@ -6,26 +6,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useRouter } from 'next/navigation';
 import AccountDeletionModal from './AccountDeletionModal';
 import * as gdprService from '@/services/messaging/gdpr-service';
 
-// Mock Next.js router
-vi.mock('next/navigation', () => ({
-  useRouter: vi.fn(),
+const { mockSignOut } = vi.hoisted(() => ({ mockSignOut: vi.fn() }));
+
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({ signOut: mockSignOut }),
 }));
 
 // Mock GDPR service
 vi.mock('@/services/messaging/gdpr-service');
 
 describe('AccountDeletionModal', () => {
-  const mockRouter = {
-    push: vi.fn(),
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(useRouter).mockReturnValue(mockRouter as any);
   });
 
   it('renders without crashing when closed', () => {
@@ -89,7 +84,7 @@ describe('AccountDeletionModal', () => {
     expect(screen.getByText(/please type delete exactly/i)).toBeInTheDocument();
   });
 
-  it('calls deleteUserAccount and redirects on successful deletion', async () => {
+  it('deletes the account and signs out through AuthContext', async () => {
     vi.mocked(gdprService.gdprService.deleteUserAccount).mockResolvedValue(
       undefined
     );
@@ -116,10 +111,10 @@ describe('AccountDeletionModal', () => {
 
     await waitFor(() => {
       expect(gdprService.gdprService.deleteUserAccount).toHaveBeenCalled();
-      expect(onDeleteComplete).toHaveBeenCalled();
-      expect(mockRouter.push).toHaveBeenCalledWith(
+      expect(mockSignOut).toHaveBeenCalledWith(
         '/sign-in?message=account_deleted'
       );
+      expect(onDeleteComplete).toHaveBeenCalled();
     });
   });
 

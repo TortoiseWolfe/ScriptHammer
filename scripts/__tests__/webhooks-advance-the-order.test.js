@@ -4,7 +4,7 @@
  * WHY A SOURCE-LEVEL GUARD. `vitest.config.ts` excludes `supabase/functions/**` and no workflow
  * runs `deno test`, so **nothing in CI ever executes an Edge Function**. `advance-order.ts`
  * itself is covered behaviourally in `tests/unit/advance-order.test.ts` (it imports nothing, so
- * it can be pulled into the required `Test (20.x)` check) — but the WIRING has no such route.
+ * it can be pulled into the required `Test` check) — but the WIRING has no such route.
  * Delete a call site and every check in this repo stays green while a buyer's order silently
  * stops advancing.
  *
@@ -75,15 +75,30 @@ describe('the payment webhooks advance the order (#1151)', () => {
     );
   });
 
-  it('the transition never throws out of the helper', () => {
-    // A webhook that throws makes the provider retry the event — forever, for a condition that
-    // will never change (a retried intent has no order row, #1126). Every exit is a return.
+  it('the transition throws only on a database error, never on a permanent condition', () => {
+    // A webhook that throws makes the provider retry. That is RIGHT for a transient failure, a
+    // read or write that may succeed next time, which the webhook claim retries up to
+    // MAX_ATTEMPTS before marking the event permanently_failed (#1307). It is WRONG for a
+    // permanent condition, retried for nothing: an intent nothing ordered, or a retry chain
+    // whose links do not match (#1126, #1308).
+    // So the only throws allowed are database errors, and the missing-order path must stay a
+    // return. This used to forbid every throw, which is how a failed read passed for "no
+    // order" and a paid order went unadvanced with the event marked processed.
     const src = code(HELPER);
-    assert.doesNotMatch(
+    const thrown = [
+      ...src.matchAll(/^\s*(?:if \([^)]*\)\s*)?throw ([A-Za-z_$][\w$]*)/gm),
+    ].map((m) => m[1]);
+    assert.deepStrictEqual(
+      thrown.sort(),
+      ['intentError', 'orderError', 'updateError'],
+      'advance-order.ts throws something other than its three database errors (the order read, ' +
+        'the intent read the retry walk makes (#1308), and the status write). A throw on a ' +
+        'permanent condition turns it into a provider retry for nothing (#1151, #1126).'
+    );
+    assert.match(
       src,
-      /^\s*throw /m,
-      'advance-order.ts throws. A thrown error reaches the webhook handler and turns a ' +
-        'permanent condition into an infinite provider retry (#1151).'
+      /return \{ advanced: false, reason: 'no-order' \}/,
+      'the missing-order path no longer returns quietly (#1126)'
     );
   });
 

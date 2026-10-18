@@ -7,6 +7,7 @@ import {
   decideRetry,
   type ParentIntentRow,
 } from '../../supabase/functions/create-order/resolve';
+import { ALREADY_PAID_MESSAGE } from '../../supabase/functions/_shared/payment-chain';
 
 /**
  * The retry branch of create-order (#559 T025 / #1046).
@@ -244,5 +245,51 @@ describe('buildRetryIntentRow', () => {
       'k'
     );
     expect(row.metadata).toEqual({});
+  });
+});
+
+/* ---------------------------------------------------------------------------------------------
+ * #1338: a retry of an intent that has already been PAID is refused.
+ *
+ * decideRetry checked ownership, the limit, expiry and the cooling period, never whether the
+ * purchase had already gone through. A buyer whose first attempt succeeded late, or whose page
+ * showed a failure that was not one, could press Retry and be charged twice.
+ * ------------------------------------------------------------------------------------------- */
+
+describe('decideRetry — an already-paid purchase (#1338)', () => {
+  it('refuses with retry_already_paid when the chain has a succeeded payment', () => {
+    const d = decideRetry(makeParent(), OWNER, NOW, { alreadyPaid: true });
+    expect(d).toMatchObject({
+      kind: 'refuse',
+      status: 409,
+      code: 'retry_already_paid',
+      // One sentence for one fact, whichever door the buyer came through (#1342): the retry
+      // branch and the three gated provider functions say the same thing.
+      error: ALREADY_PAID_MESSAGE,
+    });
+  });
+
+  it('checks ownership FIRST, so a stranger cannot learn whether someone paid', () => {
+    const d = decideRetry(makeParent(), 'someone-else', NOW, {
+      alreadyPaid: true,
+    });
+    expect(d).toMatchObject({ kind: 'refuse', code: 'retry_not_found' });
+  });
+
+  it('proceeds as before when nothing has been paid', () => {
+    expect(
+      decideRetry(makeParent(), OWNER, NOW, { alreadyPaid: false }).kind
+    ).toBe('proceed');
+    expect(decideRetry(makeParent(), OWNER, NOW).kind).toBe('proceed');
+  });
+});
+
+describe('the liveness double-charge query covers every chain create-order builds', () => {
+  it('walks deeper than RETRY_LIMIT', async () => {
+    const { DOUBLE_CHARGE_SQL } = await import(
+      '../../scripts/ci/check-webhook-liveness.mjs'
+    );
+    const depth = Number(/c\.depth < (\d+)/.exec(DOUBLE_CHARGE_SQL)?.[1]);
+    expect(depth).toBeGreaterThan(RETRY_LIMIT);
   });
 });

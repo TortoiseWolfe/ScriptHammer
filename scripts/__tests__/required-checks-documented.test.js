@@ -42,7 +42,7 @@ const WORKFLOWS = path.join(ROOT, '.github', 'workflows');
  * why `Build` and `Validate Component Structure` are deliberately excluded.
  */
 const CHECK_SOURCE = {
-  'Test (20.x)': 'ci.yml',
+  Test: 'ci.yml',
   accessibility: 'accessibility.yml',
   'E2E (local) result': 'e2e-local.yml',
   // The four advisory workflows, made requirable in #869/#872/#873/#874 and required

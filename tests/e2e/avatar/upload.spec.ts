@@ -422,7 +422,9 @@ test.describe('Avatar Upload Flow', () => {
     await expect(cropModal).not.toBeVisible();
   });
 
-  test('Edge Case: Handle network interruption gracefully', async ({
+  // fixme, not a pass (#1261): there is no offline error UI to assert on, so
+  // this test used to run with its only assertion commented out and go green.
+  test.fixme('Edge Case: Handle network interruption gracefully', async ({
     page,
     context,
   }) => {
@@ -442,9 +444,9 @@ test.describe('Avatar Upload Flow', () => {
 
     await page.getByRole('button', { name: /save/i }).click();
 
-    // TODO: Network error handling not yet implemented (T050 enhancement)
-    // For now, upload silently fails when offline - no error message shown
-    // await expect(page.getByText(/network error|upload failed|try again/i)).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByText(/network error|upload failed|try again/i)
+    ).toBeVisible({ timeout: 10000 });
 
     // Wait to ensure upload doesn't unexpectedly succeed
     await page.waitForTimeout(2000);

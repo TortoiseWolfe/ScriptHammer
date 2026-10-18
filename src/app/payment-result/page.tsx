@@ -36,7 +36,7 @@ function PaymentResultContent() {
   //
   //   ?id=<uuid>                      our own links (PaymentButton, history)
   //   ?session_id=cs_…&status=…       Stripe's success_url — the REAL purchase
-  //                                   path (create-stripe-checkout/index.ts:145,
+  //                                   path (create-stripe-checkout/index.ts's success_url,
   //                                   create-stripe-subscription/index.ts:116)
   //   ?status=cancelled               Stripe's cancel_url, carrying NO id at all
   //

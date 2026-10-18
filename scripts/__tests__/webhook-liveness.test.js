@@ -2,7 +2,7 @@
  * Guards scripts/ci/check-webhook-liveness.mjs (#1183).
  *
  * The check itself runs on a schedule against production, where nobody watches it fail. So the
- * VERDICT function is driven here, under the required `Test (20.x)` check, in both directions —
+ * VERDICT function is driven here, under the required `Test` check, in both directions —
  * including the real pre-fix #1180 state, so the gate is pinned to the incident it exists for.
  *
  * Two of these tests assert that a signal does NOT fail the run. That is deliberate and is the
@@ -13,9 +13,21 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import {
   evaluate,
+  DOUBLE_CHARGE_SQL,
+  SECOND_CHARGE_SQL,
+  COUNTS_SQL,
+  readSources,
+  readEdge,
+  logsPath,
+  QUERIES,
+  FUNCTION_SOURCE,
+  EDGE_SOURCE,
   WINDOW_HOURS,
   STALE_INFO_DAYS,
 } from '../ci/check-webhook-liveness.mjs';
@@ -125,6 +137,193 @@ describe('webhook liveness verdict (#1183)', () => {
     assert.ok(
       WINDOW_HOURS > 0 && WINDOW_HOURS <= 24,
       `WINDOW_HOURS must stay within ~24h of retention, got ${WINDOW_HOURS}`
+    );
+  });
+});
+
+/**
+ * The log queries (#1330). Supabase removed `logs.all` on 2026-09-23, and this check then failed
+ * every day for 17 days without anyone reading why. These tests pin the request and, more
+ * importantly, the two guards that stop a schema change from turning into a quiet PASS.
+ */
+describe('webhook liveness log queries (#1330)', () => {
+  it('asks the endpoint that replaced logs.all', () => {
+    const path = logsPath('ref123', { sql: 'select 1' });
+    assert.match(path, /^\/v1\/projects\/ref123\/analytics\/endpoints\/logs\?/);
+    assert.doesNotMatch(path, /logs\.all/);
+  });
+
+  it('speaks the new dialect: one `logs` table, no unnest', () => {
+    // Checks the query strings themselves, not the source file, whose comments name the old
+    // dialect on purpose.
+    for (const [name, q] of Object.entries(QUERIES)) {
+      assert.match(
+        q,
+        /\bfrom logs\b/,
+        `${name} must read the single logs table`
+      );
+      assert.doesNotMatch(
+        q,
+        /unnest\(/,
+        `${name} still uses the removed nested dialect`
+      );
+      assert.doesNotMatch(
+        q,
+        /\bfrom (function_logs|function_edge_logs)\b/,
+        name
+      );
+    }
+  });
+
+  // --- readSources: the census that makes "looked at nothing" visible -------------------
+
+  const census = [
+    { source: 'edge_logs', n: '5120' },
+    { source: 'postgres_logs', n: 880 },
+    { source: FUNCTION_SOURCE, n: '42' },
+    { source: EDGE_SOURCE, n: 17 },
+  ];
+
+  it('counts the two function sources, accepting ClickHouse 64-bit counts as strings', () => {
+    assert.deepEqual(readSources(census), {
+      functionLines: 42,
+      edgeInvocations: 17,
+    });
+  });
+
+  it('treats a day with no Edge Function at all as quiet, not broken', () => {
+    // No function ran, so none can have refused a delivery. Failing here would cry wolf.
+    const quiet = census.filter((r) => !/function/.test(r.source));
+    assert.deepEqual(readSources(quiet), {
+      functionLines: 0,
+      edgeInvocations: 0,
+    });
+  });
+
+  it('refuses an empty census: the query is broken, not the day quiet', () => {
+    assert.throws(() => readSources([]), /no rows for any source/);
+    assert.throws(() => readSources(undefined), /no rows for any source/);
+  });
+
+  it('refuses a renamed function source rather than counting zero under the old name', () => {
+    const renamed = [
+      ...census.filter((r) => !/function/.test(r.source)),
+      { source: 'edge_function_logs', n: 9 },
+    ];
+    assert.throws(
+      () => readSources(renamed),
+      /renamed: saw edge_function_logs/
+    );
+  });
+
+  // --- readEdge: the 5xx count, only when its attributes exist ----------------------------
+
+  it('returns the 5xx count when the invocations carry url and status', () => {
+    assert.equal(readEdge({ n: '30', keyed: '30', server_errors: '2' }), 2);
+    assert.equal(readEdge({ n: 30, keyed: 30, server_errors: 0 }), 0);
+  });
+
+  it('reads no invocations as zero errors', () => {
+    assert.equal(readEdge({ n: 0, keyed: 0, server_errors: 0 }), 0);
+    assert.equal(readEdge(undefined), 0);
+  });
+
+  it('refuses invocations that carry neither attribute: the names moved', () => {
+    assert.throws(
+      () => readEdge({ n: 30, keyed: 0, server_errors: 0 }),
+      /attribute names have moved/
+    );
+  });
+});
+
+describe('webhook liveness: a second charge for one order (#1338)', () => {
+  it('fails on any order charged more than once', () => {
+    const r = evaluate(withFacts({ doubleCharged: 1 }));
+    assert.equal(r.verdict, 'FAIL');
+    assert.match(r.failures.join('\n'), /charged more than once/);
+  });
+
+  it('passes with none, and when the fact is absent (older callers)', () => {
+    assert.equal(evaluate(withFacts({ doubleCharged: 0 })).verdict, 'PASS');
+    assert.equal(evaluate(healthy).verdict, 'PASS');
+  });
+
+  it('counts distinct paid intents per order across a depth-bounded chain', () => {
+    // The unique index allows one succeeded row per intent, so "more than one intent" is the
+    // signal; a bound keeps a corrupt cycle from looping.
+    assert.match(DOUBLE_CHARGE_SQL, /with recursive chain/);
+    assert.match(DOUBLE_CHARGE_SQL, /count\(distinct pr\.intent_id\) > 1/);
+    assert.match(DOUBLE_CHARGE_SQL, /c\.depth < 4/);
+    assert.match(DOUBLE_CHARGE_SQL, /status = 'succeeded'/);
+  });
+});
+
+describe('webhook liveness: a second charge on ONE intent (#1342 stage 2)', () => {
+  // The prefix both webhooks write into processing_error when they give up on a second charge.
+  // Read from the TypeScript source, because this .mjs cannot import it; the two must agree or
+  // the alarm counts nothing.
+  const helper = fs.readFileSync(
+    path.join(
+      path.dirname(fileURLToPath(import.meta.url)),
+      '..',
+      '..',
+      'supabase',
+      'functions',
+      '_shared',
+      'second-charge.ts'
+    ),
+    'utf8'
+  );
+  const prefix = /export const SECOND_CHARGE_PREFIX = '([^']+)'/.exec(
+    helper
+  )?.[1];
+
+  it('the webhooks and this check agree on the prefix', () => {
+    assert.ok(
+      prefix,
+      'SECOND_CHARGE_PREFIX not found in _shared/second-charge.ts'
+    );
+    const exact = `left(coalesce(processing_error, ''), ${prefix.length}) = '${prefix}'`;
+    assert.ok(
+      COUNTS_SQL.includes(exact),
+      'the counts query does not count the exact prefix the webhooks write'
+    );
+    assert.ok(
+      SECOND_CHARGE_SQL.includes(exact),
+      'the lookup query does not find the rows the alarm counts'
+    );
+  });
+
+  it('fails on any second charge, saying it needs a refund and how to find it', () => {
+    const r = evaluate(withFacts({ secondCharges: 1 }));
+    assert.equal(r.verdict, 'FAIL');
+    const text = r.failures.join('\n');
+    assert.match(text, /second charge\(s\) on one intent/);
+    // Clearing has to reach every event naming the charge: Stripe sends two per charge.
+    assert.match(text, /EVERY event naming it/);
+    assert.match(text, /refund/i);
+    assert.match(text, /SECOND_CHARGE_SQL/);
+  });
+
+  it('passes with none, and when the fact is absent (older callers)', () => {
+    assert.equal(evaluate(withFacts({ secondCharges: 0 })).verdict, 'PASS');
+    assert.equal(evaluate(healthy).verdict, 'PASS');
+  });
+
+  it("counts CHARGES, not events: both of Stripe's events for one charge are one alarm (blind review)", () => {
+    assert.match(
+      COUNTS_SQL,
+      /count\(distinct processing_error\) filter \(where permanently_failed and left\(coalesce\(processing_error, ''\), 14\) = 'second_charge:'\) as second_charges/
+    );
+    assert.match(SECOND_CHARGE_SQL, /group by processing_error/);
+  });
+
+  it('keeps second charges OUT of the generic permanently_failed count', () => {
+    // One fact, one line: a second charge reported as both "refund this" and "a delivery we gave
+    // up on" would read as two problems, and clearing one would leave the other.
+    assert.match(
+      COUNTS_SQL,
+      /count\(\*\) filter \(where permanently_failed and not left\(coalesce\(processing_error, ''\), 14\) = 'second_charge:'\) as permanently_failed/
     );
   });
 });

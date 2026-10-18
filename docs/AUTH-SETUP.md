@@ -581,7 +581,6 @@ account (login CSRF). So a link does not sign anyone in when it is:
 - opened in a different browser or device from the one that asked for it;
 - opened more than five minutes after it was requested (GoTrue's flow-state lifetime; none of
   the 243 settings the Management API returns for a hosted project changes it);
-- a **resent** confirmation — auth-js 2.72's `resend()` sends no PKCE challenge;
 - sent from the Supabase dashboard (invites, magic links), which carry no challenge either.
 
 A confirmation link has still **confirmed the address** in every one of those cases, so the
@@ -593,6 +592,12 @@ the same browser, and open it within five minutes.
 **Solution:** User hasn't verified email
 
 - Check email inbox for verification link
+- There is no "resend" a signed-out person can reach yet (#1352). Signing up again with the
+  same address sends a new confirmation link; the account is unchanged, so the original
+  password still applies
+- Confirmation emails are rate-limited project-wide (`rate_limit_email_sent`, 30 an hour in
+  production on 2026-10-11), so a link that never arrives can be the limit rather than the
+  address
 - Or disable email confirmation temporarily:
   - Go to: https://supabase.com/dashboard/project/<YOUR-PROJECT-REF>/settings/auth
   - Toggle **"Enable email confirmations"** to OFF (not recommended for production)

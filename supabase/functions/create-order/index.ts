@@ -44,6 +44,7 @@ import {
   decideRetry,
   type ParentIntentRow,
 } from './resolve.ts';
+import { chainAlreadyPaid } from '../_shared/payment-chain.ts';
 
 const supabaseUrl =
   Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
@@ -115,10 +116,24 @@ async function handleRetry(
     return jsonResponse(req, { error: 'Internal server error' }, 500);
   }
 
+  // Only for the owner's own intent: decideRetry refuses anyone else first, and must not be told
+  // anything about a stranger's chain. A read error fails CLOSED: better a 500 the buyer can
+  // retry than a second charge (#1338).
+  let alreadyPaid = false;
+  if (parent && (parent as ParentIntentRow).template_user_id === userId) {
+    try {
+      alreadyPaid = await chainAlreadyPaid(supabase, intentId);
+    } catch (paidError) {
+      console.error(`${FN}: paid-check failed`, paidError);
+      return jsonResponse(req, { error: 'Internal server error' }, 500);
+    }
+  }
+
   const decision = decideRetry(
     (parent as ParentIntentRow | null) ?? null,
     userId,
-    Date.now()
+    Date.now(),
+    { alreadyPaid }
   );
   if (decision.kind === 'refuse') {
     return jsonResponse(

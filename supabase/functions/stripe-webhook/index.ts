@@ -4,9 +4,24 @@
  */
 
 import { advanceOrderAndNotify } from '../_shared/advance-order.ts';
+import { assertSameCharge, retryable } from '../_shared/second-charge.ts';
 import { reportAdConversion } from '../_shared/ad-conversions.ts';
 import {
+  claimWebhookEvent,
+  failWebhookEvent,
+  finishWebhookEvent,
+  replaySafe,
+} from '../_shared/webhook-claim.ts';
+import {
+  canceledAtFromStripe,
+  failurePatch,
+  laterOf,
+  snapshotDecision,
+  stripeEventAt,
+} from '../_shared/subscription-events.ts';
+import {
   errorMessage,
+  isOurIntentRef,
   PG_UNIQUE_VIOLATION,
   resolveCheckoutIntentId,
   type WebhookHandlerResult,
@@ -112,111 +127,118 @@ serve(async (req) => {
     // Initialize Supabase client with service role
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Check for duplicate event (idempotency)
-    const { data: existingEvent } = await supabase
-      .from('webhook_events')
-      .select('id')
-      .eq('provider', 'stripe')
-      .eq('provider_event_id', event.id)
-      .single();
-
-    if (existingEvent) {
-      console.log(`Event ${event.id} already processed`);
+    // CLAIM BEFORE HANDLING (#1307). A redelivery of an event whose handler failed is handled
+    // again when that handler is replay-safe, instead of being answered "already processed"; a
+    // delivery that loses the claim gets a retryable 409. See _shared/webhook-claim.ts.
+    const claim = await claimWebhookEvent(supabase, 'stripe', {
+      provider_event_id: event.id,
+      event_type: event.type,
+      event_data: event.data.object,
+      signature,
+      livemode: event.livemode,
+    });
+    if (claim.kind === 'respond') {
+      console.log(`Event ${event.id}: ${claim.message}`);
       return new Response(
-        JSON.stringify({ received: true, message: 'Event already processed' }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
+        JSON.stringify({
+          received: claim.status === 200,
+          message: claim.message,
+        }),
+        {
+          status: claim.status,
+          headers: { 'Content-Type': 'application/json' },
+        }
       );
     }
-
-    // Store webhook event
-    const { data: webhookEvent, error: webhookError } = await supabase
-      .from('webhook_events')
-      .insert({
-        provider: 'stripe',
-        provider_event_id: event.id,
-        event_type: event.type,
-        event_data: event.data.object,
-        signature: signature,
-        signature_verified: true,
-        livemode: event.livemode,
-        processed: false,
-      })
-      .select()
-      .single();
-
-    if (webhookError) {
-      console.error('Failed to store webhook event:', webhookError);
-      throw webhookError;
-    }
+    const webhookEvent = { id: claim.id };
 
     // THE TEST ENDPOINT POSTS TO THIS SAME URL. A sandbox event therefore reaches these
     // PRODUCTION tables -- which is how 74 test-mode rows got into them. Keep the audit row
     // written above so the delivery stays visible, and touch nothing else. Returning 200 is
     // deliberate: a non-2xx here would count against BOTH endpoints being disabled (#1180).
     let processResult;
-    if (event.livemode === false) {
-      console.warn(
-        `Test-mode event ${event.id} (${event.type}) acknowledged, not processed`
-      );
-      processResult = { handled: false, reason: 'test_mode_event' };
-    } else {
-      switch (event.type) {
-        case 'payment_intent.succeeded':
-          processResult = await handlePaymentIntentSucceeded(
-            supabase,
-            event,
-            webhookEvent.id
-          );
-          break;
-        case 'checkout.session.completed':
-          processResult = await handleCheckoutSessionCompleted(
-            supabase,
-            event,
-            webhookEvent.id
-          );
-          break;
-        case 'customer.subscription.created':
-        case 'customer.subscription.updated':
-          processResult = await handleSubscriptionEvent(
-            supabase,
-            event,
-            webhookEvent.id
-          );
-          break;
-        case 'customer.subscription.deleted':
-          processResult = await handleSubscriptionDeleted(
-            supabase,
-            event,
-            webhookEvent.id
-          );
-          break;
-        case 'invoice.payment_failed':
-          processResult = await handleInvoicePaymentFailed(
-            supabase,
-            event,
-            webhookEvent.id
-          );
-          break;
-        default:
-          console.log(`Unhandled event type: ${event.type}`);
-          processResult = { handled: false };
+    try {
+      if (event.livemode === false) {
+        console.warn(
+          `Test-mode event ${event.id} (${event.type}) acknowledged, not processed`
+        );
+        processResult = { handled: false, reason: 'test_mode_event' };
+      } else {
+        switch (event.type) {
+          case 'payment_intent.succeeded':
+            processResult = await handlePaymentIntentSucceeded(
+              supabase,
+              event,
+              webhookEvent.id
+            );
+            break;
+          case 'checkout.session.completed':
+            processResult = await handleCheckoutSessionCompleted(
+              supabase,
+              event,
+              webhookEvent.id
+            );
+            break;
+          case 'customer.subscription.created':
+          case 'customer.subscription.updated':
+            processResult = await handleSubscriptionEvent(
+              supabase,
+              event,
+              webhookEvent.id
+            );
+            break;
+          case 'customer.subscription.deleted':
+            processResult = await handleSubscriptionDeleted(
+              supabase,
+              event,
+              webhookEvent.id
+            );
+            break;
+          case 'invoice.payment_failed':
+            processResult = await handleInvoicePaymentFailed(
+              supabase,
+              event,
+              webhookEvent.id
+            );
+            break;
+          default:
+            console.log(`Unhandled event type: ${event.type}`);
+            processResult = { handled: false };
+        }
       }
+    } catch (handlerError) {
+      // Record it and decide: retry (500) while the event is replay-safe and under the cap,
+      // otherwise give up with 200 and leave it permanently_failed for the liveness alarm.
+      const outcome = await failWebhookEvent(
+        supabase,
+        claim.id,
+        claim.attempt,
+        // Never a retry for a second charge: it gives up at once, permanently_failed, which
+        // Webhook Liveness reports as needing a refund (#1342).
+        retryable(replaySafe('stripe', event.type), handlerError),
+        handlerError
+      );
+      console.error(
+        `Handler failed for ${event.id} (attempt ${claim.attempt}, gave up: ${outcome.giveUp}):`,
+        handlerError
+      );
+      return new Response(
+        JSON.stringify({
+          error: errorMessage(handlerError) || 'Internal server error',
+          gave_up: outcome.giveUp,
+        }),
+        {
+          status: outcome.status,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
 
-    // Mark webhook event as processed
-    await supabase
-      .from('webhook_events')
-      .update({
-        processed: true,
-        processed_at: new Date().toISOString(),
-        ...(processResult.related_payment_id && {
-          related_payment_id: processResult.related_payment_id,
-        }),
-        ...(processResult.related_subscription_id && {
-          related_subscription_id: processResult.related_subscription_id,
-        }),
-      })
-      .eq('id', webhookEvent.id);
+    // Throws if the row was not marked, so a success whose bookkeeping failed is retried.
+    await finishWebhookEvent(supabase, claim.id, claim.attempt, {
+      related_payment_id: processResult.related_payment_id,
+      related_subscription_id: processResult.related_subscription_id,
+    });
 
     return new Response(
       JSON.stringify({ received: true, processed: processResult }),
@@ -241,12 +263,25 @@ async function handlePaymentIntentSucceeded(
 ): Promise<WebhookHandlerResult> {
   const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
-  // Find corresponding payment_intent in database
-  const { data: intent } = await supabase
+  // A Stripe PI without one of OUR intent ids was not created by create-order (a subscription
+  // invoice, a dashboard charge, another integration). It is not ours to record, and no retry
+  // will change that, so it must not reach a lookup that could throw (see isOurIntentRef).
+  const intentId = paymentIntent.metadata?.intent_id;
+  if (!isOurIntentRef(intentId)) {
+    console.log(`Stripe PI ${paymentIntent.id} carries no intent_id of ours`);
+    return { handled: false, reason: 'not_our_intent' };
+  }
+
+  // .maybeSingle(), not .single(). .single() ERRORS on zero rows, and the error was never read,
+  // so "could not read the intent" looked exactly like "no such intent": the event was marked
+  // processed and the payment never recorded. A read error now throws, which the claim turns
+  // into a retry (#1307); a genuinely missing row is still a quiet handled:false.
+  const { data: intent, error: intentError } = await supabase
     .from('payment_intents')
     .select('*')
-    .eq('id', paymentIntent.metadata?.intent_id)
-    .single();
+    .eq('id', intentId)
+    .maybeSingle();
+  if (intentError) throw intentError;
 
   if (!intent) {
     console.warn(`No payment_intent found for Stripe PI: ${paymentIntent.id}`);
@@ -276,6 +311,10 @@ async function handlePaymentIntentSucceeded(
   // be retried for three days and count toward the endpoint being disabled; the payment is
   // already recorded, so acknowledge it and still advance (advance-order is compare-and-swap).
   if (error?.code === PG_UNIQUE_VIOLATION) {
+    // ...unless the row that won is a DIFFERENT charge (#1342). The index admits one success per
+    // intent, so a second payment for the same intent lands here too, and used to be acknowledged
+    // as a replay. Throws SecondChargeError for that, which gives up on the event at once.
+    await assertSameCharge(supabase, intent.id, [paymentIntent.id]);
     console.log(
       `payment_result for intent ${intent.id} already recorded by the other event — advancing only`
     );
@@ -295,8 +334,8 @@ async function handlePaymentIntentSucceeded(
 
   // THE ORDER TRANSITION LIVES HERE (#1151), and nowhere earlier: payment is proven at this
   // line — `webhook_verified: true` was just written — and `intent.id` is the join key to
-  // `orders.intent_id`. Never throws; see advance-order.ts for why a retry storm is the worse
-  // failure.
+  // `orders.intent_id`. Throws only when it could not read or advance the order, which the
+  // webhook claim retries (#1307); a missing order and a failed receipt email do not throw.
   await advanceOrderAndNotify(supabase, {
     intentId: intent.id,
     amount: paymentIntent.amount ?? null,
@@ -352,24 +391,44 @@ async function handlePaymentCheckout(
   // session.metadata is EMPTY on every session this app creates — the intent id travels in
   // client_reference_id. See resolveCheckoutIntentId for what that cost.
   const intentId = resolveCheckoutIntentId(session);
-  if (!intentId) {
+  if (!isOurIntentRef(intentId)) {
     console.warn(
-      `Checkout session ${session.id} carries neither metadata.intent_id nor client_reference_id`
+      `Checkout session ${session.id} carries no intent reference of ours (metadata.intent_id or client_reference_id)`
     );
     return { handled: false, reason: 'no_intent_reference' };
   }
 
-  const { data: intent } = await supabase
+  // .maybeSingle() and a checked error, for the same reason as handlePaymentIntentSucceeded:
+  // a read error must not be mistaken for a missing intent (#1307).
+  const { data: intent, error: intentError } = await supabase
     .from('payment_intents')
     .select('*')
     .eq('id', intentId)
-    .single();
+    .maybeSingle();
+  if (intentError) throw intentError;
 
   if (!intent) {
     console.warn(
       `No payment_intent ${intentId} for checkout session: ${session.id}`
     );
     return { handled: false };
+  }
+
+  // An UNPAID session records a pending row, and nothing unique stopped a replay inserting a
+  // second one (#1307 prerequisite 5; the unique index covers only 'succeeded'). Look first.
+  if (session.payment_status !== 'paid') {
+    const { data: pending, error: pendingError } = await supabase
+      .from('payment_results')
+      .select('id')
+      .eq('intent_id', intent.id)
+      .eq('provider', 'stripe')
+      .eq('status', 'pending')
+      .limit(1)
+      .maybeSingle();
+    if (pendingError) throw pendingError;
+    if (pending) {
+      return { handled: false, reason: 'pending_already_recorded' };
+    }
   }
 
   const { data: paymentResult, error } = await supabase
@@ -390,6 +449,11 @@ async function handlePaymentCheckout(
   // See the matching note in handlePaymentIntentSucceeded: whichever event arrives second
   // collides on the one-succeeded-per-intent index, and must not 500.
   if (error?.code === PG_UNIQUE_VIOLATION) {
+    // Only a 'succeeded' insert can collide (the index covers nothing else), so this session was
+    // paid. Same rule as above: the other event of THIS charge, or a second charge (#1342).
+    await assertSameCharge(supabase, intent.id, [
+      session.payment_intent as string,
+    ]);
     console.log(
       `payment_result for intent ${intent.id} already recorded by the other event — advancing only`
     );
@@ -456,6 +520,7 @@ async function handleSubscriptionEvent(
   webhookEventId: string
 ): Promise<WebhookHandlerResult> {
   const subscription = event.data.object as Stripe.Subscription;
+  const eventAt = stripeEventAt(event.created);
 
   // template_user_id and customer_email come from the metadata that
   // create-stripe-subscription sets via subscription_data.metadata when
@@ -541,7 +606,26 @@ async function handleSubscriptionEvent(
       ? new Date(subscription.canceled_at * 1000).toISOString()
       : null,
     cancellation_reason: subscription.cancellation_details?.reason ?? null,
+    // The provider's time for this snapshot, so an older one can never overwrite it (#1307).
+    last_provider_event_at: eventAt,
   };
+
+  // ORDERED BY THE PROVIDER'S CLOCK (#1307 stage 2). A snapshot older than the one already
+  // applied, whether replayed or delivered out of order, would roll the row back. See
+  // snapshotDecision.
+  const { data: stored, error: storedError } = await supabase
+    .from('subscriptions')
+    .select('status, last_provider_event_at')
+    .eq('provider_subscription_id', subscription.id)
+    .maybeSingle();
+  if (storedError) throw storedError;
+  const decision = snapshotDecision(stored, eventAt);
+  if (!decision.apply) {
+    console.log(
+      `subscription ${subscription.id}: ${event.type} not applied (${decision.reason})`
+    );
+    return { handled: false, reason: decision.reason };
+  }
 
   // Upsert subscription (create or update)
   const { data: sub, error } = await supabase
@@ -583,11 +667,28 @@ async function handleSubscriptionDeleted(
 ): Promise<WebhookHandlerResult> {
   const subscription = event.data.object as Stripe.Subscription;
 
+  // NO ORDERING GUARD HERE, deliberately. Cancellation is terminal at Stripe and canceled_at now
+  // comes from the event, so applying it again is harmless, and skipping it could leave a dead
+  // subscription holding the user's one live slot (the review that rejected the first stage-2
+  // draft found exactly that). It does STAMP the provider time, so an older snapshot arriving
+  // later is refused by snapshotDecision instead of reviving the row.
+  const { data: stored, error: storedError } = await supabase
+    .from('subscriptions')
+    .select('last_provider_event_at')
+    .eq('provider_subscription_id', subscription.id)
+    .maybeSingle();
+  if (storedError) throw storedError;
+
   const { data: sub, error } = await supabase
     .from('subscriptions')
     .update({
       status: 'canceled',
-      canceled_at: new Date().toISOString(),
+      last_provider_event_at: laterOf(
+        stored?.last_provider_event_at ?? null,
+        stripeEventAt(event.created)
+      ),
+      // From the event, not now(): a replay days later must not move the date (#1307).
+      canceled_at: canceledAtFromStripe(subscription, event.created),
       cancellation_reason: subscription.cancellation_details?.reason || null,
     })
     .eq('provider_subscription_id', subscription.id)
@@ -632,39 +733,44 @@ async function handleInvoicePaymentFailed(
 
   const providerSubId = invoice.subscription as string;
 
-  // Read the current row so we can increment the failure count safely. The
-  // supabase-js client has no SQL-expression template tag, so the previous
-  // `supabase.sql\`failed_payment_count + 1\`` never incremented — it must be a
-  // plain read-then-write. Webhook events for one subscription are delivered
-  // serially, so this is not racy in practice.
-  const { data: existing } = await supabase
+  // Read the current row: its status, failure count, grace deadline and provider time.
+  const { data: existing, error: readError } = await supabase
     .from('subscriptions')
-    .select('id, failed_payment_count')
+    .select(
+      'id, status, failed_payment_count, grace_period_expires, last_provider_event_at'
+    )
     .eq('provider_subscription_id', providerSubId)
-    .single();
+    .maybeSingle();
+  // A read error is not "no subscription" (#1307): throw, and the claim retries.
+  if (readError) throw readError;
 
   if (!existing) {
     return { handled: false };
   }
 
-  // Start the grace clock now (the canonical YYYY-MM-DD TEXT date format used
-  // elsewhere in this file). GRACE_PERIOD_DAYS mirrors
-  // subscriptionConfig.gracePeriodDays in src/config/payment.ts (Deno can't
-  // import that browser module, so the value is duplicated here).
-  const gracePeriodExpires = new Date(
-    Date.now() + GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000
-  )
-    .toISOString()
-    .split('T')[0];
+  // Idempotent, so a replay is safe (#1307): the count is Stripe's own attempt_count, a live grace
+  // deadline is kept, an ended subscription is never revived, and one a newer snapshot shows
+  // active has recovered. GRACE_PERIOD_DAYS mirrors subscriptionConfig.gracePeriodDays in
+  // src/config/payment.ts (Deno can't import that browser module, so it is duplicated here).
+  if (!(invoice.attempt_count > 0)) {
+    // The rule falls back to adding one, which a replay would repeat. Stripe documents
+    // attempt_count as always set on a failed invoice; this line says so if it ever is not.
+    console.warn(`invoice ${invoice.id} carries no attempt_count; counting +1`);
+  }
+  const decision = failurePatch(existing, {
+    providerCount: invoice.attempt_count,
+    eventAt: stripeEventAt(event.created),
+    nowMs: Date.now(),
+    graceDays: GRACE_PERIOD_DAYS,
+  });
+  if (decision.kind === 'skip') {
+    return { handled: false, reason: decision.reason };
+  }
 
   const { data: sub, error } = await supabase
     .from('subscriptions')
-    .update({
-      status: 'grace_period',
-      failed_payment_count: (existing.failed_payment_count ?? 0) + 1,
-      grace_period_expires: gracePeriodExpires,
-    })
-    .eq('provider_subscription_id', providerSubId)
+    .update(decision.patch)
+    .eq('id', existing.id)
     .select()
     .single();
 

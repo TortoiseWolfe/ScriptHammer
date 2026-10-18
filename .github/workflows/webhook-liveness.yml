@@ -21,7 +21,7 @@
 # REPORTS ONLY. It issues no writes and touches no Stripe object.
 #
 # THE VERDICT FUNCTION IS GATED ON EVERY PR — scripts/__tests__/webhook-liveness.test.js runs under
-# the required `Test (20.x)` check and drives evaluate() in both directions, including the real
+# the required `Test` check and drives evaluate() in both directions, including the real
 # pre-fix #1180 state. A scheduled checker nobody watches fail needs its logic checked where
 # somebody does.
 
@@ -59,7 +59,7 @@ jobs:
 
       - uses: actions/setup-node@v5
         with:
-          node-version: 20.x
+          node-version: '22'
           # This job installs nothing (see below), and v5 defaults package-manager-cache to
           # TRUE, detects pnpm from `packageManager`, then fails with
           # `Unable to locate executable file: pnpm`. It reddened four consecutive

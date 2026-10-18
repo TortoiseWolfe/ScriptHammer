@@ -20,7 +20,7 @@
  * A TYPE-ONLY declaration, because this file is imported from two type worlds.
  *
  * It runs under Deno (the Edge Functions), but `tests/unit/advance-order.test.ts` imports it so
- * the logic is covered by the required `Test (20.x)` check — `supabase/functions/**` is excluded
+ * the logic is covered by the required `Test` check — `supabase/functions/**` is excluded
  * from vitest and nothing runs `deno test`, so without that import none of this would ever
  * execute in CI. That import pulls the file into the app's tsconfig, which has no Deno types.
  *
@@ -54,22 +54,101 @@ export interface AdvanceOrderResult {
 const PAID = 'paid';
 const PENDING = 'pending';
 
+/**
+ * How many retries a walk will follow: create-order's RETRY_LIMIT (3) plus one, which also bounds a
+ * cycle no legitimate chain can contain.
+ */
+export const MAX_RETRY_HOPS = 4;
+
+/** The fields a retry copies from the purchase it retries, plus the link itself. */
+interface IntentLink {
+  id: string;
+  parent_intent_id: string | null;
+  amount: number;
+  currency: string;
+  template_user_id: string;
+}
+
+/**
+ * Whether `parent` is the purchase `child` retried: the same price, currency and buyer. Pure.
+ *
+ * `buildRetryIntentRow` copies all three from the parent, and only the service role can write
+ * `payment_intents`. The check is the second line of defence for the walk below: without it, any
+ * way of pointing a cheap intent at an expensive one would let a $1 payment mark that order paid.
+ */
+export function isFaithfulRetry(
+  child: IntentLink,
+  parent: IntentLink
+): boolean {
+  return (
+    child.amount === parent.amount &&
+    child.currency === parent.currency &&
+    child.template_user_id === parent.template_user_id
+  );
+}
+
+async function orderForIntent(supabase: any, intentId: string) {
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select('id, buyer_email, product_id, status')
+    .eq('intent_id', intentId)
+    .maybeSingle();
+  // A READ ERROR IS NOT "NO ORDER" (#1307). Treating it as one marked the webhook event
+  // processed while a paid order was never advanced or receipted. Throw, and the webhook claim
+  // retries the event; that is safe because every write below is a compare-and-swap.
+  if (orderError) throw orderError;
+  return order;
+}
+
+async function intentLink(
+  supabase: any,
+  id: string
+): Promise<IntentLink | null> {
+  const { data, error: intentError } = await supabase
+    .from('payment_intents')
+    .select('id, parent_intent_id, amount, currency, template_user_id')
+    .eq('id', id)
+    .maybeSingle();
+  if (intentError) throw intentError;
+  return data;
+}
+
+/**
+ * The order an intent paid for, following retries back to the purchase (#1308).
+ *
+ * create-order's retry branch inserts a CHILD intent and deliberately no order row, so the order
+ * belongs to the root of the chain. Looking only at the paid intent's own id found nothing for a
+ * retry: the buyer was charged, the order stayed `pending`, and no receipt went out.
+ * `src/lib/payments/retry-chain.ts` is the same walk on the buyer's return page.
+ */
+async function findOrderThroughRetries(supabase: any, intentId: string) {
+  const own = await orderForIntent(supabase, intentId);
+  if (own) return own;
+
+  let child = await intentLink(supabase, intentId);
+  for (let hop = 0; hop < MAX_RETRY_HOPS && child?.parent_intent_id; hop++) {
+    const parent = await intentLink(supabase, child.parent_intent_id);
+    if (!parent || !isFaithfulRetry(child, parent)) return null;
+    const order = await orderForIntent(supabase, parent.id);
+    if (order) return order;
+    child = parent;
+  }
+  return null;
+}
+
 export async function advanceOrderAndNotify(
   supabase: any,
   input: AdvanceOrderInput
 ): Promise<AdvanceOrderResult> {
   const { intentId, amount, currency, provider } = input;
 
-  const { data: order } = await supabase
-    .from('orders')
-    .select('id, buyer_email, product_id, status')
-    .eq('intent_id', intentId)
-    .maybeSingle();
+  const order = await findOrderThroughRetries(supabase, intentId);
 
-  // A RETRIED INTENT LEGITIMATELY HAS NO ORDER ROW. `create-order`'s `op: 'retry'` path
-  // deliberately skips the insert (#1126), so this is reachable with nothing wrong. It must NOT
-  // throw: an error here fails the webhook, and Stripe then retries the event forever against a
-  // row that will never exist.
+  // NO ORDER IS STILL NOT AN ERROR. A retried intent has no order row of its own (#1126), but the
+  // walk above now finds its purchase's order (#1308). What reaches here is an intent nothing
+  // ordered: a payment made outside the checkout, or a chain whose links do not match. It must
+  // NOT throw: an error here fails the webhook, and the provider then retries the event against
+  // a row that will never exist.
   if (!order) {
     console.log(
       `advance-order: no order for intent ${intentId} — nothing to advance`
@@ -95,11 +174,14 @@ export async function advanceOrderAndNotify(
     .eq('status', PENDING)
     .select('id');
 
+  // A FAILED STATUS WRITE THROWS (#1307). This used to log and continue, on the reasoning that
+  // failing the webhook would trade a bookkeeping gap for a retry storm. The gap was the worse
+  // trade: a paid order never advanced and the buyer never got a receipt. The webhook claim now
+  // bounds retries (MAX_ATTEMPTS, then permanently_failed and the liveness alarm), and the
+  // compare-and-swap makes a retry harmless.
   if (updateError) {
-    // Log and continue. The payment IS recorded in payment_results either way, and failing the
-    // webhook over a status write would trade a bookkeeping gap for a retry storm.
     console.error(`advance-order: failed to advance ${order.id}:`, updateError);
-    return { advanced: false, orderId: order.id };
+    throw updateError;
   }
 
   if (!updated || updated.length === 0) {
