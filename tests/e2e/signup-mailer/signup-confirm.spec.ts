@@ -10,6 +10,7 @@ import {
   extractConfirmationLink,
   clearMailbox,
 } from '../utils/mailpit';
+import { waitForLocalTurnstileToken } from '../utils/captcha-guard';
 
 /**
  * Real-form signup with email confirmation, via a mail-catcher (#288, item 3).
@@ -56,6 +57,7 @@ test.describe('Real-form signup with email confirmation (#288)', () => {
     await page.getByLabel('Email').fill(email);
     await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
     await page.getByLabel('Confirm Password').fill(PASSWORD);
+    await waitForLocalTurnstileToken(page);
     await page.getByRole('button', { name: /sign up/i }).click();
 
     // 2. Success state: the app routes to /verify-email ("Check your inbox").
@@ -91,6 +93,7 @@ test.describe('Real-form signup with email confirmation (#288)', () => {
     await page.getByLabel('Email').fill(email);
     await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
     await page.getByLabel('Confirm Password').fill(PASSWORD);
+    await waitForLocalTurnstileToken(page);
     await page.getByRole('button', { name: /sign up/i }).click();
     await page.waitForURL(/\/verify-email/, { timeout: 30_000 });
 

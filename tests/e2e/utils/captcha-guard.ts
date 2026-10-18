@@ -27,7 +27,7 @@
  *
  * @module tests/e2e/utils/captcha-guard
  */
-import { test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 let cached: Promise<boolean> | null = null;
 
@@ -42,6 +42,21 @@ export function isLocalTurnstileTestEnabled(): boolean {
     process.env.E2E_LOCAL_TURNSTILE_TESTS === 'true' &&
     Boolean(process.env.NEXT_PUBLIC_CAPTCHA_SITE_KEY?.trim()) &&
     /^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\/?$/.test(url)
+  );
+}
+
+/**
+ * Wait until Cloudflare's published local test key has produced its dummy
+ * token. The widget loads asynchronously; submitting before it calls onSuccess
+ * only exercises the client-side "verification required" guard.
+ */
+export async function waitForLocalTurnstileToken(page: Page): Promise<void> {
+  if (!isLocalTurnstileTestEnabled()) return;
+
+  await expect(page.getByTestId('captcha-widget')).toBeVisible();
+  await expect(page.locator('input[name="cf-turnstile-response"]')).toHaveValue(
+    /\S/,
+    { timeout: 30_000 }
   );
 }
 

@@ -25,6 +25,11 @@ test.describe('Avatar Upload Flow', () => {
     await page.goto('/account');
     await page.waitForLoadState('networkidle');
     await dismissCookieBanner(page);
+    await expect(
+      page
+        .getByRole('navigation')
+        .getByRole('button', { name: 'User account menu' })
+    ).toBeVisible({ timeout: 15000 });
   });
 
   test.afterEach(async ({ page }) => {
@@ -328,19 +333,8 @@ test.describe('Avatar Upload Flow', () => {
     const accountAvatarSrc = await accountAvatar.getAttribute('src');
     expect(accountAvatarSrc).toMatch(/avatars/);
 
-    // Verify avatar in Navigation (may be in dropdown or directly visible)
-    const navAvatar = page
-      .locator('nav, header')
-      .getByRole('img', { name: /avatar/i })
-      .first();
-    await expect(navAvatar).toBeVisible();
-    const navAvatarSrc = await navAvatar.getAttribute('src');
-    expect(navAvatarSrc).toMatch(/avatars/);
-
-    // Note: Nav avatar may not match account avatar immediately due to caching
-    // This is a known limitation (Feature 038 FR-001). Reload verifies sync.
-
-    // Verify both sync after page reload
+    // The account page updates immediately; the shared navigation hook refreshes
+    // its profile on page load, so reload before asserting the two views agree.
     await page.reload();
     await page.waitForLoadState('networkidle');
     await dismissCookieBanner(page);

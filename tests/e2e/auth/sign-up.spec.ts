@@ -23,6 +23,7 @@ import {
 import {
   isLocalTurnstileTestEnabled,
   skipIfBackendCaptchaProtected,
+  waitForLocalTurnstileToken,
 } from '../utils/captcha-guard';
 
 /**
@@ -127,6 +128,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
       .getByLabel('Password', { exact: true })
       .fill(DEFAULT_TEST_PASSWORD);
     await page.getByLabel('Confirm Password').fill(DEFAULT_TEST_PASSWORD);
+    await waitForLocalTurnstileToken(page);
 
     // Submit form
     await page.getByRole('button', { name: /sign up/i }).click();
@@ -184,6 +186,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
       .getByLabel('Password', { exact: true })
       .fill(DEFAULT_TEST_PASSWORD);
     await page.getByLabel('Confirm Password').fill(DEFAULT_TEST_PASSWORD);
+    await waitForLocalTurnstileToken(page);
 
     await page.getByRole('button', { name: /sign up/i }).click();
 
@@ -345,6 +348,7 @@ test.describe('Sign-up with Admin Confirmation', () => {
       await dismissCookieBanner(page);
       await page.getByLabel('Email').fill(testEmail);
       await page.getByLabel('Password').fill(DEFAULT_TEST_PASSWORD);
+      await waitForLocalTurnstileToken(page);
       await page.getByRole('button', { name: 'Sign In' }).click();
 
       // Should redirect and authenticate

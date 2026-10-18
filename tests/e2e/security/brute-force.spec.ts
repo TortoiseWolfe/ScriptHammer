@@ -25,7 +25,10 @@ import {
   dismissCookieBanner,
   isAdminClientAvailable,
 } from '../utils/test-user-factory';
-import { skipIfBackendCaptchaProtected } from '../utils/captcha-guard';
+import {
+  skipIfBackendCaptchaProtected,
+  waitForLocalTurnstileToken,
+} from '../utils/captcha-guard';
 
 const WRONG_PASSWORD = 'NotTheirPassword123!';
 
@@ -49,6 +52,7 @@ function victimEmail(): string {
 async function submit(page: Page, email: string, password: string) {
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
+  await waitForLocalTurnstileToken(page);
   const [response] = await Promise.all([
     page.waitForResponse(
       (r) =>

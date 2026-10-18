@@ -13,6 +13,7 @@ import {
   extractConfirmationLink,
   waitForMessageTo,
 } from '../utils/mailpit';
+import { waitForLocalTurnstileToken } from '../utils/captcha-guard';
 
 /**
  * Password reset through the real email, under PKCE (#1255).
@@ -55,6 +56,7 @@ test.describe('Password reset through the emailed link (#1255)', () => {
     await page.goto('/forgot-password');
     await dismissCookieBanner(page);
     await page.getByLabel('Email').fill(email);
+    await waitForLocalTurnstileToken(page);
     await page.getByRole('button', { name: /send reset link/i }).click();
     await expect(page.getByText(/password reset email sent/i)).toBeVisible({
       timeout: 30_000,
