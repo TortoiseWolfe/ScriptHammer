@@ -56,7 +56,7 @@ export const GROUPS = [
     ],
   ],
   [
-    'Makes the site advertise the wrong address',
+    'Makes the site advertise the wrong address or project identity',
     [
       [
         'NEXT_PUBLIC_DEPLOY_URL',
@@ -74,6 +74,10 @@ export const GROUPS = [
       [
         'NEXT_PUBLIC_PROJECT_OWNER',
         'Overrides the owner detect-project.js derives from the git remote.',
+      ],
+      [
+        'NEXT_PUBLIC_PROJECT_TAGLINE',
+        'Overrides the home-page title tagline; unset, the template tagline remains.',
       ],
       [
         'NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION',

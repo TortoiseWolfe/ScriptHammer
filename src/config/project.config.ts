@@ -17,6 +17,12 @@ const defaultConfig = {
     'A production Next.js and Supabase platform with auth, payments, encrypted messaging, and an accessible offline-capable PWA',
   basePath: '',
   /**
+   * The words after the name in the HOME page title ("ScriptHammer - <tagline>").
+   * Empty means the title is the bare name. This repo opts in to its own tagline;
+   * rebrand.sh clears it, so a fork's title never advertises this template (#1327).
+   */
+  projectTagline: 'Modern Web Starter',
+  /**
    * WHICH MARK THE HERO RENDERS, and the default is deliberately NOT ours.
    *
    * 'lockup' is this project's own identity: a gear ring, a printing mallet and
@@ -49,6 +55,8 @@ export function getProjectConfig() {
     projectOwner:
       process.env.NEXT_PUBLIC_PROJECT_OWNER || defaultConfig.projectOwner,
     projectDescription: defaultConfig.projectDescription,
+    projectTagline:
+      process.env.NEXT_PUBLIC_PROJECT_TAGLINE ?? defaultConfig.projectTagline,
     basePath: process.env.NEXT_PUBLIC_BASE_PATH ?? defaultConfig.basePath,
     brandMark: defaultConfig.brandMark,
     // A monitored address a visitor can write to when the contact FORM cannot

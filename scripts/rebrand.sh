@@ -805,6 +805,36 @@ NODE
     mark_modified "$conf"
 }
 
+update_project_tagline() {
+    local conf="$REPO_ROOT/src/config/project.config.ts"
+
+    [ -f "$conf" ] || return 0
+
+    if [ "$DRY_RUN" = true ]; then
+        log_verbose "[DRY-RUN] Would clear projectTagline in src/config/project.config.ts"
+        return 0
+    fi
+
+    if ! node - "$conf" <<'NODE'; then
+const fs = require('node:fs');
+const [file] = process.argv.slice(2);
+const source = fs.readFileSync(file, 'utf8');
+
+const pattern = /(projectTagline:\s*)'(?:[^'\\]|\\.)*'/;
+if (!pattern.test(source)) {
+  // Not an error: an older checkout may predate the field entirely.
+  process.exit(0);
+}
+fs.writeFileSync(file, source.replace(pattern, "$1''"));
+NODE
+        log_error "Could not clear projectTagline in src/config/project.config.ts"
+        exit 1
+    fi
+
+    log_verbose "Cleared projectTagline; the home title is just the project name until you set one"
+    mark_modified "$conf"
+}
+
 update_project_description() {
     local conf="$REPO_ROOT/src/config/project.config.ts"
 
@@ -1774,6 +1804,7 @@ main() {
     echo "Updating project description..."
     update_project_description
     update_brand_mark
+    update_project_tagline
 
     echo ""
     echo "Scaffolding custom themes..."
