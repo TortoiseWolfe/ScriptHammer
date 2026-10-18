@@ -327,11 +327,18 @@ export async function run(argv: string[]) {
   let centerLon: number;
   let slug: string;
   let name: string;
+  let countryCode: string | undefined;
   if (plan.source === 'address') {
     const g = await geocode(plan.address!);
     console.log(
       `[geocode] "${plan.address}" → ${g.lat.toFixed(6)},${g.lon.toFixed(6)} (${g.displayName})`
     );
+    countryCode = g.address.country_code;
+    if (!countryCode) {
+      throw new Error(
+        `Nominatim returned no country code for "${plan.address}" — cannot select a terrain dataset`
+      );
+    }
     centerLat = g.lat;
     centerLon = g.lon;
     slug = plan.slug ? slugify(plan.slug) : slugFromGeocode(g);
@@ -352,6 +359,7 @@ export async function run(argv: string[]) {
       centerLon,
       widthM: plan.widthM,
       heightM: plan.heightM,
+      countryCode,
     });
     console.log(JSON.stringify(config, null, 2));
     console.log('[dry-run] nothing written');
@@ -365,6 +373,7 @@ export async function run(argv: string[]) {
     centerLon,
     widthM: plan.widthM,
     heightM: plan.heightM,
+    countryCode,
     force: plan.force,
   });
   console.log(`[scaffold] wrote ${path}`);
