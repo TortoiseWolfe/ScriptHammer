@@ -542,23 +542,19 @@ import {
   dismissCookieBanner,
   handleReAuthModal,
   waitForAuthenticatedState,
-  getAdminClient,
+  requireAdminClient,
   getUserByEmail,
 } from '../utils/test-user-factory';
 
-let setupSucceeded = false;
-let setupError = '';
-
-// Create connection AND conversation before all tests
+// Create connection AND conversation before all tests. A setup that cannot run
+// must FAIL the suite: never record a flag and `test.skip` on it — a skip is not a
+// pass, and a run where setup silently failed would report green (#1378).
 test.beforeAll(async () => {
-  const adminClient = getAdminClient();
-  if (!adminClient) {
-    setupError = 'Admin client unavailable';
-    return;
-  }
+  const adminClient = requireAdminClient('my-spec'); // throws if unavailable
 
   const userA = await getUserByEmail(TEST_USER_1.email);
   const userB = await getUserByEmail(TEST_USER_2.email);
+  if (!userA || !userB) throw new Error('test users not found');
 
   // Create connection
   await adminClient.from('user_connections').upsert({
@@ -575,16 +571,12 @@ test.beforeAll(async () => {
     participant_1_id: p1,
     participant_2_id: p2,
   });
-
-  setupSucceeded = true;
-});
-
-test.beforeEach(async ({ page }, testInfo) => {
-  if (!setupSucceeded) {
-    testInfo.skip(true, `Setup failed: ${setupError}`);
-  }
 });
 ```
+
+Seed helpers (`createTestUser`, `seedIsolated*`, `seedScrollFixture`, ...) throw on failure
+rather than returning `null`, so callers use the fixture directly. A new
+`test.skip(!<value>, ...)` in `tests/e2e` fails `pnpm test:scripts`.
 
 **Key Pattern: Canonical UUID Ordering**
 

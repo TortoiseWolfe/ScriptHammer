@@ -17,7 +17,7 @@ import {
   deleteLiveStripeSubscription,
   getStripeSubscription,
   openSubscriptionsAs,
-  getAdminClient,
+  requireAdminClient,
 } from '../utils/test-user-factory';
 
 const isLiveStripeConfigured =
@@ -36,9 +36,8 @@ test.describe('Stripe Subscription Lifecycle (live sandbox)', () => {
     );
 
     const fixture = await seedLiveStripeSubscription();
-    test.skip(!fixture, 'admin client unavailable or Stripe seed failed');
 
-    const opened = await openSubscriptionsAs(browser, fixture!);
+    const opened = await openSubscriptionsAs(browser, fixture);
     const { page } = opened;
     try {
       // Seeded row renders as an Active card.
@@ -83,7 +82,7 @@ test.describe('Stripe Subscription Lifecycle (live sandbox)', () => {
         .toBe(false);
 
       // DB row ends consistent: active with cancellation fields cleared.
-      const admin = getAdminClient();
+      const admin = requireAdminClient('08-subscription-lifecycle');
       await expect
         .poll(
           async () => {

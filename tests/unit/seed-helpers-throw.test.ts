@@ -45,6 +45,9 @@ describe('seed helpers throw when the admin client is unavailable', () => {
     ['seedIsolatedConversation', (m: any) => m.seedIsolatedConversation()],
     ['seedIsolatedConnection', (m: any) => m.seedIsolatedConnection()],
     ['seedIsolatedGroup', (m: any) => m.seedIsolatedGroup(2)],
+    ['seedIsolatedSubscription', (m: any) => m.seedIsolatedSubscription()],
+    ['seedIsolatedPayment', (m: any) => m.seedIsolatedPayment()],
+    ['seedLiveStripeSubscription', (m: any) => m.seedLiveStripeSubscription()],
     ['seedIsolatedAdmin', (m: any) => m.seedIsolatedAdmin()],
     ['seedScrollFixture', (m: any) => m.seedScrollFixture('a@b.test')],
     [

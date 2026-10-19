@@ -2439,16 +2439,14 @@ export async function seedIsolatedSubscription(
     graceDays?: number;
     prefix?: string;
   }
-): Promise<IsolatedSubscription | null> {
-  const admin = getAdminClient();
-  if (!admin) return null;
+): Promise<IsolatedSubscription> {
+  const admin = requireAdminClient('seedIsolatedSubscription');
 
   const stamp = Date.now().toString().slice(-8);
   const provider = opts?.provider ?? 'stripe';
   const prefix = opts?.prefix ?? 'iso-sub';
 
   const created = await createKeyedUserWithSession(prefix, 'isos', stamp);
-  if (!created) return null;
 
   // grace_period_expires is a TEXT YYYY-MM-DD; only meaningful for the
   // grace_period / past_due states the UI renders a countdown for.
@@ -2478,12 +2476,10 @@ export async function seedIsolatedSubscription(
     .single();
 
   if (error || !row) {
-    console.warn(
-      'seedIsolatedSubscription: subscription insert failed:',
-      error?.message
+    return abortSeed(
+      `seedIsolatedSubscription: subscription insert failed: ${error?.message}`,
+      [created.user.id]
     );
-    await deleteTestUser(created.user.id);
-    return null;
   }
 
   console.log(
@@ -2582,14 +2578,17 @@ export interface LiveStripeSubscription extends IsolatedSubscription {
  * admin client are unavailable (i.e. always in CI). Tear down with
  * {@link deleteLiveStripeSubscription}.
  */
-export async function seedLiveStripeSubscription(): Promise<LiveStripeSubscription | null> {
-  const admin = getAdminClient();
+export async function seedLiveStripeSubscription(): Promise<LiveStripeSubscription> {
+  const admin = requireAdminClient('seedLiveStripeSubscription');
   const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID;
-  if (!admin || !process.env.STRIPE_SECRET_KEY || !priceId) return null;
+  if (!process.env.STRIPE_SECRET_KEY || !priceId) {
+    throw new Error(
+      'seedLiveStripeSubscription: STRIPE_SECRET_KEY and NEXT_PUBLIC_STRIPE_PRICE_ID must be set'
+    );
+  }
 
   const stamp = Date.now().toString().slice(-8);
   const created = await createKeyedUserWithSession('live-sub', 'lsub', stamp);
-  if (!created) return null;
 
   let stripeSubId: string | undefined;
   try {
@@ -2636,17 +2635,15 @@ export async function seedLiveStripeSubscription(): Promise<LiveStripeSubscripti
       stripeSubscriptionId: stripeSubId,
     };
   } catch (err) {
-    console.warn(
-      'seedLiveStripeSubscription failed:',
-      err instanceof Error ? err.message : err
-    );
     if (stripeSubId) {
       await stripeApi('DELETE', `/subscriptions/${stripeSubId}`).catch(
         () => {}
       );
     }
-    await deleteTestUser(created.user.id);
-    return null;
+    return abortSeed(
+      `seedLiveStripeSubscription failed: ${err instanceof Error ? err.message : String(err)}`,
+      [created.user.id]
+    );
   }
 }
 
@@ -2695,14 +2692,12 @@ export interface IsolatedPayment {
  */
 export async function seedIsolatedPayment(opts?: {
   prefix?: string;
-}): Promise<IsolatedPayment | null> {
-  const admin = getAdminClient();
-  if (!admin) return null;
+}): Promise<IsolatedPayment> {
+  const admin = requireAdminClient('seedIsolatedPayment');
 
   const stamp = Date.now().toString().slice(-8);
   const prefix = opts?.prefix ?? 'iso-pay';
   const created = await createKeyedUserWithSession(prefix, 'isop', stamp);
-  if (!created) return null;
 
   // Parent intent (payment_results.intent_id → payment_intents, ON DELETE CASCADE).
   const insertIntent = async () => {
@@ -2751,9 +2746,9 @@ export async function seedIsolatedPayment(opts?: {
     intentId = await insertIntent();
     resultId = await insertResult(intentId);
   } catch (e) {
-    console.warn('seedIsolatedPayment:', (e as Error).message);
-    await deleteTestUser(created.user.id);
-    return null;
+    return abortSeed(`seedIsolatedPayment: ${(e as Error).message}`, [
+      created.user.id,
+    ]);
   }
 
   console.log(`✓ Isolated payment ${resultId} (user ${created.user.id})`);

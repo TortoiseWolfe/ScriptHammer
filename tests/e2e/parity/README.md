@@ -32,11 +32,12 @@ A suite can drop one test and gain another and still total 2001. Counts would pa
 `scripts/e2e-parity-diff.mjs` compares identities and rejects it. There is a test for
 exactly that case (`same COUNT but different tests still fails`).
 
-This matters concretely here. **228 tests** — all 76 `*-msg-iso` per browser — sit behind
-`test.skip(!fixture, 'isolation seed failed…')`, and `seedIsolatedAdmin`
-(`tests/e2e/utils/test-user-factory.ts:2761-2772`) returns `null` on two silent paths
-before reaching its loud `throw`. If the local stack cannot seed them, all 228 skip
-quietly and the run is green. That is the failure this baseline exists to catch.
+This matters concretely here. **228 tests** — all 76 `*-msg-iso` per browser — used to sit
+behind `test.skip(!fixture, 'isolation seed failed…')`, because the seed helpers returned
+`null` on failure. A stack that could not seed them skipped all 228 quietly and the run was
+green. The seed helpers in `tests/e2e/utils/test-user-factory.ts` now throw (naming what they
+were seeding and the underlying error), the skips are gone, and
+`scripts/__tests__/no-null-guard-skips.test.js` fails if one comes back (#1378).
 
 ## Direction matters
 
