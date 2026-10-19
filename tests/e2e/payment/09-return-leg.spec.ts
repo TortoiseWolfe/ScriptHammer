@@ -116,11 +116,10 @@ test.describe('the hosted-Stripe return leg (#1126)', () => {
     );
     await dismissCookieBanner(page);
 
+    // CI builds set NEXT_PUBLIC_CALENDAR_URL(_OFFICE_HOURS) to test URLs (#1374), so the
+    // link must be present; its absence is a failure, not a reason to skip.
     const link = page.getByRole('link', { name: /choose a time/i });
-    // Skip rather than fail when no scheduler is configured for this environment — the
-    // sibling test above still proves the component is mounted, which is the defect.
-    const count = await link.count().catch(() => 0);
-    test.skip(count === 0, 'no calendar configured in this environment');
+    await expect(link.first()).toBeVisible({ timeout: 20000 });
 
     const href = await link.first().getAttribute('href');
     expect(href, 'the booking link has no href').toBeTruthy();
