@@ -160,8 +160,6 @@ test.describe('Landmarks and skip link', () => {
 
       if (needsAdmin) {
         adminFixture = await seedIsolatedAdmin();
-        test.skip(!adminFixture, 'Admin client unavailable to seed an admin');
-        if (!adminFixture) return;
         // `openAuthedPage` + our OWN goto, deliberately — not `openAdminAs`.
         // That helper prepends NEXT_PUBLIC_BASE_PATH and navigates itself, so
         // going again here with the bare path produced a 404: an absolute path

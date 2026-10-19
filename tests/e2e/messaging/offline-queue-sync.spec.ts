@@ -46,7 +46,6 @@ test.describe('Offline Queue Sync E2E', () => {
 
   test.beforeEach(async () => {
     fixture = await seedIsolatedConversation();
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {

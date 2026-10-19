@@ -209,12 +209,8 @@ setup('authenticate shared test user', async ({ page, browser }) => {
     console.log('Setting up encryption keys for messaging...');
 
     // Step 1: Create matching DB keys for the primary user
-    const primaryOk = await ensureEncryptionKeys(email, password);
-    if (primaryOk) {
-      console.log('✓ Primary user encryption keys ready in DB');
-    } else {
-      console.log('⚠ Could not create primary user encryption keys');
-    }
+    await ensureEncryptionKeys(email, password);
+    console.log('✓ Primary user encryption keys ready in DB');
   } else {
     console.log('⏭ Skipping key creation (auth-setup job did it)');
   }
@@ -272,10 +268,7 @@ setup('authenticate shared test user', async ({ page, browser }) => {
 
     for (const { email: userEmail, password: userPwd } of additionalUsers) {
       console.log(`Setting up encryption keys for ${userEmail}...`);
-      const ok = await ensureEncryptionKeys(userEmail, userPwd);
-      if (!ok) {
-        console.log(`⚠ Could not set up keys for ${userEmail}`);
-      }
+      await ensureEncryptionKeys(userEmail, userPwd);
     }
 
     // ────────────────────────────────────────────────────────────────────────

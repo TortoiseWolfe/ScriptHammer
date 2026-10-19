@@ -71,7 +71,6 @@ test.describe('Group Chat E2E', () => {
   test.beforeEach(async () => {
     // One accepted connection → the viewer has exactly one selectable member.
     fixture = await seedIsolatedConnection('accepted');
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {
@@ -391,7 +390,6 @@ test.describe('Group Chat E2E — deterministic encrypted round-trip (#182)', ()
   test.beforeEach(async () => {
     // 2 keyed members + a group conversation WITH the group key distributed.
     group = await seedIsolatedGroup(2, { withKeys: true });
-    test.skip(!group, 'group seed/keying failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {

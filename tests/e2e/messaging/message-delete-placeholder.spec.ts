@@ -23,7 +23,7 @@ import {
   openAsPartner,
   fillMessageInput,
   scrollThreadToBottom,
-  getAdminClient,
+  requireAdminClient,
   type IsolatedConversation,
 } from '../utils/test-user-factory';
 
@@ -61,7 +61,6 @@ test.describe('Message Delete Placeholder E2E', () => {
 
   test.beforeEach(async () => {
     fixture = await seedIsolatedConversation();
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {
@@ -72,8 +71,9 @@ test.describe('Message Delete Placeholder E2E', () => {
   test('should show [Message deleted] placeholder and preserve adjacent messages', async ({
     browser,
   }) => {
-    const adminClient = getAdminClient();
-    test.skip(!adminClient, 'admin client not configured');
+    const adminClient = requireAdminClient(
+      'message-delete-placeholder.spec.ts'
+    );
 
     // Open BOTH participants concurrently — each pays a gate-load + Argon2id
     // unlock, and serializing them nearly exhausts the per-test budget. The

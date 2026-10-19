@@ -124,8 +124,7 @@ test.describe('Brute force: nobody can lock someone else out (#1245)', () => {
     assertLocalBackend('brute-force.spec.ts');
     email = victimEmail();
     password = `${randomUUID()}Aa1!`;
-    const user = await createTestUser(email, password, { createProfile: true });
-    if (!user) throw new Error(`could not seed the victim ${email}`);
+    await createTestUser(email, password, { createProfile: true });
   });
 
   test.afterEach(async () => {

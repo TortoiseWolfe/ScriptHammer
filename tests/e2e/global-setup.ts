@@ -229,18 +229,17 @@ async function globalSetup(): Promise<void> {
 
       // Genuinely absent (deleted mid-run / rerun without auth-setup) — recreate.
       console.log(`↻ Test user ${name} missing — recreating: ${email}`);
-      const created = await createTestUser(email, password, {
-        createProfile: true,
-      });
-      if (!created) {
+      try {
+        await createTestUser(email, password, { createProfile: true });
+        await ensureEncryptionKeys(email, password); // idempotent
+      } catch (err) {
         errors.push({
           category: 'Test User',
-          message: `${name} test user not found and could not be recreated: ${email}`,
+          message: `${name} test user not found and could not be recreated: ${email} (${err instanceof Error ? err.message : String(err)})`,
           fix: `Check SUPABASE_SERVICE_ROLE_KEY can create users, or create ${email} manually.`,
         });
         continue;
       }
-      await ensureEncryptionKeys(email, password); // idempotent
       console.log(`✓ Recreated test user ${name}: ${email}`);
     }
   }

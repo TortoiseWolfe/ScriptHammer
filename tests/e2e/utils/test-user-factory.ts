@@ -163,6 +163,24 @@ export function getAdminClient(): SupabaseClient | null {
 }
 
 /**
+ * The admin client, or a thrown Error naming what could not be seeded.
+ *
+ * Seed helpers used to return null when this was missing and every spec then wrote
+ * `test.skip(!fixture, ...)`, so a run with no service-role key reported the whole
+ * suite as skipped-and-green (#1378). A seed that cannot run is a failed test.
+ */
+export function requireAdminClient(seeding: string): SupabaseClient {
+  const client = getAdminClient();
+  if (!client) {
+    throw new Error(
+      `${seeding}: admin client unavailable — SUPABASE_SERVICE_ROLE_KEY and ` +
+        `SUPABASE_ADMIN_URL/NEXT_PUBLIC_SUPABASE_URL must be set`
+    );
+  }
+  return client;
+}
+
+/**
  * Create a test user with auto-confirmed email
  *
  * @param email - User email address
@@ -183,12 +201,8 @@ export async function createTestUser(
     createProfile?: boolean;
     metadata?: Record<string, unknown>;
   }
-): Promise<TestUser | null> {
-  const client = getAdminClient();
-  if (!client) {
-    console.error('createTestUser: Admin client not available');
-    return null;
-  }
+): Promise<TestUser> {
+  const client = requireAdminClient(`createTestUser(${email})`);
 
   // Check if user already exists (paginated — see getUserByEmail; an
   // unpaginated listUsers() misses users past page 1 and would then try to
@@ -209,16 +223,13 @@ export async function createTestUser(
   });
 
   if (error) {
-    console.error(
-      `createTestUser: Failed to create user ${email}:`,
-      error.message
+    throw new Error(
+      `createTestUser: failed to create user ${email}: ${error.message}`
     );
-    return null;
   }
 
   if (!data.user) {
-    console.error(`createTestUser: No user returned for ${email}`);
-    return null;
+    throw new Error(`createTestUser: no user returned for ${email}`);
   }
 
   console.log(`createTestUser: Created user ${email} with id ${data.user.id}`);
@@ -407,22 +418,17 @@ export function isAdminClientAvailable(): boolean {
  *
  * @param email - User email address
  * @param password - Password to derive encryption keys from
- * @returns true if keys exist (or were created), false on failure
+ * @throws if keys neither exist nor could be created
  */
 export async function ensureEncryptionKeys(
   email: string,
   password: string
-): Promise<boolean> {
-  const admin = getAdminClient();
-  if (!admin) {
-    console.error(`ensureEncryptionKeys: Admin client not available`);
-    return false;
-  }
+): Promise<void> {
+  const admin = requireAdminClient(`ensureEncryptionKeys(${email})`);
 
   const user = await getUserByEmail(email);
   if (!user) {
-    console.error(`ensureEncryptionKeys: User ${email} not found`);
-    return false;
+    throw new Error(`ensureEncryptionKeys: user ${email} not found`);
   }
 
   // Check if keys already exist — if so, keep them. Deleting and recreating
@@ -439,7 +445,7 @@ export async function ensureEncryptionKeys(
 
   if (existing) {
     console.log(`✓ Encryption keys already exist for ${email} — keeping`);
-    return true;
+    return;
   }
 
   // Only create if no keys exist (first-ever run for this user)
@@ -457,12 +463,12 @@ export async function ensureEncryptionKeys(
   });
 
   if (error) {
-    console.error(`ensureEncryptionKeys: Failed for ${email}:`, error.message);
-    return false;
+    throw new Error(
+      `ensureEncryptionKeys: failed to insert keys for ${email}: ${error.message}`
+    );
   }
 
   console.log(`✓ Encryption keys created for ${email} via admin API`);
-  return true;
 }
 
 /**
@@ -1373,17 +1379,28 @@ export interface ScrollFixture {
 
 const SCROLL_FIXTURE_MARKER = '-scroll-fixture';
 
+/**
+ * Delete whatever a half-finished seed already created, then throw. A seed that
+ * fails part-way must not leak users, and must not report success to its caller —
+ * returning null here is what let specs `test.skip(!fixture)` over a broken seed (#1378).
+ */
+async function abortSeed(
+  message: string,
+  createdUserIds: string[] = []
+): Promise<never> {
+  for (const id of createdUserIds) await deleteTestUser(id);
+  throw new Error(message);
+}
+
 export async function seedScrollFixture(
   viewerEmail: string,
   messageCount = 30
-): Promise<ScrollFixture | null> {
-  const admin = getAdminClient();
-  if (!admin) return null;
+): Promise<ScrollFixture> {
+  const admin = requireAdminClient('seedScrollFixture');
 
   const viewer = await getUserByEmail(viewerEmail);
   if (!viewer) {
-    console.warn('seedScrollFixture: viewer not found:', viewerEmail);
-    return null;
+    throw new Error(`seedScrollFixture: viewer not found: ${viewerEmail}`);
   }
 
   // 1. Create the throwaway partner (unique email → no collision, no other
@@ -1397,18 +1414,16 @@ export async function seedScrollFixture(
   const fixtureUser = await createTestUser(fixtureEmail, fixturePassword, {
     username: fixtureUsername,
   });
-  if (!fixtureUser) {
-    console.warn('seedScrollFixture: failed to create fixture user');
-    return null;
-  }
 
   // 2. Give the fixture user a public key so the viewer's getMessageHistory
   //    can derive a shared secret instead of returning an empty thread.
-  const keysOk = await ensureEncryptionKeys(fixtureEmail, fixturePassword);
-  if (!keysOk) {
-    console.warn('seedScrollFixture: failed to create fixture keys');
-    await deleteTestUser(fixtureUser.id);
-    return null;
+  try {
+    await ensureEncryptionKeys(fixtureEmail, fixturePassword);
+  } catch (err) {
+    return abortSeed(
+      `seedScrollFixture: failed to create fixture keys: ${(err as Error).message}`,
+      [fixtureUser.id]
+    );
   }
 
   // 3. Create the private conversation (canonical sorted participant order).
@@ -1422,12 +1437,10 @@ export async function seedScrollFixture(
     .select('id')
     .single();
   if (convError || !conversation) {
-    console.warn(
-      'seedScrollFixture: failed to create conversation:',
-      convError?.message
+    return abortSeed(
+      `seedScrollFixture: failed to create conversation: ${convError?.message}`,
+      [fixtureUser.id]
     );
-    await deleteTestUser(fixtureUser.id);
-    return null;
   }
   const conversationId = conversation.id as string;
 
@@ -1447,9 +1460,10 @@ export async function seedScrollFixture(
   }));
   const { error: insertError } = await admin.from('messages').insert(rows);
   if (insertError) {
-    console.warn('seedScrollFixture: insert failed:', insertError.message);
-    await deleteTestUser(fixtureUser.id);
-    return null;
+    return abortSeed(
+      `seedScrollFixture: message insert failed: ${insertError.message}`,
+      [fixtureUser.id]
+    );
   }
 
   await admin
@@ -1523,14 +1537,13 @@ export interface IsolatedConversation {
  *
  * Encryption keys are derived through the normal path (ensureEncryptionKeys →
  * Argon2id at ARGON2_CONFIG.TIME_COST=3, UNCHANGED — never lower it, it breaks
- * stored-key verification). Returns null if the admin client is unavailable.
+ * stored-key verification). Throws if the admin client is unavailable or any step fails.
  */
 export async function seedIsolatedConversation(
   messageCount = 0,
   opts?: { viewerPrefix?: string; partnerPrefix?: string }
-): Promise<IsolatedConversation | null> {
-  const admin = getAdminClient();
-  if (!admin) return null;
+): Promise<IsolatedConversation> {
+  const admin = requireAdminClient('seedIsolatedConversation');
 
   const viewerPrefix = opts?.viewerPrefix ?? 'iso-viewer';
   const partnerPrefix = opts?.partnerPrefix ?? 'iso-partner';
@@ -1541,31 +1554,29 @@ export async function seedIsolatedConversation(
   const makeUser = async (
     prefix: string,
     userTag: string
-  ): Promise<TestUser | null> => {
+  ): Promise<TestUser> => {
     const email = generateTestEmail(prefix);
     const user = await createTestUser(email, DEFAULT_TEST_PASSWORD, {
       username: `${userTag}${stamp}`,
     });
-    if (!user) {
-      console.warn(`seedIsolatedConversation: failed to create ${userTag}`);
-      return null;
-    }
-    const keysOk = await ensureEncryptionKeys(email, DEFAULT_TEST_PASSWORD);
-    if (!keysOk) {
-      console.warn(`seedIsolatedConversation: failed to key ${userTag}`);
-      await deleteTestUser(user.id);
-      return null;
+    try {
+      await ensureEncryptionKeys(email, DEFAULT_TEST_PASSWORD);
+    } catch (err) {
+      return abortSeed(
+        `seedIsolatedConversation: failed to key ${userTag}: ${(err as Error).message}`,
+        [user.id]
+      );
     }
     return user;
   };
 
   // 1. Throwaway viewer + partner (both keyed at TIME_COST=3).
   const viewer = await makeUser(viewerPrefix, 'isov');
-  if (!viewer) return null;
-  const partner = await makeUser(partnerPrefix, 'isop');
-  if (!partner) {
-    await deleteTestUser(viewer.id);
-    return null;
+  let partner: TestUser;
+  try {
+    partner = await makeUser(partnerPrefix, 'isop');
+  } catch (err) {
+    return abortSeed((err as Error).message, [viewer.id]);
   }
 
   // 2. Auth sessions for BOTH users, for browser localStorage injection. Uses
@@ -1574,14 +1585,12 @@ export async function seedIsolatedConversation(
     process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const signInKey = SIGN_IN_KEY;
   if (!anonUrl || !signInKey) {
-    console.warn('seedIsolatedConversation: anon URL/key not configured');
-    await deleteTestUser(viewer.id);
-    await deleteTestUser(partner.id);
-    return null;
+    return abortSeed('seedIsolatedConversation: anon URL/key not configured', [
+      viewer.id,
+      partner.id,
+    ]);
   }
-  const signInUser = async (
-    user: TestUser
-  ): Promise<InjectableSession | null> => {
+  const signInUser = async (user: TestUser): Promise<InjectableSession> => {
     const signInClient = createClient(anonUrl, signInKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
@@ -1590,11 +1599,9 @@ export async function seedIsolatedConversation(
       password: user.password,
     });
     if (error || !data.session) {
-      console.warn(
-        `seedIsolatedConversation: sign-in failed for ${user.email}:`,
-        error?.message
+      throw new Error(
+        `seedIsolatedConversation: sign-in failed for ${user.email}: ${error?.message}`
       );
-      return null;
     }
     return {
       access_token: data.session.access_token,
@@ -1604,12 +1611,13 @@ export async function seedIsolatedConversation(
     };
   };
 
-  const viewerSession = await signInUser(viewer);
-  const partnerSession = viewerSession ? await signInUser(partner) : null;
-  if (!viewerSession || !partnerSession) {
-    await deleteTestUser(viewer.id);
-    await deleteTestUser(partner.id);
-    return null;
+  let viewerSession: InjectableSession;
+  let partnerSession: InjectableSession;
+  try {
+    viewerSession = await signInUser(viewer);
+    partnerSession = await signInUser(partner);
+  } catch (err) {
+    return abortSeed((err as Error).message, [viewer.id, partner.id]);
   }
 
   // 3. Private conversation (canonical sorted participant order).
@@ -1621,13 +1629,10 @@ export async function seedIsolatedConversation(
     .select('id')
     .single();
   if (convError || !conversation) {
-    console.warn(
-      'seedIsolatedConversation: conversation insert failed:',
-      convError?.message
+    return abortSeed(
+      `seedIsolatedConversation: conversation insert failed: ${convError?.message}`,
+      [viewer.id, partner.id]
     );
-    await deleteTestUser(viewer.id);
-    await deleteTestUser(partner.id);
-    return null;
   }
   const conversationId = conversation.id as string;
 
@@ -1647,13 +1652,10 @@ export async function seedIsolatedConversation(
     }));
     const { error: insertError } = await admin.from('messages').insert(rows);
     if (insertError) {
-      console.warn(
-        'seedIsolatedConversation: message insert failed:',
-        insertError.message
+      return abortSeed(
+        `seedIsolatedConversation: message insert failed: ${insertError.message}`,
+        [viewer.id, partner.id]
       );
-      await deleteTestUser(viewer.id);
-      await deleteTestUser(partner.id);
-      return null;
     }
     await admin
       .from('conversations')
@@ -1877,7 +1879,7 @@ export async function openAsPartner(
 /**
  * Create a throwaway user (keyed at TIME_COST=3) and sign it in, returning the
  * user + an InjectableSession for browser injection. Shared building block for
- * the isolated-fixture seeders. Returns null on any failure (caller cleans up).
+ * the isolated-fixture seeders. Throws on any failure, after deleting its own user.
  */
 async function createKeyedUserWithSession(
   prefix: string,
@@ -1887,16 +1889,12 @@ async function createKeyedUserWithSession(
   user: TestUser;
   session: InjectableSession;
   displayName: string;
-} | null> {
+}> {
   const email = generateTestEmail(prefix);
   const displayName = `${userTag}${stamp}`;
   const user = await createTestUser(email, DEFAULT_TEST_PASSWORD, {
     username: displayName,
   });
-  if (!user) {
-    console.warn(`createKeyedUserWithSession: failed to create ${userTag}`);
-    return null;
-  }
   // A DB trigger auto-creates the user_profiles row on signup, so
   // createTestUser's createUserProfile() early-returns ("already exists") and
   // never sets display_name — leaving it null and the user UNsearchable
@@ -1909,20 +1907,23 @@ async function createKeyedUserWithSession(
       .update({ username: displayName, display_name: displayName })
       .eq('id', user.id);
   }
-  const keysOk = await ensureEncryptionKeys(email, DEFAULT_TEST_PASSWORD);
-  if (!keysOk) {
-    console.warn(`createKeyedUserWithSession: failed to key ${userTag}`);
-    await deleteTestUser(user.id);
-    return null;
+  try {
+    await ensureEncryptionKeys(email, DEFAULT_TEST_PASSWORD);
+  } catch (err) {
+    return abortSeed(
+      `createKeyedUserWithSession: failed to key ${userTag}: ${(err as Error).message}`,
+      [user.id]
+    );
   }
 
   const anonUrl =
     process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const signInKey = SIGN_IN_KEY;
   if (!anonUrl || !signInKey) {
-    console.warn('createKeyedUserWithSession: anon URL/key not configured');
-    await deleteTestUser(user.id);
-    return null;
+    return abortSeed(
+      'createKeyedUserWithSession: anon URL/key not configured',
+      [user.id]
+    );
   }
   const signInClient = createClient(anonUrl, signInKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -1932,12 +1933,10 @@ async function createKeyedUserWithSession(
     password: user.password,
   });
   if (error || !data.session) {
-    console.warn(
-      `createKeyedUserWithSession: sign-in failed for ${user.email}:`,
-      error?.message
+    return abortSeed(
+      `createKeyedUserWithSession: sign-in failed for ${user.email}: ${error?.message}`,
+      [user.id]
     );
-    await deleteTestUser(user.id);
-    return null;
   }
   return {
     user,
@@ -1978,14 +1977,13 @@ export interface IsolatedConnection {
  *                'none' to create the two users WITHOUT a connection row (for
  *                tests that send the request via the UI). When 'none',
  *                `connectionId` is the empty string.
- * Returns null if the admin client / anon key is unavailable.
+ * Throws if the admin client / anon key is unavailable or any step fails.
  */
 export async function seedIsolatedConnection(
   status: 'pending' | 'accepted' | 'blocked' | 'declined' | 'none' = 'pending',
   opts?: { requesterPrefix?: string; addresseePrefix?: string }
-): Promise<IsolatedConnection | null> {
-  const admin = getAdminClient();
-  if (!admin) return null;
+): Promise<IsolatedConnection> {
+  const admin = requireAdminClient('seedIsolatedConnection');
 
   const stamp = Date.now().toString().slice(-8);
   const requesterPrefix = opts?.requesterPrefix ?? 'iso-req';
@@ -1996,15 +1994,15 @@ export async function seedIsolatedConnection(
     'isor',
     stamp
   );
-  if (!requester) return null;
-  const addressee = await createKeyedUserWithSession(
-    addresseePrefix,
-    'isoa',
-    stamp
-  );
-  if (!addressee) {
-    await deleteTestUser(requester.user.id);
-    return null;
+  let addressee: Awaited<ReturnType<typeof createKeyedUserWithSession>>;
+  try {
+    addressee = await createKeyedUserWithSession(
+      addresseePrefix,
+      'isoa',
+      stamp
+    );
+  } catch (err) {
+    return abortSeed((err as Error).message, [requester.user.id]);
   }
 
   let connectionId = '';
@@ -2019,13 +2017,10 @@ export async function seedIsolatedConnection(
       .select('id')
       .single();
     if (connError || !connection) {
-      console.warn(
-        'seedIsolatedConnection: connection insert failed:',
-        connError?.message
+      return abortSeed(
+        `seedIsolatedConnection: connection insert failed: ${connError?.message}`,
+        [requester.user.id, addressee.user.id]
       );
-      await deleteTestUser(requester.user.id);
-      await deleteTestUser(addressee.user.id);
-      return null;
     }
     connectionId = connection.id as string;
   }
@@ -2210,17 +2205,15 @@ async function distributeGroupKeysForFixture(
  * decrypt, without driving the >90s in-browser group-creation flow. Without it
  * (default), opening the group in a browser fails with "Group key not found".
  *
- * Returns null if the admin client / anon key is unavailable or seeding fails.
+ * Throws if the admin client / anon key is unavailable or seeding fails.
  */
 export async function seedIsolatedGroup(
   participantCount = 3,
   opts?: { prefix?: string; withKeys?: boolean }
-): Promise<IsolatedGroup | null> {
-  const admin = getAdminClient();
-  if (!admin) return null;
+): Promise<IsolatedGroup> {
+  const admin = requireAdminClient('seedIsolatedGroup');
   if (participantCount < 2) {
-    console.warn('seedIsolatedGroup: participantCount must be >= 2');
-    return null;
+    throw new Error('seedIsolatedGroup: participantCount must be >= 2');
   }
 
   const stamp = Date.now().toString().slice(-8);
@@ -2232,14 +2225,16 @@ export async function seedIsolatedGroup(
   };
 
   for (let i = 0; i < participantCount; i++) {
-    const made = await createKeyedUserWithSession(
-      `${prefix}${i}`,
-      `isog${i}`,
-      stamp
-    );
-    if (!made) {
+    let made: Awaited<ReturnType<typeof createKeyedUserWithSession>>;
+    try {
+      made = await createKeyedUserWithSession(
+        `${prefix}${i}`,
+        `isog${i}`,
+        stamp
+      );
+    } catch (err) {
       await cleanup();
-      return null;
+      throw err;
     }
     participants.push({ user: made.user, session: made.session });
   }
@@ -2260,12 +2255,10 @@ export async function seedIsolatedGroup(
     .select('id')
     .single();
   if (convError || !conversation) {
-    console.warn(
-      'seedIsolatedGroup: conversation insert failed:',
-      convError?.message
-    );
     await cleanup();
-    return null;
+    throw new Error(
+      `seedIsolatedGroup: conversation insert failed: ${convError?.message}`
+    );
   }
   const conversationId = conversation.id as string;
 
@@ -2279,13 +2272,11 @@ export async function seedIsolatedGroup(
     .from('conversation_members')
     .insert(memberRows);
   if (memberError) {
-    console.warn(
-      'seedIsolatedGroup: conversation_members insert failed:',
-      memberError.message
-    );
     await admin.from('conversations').delete().eq('id', conversationId);
     await cleanup();
-    return null;
+    throw new Error(
+      `seedIsolatedGroup: conversation_members insert failed: ${memberError.message}`
+    );
   }
 
   // Optionally distribute the group key server-side so the group is
@@ -2299,10 +2290,11 @@ export async function seedIsolatedGroup(
       creatorId
     );
     if (!distributed) {
-      console.warn('seedIsolatedGroup: group-key distribution failed');
       await admin.from('conversations').delete().eq('id', conversationId);
       await cleanup();
-      return null;
+      throw new Error(
+        'seedIsolatedGroup: group-key distribution failed (see the distributeGroupKeysForFixture warning above for the underlying error)'
+      );
     }
   }
 
@@ -2858,13 +2850,11 @@ export interface IsolatedAdmin {
 }
 
 /**
- * Seed a throwaway admin. Returns null if the admin client is unavailable
- * (same contract as {@link seedIsolatedPayment}), and THROWS if the promotion
- * did not take — see below.
+ * Seed a throwaway admin. THROWS if the admin client is unavailable, if
+ * the promotion fails, or if it did not take — see below.
  */
-export async function seedIsolatedAdmin(): Promise<IsolatedAdmin | null> {
-  const admin = getAdminClient();
-  if (!admin) return null;
+export async function seedIsolatedAdmin(): Promise<IsolatedAdmin> {
+  const admin = requireAdminClient('seedIsolatedAdmin');
 
   const stamp = Date.now().toString().slice(-8);
   const created = await createKeyedUserWithSession(
@@ -2872,7 +2862,6 @@ export async function seedIsolatedAdmin(): Promise<IsolatedAdmin | null> {
     'isoadm',
     stamp
   );
-  if (!created) return null;
 
   const { error } = await admin
     .from('user_profiles')
@@ -2880,9 +2869,9 @@ export async function seedIsolatedAdmin(): Promise<IsolatedAdmin | null> {
     .eq('id', created.user.id);
 
   if (error) {
-    console.warn('seedIsolatedAdmin: promotion failed:', error.message);
-    await deleteTestUser(created.user.id);
-    return null;
+    return abortSeed(`seedIsolatedAdmin: promotion failed: ${error.message}`, [
+      created.user.id,
+    ]);
   }
 
   // VERIFY THE PROMOTION THROUGH THE USER'S OWN SESSION, not the service role.
@@ -3135,14 +3124,13 @@ export async function resetEncryptionKeys(
  * embedded user reflects `provider: <provider>`. That is exactly what a real
  * OAuth login produces, without any Google/GitHub app or live handshake.
  *
- * @returns the fresh session, or null if the admin client / re-sign-in fails.
+ * @returns the fresh session; throws if the admin client or re-sign-in fails.
  */
 export async function promoteToOAuthAndReSignIn(
   user: TestUser,
   provider: 'google' | 'github' = 'google'
-): Promise<InjectableSession | null> {
-  const admin = getAdminClient();
-  if (!admin) return null;
+): Promise<InjectableSession> {
+  const admin = requireAdminClient(`promoteToOAuthAndReSignIn(${user.email})`);
 
   // Merge provider into app_metadata (updateUserById merges into
   // raw_app_meta_data — same call scripts/seed-test-users.ts uses for is_admin).
@@ -3150,11 +3138,9 @@ export async function promoteToOAuthAndReSignIn(
     app_metadata: { provider, providers: [provider] },
   });
   if (updateErr) {
-    console.warn(
-      `promoteToOAuthAndReSignIn: updateUserById failed for ${user.email}:`,
-      updateErr.message
+    throw new Error(
+      `promoteToOAuthAndReSignIn: updateUserById failed for ${user.email}: ${updateErr.message}`
     );
-    return null;
   }
 
   // Re-sign-in so the new session's JWT + embedded user carry the updated
@@ -3162,7 +3148,11 @@ export async function promoteToOAuthAndReSignIn(
   const anonUrl =
     process.env.SUPABASE_ADMIN_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const signInKey = SIGN_IN_KEY;
-  if (!anonUrl || !signInKey) return null;
+  if (!anonUrl || !signInKey) {
+    throw new Error(
+      `promoteToOAuthAndReSignIn: anon URL/key not configured (${user.email})`
+    );
+  }
   const signInClient = createClient(anonUrl, signInKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
@@ -3171,11 +3161,9 @@ export async function promoteToOAuthAndReSignIn(
     password: user.password,
   });
   if (error || !data.session) {
-    console.warn(
-      `promoteToOAuthAndReSignIn: re-sign-in failed for ${user.email}:`,
-      error?.message
+    throw new Error(
+      `promoteToOAuthAndReSignIn: re-sign-in failed for ${user.email}: ${error?.message}`
     );
-    return null;
   }
   return {
     access_token: data.session.access_token,
@@ -3191,9 +3179,16 @@ export async function promoteToOAuthAndReSignIn(
  * For the OAuth setup-mode test. Safe if the user has no keys.
  */
 export async function deleteUserEncryptionKeys(userId: string): Promise<void> {
-  const admin = getAdminClient();
-  if (!admin) return;
-  await admin.from('user_encryption_keys').delete().eq('user_id', userId);
+  const admin = requireAdminClient(`deleteUserEncryptionKeys(${userId})`);
+  const { error } = await admin
+    .from('user_encryption_keys')
+    .delete()
+    .eq('user_id', userId);
+  if (error) {
+    throw new Error(
+      `deleteUserEncryptionKeys: delete failed for ${userId}: ${error.message}`
+    );
+  }
 }
 
 /**

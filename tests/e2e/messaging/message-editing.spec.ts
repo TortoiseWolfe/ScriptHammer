@@ -22,7 +22,7 @@ import { settleFrames } from '../utils/settle';
 import {
   fillMessageInput,
   scrollThreadToBottom,
-  getAdminClient,
+  requireAdminClient,
   seedIsolatedConversation,
   deleteIsolatedConversation,
   openAsViewer,
@@ -143,7 +143,6 @@ test.describe('Message Editing', () => {
 
   test.beforeEach(async () => {
     fixture = await seedIsolatedConversation();
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {
@@ -302,7 +301,6 @@ test.describe('Message Deletion', () => {
 
   test.beforeEach(async () => {
     fixture = await seedIsolatedConversation();
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {
@@ -470,7 +468,6 @@ test.describe('Time Window Restrictions', () => {
 
   test.beforeEach(async () => {
     fixture = await seedIsolatedConversation();
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {
@@ -506,8 +503,7 @@ test.describe('Time Window Restrictions', () => {
   test('T117: should not show Edit/Delete buttons for messages older than 15 minutes', async ({
     browser,
   }) => {
-    const adminClient = getAdminClient();
-    test.skip(!adminClient, 'admin client not configured');
+    const adminClient = requireAdminClient('message-editing.spec.ts');
 
     const viewer = await openAsViewer(browser, fixture!);
     forwardConsole(viewer.page, 'viewer');
@@ -647,7 +643,6 @@ test.describe('Accessibility', () => {
 
   test.beforeEach(async () => {
     fixture = await seedIsolatedConversation();
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {

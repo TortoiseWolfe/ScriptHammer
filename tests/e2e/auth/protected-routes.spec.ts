@@ -267,8 +267,7 @@ test.describe('Protected Routes E2E', () => {
     } = await import('../utils/test-user-factory');
 
     if (!isAdminClientAvailable()) {
-      test.skip(true, 'SUPABASE_SERVICE_ROLE_KEY not configured');
-      return;
+      throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
     }
 
     // Derive email domain from primary test user or use fallback
@@ -287,10 +286,6 @@ test.describe('Protected Routes E2E', () => {
 
     // Create user via admin API
     const user = await createTestUser(deleteEmail, testPassword);
-    if (!user) {
-      test.skip(true, 'Could not create test user via admin API');
-      return;
-    }
 
     try {
       // Sign in as the newly created user (not the primary user)

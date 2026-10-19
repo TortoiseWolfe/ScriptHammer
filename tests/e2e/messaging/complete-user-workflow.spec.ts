@@ -26,7 +26,7 @@ import {
   openAsPartner,
   fillMessageInput,
   scrollThreadToBottom,
-  getAdminClient,
+  requireAdminClient,
   handleReAuthModal,
   DEFAULT_TEST_PASSWORD,
   type IsolatedConversation,
@@ -63,7 +63,6 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
 
   test.beforeEach(async () => {
     fixture = await seedIsolatedConversation();
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {
@@ -143,26 +142,23 @@ test.describe('Complete User Messaging Workflow (Feature 024)', () => {
 
       // ===== Verify encryption: database stores only ciphertext =====
       // Scoped to THIS fixture's conversation (never a global table scan).
-      const adminClient = getAdminClient();
-      if (adminClient) {
-        const { data: messages } = await adminClient
-          .from('messages')
-          .select('encrypted_content, initialization_vector')
-          .eq('conversation_id', fixture!.conversationId)
-          .order('created_at', { ascending: false })
-          .limit(5);
+      const adminClient = requireAdminClient('complete-user-workflow.spec.ts');
+      const { data: messages } = await adminClient
+        .from('messages')
+        .select('encrypted_content, initialization_vector')
+        .eq('conversation_id', fixture!.conversationId)
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-        if (messages && messages.length > 0) {
-          const foundPlaintext = messages.some((msg) => {
-            const content = msg.encrypted_content;
-            return (
-              content &&
-              (content.includes(testMessage) || content.includes(replyMessage))
-            );
-          });
-          expect(foundPlaintext).toBe(false);
-        }
-      }
+      expect(messages?.length ?? 0).toBeGreaterThan(0);
+      const foundPlaintext = (messages ?? []).some((msg) => {
+        const content = msg.encrypted_content;
+        return (
+          content &&
+          (content.includes(testMessage) || content.includes(replyMessage))
+        );
+      });
+      expect(foundPlaintext).toBe(false);
     } finally {
       await viewer.close();
       await partner.close();
@@ -175,7 +171,6 @@ test.describe('Conversations Page Loading (Feature 029)', () => {
 
   test.beforeEach(async () => {
     fixture = await seedIsolatedConversation();
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {

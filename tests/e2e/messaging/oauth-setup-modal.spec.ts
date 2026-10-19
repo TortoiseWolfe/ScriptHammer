@@ -133,7 +133,6 @@ test.describe('Feature 013 — OAuth Messaging Password', () => {
 
   test.beforeEach(async () => {
     fixture = await seedIsolatedConversation();
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {
@@ -204,11 +203,10 @@ test.describe('Feature 013 — OAuth Messaging Password', () => {
       fixture!.viewer,
       'google'
     );
-    test.skip(!oauthSession, 'OAuth promotion failed (no admin client?)');
 
     const viewer = await openMessagesWithoutUnlock(
       browser,
-      oauthSession!,
+      oauthSession,
       fixture!.conversationId
     );
     try {
@@ -245,11 +243,10 @@ test.describe('Feature 013 — OAuth Messaging Password', () => {
       fixture!.viewer,
       'google'
     );
-    test.skip(!oauthSession, 'OAuth promotion failed (no admin client?)');
 
     const viewer = await openMessagesWithoutUnlock(
       browser,
-      oauthSession!,
+      oauthSession,
       fixture!.conversationId
     );
     try {

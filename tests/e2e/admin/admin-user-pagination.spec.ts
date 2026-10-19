@@ -149,8 +149,8 @@ test.describe('Admin User Pagination E2E', () => {
   });
 
   test.beforeEach(async ({ page }) => {
-    test.skip(!admin, 'Admin client unavailable to seed an admin');
-    if (!admin) return;
+    // seedIsolatedAdmin() throws in beforeAll when it cannot seed; this only narrows the type.
+    if (!admin) throw new Error('admin fixture was not seeded in beforeAll');
     await injectSessionIntoPage(page, admin.session);
     await page.waitForLoadState('networkidle');
   });
