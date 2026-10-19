@@ -108,115 +108,121 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
     }
   });
 
-  test('should complete sign-up with valid credentials', async ({ page }) => {
-    // Generate email from TEST_USER_PRIMARY_EMAIL domain
-    const testEmail = generateSignUpEmail('valid');
-    createdEmails.push(testEmail);
+  test(
+    'should complete sign-up with valid credentials',
+    { tag: '@local-captcha' },
+    async ({ page }) => {
+      // Generate email from TEST_USER_PRIMARY_EMAIL domain
+      const testEmail = generateSignUpEmail('valid');
+      createdEmails.push(testEmail);
 
-    await page.goto('/sign-up');
-    await dismissCookieBanner(page);
-    await skipIfSubmitsRealSignup();
+      await page.goto('/sign-up');
+      await dismissCookieBanner(page);
+      await skipIfSubmitsRealSignup();
 
-    // Page heading is "Create Account"
-    await expect(
-      page.getByRole('heading', { name: /sign up|create account/i })
-    ).toBeVisible();
+      // Page heading is "Create Account"
+      await expect(
+        page.getByRole('heading', { name: /sign up|create account/i })
+      ).toBeVisible();
 
-    // Fill sign-up form
-    await page.getByLabel('Email').fill(testEmail);
-    await page
-      .getByLabel('Password', { exact: true })
-      .fill(DEFAULT_TEST_PASSWORD);
-    await page.getByLabel('Confirm Password').fill(DEFAULT_TEST_PASSWORD);
-    await waitForLocalTurnstileToken(page);
+      // Fill sign-up form
+      await page.getByLabel('Email').fill(testEmail);
+      await page
+        .getByLabel('Password', { exact: true })
+        .fill(DEFAULT_TEST_PASSWORD);
+      await page.getByLabel('Confirm Password').fill(DEFAULT_TEST_PASSWORD);
+      await waitForLocalTurnstileToken(page);
 
-    // Submit form
-    await page.getByRole('button', { name: /sign up/i }).click();
+      // Submit form
+      await page.getByRole('button', { name: /sign up/i }).click();
 
-    // Wait for either redirect or error
-    await page.waitForTimeout(3000);
+      // Wait for either redirect or error
+      await page.waitForTimeout(3000);
 
-    const hasError = await page
-      .locator('.alert-error')
-      .isVisible()
-      .catch(() => false);
-    const redirected =
-      page.url().includes('/verify-email') || page.url().includes('/profile');
+      const hasError = await page
+        .locator('.alert-error')
+        .isVisible()
+        .catch(() => false);
+      const redirected =
+        page.url().includes('/verify-email') || page.url().includes('/profile');
 
-    if (hasError) {
-      const errorText = await page.locator('.alert-error').textContent();
-      throw new Error(`Sign-up failed: ${errorText}`);
+      if (hasError) {
+        const errorText = await page.locator('.alert-error').textContent();
+        throw new Error(`Sign-up failed: ${errorText}`);
+      }
+
+      if (!redirected) {
+        // If still on sign-up page without error, wait a bit more
+        await page.waitForURL(/\/(verify-email|profile)/, { timeout: 30000 });
+      }
+
+      const url = page.url();
+      expect(url).toMatch(/\/(verify-email|profile)/);
+      console.log('Sign-up successful - redirected to:', url);
     }
+  );
 
-    if (!redirected) {
-      // If still on sign-up page without error, wait a bit more
-      await page.waitForURL(/\/(verify-email|profile)/, { timeout: 30000 });
+  test(
+    'should show error when signing up with existing email',
+    { tag: '@local-captcha' },
+    async ({ page }) => {
+      // The local signup-mailer run must be able to seed users through the admin API.
+      if (!isAdminClientAvailable()) {
+        throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
+      }
+
+      // Create a user first
+      const existingEmail = generateSignUpEmail('existing');
+      const user = await createTestUser(existingEmail, DEFAULT_TEST_PASSWORD);
+
+      if (!user) {
+        throw new Error('Could not create test user for duplicate-email test');
+      }
+
+      createdEmails.push(existingEmail);
+
+      await page.goto('/sign-up');
+      await dismissCookieBanner(page);
+      await skipIfSubmitsRealSignup();
+
+      // Try to sign up with the same email
+      await page.getByLabel('Email').fill(existingEmail);
+      await page
+        .getByLabel('Password', { exact: true })
+        .fill(DEFAULT_TEST_PASSWORD);
+      await page.getByLabel('Confirm Password').fill(DEFAULT_TEST_PASSWORD);
+      await waitForLocalTurnstileToken(page);
+
+      await page.getByRole('button', { name: /sign up/i }).click();
+
+      // Wait for form to process
+      await page.waitForTimeout(2000);
+
+      // Check multiple outcomes - different Supabase configurations may behave differently:
+      // 1. Error message visible
+      // 2. Redirected to verify-email (Supabase may allow duplicate signup attempts)
+      // 3. Redirected to profile (if auto-confirmed)
+      const hasError = await page
+        .locator('.alert-error')
+        .isVisible({ timeout: 5000 })
+        .catch(() => false);
+
+      const redirected =
+        page.url().includes('/verify-email') ||
+        page.url().includes('/profile') ||
+        page.url().includes('/sign-in');
+
+      // Either we see an error OR the app handled the duplicate email somehow
+      expect(hasError || redirected).toBe(true);
+
+      if (hasError) {
+        const errorText = await page.locator('.alert-error').textContent();
+        console.log('Duplicate email error:', errorText);
+      } else {
+        console.log('Duplicate email redirected to:', page.url());
+      }
     }
-
-    const url = page.url();
-    expect(url).toMatch(/\/(verify-email|profile)/);
-    console.log('Sign-up successful - redirected to:', url);
-  });
-
-  test('should show error when signing up with existing email', async ({
-    page,
-  }) => {
-    // The local signup-mailer run must be able to seed users through the admin API.
-    if (!isAdminClientAvailable()) {
-      throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
-    }
-
-    // Create a user first
-    const existingEmail = generateSignUpEmail('existing');
-    const user = await createTestUser(existingEmail, DEFAULT_TEST_PASSWORD);
-
-    if (!user) {
-      throw new Error('Could not create test user for duplicate-email test');
-    }
-
-    createdEmails.push(existingEmail);
-
-    await page.goto('/sign-up');
-    await dismissCookieBanner(page);
-    await skipIfSubmitsRealSignup();
-
-    // Try to sign up with the same email
-    await page.getByLabel('Email').fill(existingEmail);
-    await page
-      .getByLabel('Password', { exact: true })
-      .fill(DEFAULT_TEST_PASSWORD);
-    await page.getByLabel('Confirm Password').fill(DEFAULT_TEST_PASSWORD);
-    await waitForLocalTurnstileToken(page);
-
-    await page.getByRole('button', { name: /sign up/i }).click();
-
-    // Wait for form to process
-    await page.waitForTimeout(2000);
-
-    // Check multiple outcomes - different Supabase configurations may behave differently:
-    // 1. Error message visible
-    // 2. Redirected to verify-email (Supabase may allow duplicate signup attempts)
-    // 3. Redirected to profile (if auto-confirmed)
-    const hasError = await page
-      .locator('.alert-error')
-      .isVisible({ timeout: 5000 })
-      .catch(() => false);
-
-    const redirected =
-      page.url().includes('/verify-email') ||
-      page.url().includes('/profile') ||
-      page.url().includes('/sign-in');
-
-    // Either we see an error OR the app handled the duplicate email somehow
-    expect(hasError || redirected).toBe(true);
-
-    if (hasError) {
-      const errorText = await page.locator('.alert-error').textContent();
-      console.log('Duplicate email error:', errorText);
-    } else {
-      console.log('Duplicate email redirected to:', page.url());
-    }
-  });
+  );
 
   test('should show validation error for weak password', async ({ page }) => {
     await page.goto('/sign-up');
@@ -321,42 +327,48 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
 });
 
 test.describe('Sign-up with Admin Confirmation', () => {
-  test('should create user, auto-confirm, and sign-in', async ({ page }) => {
-    // Skip if admin client not available
-    if (!isAdminClientAvailable()) {
-      throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
+  test(
+    'should create user, auto-confirm, and sign-in',
+    { tag: '@local-captcha' },
+    async ({ page }) => {
+      // Skip if admin client not available
+      if (!isAdminClientAvailable()) {
+        throw new Error('SUPABASE_SERVICE_ROLE_KEY not configured');
+      }
+      // Seeding uses the admin API; sign-in uses the REAL form and the local
+      // Turnstile test key to submit against protected GoTrue.
+      await skipIfBackendCaptchaProtected(
+        'Admin-confirmed user can sign in through the sign-in form'
+      );
+
+      // Create user via admin API (email auto-confirmed)
+      const testEmail = generateSignUpEmail('admin');
+      const user = await createTestUser(testEmail, DEFAULT_TEST_PASSWORD, {
+        createProfile: true,
+      });
+
+      if (!user) {
+        throw new Error(
+          'Could not create test user for admin-confirmation test'
+        );
+      }
+
+      try {
+        // Now sign in with the created user
+        await page.goto('/sign-in');
+        await dismissCookieBanner(page);
+        await page.getByLabel('Email').fill(testEmail);
+        await page.getByLabel('Password').fill(DEFAULT_TEST_PASSWORD);
+        await waitForLocalTurnstileToken(page);
+        await page.getByRole('button', { name: 'Sign In' }).click();
+
+        // Should redirect and authenticate
+        await waitForAuthenticatedState(page);
+        console.log('Admin-created user signed in successfully');
+      } finally {
+        // Clean up
+        await deleteTestUserByEmail(testEmail);
+      }
     }
-    // Seeding uses the admin API; sign-in uses the REAL form and the local
-    // Turnstile test key to submit against protected GoTrue.
-    await skipIfBackendCaptchaProtected(
-      'Admin-confirmed user can sign in through the sign-in form'
-    );
-
-    // Create user via admin API (email auto-confirmed)
-    const testEmail = generateSignUpEmail('admin');
-    const user = await createTestUser(testEmail, DEFAULT_TEST_PASSWORD, {
-      createProfile: true,
-    });
-
-    if (!user) {
-      throw new Error('Could not create test user for admin-confirmation test');
-    }
-
-    try {
-      // Now sign in with the created user
-      await page.goto('/sign-in');
-      await dismissCookieBanner(page);
-      await page.getByLabel('Email').fill(testEmail);
-      await page.getByLabel('Password').fill(DEFAULT_TEST_PASSWORD);
-      await waitForLocalTurnstileToken(page);
-      await page.getByRole('button', { name: 'Sign In' }).click();
-
-      // Should redirect and authenticate
-      await waitForAuthenticatedState(page);
-      console.log('Admin-created user signed in successfully');
-    } finally {
-      // Clean up
-      await deleteTestUserByEmail(testEmail);
-    }
-  });
+  );
 });

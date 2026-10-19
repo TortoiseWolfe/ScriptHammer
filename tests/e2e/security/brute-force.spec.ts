@@ -132,66 +132,72 @@ test.describe('Brute force: nobody can lock someone else out (#1245)', () => {
     if (email) await deleteTestUserByEmail(email);
   });
 
-  test('six anonymous RPCs naming the address do not lock its owner out', async ({
-    page,
-  }) => {
-    // The weapon itself: no form, no captcha, just the public key and someone's address.
-    for (let i = 0; i < 6; i++) {
-      const r = await anonRpc('record_failed_attempt', {
+  test(
+    'six anonymous RPCs naming the address do not lock its owner out',
+    { tag: '@local-captcha' },
+    async ({ page }) => {
+      // The weapon itself: no form, no captcha, just the public key and someone's address.
+      for (let i = 0; i < 6; i++) {
+        const r = await anonRpc('record_failed_attempt', {
+          p_identifier: email,
+          p_attempt_type: 'sign_in',
+        });
+        expect(r.status, `record ${i + 1}`).toBeLessThan(300);
+      }
+      const check = await anonRpc('check_rate_limit', {
         p_identifier: email,
         p_attempt_type: 'sign_in',
       });
-      expect(r.status, `record ${i + 1}`).toBeLessThan(300);
-    }
-    const check = await anonRpc('check_rate_limit', {
-      p_identifier: email,
-      p_attempt_type: 'sign_in',
-    });
-    expect(check.status).toBe(200);
-    // Before A2: {allowed: false, locked_until: <15 minutes out>}.
-    expect(check.body).toEqual({
-      allowed: true,
-      remaining: 5,
-      locked_until: null,
-    });
+      expect(check.status).toBe(200);
+      // Before A2: {allowed: false, locked_until: <15 minutes out>}.
+      expect(check.body).toEqual({
+        allowed: true,
+        remaining: 5,
+        locked_until: null,
+      });
 
-    await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-    await expectSignedIn(page, email, password);
-  });
-
-  test('six wrong passwords from another browser do not stop the owner signing in', async ({
-    browser,
-  }) => {
-    const stranger = await browser.newContext({
-      storageState: { cookies: [], origins: [] },
-    });
-    const owner = await browser.newContext({
-      storageState: { cookies: [], origins: [] },
-    });
-    try {
-      const attacker = await stranger.newPage();
-      await attacker.goto('/sign-in');
-      await dismissCookieBanner(attacker);
-      await sixWrongPasswords(attacker, email);
-
-      const page = await owner.newPage();
       await page.goto('/sign-in');
       await dismissCookieBanner(page);
       await expectSignedIn(page, email, password);
-    } finally {
-      await stranger.close();
-      await owner.close();
     }
-  });
+  );
 
-  test('the owner can still sign in straight after six mistakes of their own', async ({
-    page,
-  }) => {
-    // The same browser, so nothing the old form kept per tab could explain a pass.
-    await page.goto('/sign-in');
-    await dismissCookieBanner(page);
-    await sixWrongPasswords(page, email);
-    await expectSignedIn(page, email, password);
-  });
+  test(
+    'six wrong passwords from another browser do not stop the owner signing in',
+    { tag: '@local-captcha' },
+    async ({ browser }) => {
+      const stranger = await browser.newContext({
+        storageState: { cookies: [], origins: [] },
+      });
+      const owner = await browser.newContext({
+        storageState: { cookies: [], origins: [] },
+      });
+      try {
+        const attacker = await stranger.newPage();
+        await attacker.goto('/sign-in');
+        await dismissCookieBanner(attacker);
+        await sixWrongPasswords(attacker, email);
+
+        const page = await owner.newPage();
+        await page.goto('/sign-in');
+        await dismissCookieBanner(page);
+        await expectSignedIn(page, email, password);
+      } finally {
+        await stranger.close();
+        await owner.close();
+      }
+    }
+  );
+
+  test(
+    'the owner can still sign in straight after six mistakes of their own',
+    { tag: '@local-captcha' },
+    async ({ page }) => {
+      // The same browser, so nothing the old form kept per tab could explain a pass.
+      await page.goto('/sign-in');
+      await dismissCookieBanner(page);
+      await sixWrongPasswords(page, email);
+      await expectSignedIn(page, email, password);
+    }
+  );
 });

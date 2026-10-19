@@ -377,7 +377,7 @@ jobs:
     # jobs on fork PRs (they show neutral, not failed); maintainers verify E2E
     # after pulling the branch into this repo. Same-repo branch PRs, push, cron,
     # and workflow_dispatch always have secrets and run normally. This condition
-    # is repeated on every job below that needs secrets (basepath, rate-limiting,
+    # is repeated on every job below that needs secrets (basepath,
     # auth-setup, e2e) — Actions has no YAML-anchor support for jobs.
     if: >-
       github.event_name != 'pull_request' ||
@@ -444,12 +444,18 @@ jobs:
 
           echo "serve is responding on http://localhost:3000"
 
+      # `@local-captcha` (sign-up, rate-limiting and brute-force specs, 8 tests) needs
+      # Cloudflare Turnstile TEST keys. The hosted project is CAPTCHA-protected by
+      # design, so on this lane they could only skip. They run, with 0 skipped, in the
+      # required Signup Mailer lane (signup-mailer.yml, project `captcha-blocked`),
+      # which gates on zero skips (#1366, #1387).
       - name: Run smoke tests (sign-up only - auth tests run after auth-setup)
         run: |
           scripts/ci/playwright-in-container.sh test \
             tests/e2e/auth/sign-up.spec.ts \
             --project=signup \
             --no-deps \
+            --grep-invert @local-captcha \
             --reporter=list,./tests/e2e/reporters/assertion-count-reporter.ts \
             --timeout=30000
         env:
@@ -569,97 +575,6 @@ jobs:
         run: echo "## basePath Project-Site Smoke Complete" >> "$GITHUB_STEP_SUMMARY"
 
   # ============================================
-  # STEP 3: Rate-limiting tests (ordered, clean IP)
-  # ============================================
-  rate-limiting:
-    name: Rate-Limiting Tests
-    runs-on: ubuntu-latest
-    needs: smoke
-    # Fork-PR guard (see smoke job): skip on fork PRs where secrets are withheld.
-    # (smoke already skips on forks and this needs it, but keep the guard explicit.)
-    if: >-
-      github.event_name != 'pull_request' ||
-      github.event.pull_request.head.repo.full_name == github.repository
-    timeout-minutes: 10
-    continue-on-error: true
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 10.16.1
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: '22'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # No install step (#829): the browsers come from the image.
-
-      - name: Download build
-        uses: actions/download-artifact@v8
-        with:
-          name: build-output
-          path: out/
-
-      - name: Start server
-        run: |
-          set -euo pipefail
-          npx serve out -l 3000 > serve.log 2>&1 &
-          SERVE_PID=$!
-          echo "serve started, PID=$SERVE_PID"
-
-          # Brief grace period for the child to spawn; wait-on does the real polling.
-          sleep 2
-
-          # Verify serve didn't already exit (port in use, missing out/, etc.).
-          if ! kill -0 "$SERVE_PID" 2>/dev/null; then
-            echo "::error::serve exited immediately after launch"
-            echo "--- serve.log ---"
-            cat serve.log || true
-            exit 1
-          fi
-
-          # Explicit exit-code propagation. Don't rely on -e interacting cleanly
-          # with backgrounded jobs.
-          if ! npx wait-on http://localhost:3000 --timeout 60000 --verbose; then
-            echo "::error::wait-on timed out — serve never bound to port 3000 within 60s"
-            echo "--- serve.log ---"
-            cat serve.log || true
-            echo "--- listening sockets ---"
-            ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null || true
-            echo "--- serve process state ---"
-            ps -fp "$SERVE_PID" 2>/dev/null || echo "serve process $SERVE_PID is gone"
-            echo "--- direct curl attempt ---"
-            curl -v --max-time 5 http://localhost:3000/ 2>&1 || true
-            exit 1
-          fi
-
-          echo "serve is responding on http://localhost:3000"
-
-      - name: Run rate-limiting tests (ordered)
-        run: scripts/ci/playwright-in-container.sh test --project=rate-limiting --project=brute-force --project=signup --reporter=list,./tests/e2e/reporters/assertion-count-reporter.ts --trace=on-first-retry
-        env:
-          CI: true
-          PLAYWRIGHT_BROWSER: chromium
-          SKIP_WEBSERVER: true
-          BASE_URL: http://localhost:3000
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          TEST_USER_PRIMARY_EMAIL: ${{ vars.TEST_USER_PRIMARY_EMAIL }}
-          TEST_USER_PRIMARY_PASSWORD: ${{ secrets.TEST_USER_PRIMARY_PASSWORD }}
-          TEST_USER_SECONDARY_EMAIL: ${{ vars.TEST_USER_SECONDARY_EMAIL }}
-          TEST_USER_SECONDARY_PASSWORD: ${{ secrets.TEST_USER_SECONDARY_PASSWORD }}
-          TEST_USER_TERTIARY_EMAIL: ${{ vars.TEST_USER_TERTIARY_EMAIL }}
-          TEST_USER_TERTIARY_PASSWORD: ${{ secrets.TEST_USER_TERTIARY_PASSWORD }}
-
-  # ============================================
   # STEP 4: Auth Setup (runs ONCE, shares state)
   # ============================================
   auth-setup:
@@ -768,7 +683,7 @@ jobs:
   e2e:
     name: E2E (${{ matrix.project }} ${{ matrix.shard }})
     runs-on: ubuntu-latest
-    needs: [smoke, rate-limiting, auth-setup]
+    needs: [smoke, auth-setup]
     # Fork-PR guard (see smoke job): skip on fork PRs where secrets are withheld.
     if: >-
       github.event_name != 'pull_request' ||
@@ -964,7 +879,7 @@ jobs:
     runs-on: ubuntu-latest
     # Lever 1: depends only on the build/auth artifacts (same as e2e/chromium),
     # NOT on the chromium job — so all 3 browsers run in parallel.
-    needs: [smoke, rate-limiting, auth-setup]
+    needs: [smoke, auth-setup]
     # Cross-browser is OPT-IN (#643). It used to run on every push to main, which
     # made the post-merge run 62% of all Supabase load in the repo — main was 46%
     # of runs, and this is the only place firefox/webkit ever executed. It now
@@ -1139,7 +1054,7 @@ jobs:
     name: E2E (${{ matrix.project }} ${{ matrix.shard }})
     runs-on: ubuntu-latest
     # Lever 1: depends only on build/auth artifacts, NOT firefox — all 3 parallel.
-    needs: [smoke, rate-limiting, auth-setup]
+    needs: [smoke, auth-setup]
     # Opt-in cross-browser and no `always()` — see e2e-firefox above for both, in
     # full. Same gate deliberately: weekly cron, a `full-e2e`-labelled same-repo
     # PR, or an explicit dispatch. Never on a bare push, and never on a bot

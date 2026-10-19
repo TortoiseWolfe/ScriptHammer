@@ -180,6 +180,45 @@ jobs:
           E2E_LOCAL_TURNSTILE_TESTS: 'true'
         run: scripts/ci/playwright-in-container.sh test --config playwright.signup-mailer.config.ts
 
+      # ZERO SKIPS, and at least one test executed (#1387). A skipped test reports green, and
+      # this lane carries the eight `@local-captcha` tests the hosted lane cannot run: if one
+      # starts skipping here (a guard that fires, a missing key), nothing runs it ANYWHERE
+      # and every check stays green. Same results.json walk as the per-shard gate in
+      # e2e-local.yml. Runs only when the step above passed; a failure there already fails
+      # the job, and `Signup Mailer result` reads this job's result, so this turns it red.
+      - name: No test in this lane may skip, and at least one must have run
+        run: |
+          python3 - test-results/signup-mailer-results.json <<'EOF'
+          import json, sys
+          try:
+              d = json.load(open(sys.argv[1]))
+          except Exception as e:
+              print(f"::error::no readable results file ({e}) - this lane reported nothing")
+              sys.exit(1)
+          ran = skipped = 0
+          names = []
+          def walk(s):
+              global ran, skipped
+              for spec in s.get("specs", []):
+                  for t in spec.get("tests", []):
+                      if t.get("status") == "skipped":
+                          skipped += 1
+                          names.append(spec.get("title", "?"))
+                      else:
+                          ran += 1
+              for c in s.get("suites", []): walk(c)
+          for s_ in d.get("suites", []): walk(s_)
+          print(f"executed {ran}, skipped {skipped}")
+          if ran == 0:
+              print("::error::this lane executed 0 tests - a green tick here would be meaningless")
+              sys.exit(1)
+          if skipped:
+              for n in names[:20]:
+                  print(f"::error::skipped: {n}")
+              print(f"::error::{skipped} test(s) skipped - a skip is not a pass; these tests exist to run here")
+              sys.exit(1)
+          EOF
+
       - name: Dump logs on failure
         if: failure()
         run: |
