@@ -12,22 +12,15 @@ import {
   updateRetryCount,
 } from './offline-queue';
 
-// Skip in Node environment where IndexedDB isn't available
-const isBrowser = typeof window !== 'undefined' && 'indexedDB' in window;
-
-describe.skipIf(!isBrowser)('Offline Queue - Real IndexedDB', () => {
+describe('Offline Queue - Real IndexedDB', () => {
   beforeEach(async () => {
     // Clear any existing data
-    if (isBrowser) {
-      await clearQueue().catch(() => {});
-    }
+    await clearQueue().catch(() => {});
   });
 
   afterEach(async () => {
     // Clean up after tests
-    if (isBrowser) {
-      await clearQueue().catch(() => {});
-    }
+    await clearQueue().catch(() => {});
   });
 
   describe('Basic Queue Operations', () => {

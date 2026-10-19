@@ -104,9 +104,8 @@ test.describe('Offline Payment Queue', () => {
   });
 
   // ── Populated-queue flows ────────────────────────────────────────────────
-  // Open the /payment hub and return the PaymentQueuePanel locator, or null when
-  // the panel isn't rendered (no provider configured — the queue is client-side
-  // and seedable regardless, but the panel is what these tests assert against).
+  // Open the /payment hub and return the PaymentQueuePanel locator. The panel
+  // must render: its absence is a failure, not a reason to skip.
   async function openHubPanel(page: Page) {
     await page.goto('/payment', { waitUntil: 'networkidle' });
     if (page.url().includes('/sign-in')) {
@@ -115,7 +114,11 @@ test.describe('Offline Payment Queue', () => {
     }
     await dismissCookieBanner(page);
     const panel = page.getByTestId('payment-queue-panel');
-    return (await panel.count()) ? panel : null;
+    await expect(
+      panel,
+      'PaymentQueuePanel did not render on /payment'
+    ).toBeVisible({ timeout: 30000 });
+    return panel;
   }
 
   test('should show queued items and the Offline badge when offline', async ({
@@ -123,10 +126,6 @@ test.describe('Offline Payment Queue', () => {
     context,
   }) => {
     const panel = await openHubPanel(page);
-    test.skip(
-      !panel,
-      'PaymentQueuePanel not rendered (no provider configured)'
-    );
 
     // Seed + render the queue while ONLINE (reloading offline errors with
     // ERR_INTERNET_DISCONNECTED). IndexedDB rows persist across the offline
@@ -164,10 +163,6 @@ test.describe('Offline Payment Queue', () => {
 
   test('should handle multiple queued payments', async ({ page }) => {
     const panel = await openHubPanel(page);
-    test.skip(
-      !panel,
-      'PaymentQueuePanel not rendered (no provider configured)'
-    );
 
     await seedPaymentQueue(page, [
       { type: 'payment_intent' },
@@ -186,10 +181,6 @@ test.describe('Offline Payment Queue', () => {
 
   test('should persist queue across page reloads', async ({ page }) => {
     const panel = await openHubPanel(page);
-    test.skip(
-      !panel,
-      'PaymentQueuePanel not rendered (no provider configured)'
-    );
 
     await seedPaymentQueue(page, [
       { type: 'payment_intent' },
@@ -207,10 +198,6 @@ test.describe('Offline Payment Queue', () => {
 
   test('should show retry count on queued items', async ({ page }) => {
     const panel = await openHubPanel(page);
-    test.skip(
-      !panel,
-      'PaymentQueuePanel not rendered (no provider configured)'
-    );
 
     // A pending item that has already failed twice renders "Attempt 2/5". We
     // assert the DISPLAYED retry count/error, not wall-clock backoff timing
@@ -229,10 +216,6 @@ test.describe('Offline Payment Queue', () => {
 
   test('should show Max-retries badge after max attempts', async ({ page }) => {
     const panel = await openHubPanel(page);
-    test.skip(
-      !panel,
-      'PaymentQueuePanel not rendered (no provider configured)'
-    );
 
     // retries >= maxRetries(5) → the panel shows a "Max retries" badge-error.
     await seedPaymentQueue(page, [
@@ -256,7 +239,6 @@ test.describe('Offline Payment Queue', () => {
     const admin = getAdminClient();
     expect(admin, 'admin client unavailable').not.toBeNull();
     const panel = await openHubPanel(page);
-    expect(panel, 'PaymentQueuePanel did not render').not.toBeNull();
 
     const buyerEmail = `queue-drain-${Date.now()}@example.com`;
     try {
@@ -305,10 +287,6 @@ test.describe('Offline Payment Queue', () => {
 
   test('should clear the queue manually', async ({ page }) => {
     const panel = await openHubPanel(page);
-    test.skip(
-      !panel,
-      'PaymentQueuePanel not rendered (no provider configured)'
-    );
 
     await seedPaymentQueue(page, [
       { type: 'payment_intent' },
@@ -362,10 +340,6 @@ test.describe('Offline Payment Queue', () => {
     });
 
     const panel = await openHubPanel(page);
-    test.skip(
-      !panel,
-      'PaymentQueuePanel not rendered (no provider configured)'
-    );
 
     // Seed an item so the queue is non-empty (realistic near-full scenario).
     await seedPaymentQueue(page, [{ type: 'payment_intent' }]);

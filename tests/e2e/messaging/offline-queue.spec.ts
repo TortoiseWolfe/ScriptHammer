@@ -28,7 +28,7 @@ import {
   openAsPartner,
   fillMessageInput,
   scrollThreadToBottom,
-  getAdminClient,
+  requireAdminClient,
   handleReAuthModal,
   DEFAULT_TEST_PASSWORD,
   type IsolatedConversation,
@@ -100,7 +100,6 @@ test.describe('Offline Message Queue', () => {
 
   test.beforeEach(async () => {
     fixture = await seedIsolatedConversation();
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {
@@ -315,11 +314,7 @@ test.describe('Offline Message Queue', () => {
   test('T149: should handle conflict resolution with server timestamp', async ({
     browser,
   }) => {
-    const adminClient = getAdminClient();
-    test.skip(
-      !adminClient,
-      'Skipping conflict resolution test - Supabase admin client not available'
-    );
+    const adminClient = requireAdminClient('offline-queue.spec.ts');
 
     // Open BOTH participants concurrently — each pays a gate-load + Argon2id
     // unlock, and serializing them would exhaust the per-test budget.

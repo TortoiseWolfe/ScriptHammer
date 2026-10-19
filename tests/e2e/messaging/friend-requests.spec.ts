@@ -74,7 +74,6 @@ test.describe('Friend Request Flow', () => {
   }) => {
     // Start with NO connection — the requester sends it via the UI.
     fixture = await seedIsolatedConnection('none');
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
 
     const [requester, addressee] = await Promise.all([
       openConnectionsTab(browser, fixture!.requesterSession),
@@ -149,7 +148,6 @@ test.describe('Friend Request Flow', () => {
   test('addressee can decline a friend request', async ({ browser }) => {
     // Seed a pending request FROM requester TO addressee; addressee declines.
     fixture = await seedIsolatedConnection('pending');
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
 
     const addressee = await openConnectionsTab(
       browser,
@@ -181,7 +179,6 @@ test.describe('Friend Request Flow', () => {
   test('requester can cancel a sent pending request', async ({ browser }) => {
     // Seed a pending request; the requester cancels it from the "Sent" tab.
     fixture = await seedIsolatedConnection('pending');
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
 
     const requester = await openConnectionsTab(
       browser,
@@ -214,7 +211,6 @@ test.describe('Friend Request Flow', () => {
     // A pending request already exists; searching again must NOT offer a fresh
     // "Send Request" — the button is gone/disabled or shows a pending state.
     fixture = await seedIsolatedConnection('pending');
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
 
     const requester = await openConnectionsTab(
       browser,
@@ -256,7 +252,6 @@ test.describe('Accessibility', () => {
 
   test('connections page meets WCAG standards', async ({ browser }) => {
     fixture = await seedIsolatedConnection('none');
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
 
     const viewer = await openConnectionsTab(browser, fixture!.requesterSession);
     try {
@@ -286,7 +281,6 @@ test.describe('Accessibility', () => {
 
   test('tab navigation works correctly', async ({ browser }) => {
     fixture = await seedIsolatedConnection('none');
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
 
     const viewer = await openConnectionsTab(browser, fixture!.requesterSession);
     try {

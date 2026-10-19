@@ -268,8 +268,6 @@ test.describe('WCAG AAA color-contrast-enhanced (violations only)', () => {
         let page = defaultPage;
         if (needsAdmin) {
           adminFixture = await seedIsolatedAdmin();
-          test.skip(!adminFixture, 'Admin client unavailable to seed an admin');
-          if (!adminFixture) return;
           openedAdmin = await openAuthedPage(browser, adminFixture.session);
           page = openedAdmin.page;
           await page.setViewportSize({ width: 1280, height: 1024 });

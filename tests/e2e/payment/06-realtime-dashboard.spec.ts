@@ -9,7 +9,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import {
   dismissCookieBanner,
-  getAdminClient,
+  requireAdminClient,
   seedIsolatedPayment,
   deleteIsolatedPayment,
   openPaymentHubAs,
@@ -135,8 +135,6 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
     let opened: Awaited<ReturnType<typeof openPaymentHubAs>> | null = null;
     try {
       fixture = await seedIsolatedPayment();
-      test.skip(!fixture, 'Admin client unavailable to seed payment');
-      if (!fixture) return;
 
       opened = await openPaymentHubAs(browser, fixture.session);
       const { page } = opened;
@@ -164,10 +162,8 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
     let opened: Awaited<ReturnType<typeof openPaymentHubAs>> | null = null;
     try {
       fixture = await seedIsolatedPayment();
-      const admin = getAdminClient();
-      expect(fixture, 'seedIsolatedPayment returned null').not.toBeNull();
-      expect(admin, 'admin client unavailable').not.toBeNull();
-      const seeded = fixture!;
+      const admin = requireAdminClient('06-realtime-dashboard');
+      const seeded = fixture;
 
       const unverify = await admin!
         .from('payment_results')
@@ -210,9 +206,7 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
       fixture = await seedIsolatedSubscription('active', {
         provider: 'stripe',
       });
-      const admin = getAdminClient();
-      test.skip(!fixture || !admin, 'Admin client unavailable to seed');
-      if (!fixture || !admin) return;
+      const admin = requireAdminClient('06-realtime-dashboard');
 
       opened = await openSubscriptionsAs(browser, fixture);
       const { page } = opened;
@@ -245,8 +239,6 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
     let opened: Awaited<ReturnType<typeof openPaymentHubAs>> | null = null;
     try {
       fixture = await seedIsolatedPayment();
-      test.skip(!fixture, 'Admin client unavailable to seed payment');
-      if (!fixture) return;
 
       opened = await openPaymentHubAs(browser, fixture.session);
       const { page } = opened;
@@ -274,8 +266,6 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
     let opened: Awaited<ReturnType<typeof openPaymentHubAs>> | null = null;
     try {
       fixture = await seedIsolatedPayment();
-      test.skip(!fixture, 'Admin client unavailable to seed payment');
-      if (!fixture) return;
 
       opened = await openPaymentHubAs(browser, fixture.session);
       const status = opened.page.getByTestId('realtime-status');
@@ -297,8 +287,6 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
     let opened: Awaited<ReturnType<typeof openPaymentHubAs>> | null = null;
     try {
       fixture = await seedIsolatedPayment();
-      test.skip(!fixture, 'Admin client unavailable to seed payment');
-      if (!fixture) return;
 
       opened = await openPaymentHubAs(browser, fixture.session);
       const { page } = opened;
@@ -342,8 +330,6 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
     let opened: Awaited<ReturnType<typeof openPaymentHubAs>> | null = null;
     try {
       fixture = await seedIsolatedPayment();
-      test.skip(!fixture, 'Admin client unavailable to seed payment');
-      if (!fixture) return;
 
       opened = await openPaymentHubAs(browser, fixture.session);
       const { page } = opened;
@@ -373,8 +359,6 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
     let opened: Awaited<ReturnType<typeof openPaymentHubAs>> | null = null;
     try {
       fixture = await seedIsolatedPayment();
-      test.skip(!fixture, 'Admin client unavailable to seed payment');
-      if (!fixture) return;
 
       opened = await openPaymentHubAs(browser, fixture.session);
       const { page } = opened;

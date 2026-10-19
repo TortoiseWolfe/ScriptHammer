@@ -15,7 +15,7 @@ import {
   deleteIsolatedSubscription,
   openSubscriptionsAs,
   openAuthedPage,
-  getAdminClient,
+  requireAdminClient,
   seedIsolatedPayment,
   deleteIsolatedPayment,
   type IsolatedSubscription,
@@ -29,11 +29,8 @@ import {
  * writes, so no real Stripe decline is needed. Throws rather than skipping.
  */
 async function seedFailedPayment(retryCount: number): Promise<IsolatedPayment> {
-  const fixture = await seedIsolatedPayment({ prefix: 'iso-fail' });
-  const admin = getAdminClient();
-  expect(fixture, 'seedIsolatedPayment returned null').not.toBeNull();
-  expect(admin, 'admin client unavailable').not.toBeNull();
-  const seeded = fixture!;
+  const seeded = await seedIsolatedPayment({ prefix: 'iso-fail' });
+  const admin = requireAdminClient('03-failed-payment-retry');
 
   const result = await admin!
     .from('payment_results')
@@ -183,8 +180,6 @@ test.describe('Failed Payment Retry Logic', () => {
       fixture = await seedIsolatedSubscription('past_due', {
         provider: 'stripe',
       });
-      test.skip(!fixture, 'Admin client unavailable to seed subscription');
-      if (!fixture) return;
 
       opened = await openSubscriptionsAs(browser, fixture);
       const { page } = opened;

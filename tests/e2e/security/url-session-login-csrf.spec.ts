@@ -77,8 +77,6 @@ test.beforeAll(async () => {
   const user = await createTestUser(attackerEmail, password, {
     createProfile: true,
   });
-  if (!user)
-    throw new Error(`could not create the attacker account ${attackerEmail}`);
   attackerId = user.id;
   const { session, error } = await signInAsInjectable(attackerEmail, password);
   if (!session)

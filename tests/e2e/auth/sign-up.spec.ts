@@ -173,11 +173,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
 
       // Create a user first
       const existingEmail = generateSignUpEmail('existing');
-      const user = await createTestUser(existingEmail, DEFAULT_TEST_PASSWORD);
-
-      if (!user) {
-        throw new Error('Could not create test user for duplicate-email test');
-      }
+      await createTestUser(existingEmail, DEFAULT_TEST_PASSWORD);
 
       createdEmails.push(existingEmail);
 
@@ -343,15 +339,9 @@ test.describe('Sign-up with Admin Confirmation', () => {
 
       // Create user via admin API (email auto-confirmed)
       const testEmail = generateSignUpEmail('admin');
-      const user = await createTestUser(testEmail, DEFAULT_TEST_PASSWORD, {
+      await createTestUser(testEmail, DEFAULT_TEST_PASSWORD, {
         createProfile: true,
       });
-
-      if (!user) {
-        throw new Error(
-          'Could not create test user for admin-confirmation test'
-        );
-      }
 
       try {
         // Now sign in with the created user

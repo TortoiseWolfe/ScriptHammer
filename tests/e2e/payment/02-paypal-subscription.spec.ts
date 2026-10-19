@@ -10,7 +10,7 @@
 import { test, expect } from '@playwright/test';
 import {
   dismissCookieBanner,
-  getAdminClient,
+  requireAdminClient,
   seedIsolatedSubscription,
   deleteIsolatedSubscription,
   openSubscriptionsAs,
@@ -134,9 +134,6 @@ test.describe('PayPal Subscription Creation Flow', () => {
         provider: 'stripe',
         graceDays: 5,
       });
-      // No admin client / anon key (unconfigured env) → skip rather than fail.
-      test.skip(!fixture, 'Admin client unavailable to seed subscription');
-      if (!fixture) return;
 
       opened = await openSubscriptionsAs(browser, fixture);
       const { page } = opened;
@@ -168,12 +165,7 @@ test.describe('PayPal Subscription Creation Flow', () => {
       fixture = await seedIsolatedSubscription('active', {
         provider: 'stripe',
       });
-      const admin = getAdminClient();
-      test.skip(
-        !fixture || !admin,
-        'Admin client unavailable to seed subscription'
-      );
-      if (!fixture || !admin) return;
+      const admin = requireAdminClient('02-paypal duplicate subscription');
 
       const { error } = await admin.from('subscriptions').insert({
         template_user_id: fixture.user.id,

@@ -115,7 +115,6 @@ test.describe('Large-history message thread', () => {
 
   test.beforeEach(async () => {
     fixture = await seedIsolatedConversation(SEEDED_MESSAGE_COUNT);
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {
@@ -298,7 +297,6 @@ test.describe('Keyboard access', () => {
 
   test.beforeEach(async () => {
     fixture = await seedIsolatedConversation(SEEDED_MESSAGE_COUNT);
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {

@@ -24,7 +24,7 @@ import {
   openAsPartner,
   fillMessageInput,
   scrollThreadToBottom,
-  getAdminClient,
+  requireAdminClient,
   type IsolatedConversation,
 } from '../utils/test-user-factory';
 
@@ -59,7 +59,6 @@ test.describe('Encrypted Messaging Flow', () => {
 
   test.beforeEach(async () => {
     fixture = await seedIsolatedConversation();
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {
@@ -141,8 +140,7 @@ test.describe('Encrypted Messaging Flow', () => {
   test('should verify zero-knowledge encryption in database', async ({
     browser,
   }) => {
-    const adminClient = getAdminClient();
-    test.skip(!adminClient, 'admin client not configured');
+    const adminClient = requireAdminClient('encrypted-messaging.spec.ts');
 
     const viewer = await openAsViewer(browser, fixture!);
     try {
@@ -324,7 +322,6 @@ test.describe('Encryption Key Security', () => {
 
   test.beforeEach(async () => {
     fixture = await seedIsolatedConversation();
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {

@@ -54,7 +54,6 @@ test.describe('Cross-Window Message Delivery (#57 regression)', () => {
 
   test.beforeEach(async () => {
     fixture = await seedIsolatedConversation();
-    test.skip(!fixture, 'isolation seed failed (no admin client / anon key?)');
   });
 
   test.afterEach(async () => {

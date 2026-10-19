@@ -41,10 +41,7 @@ test.describe('Password reset through the emailed link (#1255)', () => {
     }
     assertLocalBackend('password-reset.spec.ts');
     email = `reset-e2e-${Date.now()}@scripthammer.test`;
-    const user = await createTestUser(email, OLD_PASSWORD, {
-      createProfile: true,
-    });
-    if (!user) throw new Error(`could not seed ${email}`);
+    await createTestUser(email, OLD_PASSWORD, { createProfile: true });
   });
 
   test.afterEach(async () => {

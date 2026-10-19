@@ -31,18 +31,19 @@ let scrollFixture: ScrollFixture | null = null;
  * - Jump-to-bottom button works correctly
  */
 
-// Track if conversations exist for test user in CI
-let setupSucceeded = false;
-
 test.beforeAll(async ({ browser }) => {
-  // Build the isolated, static scroll fixture (issue #109). No-ops gracefully
-  // if credentials/admin client are unavailable, preserving the skip path.
-  if (PRIMARY_EMAIL) {
-    scrollFixture = await seedScrollFixture(
-      PRIMARY_EMAIL,
-      SCROLL_FIXTURE_MESSAGE_COUNT
+  // Build the isolated, static scroll fixture (issue #109). seedScrollFixture
+  // throws when it cannot seed, and so does the missing-credentials case: a
+  // setup that cannot run fails the suite rather than skipping it (#1378).
+  if (!PRIMARY_EMAIL) {
+    throw new Error(
+      'TEST_USER_PRIMARY_EMAIL is not set; cannot seed scroll fixture'
     );
   }
+  scrollFixture = await seedScrollFixture(
+    PRIMARY_EMAIL,
+    SCROLL_FIXTURE_MESSAGE_COUNT
+  );
 
   const context = await browser.newContext({
     storageState: './tests/e2e/fixtures/storage-state-auth.json',
@@ -54,9 +55,9 @@ test.beforeAll(async ({ browser }) => {
     // This was `http://localhost:3000/messages`, hardcoded. Every other navigation in this
     // file is relative, so the suite ran fine on 3000 and nowhere else — and the failure
     // mode was silent: the goto reached whatever else was on 3000, the conversation button
-    // never appeared, `setupSucceeded` went false, and FIVE tests skipped with the
-    // reassuring message "No conversations for test user in CI". A green run that executed
-    // two of seven tests.
+    // never appeared, and FIVE tests skipped with the reassuring message
+    // "No conversations for test user in CI". A green run that executed two of seven
+    // tests. The wait below now throws instead.
     //
     // That is what stopped this file being reproducible off-CI, which is what made T009 so
     // hard to diagnose: locally it never ran at all.
@@ -70,12 +71,10 @@ test.beforeAll(async ({ browser }) => {
     // conversations exist in DB and render correctly — the original
     // isVisible({ timeout: 8000 }) was returning false in ~50ms because
     // the element wasn't attached yet at the moment of the call.
-    setupSucceeded = await page
+    await page
       .getByRole('button', { name: /Conversation with/ })
       .first()
-      .waitFor({ state: 'visible', timeout: 20000 })
-      .then(() => true)
-      .catch(() => false);
+      .waitFor({ state: 'visible', timeout: 20000 });
   } finally {
     await context.close();
   }
@@ -148,7 +147,6 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
   test('T003: Message input visible on mobile viewport (375x667)', async ({
     page,
   }) => {
-    test.skip(!setupSucceeded, 'No conversations for test user in CI');
     await page.setViewportSize(VIEWPORTS.mobile);
     await page.goto('about:blank').catch(() => {});
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });
@@ -174,7 +172,6 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
   test('T004: Message input visible on tablet viewport (768x1024)', async ({
     page,
   }) => {
-    test.skip(!setupSucceeded, 'No conversations for test user in CI');
     await page.setViewportSize(VIEWPORTS.tablet);
     await page.goto('about:blank').catch(() => {});
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });
@@ -197,7 +194,6 @@ test.describe('Messaging Scroll - User Story 1: View Message Input', () => {
   test('T005: Message input visible on desktop viewport (1280x800)', async ({
     page,
   }) => {
-    test.skip(!setupSucceeded, 'No conversations for test user in CI');
     await page.setViewportSize(VIEWPORTS.desktop);
     await page.goto('about:blank').catch(() => {});
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });
@@ -231,7 +227,6 @@ test.describe('Messaging Scroll - User Story 2: Scroll Through Messages', () => 
   test('T006: Scroll container constrained to MessageThread', async ({
     page,
   }) => {
-    test.skip(!setupSucceeded, 'No conversations for test user in CI');
     await page.setViewportSize(VIEWPORTS.desktop);
     await page.goto('about:blank').catch(() => {});
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });
@@ -283,14 +278,11 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
   test('T007-T008: Jump button appears when scrolled and does not overlap input', async ({
     page,
   }) => {
-    // Requires the isolated, tall scroll fixture (issue #109). Skip with a
-    // CLEAR, logged reason if it couldn't be built (e.g. admin client / creds
-    // unavailable) — never a silent pass that hides zero coverage.
-    test.skip(
-      !scrollFixture,
-      'Scroll fixture unavailable (no admin client / credentials) — cannot build a scrollable thread'
-    );
-    const conversationId = scrollFixture!.conversationId;
+    // Requires the isolated, tall scroll fixture (issue #109); beforeAll throws
+    // if it could not be built, so a missing fixture fails here rather than skips.
+    if (!scrollFixture)
+      throw new Error('scroll fixture was not seeded in beforeAll');
+    const conversationId = scrollFixture.conversationId;
 
     await page.setViewportSize(VIEWPORTS.desktop);
     await page.goto('about:blank').catch(() => {});
@@ -363,7 +355,6 @@ test.describe('Messaging Scroll - User Story 3: Jump to Bottom Button', () => {
   });
 
   test('T009: Jump button click scrolls to bottom', async ({ page }) => {
-    test.skip(!setupSucceeded, 'No conversations for test user in CI');
     await page.setViewportSize(VIEWPORTS.desktop);
     await page.goto('about:blank').catch(() => {});
     await page.goto('/messages', { waitUntil: 'domcontentloaded' });

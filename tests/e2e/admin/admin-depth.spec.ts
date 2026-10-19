@@ -82,8 +82,6 @@ test.describe('Admin console, rendered as an admin', () => {
       let opened: Awaited<ReturnType<typeof openAdminAs>> | null = null;
       try {
         fixture = await seedIsolatedAdmin();
-        test.skip(!fixture, 'Admin client unavailable to seed an admin');
-        if (!fixture) return;
 
         opened = await openAdminAs(browser, fixture.session, route);
         const { page } = opened;
@@ -167,8 +165,6 @@ test.describe('Admin console, rendered as an admin', () => {
     let opened: Awaited<ReturnType<typeof openAdminAs>> | null = null;
     try {
       fixture = await seedIsolatedAdmin();
-      test.skip(!fixture, 'Admin client unavailable to seed an admin');
-      if (!fixture) return;
 
       opened = await openAdminAs(browser, fixture.session, '/admin');
       await assertLandedOnAdmin(opened.page, '/admin');
