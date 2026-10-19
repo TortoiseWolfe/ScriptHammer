@@ -21,30 +21,74 @@ test.describe('PWA Installation', () => {
     await dismissCookieBanner(page);
   });
 
-  test('service worker registers successfully', async ({ page }) => {
-    // Wait for service worker to register
-    const swResult = await page.evaluate(async () => {
-      if (!('serviceWorker' in navigator)) {
-        return { supported: false, registered: false };
-      }
+  // playwright.config.ts blocks service workers for every spec (they intercept
+  // navigations and cause ERR_ABORTED / "frame was detached" during goto and
+  // reload). These two tests are ABOUT the worker, so only they opt back in.
+  test.describe('service worker', () => {
+    test.use({ serviceWorkers: 'allow' });
 
-      // Wait up to 5 seconds for service worker to register
-      for (let i = 0; i < 50; i++) {
+    // Resolves once the page's registration has an activated worker, returning
+    // its script URL. Rejects if none appears, so expect.poll keeps retrying.
+    const activeWorkerUrl = (page: import('@playwright/test').Page) =>
+      page.evaluate(async () => {
         const registration = await navigator.serviceWorker.getRegistration();
-        if (registration) {
-          return { supported: true, registered: true };
-        }
-        await new Promise((resolve) => setTimeout(resolve, 100));
-      }
-      return { supported: true, registered: false };
+        return registration?.active?.state === 'activated'
+          ? registration.active.scriptURL
+          : null;
+      });
+
+    test('service worker registers and activates', async ({ page }) => {
+      await expect
+        .poll(() => activeWorkerUrl(page), {
+          message: 'sw.js should register and activate',
+          timeout: 15000,
+        })
+        .toMatch(/\/sw\.js$/);
     });
 
-    // In CI headless browsers, service workers may not register
-    // Test passes if SW not supported OR if SW is registered
-    // We don't fail if SW is supported but didn't register (CI environment)
-    expect(
-      swResult.supported === false || swResult.registered === true || true
-    ).toBe(true);
+    test('app works offline after service worker activation', async ({
+      page,
+      context,
+      browserName,
+    }) => {
+      // WebKit does not support page.reload() while offline with service workers —
+      // triggers "WebKit encountered an internal error". Known Playwright limitation.
+      test.skip(
+        browserName === 'webkit',
+        'WebKit does not support offline reload with service workers'
+      );
+
+      await expect
+        .poll(() => activeWorkerUrl(page), { timeout: 15000 })
+        .toMatch(/\/sw\.js$/);
+
+      // sw.js calls clients.claim(), but a reload makes the control state
+      // unambiguous and lets the worker cache the page it just served.
+      await page.reload();
+      await page.waitForFunction(() => !!navigator.serviceWorker.controller, {
+        timeout: 15000,
+      });
+
+      // textContent, not innerText: the hero h1 is CSS-uppercased and the two
+      // would differ by case.
+      const onlineHeading = (
+        (await page.locator('h1').first().textContent()) ?? ''
+      ).trim();
+      const onlineTitle = await page.title();
+      expect(onlineHeading.length).toBeGreaterThan(0);
+      expect(onlineHeading).not.toBe("You're Offline");
+
+      await context.setOffline(true);
+      try {
+        await page.reload();
+        // The cached home page, not the worker's offline.html fallback.
+        await expect(page.locator('h1').first()).toHaveText(onlineHeading);
+        await expect(page).toHaveTitle(onlineTitle);
+        await expect(page.getByText("You're Offline")).toHaveCount(0);
+      } finally {
+        await context.setOffline(false);
+      }
+    });
   });
 
   test('manifest file is linked correctly', async ({ page }) => {
@@ -115,61 +159,6 @@ test.describe('PWA Installation', () => {
       return size >= 192;
     });
     expect(hasLargeIcon).toBe(true);
-  });
-
-  test('app works offline after service worker activation', async ({
-    page,
-    context,
-    browserName,
-  }) => {
-    // WebKit does not support page.reload() while offline with service workers —
-    // triggers "WebKit encountered an internal error". Known Playwright limitation.
-    test.skip(
-      browserName === 'webkit',
-      'WebKit does not support offline reload with service workers'
-    );
-    // Check if service workers are supported
-    const swSupported = await page.evaluate(() => 'serviceWorker' in navigator);
-
-    // A bare `return` here reported as PASSED, so a browser with no service worker
-    // support looked like proof that offline mode works (#850). test.skip() reports
-    // what actually happened.
-    test.skip(
-      !swSupported,
-      'Service workers are not supported in this browser'
-    );
-
-    // Wait for service worker to be active (with timeout)
-    const swActive = await page.evaluate(async () => {
-      try {
-        // Race between serviceWorker.ready and a 5-second timeout
-        const timeoutPromise = new Promise<boolean>((resolve) =>
-          setTimeout(() => resolve(false), 5000)
-        );
-        const readyPromise = navigator.serviceWorker.ready.then(
-          (reg) => reg.active !== null
-        );
-        return await Promise.race([readyPromise, timeoutPromise]);
-      } catch {
-        return false;
-      }
-    });
-
-    // Same again: a service worker that never activated is a skip, not a pass.
-    test.skip(!swActive, 'Service worker did not activate within 5s');
-
-    // Go offline
-    await context.setOffline(true);
-
-    // Try to navigate while offline
-    try {
-      await page.reload();
-      // Page should still load (from cache)
-      await expect(page.locator('h1').first()).toBeVisible({ timeout: 5000 });
-    } finally {
-      // Go back online
-      await context.setOffline(false);
-    }
   });
 
   test('install button shows on supported browsers', async ({ page }) => {
