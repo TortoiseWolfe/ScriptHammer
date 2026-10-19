@@ -30,6 +30,7 @@ test.describe('Stripe Subscription Lifecycle (live sandbox)', () => {
   test('cancel and resume round-trip through the deployed Edge Functions', async ({
     browser,
   }) => {
+    // Kept skip (#188): needs live Stripe test keys, which no CI lane carries; run it locally.
     test.skip(
       !isLiveStripeConfigured,
       'STRIPE_SECRET_KEY / NEXT_PUBLIC_STRIPE_PRICE_ID not set — run locally for the live lifecycle test'

@@ -101,6 +101,7 @@ test.describe('walk scene is visible (not a dark void / empty frame)', () => {
       const c = document.createElement('canvas');
       return !!(c.getContext('webgl2') || c.getContext('webgl'));
     });
+    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
     test.skip(
       !hasWebGL,
       'no WebGL in this browser (see #288) — the scene cannot produce the meshes walk ' +
@@ -136,6 +137,7 @@ test.describe('walk scene is visible (not a dark void / empty frame)', () => {
     // GATED ON WEBGL EXISTING, NOT ON IT BEING HARDWARE (#1376). Software GL (SwiftShader,
     // which is what every CI chromium uses) draws this scene fine; only a browser with no
     // WebGL at all (headless firefox, #288) cannot, and that measures the runner.
+    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
     test.skip(
       !gpu.webgl,
       'no WebGL in this browser (see #288) — the scene cannot be drawn at all'

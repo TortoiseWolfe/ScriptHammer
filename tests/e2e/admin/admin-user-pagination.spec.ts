@@ -72,6 +72,7 @@ test.describe('Admin User Pagination E2E', () => {
   // The predicate is the requirement itself: a disposable backend this spec may seed
   // and delete from. `assertLocalBackend()` below is the belt-and-braces that throws
   // if anything slips past.
+  // Kept skip (#914): fires only on the hosted lane, whose shared backend this spec must not seed or delete.
   test.skip(
     !isLocalSupabaseUrl(resolveBackendUrl()),
     'needs a disposable local Supabase: this spec seeds and deletes data'

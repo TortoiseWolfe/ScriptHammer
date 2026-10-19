@@ -45,6 +45,7 @@ import {
  * cloud submissions remain explicitly skipped to protect sending reputation.
  */
 async function skipIfSubmitsRealSignup() {
+  // Kept skip (#1387, #353): real confirmation mail from a cloud backend burned the sender's reputation.
   test.skip(
     !isLocalTurnstileTestEnabled(),
     'Real sign-up submissions run only against local Supabase with Mailpit and the published Turnstile test keys (signup-mailer.yml).'
@@ -117,6 +118,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
 
       await page.goto('/sign-up');
       await dismissCookieBanner(page);
+      // Kept skip (#1387): real sign-ups run only on the local Mailpit stack (Signup Mailer lane, zero-skip gate).
       await skipIfSubmitsRealSignup();
 
       // Page heading is "Create Account"
@@ -178,6 +180,7 @@ test.describe('Sign-up E2E Tests (Feature 027)', () => {
 
       await page.goto('/sign-up');
       await dismissCookieBanner(page);
+      // Kept skip (#1387): real sign-ups run only on the local Mailpit stack (Signup Mailer lane, zero-skip gate).
       await skipIfSubmitsRealSignup();
 
       // Try to sign up with the same email
@@ -332,6 +335,7 @@ test.describe('Sign-up with Admin Confirmation', () => {
       }
       // Seeding uses the admin API; sign-in uses the REAL form and the local
       // Turnstile test key to submit against protected GoTrue.
+      // Kept skip (#1387): skips only on a CAPTCHA-protected backend (#353), i.e. the hosted lane; local stacks run it.
       await skipIfBackendCaptchaProtected(
         'Admin-confirmed user can sign in through the sign-in form'
       );

@@ -38,6 +38,7 @@ test.describe('Capture Decryption Logs', () => {
     test.setTimeout(120000);
     // Signs both participants in through the real form, which cannot be
     // submitted without a Turnstile token.
+    // Kept skip (#1387): skips only on a CAPTCHA-protected backend (#353), i.e. the hosted lane; local stacks run it.
     await skipIfBackendCaptchaProtected(
       'Console capture of a two-party message exchange'
     );

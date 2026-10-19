@@ -29,6 +29,7 @@ describe('Supabase Auth Sign-Up Contract', () => {
     }
   });
 
+  // Kept skip (#1263): no Vitest config includes this file, so it runs nowhere until #1263 item 5 is settled.
   it.skipIf(!hasSecondaryUser())(
     'should accept valid email and password',
     async () => {
@@ -47,6 +48,7 @@ describe('Supabase Auth Sign-Up Contract', () => {
     }
   );
 
+  // Kept skip (#1263): no Vitest config includes this file, so it runs nowhere until #1263 item 5 is settled.
   it.skipIf(!hasSecondaryUser())(
     'should reject invalid email format',
     async () => {
@@ -60,6 +62,7 @@ describe('Supabase Auth Sign-Up Contract', () => {
     }
   );
 
+  // Kept skip (#1263): no Vitest config includes this file, so it runs nowhere until #1263 item 5 is settled.
   it.skipIf(!hasSecondaryUser())('should reject weak password', async () => {
     const { data, error } = await supabase.auth.signUp({
       email: `test-${Date.now()}@example.com`,
@@ -70,6 +73,7 @@ describe('Supabase Auth Sign-Up Contract', () => {
     expect(error?.message).toContain('password');
   });
 
+  // Kept skip (#1263): no Vitest config includes this file, so it runs nowhere until #1263 item 5 is settled.
   it.skipIf(!hasSecondaryUser())('should reject duplicate email', async () => {
     const testEmail = `duplicate-${Date.now()}@example.com`;
 
@@ -89,6 +93,7 @@ describe('Supabase Auth Sign-Up Contract', () => {
     expect(error?.message).toContain('already registered');
   });
 
+  // Kept skip (#1263): no Vitest config includes this file, so it runs nowhere until #1263 item 5 is settled.
   it.skipIf(!hasSecondaryUser())(
     'should return user metadata structure',
     async () => {
@@ -109,6 +114,7 @@ describe('Supabase Auth Sign-Up Contract', () => {
     }
   );
 
+  // Kept skip (#1263): no Vitest config includes this file, so it runs nowhere until #1263 item 5 is settled.
   it.skipIf(!hasSecondaryUser())('should send verification email', async () => {
     const { data, error } = await supabase.auth.signUp({
       email: `test-${Date.now()}@example.com`,

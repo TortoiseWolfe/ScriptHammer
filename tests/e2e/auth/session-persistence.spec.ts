@@ -69,6 +69,7 @@ test.describe('Session Persistence E2E', () => {
     // it would pass no matter what Remember Me did — the same cannot-fail shape
     // #587 removed from the sibling test below. The guard keeps it honest and
     // lets it run for real wherever captcha is off.
+    // Kept skip (#1387): skips only on a CAPTCHA-protected backend (#353), i.e. the hosted lane; local stacks run it.
     await skipIfBackendCaptchaProtected(
       'Remember Me putting a refresh token in localStorage (#375)'
     );
@@ -115,6 +116,7 @@ test.describe('Session Persistence E2E', () => {
     // Before signing in, not after: against a captcha-protected backend this
     // test cannot measure anything (see the note below), so there is no reason
     // to spend a sign-in discovering that.
+    // Kept skip (#1387): skips only on a CAPTCHA-protected backend (#353), i.e. the hosted lane; local stacks run it.
     await skipIfBackendCaptchaProtected(
       'Where the auth token is stored after a real form sign-in (#375)'
     );

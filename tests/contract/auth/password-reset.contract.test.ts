@@ -27,6 +27,7 @@ describe('Supabase Auth Password Reset Contract', () => {
     }
   });
 
+  // Kept skip (#1263): no Vitest config includes this file, so it runs nowhere until #1263 item 5 is settled.
   it.skipIf(!hasSecondaryUser())(
     'should send password reset email for valid email',
     async () => {
@@ -68,6 +69,7 @@ describe('Supabase Auth Password Reset Contract', () => {
     expect(error?.message).toContain('email');
   });
 
+  // Kept skip (#1263): no Vitest config includes this file, so it runs nowhere until #1263 item 5 is settled.
   it.skipIf(!hasSecondaryUser())('should require redirectTo URL', async () => {
     const { error } = await supabase.auth.resetPasswordForEmail(
       TEST_EMAIL_SECONDARY!
@@ -78,6 +80,7 @@ describe('Supabase Auth Password Reset Contract', () => {
     expect(error).toBeNull();
   });
 
+  // Kept skip (#1263): no Vitest config includes this file, so it runs nowhere until #1263 item 5 is settled.
   it.skipIf(!hasSecondaryUser())(
     'should update password with valid reset token',
     async () => {

@@ -251,6 +251,7 @@ test.describe('/game/3d — US-1: Visit the 3D Game Route', () => {
     // legitimate production state and the FallbackPanel handles it via
     // FR-008. Skip the canvas-mount assertion in that case (covered by
     // dedicated FR-008 tests at the top of this file).
+    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
     test.skip(
       webglOk !== 'true',
       'WebGL probe failed at mount; FR-008 fallback path active'
@@ -312,6 +313,7 @@ test.describe('/game/3d — US-1: Visit the 3D Game Route', () => {
       .locator('[data-webgl-ok]')
       .first()
       .getAttribute('data-webgl-ok');
+    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
     test.skip(
       webglOk !== 'true',
       'WebGL probe failed at mount; orbit-drag requires a real canvas'
@@ -354,6 +356,7 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
       .locator('[data-webgl-ok]')
       .first()
       .getAttribute('data-webgl-ok');
+    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
     test.skip(
       webglOk !== 'true',
       'SC-004 multi-modality requires a working canvas; FR-008 fallback active'
@@ -397,6 +400,7 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
       .locator('[data-webgl-ok]')
       .first()
       .getAttribute('data-webgl-ok');
+    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
     test.skip(webglOk !== 'true', 'SC-004 requires working canvas');
 
     const canvas = page.locator('canvas');
@@ -426,6 +430,7 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
     // Playwright's touch emulation requires a touch-enabled context.
     // We dispatch a touchstart/touchmove/touchend sequence directly because
     // the default page context isn't touch-enabled in the test matrix.
+    // Kept skip (#1399): Firefox's Playwright build ignores dispatched touch input; chromium and webkit run this.
     test.skip(
       browserName === 'firefox',
       'Firefox does not synthesize touch events from page.dispatchEvent reliably; mobile is covered by the dedicated mobile viewport test (US-5).'
@@ -439,6 +444,7 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
       .locator('[data-webgl-ok]')
       .first()
       .getAttribute('data-webgl-ok');
+    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
     test.skip(webglOk !== 'true', 'SC-004 requires working canvas');
 
     const canvas = page.locator('canvas');

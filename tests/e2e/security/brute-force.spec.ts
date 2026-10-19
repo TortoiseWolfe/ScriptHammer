@@ -112,6 +112,7 @@ test.describe('Brute force: nobody can lock someone else out (#1245)', () => {
   let password: string;
 
   test.beforeEach(async () => {
+    // Kept skip (#1387): skips only on a CAPTCHA-protected backend (#353), i.e. the hosted lane; local stacks run it.
     await skipIfBackendCaptchaProtected(
       'Wrong passwords for an address do not lock its owner out (#1245)'
     );
