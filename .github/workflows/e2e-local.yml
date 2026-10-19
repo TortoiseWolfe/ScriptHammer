@@ -279,6 +279,13 @@ jobs:
           # form-submission.spec.ts fulfils api.web3forms.com locally in
           # beforeEach, so no request leaves the runner either way.
           NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY: e2e_dummy_web3forms_key
+          # Test-only scheduler URLs on the reserved .test TLD (RFC 2606), never
+          # resolvable and never reached: BookingStep renders a plain <a href>, no
+          # embed. Unset, BookingStep renders no booking link and the return-leg
+          # spec (09-return-leg) had nothing to assert on (#1374). The office-hours
+          # path must contain "office-hours" - the spec asserts the per-SKU URL won.
+          NEXT_PUBLIC_CALENDAR_URL: https://cal.example.test/scripthammer
+          NEXT_PUBLIC_CALENDAR_URL_OFFICE_HOURS: https://cal.example.test/scripthammer/office-hours
           # NEXT_PUBLIC_CAPTCHA_SITE_KEY is deliberately ABSENT — do not copy it
           # from e2e.yml.
           #
