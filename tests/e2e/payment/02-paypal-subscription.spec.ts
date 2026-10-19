@@ -49,6 +49,7 @@ test.describe('PayPal Subscription Creation Flow', () => {
       .waitFor({ state: 'visible', timeout: 15000 });
   });
 
+  // Kept skip (#188, #1193): needs server-side PayPal sandbox credentials, which no CI lane carries.
   test.skip('should create PayPal subscription successfully', async ({
     page,
   }) => {
@@ -116,6 +117,7 @@ test.describe('PayPal Subscription Creation Flow', () => {
   // remain skipped: cancel drives the cancel-subscription edge function and
   // failed-retry needs PayPal sandbox keys.
 
+  // Kept skip (#188): cancel drives the deployed Edge Function against PayPal; no CI lane has its credentials.
   test.skip('should allow subscription cancellation', async ({ page }) => {
     // Fixture exists (seedIsolatedSubscription) but cancel drives the
     // cancel-subscription Edge Function end-to-end; un-skip once that flow is

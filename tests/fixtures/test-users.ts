@@ -32,6 +32,7 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
  * This keeps security tests visible in CI output as "skipped" rather than
  * invisibly excluded, so reviewers know they exist.
  */
+// Kept skip (#1379): every tests/rls suite skips on this. The main Vitest run excludes tests/rls; the conformance lane supplies the environment and fails on any skip.
 export function hasRlsTestEnvironment(): boolean {
   const configured = Boolean(
     SUPABASE_URL && SUPABASE_ANON_KEY && SUPABASE_SERVICE_ROLE_KEY

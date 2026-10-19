@@ -75,6 +75,7 @@ async function signIn(page: Page) {
 test.describe('Rate limiting: Supabase Auth refuses, the page says so (#1245)', () => {
   test.beforeEach(async () => {
     // The local signup-mailer lane supplies test-key tokens; protected backends elsewhere skip.
+    // Kept skip (#1387): skips only on a CAPTCHA-protected backend (#353), i.e. the hosted lane; local stacks run it.
     await skipIfBackendCaptchaProtected(
       'What sign-in and reset show when Supabase Auth answers 429'
     );

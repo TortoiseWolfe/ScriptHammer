@@ -76,6 +76,7 @@ async function buildProviderFor(
 if (!DOTNET_API_URL || !hasRlsTestEnvironment()) {
   // Visibly-skipped placeholder (dormant until DOTNET_API_URL points at a live
   // .NET server AND a live Supabase is configured to seed + mint tokens).
+  // Kept skip (#1379): the conformance lane sets DOTNET_API_URL and the RLS environment and fails on any skip, so this placeholder shows only off that lane.
   describe.skip('MessagingDataProvider contract [dotnet]', () => {
     it('runs with DOTNET_API_URL + live Supabase (see dotnet-messaging/README.md)', () => {});
   });

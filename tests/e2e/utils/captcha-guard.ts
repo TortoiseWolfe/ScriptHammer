@@ -107,6 +107,7 @@ export async function skipIfBackendCaptchaProtected(
   reason: string
 ): Promise<void> {
   const protectedBackend = await isBackendCaptchaProtected();
+  // Kept skip (#1387): a CAPTCHA-protected backend refuses scripted sign-in, so the test cannot run there.
   test.skip(
     protectedBackend && !isLocalTurnstileTestEnabled(),
     `${reason} — the backend is CAPTCHA-protected (#353) and the real sign-in ` +

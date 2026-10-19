@@ -53,6 +53,7 @@ test.describe('PWA Installation', () => {
     }) => {
       // WebKit does not support page.reload() while offline with service workers —
       // triggers "WebKit encountered an internal error". Known Playwright limitation.
+      // Kept skip (#1399); chromium and firefox run this.
       test.skip(
         browserName === 'webkit',
         'WebKit does not support offline reload with service workers'
