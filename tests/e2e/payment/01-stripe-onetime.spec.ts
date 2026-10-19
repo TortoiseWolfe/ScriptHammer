@@ -2,20 +2,31 @@
  * Integration Test: One-Time Payment (Stripe) - T055
  * Tests Stripe payment UI and consent flow
  *
- * NOTE: The full Stripe Checkout redirect tests (one-time AND subscription
- * mode) run locally when NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY (+
- * NEXT_PUBLIC_STRIPE_PRICE_ID for the subscription leg) are set via .env.
- * They auto-skip in CI, whose test-run env does not carry those vars
- * (isStripeConfigured is false). The remaining cancellation / declined-card
- * cases are still stubs. Cancel/resume lifecycle lives in
- * 08-subscription-lifecycle.spec.ts.
+ * The Stripe Checkout redirect legs (one-time and subscription) run on every
+ * lane: the Edge Function that mints the hosted Checkout URL is route-mocked
+ * and checkout.stripe.com is fulfilled with a stub page, so nothing leaves the
+ * runner and no provider key is needed (the client redirects with
+ * window.location.assign(url) and never loads Stripe.js). One-time still goes
+ * through the real create-order function to create its payment_intent.
+ * Cancel/resume lifecycle lives in 08-subscription-lifecycle.spec.ts.
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
-// Check if Stripe is configured
-const isStripeConfigured = !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+const STUB_CHECKOUT_URL =
+  'https://checkout.stripe.com/c/pay/cs_test_e2e_stub#fragment';
+
+/** Fulfil the hosted Checkout page so the redirect has somewhere to land. */
+async function stubStripeCheckoutPage(page: Page) {
+  await page.route('https://checkout.stripe.com/**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'text/html',
+      body: '<html><body><h1>Stripe Checkout stub</h1></body></html>',
+    })
+  );
+}
 
 test.describe('Stripe One-Time Payment Flow', () => {
   test.describe.configure({ timeout: 60000 });
@@ -49,14 +60,20 @@ test.describe('Stripe One-Time Payment Flow', () => {
       .waitFor({ state: 'visible', timeout: 15000 });
   });
 
-  // Runs locally when NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY is set (see .env);
-  // auto-skips in CI, where that var is absent from the test-run env so
-  // isStripeConfigured is false. Drives a real Stripe Checkout redirect.
   test('should complete one-time payment successfully', async ({ page }) => {
-    test.skip(
-      !isStripeConfigured,
-      'Stripe API keys not configured - run locally for full payment flow tests'
-    );
+    // The real create-order makes the intent; only the Stripe-facing function
+    // is mocked, and it must be handed that intent's id.
+    let checkoutBody: { payment_intent_id?: string } | null = null;
+    await page.route('**/functions/v1/create-stripe-checkout', (route) => {
+      checkoutBody = route.request().postDataJSON();
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'access-control-allow-origin': '*' },
+        body: JSON.stringify({ url: STUB_CHECKOUT_URL }),
+      });
+    });
+    await stubStripeCheckoutPage(page);
 
     // Grant consent
     await page.getByRole('button', { name: /Accept/i }).click();
@@ -74,28 +91,31 @@ test.describe('Stripe One-Time Payment Flow', () => {
       .click();
     await page.getByRole('button', { name: 'Pay $20.00 (One-Time)' }).click();
 
-    await page.waitForURL(/checkout\.stripe\.com/, { timeout: 15000 });
+    await page.waitForURL(/checkout\.stripe\.com\/c\/pay\/cs_test_e2e_stub/, {
+      timeout: 15000,
+    });
+    expect(checkoutBody).not.toBeNull();
+    expect(checkoutBody!.payment_intent_id).toMatch(/^[0-9a-f-]{36}$/);
   });
 
   // Subscription leg (#105): usePaymentButton routes type="recurring" through
   // createSubscriptionCheckout → create-stripe-subscription (mode=subscription).
-  //
-  // GATE CHANGED (#772). The price is no longer a global
-  // NEXT_PUBLIC_STRIPE_PRICE_ID — the server resolves it from
-  // `products.stripe_price_id` for the SKU the button names. So this needs an
-  // ACTIVE recurring SKU, and all three are deliberately `active = false` until
-  // #772 and #559 are both closed, at which point the server correctly answers
-  // "product not found".
-  //
-  // Skipped on the PRECONDITION, not on an assertion: the feature is not
-  // shippable yet by design, so there is no failure being hidden here.
+  // The server resolves the price from products.stripe_price_id for the SKU the
+  // button names (#772), so the request must carry that SKU and no price.
   test('should redirect to subscription-mode Stripe Checkout', async ({
     page,
   }) => {
-    test.skip(
-      !isStripeConfigured || !process.env.SUBSCRIPTION_SKU_ACTIVE,
-      'No recurring SKU is active yet (#772/#559) — set SUBSCRIPTION_SKU_ACTIVE=1 once one is'
-    );
+    let subscriptionBody: Record<string, unknown> | null = null;
+    await page.route('**/functions/v1/create-stripe-subscription', (route) => {
+      subscriptionBody = route.request().postDataJSON();
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'access-control-allow-origin': '*' },
+        body: JSON.stringify({ url: STUB_CHECKOUT_URL }),
+      });
+    });
+    await stubStripeCheckoutPage(page);
 
     // Grant consent
     await page.getByRole('button', { name: /Accept/i }).click();
@@ -117,16 +137,28 @@ test.describe('Stripe One-Time Payment Flow', () => {
     await container.getByRole('tab', { name: /stripe/i }).click();
     await subscribeButton.click();
 
-    await page.waitForURL(/checkout\.stripe\.com/, { timeout: 15000 });
+    await page.waitForURL(/checkout\.stripe\.com\/c\/pay\/cs_test_e2e_stub/, {
+      timeout: 15000,
+    });
+    expect(subscriptionBody).not.toBeNull();
+    expect(subscriptionBody!.product_id).toBe('svc-care');
+    expect(subscriptionBody).not.toHaveProperty('price_id');
   });
 
-  test.skip('should handle payment cancellation gracefully', async ({
-    page,
-  }) => {
-    test.skip(
-      !isStripeConfigured,
-      'Stripe API keys not configured - skipping Checkout flow test'
-    );
+  test('should handle payment cancellation gracefully', async ({ page }) => {
+    // Stripe's cancel_url carries no id: a buyer who changed their mind.
+    await page.goto('/payment-result?status=cancelled', {
+      waitUntil: 'networkidle',
+    });
+
+    const notice = page.getByRole('status').filter({
+      hasText: 'Checkout cancelled',
+    });
+    await expect(notice).toBeVisible({ timeout: 15000 });
+    await expect(notice).toContainText('You were not charged');
+    await expect(
+      page.getByRole('link', { name: 'Back to pricing' })
+    ).toBeVisible();
   });
 
   test('should enforce payment consent requirement', async ({ page }) => {

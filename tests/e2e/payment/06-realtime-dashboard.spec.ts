@@ -2,10 +2,8 @@
  * Integration Test: Dashboard Real-Time Updates - T060
  * Tests Supabase realtime subscription for payment status updates
  *
- * NOTE: Most tests are skipped because:
- * 1. /payment/dashboard route doesn't exist (only /payment-demo)
- * 2. Real-time status updates require actual payment processing
- * 3. Tests assume UI elements that aren't implemented
+ * Every case seeds rows with the service-role key and drives changes with
+ * service-role writes, so no provider or webhook is needed.
  */
 
 import { test, expect, type Page } from '@playwright/test';
@@ -154,11 +152,50 @@ test.describe('Payment Dashboard Real-Time Updates', () => {
     }
   });
 
-  test.skip('should update webhook verification status in real-time', async ({
-    page,
+  test('should update webhook verification status in real-time', async ({
+    browser,
   }) => {
-    // Skip: Requires actual webhook processing
-    test.skip(true, 'Webhook verification requires actual Stripe webhooks');
+    // The webhook is the only thing that sets webhook_verified, and what the
+    // buyer sees is that column. Seed the row UNVERIFIED (what a redirect-only
+    // payment looks like), open the hub as its owner, then do server-side what
+    // the stripe-webhook function does — a service-role UPDATE — and assert the
+    // indicator flips live. No provider involved.
+    let fixture: IsolatedPayment | null = null;
+    let opened: Awaited<ReturnType<typeof openPaymentHubAs>> | null = null;
+    try {
+      fixture = await seedIsolatedPayment();
+      const admin = getAdminClient();
+      expect(fixture, 'seedIsolatedPayment returned null').not.toBeNull();
+      expect(admin, 'admin client unavailable').not.toBeNull();
+      const seeded = fixture!;
+
+      const unverify = await admin!
+        .from('payment_results')
+        .update({ webhook_verified: false, verification_method: 'redirect' })
+        .eq('id', seeded.resultId);
+      expect(unverify.error).toBeNull();
+
+      opened = await openPaymentHubAs(browser, seeded.session);
+      const { page } = opened;
+      const notVerified = page.locator('[aria-label="Webhook not verified"]');
+      const verified = page.locator('[aria-label="Webhook verified"]');
+
+      await expect(notVerified).toHaveCount(1, { timeout: 30000 });
+      await expect(verified).toHaveCount(0);
+      await waitForRealtimeLive(page);
+
+      const verify = await admin!
+        .from('payment_results')
+        .update({ webhook_verified: true, verification_method: 'webhook' })
+        .eq('id', seeded.resultId);
+      expect(verify.error).toBeNull();
+
+      await expect(verified).toHaveCount(1, { timeout: 15000 });
+      await expect(notVerified).toHaveCount(0);
+    } finally {
+      if (opened) await opened.close();
+      await deleteIsolatedPayment(fixture);
+    }
   });
 
   test('should handle subscription status changes in real-time', async ({

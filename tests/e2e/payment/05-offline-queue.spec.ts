@@ -18,6 +18,7 @@ import {
   dismissCookieBanner,
   seedPaymentQueue,
   clearPaymentQueue,
+  getAdminClient,
 } from '../utils/test-user-factory';
 
 test.describe('Offline Payment Queue', () => {
@@ -246,20 +247,60 @@ test.describe('Offline Payment Queue', () => {
     await clearPaymentQueue(page);
   });
 
-  // KEEP-AS-MARKER: draining the queue via "Retry now" runs the REAL sync
-  // (paymentQueue.sync → provider charge → Supabase upsert). Against the dummy
-  // provider keys CI uses, the charge can't complete, so the item stays pending
-  // — the panel only empties with a live provider/backend. Asserting the drain
-  // needs real Stripe/PayPal sandbox creds, so this stays a documented skip.
-  // (The retry button's presence/enablement is covered by the "#4" render test;
-  // the sync/backoff LOGIC is covered by base-queue unit tests.)
-  test.skip('should drain the queue on Retry (needs live provider)', async ({
-    page,
-  }) => {
-    test.skip(
-      true,
-      'Retry runs a real provider charge — needs live Stripe/PayPal sandbox creds'
-    );
+  // Since #1048 the drain replays a queued payment_intent through the create-order
+  // Edge Function (priced from the catalog), which the local stack serves — no
+  // provider is involved at this step, the charge happens later at hosted
+  // Checkout. So "Retry now" really empties the queue and really creates the
+  // intent, and both are asserted: the panel AND the payment_intents row.
+  test('should drain the queue on Retry', async ({ page }) => {
+    const admin = getAdminClient();
+    expect(admin, 'admin client unavailable').not.toBeNull();
+    const panel = await openHubPanel(page);
+    expect(panel, 'PaymentQueuePanel did not render').not.toBeNull();
+
+    const buyerEmail = `queue-drain-${Date.now()}@example.com`;
+    try {
+      const written = await seedPaymentQueue(page, [
+        {
+          type: 'payment_intent',
+          data: {
+            amount: 2000,
+            currency: 'usd',
+            type: 'one_time',
+            customer_email: buyerEmail,
+            product_id: 'demo-checkout',
+            idempotency_key: crypto.randomUUID(),
+          },
+        },
+      ]);
+      expect(written).toBe(1);
+      await page.reload({ waitUntil: 'networkidle' });
+      await dismissCookieBanner(page);
+      await expect(page.getByTestId('queue-count')).toContainText('1 pending', {
+        timeout: 15000,
+      });
+
+      await page.getByTestId('queue-retry').click();
+
+      await expect(page.getByTestId('queue-count')).toContainText(
+        'No queued payments',
+        { timeout: 30000 }
+      );
+
+      const { data, error } = await admin!
+        .from('payment_intents')
+        .select('id, amount, type')
+        .eq('customer_email', buyerEmail);
+      expect(error).toBeNull();
+      expect(data).toHaveLength(1);
+      expect(data![0].type).toBe('one_time');
+    } finally {
+      await clearPaymentQueue(page);
+      await admin!
+        .from('payment_intents')
+        .delete()
+        .eq('customer_email', buyerEmail);
+    }
   });
 
   test('should clear the queue manually', async ({ page }) => {
