@@ -17,6 +17,7 @@ const NOMINATIM_HIT = [
       road: 'Broad Street',
       city: 'Chattanooga',
       state: 'Tennessee',
+      country_code: 'us',
     },
   },
 ];
@@ -66,7 +67,7 @@ describe('slugify / slugFromGeocode', () => {
     expect(slugify('  --Weird__ Input!! ')).toBe('weird-input');
     expect(slugify('!!!')).toBe('site');
   });
-  it('derives road + city from the structured address', () => {
+  it('derives house number + road + city from the structured address', () => {
     expect(
       slugFromGeocode({
         lat: 0,
@@ -74,7 +75,33 @@ describe('slugify / slugFromGeocode', () => {
         displayName: NOMINATIM_HIT[0].display_name,
         address: NOMINATIM_HIT[0].address,
       })
+    ).toBe('1-broad-street-chattanooga');
+  });
+  it('keeps the legacy road + city slug when no house number is available', () => {
+    expect(
+      slugFromGeocode({
+        lat: 0,
+        lon: 0,
+        displayName: NOMINATIM_HIT[0].display_name,
+        address: { ...NOMINATIM_HIT[0].address, house_number: '' },
+      })
     ).toBe('broad-street-chattanooga');
+  });
+  it('keeps same-street addresses distinct by house number', () => {
+    const first = {
+      lat: 0,
+      lon: 0,
+      displayName: NOMINATIM_HIT[0].display_name,
+      address: { ...NOMINATIM_HIT[0].address, house_number: '100' },
+    };
+    const second = {
+      ...first,
+      address: { ...first.address, house_number: '400' },
+    };
+
+    expect(slugFromGeocode(first)).toBe('100-broad-street-chattanooga');
+    expect(slugFromGeocode(second)).toBe('400-broad-street-chattanooga');
+    expect(slugFromGeocode(first)).not.toBe(slugFromGeocode(second));
   });
   it('falls back to the display name head without structured fields', () => {
     expect(

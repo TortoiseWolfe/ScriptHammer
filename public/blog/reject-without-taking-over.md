@@ -195,4 +195,4 @@ That matters because the tempting shortcut never stops being tempting. The next 
 
 The agent can write the code. It can even fix its own PR. What it cannot do is decide, on your behalf, that a merge is trustworthy — that judgment is the human's, exercised at the gate. Reject-and-return is how you exercise it without erasing the very thing that made the work traceable in the first place.
 
-**Part 3 of the [AI Workflow series](https://tortoisewolfe.github.io/AI_Workflow/series.html#build-log).** ← Previous: [Your Client's Email Is Not a Spec](/blog/client-email-not-a-spec/) · Next: [I Graphed 15 Years of My Own Facebook](/blog/facebook-export-knowledge-graph/) → · [Every part, in order](https://tortoisewolfe.github.io/AI_Workflow/series.html)
+**Part 3 of the [AI Workflow series](https://tortoisewolfe.github.io/AI_Workflow/series.html#build-log).** ← Previous: [Your Client's Email Is Not a Spec](/blog/client-email-not-a-spec/) · Next: [Red From the First Commit](/blog/red-from-the-first-commit/) → · [Every part, in order](https://tortoisewolfe.github.io/AI_Workflow/series.html)

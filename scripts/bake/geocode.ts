@@ -46,11 +46,11 @@ export function slugify(s: string): string {
   return slug || 'site';
 }
 
-/** Derive a site slug from the geocoder's structured address (road + city). */
+/** Derive a site slug from house number, road and city when available. */
 export function slugFromGeocode(r: GeocodeResult): string {
   const a = r.address;
   const road = a.road ?? a.neighbourhood ?? a.suburb;
   const city = a.city ?? a.town ?? a.village ?? a.county;
-  const parts = [road, city].filter(Boolean).join(' ');
+  const parts = [a.house_number, road, city].filter(Boolean).join(' ');
   return slugify(parts || r.displayName.split(',').slice(0, 2).join(' '));
 }

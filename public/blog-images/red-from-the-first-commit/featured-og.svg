@@ -1,0 +1,46 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Red From the First Commit — a CI chain that failed at its first gate and hid every job behind it">
+  <defs>
+    <linearGradient id="rd-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="100%" stop-color="#27272a"/>
+    </linearGradient>
+    <linearGradient id="rd-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#rd-bg)"/>
+
+  <g opacity="0.06" stroke="#a78bfa" stroke-width="1">
+    <path d="M0 158 H1200 M0 316 H1200 M0 474 H1200"/>
+    <path d="M240 0 V630 M480 0 V630 M720 0 V630 M960 0 V630"/>
+  </g>
+
+  <rect x="90" y="118" width="72" height="8" rx="4" fill="url(#rd-accent)"/>
+
+  <!-- Job chain motif, top-right: first job red, the rest skipped -->
+  <g transform="translate(852 150)" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M24 30 V138" stroke="#52525b" stroke-width="5" fill="none" stroke-dasharray="3 9"/>
+    <circle cx="24" cy="18" r="13" fill="#2a1215" stroke="#f87171" stroke-width="7"/>
+    <path d="M18 12 l12 12 M30 12 l-12 12" stroke="#f87171" stroke-width="4" fill="none"/>
+    <circle cx="24" cy="75" r="13" fill="#1e1b2e" stroke="#52525b" stroke-width="7" stroke-dasharray="5 5"/>
+    <circle cx="24" cy="132" r="13" fill="#1e1b2e" stroke="#52525b" stroke-width="7" stroke-dasharray="5 5"/>
+    <text x="54" y="25" font-family="'Segoe UI', system-ui, sans-serif" font-size="20" font-weight="700" fill="#f87171">smoke</text>
+    <text x="54" y="82" font-family="'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="500" fill="#71717a">skipped</text>
+    <text x="54" y="139" font-family="'Segoe UI', system-ui, sans-serif" font-size="18" font-weight="500" fill="#71717a">skipped</text>
+  </g>
+
+  <!-- Title -->
+  <text x="90" y="252" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="78" font-weight="800" fill="#fafafa">Red From the</text>
+  <text x="90" y="344" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="78" font-weight="800" fill="url(#rd-accent)">First Commit</text>
+
+  <!-- Subtitle -->
+  <text x="94" y="416" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="33" font-weight="500" fill="#d4d4d8">The test suite that never got past smoke,</text>
+  <text x="94" y="458" font-family="'Segoe UI', system-ui, -apple-system, sans-serif" font-size="33" font-weight="500" fill="#d4d4d8">and what was waiting behind it</text>
+
+  <g font-family="'Segoe UI', system-ui, -apple-system, sans-serif">
+    <text x="90" y="560" font-size="28" font-weight="700" fill="#a78bfa">ScriptHammer</text>
+    <text x="368" y="560" font-size="24" font-weight="400" fill="#71717a">the assembly line for AI-written code · 4</text>
+  </g>
+</svg>

@@ -19,6 +19,7 @@ export interface ScaffoldOpts {
   centerLon: number;
   widthM: number;
   heightM: number;
+  countryCode?: string;
   force?: boolean;
   root?: string;
 }
@@ -33,12 +34,16 @@ export function buildSiteConfig(
     opts.widthM,
     opts.heightM
   );
+  const terrainDataset =
+    opts.countryCode == null || opts.countryCode.trim().toLowerCase() === 'us'
+      ? 'ned10m'
+      : 'srtm30m';
   return SiteConfigSchema.parse({
     slug: opts.slug,
     name: opts.name,
     box,
     mpp: 2,
-    terrain: { ...defaultTerrainGrid(box), dataset: 'ned10m' },
+    terrain: { ...defaultTerrainGrid(box), dataset: terrainDataset },
     carveWater: true,
     heroes: [],
     heights: { overrides: {}, fallbackClampM: 100 },
