@@ -92,7 +92,7 @@ test.describe('Protected Routes E2E', () => {
 
   test('should allow authenticated users to access protected routes', async ({
     page,
-  }, testInfo) => {
+  }) => {
     // Auth comes from storageState - navigate directly to protected routes
     const protectedRoutes = [
       { path: '/profile', heading: 'Profile' },
@@ -100,15 +100,13 @@ test.describe('Protected Routes E2E', () => {
       { path: '/payment-demo', heading: 'Payment Integration Demo' },
     ];
 
-    // Check auth is valid — WebKit sometimes fails to restore the session
+    // A lost session used to SKIP this test, whose whole job is checking that
+    // protected routes stay reachable when signed in. That is a failure (#1398).
     await page.goto('/profile', { waitUntil: 'domcontentloaded' });
-    if (page.url().includes('/sign-in')) {
-      testInfo.skip(
-        true,
-        'Auth session not restored from storageState (transient WebKit issue)'
-      );
-      return;
-    }
+    await expect(
+      page,
+      'stored session was not restored: /profile redirected to /sign-in (#1398)'
+    ).not.toHaveURL(/\/sign-in/);
 
     for (const route of protectedRoutes) {
       await page.goto(route.path, { waitUntil: 'domcontentloaded' });
@@ -126,14 +124,12 @@ test.describe('Protected Routes E2E', () => {
     // default 30s test timeout on Supabase Cloud under shard load.
     test.setTimeout(120000);
 
-    // Skip if secondary user not configured
-    if (!process.env.TEST_USER_SECONDARY_EMAIL) {
-      test.skip(
-        true,
-        'TEST_USER_SECONDARY_EMAIL not configured - skipping RLS test'
-      );
-      return;
-    }
+    // Every lane that runs this spec sets the secondary user. A lane that lost
+    // it must fail, not skip the RLS check silently (#1398).
+    expect(
+      process.env.TEST_USER_SECONDARY_EMAIL,
+      'TEST_USER_SECONDARY_EMAIL is not set; the RLS payment check needs a second user (#1398)'
+    ).toBeTruthy();
 
     // Step 1: Already authenticated as user 1 via storageState
     // Access payment demo and verify user's own data

@@ -96,19 +96,18 @@ async function removeTestAvatar(page: import('@playwright/test').Page) {
   await expect(removeButton).toHaveCount(0, { timeout: 20000 });
 }
 test.describe('Avatar Upload Accessibility (WCAG 2.1 AA)', () => {
-  test.beforeEach(async ({ page }, testInfo) => {
+  test.beforeEach(async ({ page }) => {
     // Already authenticated via storageState - navigate directly
     await page.goto('/account', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle');
 
-    // WebKit sometimes fails to restore the Supabase session from
-    // storageState, causing a redirect to /sign-in. Skip instead of
-    // failing all 10 tests — the auth issue is transient and not
-    // related to what these a11y tests verify.
-    if (page.url().includes('/sign-in')) {
-      testInfo.skip(true, 'Auth session not restored from storageState');
-      return;
-    }
+    // A lost session used to SKIP all 10 tests as a "transient WebKit issue".
+    // No CI run has ever hit it, and if one does, that is a broken session
+    // restore, which is a failure (#1398).
+    await expect(
+      page,
+      'stored session was not restored: /account redirected to /sign-in (#1398)'
+    ).not.toHaveURL(/\/sign-in/);
     await dismissCookieBanner(page);
   });
 

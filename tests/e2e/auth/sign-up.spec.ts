@@ -91,14 +91,13 @@ function isEmailConfigValid(): boolean {
 test.describe('Sign-up E2E Tests (Feature 027)', () => {
   const createdEmails: string[] = [];
 
-  // Skip all tests if email configuration is invalid
-  test.beforeEach(async ({}, testInfo) => {
-    if (!isEmailConfigValid()) {
-      testInfo.skip(
-        true,
-        'TEST_USER_PRIMARY_EMAIL not configured or using @example.com (blocked by Supabase)'
-      );
-    }
+  // A misconfigured address used to SKIP the whole spec. Every lane that runs
+  // the signup project sets a real one, so a bad value is a failure (#1398).
+  test.beforeEach(() => {
+    expect(
+      isEmailConfigValid(),
+      'TEST_USER_PRIMARY_EMAIL is unset or @example.com, which Supabase rejects (#1398)'
+    ).toBe(true);
   });
 
   test.afterAll(async () => {
