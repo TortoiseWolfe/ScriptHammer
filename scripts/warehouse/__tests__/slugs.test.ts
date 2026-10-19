@@ -2,10 +2,10 @@
 // (sites/_warehouse/raw/<slug>.glb), the served GLB
 // (public/twins/<site>/models/<slug>.glb) and models.json. Fetch and emit
 // both call the ONE shared assignSlugs (src/lib/placement.ts via ./lib);
-// these tests guard its semantics, and — when the local inventory exists —
+// these tests guard its semantics, and
 // its agreement with the committed artifact.
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import { assignSlugs, slugify } from '../lib';
@@ -72,37 +72,52 @@ describe('assignSlugs', () => {
   });
 });
 
-// Real-data agreement: run assignSlugs over the committed curation list with
-// the local inventory and require exact agreement with the committed
-// models.json. Any drift here means the raw cache and the served city no
-// longer join. Inventory lives in gitignored sites/_warehouse/ — skip (CI,
-// fresh clones) when absent.
-const invPath = path.resolve('sites/_warehouse/inventory.json');
+// Real-data agreement: run assignSlugs over the committed curation list and
+// require exact agreement with the committed models.json. Any drift here means
+// the raw cache and the served city no longer join.
+//
+// The id -> title lookup is rebuilt from COMMITTED data only (no gitignored
+// inventory, which is not redistributed — #714): every published model's title
+// is already in models.json, and fixtures/unpublished-curated-titles.json holds
+// the titles of the curated ids that never published (excluded or failed), which
+// still matter because a shared title forces an id suffix on its twin.
 const modelsPath = path.resolve('public/twins/chatt/models/models.json');
-const haveRealData = existsSync(invPath) && existsSync(modelsPath);
 
-describe.skipIf(!haveRealData)(
-  'assignSlugs ↔ committed chatt artifact',
-  () => {
-    it('reproduces every published slug from the curation list', () => {
-      const inventory = JSON.parse(readFileSync(invPath, 'utf8'));
-      const curated: { neighborhoods: { ids: string[] }[] } = JSON.parse(
-        readFileSync(
-          path.resolve('scripts/warehouse/curated-chatt.json'),
-          'utf8'
-        )
-      );
-      const models: { models: { slug: string; warehouseId: string }[] } =
-        JSON.parse(readFileSync(modelsPath, 'utf8'));
-      const byId = new Map<string, { title: string }>(
-        inventory.models.map((m: { id: string; title: string }) => [m.id, m])
-      );
-      const ids = curated.neighborhoods.flatMap((n) => n.ids);
-      const slugs = assignSlugs(ids, byId);
-      expect(new Set(slugs.values()).size).toBe(slugs.size); // zero collisions
-      for (const m of models.models) {
-        expect(slugs.get(m.warehouseId)).toBe(m.slug);
-      }
-    });
-  }
-);
+describe('assignSlugs ↔ committed chatt artifact', () => {
+  it('reproduces every published slug from the curation list', () => {
+    const curated: { neighborhoods: { ids: string[] }[] } = JSON.parse(
+      readFileSync(path.resolve('scripts/warehouse/curated-chatt.json'), 'utf8')
+    );
+    const models: {
+      models: { slug: string; warehouseId: string; title: string }[];
+    } = JSON.parse(readFileSync(modelsPath, 'utf8'));
+    const unpublished: Record<string, string> = JSON.parse(
+      readFileSync(
+        path.resolve(
+          'scripts/warehouse/__tests__/fixtures/unpublished-curated-titles.json'
+        ),
+        'utf8'
+      )
+    );
+    const byId = new Map<string, { title: string }>([
+      ...models.models.map((m): [string, { title: string }] => [
+        m.warehouseId,
+        { title: m.title },
+      ]),
+      ...Object.entries(unpublished).map((e): [string, { title: string }] => [
+        e[0],
+        { title: e[1] },
+      ]),
+    ]);
+    const ids = curated.neighborhoods.flatMap((n) => n.ids);
+    // every curated id resolves — a missing title would silently drop out of
+    // assignSlugs and weaken the collision check
+    expect(ids.filter((id) => !byId.has(id))).toEqual([]);
+    const slugs = assignSlugs(ids, byId);
+    expect(new Set(slugs.values()).size).toBe(slugs.size); // zero collisions
+    expect(models.models.length).toBeGreaterThan(0);
+    for (const m of models.models) {
+      expect(slugs.get(m.warehouseId)).toBe(m.slug);
+    }
+  });
+});

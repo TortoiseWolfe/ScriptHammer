@@ -1,18 +1,21 @@
 // #259 budget gate — deterministic asset ceilings for the sampled buildings.
 //
 // FPS is never asserted here (CI renders on CPU; absolute frame rates are
-// noise). What IS deterministic: the abstraction pass's output stats. This
-// test reads the pipeline's report.json and holds every model to the stated
-// budget. When the local-only pipeline outputs are absent (CI — the models
-// are gitignored per the 2026-07-10 distribution decision), it skips, exactly
-// like the optional runtime layer it guards.
+// noise). What IS deterministic: the shipped GLBs themselves. This test
+// measures the COMMITTED models in public/twins/chatt/models directly (it used
+// to read the gitignored pipeline report.json, so on CI the whole file skipped
+// and the budget guarded nothing) and holds every model to the stated budget.
 
-import { describe, it, expect } from 'vitest';
-import { existsSync, readFileSync } from 'node:fs';
+import { describe, it, expect, beforeAll } from 'vitest';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { NodeIO, getBounds } from '@gltf-transform/core';
+import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
+import { MeshoptDecoder } from 'meshoptimizer';
+// @ts-expect-error — untyped .mjs shared with the abstraction pass
+import { trianglesUnder } from '../cull.mjs';
 
-const REPORT = path.resolve('sites/_warehouse/report.json');
-const present = existsSync(REPORT);
+const MODELS_DIR = path.resolve('public/twins/chatt/models');
 
 // The stated budget (issue #259 asks for explicit numbers, reported honestly).
 // Iteration 2 (135-building city): the whole-set triangle proxy is the LOD2
@@ -28,73 +31,120 @@ const CEILINGS = {
   textures: 2, // palette texture (+1 slack)
 };
 
-describe.skipIf(!present)('#259 sampled-building budget ceilings', () => {
-  const raw = present
-    ? (JSON.parse(readFileSync(REPORT, 'utf8')) as {
-        models: {
-          slug: string;
-          after: {
-            glbBytes: number;
-            materials: number;
-            textures: number;
-            lodTriangles: Record<string, number>;
-            dimensions?: { x: number; y: number; z: number };
-          };
-          culled?: { aborted?: boolean };
-        }[];
-      })
-    : { models: [] };
+interface Measured {
+  slug: string;
+  glbBytes: number;
+  materials: number;
+  textures: number;
+  lodTriangles: Record<string, number>;
+  dimensions: { x: number; y: number; z: number };
+}
+
+type Node = {
+  getName(): string;
+  listChildren(): Node[];
+};
+
+describe('#259 sampled-building budget ceilings', () => {
   // The gate guards what SHIPS into the twin: models excluded by the
   // committed overrides never emit, so they don't count against the budget.
   const overrides = JSON.parse(
     readFileSync(path.resolve('scripts/warehouse/overrides-chatt.json'), 'utf8')
   ) as Record<string, { exclude?: boolean }>;
-  const report = {
-    models: raw.models.filter((m) => !overrides[m.slug]?.exclude),
-  };
+
+  const report: { models: Measured[] } = { models: [] };
+
+  beforeAll(async () => {
+    await MeshoptDecoder.ready;
+    const io = new NodeIO()
+      .registerExtensions(ALL_EXTENSIONS)
+      .registerDependencies({ 'meshopt.decoder': MeshoptDecoder });
+    const slugs = readdirSync(MODELS_DIR)
+      .filter((f) => f.endsWith('.glb'))
+      .map((f) => f.slice(0, -4))
+      .filter((slug) => !overrides[slug]?.exclude)
+      .sort();
+    for (const slug of slugs) {
+      const file = path.join(MODELS_DIR, `${slug}.glb`);
+      const doc = await io.read(file);
+      const root = doc.getRoot();
+      const scene = root.getDefaultScene() ?? root.listScenes()[0];
+      const top = scene.listChildren() as unknown as Node[];
+      const lod = (name: string) =>
+        top.find((n) => n.getName() === name) as unknown;
+      const lodTriangles: Record<string, number> = {};
+      for (const name of ['LOD0', 'LOD1', 'LOD2']) {
+        const n = lod(name);
+        if (n) lodTriangles[name] = trianglesUnder(n);
+      }
+      // Extents of the geometry that ships (LOD0 — all levels share the footprint).
+      const bbox = getBounds((lod('LOD0') ?? scene) as typeof scene);
+      report.models.push({
+        slug,
+        glbBytes: statSync(file).size,
+        materials: root.listMaterials().length,
+        textures: root.listTextures().length,
+        lodTriangles,
+        dimensions: {
+          x: bbox.max[0] - bbox.min[0],
+          y: bbox.max[1] - bbox.min[1],
+          z: bbox.max[2] - bbox.min[2],
+        },
+      });
+    }
+  }, 120_000);
 
   it('has models to check', () => {
+    expect(existsSync(MODELS_DIR)).toBe(true);
     expect(report.models.length).toBeGreaterThan(0);
   });
 
   it('every model holds the per-building ceilings', () => {
     const violations: string[] = [];
     for (const m of report.models) {
-      const a = m.after;
-      if (a.lodTriangles.LOD0 > CEILINGS.lod0Triangles)
-        violations.push(`${m.slug}: LOD0 ${a.lodTriangles.LOD0} tris`);
-      if (a.glbBytes > CEILINGS.glbBytes)
-        violations.push(`${m.slug}: ${a.glbBytes} bytes`);
-      if (a.materials > CEILINGS.materials)
-        violations.push(`${m.slug}: ${a.materials} materials`);
-      if (a.textures > CEILINGS.textures)
-        violations.push(`${m.slug}: ${a.textures} textures`);
+      if (m.lodTriangles.LOD0 > CEILINGS.lod0Triangles)
+        violations.push(`${m.slug}: LOD0 ${m.lodTriangles.LOD0} tris`);
+      if (m.glbBytes > CEILINGS.glbBytes)
+        violations.push(`${m.slug}: ${m.glbBytes} bytes`);
+      if (m.materials > CEILINGS.materials)
+        violations.push(`${m.slug}: ${m.materials} materials`);
+      if (m.textures > CEILINGS.textures)
+        violations.push(`${m.slug}: ${m.textures} textures`);
     }
     expect(violations, 'per-building budget violations').toEqual([]);
   });
 
   it('the whole set holds the totals', () => {
     const tris = report.models.reduce(
-      (s, m) => s + (m.after.lodTriangles.LOD2 ?? 0),
+      (s, m) => s + (m.lodTriangles.LOD2 ?? 0),
       0
     );
-    const bytes = report.models.reduce((s, m) => s + m.after.glbBytes, 0);
+    const bytes = report.models.reduce((s, m) => s + m.glbBytes, 0);
     expect(tris).toBeLessThanOrEqual(CEILINGS.totalLod2Triangles);
     expect(bytes).toBeLessThanOrEqual(CEILINGS.totalGlbBytes);
   });
 
-  it('no model failed abstraction', () => {
-    const failed = (
-      JSON.parse(readFileSync(REPORT, 'utf8')) as {
-        failed?: { slug: string }[];
-      }
-    ).failed;
-    expect(failed ?? []).toEqual([]);
+  it('every shipped model in models.json has a committed GLB, and vice versa', () => {
+    const published = (
+      JSON.parse(
+        readFileSync(path.join(MODELS_DIR, 'models.json'), 'utf8')
+      ) as { models: { slug: string; file: string }[] }
+    ).models;
+    for (const p of published) {
+      expect(existsSync(path.join(MODELS_DIR, p.file)), p.file).toBe(true);
+    }
+    const publishedSlugs = new Set(published.map((p) => p.slug));
+    const orphans = report.models
+      .map((m) => m.slug)
+      .filter((slug) => !publishedSlugs.has(slug));
+    expect(orphans, 'GLBs on disk that models.json does not publish').toEqual(
+      []
+    );
   });
 
-  it('every reported model has LOD0/LOD1/LOD2 counts', () => {
+  it('every model has LOD0/LOD1/LOD2 counts', () => {
     for (const m of report.models) {
-      expect(Object.keys(m.after.lodTriangles)).toEqual(
+      expect(Object.keys(m.lodTriangles), m.slug).toEqual(
         expect.arrayContaining(['LOD0', 'LOD1', 'LOD2'])
       );
     }
@@ -114,8 +164,7 @@ describe.skipIf(!present)('#259 sampled-building budget ceilings', () => {
   it('every shipping model is building-sized or explicitly granted', () => {
     const violations: string[] = [];
     for (const m of report.models) {
-      const d = m.after.dimensions;
-      if (!d) continue; // pre-iter-5 report entry — regenerate to cover
+      const d = m.dimensions;
       const xz = Math.max(d.x, d.z);
       const grant = abstractCfg[m.slug] ?? {};
       const granted =
@@ -126,16 +175,5 @@ describe.skipIf(!present)('#259 sampled-building budget ceilings', () => {
       }
     }
     expect(violations, 'ungranted oversize models (site context?)').toEqual([]);
-  });
-
-  it('no shipping model hit the cull abort guard without a grant', () => {
-    const aborted = report.models
-      .filter((m) => m.culled?.aborted)
-      .filter((m) => {
-        const g = abstractCfg[m.slug] ?? {};
-        return !(g.keepAll || typeof g.maxExtentM === 'number');
-      })
-      .map((m) => m.slug);
-    expect(aborted, 'guard-aborted models needing curation/grant').toEqual([]);
   });
 });
