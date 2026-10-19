@@ -11,6 +11,8 @@
 #   - tests/rls/**                         (the 75 RLS policies, 9 suites)
 #   - messaging-provider.supabase.test.ts  (C7-C14, [supabase])
 #   - messaging-provider.dotnet.test.ts    (C7-C14, [dotnet], live ASP.NET)
+#   - admin/admin-access.contract.test.ts  (admin RPC shapes; needs a seeded admin)
+# A skipped or todo test FAILS the job (assert-no-skipped.mjs, #1379).
 # Verified 107/107 green locally before wiring.
 #
 # NOTE ON CONCURRENCY: unlike e2e.yml, this job does NOT need the repo-wide
@@ -165,8 +167,32 @@ jobs:
       - name: Generate project configuration
         run: node scripts/detect-project.js
 
-      - name: Run RLS + provider conformance (pnpm test:rls)
+      - name: Seed the admin + test users locally under random per-run passwords
+        # tests/contract/admin/admin-access.contract.test.ts signs in as the admin and as
+        # the primary test user. #1246: no password literal may exist anywhere, so every
+        # password here is generated for this run only, masked, and handed to the seeder
+        # and to the test through the environment. The stack is ephemeral (torn down with
+        # -v below), so nothing outlives the job. The seeder refuses non-local targets.
+        run: |
+          set -euo pipefail
+          for v in SEED_ADMIN_PASSWORD TEST_USER_PRIMARY_PASSWORD TEST_USER_SECONDARY_PASSWORD TEST_USER_TERTIARY_PASSWORD; do
+            pw=$(openssl rand -base64 32)
+            echo "::add-mask::$pw"
+            echo "$v=$pw" >> "$GITHUB_ENV"
+            export "$v=$pw"
+          done
+          pnpm exec tsx scripts/seed-test-users.ts
+
+      - name: Run RLS + provider + admin conformance (pnpm test:rls)
+        # The JSON report is read by the next step: a skipped test is not a pass (#1379).
+        # tests/rls gates on describe.skipIf(!hasRlsTestEnvironment()), so a missing env
+        # var would otherwise turn the whole suite into skips with exit code 0.
+        env:
+          VITEST_JSON_REPORT: ${{ runner.temp }}/vitest-rls.json
         run: pnpm test:rls
+
+      - name: Fail if any test was skipped or todo (#1379)
+        run: node scripts/ci/assert-no-skipped.mjs "${{ runner.temp }}/vitest-rls.json"
 
       - name: Dump stack logs on failure
         if: failure()

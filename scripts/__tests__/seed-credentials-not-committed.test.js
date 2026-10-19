@@ -44,10 +44,12 @@ test('the admin contract test has no fallback password', () => {
   );
   assert.doesNotMatch(src, /SEED_ADMIN_PASSWORD\s*\|\|/, 'an || fallback');
   assert.doesNotMatch(src, /password:\s*'[^']*'/);
+  // #1379: the variable is REQUIRED, not optional. A skip here ran nowhere, silently.
+  assert.doesNotMatch(src, /describe\.skip|\.skipIf\(|it\.skip/, 'a skip');
   assert.match(
     src,
-    /ADMIN_PASSWORD \? describe : describe\.skip/,
-    'skips by name'
+    /if \(!ADMIN_PASSWORD\) \{\s*throw new Error\(/,
+    'throws when SEED_ADMIN_PASSWORD is absent'
   );
 });
 

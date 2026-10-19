@@ -19,8 +19,17 @@ export default defineConfig({
       // same infra needs as the RLS suite (live Supabase + service role +
       // stale-user cleanup + sequential execution).
       'tests/contract/messaging-provider.*.test.ts',
+      // Admin RPC shape contract: needs a live backend AND a seeded admin whose
+      // password arrives as SEED_ADMIN_PASSWORD (#1246, #1379). Excluded from the
+      // default config; conformance.yml seeds the admin and runs it here.
+      'tests/contract/admin/admin-access.contract.test.ts',
     ],
     globals: true,
+    // conformance.yml sets VITEST_JSON_REPORT so assert-no-skipped.mjs can read a
+    // machine report after the run (#1379). Unset, the run is the plain default.
+    reporters: process.env.VITEST_JSON_REPORT
+      ? ['default', ['json', { outputFile: process.env.VITEST_JSON_REPORT }]]
+      : ['default'],
     testTimeout: 30000,
     hookTimeout: 30000,
     // Scrub stale *@scripthammer.test users + orphan FK rows before any

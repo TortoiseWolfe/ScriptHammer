@@ -2,9 +2,15 @@
  * Admin Access Contract Tests
  *
  * Two halves:
- *   1. Non-admin → {}  — proves the JWT guard short-circuits.
- *   2. Admin → shape   — proves the SQL past the guard emits what the
- *                        component destructures.
+ *   1. Non-admin → 42501 — proves the is_admin() guard refuses. Since #1029 the
+ *                          guard RAISES; it no longer returns '{}', which was
+ *                          indistinguishable from "no rows".
+ *   2. Admin → shape     — proves the SQL past the guard emits what the
+ *                          component destructures.
+ *
+ * Runs in conformance (vitest.rls.config.ts) against a local stack whose admin
+ * was seeded under a random per-run password (#1379). It is excluded from the
+ * default vitest config because it needs that live backend.
  *
  * Half 2 is the one that catches drift. A SQL column aliased `fail_count`
  * and a component reading `entry.attempts` both pass in isolation: the unit
@@ -20,212 +26,88 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
+/** Every admin RPC, with the arguments its signature accepts. */
+const ADMIN_RPCS: Array<{ fn: string; args?: Record<string, unknown> }> = [
+  { fn: 'admin_payment_stats' },
+  { fn: 'admin_auth_stats' },
+  { fn: 'admin_user_stats' },
+  { fn: 'admin_messaging_stats' },
+  { fn: 'admin_payment_trends', args: { p_start: null, p_end: null } },
+  { fn: 'admin_audit_trends', args: { p_start: null, p_end: null } },
+  { fn: 'admin_messaging_trends', args: { p_start: null, p_end: null } },
+  {
+    fn: 'admin_list_users',
+    args: { p_search: '', p_limit: 10, p_offset: 0 },
+  },
+  { fn: 'admin_conversation_list', args: { p_limit: 10, p_offset: 0 } },
+  { fn: 'admin_overview', args: { p_start: null, p_end: null } },
+];
+
+const keysOf = (o: object): string[] => Object.keys(o).sort();
+
 describe('Admin Access Contract Tests', () => {
-  it('non-admin gets empty result from admin_payment_stats', async () => {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    await supabase.auth.signInWithPassword({
+  let nonAdmin: SupabaseClient;
+
+  beforeAll(async () => {
+    nonAdmin = createClient(supabaseUrl, supabaseKey);
+    const { error } = await nonAdmin.auth.signInWithPassword({
       email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
       password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
     });
-    const { data } = await supabase.rpc('admin_payment_stats');
-    expect(data).toEqual({});
+    // Without this a failed sign-in makes the caller anonymous, and anonymous is
+    // refused with the same 42501 — the refusal tests below would pass for the
+    // wrong reason.
+    if (error) {
+      throw new Error(`Non-admin sign-in failed: ${error.message}`);
+    }
   });
 
-  it('non-admin gets empty result from admin_auth_stats', async () => {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    await supabase.auth.signInWithPassword({
-      email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-    });
-    const { data } = await supabase.rpc('admin_auth_stats');
-    expect(data).toEqual({});
-  });
-
-  it('non-admin gets empty result from admin_user_stats', async () => {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    await supabase.auth.signInWithPassword({
-      email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-    });
-    const { data } = await supabase.rpc('admin_user_stats');
-    expect(data).toEqual({});
-  });
-
-  it('non-admin gets empty result from admin_messaging_stats', async () => {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    await supabase.auth.signInWithPassword({
-      email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-    });
-    const { data } = await supabase.rpc('admin_messaging_stats');
-    expect(data).toEqual({});
-  });
-
-  it('non-admin gets empty result from admin_payment_analytics', async () => {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    await supabase.auth.signInWithPassword({
-      email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-    });
-    const { data, error } = await supabase.rpc('admin_payment_analytics', {
-      p_from: '2025-01-01T00:00:00Z',
-      p_to: '2025-12-31T23:59:59Z',
-    });
-    expect(error).toBeNull();
-    expect(data).toEqual({});
-  });
-
-  it('admin_payment_analytics accepts null range (defaults to 30 days)', async () => {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    await supabase.auth.signInWithPassword({
-      email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-    });
-    // Non-admin still gets {} but this verifies the function signature
-    // tolerates NULL params without raising a Postgres error.
-    const { data, error } = await supabase.rpc('admin_payment_analytics', {
-      p_from: null,
-      p_to: null,
-    });
-    expect(error).toBeNull();
-    expect(data).toEqual({});
-  });
-
-  it('non-admin gets empty result from admin_audit_analytics', async () => {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    await supabase.auth.signInWithPassword({
-      email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-    });
-    const { data, error } = await supabase.rpc('admin_audit_analytics', {
-      p_from: '2025-01-01T00:00:00Z',
-      p_to: '2025-12-31T23:59:59Z',
-    });
-    expect(error).toBeNull();
-    expect(data).toEqual({});
-  });
-
-  it('admin_audit_analytics accepts null range (defaults to 30 days)', async () => {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    await supabase.auth.signInWithPassword({
-      email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-    });
-    const { data, error } = await supabase.rpc('admin_audit_analytics', {
-      p_from: null,
-      p_to: null,
-    });
-    expect(error).toBeNull();
-    expect(data).toEqual({});
-  });
-
-  it('non-admin gets empty result from admin_user_list', async () => {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    await supabase.auth.signInWithPassword({
-      email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-    });
-    // Empty search + default limit. {} is the non-admin sentinel; an admin
-    // would get a JSON array here.
-    const { data, error } = await supabase.rpc('admin_user_list', {
-      p_search: '',
-      p_limit: 50,
-    });
-    expect(error).toBeNull();
-    expect(data).toEqual({});
-  });
-
-  it('admin_user_list accepts search substring without error', async () => {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    await supabase.auth.signInWithPassword({
-      email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-    });
-    // Verifies the ILIKE '%...%' concat tolerates a real string — the JWT
-    // guard short-circuits before the query runs, so this is a
-    // signature-acceptance check not a result check.
-    const { data, error } = await supabase.rpc('admin_user_list', {
-      p_search: 'alice',
-      p_limit: 10,
-    });
-    expect(error).toBeNull();
-    expect(data).toEqual({});
-  });
-
-  it('non-admin gets empty result from admin_messaging_analytics', async () => {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    await supabase.auth.signInWithPassword({
-      email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-    });
-    const { data, error } = await supabase.rpc('admin_messaging_analytics', {
-      p_from: '2025-01-01T00:00:00Z',
-      p_to: '2025-12-31T23:59:59Z',
-    });
-    expect(error).toBeNull();
-    expect(data).toEqual({});
-  });
-
-  it('admin_messaging_analytics accepts null range (defaults to 30 days)', async () => {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    await supabase.auth.signInWithPassword({
-      email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-    });
-    // JWT guard returns {} before the FULL OUTER JOIN runs, so this proves
-    // Postgres accepts the signature with NULLs — not that the join is sound.
-    // Admin-positive shape tests below cover the post-guard path.
-    const { data, error } = await supabase.rpc('admin_messaging_analytics', {
-      p_from: null,
-      p_to: null,
-    });
-    expect(error).toBeNull();
-    expect(data).toEqual({});
-  });
-
-  it('non-admin gets empty result from admin_overview', async () => {
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    await supabase.auth.signInWithPassword({
-      email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
-    });
-    // No args. The outer guard short-circuits before any of the four nested
-    // _stats calls run, so this is strictly a signature + guard check. If the
-    // guard were missing, the nested functions would each return {} anyway
-    // (defence in depth) and we'd see {payments:{}, auth:{}, ...} here — so
-    // asserting a bare {} proves the outer guard specifically.
-    const { data, error } = await supabase.rpc('admin_overview');
-    expect(error).toBeNull();
-    expect(data).toEqual({});
-  });
+  it.each(ADMIN_RPCS)(
+    'non-admin is refused by $fn with 42501, not an empty result',
+    async ({ fn, args }) => {
+      const { data, error } = await nonAdmin.rpc(fn, args);
+      expect(data).toBeNull();
+      expect(error?.code).toBe('42501');
+      expect(error?.message).toContain('caller is not an admin');
+    }
+  );
 });
 
 // Signing in as the admin needs the password the seeder was given. There is no
-// fallback literal any more (#1246): without SEED_ADMIN_PASSWORD this block
-// skips by name rather than trying a password that must not exist.
+// fallback literal (#1246) and no skip (#1379): without SEED_ADMIN_PASSWORD the
+// block FAILS in beforeAll, so a missing variable is a red run, never a silent one.
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD;
-const describeAdmin = ADMIN_PASSWORD ? describe : describe.skip;
 
-describeAdmin('Admin RPC Shape Contract — admin caller', () => {
-  // One client for the whole block. Each test creating its own client +
-  // sign-in worked fine for the non-admin tests above (where the sign-in
-  // is part of what's being proven), but here we just need a JWT that
-  // clears the guard. The shape assertions are the test.
+describe('Admin RPC Shape Contract — admin caller', () => {
   let admin: SupabaseClient;
 
   beforeAll(async () => {
+    if (!ADMIN_PASSWORD) {
+      throw new Error(
+        'SEED_ADMIN_PASSWORD is required: the admin shape contract signs in as ' +
+          'the seeded admin and has no default password (#1246).'
+      );
+    }
     admin = createClient(supabaseUrl, supabaseKey);
     const { error } = await admin.auth.signInWithPassword({
       email: process.env.SEED_ADMIN_EMAIL || 'admin@scripthammer.com',
-      password: ADMIN_PASSWORD as string,
+      password: ADMIN_PASSWORD,
     });
     if (error) {
       throw new Error(
         `Admin sign-in failed: ${error.message}. ` +
-          `Seed script must set raw_app_meta_data.is_admin on this user.`
+          `Seed script must set user_profiles.is_admin on this user.`
       );
     }
   });
+
+  const call = async (fn: string, args?: Record<string, unknown>) => {
+    const { data, error } = await admin.rpc(fn, args);
+    expect(error, `${fn} must not error for an admin`).toBeNull();
+    expect(data, `${fn} must return a JSON object`).toBeTypeOf('object');
+    expect(data).not.toBeNull();
+    return data;
+  };
 
   // A Record<string, number> — the shape TS declares and Object.entries()
   // expects — is a plain object with string keys and number values. An
@@ -247,64 +129,30 @@ describeAdmin('Admin RPC Shape Contract — admin caller', () => {
   };
 
   it('admin_payment_stats.revenue_by_provider is Record<string, number>', async () => {
-    // AdminPaymentPanel never dereferences this today — the field is
-    // declared, passed, and discarded. But the type says Record, the test
-    // fixtures say {stripe: 400000, paypal: 100000}, and the next dev who
-    // tries `Object.entries(stats.revenue_by_provider).map(([provider, cents]) => ...)`
-    // against live data will get [["0", {provider, total}], ["1", {...}]]
-    // because json_agg(row_to_json()) produces an array of rows.
-    //
-    // json_object_agg(provider, total) produces the Record shape directly.
-    const { data, error } = await admin.rpc('admin_payment_stats');
-    expect(error).toBeNull();
+    // json_object_agg(provider, total) gives the Record shape; json_agg(row_to_json())
+    // would give [["0", {provider, total}], ...] under Object.entries().
+    const data = await call('admin_payment_stats');
     expectRecordStringNumber(data.revenue_by_provider, 'revenue_by_provider');
   });
 
   it('admin_auth_stats.top_failed_logins entries have .attempts, not .fail_count', async () => {
-    // AdminAuditTrail.tsx:437 renders `{entry.attempts} failed attempts`.
-    // SQL aliases the count AS fail_count. entry.attempts is undefined.
-    // React renders undefined as nothing → the card reads " failed attempts"
-    // with no number. The smoke didn't catch this because it doesn't assert
-    // on anomaly card text — the section renders (length > 0) but the
-    // content is wrong.
-    //
-    // We can't force the seed to produce a failed-login entry for this test,
-    // so if the array is empty we can only assert it's an array. But when
-    // it's populated (which the current seed does give us), every entry
-    // must expose the field the component reads.
-    const { data, error } = await admin.rpc('admin_auth_stats');
-    expect(error).toBeNull();
+    // AdminAuditTrail renders `{entry.attempts} failed attempts`. The array is empty
+    // under the default seed, so this is a no-op on a fresh stack; the top-level
+    // key check below still pins the surrounding shape.
+    const data = await call('admin_auth_stats');
     expect(data.top_failed_logins).toBeInstanceOf(Array);
     for (const entry of data.top_failed_logins) {
       expect(entry).toHaveProperty('user_id');
-      // The field the component reads:
       expect(entry).toHaveProperty('attempts');
       expect(typeof entry.attempts).toBe('number');
-      // And NOT the stale SQL alias. If both exist someone did an additive
-      // "fix" and left the old column, which means two names for one value
-      // and the next reader gets to guess which one is authoritative.
       expect(entry).not.toHaveProperty('fail_count');
     }
   });
 
   it('admin_messaging_stats.connection_distribution is Record<string, number>', async () => {
-    // AdminMessagingOverview.tsx:132 does:
-    //   const distributionEntries = Object.entries(distribution);
-    //   ...
-    //   distributionEntries.map(([status, count]) => (
-    //     <div className="stat-title">{status}</div>
-    //     <div className="stat-value">{count}</div>
-    //   ))
-    //
-    // With the RPC returning [{status, total}, ...], Object.entries gives
-    // [["0", {status, total}], ["1", {...}]] — array indices as keys,
-    // whole row objects as values. {count} then tries to render an object
-    // and React throws "Objects are not valid as a React child (found:
-    // object with keys {status, total})".
-    //
-    // The admin smoke never hit /admin/messaging, so this crashed silently.
-    const { data, error } = await admin.rpc('admin_messaging_stats');
-    expect(error).toBeNull();
+    // AdminMessagingOverview does Object.entries(distribution); an array of rows
+    // would crash React with "Objects are not valid as a React child".
+    const data = await call('admin_messaging_stats');
     expectRecordStringNumber(
       data.connection_distribution,
       'connection_distribution'
@@ -312,15 +160,14 @@ describeAdmin('Admin RPC Shape Contract — admin caller', () => {
   });
 
   it('admin_overview inherits corrected shapes from sub-RPCs', async () => {
-    // admin_overview() calls the four _stats functions and nests their
-    // output. If those are fixed, this is fixed — but the overview page
-    // is the one admins actually look at first, so it gets its own
-    // assertion rather than trusting composition.
-    const { data, error } = await admin.rpc('admin_overview', {
-      p_from: null,
-      p_to: null,
-    });
-    expect(error).toBeNull();
+    const data = await call('admin_overview', { p_start: null, p_end: null });
+    expect(keysOf(data)).toEqual(
+      ['range', 'payments', 'auth', 'users', 'messaging', 'sparks'].sort()
+    );
+    expect(keysOf(data.range)).toEqual(['end', 'start']);
+    expect(keysOf(data.sparks)).toEqual(
+      ['logins', 'messages', 'payments', 'signups'].sort()
+    );
     expectRecordStringNumber(
       data.payments.revenue_by_provider,
       'overview.payments.revenue_by_provider'
@@ -336,16 +183,14 @@ describeAdmin('Admin RPC Shape Contract — admin caller', () => {
   });
 
   // ---------------------------------------------------------------------
-  // Regression lock: the 6 RPCs that already match. These passed on first
-  // run — they're here so the next person who touches the migration can't
-  // silently drift a field name. Full key-set equality, not just "has the
-  // fields we use today", because unexpected extra fields are also drift
-  // (they mean the SQL changed and nobody updated the type).
+  // Regression lock: full key-set equality, not just "has the fields we use
+  // today", because unexpected extra fields are also drift (the SQL changed and
+  // nobody updated the type).
   // ---------------------------------------------------------------------
 
   it('admin_payment_stats top-level keys match AdminPaymentStats', async () => {
-    const { data } = await admin.rpc('admin_payment_stats');
-    expect(Object.keys(data).sort()).toEqual(
+    const data = await call('admin_payment_stats');
+    expect(keysOf(data)).toEqual(
       [
         'total_payments',
         'successful_payments',
@@ -360,9 +205,10 @@ describeAdmin('Admin RPC Shape Contract — admin caller', () => {
   });
 
   it('admin_auth_stats top-level keys match AdminAuthStats', async () => {
-    const { data } = await admin.rpc('admin_auth_stats');
-    expect(Object.keys(data).sort()).toEqual(
+    const data = await call('admin_auth_stats');
+    expect(keysOf(data)).toEqual(
       [
+        'reports_dropped_this_week',
         'logins_today',
         'failed_this_week',
         'signups_this_month',
@@ -372,8 +218,8 @@ describeAdmin('Admin RPC Shape Contract — admin caller', () => {
   });
 
   it('admin_user_stats keys match AdminUserStats', async () => {
-    const { data } = await admin.rpc('admin_user_stats');
-    expect(Object.keys(data).sort()).toEqual(
+    const data = await call('admin_user_stats');
+    expect(keysOf(data)).toEqual(
       [
         'total_users',
         'active_this_week',
@@ -384,8 +230,8 @@ describeAdmin('Admin RPC Shape Contract — admin caller', () => {
   });
 
   it('admin_messaging_stats top-level keys match AdminMessagingStats', async () => {
-    const { data } = await admin.rpc('admin_messaging_stats');
-    expect(Object.keys(data).sort()).toEqual(
+    const data = await call('admin_messaging_stats');
+    expect(keysOf(data)).toEqual(
       [
         'total_conversations',
         'group_conversations',
@@ -398,115 +244,82 @@ describeAdmin('Admin RPC Shape Contract — admin caller', () => {
     );
   });
 
-  it('admin_payment_analytics shape matches PaymentAnalytics', async () => {
-    const { data } = await admin.rpc('admin_payment_analytics', {
-      p_from: null,
-      p_to: null,
-    });
-    expect(Object.keys(data).sort()).toEqual(
-      ['window', 'daily_volume', 'provider_breakdown', 'refund_trend'].sort()
+  // The *_trends RPCs default their window to the last 7 days only when the
+  // arguments are OMITTED; explicit NULLs are echoed back and produce no series.
+  // So the element-shape checks call them with no arguments, which yields one
+  // daily_series row per day regardless of what data the stack holds.
+
+  it('admin_payment_trends shape matches PaymentTrends', async () => {
+    const data = await call('admin_payment_trends');
+    expect(keysOf(data)).toEqual(
+      [
+        'range',
+        'totals',
+        'refund_rate',
+        'provider_breakdown',
+        'daily_series',
+      ].sort()
     );
-    expect(data.window).toHaveProperty('from');
-    expect(data.window).toHaveProperty('to');
-    // Element shapes — the seed gives us at least one row for each, so
-    // we can check field names. If the seed ever stops producing rows
-    // these silently become no-ops; the top-level key check still holds.
-    for (const row of data.daily_volume) {
-      expect(Object.keys(row).sort()).toEqual(
-        ['day', 'provider', 'status', 'txn_count', 'revenue_cents'].sort()
+    expect(keysOf(data.totals)).toEqual(
+      ['succeeded', 'failed', 'refunded', 'revenue_cents'].sort()
+    );
+    expect(data.daily_series.length).toBeGreaterThan(0);
+    for (const row of data.daily_series) {
+      expect(keysOf(row)).toEqual(
+        ['day', 'succeeded', 'failed', 'revenue_cents'].sort()
       );
     }
     for (const row of data.provider_breakdown) {
-      expect(Object.keys(row).sort()).toEqual(
-        [
-          'provider',
-          'succeeded',
-          'failed',
-          'refunded',
-          'pending',
-          'revenue_cents',
-          'refund_rate_pct',
-        ].sort()
-      );
-    }
-    for (const row of data.refund_trend) {
-      expect(Object.keys(row).sort()).toEqual(
-        ['day', 'refunded', 'completed', 'refund_rate_pct'].sort()
+      expect(keysOf(row)).toEqual(
+        ['provider', 'succeeded', 'failed', 'refunded', 'revenue_cents'].sort()
       );
     }
   });
 
-  it('admin_audit_analytics shape matches AuditAnalytics', async () => {
-    const { data } = await admin.rpc('admin_audit_analytics', {
-      p_from: null,
-      p_to: null,
-    });
-    expect(Object.keys(data).sort()).toEqual(
-      ['window', 'daily_activity', 'event_breakdown', 'ip_bursts'].sort()
-    );
-    for (const row of data.daily_activity) {
-      expect(Object.keys(row).sort()).toEqual(
-        ['day', 'ok', 'failed', 'total', 'failure_rate_pct'].sort()
-      );
-    }
-    for (const row of data.event_breakdown) {
-      expect(Object.keys(row).sort()).toEqual(
-        ['event_type', 'ok', 'failed', 'total'].sort()
-      );
-    }
-    // ip_bursts is empty under the default seed (no >10 events/IP/10min
-    // window). Shape verified by reading the SQL: json_build_object in the
-    // ip_bursts CTE uses exactly {ip_address, bucket_start, event_count,
-    // failed_sign_ins, distinct_users}. An admin seeding a burst would
-    // exercise this loop.
-    for (const row of data.ip_bursts) {
-      expect(Object.keys(row).sort()).toEqual(
-        [
-          'ip_address',
-          'bucket_start',
-          'event_count',
-          'failed_sign_ins',
-          'distinct_users',
-        ].sort()
-      );
+  it('admin_audit_trends shape matches AuditTrends', async () => {
+    const data = await call('admin_audit_trends');
+    expect(keysOf(data)).toEqual(['range', 'totals', 'daily_series'].sort());
+    expect(keysOf(data.totals)).toEqual(['sign_in_failed', 'sign_in_success']);
+    expect(data.daily_series.length).toBeGreaterThan(0);
+    for (const row of data.daily_series) {
+      expect(keysOf(row)).toEqual(['day', 'failed', 'succeeded'].sort());
     }
   });
 
-  it('admin_messaging_analytics shape matches MessagingAnalytics', async () => {
-    const { data } = await admin.rpc('admin_messaging_analytics', {
-      p_from: null,
-      p_to: null,
-    });
-    expect(Object.keys(data).sort()).toEqual(
-      ['window', 'conversation_counts', 'daily_volume', 'top_senders'].sort()
+  it('admin_messaging_trends shape matches MessagingTrends', async () => {
+    const data = await call('admin_messaging_trends');
+    expect(keysOf(data)).toEqual(
+      ['range', 'totals', 'daily_series', 'top_senders'].sort()
     );
-    expect(Object.keys(data.conversation_counts).sort()).toEqual(
-      ['total', 'created_in_window', 'active_in_window'].sort()
+    expect(keysOf(data.totals)).toEqual(
+      ['messages', 'conversations_created', 'active_senders'].sort()
     );
-    for (const row of data.daily_volume) {
-      expect(Object.keys(row).sort()).toEqual(
-        ['day', 'messages', 'new_conversations'].sort()
+    expect(data.daily_series.length).toBeGreaterThan(0);
+    for (const row of data.daily_series) {
+      expect(keysOf(row)).toEqual(
+        ['day', 'messages', 'conversations_created'].sort()
       );
     }
     for (const row of data.top_senders) {
-      expect(Object.keys(row).sort()).toEqual(
-        ['sender_id', 'username', 'message_count', 'conversation_count'].sort()
+      expect(keysOf(row)).toEqual(
+        ['user_id', 'username', 'display_name', 'messages'].sort()
       );
     }
   });
 
-  it('admin_user_list rows match AdminUserRow', async () => {
-    // The two optional fields (last_sign_in_at, days_since_sign_in) are
-    // emitted as null, not omitted — row_to_json doesn't drop null columns.
-    // So the key set is stable regardless of whether a user has signed in.
-    const { data } = await admin.rpc('admin_user_list', {
+  it('admin_list_users rows match AdminUserRow', async () => {
+    // last_sign_in_at is emitted as null, not omitted — row_to_json keeps null
+    // columns — so the key set is stable whether or not a user has signed in.
+    const data = await call('admin_list_users', {
       p_search: '',
       p_limit: 10,
+      p_offset: 0,
     });
-    expect(data).toBeInstanceOf(Array);
-    expect(data.length).toBeGreaterThan(0); // seed guarantees ≥1 user
-    for (const row of data) {
-      expect(Object.keys(row).sort()).toEqual(
+    expect(keysOf(data)).toEqual(['total', 'users']);
+    expect(data.users).toBeInstanceOf(Array);
+    expect(data.users.length).toBeGreaterThan(0); // conformance seeds 3 users
+    for (const row of data.users) {
+      expect(keysOf(row)).toEqual(
         [
           'id',
           'username',
@@ -514,7 +327,37 @@ describeAdmin('Admin RPC Shape Contract — admin caller', () => {
           'created_at',
           'welcome_message_sent',
           'last_sign_in_at',
-          'days_since_sign_in',
+          'activity',
+        ].sort()
+      );
+    }
+  });
+
+  it('admin_list_users accepts a search substring', async () => {
+    const data = await call('admin_list_users', {
+      p_search: 'testuser',
+      p_limit: 10,
+      p_offset: 0,
+    });
+    expect(data.total).toBeGreaterThan(0);
+  });
+
+  it('admin_conversation_list shape matches AdminConversationList', async () => {
+    const data = await call('admin_conversation_list', {
+      p_limit: 10,
+      p_offset: 0,
+    });
+    expect(keysOf(data)).toEqual(['conversations', 'total']);
+    expect(data.conversations).toBeInstanceOf(Array);
+    for (const row of data.conversations) {
+      expect(keysOf(row)).toEqual(
+        [
+          'conversation_id',
+          'is_group',
+          'participant_count',
+          'message_count',
+          'last_activity',
+          'created_at',
         ].sort()
       );
     }
