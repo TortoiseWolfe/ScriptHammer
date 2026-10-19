@@ -105,18 +105,29 @@ test.describe('Homepage Navigation', () => {
   });
 
   test('GitHub repository link opens in new tab', async ({ page, context }) => {
-    test.skip(!!process.env.CI, 'External tab popups unreliable in CI');
+    // github.com is stubbed so the popup needs no network (CI included).
+    await context.route('https://github.com/**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'text/html',
+        body: '<title>stub</title>',
+      })
+    );
 
-    // Listen for new page/tab
-    const [newPage] = await Promise.all([
+    const link = page.getByRole('link', { name: /clone the starter/i });
+    await link.scrollIntoViewIfNeeded();
+    await expect(link).toHaveAttribute('target', '_blank');
+    await expect(link).toHaveAttribute('rel', /noopener/);
+    const href = await link.getAttribute('href');
+    expect(href).toMatch(/^https:\/\/github\.com\//);
+
+    const [popup] = await Promise.all([
       context.waitForEvent('page'),
-      page.click('text=View Source'),
+      link.click(),
     ]);
-
-    // Check the new tab URL
-    await newPage.waitForLoadState();
-    expect(newPage.url()).toContain('github.com');
-    await newPage.close();
+    await popup.waitForLoadState();
+    expect(popup.url()).toBe(href);
+    await popup.close();
   });
 
   test('skip to main content link works', async ({ page }) => {
