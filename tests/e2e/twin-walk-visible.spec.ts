@@ -143,29 +143,37 @@ test.describe('walk scene is visible (not a dark void / empty frame)', () => {
     await page.locator('[data-stance]').first().waitFor({ timeout: 25_000 });
     await page.waitForTimeout(8000);
 
+    // CAPTURE ONLY THE STRIP, VIA THE PAGE, WITH A REAL BUDGET (#1376). Under software GL
+    // every capture is a synchronous GPU->CPU readback. `locator('canvas').screenshot()`
+    // reads back the whole viewport-sized canvas and took ~8 s on SwiftShader locally
+    // (10.8 s with the CPU throttled 4x), so on a loaded CI runner it blew through the
+    // 15 s actionTimeout on all three attempts. A `page.screenshot({ clip })` of just the
+    // strip took ~2.7 s (4.0 s at 4x, 6.1 s at 8x). The explicit timeout is the budget
+    // for a readback that is slow by nature; it is not what makes the test pass, the
+    // floors below are.
+    const vp = page.viewportSize();
+    if (!vp) throw new Error('walk pixel guard needs a viewport size');
+    const left = Math.round(vp.width * 0.18);
+    const top = Math.round(vp.height * 0.12);
+    const shot = await page.screenshot({
+      clip: {
+        x: left,
+        y: top,
+        width: vp.width - left,
+        height: Math.round(vp.height * 0.44) - top,
+      },
+      timeout: 90_000,
+    });
+
+    // The strip is the upper scene area with no page chrome in it: below the nav, right of
+    // the left HUD column, above the handlebars and the bottom controls. Measuring the whole
+    // frame instead is not an option: the bright, high-contrast DOM chrome alone gave a scene
+    // with every light and the sky removed a mean of 0.14 and a variance of 0.075 — both
+    // above the floors below — so it could not fail on a dead canvas (the same scene reads
+    // 0.004 / 0.0000 over the strip).
     const W = 32;
     const H = 8;
-    const shot = await page.locator('canvas').first().screenshot();
-
-    // MEASURE THE SCENE, NOT THE PAGE (#1376). The canvas fills the viewport and the
-    // screenshot is the composited frame, so it includes the nav, the HUD panels, the
-    // footer and the player's handlebars. Those are bright, high-contrast DOM, and they
-    // alone gave a scene with every light and the sky removed a mean of 0.14 and a variance
-    // of 0.075 — both above the floors below — so a whole-frame measurement could not fail
-    // on a dead canvas (the same scene reads 0.004 / 0.0000 over the strip). This strip is the upper scene area with no chrome in it: below the nav,
-    // right of the left HUD column, above the handlebars and the bottom controls.
-    const meta = await sharp(shot).metadata();
-    const fw = meta.width ?? 0;
-    const fh = meta.height ?? 0;
-    const left = Math.round(fw * 0.18);
-    const top = Math.round(fh * 0.12);
     const { data, info } = await sharp(shot)
-      .extract({
-        left,
-        top,
-        width: fw - left,
-        height: Math.round(fh * 0.44) - top,
-      })
       .resize(W, H, { fit: 'fill' })
       .raw()
       .toBuffer({ resolveWithObject: true });
