@@ -19,7 +19,13 @@ import sharp from 'sharp';
  *        --config playwright.visual.config.ts
  */
 
-// Floors calibrated against the daylit walk scene (buildings + sky + ground).
+// Floors calibrated against the daylit walk scene (buildings + sky + ground), measured
+// on SwiftShader (the renderer every CI chromium uses) over the chrome-free scene strip
+// the pixel test crops to. Measured there (#1376):
+//   lit scene            mean 0.424  variance 0.0052
+//   geometry hidden      mean 0.521  variance 0.0001   (sky + fog only; fails variance)
+//   lights+sky removed   mean 0.004  variance 0.0000   (fails mean)
+// Whole-frame, the lights-removed control measured mean 0.14 / variance 0.075 and PASSED.
 // A dark-void regression drives mean luminance toward 0; a flat single-colour
 // frame (no geometry / all fog) drives inter-tile variance toward 0.
 const MIN_MEAN_LUMINANCE = 0.1;
@@ -106,41 +112,67 @@ test.describe('walk scene is visible (not a dark void / empty frame)', () => {
   test('street level renders lit geometry', async ({ page }) => {
     await openWalk(page);
 
-    // Gate on a REAL GPU. Software renderers (SwiftShader / llvmpipe — headless
-    // CI and this dev container) can't render the heavy R3F scene, so a pixel
-    // guard there cannot tell "the app is dark" from "the env can't draw" (the
-    // #288 limitation the twin-contrast specs document). Skip cleanly rather than
-    // false-fail; the guard still runs on real-GPU dev machines / GPU CI runners.
     const gpu = await page.evaluate(() => {
       const c = document.createElement('canvas');
       const gl = (c.getContext('webgl2') ||
         c.getContext('webgl')) as WebGLRenderingContext | null;
       if (!gl) return { webgl: false, renderer: '' };
       const ext = gl.getExtension('WEBGL_debug_renderer_info');
-      const renderer = ext
-        ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL))
-        : '';
-      return { webgl: true, renderer };
+      return {
+        webgl: true,
+        renderer: ext
+          ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL))
+          : '',
+      };
     });
-    test.skip(!gpu.webgl, 'no WebGL (see #288) — the visual guard needs a GPU');
+
+    // GATED ON WEBGL EXISTING, NOT ON IT BEING HARDWARE (#1376). Software GL (SwiftShader,
+    // which is what every CI chromium uses) draws this scene fine; only a browser with no
+    // WebGL at all (headless firefox, #288) cannot, and that measures the runner.
     test.skip(
-      /swiftshader|llvmpipe|softwarerasterizer|swrast|software/i.test(
-        gpu.renderer
-      ),
-      `software WebGL (${gpu.renderer}) — the visual guard needs a real GPU (see #288); it runs on dev machines / GPU CI`
+      !gpu.webgl,
+      'no WebGL in this browser (see #288) — the scene cannot be drawn at all'
     );
 
-    // Real GPU: wait for Walk to activate, then settle the first frames. Hard wait —
+    // Say which renderer drew the frame, so the measured numbers are never read
+    // against the wrong hardware.
+    console.log(`[visual-smoke] WebGL renderer: ${gpu.renderer || 'unknown'}`);
+
+    // Wait for Walk to activate, then settle the first frames. Hard wait —
     // a dark-void check against a scene that never entered walk measures the wrong frame.
     await page.locator('[data-stance]').first().waitFor({ timeout: 25_000 });
     await page.waitForTimeout(8000);
 
-    const shot = await page.locator('canvas').first().screenshot();
+    // CAPTURE ONLY THE STRIP, VIA THE PAGE, WITH A REAL BUDGET (#1376). Under software GL
+    // every capture is a synchronous GPU->CPU readback. `locator('canvas').screenshot()`
+    // reads back the whole viewport-sized canvas and took ~8 s on SwiftShader locally
+    // (10.8 s with the CPU throttled 4x), so on a loaded CI runner it blew through the
+    // 15 s actionTimeout on all three attempts. A `page.screenshot({ clip })` of just the
+    // strip took ~2.7 s (4.0 s at 4x, 6.1 s at 8x). The explicit timeout is the budget
+    // for a readback that is slow by nature; it is not what makes the test pass, the
+    // floors below are.
+    const vp = page.viewportSize();
+    if (!vp) throw new Error('walk pixel guard needs a viewport size');
+    const left = Math.round(vp.width * 0.18);
+    const top = Math.round(vp.height * 0.12);
+    const shot = await page.screenshot({
+      clip: {
+        x: left,
+        y: top,
+        width: vp.width - left,
+        height: Math.round(vp.height * 0.44) - top,
+      },
+      timeout: 90_000,
+    });
 
-    // Downsample to a coarse grid and measure mean luminance + inter-tile
-    // variance. sharp decodes the PNG the compositor produced.
+    // The strip is the upper scene area with no page chrome in it: below the nav, right of
+    // the left HUD column, above the handlebars and the bottom controls. Measuring the whole
+    // frame instead is not an option: the bright, high-contrast DOM chrome alone gave a scene
+    // with every light and the sky removed a mean of 0.14 and a variance of 0.075 — both
+    // above the floors below — so it could not fail on a dead canvas (the same scene reads
+    // 0.004 / 0.0000 over the strip).
     const W = 32;
-    const H = 18;
+    const H = 8;
     const { data, info } = await sharp(shot)
       .resize(W, H, { fit: 'fill' })
       .raw()
