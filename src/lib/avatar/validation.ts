@@ -102,6 +102,7 @@ export function getStorageErrorMessage(error: unknown): string {
     if (
       message.includes('network') ||
       message.includes('fetch') ||
+      message.includes('load failed') || // WebKit's TypeError for a failed fetch
       message.includes('connection')
     ) {
       return 'Network error. Please check your internet connection and try again.';

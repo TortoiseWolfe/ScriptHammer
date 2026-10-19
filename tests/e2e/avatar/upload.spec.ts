@@ -406,44 +406,52 @@ test.describe('Avatar Upload Flow', () => {
     await expect(cropModal).not.toBeVisible();
   });
 
-  // fixme, not a pass (#1261): there is no offline error UI to assert on, so
-  // this test used to run with its only assertion commented out and go green.
-  test.fixme(
-    'Edge Case: Handle network interruption gracefully',
-    async ({ page, context }) => {
-      // Simulate network failure during upload
-      await context.setOffline(true);
-
-      const uploadButton = page.getByRole('button', { name: /upload avatar/i });
-      const fileChooserPromise = page.waitForEvent('filechooser');
-      await uploadButton.click();
-      const fileChooser = await fileChooserPromise;
-
-      const testImagePath = path.join(
-        __dirname,
-        '../fixtures/avatars/valid-500x500.jpg'
+  test('Edge Case: Handle network interruption gracefully', async ({
+    page,
+  }) => {
+    // Abort the storage request rather than going offline, so the rest of the
+    // app (session refresh, profile reads) keeps working.
+    await page
+      .context()
+      .route('**/storage/v1/object/**', (route) =>
+        route.abort('connectionfailed')
       );
-      await fileChooser.setFiles(testImagePath);
 
-      await page.getByRole('button', { name: /save/i }).click();
+    const profilePictureCard = page
+      .locator('.card')
+      .filter({ hasText: 'Profile Picture' });
+    const accountAvatar = profilePictureCard.getByRole('img', {
+      name: /avatar/i,
+    });
 
-      await expect(
-        page.getByText(/network error|upload failed|try again/i)
-      ).toBeVisible({ timeout: 10000 });
+    const uploadButton = page.getByRole('button', { name: /upload avatar/i });
+    const fileChooserPromise = page.waitForEvent('filechooser');
+    await uploadButton.click();
+    const fileChooser = await fileChooserPromise;
+    await fileChooser.setFiles(
+      path.join(__dirname, '../fixtures/avatars/valid-500x500.jpg')
+    );
 
-      // Wait to ensure upload doesn't unexpectedly succeed
-      await page.waitForTimeout(2000);
+    const cropModal = page.getByRole('dialog', { name: /crop/i });
+    await expect(cropModal).toBeVisible({ timeout: 5000 });
+    const saveButton = cropModal.getByRole('button', { name: /save/i });
+    await saveButton.click();
 
-      // Restore network
-      await context.setOffline(false);
+    // The failure is surfaced, the dialog stays open, and Save is usable again
+    await expect(
+      page.getByRole('alert').filter({ hasText: /network error/i })
+    ).toBeVisible({ timeout: 15000 });
+    await expect(cropModal).toBeVisible();
+    await expect(saveButton).toBeEnabled();
 
-      // Verify retry option available
-      const retryButton = page.getByRole('button', { name: /retry/i });
-      if (await retryButton.isVisible().catch(() => false)) {
-        await expect(retryButton).toBeVisible();
-      }
-    }
-  );
+    // Restore the network: the same dialog can now complete the upload
+    await page.context().unroute('**/storage/v1/object/**');
+    await saveButton.click();
+    await expect(cropModal).toBeHidden({ timeout: 30000 });
+    await expect(accountAvatar).toHaveAttribute('src', /avatars/, {
+      timeout: 10000,
+    });
+  });
 
   test('Accessibility: Keyboard navigation', async ({ page }) => {
     // Focus upload button directly (Tab may land on other interactive elements first)
