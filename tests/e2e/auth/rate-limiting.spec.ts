@@ -80,64 +80,68 @@ test.describe('Rate limiting: Supabase Auth refuses, the page says so (#1245)', 
     );
   });
 
-  test('sign-in: a 429 reads as a rate limit, and the form still works after it', async ({
-    page,
-  }) => {
-    await page.goto('/sign-in');
-    await dismissCookieBanner(page);
+  test(
+    'sign-in: a 429 reads as a rate limit, and the form still works after it',
+    { tag: '@local-captcha' },
+    async ({ page }) => {
+      await page.goto('/sign-in');
+      await dismissCookieBanner(page);
 
-    const refusal = refuseWith(TOO_MANY_REQUESTS);
-    await page.route(TOKEN, refusal);
-    await signIn(page);
-    // Exactly the helper's sentence — not Auth's raw one, which names no remedy.
-    await expect(formError(page)).toHaveText(
-      'Too many attempts. Please wait a few minutes, then try again.'
-    );
-    expect(refusal.calls).toBe(1);
+      const refusal = refuseWith(TOO_MANY_REQUESTS);
+      await page.route(TOKEN, refusal);
+      await signIn(page);
+      // Exactly the helper's sentence — not Auth's raw one, which names no remedy.
+      await expect(formError(page)).toHaveText(
+        'Too many attempts. Please wait a few minutes, then try again.'
+      );
+      expect(refusal.calls).toBe(1);
 
-    // CONTROL: the same form, unmocked, reaches Auth and gets its ordinary refusal — so the
-    // message above came from the 429, not from anything else about this page.
-    await page.unroute(TOKEN);
-    await waitForLocalTurnstileToken(page);
-    const [answer] = await Promise.all([
-      page.waitForResponse(
-        (r) => TOKEN(new URL(r.url())) && r.request().method() === 'POST'
-      ),
-      signIn(page),
-    ]);
-    expect(answer.status()).toBe(400);
-    await expect(formError(page)).toHaveText(
-      /^\s*invalid login credentials\s*$/i
-    );
-  });
+      // CONTROL: the same form, unmocked, reaches Auth and gets its ordinary refusal — so the
+      // message above came from the 429, not from anything else about this page.
+      await page.unroute(TOKEN);
+      await waitForLocalTurnstileToken(page);
+      const [answer] = await Promise.all([
+        page.waitForResponse(
+          (r) => TOKEN(new URL(r.url())) && r.request().method() === 'POST'
+        ),
+        signIn(page),
+      ]);
+      expect(answer.status()).toBe(400);
+      await expect(formError(page)).toHaveText(
+        /^\s*invalid login credentials\s*$/i
+      );
+    }
+  );
 
-  test('password reset: an email limit is named without saying which', async ({
-    page,
-  }) => {
-    await page.goto('/forgot-password');
-    await dismissCookieBanner(page);
+  test(
+    'password reset: an email limit is named without saying which',
+    { tag: '@local-captcha' },
+    async ({ page }) => {
+      await page.goto('/forgot-password');
+      await dismissCookieBanner(page);
 
-    const refusal = refuseWith(EMAIL_QUOTA);
-    await page.route(RECOVER, refusal);
-    await page.getByLabel('Email').fill('nobody-1245@example.com');
-    await waitForLocalTurnstileToken(page);
-    await page.getByRole('button', { name: /send reset link/i }).click();
-    await expect(formError(page)).toHaveText(
-      'Too many emails have been sent recently. Check your inbox, or try again later.'
-    );
-    expect(refusal.calls).toBe(1);
+      const refusal = refuseWith(EMAIL_QUOTA);
+      await page.route(RECOVER, refusal);
+      await page.getByLabel('Email').fill('nobody-1245@example.com');
+      await waitForLocalTurnstileToken(page);
+      await page.getByRole('button', { name: /send reset link/i }).click();
+      await expect(formError(page)).toHaveText(
+        'Too many emails have been sent recently. Check your inbox, or try again later.'
+      );
+      expect(refusal.calls).toBe(1);
 
-    // CONTROL: unmocked, Auth accepts the request (it answers 200 for an address it does not
-    // know), and the page says the email is on its way.
-    await page.unroute(RECOVER);
-    await waitForLocalTurnstileToken(page);
-    const [answer] = await Promise.all([
-      page.waitForResponse(
-        (r) => RECOVER(new URL(r.url())) && r.request().method() === 'POST'
-      ),
-      page.getByRole('button', { name: /send reset link/i }).click(),
-    ]);
-    expect(answer.status()).toBe(200);
-    await expect(page.getByText(/password reset email sent/i)).toBeVisible();
-  });
+      // CONTROL: unmocked, Auth accepts the request (it answers 200 for an address it does not
+      // know), and the page says the email is on its way.
+      await page.unroute(RECOVER);
+      await waitForLocalTurnstileToken(page);
+      const [answer] = await Promise.all([
+        page.waitForResponse(
+          (r) => RECOVER(new URL(r.url())) && r.request().method() === 'POST'
+        ),
+        page.getByRole('button', { name: /send reset link/i }).click(),
+      ]);
+      expect(answer.status()).toBe(200);
+      await expect(page.getByText(/password reset email sent/i)).toBeVisible();
+    }
+  );
 });

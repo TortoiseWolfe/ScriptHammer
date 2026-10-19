@@ -752,6 +752,12 @@ the parallel projects `testIgnore` all three. The chain once existed so the lock
 run on a clean IP before sign-up spent the quota. Since #1245 neither of the first two spends any
 real quota, so the order is harmless rather than load-bearing.
 
+The hosted lane (`e2e.yml`) no longer has a rate-limiting job (#1387). The eight tests in those
+three specs that need Cloudflare Turnstile test keys carry `{ tag: '@local-captcha' }`; the hosted
+project is CAPTCHA-protected by design, so there they could only skip. `e2e.yml` selects them out
+with `--grep-invert @local-captcha`, and they run — with 0 skipped, enforced by a gate step — in the
+required `Signup Mailer result` lane (`playwright.signup-mailer.config.ts`, project `captcha-blocked`).
+
 #### For Forked Projects
 
 1. **Increase rate limits** via the Management API if a hosted run is being throttled (see above).
