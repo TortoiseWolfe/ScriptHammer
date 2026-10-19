@@ -19,7 +19,13 @@ import sharp from 'sharp';
  *        --config playwright.visual.config.ts
  */
 
-// Floors calibrated against the daylit walk scene (buildings + sky + ground).
+// Floors calibrated against the daylit walk scene (buildings + sky + ground), measured
+// on SwiftShader (the renderer every CI chromium uses) over the chrome-free scene strip
+// the pixel test crops to. Measured there (#1376):
+//   lit scene            mean 0.424  variance 0.0052
+//   geometry hidden      mean 0.521  variance 0.0001   (sky + fog only; fails variance)
+//   lights+sky removed   mean 0.004  variance 0.0000   (fails mean)
+// Whole-frame, the lights-removed control measured mean 0.14 / variance 0.075 and PASSED.
 // A dark-void regression drives mean luminance toward 0; a flat single-colour
 // frame (no geometry / all fog) drives inter-tile variance toward 0.
 const MIN_MEAN_LUMINANCE = 0.1;
@@ -106,42 +112,60 @@ test.describe('walk scene is visible (not a dark void / empty frame)', () => {
   test('street level renders lit geometry', async ({ page }) => {
     await openWalk(page);
 
-    // Gate on a REAL GPU. Software renderers (SwiftShader / llvmpipe — headless
-    // CI and this dev container) can't render the heavy R3F scene, so a pixel
-    // guard there cannot tell "the app is dark" from "the env can't draw" (the
-    // #288 limitation the twin-contrast specs document). Skip cleanly rather than
-    // false-fail; the guard still runs on real-GPU dev machines / GPU CI runners.
     const gpu = await page.evaluate(() => {
       const c = document.createElement('canvas');
       const gl = (c.getContext('webgl2') ||
         c.getContext('webgl')) as WebGLRenderingContext | null;
       if (!gl) return { webgl: false, renderer: '' };
       const ext = gl.getExtension('WEBGL_debug_renderer_info');
-      const renderer = ext
-        ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL))
-        : '';
-      return { webgl: true, renderer };
+      return {
+        webgl: true,
+        renderer: ext
+          ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL))
+          : '',
+      };
     });
-    test.skip(!gpu.webgl, 'no WebGL (see #288) — the visual guard needs a GPU');
+
+    // GATED ON WEBGL EXISTING, NOT ON IT BEING HARDWARE (#1376). Software GL (SwiftShader,
+    // which is what every CI chromium uses) draws this scene fine; only a browser with no
+    // WebGL at all (headless firefox, #288) cannot, and that measures the runner.
     test.skip(
-      /swiftshader|llvmpipe|softwarerasterizer|swrast|software/i.test(
-        gpu.renderer
-      ),
-      `software WebGL (${gpu.renderer}) — the visual guard needs a real GPU (see #288); it runs on dev machines / GPU CI`
+      !gpu.webgl,
+      'no WebGL in this browser (see #288) — the scene cannot be drawn at all'
     );
 
-    // Real GPU: wait for Walk to activate, then settle the first frames. Hard wait —
+    // Say which renderer drew the frame, so the measured numbers are never read
+    // against the wrong hardware.
+    console.log(`[visual-smoke] WebGL renderer: ${gpu.renderer || 'unknown'}`);
+
+    // Wait for Walk to activate, then settle the first frames. Hard wait —
     // a dark-void check against a scene that never entered walk measures the wrong frame.
     await page.locator('[data-stance]').first().waitFor({ timeout: 25_000 });
     await page.waitForTimeout(8000);
 
+    const W = 32;
+    const H = 8;
     const shot = await page.locator('canvas').first().screenshot();
 
-    // Downsample to a coarse grid and measure mean luminance + inter-tile
-    // variance. sharp decodes the PNG the compositor produced.
-    const W = 32;
-    const H = 18;
+    // MEASURE THE SCENE, NOT THE PAGE (#1376). The canvas fills the viewport and the
+    // screenshot is the composited frame, so it includes the nav, the HUD panels, the
+    // footer and the player's handlebars. Those are bright, high-contrast DOM, and they
+    // alone gave a scene with every light and the sky removed a mean of 0.14 and a variance
+    // of 0.075 — both above the floors below — so a whole-frame measurement could not fail
+    // on a dead canvas (the same scene reads 0.004 / 0.0000 over the strip). This strip is the upper scene area with no chrome in it: below the nav,
+    // right of the left HUD column, above the handlebars and the bottom controls.
+    const meta = await sharp(shot).metadata();
+    const fw = meta.width ?? 0;
+    const fh = meta.height ?? 0;
+    const left = Math.round(fw * 0.18);
+    const top = Math.round(fh * 0.12);
     const { data, info } = await sharp(shot)
+      .extract({
+        left,
+        top,
+        width: fw - left,
+        height: Math.round(fh * 0.44) - top,
+      })
       .resize(W, H, { fit: 'fill' })
       .raw()
       .toBuffer({ resolveWithObject: true });
