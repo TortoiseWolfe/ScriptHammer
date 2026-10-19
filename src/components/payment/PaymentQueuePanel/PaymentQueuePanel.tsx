@@ -50,8 +50,10 @@ export const PaymentQueuePanel: React.FC<PaymentQueuePanelProps> = ({
 
   const refresh = useCallback(async () => {
     try {
+      // A drained payment stays in IndexedDB as status 'completed' (the base
+      // queue keeps it); it is no longer queued, so the panel does not list it.
       const queue = await paymentQueue.getQueue();
-      setItems(queue);
+      setItems(queue.filter((i) => i.status !== 'completed'));
     } catch {
       // Non-critical; leave the last-known list.
     }
@@ -78,6 +80,9 @@ export const PaymentQueuePanel: React.FC<PaymentQueuePanelProps> = ({
       // Reset failed items to pending, then drain the queue.
       await paymentQueue.retryFailed();
       await paymentQueue.sync();
+      // Drop the rows the drain just finished so their payment data does not
+      // sit in the browser after it has reached the server.
+      await paymentQueue.clearCompleted();
     } catch (err) {
       setActionError(
         err instanceof Error ? err.message : 'Failed to retry queued payments'
