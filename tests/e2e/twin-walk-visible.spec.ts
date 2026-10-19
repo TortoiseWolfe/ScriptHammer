@@ -54,8 +54,13 @@ async function openWalk(page: import('@playwright/test').Page) {
 // The real cost is genuine, not padding: the scene downloads the baked city, builds its
 // meshes and bakes the collision BVH before walk can engage — ~15s in the dev container, and
 // slower on a CI runner that is simultaneously hosting a full local Supabase stack. The pixel
-// test below is budgeted too (a 25s wait plus an 8s settle plus a screenshot already exceeds
-// 30s on its own, so it could only ever have passed by skipping).
+// test below is budgeted too (#1395): it waits for walk with the same budget as the
+// reachability test, then settles 8s and captures with a 90s readback budget.
+//
+// ONE BUDGET FOR REACHING WALK, SHARED BY BOTH TESTS (#1395). The pixel test once waited
+// only 25s while the reachability test allowed 120s. On main at 6187feab walk took ~34s on a
+// loaded runner: the reachability test passed and the pixel test failed all three tries.
+const WALK_ENGAGE_MS = 120_000;
 test.describe.configure({ timeout: 150_000 });
 
 test.describe('walk scene is visible (not a dark void / empty frame)', () => {
@@ -106,10 +111,12 @@ test.describe('walk scene is visible (not a dark void / empty frame)', () => {
       page.locator('[data-stance]').first(),
       'the ?walk deep link never reached walk mode — the stance badge only renders ' +
         'while mode === "walk", so the player is stuck in the orbit shot (#723)'
-    ).toBeVisible({ timeout: 120_000 });
+    ).toBeVisible({ timeout: WALK_ENGAGE_MS });
   });
 
   test('street level renders lit geometry', async ({ page }) => {
+    // open (≤30s) + walk (WALK_ENGAGE_MS) + 8s settle + 90s capture, with headroom.
+    test.setTimeout(WALK_ENGAGE_MS + 160_000);
     await openWalk(page);
 
     const gpu = await page.evaluate(() => {
@@ -140,7 +147,10 @@ test.describe('walk scene is visible (not a dark void / empty frame)', () => {
 
     // Wait for Walk to activate, then settle the first frames. Hard wait —
     // a dark-void check against a scene that never entered walk measures the wrong frame.
-    await page.locator('[data-stance]').first().waitFor({ timeout: 25_000 });
+    await expect(
+      page.locator('[data-stance]').first(),
+      'walk mode never engaged, so there is no street-level frame to measure (#723)'
+    ).toBeVisible({ timeout: WALK_ENGAGE_MS });
     await page.waitForTimeout(8000);
 
     // CAPTURE ONLY THE STRIP, VIA THE PAGE, WITH A REAL BUDGET (#1376). Under software GL

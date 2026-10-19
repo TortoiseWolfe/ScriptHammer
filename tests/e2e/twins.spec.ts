@@ -159,6 +159,12 @@ test.describe('/twins/[slug]?diorama — the R3F exhibit (opt-in since #292)', (
     expect(real, `console errors on ?ortho:\n${real.join('\n')}`).toEqual([]);
   });
 
+  // Budgets for the compare-mode dock on software GL (#1395); see the test below.
+  // DOCK_SETUP_MS covers the ?ortho navigation (navigationTimeout 60 s) and the first
+  // render; DOCK_ACTION_MS is one click or the state change it causes.
+  const DOCK_SETUP_MS = 90_000;
+  const DOCK_ACTION_MS = 60_000;
+
   test('Top-down compare mode (#233): dock button + ?ortho render without errors', async ({
     page,
   }) => {
@@ -169,9 +175,17 @@ test.describe('/twins/[slug]?diorama — the R3F exhibit (opt-in since #292)', (
     // (navigationTimeout), which alone can exceed the default 30s TEST cap on a
     // cold CI chromium runner — the exact cause of the chromium-gen 6/6 flake
     // (timed out at the 30s wall while the UI itself rendered correctly). Triple
-    // the budget so the wall-clock matches the route's real cost. `test.slow()`
-    // is the idiomatic Playwright marker, used across the rest of this suite.
-    test.slow();
+    // the budget so the wall-clock matches the route's real cost.
+    //
+    // THE DOCK CLICKS GET THEIR OWN BUDGET ON SOFTWARE GL (#1395). CI has no GPU, so
+    // chromium draws through SwiftShader, and compositing a WebGL canvas there is a
+    // synchronous GPU->CPU readback that holds the main thread for seconds (#716 traced
+    // ~10.7 s in GLES2::ReadPixels). A click cannot be delivered while that runs. On main
+    // at 1095509b both the ⋯ and the Miniature clicks hit the 15 s actionTimeout on all
+    // three tries while the button was visible, enabled and stable. Only these four
+    // interactions get the longer limit; the suite-wide actionTimeout stays 15 s, so no
+    // other test goes blind to a slow control.
+    test.setTimeout(DOCK_SETUP_MS + 4 * DOCK_ACTION_MS + 60_000);
     const errors: string[] = [];
     page.on('console', (msg) => {
       if (msg.type() === 'error')
@@ -203,12 +217,16 @@ test.describe('/twins/[slug]?diorama — the R3F exhibit (opt-in since #292)', (
     const overflow = page.getByRole('button', { name: 'More controls' });
     const openOverflow = async () => {
       if ((await overflow.getAttribute('aria-expanded')) !== 'true') {
-        await overflow.click();
+        await overflow.click({ timeout: DOCK_ACTION_MS });
       }
-      await expect(overflow).toHaveAttribute('aria-expanded', 'true');
+      await expect(overflow).toHaveAttribute('aria-expanded', 'true', {
+        timeout: DOCK_ACTION_MS,
+      });
     };
     await openOverflow();
-    await expect(page.getByRole('button', { name: 'Top-down' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Top-down' })).toBeVisible({
+      timeout: DOCK_ACTION_MS,
+    });
     await expect(page.locator('canvas')).toBeAttached({ timeout: 10000 });
     // Round-trip through the dock: leave and re-enter Top-down. This drives
     // the ortho render branch (frustum, colorspace flip, fog restore) and the
@@ -216,10 +234,16 @@ test.describe('/twins/[slug]?diorama — the R3F exhibit (opt-in since #292)', (
     // as console errors below. Miniature is in the primary bar; clicking it
     // also dismisses the overflow (click-outside), so re-enter Top-down by
     // reopening the overflow, waited on its expanded state.
-    await page.getByRole('button', { name: 'Miniature' }).click();
-    await expect(overflow).toHaveAttribute('aria-expanded', 'false');
+    await page
+      .getByRole('button', { name: 'Miniature' })
+      .click({ timeout: DOCK_ACTION_MS });
+    await expect(overflow).toHaveAttribute('aria-expanded', 'false', {
+      timeout: DOCK_ACTION_MS,
+    });
     await openOverflow();
-    await page.getByRole('button', { name: 'Top-down' }).click();
+    await page
+      .getByRole('button', { name: 'Top-down' })
+      .click({ timeout: DOCK_ACTION_MS });
     await page.waitForTimeout(1500);
     const relevant = errors.filter((e) => {
       const lower = e.toLowerCase();
