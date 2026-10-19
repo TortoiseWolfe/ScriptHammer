@@ -14,7 +14,10 @@
 
 import { test, expect, type Page, type Route } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
-import { skipIfBackendCaptchaProtected } from '../utils/captcha-guard';
+import {
+  skipIfBackendCaptchaProtected,
+  waitForLocalTurnstileToken,
+} from '../utils/captcha-guard';
 
 // What GoTrue actually sends, read from the local stack on 2026-09-24: an API-version header,
 // a wildcard CORS origin, and `{code, message}`. The CORS header is not decoration — the page and
@@ -65,12 +68,13 @@ const formError = (page: Page) =>
 async function signIn(page: Page) {
   await page.getByLabel('Email').fill('nobody-1245@example.com');
   await page.getByLabel('Password', { exact: true }).fill('WrongPassword123!');
+  await waitForLocalTurnstileToken(page);
   await page.getByRole('button', { name: 'Sign In' }).click();
 }
 
 test.describe('Rate limiting: Supabase Auth refuses, the page says so (#1245)', () => {
   test.beforeEach(async () => {
-    // The forms cannot be submitted without a Turnstile token where captcha is on.
+    // The local signup-mailer lane supplies test-key tokens; protected backends elsewhere skip.
     await skipIfBackendCaptchaProtected(
       'What sign-in and reset show when Supabase Auth answers 429'
     );
@@ -94,6 +98,7 @@ test.describe('Rate limiting: Supabase Auth refuses, the page says so (#1245)', 
     // CONTROL: the same form, unmocked, reaches Auth and gets its ordinary refusal — so the
     // message above came from the 429, not from anything else about this page.
     await page.unroute(TOKEN);
+    await waitForLocalTurnstileToken(page);
     const [answer] = await Promise.all([
       page.waitForResponse(
         (r) => TOKEN(new URL(r.url())) && r.request().method() === 'POST'
@@ -115,6 +120,7 @@ test.describe('Rate limiting: Supabase Auth refuses, the page says so (#1245)', 
     const refusal = refuseWith(EMAIL_QUOTA);
     await page.route(RECOVER, refusal);
     await page.getByLabel('Email').fill('nobody-1245@example.com');
+    await waitForLocalTurnstileToken(page);
     await page.getByRole('button', { name: /send reset link/i }).click();
     await expect(formError(page)).toHaveText(
       'Too many emails have been sent recently. Check your inbox, or try again later.'
@@ -124,6 +130,7 @@ test.describe('Rate limiting: Supabase Auth refuses, the page says so (#1245)', 
     // CONTROL: unmocked, Auth accepts the request (it answers 200 for an address it does not
     // know), and the page says the email is on its way.
     await page.unroute(RECOVER);
+    await waitForLocalTurnstileToken(page);
     const [answer] = await Promise.all([
       page.waitForResponse(
         (r) => RECOVER(new URL(r.url())) && r.request().method() === 'POST'

@@ -5,17 +5,16 @@
  *
  * `SECURITY_CAPTCHA_ENABLED` is global to Supabase Auth, so the password grant
  * is refused with `captcha_failed` unless a Turnstile token is attached. A
- * token can only come from Cloudflare solving a challenge, and Turnstile exists
- * precisely to withhold tokens from automated browsers. If Playwright could
- * satisfy it, it would not be doing its job — so this is not a gap to engineer
- * around, it is the control working.
+ * production token can only come from Cloudflare solving a challenge, and
+ * Turnstile exists precisely to withhold tokens from automated browsers. The
+ * local signup-mailer lane is the exception: it uses Cloudflare's published
+ * always-pass test key pair to exercise the same widget and server verification
+ * without touching production.
  *
- * The E2E build compounds this: `NEXT_PUBLIC_CAPTCHA_SITE_KEY` is passed only
- * by `deploy.yml`, so E2E builds render no widget at all. The form therefore
- * submits token-less and the server refuses it. The failure is not even a
- * captcha prompt the test could see — it surfaces as a raw
- * `captcha protection: request disallowed` string where the spec expected
- * `invalid credentials`.
+ * Hosted E2E builds omit `NEXT_PUBLIC_CAPTCHA_SITE_KEY`, so those forms submit
+ * token-less and the protected cloud backend refuses them. The local
+ * signup-mailer build instead renders the test widget and uses the matching
+ * local GoTrue secret.
  *
  * ## Why this PROBES instead of hard-coding a skip
  *
@@ -23,14 +22,43 @@
  * turned off, and nothing would notice — the same silent-coverage-loss trap
  * that let the missing CAPTCHA go unseen in the first place. Asking the backend
  * what is actually true means these specs resume automatically wherever captcha
- * is disabled, which is exactly the case for the local-Supabase runs
- * (`signup-mailer.yml`) where real-form auth coverage belongs.
+ * is disabled, and the explicit local Turnstile test configuration lets them
+ * exercise the protected path in `signup-mailer.yml`.
  *
  * @module tests/e2e/utils/captcha-guard
  */
-import { test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 let cached: Promise<boolean> | null = null;
+
+/**
+ * Limit the test-key exception to the local signup-mailer stack. The explicit
+ * flag alone is insufficient: never submit against a remote backend or a build
+ * that did not render the test widget.
+ */
+export function isLocalTurnstileTestEnabled(): boolean {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+  return (
+    process.env.E2E_LOCAL_TURNSTILE_TESTS === 'true' &&
+    Boolean(process.env.NEXT_PUBLIC_CAPTCHA_SITE_KEY?.trim()) &&
+    /^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?\/?$/.test(url)
+  );
+}
+
+/**
+ * Wait until Cloudflare's published local test key has produced its dummy
+ * token. The widget loads asynchronously; submitting before it calls onSuccess
+ * only exercises the client-side "verification required" guard.
+ */
+export async function waitForLocalTurnstileToken(page: Page): Promise<void> {
+  if (!isLocalTurnstileTestEnabled()) return;
+
+  await expect(page.getByTestId('captcha-widget')).toBeVisible();
+  await expect(page.locator('input[name="cf-turnstile-response"]')).toHaveValue(
+    /\S/,
+    { timeout: 30_000 }
+  );
+}
 
 /**
  * Ask the live backend whether the password grant requires a captcha token.
@@ -69,8 +97,8 @@ export function isBackendCaptchaProtected(): Promise<boolean> {
 }
 
 /**
- * Skip the current test when the backend requires a captcha token, because the
- * spec signs in through the real form and no token can be obtained in CI.
+ * Skip the current test when the backend requires a captcha token, except when
+ * the local stack is using the explicit published Turnstile test-key pair.
  *
  * @param reason - What this spec covers, named so a skipped run still says what
  * is no longer being verified.
@@ -80,10 +108,9 @@ export async function skipIfBackendCaptchaProtected(
 ): Promise<void> {
   const protectedBackend = await isBackendCaptchaProtected();
   test.skip(
-    protectedBackend,
+    protectedBackend && !isLocalTurnstileTestEnabled(),
     `${reason} — the backend is CAPTCHA-protected (#353) and the real sign-in ` +
-      `form cannot be submitted without a Turnstile token, which Cloudflare ` +
-      `withholds from automation by design. Coverage belongs on a local ` +
-      `Supabase run where captcha is off (see signup-mailer.yml).`
+      `form cannot be submitted with production keys in automation. Use the ` +
+      `local signup-mailer run with Cloudflare's published Turnstile test keys.`
   );
 }

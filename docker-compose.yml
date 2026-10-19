@@ -308,6 +308,11 @@ services:
       GOTRUE_SMTP_SENDER_NAME: Supabase
       GOTRUE_EXTERNAL_PHONE_ENABLED: 'false'
       GOTRUE_SMS_AUTOCONFIRM: 'true'
+      # CI may enable CAPTCHA with Cloudflare's published test keys for the
+      # local signup-mailer E2E. Defaults preserve the normal local stack.
+      GOTRUE_SECURITY_CAPTCHA_ENABLED: ${GOTRUE_SECURITY_CAPTCHA_ENABLED:-false}
+      GOTRUE_SECURITY_CAPTCHA_PROVIDER: ${GOTRUE_SECURITY_CAPTCHA_PROVIDER:-turnstile}
+      GOTRUE_SECURITY_CAPTCHA_SECRET: ${GOTRUE_SECURITY_CAPTCHA_SECRET:-}
     healthcheck:
       test:
         [

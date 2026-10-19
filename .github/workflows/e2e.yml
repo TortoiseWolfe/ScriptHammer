@@ -350,10 +350,10 @@ jobs:
           # own inline style — so a gate must measure the element, not wait for a
           # frame.
           #
-          # Deliberately NOT set for signup-mailer.yml (its own build; it drives
-          # real auth forms against local Supabase where captcha is off) nor for
-          # the basePath job below (its own build, and the `basepath` project
-          # does not measure this).
+          # signup-mailer.yml sets the matching published test secret on its
+          # isolated local stack, allowing real protected-form submissions
+          # without reaching the cloud sender. The basePath job below uses its
+          # own build, and the `basepath` project does not measure this.
           NEXT_PUBLIC_CAPTCHA_SITE_KEY: 1x00000000000000000000AA
 
       - name: Upload build artifacts

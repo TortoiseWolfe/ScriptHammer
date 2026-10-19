@@ -11,10 +11,10 @@
 // the form answered the sixth wrong password with a lockout instead of asking Auth, and the
 // limiter RPCs let an anonymous caller write that lockout directly.
 //
-// Runs where the real form can be submitted without a Turnstile token — the local stack in
-// signup-mailer.yml — and skips only where captcha protects the backend. Anything else that
-// stops it from running is an error, not a skip: that lane has no assertion-count gate, so a
-// skipped security test would report green.
+// Runs in signup-mailer.yml against the local stack, where the published Turnstile test-key pair
+// supplies tokens to the real form. Outside that explicit local configuration, the guard skips
+// only where captcha protects the backend. Anything else that stops it from running is an error,
+// not a skip: that lane has no assertion-count gate, so a skipped security test would report green.
 
 import { randomUUID } from 'node:crypto';
 import { test, expect, type Page } from '@playwright/test';
@@ -25,7 +25,10 @@ import {
   dismissCookieBanner,
   isAdminClientAvailable,
 } from '../utils/test-user-factory';
-import { skipIfBackendCaptchaProtected } from '../utils/captcha-guard';
+import {
+  skipIfBackendCaptchaProtected,
+  waitForLocalTurnstileToken,
+} from '../utils/captcha-guard';
 
 const WRONG_PASSWORD = 'NotTheirPassword123!';
 
@@ -49,6 +52,7 @@ function victimEmail(): string {
 async function submit(page: Page, email: string, password: string) {
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
+  await waitForLocalTurnstileToken(page);
   const [response] = await Promise.all([
     page.waitForResponse(
       (r) =>

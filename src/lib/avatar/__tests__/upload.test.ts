@@ -31,7 +31,12 @@ const mockDbUpdate = vi.fn().mockReturnValue({
 // #1068: the auth-metadata mirror is best-effort now, so it can legitimately be
 // missing and `user_profiles` is consulted instead. Resolves to no prior avatar
 // by default; individual tests override it.
-const mockDbMaybeSingle = vi.fn(async () => ({ data: null, error: null }));
+const mockDbMaybeSingle = vi.fn<
+  () => Promise<{
+    data: { avatar_url?: string | null } | null;
+    error: { message: string } | null;
+  }>
+>(async () => ({ data: null, error: null }));
 const mockDbSelect = vi.fn(() => ({
   eq: vi.fn(() => ({ maybeSingle: mockDbMaybeSingle })),
 }));
@@ -223,37 +228,68 @@ describe('removeAvatar', () => {
     expect(result.error).toBeUndefined();
   });
 
+  it('removes the profile avatar when the auth-metadata mirror is missing', async () => {
+    const avatarUrl =
+      'https://example.com/storage/v1/object/public/avatars/user-123/123.webp';
+    mockGetSession.mockResolvedValue({
+      data: {
+        session: { user: { id: 'user-123', user_metadata: {} } },
+      },
+      error: null,
+    });
+    mockDbMaybeSingle.mockResolvedValue({
+      data: { avatar_url: avatarUrl },
+      error: null,
+    });
+    mockDbUpdate.mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ error: null }),
+    });
+    mockUpdateUser.mockResolvedValue({
+      data: { user: null },
+      error: null,
+    });
+    mockRemove.mockResolvedValue({ data: null, error: null });
+
+    const result = await removeAvatar();
+
+    expect(result.error).toBeUndefined();
+    expect(mockDbUpdate).toHaveBeenCalledWith({ avatar_url: null });
+    expect(mockRemove).toHaveBeenCalledWith(['user-123/123.webp']);
+  });
+
   it('should handle profile update errors', async () => {
+    const avatarUrl = 'https://example.com/avatar.webp';
     mockGetSession.mockResolvedValue({
       data: {
         session: {
-          user: {
-            id: 'user-123',
-            user_metadata: { avatar_url: 'https://example.com/avatar.webp' },
-          },
+          user: { id: 'user-123', user_metadata: {} },
         },
       },
       error: null,
     });
-
-    mockUpdateUser.mockResolvedValue({
-      data: { user: null },
-      error: {
-        message: 'Update failed',
-        name: 'AuthError',
-        status: 500,
-      },
+    mockDbMaybeSingle.mockResolvedValue({
+      data: { avatar_url: avatarUrl },
+      error: null,
+    });
+    mockDbUpdate.mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ error: { message: 'Update failed' } }),
     });
 
     const result = await removeAvatar();
 
     expect(result.error).toContain('Failed to remove avatar');
+    expect(mockUpdateUser).not.toHaveBeenCalled();
+    expect(mockRemove).not.toHaveBeenCalled();
   });
 });
 
 describe('uploadWithRetry', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockDbMaybeSingle.mockResolvedValue({ data: null, error: null });
+    mockDbUpdate.mockReturnValue({
+      eq: vi.fn().mockResolvedValue({ data: null, error: null }),
+    });
   });
 
   it('should retry failed uploads', async () => {

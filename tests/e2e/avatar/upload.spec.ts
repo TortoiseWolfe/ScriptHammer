@@ -20,17 +20,16 @@ import { dismissCookieBanner } from '../utils/test-user-factory';
 
 // Auth comes from storageState (setup project) - no sign-in needed
 test.describe('Avatar Upload Flow', () => {
-  // Avatar upload requires Supabase Storage — Save button doesn't dismiss modal in CI
-  // because the upload to storage fails silently without a configured bucket
-  test.skip(
-    !!process.env.CI,
-    'Avatar upload requires Supabase Storage — skipped in CI'
-  );
   test.beforeEach(async ({ page }) => {
     // Navigate to Account Settings (already authenticated via storageState)
     await page.goto('/account');
     await page.waitForLoadState('networkidle');
     await dismissCookieBanner(page);
+    await expect(
+      page
+        .getByRole('navigation')
+        .getByRole('button', { name: 'User account menu' })
+    ).toBeVisible({ timeout: 15000 });
   });
 
   test.afterEach(async ({ page }) => {
@@ -96,11 +95,7 @@ test.describe('Avatar Upload Flow', () => {
       const errorText = await errorMessage
         .textContent()
         .catch(() => 'Unknown error');
-      test.skip(
-        true,
-        `Upload failed (Supabase storage may not be configured): ${errorText}`
-      );
-      return;
+      throw new Error(`Avatar upload failed: ${errorText}`);
     }
 
     // Verify upload succeeded by checking avatar URL changed
@@ -338,19 +333,8 @@ test.describe('Avatar Upload Flow', () => {
     const accountAvatarSrc = await accountAvatar.getAttribute('src');
     expect(accountAvatarSrc).toMatch(/avatars/);
 
-    // Verify avatar in Navigation (may be in dropdown or directly visible)
-    const navAvatar = page
-      .locator('nav, header')
-      .getByRole('img', { name: /avatar/i })
-      .first();
-    await expect(navAvatar).toBeVisible();
-    const navAvatarSrc = await navAvatar.getAttribute('src');
-    expect(navAvatarSrc).toMatch(/avatars/);
-
-    // Note: Nav avatar may not match account avatar immediately due to caching
-    // This is a known limitation (Feature 038 FR-001). Reload verifies sync.
-
-    // Verify both sync after page reload
+    // The account page updates immediately; the shared navigation hook refreshes
+    // its profile on page load, so reload before asserting the two views agree.
     await page.reload();
     await page.waitForLoadState('networkidle');
     await dismissCookieBanner(page);
@@ -424,42 +408,42 @@ test.describe('Avatar Upload Flow', () => {
 
   // fixme, not a pass (#1261): there is no offline error UI to assert on, so
   // this test used to run with its only assertion commented out and go green.
-  test.fixme('Edge Case: Handle network interruption gracefully', async ({
-    page,
-    context,
-  }) => {
-    // Simulate network failure during upload
-    await context.setOffline(true);
+  test.fixme(
+    'Edge Case: Handle network interruption gracefully',
+    async ({ page, context }) => {
+      // Simulate network failure during upload
+      await context.setOffline(true);
 
-    const uploadButton = page.getByRole('button', { name: /upload avatar/i });
-    const fileChooserPromise = page.waitForEvent('filechooser');
-    await uploadButton.click();
-    const fileChooser = await fileChooserPromise;
+      const uploadButton = page.getByRole('button', { name: /upload avatar/i });
+      const fileChooserPromise = page.waitForEvent('filechooser');
+      await uploadButton.click();
+      const fileChooser = await fileChooserPromise;
 
-    const testImagePath = path.join(
-      __dirname,
-      '../fixtures/avatars/valid-500x500.jpg'
-    );
-    await fileChooser.setFiles(testImagePath);
+      const testImagePath = path.join(
+        __dirname,
+        '../fixtures/avatars/valid-500x500.jpg'
+      );
+      await fileChooser.setFiles(testImagePath);
 
-    await page.getByRole('button', { name: /save/i }).click();
+      await page.getByRole('button', { name: /save/i }).click();
 
-    await expect(
-      page.getByText(/network error|upload failed|try again/i)
-    ).toBeVisible({ timeout: 10000 });
+      await expect(
+        page.getByText(/network error|upload failed|try again/i)
+      ).toBeVisible({ timeout: 10000 });
 
-    // Wait to ensure upload doesn't unexpectedly succeed
-    await page.waitForTimeout(2000);
+      // Wait to ensure upload doesn't unexpectedly succeed
+      await page.waitForTimeout(2000);
 
-    // Restore network
-    await context.setOffline(false);
+      // Restore network
+      await context.setOffline(false);
 
-    // Verify retry option available
-    const retryButton = page.getByRole('button', { name: /retry/i });
-    if (await retryButton.isVisible().catch(() => false)) {
-      await expect(retryButton).toBeVisible();
+      // Verify retry option available
+      const retryButton = page.getByRole('button', { name: /retry/i });
+      if (await retryButton.isVisible().catch(() => false)) {
+        await expect(retryButton).toBeVisible();
+      }
     }
-  });
+  );
 
   test('Accessibility: Keyboard navigation', async ({ page }) => {
     // Focus upload button directly (Tab may land on other interactive elements first)

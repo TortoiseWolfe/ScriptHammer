@@ -170,26 +170,45 @@ export async function removeAvatar(): Promise<RemoveAvatarResult> {
     }
 
     const user = session.user;
-    const avatarUrl = user.user_metadata?.avatar_url as string | undefined;
+    const { data: profile, error: profileReadError } = await supabase
+      .from('user_profiles')
+      .select('avatar_url')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (profileReadError) {
+      return {
+        error: `Failed to remove avatar: ${profileReadError.message}`,
+      };
+    }
+
+    const avatarUrl =
+      profile?.avatar_url ||
+      (user.user_metadata?.avatar_url as string | undefined);
 
     if (!avatarUrl) {
       return {}; // No avatar to remove
     }
 
-    // Step 1: Clear avatar URL from profile (both auth metadata and user_profiles table)
-    const { error: updateError } = await supabase.auth.updateUser({
-      data: { avatar_url: null },
-    });
-
-    if (updateError) {
-      return { error: `Failed to remove avatar: ${updateError.message}` };
-    }
-
-    // Also clear from user_profiles table
-    await supabase
+    // user_profiles is the source of truth; auth metadata is only a mirror.
+    const { error: profileError } = await supabase
       .from('user_profiles')
       .update({ avatar_url: null })
       .eq('id', user.id);
+
+    if (profileError) {
+      return { error: `Failed to remove avatar: ${profileError.message}` };
+    }
+
+    const { error: mirrorError } = await supabase.auth.updateUser({
+      data: { avatar_url: null },
+    });
+    if (mirrorError) {
+      console.warn(
+        `[avatar] auth metadata mirror not cleared: ${mirrorError.message}. ` +
+          'The profile avatar is removed; only the metadata copy remains.'
+      );
+    }
 
     // Step 2: Delete file from storage
     const path = extractPathFromUrl(avatarUrl);

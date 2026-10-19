@@ -96,6 +96,12 @@ jobs:
           # Flip off auto-confirm so GoTrue emits a REAL confirmation email into
           # Mailpit (the whole point). Default stays 'true' for normal dev.
           GOTRUE_MAILER_AUTOCONFIRM: 'false'
+          # Published Cloudflare test keys: the visible widget always passes,
+          # and GoTrue validates its dummy token with the matching test secret.
+          # These are public testing values, not production credentials.
+          GOTRUE_SECURITY_CAPTCHA_ENABLED: 'true'
+          GOTRUE_SECURITY_CAPTCHA_PROVIDER: turnstile
+          GOTRUE_SECURITY_CAPTCHA_SECRET: 1x0000000000000000000000000000000AA
         run: |
           docker compose --profile supabase up -d --build \
             supabase-db supabase-kong supabase-auth supabase-rest supabase-mail
@@ -145,6 +151,9 @@ jobs:
           DISABLE_BASE_PATH: 'true'
           # NEXT_PUBLIC_SUPABASE_URL / ANON_KEY are inlined at build time — they
           # come from $GITHUB_ENV (local stack + demo anon key) set above.
+          # Match GoTrue's test secret above so the real widget/form flow works
+          # without exposing real CAPTCHA credentials or sending real mail.
+          NEXT_PUBLIC_CAPTCHA_SITE_KEY: 1x00000000000000000000AA
 
       # No install step (#829): the browsers ship in the image.
 
@@ -162,10 +171,13 @@ jobs:
           # its own victim through the admin API and deletes it after (#1245) —
           # but the sign-up helpers reject a blank value or @example.com, and
           # the gmail branch keeps the generated addresses plus-routed.
-          # Nothing leaves the machine: local Supabase delivers to Mailpit, so
-          # there is no bounce risk (#361).
+          # Auth mail stays in local Mailpit; only Cloudflare's published test
+          # keys are used for Turnstile verification, so no real mail or CAPTCHA
+          # credentials leave the runner (#361).
           TEST_USER_PRIMARY_EMAIL: scripthammer.e2e+local@gmail.com
           TEST_USER_PRIMARY_PASSWORD: LocalStackTestPassword123!
+          NEXT_PUBLIC_CAPTCHA_SITE_KEY: 1x00000000000000000000AA
+          E2E_LOCAL_TURNSTILE_TESTS: 'true'
         run: scripts/ci/playwright-in-container.sh test --config playwright.signup-mailer.config.ts
 
       - name: Dump logs on failure

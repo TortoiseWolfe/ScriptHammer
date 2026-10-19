@@ -1149,17 +1149,16 @@ export async function performSignIn(
 ): Promise<{ success: boolean; error?: string }> {
   const { rememberMe = false, timeout = 30000 } = options; // Increased from 15s to 30s for CI
 
-  // When the backend requires a captcha token, the form cannot be submitted
-  // from automation at all — Cloudflare withholds tokens from automated
-  // browsers by design (#353). Authenticate by injecting a server-minted
-  // session so callers that merely need to BE signed in keep working.
+  // For protected backends this helper injects a server-minted session rather
+  // than trying to solve the production challenge. Callers that merely need to
+  // BE signed in keep working; form-focused coverage uses the local test-key
+  // configuration through captcha-guard.
   //
   // Credentials are still verified: signInAsInjectable does a real password
   // check, so a wrong password still returns success:false here. What this
-  // branch stops proving is that the FORM works — that coverage lives on the
-  // local-Supabase run where captcha is off (signup-mailer.yml). Specs whose
-  // subject IS the form (brute-force, rate-limiting) do not rely on this; they
-  // skip explicitly via captcha-guard, so nothing passes for the wrong reason.
+  // branch stops proving is that the FORM works — that coverage lives in the
+  // local signup-mailer run, which uses Turnstile's published test keys.
+  // Form-focused specs use captcha-guard and submit through the widget there.
   //
   // Doing this inside the helper rather than at each call site also stops the
   // repeated form submissions that were tripping the 5-attempt lockout on the
