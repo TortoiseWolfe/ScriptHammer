@@ -123,13 +123,6 @@ test.describe('PayPal Subscription Creation Flow', () => {
     test.skip(true, 'Cancel drives the cancel-subscription Edge Function');
   });
 
-  test.skip('should handle failed payment retry logic', async ({ page }) => {
-    // The past_due/grace row can now be seeded (seedIsolatedSubscription), but
-    // the retry itself re-charges through the provider, which needs live PayPal
-    // sandbox creds CI can't have. That provider leg is the remaining blocker.
-    test.skip(true, 'Retry re-charges via PayPal — needs live sandbox creds');
-  });
-
   test('should show grace period warning', async ({ browser }) => {
     // Seed a grace_period subscription (expires in 5 days) for a throwaway user,
     // open the payment hub's Subscriptions tab AS that user, and assert the

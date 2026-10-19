@@ -129,13 +129,6 @@ test.describe('Stripe One-Time Payment Flow', () => {
     );
   });
 
-  test.skip('should display error for declined card', async ({ page }) => {
-    test.skip(
-      !isStripeConfigured,
-      'Stripe API keys not configured - skipping Checkout flow test'
-    );
-  });
-
   test('should enforce payment consent requirement', async ({ page }) => {
     // The GDPR consent section should be visible first
     await expect(
@@ -191,13 +184,5 @@ test.describe('Stripe One-Time Payment Flow', () => {
     const paypalTab = page.getByRole('tab', { name: /paypal/i }).first();
     await paypalTab.click();
     await expect(paypalTab).toHaveClass(/tab-active/);
-  });
-
-  test.skip('should show offline queue indicator when offline', async ({
-    page,
-    context,
-  }) => {
-    // Skip: Offline queue feature may not be fully implemented
-    test.skip(true, 'Offline queue feature not yet implemented');
   });
 });
