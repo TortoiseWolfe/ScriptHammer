@@ -1,11 +1,13 @@
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, posix } from 'node:path';
 import { unified } from 'unified';
 import remarkParse from 'remark-parse';
 import remarkGfm from 'remark-gfm';
 import remarkHtml from 'remark-html';
 import { rehype } from 'rehype';
 import rehypeSlug from 'rehype-slug';
+import { DOCS } from '@/lib/docs/registry';
+import { getInternalUrl, projectConfig } from '@/config/project.config';
 
 /**
  * Markdown → HTML for `/docs` (#380).
@@ -60,7 +62,8 @@ export async function renderDoc(file: string): Promise<RenderedDoc> {
       .process(bare)
   );
 
-  return { html: withIds, headings: headingsFrom(withIds) };
+  const html = rewriteRepoLinks(withIds, file);
+  return { html, headings: headingsFrom(html) };
 }
 
 /**
@@ -81,4 +84,52 @@ function headingsFrom(html: string): RenderedDoc['headings'] {
     if (text) out.push({ level: Number(m[1]), id: m[2], text });
   }
   return out;
+}
+
+/**
+ * Make the markdown's repo-relative links resolve on the SITE (#1373).
+ *
+ * These documents are written to be read on GitHub, where `docs/FORKING.md`
+ * and `architecture-detailed.png` are files. Rendered into `/docs/<slug>/` the
+ * same strings become paths under the page, which do not exist — the crawl in
+ * `tests/e2e/tests/broken-links.spec.ts` found 24 of them. The markdown stays
+ * correct for GitHub readers; the rewrite happens here, at build time:
+ *
+ *   - a link to another document in the registry becomes that document's page;
+ *   - any other repo file becomes its page on GitHub (`blob`), or for an image
+ *     `src`, the raw file (`raw`), so the image still renders.
+ *
+ * Absolute (`/...`), `#fragment`, `?query` and scheme-qualified (`https:`,
+ * `mailto:`) targets are left alone.
+ */
+export function rewriteRepoLinks(html: string, file: string): string {
+  const dir = posix.dirname(file);
+  return html.replace(
+    /\b(href|src)="([^"]*)"/g,
+    (whole, attr: string, value: string) => {
+      if (
+        value === '' ||
+        value.startsWith('#') ||
+        value.startsWith('/') ||
+        value.startsWith('?') ||
+        /^[a-z][a-z0-9+.-]*:/i.test(value)
+      ) {
+        return whole;
+      }
+      const [pathPart, ...rest] = value.split(/(?=[?#])/);
+      const suffix = rest.join('');
+      const repoPath = posix.normalize(posix.join(dir, pathPart));
+      if (repoPath.startsWith('..')) return whole;
+
+      const doc = DOCS.find((d) => d.file === repoPath);
+      if (doc && attr === 'href') {
+        const hash = suffix.includes('#')
+          ? suffix.slice(suffix.indexOf('#'))
+          : '';
+        return `href="${getInternalUrl(`/docs/${doc.slug}/`)}${hash}"`;
+      }
+      const kind = attr === 'src' ? 'raw' : 'blob';
+      return `${attr}="${projectConfig.projectUrl}/${kind}/main/${repoPath}${suffix}"`;
+    }
+  );
 }

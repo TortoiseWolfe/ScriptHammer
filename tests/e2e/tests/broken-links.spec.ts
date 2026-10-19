@@ -78,243 +78,92 @@ test.describe('Broken Links Detection', () => {
   // Increase timeout for crawling tests (2 minutes)
   test.setTimeout(120000);
 
-  const visitedUrls = new Set<string>();
-  const brokenLinks: BrokenLink[] = [];
-  const externalLinksToCheck = new Map<string, Set<string>>();
   let baseUrl: string;
 
-  test.beforeAll(async () => {
-    // Reset tracking for each test run
-    visitedUrls.clear();
-    brokenLinks.length = 0;
-    externalLinksToCheck.clear();
-  });
+  // ---------------------------------------------------------------------------
+  // Internal-link crawl (#1373)
+  //
+  // This used to drive `page.goto` once per URL, in series, with a visited set
+  // keyed on the full href — so every `#hash` and `?query` variant was fetched
+  // again, and with an authenticated storageState the crawl blew its budget and
+  // was skipped in CI, leaving internal links unchecked anywhere.
+  //
+  // It now uses the `request` fixture (no rendering): the site is a static
+  // export, so every internal link is already present in the served HTML.
+  // URLs are normalised (hash and query stripped, trailing slash forced on
+  // extension-less paths to match `trailingSlash: true` in next.config.ts), the
+  // frontier is crawled breadth-first, and a small pool fetches concurrently.
+  // Links that exist only after client-side rendering are not seen by this crawl.
+  // ---------------------------------------------------------------------------
+  const CRAWL_CONCURRENCY = 8;
 
-  test.afterAll(async () => {
-    // Report all broken links found
-    if (brokenLinks.length > 0) {
-      console.log('\n🔴 BROKEN LINKS FOUND:');
-      console.log('='.repeat(80));
+  // No cookies, no origins: an authenticated session would change what the site
+  // renders and what it links to, and is irrelevant to link integrity.
+  test.use({ storageState: { cookies: [], origins: [] } });
 
-      // Group by source page
-      const linksBySource = new Map<string, BrokenLink[]>();
-      for (const link of brokenLinks) {
-        const links = linksBySource.get(link.sourceUrl) || [];
-        links.push(link);
-        linksBySource.set(link.sourceUrl, links);
-      }
-
-      // Print organized report
-      for (const [source, links] of linksBySource) {
-        console.log(`\n📄 Source: ${source}`);
-        for (const link of links) {
-          console.log(`   ❌ ${link.targetUrl}`);
-          if (link.statusCode) {
-            console.log(`      Status: ${link.statusCode}`);
-          }
-          if (link.error) {
-            console.log(`      Error: ${link.error}`);
-          }
-          if (link.linkText) {
-            console.log(`      Text: "${link.linkText}"`);
-          }
-        }
-      }
-
-      console.log('\n' + '='.repeat(80));
-      console.log(`Total broken links: ${brokenLinks.length}`);
-    } else {
-      console.log('\n✅ No broken links found!');
+  function normalizeUrl(href: string, fromUrl: string): string | null {
+    let u: URL;
+    try {
+      u = new URL(href, fromUrl);
+    } catch {
+      return null;
     }
-
-    // Report external links that need checking
-    if (externalLinksToCheck.size > 0) {
-      console.log('\n📤 External links found (need manual verification):');
-      for (const [url, sources] of externalLinksToCheck) {
-        console.log(`\n   ${url}`);
-        console.log(`   Found on: ${Array.from(sources).join(', ')}`);
-      }
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+    u.hash = '';
+    u.search = '';
+    // trailingSlash: true — extension-less paths are served as `/path/`.
+    const last = u.pathname.split('/').pop() || '';
+    if (!u.pathname.endsWith('/') && !last.includes('.')) {
+      u.pathname += '/';
     }
-  });
-
-  async function extractLinks(
-    page: Page
-  ): Promise<Array<{ href: string; text: string }>> {
-    return await page.evaluate(() => {
-      const links = Array.from(document.querySelectorAll('a[href]'));
-      return links.map((link) => ({
-        href: (link as HTMLAnchorElement).href,
-        text: (link as HTMLAnchorElement).textContent?.trim() || '',
-      }));
-    });
+    return u.href;
   }
 
-  async function normalizeUrl(
-    url: string,
-    currentPageUrl: string
-  ): Promise<string> {
-    // Handle relative URLs
-    if (!url.startsWith('http')) {
-      const base = new URL(currentPageUrl);
-      return new URL(url, base.origin).href;
-    }
-    return url;
-  }
-
-  async function isInternalLink(url: string): Promise<boolean> {
-    const testUrl = new URL(url);
-    const base = new URL(baseUrl);
-
-    // Check if same origin
-    if (testUrl.origin !== base.origin) {
-      return false;
-    }
-
-    // For GitHub Pages, also check if path starts with base path
+  function isInternal(url: string): boolean {
+    const u = new URL(url);
+    if (u.origin !== new URL(baseUrl).origin) return false;
     const basePath = process.env.BASE_PATH || '';
-    if (basePath && !testUrl.pathname.startsWith(basePath)) {
-      return false;
-    }
-
-    return true;
+    return !basePath || u.pathname.startsWith(basePath);
   }
 
-  async function checkInternalLink(
-    page: Page,
-    sourceUrl: string,
-    targetUrl: string,
-    linkText: string
-  ): Promise<void> {
-    // Skip if already visited
-    if (visitedUrls.has(targetUrl)) {
-      return;
+  function extractHrefs(html: string): string[] {
+    const hrefs: string[] = [];
+    const re = /<a\s[^>]*?href\s*=\s*(?:"([^"]*)"|'([^']*)')/gi;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(html)) !== null) {
+      const raw = m[1] ?? m[2] ?? '';
+      hrefs.push(
+        raw
+          .replace(/&amp;/g, '&')
+          .replace(/&#x27;/g, "'")
+          .replace(/&quot;/g, '"')
+          .trim()
+      );
     }
-
-    // Skip hash-only links (same-page anchor links)
-    const sourceUrlObj = new URL(sourceUrl);
-    const targetUrlObj = new URL(targetUrl);
-    // Normalize trailing slashes for comparison
-    const sourcePath = sourceUrlObj.pathname.replace(/\/$/, '');
-    const targetPath = targetUrlObj.pathname.replace(/\/$/, '');
-    // Check if URL contains a hash (includes empty hash like "#")
-    const hasHash = targetUrl.includes('#');
-    if (
-      sourcePath === targetPath &&
-      sourceUrlObj.search === targetUrlObj.search &&
-      hasHash
-    ) {
-      return;
-    }
-
-    visitedUrls.add(targetUrl);
-
-    try {
-      // Navigate to the target URL (use domcontentloaded - faster and sufficient for 404 check)
-      const response = await page.goto(targetUrl, {
-        waitUntil: 'domcontentloaded',
-        timeout: 15000,
-      });
-
-      if (!response) {
-        brokenLinks.push({
-          sourceUrl,
-          targetUrl,
-          error: 'No response received',
-          linkText,
-        });
-        return;
-      }
-
-      const status = response.status();
-
-      // Check for 404 or other error status codes
-      if (status >= 400) {
-        brokenLinks.push({
-          sourceUrl,
-          targetUrl,
-          statusCode: status,
-          linkText,
-        });
-        return;
-      }
-
-      // Check if we got redirected to a 404 page
-      const pageTitle = await page.title();
-
-      // Check for h1 heading to be more specific
-      const h1Text = await page.textContent('h1').catch(() => null);
-
-      // More specific 404 detection - check title and main heading
-      const is404Page =
-        pageTitle.toLowerCase() === '404' ||
-        pageTitle.toLowerCase() === 'not found' ||
-        pageTitle.toLowerCase() === '404 - page not found' ||
-        h1Text?.toLowerCase() === '404' ||
-        h1Text?.toLowerCase() === 'page not found';
-
-      if (is404Page) {
-        brokenLinks.push({
-          sourceUrl,
-          targetUrl,
-          statusCode: 404,
-          error: 'Redirected to 404 page',
-          linkText,
-        });
-        return;
-      }
-
-      // If successful, crawl this page for more links
-      await crawlPage(page, targetUrl);
-    } catch (error) {
-      brokenLinks.push({
-        sourceUrl,
-        targetUrl,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        linkText,
-      });
-    }
+    return hrefs;
   }
 
-  async function crawlPage(page: Page, currentUrl: string): Promise<void> {
-    try {
-      const links = await extractLinks(page);
-
-      for (const link of links) {
-        const normalizedUrl = await normalizeUrl(link.href, currentUrl);
-
-        if (await isInternalLink(normalizedUrl)) {
-          await checkInternalLink(page, currentUrl, normalizedUrl, link.text);
-        } else if (normalizedUrl.startsWith('http')) {
-          // Track external links for reporting
-          const sources = externalLinksToCheck.get(normalizedUrl) || new Set();
-          sources.add(currentUrl);
-          externalLinksToCheck.set(normalizedUrl, sources);
-        }
-      }
-    } catch (error) {
-      console.error(`Error crawling page ${currentUrl}:`, error);
-    }
-  }
-
-  test('check all internal links for 404s', async ({ page, baseURL }) => {
-    test.skip(
-      !!process.env.CI,
-      'Crawl too slow in CI (120s timeout exceeded with authenticated storageState)'
+  function isSoft404(html: string): boolean {
+    const title = (/<title[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1] ?? '')
+      .trim()
+      .toLowerCase();
+    const h1 = (/<h1[^>]*>([\s\S]*?)<\/h1>/i.exec(html)?.[1] ?? '')
+      .replace(/<[^>]*>/g, '')
+      .trim()
+      .toLowerCase();
+    return (
+      title === '404' ||
+      title === 'not found' ||
+      title === '404 - page not found' ||
+      h1 === '404' ||
+      h1 === 'page not found'
     );
+  }
+
+  test('check all internal links for 404s', async ({ request, baseURL }) => {
+    test.setTimeout(180_000);
     baseUrl = baseURL || 'http://localhost:3000';
 
-    // Start from homepage
-    const response = await page.goto('/', {
-      waitUntil: 'domcontentloaded',
-    });
-
-    expect(response).toBeTruthy();
-    expect(response?.status()).toBeLessThan(400);
-
-    // Start crawling from homepage
-    await crawlPage(page, baseUrl);
-
-    // Also check specific important pages that might not be linked
     const importantPages = [
       '/blog',
       '/themes',
@@ -326,20 +175,134 @@ test.describe('Broken Links Detection', () => {
       '/docs',
     ];
 
-    for (const pagePath of importantPages) {
-      const url = new URL(pagePath, baseUrl).href;
-      if (!visitedUrls.has(url)) {
-        await checkInternalLink(
-          page,
-          baseUrl,
-          url,
-          `Direct check: ${pagePath}`
-        );
-      }
+    // url -> the page that first linked to it (for the failure report)
+    const queued = new Map<string, string>();
+    const externalLinks = new Map<string, Set<string>>();
+    const failures: BrokenLink[] = [];
+    let frontier: string[] = [];
+
+    const enqueue = (url: string, from: string, text: string) => {
+      if (queued.has(url)) return;
+      queued.set(url, from + (text ? `  (${text})` : ''));
+      frontier.push(url);
+    };
+
+    const startUrls = ['/', ...importantPages].map(
+      (p) => normalizeUrl(p, baseUrl) as string
+    );
+    for (const url of startUrls) {
+      enqueue(url, 'start page', '');
     }
 
-    // Assert no broken links were found
-    expect(brokenLinks).toEqual([]);
+    const started = Date.now();
+
+    const visit = async (url: string): Promise<string[]> => {
+      const source = queued.get(url) ?? 'unknown';
+      let response;
+      try {
+        response = await request.get(url, { timeout: 30_000 });
+      } catch (error) {
+        failures.push({
+          sourceUrl: source,
+          targetUrl: url,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        return [];
+      }
+      // `serve` treats a path whose last segment contains a dot (e.g.
+      // /blog/tags/next.js) as a FILE and answers a directory with a listing and
+      // a 200 -- with or without a trailing slash, and /index.html is rewritten
+      // back to the listing by cleanUrls. Production (GitHub Pages behind
+      // Cloudflare) serves the directory's index.html. The listing itself is
+      // not the page, so confirm the exported page exists through the RSC
+      // payload that sits beside its index.html (`index.txt`, which `serve`
+      // does return) and do not crawl the listing's markup.
+      if ((await response.text()).includes('<title>Files within')) {
+        const payload = await request.get(
+          `${url.replace(/\/$/, '')}/index.txt`,
+          { timeout: 30_000 }
+        );
+        if (payload.status() >= 400) {
+          failures.push({
+            sourceUrl: source,
+            targetUrl: url,
+            statusCode: payload.status(),
+            error: 'Directory has no exported page (index.txt missing)',
+          });
+        }
+        return [];
+      }
+      const status = response.status();
+      if (status >= 400) {
+        failures.push({
+          sourceUrl: source,
+          targetUrl: url,
+          statusCode: status,
+        });
+        return [];
+      }
+      const contentType = response.headers()['content-type'] || '';
+      if (!contentType.includes('text/html')) return [];
+
+      const html = await response.text();
+      if (isSoft404(html)) {
+        failures.push({
+          sourceUrl: source,
+          targetUrl: url,
+          statusCode: 404,
+          error: 'Served a 404 page with a success status',
+        });
+        return [];
+      }
+      // Follow links relative to where the response finally landed (redirects).
+      const finalUrl = response.url();
+      for (const href of extractHrefs(html)) {
+        const target = normalizeUrl(href, finalUrl);
+        if (!target) continue;
+        if (isInternal(target)) {
+          enqueue(target, url, '');
+        } else {
+          const sources = externalLinks.get(target) ?? new Set<string>();
+          sources.add(url);
+          externalLinks.set(target, sources);
+        }
+      }
+      return [];
+    };
+
+    // Breadth-first, level by level; each level is drained by a worker pool.
+    while (frontier.length > 0) {
+      const level = frontier;
+      frontier = [];
+      let next = 0;
+      await Promise.all(
+        Array.from(
+          { length: Math.min(CRAWL_CONCURRENCY, level.length) },
+          async () => {
+            while (next < level.length) {
+              await visit(level[next++]);
+            }
+          }
+        )
+      );
+    }
+
+    console.log(
+      `\n🔗 Crawled ${queued.size} internal URLs in ${((Date.now() - started) / 1000).toFixed(1)}s; ${externalLinks.size} external links not checked`
+    );
+
+    expect(
+      failures.length,
+      failures.length
+        ? `${failures.length} broken internal link(s):\n` +
+            failures
+              .map(
+                (f) =>
+                  `  ${f.targetUrl} -> ${f.statusCode ?? f.error}\n    linked from: ${f.sourceUrl}`
+              )
+              .join('\n')
+        : undefined
+    ).toBe(0);
   });
 
   test('check meta tag images and resources', async ({ page, baseURL }) => {
@@ -362,7 +325,7 @@ test.describe('Broken Links Detection', () => {
       if (ogImage) {
         await checkResource(
           page,
-          await normalizeUrl(ogImage, page.url()),
+          new URL(ogImage, page.url()).href,
           'Open Graph image not found',
           baseUrl,
           brokenResources
@@ -376,7 +339,7 @@ test.describe('Broken Links Detection', () => {
       if (twitterImage) {
         await checkResource(
           page,
-          await normalizeUrl(twitterImage, page.url()),
+          new URL(twitterImage, page.url()).href,
           'Twitter card image not found',
           baseUrl,
           brokenResources
@@ -392,7 +355,7 @@ test.describe('Broken Links Detection', () => {
       if (favicon) {
         await checkResource(
           page,
-          await normalizeUrl(favicon, page.url()),
+          new URL(favicon, page.url()).href,
           'Favicon not found',
           baseUrl,
           brokenResources
