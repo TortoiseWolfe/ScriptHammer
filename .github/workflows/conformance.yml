@@ -13,7 +13,7 @@
 #   - messaging-provider.dotnet.test.ts    (C7-C14, [dotnet], live ASP.NET)
 #   - admin/admin-access.contract.test.ts  (admin RPC shapes; needs a seeded admin)
 # A skipped or todo test FAILS the job (assert-no-skipped.mjs, #1379).
-# Verified 107/107 green locally before wiring.
+# Verified locally 19 Oct 2026: 28 files, 346 passed, 0 skipped.
 #
 # NOTE ON CONCURRENCY: unlike e2e.yml, this job does NOT need the repo-wide
 # `e2e-supabase` mutex. That mutex exists because every E2E run shares ONE cloud
