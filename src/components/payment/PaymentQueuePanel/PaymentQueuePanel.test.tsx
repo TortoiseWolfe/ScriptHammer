@@ -8,6 +8,7 @@ const mockQueue = {
   retryFailed: vi.fn(),
   sync: vi.fn(),
   clear: vi.fn(),
+  clearCompleted: vi.fn(),
 };
 let offline = false;
 
@@ -17,6 +18,7 @@ vi.mock('@/lib/offline-queue/payment-adapter', () => ({
     retryFailed: (...a: unknown[]) => mockQueue.retryFailed(...a),
     sync: (...a: unknown[]) => mockQueue.sync(...a),
     clear: (...a: unknown[]) => mockQueue.clear(...a),
+    clearCompleted: (...a: unknown[]) => mockQueue.clearCompleted(...a),
   },
 }));
 
@@ -68,6 +70,7 @@ describe('PaymentQueuePanel', () => {
       conflicted: 0,
     });
     mockQueue.clear.mockResolvedValue(undefined);
+    mockQueue.clearCompleted.mockResolvedValue(0);
   });
 
   it('shows the empty state when the queue is empty', async () => {
@@ -113,6 +116,39 @@ describe('PaymentQueuePanel', () => {
     fireEvent.click(screen.getByTestId('queue-retry'));
     await waitFor(() => expect(mockQueue.retryFailed).toHaveBeenCalledTimes(1));
     expect(mockQueue.sync).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(mockQueue.clearCompleted).toHaveBeenCalledTimes(1)
+    );
+  });
+
+  it('does not list a completed payment as queued', async () => {
+    mockQueue.getQueue.mockResolvedValue([
+      makeItem({ id: 1, status: 'completed' }),
+    ]);
+    render(<PaymentQueuePanel pollIntervalMs={999999} />);
+    await waitFor(() => expect(mockQueue.getQueue).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.getByTestId('queue-count')).toHaveTextContent(
+        /no queued payments/i
+      )
+    );
+    expect(screen.queryByTestId('queue-items')).not.toBeInTheDocument();
+  });
+
+  it('shows the queue empty after Retry drains the last payment', async () => {
+    mockQueue.getQueue
+      .mockResolvedValueOnce([makeItem({ id: 1 })])
+      .mockResolvedValue([makeItem({ id: 1, status: 'completed' })]);
+    render(<PaymentQueuePanel pollIntervalMs={999999} />);
+    await waitFor(() =>
+      expect(screen.getByTestId('queue-count')).toHaveTextContent(/1 pending/i)
+    );
+    fireEvent.click(screen.getByTestId('queue-retry'));
+    await waitFor(() =>
+      expect(screen.getByTestId('queue-count')).toHaveTextContent(
+        /no queued payments/i
+      )
+    );
   });
 
   it('disables Retry now when offline', async () => {

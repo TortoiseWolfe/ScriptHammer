@@ -359,11 +359,14 @@ End-to-end tests use Playwright to test complete user workflows in real browsers
 
 ### Live-acceptance E2E (real Stripe/PayPal sandbox)
 
-CI's build bakes dummy payment keys, so every spec gated on
-`isStripeConfigured` / `STRIPE_SECRET_KEY` / `NEXT_PUBLIC_STRIPE_PRICE_ID`
-skips there. The live legs (Stripe one-time + subscription redirects, the
-cancel/resume lifecycle in `08-subscription-lifecycle.spec.ts`) only ever run
-locally, against the sandbox creds in your gitignored `.env`:
+CI's build bakes dummy payment keys. The Stripe one-time and subscription
+redirects in `01-stripe-onetime.spec.ts` still run there: they route-mock the
+checkout Edge Functions and the `checkout.stripe.com` hop, because the client
+never loads Stripe.js (#1370). What needs a real provider skips in CI and runs
+only locally, against the sandbox creds in your gitignored `.env`: the
+cancel/resume lifecycle in `08-subscription-lifecycle.spec.ts`
+(`STRIPE_SECRET_KEY` / `NEXT_PUBLIC_STRIPE_PRICE_ID`) and the PayPal approval
+and cancel legs in `02-paypal-subscription.spec.ts` (#188):
 
 ```bash
 # whole payment suite (chromium), from the HOST:
