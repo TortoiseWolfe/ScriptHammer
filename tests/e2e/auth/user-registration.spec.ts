@@ -1,8 +1,9 @@
 /**
  * E2E Test: User Registration Flow (T066)
  *
- * Tests the complete registration journey from quickstart.md:
- * sign-up → verify email → sign-in → access protected pages
+ * Client-side validation and navigation on the sign-up page. The full
+ * sign-up and confirm-email journey is covered by
+ * tests/e2e/signup-mailer/signup-confirm.spec.ts.
  *
  * Email domain is derived from TEST_USER_PRIMARY_EMAIL.
  */
@@ -11,7 +12,6 @@ import { test, expect } from '@playwright/test';
 import {
   dismissCookieBanner,
   DEFAULT_TEST_PASSWORD,
-  signOutViaDropdown,
 } from '../utils/test-user-factory';
 
 /**
@@ -34,71 +34,11 @@ function generateRegistrationEmail(prefix: string): string {
 }
 
 test.describe('User Registration E2E', () => {
-  const testEmail = generateRegistrationEmail('main');
   const testPassword = DEFAULT_TEST_PASSWORD;
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await dismissCookieBanner(page);
-  });
-
-  // Skip: Requires real Supabase user creation - run with proper env setup
-  test.skip('should complete full registration flow from sign-up to protected access', async ({
-    page,
-  }) => {
-    // Step 1: Navigate to sign-up page
-    await page.goto('/sign-up', { waitUntil: 'domcontentloaded' });
-    await expect(page).toHaveURL(/\/sign-up\/?$/);
-    await expect(
-      page.getByRole('heading', { name: 'Create Account' })
-    ).toBeVisible();
-
-    // Step 2: Fill sign-up form
-    await dismissCookieBanner(page);
-    await page.getByLabel('Email').fill(testEmail);
-    await page.getByLabel('Password', { exact: true }).fill(testPassword);
-    await page.getByLabel('Confirm Password').fill(testPassword);
-
-    // Step 3: Check Remember Me (optional)
-    await page.getByLabel('Remember Me').check();
-
-    // Step 4: Submit sign-up form
-    await page.getByRole('button', { name: 'Sign Up' }).click();
-
-    // Step 5: Verify redirected to verify-email or profile
-    // Note: In development, email verification might be disabled
-    await page.waitForURL(/\/(verify-email|profile)/);
-
-    // Step 6: If on verify-email page, check for verification notice
-    if (page.url().includes('verify-email')) {
-      await expect(page.getByText(/check your inbox/i)).toBeVisible();
-
-      // In real scenario, user would click link in email
-      // For E2E test, we can skip to profile if email verification is disabled
-    }
-
-    // Step 7: Navigate to profile (protected route)
-    await page.goto('/profile', { waitUntil: 'domcontentloaded' });
-
-    // Step 8: Verify user is authenticated and can access profile
-    await expect(page.getByText(testEmail)).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Profile' })).toBeVisible();
-
-    // Step 9: Verify payment demo access (another protected route)
-    await page.goto('/payment-demo', { waitUntil: 'domcontentloaded' });
-    await expect(page).toHaveURL(/\/payment-demo\/?$/);
-    await expect(
-      page.getByRole('heading', { name: 'Payment Integration Demo' })
-    ).toBeVisible();
-
-    // Step 10: Sign out via dropdown menu
-    await signOutViaDropdown(page);
-
-    // Step 11: Verify redirected to home then can access sign-in
-    await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
-    await expect(page).toHaveURL('/sign-in');
-
-    // Clean up: Delete test user (would need admin API or manual cleanup)
   });
 
   test('should show validation errors for invalid TLD email', async ({

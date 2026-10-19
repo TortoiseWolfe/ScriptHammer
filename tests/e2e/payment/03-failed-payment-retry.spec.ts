@@ -48,16 +48,6 @@ test.describe('Failed Payment Retry Logic', () => {
       .waitFor({ state: 'visible', timeout: 15000 });
   });
 
-  test.skip('should display retry button for failed payment', async ({
-    page,
-  }) => {
-    // Skip: Requires actual Stripe Checkout
-    test.skip(
-      true,
-      'Stripe API keys not configured - skipping Checkout flow test'
-    );
-  });
-
   test('should render payment result page with missing session', async ({
     page,
   }) => {
@@ -219,22 +209,6 @@ test.describe('Failed Payment Retry Logic', () => {
     await expect(page.getByText(/no payment session found/i)).toBeVisible({
       timeout: 10000,
     });
-  });
-
-  test.skip('should log error details for debugging', async ({ page }) => {
-    // Skip: Requires actual Stripe Checkout
-    test.skip(
-      true,
-      'Stripe API keys not configured - skipping Checkout flow test'
-    );
-  });
-
-  test.skip('should display user-friendly error messages', async ({ page }) => {
-    // Skip: Requires actual Stripe Checkout
-    test.skip(
-      true,
-      'Stripe API keys not configured - skipping Checkout flow test'
-    );
   });
 
   test('should show payment demo page correctly', async ({ page }) => {
