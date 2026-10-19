@@ -267,21 +267,33 @@ test.describe('Group Chat E2E', () => {
       await createButton.click();
 
       // createGroup runs in-browser: generate + ECDH-distribute the group key
-      // to every member, then insert (Argon2/ECDH — can take a while). Re-deriving
-      // the private key may surface the ReAuth modal at an unpredictable moment
-      // during that async work, so poll for it while waiting for the navigation
-      // to /messages?conversation=<id> (or an error alert).
+      // to every member, then insert. Re-deriving the private key may surface
+      // the ReAuth modal at an unpredictable moment during that async work, so
+      // poll for it while waiting for the navigation to the new conversation
+      // (or an error alert).
+      //
+      // #1375: match the URL by parsing it, never by regex on the raw string.
+      // next.config sets `trailingSlash: true`, so new-group's
+      // router.push('/messages?conversation=<id>') lands on
+      // '/messages/?conversation=<id>'. The old /\/messages\?conversation=/
+      // test could never match that, so this test burned its whole budget on
+      // every run — while the group had in fact been created within seconds —
+      // and then reported a skip.
       const errorAlert = viewer.page.locator('.alert-error');
+      const conversationIdFrom = (href: string): string | null => {
+        const url = new URL(href);
+        return /^\/messages\/?$/.test(url.pathname.slice(BP.length))
+          ? url.searchParams.get('conversation')
+          : null;
+      };
       const deadline = Date.now() + 90000;
-      let navigated = false;
+      let conversationId: string | null = null;
       while (Date.now() < deadline) {
         await handleReAuthModal(viewer.page, DEFAULT_TEST_PASSWORD).catch(
           () => {}
         );
-        if (/\/messages\?conversation=/.test(viewer.page.url())) {
-          navigated = true;
-          break;
-        }
+        conversationId = conversationIdFrom(viewer.page.url());
+        if (conversationId) break;
         // A REAL group-creation error (e.g. the RLS 403s this feature fixed)
         // must fail the test — that's the regression we're guarding.
         if (await errorAlert.isVisible().catch(() => false)) {
@@ -290,16 +302,14 @@ test.describe('Group Chat E2E', () => {
         }
         await viewer.page.waitForTimeout(1000);
       }
-      // If creation neither errored NOR navigated in 90s, the throwaway-user
-      // Argon2/ECDH key distribution was just too slow on this runner — skip
-      // rather than flake-fail. The encrypt/decrypt LOGIC is covered by the
-      // message-service unit tests; this spec guards the "group is reachable,
-      // no 'not yet implemented' throw, message round-trips" flow when the
-      // environment is fast enough to create the group.
-      test.skip(
-        !navigated,
-        'group creation did not complete within 90s on this runner (slow Argon2/ECDH)'
-      );
+      // Not reaching the conversation is a FAILURE, never a skip (#1375): a
+      // timeout here means createGroup hung or navigated somewhere unexpected.
+      expect(
+        conversationId,
+        `Group creation did not navigate to /messages/?conversation=<id> within ` +
+          `90s. Final URL: ${viewer.page.url()}. Create button still on page: ` +
+          `${await createButton.isVisible().catch(() => false)}.`
+      ).toBeTruthy();
 
       await handleReAuthModal(viewer.page, DEFAULT_TEST_PASSWORD).catch(
         () => {}
@@ -364,15 +374,16 @@ test('contract - isolated connection helper is usable', async () => {
 /**
  * DETERMINISTIC group send/decrypt (#182 follow-up).
  *
- * Unlike the UI-created-group test above — which drives createGroup() in-browser
- * (Argon2 + in-browser ECDH key distribution, routinely >90s, so it skips on
- * slow runners and never reliably proves send/decrypt) — this seeds the group
- * AND distributes the group key SERVER-SIDE via seedIsolatedGroup(withKeys), so
- * the group is send/decrypt-ready with NO UI creation. Each browser still pays
- * one Argon2 key-unlock (via the ReAuth modal, same as every 1:1 iso test), but
- * the compounding UI-creation cost is gone → the test is deterministic and does
- * NOT skip. It's the authoritative cross-member group-encryption round-trip:
- * member A sends, member B (a second browser context) decrypts.
+ * The UI-created-group test above proves the creator's own path (createGroup()
+ * in-browser, then send + render). This one seeds the group AND distributes the
+ * group key SERVER-SIDE via seedIsolatedGroup(withKeys), so it can open TWO
+ * members at once: member A sends, member B (a second browser context) decrypts.
+ * It's the authoritative cross-member group-encryption round-trip.
+ *
+ * (#1375: the UI test was long believed to be "routinely >90s" and skipped on
+ * every run. It never was slow — its URL check missed the trailing slash that
+ * `trailingSlash: true` adds, so it timed out after a creation that had already
+ * succeeded.)
  */
 test.describe('Group Chat E2E — deterministic encrypted round-trip (#182)', () => {
   let group: IsolatedGroup | null = null;
