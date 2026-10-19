@@ -73,7 +73,7 @@ export default defineConfig({
       'tests/contract/profile/update-profile.contract.test.ts',
       'tests/integration/messaging/connections.test.ts',
       'src/tests/integration/payment-isolation.test.ts',
-      // Exclude admin contract tests requiring live Supabase with admin RPC functions
+      // Admin contract tests need live Supabase + a seeded admin; they run in conformance via vitest.rls.config.ts (#1379)
       'tests/contract/admin/admin-access.contract.test.ts',
     ],
     coverage: {
