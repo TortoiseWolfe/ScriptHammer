@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AuthApiError } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase/client';
 import { REQUEST_RATE_MESSAGE } from '@/lib/auth/auth-rate-limit';
+import { getPendingConfirmationEmail } from '@/lib/auth/pending-confirmation';
 import SignInForm from './SignInForm';
 
 // (#353) Default UNCONFIGURED so the pre-existing cases exercise the path every
@@ -206,6 +207,52 @@ describe('SignInForm', () => {
       // Let the success branch run to its end before asserting what it did not do.
       await new Promise((r) => setTimeout(r, 50));
       expect(rpcNames()).not.toContain('log_auth_event');
+    });
+  });
+
+  // #1352. Production refuses an unconfirmed sign-in, so /verify-email never learns the
+  // address from a session. This form is one of the two places that knows it.
+  describe('"Email not confirmed" hands the address to /verify-email (#1352)', () => {
+    beforeEach(() => {
+      window.sessionStorage.clear();
+      auth.signIn.mockResolvedValueOnce({
+        error: new AuthApiError(
+          'Email not confirmed',
+          400,
+          'email_not_confirmed'
+        ),
+      });
+    });
+
+    it('stores the address in sessionStorage, not in the URL', async () => {
+      render(<SignInForm />);
+      fireEvent.change(screen.getByLabelText(/email/i), {
+        target: { value: 'someone@example.com' },
+      });
+      fireEvent.change(screen.getByLabelText(/password/i), {
+        target: { value: 'CorrectHorse1!' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+
+      await vi.waitFor(() =>
+        expect(getPendingConfirmationEmail()).toBe('someone@example.com')
+      );
+      expect(window.location.search).toBe('');
+    });
+
+    it('stores nothing for any other sign-in failure', async () => {
+      auth.signIn.mockReset();
+      auth.signIn.mockResolvedValueOnce({
+        error: new AuthApiError(
+          'Invalid login credentials',
+          400,
+          'invalid_credentials'
+        ),
+      });
+      render(<SignInForm />);
+      await submitWrongPassword();
+
+      expect(getPendingConfirmationEmail()).toBeNull();
     });
   });
 });

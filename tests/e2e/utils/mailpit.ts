@@ -39,16 +39,22 @@ async function mailpitJson<T>(path: string): Promise<T> {
 
 /**
  * Poll Mailpit until a message addressed to `email` arrives, then return its full
- * body. Throws (loudly) on timeout — a real signup that produces NO confirmation
+ * body (the newest one not in `excludeIds`). Throws (loudly) on timeout — a real signup that produces NO confirmation
  * email is exactly the #287 failure this test exists to catch, so it must fail,
  * never silently skip.
  */
 export async function waitForMessageTo(
   email: string,
-  opts: { timeoutMs?: number; intervalMs?: number } = {}
+  opts: {
+    timeoutMs?: number;
+    intervalMs?: number;
+    /** Message ids already seen, so a second email to the same address is the one returned (#1352). */
+    excludeIds?: string[];
+  } = {}
 ): Promise<MailpitMessage> {
   const timeoutMs = opts.timeoutMs ?? 30_000;
   const intervalMs = opts.intervalMs ?? 1_000;
+  const excluded = new Set(opts.excludeIds ?? []);
   const deadline = Date.now() + timeoutMs;
   let lastError = '';
 
@@ -57,8 +63,9 @@ export async function waitForMessageTo(
       const data = await mailpitJson<{ messages: MessageSummary[] }>(
         `/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`
       );
-      if (data.messages.length > 0) {
-        return getMessage(data.messages[0].ID);
+      const fresh = data.messages.find((m) => !excluded.has(m.ID));
+      if (fresh) {
+        return getMessage(fresh.ID);
       }
     } catch (err) {
       lastError = (err as Error).message;

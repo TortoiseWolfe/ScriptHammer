@@ -259,7 +259,8 @@ services:
 
   supabase-auth:
     profiles: [supabase]
-    image: supabase/gotrue:v2.177.0
+    # GOTRUE_IMAGE: only signup-mailer.yml overrides it (resend must be PKCE-bound, #1352).
+    image: ${GOTRUE_IMAGE:-supabase/gotrue:v2.177.0}
     restart: unless-stopped
     depends_on:
       supabase-db:
@@ -306,6 +307,10 @@ services:
       GOTRUE_SMTP_PORT: 1025
       GOTRUE_SMTP_ADMIN_EMAIL: admin@example.com
       GOTRUE_SMTP_SENDER_NAME: Supabase
+      # GoTrue refuses a second email to one address inside this window (429
+      # over_email_send_rate_limit); its own default is one minute. The signup-mailer
+      # E2E (#1352) asks for a resend seconds after signing up, so that lane shortens it.
+      GOTRUE_SMTP_MAX_FREQUENCY: ${GOTRUE_SMTP_MAX_FREQUENCY:-1m0s}
       GOTRUE_EXTERNAL_PHONE_ENABLED: 'false'
       GOTRUE_SMS_AUTOCONFIRM: 'true'
       # CI may enable CAPTCHA with Cloudflare's published test keys for the

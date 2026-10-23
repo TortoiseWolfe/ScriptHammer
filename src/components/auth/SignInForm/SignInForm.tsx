@@ -11,6 +11,7 @@ import { captchaConfig } from '@/config/captcha.config';
 import { authRateLimitMessage } from '@/lib/auth/auth-rate-limit';
 import { validateEmail } from '@/lib/auth/email-validator';
 import { logAuthEvent } from '@/lib/auth/audit-logger';
+import { setPendingConfirmationEmail } from '@/lib/auth/pending-confirmation';
 import { getInternalUrl } from '@/config/project.config';
 import { createLogger } from '@/lib/logger/logger';
 
@@ -112,6 +113,9 @@ export default function SignInForm({
 
       // Check if email needs verification
       if (signInError.message.toLowerCase().includes('email not confirmed')) {
+        // sessionStorage, not the query string (#1352): /verify-email asks nobody for the
+        // address again, and a URL would put it in history and analytics.
+        setPendingConfirmationEmail(email);
         window.location.href = getInternalUrl('/verify-email');
         return;
       }

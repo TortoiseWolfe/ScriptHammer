@@ -7,6 +7,7 @@ import {
   EMAIL_QUOTA_MESSAGE,
   REQUEST_RATE_MESSAGE,
 } from '@/lib/auth/auth-rate-limit';
+import { getPendingConfirmationEmail } from '@/lib/auth/pending-confirmation';
 import SignUpForm from './SignUpForm';
 
 // (#353) CAPTCHA config is read at render time. Default to UNCONFIGURED so the
@@ -190,6 +191,46 @@ describe('SignUpForm', () => {
       await vi.waitFor(() => expect(rpcNames()).toContain('log_auth_event'));
       expect(rpcNames()).not.toContain('check_rate_limit');
       expect(rpcNames()).not.toContain('record_failed_attempt');
+    });
+  });
+
+  // #1352. A new account has no session until the address is confirmed, so /verify-email can
+  // only offer a resend if the form that just created the account tells it the address.
+  describe('hands the address to /verify-email (#1352)', () => {
+    beforeEach(() => {
+      window.sessionStorage.clear();
+      auth.signUp.mockClear();
+    });
+
+    it('stores the address before calling onSuccess', async () => {
+      let carriedAtSuccess: string | null = null;
+      const onSuccess = vi.fn(() => {
+        carriedAtSuccess = getPendingConfirmationEmail();
+      });
+      render(<SignUpForm onSuccess={onSuccess} />);
+      fireEvent.change(screen.getByLabelText(/email/i), {
+        target: { value: 'someone@example.com' },
+      });
+      fireEvent.change(screen.getByLabelText(/^password$/i), {
+        target: { value: 'CorrectHorse1!' },
+      });
+      fireEvent.change(screen.getByLabelText(/confirm password/i), {
+        target: { value: 'CorrectHorse1!' },
+      });
+      fireEvent.click(screen.getByRole('button', { name: /sign up/i }));
+
+      await vi.waitFor(() => expect(onSuccess).toHaveBeenCalledTimes(1));
+      expect(carriedAtSuccess).toBe('someone@example.com');
+    });
+
+    it('stores nothing when sign-up fails', async () => {
+      auth.signUp.mockResolvedValueOnce({
+        error: new AuthApiError('boom', 500, 'unexpected_failure'),
+      });
+      render(<SignUpForm />);
+      await submitValidSignUp();
+
+      expect(getPendingConfirmationEmail()).toBeNull();
     });
   });
 });
