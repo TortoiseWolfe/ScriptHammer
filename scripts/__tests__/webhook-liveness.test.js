@@ -62,16 +62,26 @@ describe('webhook liveness verdict (#1183)', () => {
     );
   });
 
-  it('fails on the real #1180 state: deliveries being refused for a bad signature', () => {
-    // What production actually looked like between 2026-08-17 and 2026-09-17: every live
-    // delivery rejected, nothing thrown, and — crucially — webhook_events NOT growing, which
-    // is why the row-age signal was useless and the log signal was not.
+  it('fails on signature rejections, stating both possible causes and how to tell them apart', () => {
+    // Since #1229, signature rejections can come from either a real provider with a wrong
+    // secret (#1180) OR a forged/test request correctly refused (#1229). The message must
+    // name both and explain the discriminator, not assert a single cause.
     const r = evaluate(
       withFacts({ signatureFailures: 3, newestEventAgeDays: 31 })
     );
     assert.equal(r.verdict, 'FAIL');
-    assert.match(r.failures.join('\n'), /signature rejection/i);
-    assert.match(r.failures.join('\n'), /#1180/);
+    const text = r.failures.join('\n');
+    assert.match(text, /signature rejection/i);
+    assert.match(text, /#1180/);
+    assert.match(text, /#1229/);
+    assert.match(text, /forged or test-signed request was correctly refused/);
+    assert.match(
+      text,
+      /Stripe Dashboard.*Developers.*Webhooks.*failed deliveries/
+    );
+    assert.match(text, /Failed deliveries listed there = #1180/);
+    assert.match(text, /none listed = the function did its job/);
+    assert.doesNotMatch(text, /RIGHT NOW/);
   });
 
   it('fails on a 5xx, because Stripe retries those for three days', () => {
