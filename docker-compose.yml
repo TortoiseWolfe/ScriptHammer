@@ -259,7 +259,8 @@ services:
 
   supabase-auth:
     profiles: [supabase]
-    image: supabase/gotrue:v2.177.0
+    # GOTRUE_IMAGE: only signup-mailer.yml overrides it (resend must be PKCE-bound, #1352).
+    image: ${GOTRUE_IMAGE:-supabase/gotrue:v2.177.0}
     restart: unless-stopped
     depends_on:
       supabase-db:

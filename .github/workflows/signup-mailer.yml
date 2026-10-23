@@ -100,6 +100,11 @@ jobs:
           # after the first. GoTrue's default wait between emails is a minute; production
           # keeps it, this throwaway stack does not need to.
           GOTRUE_SMTP_MAX_FREQUENCY: 1s
+          # GoTrue v2.177.0, the pin every other lane keeps, ignores the PKCE challenge a resend
+          # carries: the second email's link is an implicit-flow link, which this client never
+          # consumes (#1255), so it confirms the address and signs nobody in. v2.197.0 binds the
+          # resent link to the browser that asked, as production's does (#1352).
+          GOTRUE_IMAGE: supabase/gotrue:v2.197.0
           # Published Cloudflare test keys: the visible widget always passes,
           # and GoTrue validates its dummy token with the matching test secret.
           # These are public testing values, not production credentials.
