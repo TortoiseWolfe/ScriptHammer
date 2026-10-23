@@ -96,6 +96,10 @@ jobs:
           # Flip off auto-confirm so GoTrue emits a REAL confirmation email into
           # Mailpit (the whole point). Default stays 'true' for normal dev.
           GOTRUE_MAILER_AUTOCONFIRM: 'false'
+          # The resend journey (#1352) asks for a second email to the same address seconds
+          # after the first. GoTrue's default wait between emails is a minute; production
+          # keeps it, this throwaway stack does not need to.
+          GOTRUE_SMTP_MAX_FREQUENCY: 1s
           # Published Cloudflare test keys: the visible widget always passes,
           # and GoTrue validates its dummy token with the matching test secret.
           # These are public testing values, not production credentials.

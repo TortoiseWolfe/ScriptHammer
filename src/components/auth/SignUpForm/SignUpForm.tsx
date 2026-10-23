@@ -6,6 +6,7 @@ import { setSessionPersistence } from '@/lib/supabase/client';
 import { authRateLimitMessage } from '@/lib/auth/auth-rate-limit';
 import { validateEmail } from '@/lib/auth/email-validator';
 import { logAuthEvent } from '@/lib/auth/audit-logger';
+import { setPendingConfirmationEmail } from '@/lib/auth/pending-confirmation';
 import PasswordStrengthIndicator from '@/components/atomic/PasswordStrengthIndicator';
 import CaptchaWidget, {
   type CaptchaWidgetHandle,
@@ -152,6 +153,11 @@ export default function SignUpForm({
       // admin) and, after the trigger, a double-write. Removed; the trigger is
       // the single source of truth for successful signups. The failed-attempt
       // logAuthEvent() above stays (no auth.users INSERT happens on failure).
+
+      // Hand the address to /verify-email (#1352). Production gives an unconfirmed address no
+      // session, so that page cannot learn it from the auth context and would have nothing to
+      // offer a person whose link expires. Before the key work below, which can take a while.
+      setPendingConfirmationEmail(email);
 
       // Initialize encryption keys and send welcome message (Feature 004)
       try {

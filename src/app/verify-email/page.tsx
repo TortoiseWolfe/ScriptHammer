@@ -1,5 +1,6 @@
 import React from 'react';
 import EmailVerificationNotice from '@/components/auth/EmailVerificationNotice';
+import ResendConfirmation from '@/components/auth/ResendConfirmation';
 import Link from 'next/link';
 import { Metadata } from 'next';
 
@@ -21,6 +22,7 @@ export default function VerifyEmailPage() {
 
         <div className="sh-plate rounded-[26px] px-4 py-8 sm:px-6 md:px-8">
           <EmailVerificationNotice className="mb-6" />
+          <ResendConfirmation className="mb-6" />
 
           <p className="text-base-content text-center text-sm">
             Check your inbox for a verification link. Once verified, you&apos;ll
