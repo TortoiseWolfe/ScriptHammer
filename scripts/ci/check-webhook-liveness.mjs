@@ -23,7 +23,7 @@
  * check is worth (see #1185).
  *
  * WHAT IT WOULD HAVE CAUGHT, on day one rather than day 31:
- *   signature_failures   #1180 — the wrong signing secret
+ *   signature_failures   #1180 — the wrong signing secret, OR a forged/test request correctly refused (#1229)
  *   server_errors        the .single()-on-zero-rows 500, which Stripe retries for three days
  *   permanently_failed   anything the retry ledger has given up on
  *   second_charges       a second charge on one intent, which the webhooks give up on (#1342)
@@ -47,7 +47,7 @@ export const STALE_INFO_DAYS = 30;
  * Decide, from already-gathered facts. Pure: no clock, no network, no env.
  *
  * @param {object} f
- * @param {number} f.signatureFailures  HMAC mismatches (wrong secret), in-window
+ * @param {number} f.signatureFailures  HMAC mismatches (wrong secret or a correctly refused forgery), in-window
  * @param {number} [f.staleSignatures]   correct secret, stale payload — replay, skew, or our probe
  * @param {number} f.serverErrors       5xx responses from a payment webhook, in-window
  * @param {number} f.permanentlyFailed  webhook_events rows the retry ledger gave up on
@@ -64,8 +64,10 @@ export function evaluate(f) {
   if (f.signatureFailures > 0) {
     failures.push(
       `${f.signatureFailures} signature rejection(s) in the last ${WINDOW_HOURS}h. ` +
-        `A provider is signing with a secret this function does not hold — the #1180 failure. ` +
-        `Deliveries are being refused RIGHT NOW.`
+        `Two possible causes: (1) a provider is signing with a secret this function does not hold — the #1180 failure; ` +
+        `or (2) a forged or test-signed request was correctly refused — the #1229 guard. ` +
+        `To distinguish: check Stripe Dashboard > Developers > Webhooks > this endpoint > failed deliveries. ` +
+        `Failed deliveries listed there = #1180; none listed = the function did its job.`
     );
   }
 
@@ -411,7 +413,7 @@ async function main() {
     '',
     '| signal | count |',
     '| --- | --- |',
-    `| signature rejections (wrong secret) | ${facts.signatureFailures} |`,
+    `| signature rejections (wrong secret or forged/test) | ${facts.signatureFailures} |`,
     `| stale-but-valid signatures | ${facts.staleSignatures ?? 0} |`,
     `| 5xx from a payment webhook | ${facts.serverErrors} |`,
     `| permanently_failed rows | ${facts.permanentlyFailed} |`,
