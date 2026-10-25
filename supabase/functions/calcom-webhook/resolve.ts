@@ -8,6 +8,8 @@
  * because this is the file that decides whether to trust a stranger's POST.
  */
 
+import { timingSafeEqual } from '../_shared/timing-safe-equal.ts';
+
 /** What Cal.com sends. Only the parts this function reads are named. */
 export interface CalcomEvent {
   triggerEvent?: string;
@@ -55,14 +57,6 @@ const HEX_64 = /^[0-9a-f]{64}$/i;
  * form that fails closed.
  */
 export const NO_SECRET_SENTINEL = 'no-secret-provided';
-
-/** Compare without leaking position through timing. Lengths differ → false, no early exit. */
-export function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
 
 function toHex(buf: ArrayBuffer): string {
   return Array.from(new Uint8Array(buf))
