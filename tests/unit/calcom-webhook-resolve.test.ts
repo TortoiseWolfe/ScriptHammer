@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import {
   verifySignature,
   resolveBooking,
-  timingSafeEqual,
   SIGNATURE_HEADER,
   NO_SECRET_SENTINEL,
 } from '../../supabase/functions/calcom-webhook/resolve';
+import { timingSafeEqual } from '../../supabase/functions/_shared/timing-safe-equal';
 
 /**
  * This is the file that decides whether to trust a stranger's POST, and nothing in CI
