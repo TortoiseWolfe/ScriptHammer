@@ -12,6 +12,9 @@ import { dismissCookieBanner } from '../utils/test-user-factory';
  * Signed out, at a phone width and a desktop width, each part must sit below the one before
  * it, and the field must be wide enough to type an address in.
  */
+// The projects run pre-authenticated, and the control renders nothing for a signed-in user.
+test.use({ storageState: { cookies: [], origins: [] } });
+
 for (const viewport of [
   { name: 'phone', width: 390, height: 844 },
   { name: 'desktop', width: 1280, height: 800 },
