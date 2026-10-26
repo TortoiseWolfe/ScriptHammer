@@ -115,7 +115,7 @@ export default function ResendConfirmation({
     <form
       onSubmit={handleSubmit}
       noValidate
-      className={`alert alert-warning flex-col items-stretch gap-3${className ? ` ${className}` : ''}`}
+      className={`alert alert-warning grid-flow-row grid-cols-1 items-stretch justify-items-stretch gap-3${className ? ` ${className}` : ''}`}
     >
       <p>Link expired or never arrived? Ask for a new one.</p>
       <div className="flex flex-col gap-2">
