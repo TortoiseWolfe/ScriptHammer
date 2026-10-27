@@ -2,7 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { ROSTER } from './roster';
-import { THEME_SONG, HOOK } from './songs';
+import {
+  THEME_SONG,
+  HOOK,
+  DUET_SONGS,
+  DUET_SINGERS,
+  DUET_SOURCES,
+} from './songs';
 import { getAssetUrl, projectConfig } from '@/config/project.config';
 
 const PUBLIC = join(process.cwd(), 'public');
@@ -44,14 +50,37 @@ describe('band roster', () => {
 });
 
 describe('band songs', () => {
-  it.each([THEME_SONG, HOOK])('$id exists on disk and has lyrics', (song) => {
-    expect(onDisk(song.src), song.src).toBe(true);
-    expect(song.lyrics.length).toBeGreaterThan(0);
-    expect(song.length).toMatch(/^\d+:\d{2}$/);
-  });
+  it.each([THEME_SONG, HOOK, ...DUET_SONGS])(
+    '$id exists on disk and has lyrics',
+    (song) => {
+      expect(onDisk(song.src), song.src).toBe(true);
+      expect(song.lyrics.length).toBeGreaterThan(0);
+      expect(song.length).toMatch(/^\d+:\d{2}$/);
+    }
+  );
 
   it('keeps the show dates off the page data', () => {
-    const all = JSON.stringify([THEME_SONG, HOOK, ROSTER]);
+    const all = JSON.stringify([THEME_SONG, HOOK, ...DUET_SONGS, ROSTER]);
     expect(all).not.toMatch(/October|Halloween/i);
+  });
+
+  it('names the duet singers, who are both in the roster', () => {
+    const slugs = ROSTER.map((m) => m.slug);
+    expect(slugs).toContain(DUET_SINGERS.for);
+    expect(slugs).toContain(DUET_SINGERS.against);
+    for (const song of DUET_SONGS) {
+      const text = song.lyrics.map((st) => st.label).join(' | ');
+      expect(text).toContain('Ivory');
+      expect(text).toContain('Chops');
+    }
+  });
+
+  it('has two duet takes with distinct files and ids, and sources over https', () => {
+    expect(DUET_SONGS).toHaveLength(2);
+    expect(new Set(DUET_SONGS.map((s) => s.src)).size).toBe(2);
+    expect(new Set(DUET_SONGS.map((s) => s.id)).size).toBe(2);
+    for (const source of DUET_SOURCES) {
+      expect(source.href).toMatch(/^https:\/\//);
+    }
   });
 });
