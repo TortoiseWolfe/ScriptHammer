@@ -24,7 +24,7 @@ test.describe('/band (#1408)', () => {
       })
     ).toBeVisible();
     await expect(page.getByTestId('band-member-card')).toHaveCount(7);
-    await expect(page.getByTestId('song-player')).toHaveCount(2);
+    await expect(page.getByTestId('song-player')).toHaveCount(4);
     // Every portrait actually loaded (a 404 leaves naturalWidth at 0). They are
     // lazy, so ask for them all first.
     await page
@@ -46,12 +46,25 @@ test.describe('/band (#1408)', () => {
     await expect(page.locator('main iframe')).toHaveCount(0);
   });
 
+  test('the Halloween duet is up, with both singers named', async ({
+    page,
+  }) => {
+    await page.goto('/band/');
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'New for Halloween' })
+    ).toBeVisible();
+    const section = page.locator('section[aria-labelledby="halloween"]');
+    await expect(section.getByTestId('song-player')).toHaveCount(2);
+    await expect(section).toContainText('Ivory sings for the machines');
+    await expect(section).toContainText('Chops sings against');
+  });
+
   test('plays nothing until asked: audio does not autoplay or preload', async ({
     page,
   }) => {
     await page.goto('/band/');
     const audios = page.locator('audio');
-    await expect(audios).toHaveCount(2);
+    await expect(audios).toHaveCount(4);
     for (const el of await audios.all()) {
       await expect(el).toHaveAttribute('preload', 'none');
       await expect(el).not.toHaveAttribute('autoplay', /.*/);
@@ -60,7 +73,7 @@ test.describe('/band (#1408)', () => {
     }
   });
 
-  test('both MP3s answer 200 as audio/mpeg and load', async ({
+  test('every MP3 answers 200 as audio/mpeg and load', async ({
     page,
     browserName,
   }) => {
@@ -68,7 +81,7 @@ test.describe('/band (#1408)', () => {
     for (const el of await page.locator('audio').all()) {
       const src = await el.getAttribute('src');
       expect(src, 'src goes through getAssetUrl').toMatch(
-        /\/band\/audio\/band-wagon-(theme|hook)\.mp3$/
+        /\/band\/audio\/band-wagon-(theme|hook|duet-1|duet-2)\.mp3$/
       );
       await expectPlayableMp3(page, src!, browserName);
     }

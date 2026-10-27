@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { routeMetadata } from '@/utils/metadata';
 import { projectConfig, getAssetUrl } from '@/config/project.config';
 import { BAND_NAME } from '@/lib/band/roster';
-import { THEME_SONG, HOOK } from '@/lib/band/songs';
+import { THEME_SONG, HOOK, DUET_SONGS, DUET_SOURCES } from '@/lib/band/songs';
 import BandRoster from '@/components/molecular/BandRoster';
 import ThemeSongPlayer from '@/components/molecular/ThemeSongPlayer';
 
@@ -99,6 +99,43 @@ export default function BandPage() {
             <ThemeSongPlayer song={THEME_SONG} />
             <ThemeSongPlayer song={HOOK} />
           </div>
+        </section>
+
+        <section aria-labelledby="halloween" className="mt-14 md:mt-20">
+          <h2
+            id="halloween"
+            className="sh-font-special-elite !mt-0 !mb-2 !text-3xl text-[#f6ecd0] md:!text-4xl"
+          >
+            New for Halloween
+          </h2>
+          <p className="!mt-0 !mb-6 max-w-[68ch] text-lg leading-[1.65]">
+            A duet with two sides. Ivory sings for the machines taking over and
+            Chops sings against, and they join together on the chorus. We
+            recorded it twice, so you can pick your favourite take.
+          </p>
+          <div className="grid gap-6 lg:grid-cols-2">
+            {DUET_SONGS.map((song) => (
+              <ThemeSongPlayer key={song.id} song={song} />
+            ))}
+          </div>
+          <details className="mt-6 max-w-[68ch]">
+            <summary className="min-h-11 cursor-pointer py-2 text-lg font-semibold text-[#f5b335] underline underline-offset-4">
+              Where the facts come from
+            </summary>
+            <ul className="mt-2 list-disc space-y-2 pl-6 text-lg leading-[1.65]">
+              {DUET_SOURCES.map((source) => (
+                <li key={source.href}>
+                  <a
+                    href={source.href}
+                    rel="noopener noreferrer"
+                    className="font-semibold text-[#f5b335] underline underline-offset-4"
+                  >
+                    {source.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </details>
         </section>
 
         <section aria-labelledby="meet" className="mt-14 md:mt-20">
