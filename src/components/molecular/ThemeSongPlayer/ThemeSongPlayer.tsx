@@ -31,10 +31,10 @@ export default function ThemeSongPlayer({
     >
       <h3
         id={titleId}
-        className="sh-font-special-elite !m-0 !text-2xl text-[#f5b335]"
+        className="sh-font-special-elite !m-0 !text-2xl text-balance text-[#f5b335]"
       >
         {song.title}{' '}
-        <span className="font-sans text-lg font-normal text-[#f6ecd0]">
+        <span className="mt-1 block font-sans text-lg font-normal text-[#f6ecd0]">
           ({song.length})
         </span>
       </h3>
@@ -48,12 +48,17 @@ export default function ThemeSongPlayer({
         aria-label={`${song.title}, ${song.length}`}
         className="w-full"
       >
-        Your browser cannot play audio. You can{' '}
-        <a href={getAssetUrl(song.src)} className="text-lg underline">
-          download {song.title}
-        </a>{' '}
-        instead.
+        Your browser cannot play audio.
       </audio>
+      <p className="!mt-3 !mb-0">
+        <a
+          href={getAssetUrl(song.src)}
+          download
+          className="inline-flex min-h-11 items-center text-lg font-semibold text-[#f5b335] underline underline-offset-4"
+        >
+          Download {song.title} (MP3)
+        </a>
+      </p>
       <details className="mt-4">
         <summary className="min-h-11 cursor-pointer py-2 text-lg font-semibold text-[#f5b335] underline underline-offset-4">
           Lyrics

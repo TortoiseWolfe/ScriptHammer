@@ -50,12 +50,12 @@ export default function BandPage() {
       data-testid="band-page"
     >
       <div className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6 md:py-16">
-        <header className="grid items-center gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] md:gap-12">
-          <div>
+        <header className="grid grid-cols-1 items-center gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] md:gap-12">
+          <div className="min-w-0">
             <p className="!m-0 text-lg font-bold tracking-widest text-[#f5b335] uppercase">
               Looks scary. Plays nice.
             </p>
-            <h1 className="sh-font-special-elite !my-4 !text-4xl text-balance text-[#f6ecd0] sm:!text-5xl">
+            <h1 className="sh-font-special-elite !my-4 !text-3xl text-balance text-[#f6ecd0] min-[400px]:!text-4xl sm:!text-5xl">
               {`${BAND_NAME}, the house band`}
             </h1>
             <p className="!m-0 max-w-[68ch] text-lg leading-[1.65]">

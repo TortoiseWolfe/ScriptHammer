@@ -15,6 +15,15 @@ describe('ThemeSongPlayer', () => {
     expect(audio).toHaveAttribute('src', getAssetUrl(THEME_SONG.src));
   });
 
+  it('offers a visible download link outside the audio element', () => {
+    const { container } = render(<ThemeSongPlayer song={THEME_SONG} />);
+    const link = screen.getByRole('link', { name: /Download .*MP3/ });
+    expect(link).toHaveAttribute('href', getAssetUrl(THEME_SONG.src));
+    // A link inside <audio> is invisible to visitors and trips axe's
+    // link-in-text-block rule, which pa11y counts as a failure.
+    expect(container.querySelector('audio a')).toBeNull();
+  });
+
   it('names the song and its length', () => {
     render(<ThemeSongPlayer song={HOOK} />);
     expect(
