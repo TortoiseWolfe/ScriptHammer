@@ -55,7 +55,8 @@ export default function BandPage() {
         <header className="grid grid-cols-1 items-center gap-8 md:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] md:gap-12">
           <div className="min-w-0">
             <p className="!m-0 text-lg font-bold tracking-widest text-[#f5b335] uppercase">
-              Looks scary. Plays nice.
+              <span className="inline-block">Looks scary.</span>{' '}
+              <span className="inline-block">Plays nice.</span>
             </p>
             <h1 className="sh-font-special-elite !my-4 !text-3xl text-balance text-[#f6ecd0] min-[400px]:!text-4xl sm:!text-5xl">
               {`${BAND_NAME}, the house band`}
