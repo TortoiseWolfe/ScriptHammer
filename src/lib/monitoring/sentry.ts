@@ -20,6 +20,7 @@
 
 import * as Sentry from '@sentry/react';
 import { scrubEvent } from './scrub';
+import { isKidSafeLocation } from '@/lib/privacy/kid-safe-routes';
 
 /** Sentry DSN — public client key, safe in the browser. Empty = disabled. */
 export const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
@@ -74,6 +75,6 @@ export function captureAppError(
   error: Error,
   context?: Record<string, unknown>
 ): void {
-  if (!isSentryEnabled()) return;
+  if (!isSentryEnabled() || isKidSafeLocation()) return;
   Sentry.captureException(error, context ? { extra: context } : undefined);
 }

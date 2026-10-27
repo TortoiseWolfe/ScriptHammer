@@ -11,6 +11,7 @@ import {
   trackPageView,
 } from '@/utils/analytics';
 import { initWebVitals } from '@/utils/performance';
+import { isKidSafeRoute } from '@/lib/privacy/kid-safe-routes';
 
 /**
  * GoogleAnalytics component
@@ -30,12 +31,23 @@ export default function GoogleAnalytics() {
   // in place across a flip-off is safe; only the consent-on transition
   // ever needs to call initWebVitals.
   const webVitalsInitializedRef = useRef(false);
+  // A kid-safe route (COPPA) never loads or feeds Google Analytics, whatever
+  // was accepted elsewhere. gtag may already be running from the page the
+  // visitor came from, so it is switched off too, not just left unrendered.
+  const kidSafe = isKidSafeRoute(pathname);
 
   // Initialize GA and update consent when consent changes
   useEffect(() => {
     if (!GA_MEASUREMENT_ID) return;
 
-    if (consent.analytics) {
+    // Google's documented opt-out flag: stops a loaded gtag.js sending anything.
+    (window as unknown as Record<string, unknown>)[
+      `ga-disable-${GA_MEASUREMENT_ID}`
+    ] = kidSafe;
+
+    if (kidSafe) {
+      updateGAConsent(false);
+    } else if (consent.analytics) {
       initializeGA();
       updateGAConsent(true);
       // Subscribe to LCP/FCP/CLS/TTFB/INP exactly once per page load.
@@ -50,17 +62,18 @@ export default function GoogleAnalytics() {
     } else {
       updateGAConsent(false);
     }
-  }, [consent.analytics]);
+  }, [consent.analytics, kidSafe]);
 
   // Track page views when pathname changes
   useEffect(() => {
-    if (!GA_MEASUREMENT_ID || !consent.analytics || !pathname) return;
+    if (!GA_MEASUREMENT_ID || !consent.analytics || !pathname || kidSafe)
+      return;
 
     trackPageView(pathname);
-  }, [pathname, consent.analytics]);
+  }, [pathname, consent.analytics, kidSafe]);
 
   // Don't render if no measurement ID or consent denied
-  if (!GA_MEASUREMENT_ID || !consent.analytics) {
+  if (!GA_MEASUREMENT_ID || !consent.analytics || kidSafe) {
     return null;
   }
 
