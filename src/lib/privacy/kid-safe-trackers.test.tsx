@@ -87,6 +87,21 @@ describe('trackers on a kid-safe route', () => {
       expect(captureOppref).not.toHaveBeenCalled();
     });
 
+    it('OpenAIPixel neutralises a pixel loaded on an earlier page', () => {
+      const original = vi.fn();
+      const w = window as unknown as { oaiq?: unknown };
+      w.oaiq = original;
+      const sdk = document.createElement('script');
+      sdk.src = 'https://bzrcdn.openai.com/sdk/oaiq.min.js';
+      document.head.appendChild(sdk);
+      render(<OpenAIPixel />);
+      expect(w.oaiq).not.toBe(original);
+      (w.oaiq as (...a: unknown[]) => void)('event', { name: 'x' });
+      expect(original).not.toHaveBeenCalled();
+      expect(document.querySelector('script[src*="oaiq"]')).toBeNull();
+      delete w.oaiq;
+    });
+
     it('SentryMonitor closes Sentry and never starts it', async () => {
       render(<SentryMonitor />);
       await waitFor(() => expect(closeSentry).toHaveBeenCalled());

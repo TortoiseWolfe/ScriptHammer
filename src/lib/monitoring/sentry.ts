@@ -51,7 +51,11 @@ export function initSentry(): void {
     sendDefaultPii: false,
     // scrubEvent operates on the broader Event type and mutates in place,
     // returning the same reference — safe to hand back as the ErrorEvent.
-    beforeSend: (event) => scrubEvent(event) as typeof event | null,
+    // A client that was initialized on an earlier page survives client-side navigation to a
+    // kid-safe route, so auto-captured global errors and breadcrumbs are dropped here too.
+    beforeSend: (event) =>
+      isKidSafeLocation() ? null : (scrubEvent(event) as typeof event | null),
+    beforeBreadcrumb: (breadcrumb) => (isKidSafeLocation() ? null : breadcrumb),
   });
   initialized = true;
 }

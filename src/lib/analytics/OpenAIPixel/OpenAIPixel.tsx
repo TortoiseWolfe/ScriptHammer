@@ -45,6 +45,19 @@ export default function OpenAIPixel() {
     }
   }, [marketing]);
 
+  // A pixel loaded on an earlier page survives client-side navigation. Replace its queue
+  // function with a no-op and drop the SDK script so nothing more is sent from a kid-safe route.
+  useEffect(() => {
+    if (!kidSafe) return;
+    const w = window as unknown as { oaiq?: unknown };
+    if (w.oaiq) {
+      w.oaiq = () => undefined;
+    }
+    document
+      .querySelectorAll('script[src*="bzrcdn.openai.com/sdk/oaiq"]')
+      .forEach((el) => el.remove());
+  }, [kidSafe]);
+
   if (!pixelId || !marketing) {
     return null;
   }
