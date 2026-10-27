@@ -410,6 +410,10 @@ export function GlobalNav() {
         { href: '/game', label: 'Game' },
         { href: '/payment-demo', label: 'Payments' },
         { href: '/schedule', label: 'Schedule' },
+        // `reload: true`: /band is a kid-safe route (no trackers). A full document
+        // load is the strongest way in: nothing from the page you came from, such
+        // as an analytics script that consent loaded, survives into it (#1408).
+        { href: '/band', label: 'Band', reload: true },
       ],
     },
     { href: '/themes', label: 'Themes' },

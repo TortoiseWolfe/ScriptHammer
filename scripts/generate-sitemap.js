@@ -36,6 +36,7 @@ const staticPages = [
   '/game',
   '/map',
   '/schedule',
+  '/band',
   // Committed digital twins (#232): a /twins/<slug> page exists for every
   // baked site under public/twins/ (gitignore allowlists what ships). The
   // /chatt alias is deliberately absent — its canonical is /twins/chatt.

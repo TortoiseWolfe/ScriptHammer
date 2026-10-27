@@ -142,6 +142,7 @@ describe('GlobalNav destinations', () => {
       'Game',
       'Payments',
       'Schedule',
+      'Band',
     ]) {
       expect(screen.getByRole('menuitem', { name: label })).toBeInTheDocument();
     }
@@ -157,6 +158,15 @@ describe('GlobalNav destinations', () => {
     const atlas = screen.getByRole('menuitem', { name: 'Atlas' });
     expect(atlas.tagName).toBe('A');
     expect(atlas.getAttribute('href')).toContain('/chatt');
+  });
+
+  it('opens /band with a FULL document load, so no tracker survives into it (#1408)', async () => {
+    const u = userEvent.setup();
+    render(<GlobalNav />);
+    await u.click(screen.getByRole('button', { name: 'Demos' }));
+    const band = screen.getByRole('menuitem', { name: 'Band' });
+    expect(band.tagName).toBe('A');
+    expect(band.getAttribute('href')).toContain('/band');
   });
 });
 
