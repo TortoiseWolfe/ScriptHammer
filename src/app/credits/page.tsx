@@ -120,6 +120,59 @@ export default function CreditsPage() {
           ))}
         </section>
 
+        <section className="mb-8" id="band">
+          <h2>The house band</h2>
+          <p>
+            The music, portraits and cover art on the{' '}
+            <Link href="/band">band page</Link> are by &ldquo;ScriptHammer, the
+            house band&rdquo; and licensed{' '}
+            <a
+              href="https://creativecommons.org/licenses/by-sa/4.0/"
+              rel="noreferrer noopener"
+              target="_blank"
+            >
+              CC BY-SA 4.0
+            </a>
+            . The site&apos;s code stays MIT.
+          </p>
+          <ul>
+            <li>
+              <strong>The music is AI-generated</strong> with{' '}
+              <a
+                href="https://github.com/ace-step/ACE-Step-1.5"
+                rel="noreferrer noopener"
+                target="_blank"
+              >
+                ACE-Step 1.5
+              </a>{' '}
+              (MIT code and model weights; it states no terms about what it
+              generates). The prompts name no song, artist, album or label.
+            </li>
+            <li>
+              <strong>The art is AI-assisted.</strong> The portraits come from
+              the public{' '}
+              <a
+                href="https://github.com/TortoiseWolfe/wp-dev"
+                rel="noreferrer noopener"
+                target="_blank"
+              >
+                wp-dev
+              </a>{' '}
+              repository; the tool that drew them was not recorded. The cover
+              was composed in code from them.
+            </li>
+            <li>
+              Cover lettering uses Rye, Alfa Slab One, Lilita One and Pirata
+              One, all under the SIL Open Font License 1.1, rendered into the
+              picture.
+            </li>
+          </ul>
+          <p>
+            Whether a purely AI-generated recording can be copyrighted is a
+            legal question this page does not settle.
+          </p>
+        </section>
+
         <section className="mb-8">
           <h2>Licensing these models yourself</h2>
           <p>

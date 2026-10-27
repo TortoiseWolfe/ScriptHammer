@@ -52,6 +52,11 @@
       "url": "http://localhost:3000/blog",
       "screenCapture": ".pa11y-screenshots/blog.png",
       "actions": ["wait for element footer to be visible"]
+    },
+    {
+      "url": "http://localhost:3000/band",
+      "screenCapture": ".pa11y-screenshots/band.png",
+      "actions": ["wait for element footer to be visible"]
     }
   ]
 }

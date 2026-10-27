@@ -2,8 +2,10 @@
 
 import React, { useEffect } from 'react';
 import Script from 'next/script';
+import { usePathname } from 'next/navigation';
 import { useConsent } from '@/contexts/ConsentContext';
 import { captureOppref, clearOppref } from '@/lib/analytics/ad-attribution';
+import { isKidSafeRoute } from '@/lib/privacy/kid-safe-routes';
 
 /**
  * OpenAIPixel component
@@ -28,19 +30,35 @@ import { captureOppref, clearOppref } from '@/lib/analytics/ad-attribution';
 export default function OpenAIPixel() {
   const { consent } = useConsent();
   const pixelId = process.env.NEXT_PUBLIC_OPENAI_PIXEL_ID;
+  // Kid-safe routes (COPPA) never carry an advertising pixel or hold a click id.
+  const kidSafe = isKidSafeRoute(usePathname());
+  const marketing = consent.marketing && !kidSafe;
 
   // Capture on every consent change, not only on mount: a visitor who lands on the ad URL and
   // accepts the banner a moment later must still be attributable. Withdrawing consent forgets
   // the value, so declining later is not merely "stop sending" but "stop holding".
   useEffect(() => {
-    if (consent.marketing) {
+    if (marketing) {
       captureOppref(true);
     } else {
       clearOppref();
     }
-  }, [consent.marketing]);
+  }, [marketing]);
 
-  if (!pixelId || !consent.marketing) {
+  // A pixel loaded on an earlier page survives client-side navigation. Replace its queue
+  // function with a no-op and drop the SDK script so nothing more is sent from a kid-safe route.
+  useEffect(() => {
+    if (!kidSafe) return;
+    const w = window as unknown as { oaiq?: unknown };
+    if (w.oaiq) {
+      w.oaiq = () => undefined;
+    }
+    document
+      .querySelectorAll('script[src*="bzrcdn.openai.com/sdk/oaiq"]')
+      .forEach((el) => el.remove());
+  }, [kidSafe]);
+
+  if (!pixelId || !marketing) {
     return null;
   }
 

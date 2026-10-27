@@ -208,6 +208,23 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Never intercept audio or Range requests (#1408).
+  //
+  // The default handler below answers from the cache first and caches every
+  // 200. A media element seeks with `Range` requests and needs a 206 back; a
+  // cached full 200 breaks seeking in Safari, and the band's MP3s would sit in
+  // the cache for nothing. So audio and anything carrying `Range` goes straight
+  // to the browser, which handles it natively. The MP3s are also absent from
+  // STATIC_ASSETS on purpose: nothing here precaches them.
+  if (
+    request.headers.has('range') ||
+    request.destination === 'audio' ||
+    request.destination === 'video' ||
+    /\.(mp3|ogg|wav|m4a)$/i.test(url.pathname)
+  ) {
+    return;
+  }
+
   // Handle API requests - Network first, fallback to cache
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(

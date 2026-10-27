@@ -15,6 +15,7 @@ import { CookieConsent } from '@/components/privacy/CookieConsent';
 import { ConsentModal } from '@/components/privacy/ConsentModal';
 import GoogleAnalytics from '@/lib/analytics/GoogleAnalytics';
 import OpenAIPixel from '@/lib/analytics/OpenAIPixel';
+import KidSafeRouteGuard from '@/lib/privacy/KidSafeRouteGuard';
 import SentryMonitor from '@/lib/monitoring/SentryMonitor';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -186,6 +187,7 @@ export default function RootLayout({
           <GoogleAnalytics />
           <OpenAIPixel />
           <SentryMonitor />
+          <KidSafeRouteGuard />
           <AuthProvider>
             <AccessibilityProvider>
               {/* WCAG 2.4.1 Bypass Blocks. It lives HERE, not on a page (#475).

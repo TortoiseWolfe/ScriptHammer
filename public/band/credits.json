@@ -1,0 +1,26 @@
+{
+  "band": "ScriptHammer, the house band",
+  "licence": {
+    "musicAndArt": "CC BY-SA 4.0",
+    "url": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "code": "MIT"
+  },
+  "music": {
+    "aiGenerated": true,
+    "tool": "ACE-Step 1.5",
+    "toolUrl": "https://github.com/ace-step/ACE-Step-1.5",
+    "toolLicence": "MIT (code and model weights); no terms stated about generated output"
+  },
+  "art": {
+    "aiAssisted": true,
+    "tool": "not recorded",
+    "portraitsFrom": "TortoiseWolfe/wp-dev, devscripts/assets",
+    "coverComposedIn": "SVG and HTML, in code"
+  },
+  "fonts": [
+    { "name": "Rye", "licence": "SIL OFL 1.1" },
+    { "name": "Alfa Slab One", "licence": "SIL OFL 1.1" },
+    { "name": "Lilita One", "licence": "SIL OFL 1.1" },
+    { "name": "Pirata One", "licence": "SIL OFL 1.1" }
+  ]
+}

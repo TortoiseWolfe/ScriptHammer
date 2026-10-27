@@ -99,4 +99,27 @@ describe('sentry module', () => {
     }) as { message: string };
     expect(scrubbed.message).toBe('failure for [REDACTED]');
   });
+  describe('on a kid-safe route', () => {
+    afterEach(() => {
+      window.history.pushState({}, '', '/');
+    });
+
+    it('beforeSend drops auto-captured events and beforeBreadcrumb drops breadcrumbs', async () => {
+      process.env.NEXT_PUBLIC_SENTRY_DSN = DSN;
+      const m = await freshModule();
+      m.initSentry();
+      const cfg = init.mock.calls[0][0] as {
+        beforeSend: (e: unknown) => unknown;
+        beforeBreadcrumb: (b: unknown) => unknown;
+      };
+      // Control: on an ordinary route both pass through.
+      window.history.pushState({}, '', '/pricing/');
+      expect(cfg.beforeSend({ message: 'ok' })).not.toBeNull();
+      expect(cfg.beforeBreadcrumb({ message: 'click' })).not.toBeNull();
+      // Navigated client-side to /band: the client is already running, so these must drop.
+      window.history.pushState({}, '', '/band/');
+      expect(cfg.beforeSend({ message: 'global error' })).toBeNull();
+      expect(cfg.beforeBreadcrumb({ message: 'click' })).toBeNull();
+    });
+  });
 });

@@ -5,6 +5,7 @@
 
 import type { GA4ConsentState, GtagFunction } from '@/types/analytics.types';
 import analyticsDebugger from './analytics-debug';
+import { isKidSafeLocation } from '@/lib/privacy/kid-safe-routes';
 
 /**
  * Extended window type for analytics
@@ -95,7 +96,7 @@ export function trackEvent(
   value?: number,
   customParameters?: Record<string, unknown>
 ): void {
-  if (typeof window === 'undefined' || !window.gtag) {
+  if (typeof window === 'undefined' || !window.gtag || isKidSafeLocation()) {
     return;
   }
 
@@ -121,7 +122,7 @@ export function trackPageView(
   title?: string,
   location?: string
 ): void {
-  if (typeof window === 'undefined' || !window.gtag) {
+  if (typeof window === 'undefined' || !window.gtag || isKidSafeLocation()) {
     return;
   }
 
@@ -140,7 +141,8 @@ export function isAnalyticsEnabled(): boolean {
   return !!(
     typeof window !== 'undefined' &&
     'gtag' in window &&
-    GA_MEASUREMENT_ID
+    GA_MEASUREMENT_ID &&
+    !isKidSafeLocation()
   );
 }
 
