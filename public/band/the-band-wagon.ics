@@ -1,0 +1,43 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//ScriptHammer//The Band Wagon//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:The Band Wagon: One Night Only, Every City on Earth
+BEGIN:VEVENT
+UID:live-opening@scripthammer.com
+DTSTAMP:20261027T120000Z
+DTSTART:20261029T220000Z
+DTEND:20261029T233000Z
+SUMMARY:The Band Wagon: Opening set (LIVE)
+DESCRIPTION:Watch free on Twitch at twitch.tv/scripthammer. More at https://scripthammer.com/band/
+URL:https://twitch.tv/scripthammer
+END:VEVENT
+BEGIN:VEVENT
+UID:live-headline@scripthammer.com
+DTSTAMP:20261027T120000Z
+DTSTART:20261030T000000Z
+DTEND:20261030T020000Z
+SUMMARY:The Band Wagon: Headline (LIVE)
+DESCRIPTION:Watch free on Twitch at twitch.tv/scripthammer. More at https://scripthammer.com/band/
+URL:https://twitch.tv/scripthammer
+END:VEVENT
+BEGIN:VEVENT
+UID:replay-opening@scripthammer.com
+DTSTAMP:20261027T120000Z
+DTSTART:20261031T220000Z
+DTEND:20261031T233000Z
+SUMMARY:The Band Wagon: Opening set (REPLAY)
+DESCRIPTION:Watch free on Twitch at twitch.tv/scripthammer. More at https://scripthammer.com/band/
+URL:https://twitch.tv/scripthammer
+END:VEVENT
+BEGIN:VEVENT
+UID:replay-headline@scripthammer.com
+DTSTAMP:20261027T120000Z
+DTSTART:20261101T000000Z
+DTEND:20261101T020000Z
+SUMMARY:The Band Wagon: Headline (REPLAY)
+DESCRIPTION:Watch free on Twitch at twitch.tv/scripthammer. More at https://scripthammer.com/band/
+URL:https://twitch.tv/scripthammer
+END:VEVENT
+END:VCALENDAR

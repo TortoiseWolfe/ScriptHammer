@@ -22,3 +22,10 @@
 
 - [x] T014 Duet MP3s encoded and checked; two players, duet lyrics, two singers (Ivory and Chops), "Where the facts come from" note
 - [ ] T015 Tests extended; every check green; leave open
+
+## PR 3: the show block (Thu 29 Oct 2026)
+
+- [x] T016 `src/lib/band/show.ts` (slots in UTC, city times from the tz database, state check, calendar file builder) + tests
+- [x] T017 `BandShow` (5-file), a client component that stops saying "coming up" once the replay is over
+- [x] T018 `public/band/the-band-wagon.ics` (4 slots), og:description and twitter:description name the show and date
+- [x] T019 e2e: show block, calendar file 200, social text, "over" state with a pinned clock

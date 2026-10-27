@@ -5,6 +5,8 @@ import { routeMetadata } from '@/utils/metadata';
 import { projectConfig, getAssetUrl } from '@/config/project.config';
 import { BAND_NAME } from '@/lib/band/roster';
 import { THEME_SONG, HOOK, DUET_SONGS, DUET_SOURCES } from '@/lib/band/songs';
+import { SHOW_DESCRIPTION } from '@/lib/band/show';
+import BandShow from '@/components/molecular/BandShow';
 import BandRoster from '@/components/molecular/BandRoster';
 import ThemeSongPlayer from '@/components/molecular/ThemeSongPlayer';
 
@@ -20,13 +22,13 @@ export const metadata: Metadata = {
   description: DESCRIPTION,
   openGraph: {
     title: TITLE,
-    description: DESCRIPTION,
+    description: SHOW_DESCRIPTION,
     images: [{ url: OG_IMAGE, width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary_large_image',
     title: TITLE,
-    description: DESCRIPTION,
+    description: SHOW_DESCRIPTION,
     images: [OG_IMAGE],
   },
 };
@@ -87,6 +89,8 @@ export default function BandPage() {
             className="w-full rounded-2xl shadow-[0_10px_20px_-6px_rgb(0_0_0/0.7),0_4px_8px_-3px_rgb(0_0_0/0.5),inset_0_1px_0_rgb(246_236_208/0.12)]"
           />
         </header>
+
+        <BandShow className="mt-14 md:mt-20" />
 
         <section aria-labelledby="listen" className="mt-14 md:mt-20">
           <h2
