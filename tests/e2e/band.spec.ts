@@ -87,6 +87,57 @@ test.describe('/band (#1408)', () => {
     }
   });
 
+  test('names the show, links the channel, ships the calendar file and the social text', async ({
+    page,
+    request,
+  }) => {
+    await page.goto('/band');
+    const show = page.getByTestId('band-show');
+    await expect(
+      show.getByRole('heading', {
+        level: 2,
+        name: 'The Band Wagon: One Night Only, Every City on Earth',
+      })
+    ).toBeVisible();
+    await expect(show).toContainText('LIVE Thursday 29 October');
+    await expect(show).toContainText('REPLAY Saturday 31 October');
+    await expect(
+      show.getByRole('link', { name: 'twitch.tv/scripthammer' })
+    ).toHaveAttribute('href', 'https://twitch.tv/scripthammer');
+    await expect(show.getByTestId('show-city')).toHaveCount(8);
+
+    const icsHref = await show
+      .getByRole('link', { name: /calendar/i })
+      .getAttribute('href');
+    expect(icsHref).not.toBeNull();
+    const ics = await request.get(icsHref as string);
+    expect(ics.status()).toBe(200);
+    expect(await ics.text()).toContain('DTSTART:20261029T220000Z');
+
+    for (const name of ['og:description', 'twitter:description']) {
+      const content = await page
+        .locator(`meta[property="${name}"], meta[name="${name}"]`)
+        .getAttribute('content');
+      expect(content).toContain('The Band Wagon');
+      expect(content).toContain('Thursday 29 October');
+    }
+  });
+
+  test('says nothing is coming up once the replay is over', async ({
+    page,
+  }) => {
+    // 2 Nov 2026, noon UTC: after the replay, before any real clock could matter.
+    await page.clock.install({ time: new Date('2026-11-02T12:00:00Z') });
+    await page.goto('/band');
+    await expect(page.getByTestId('band-show')).toHaveAttribute(
+      'data-state',
+      'over'
+    );
+    await expect(page.getByTestId('band-show')).not.toContainText(
+      /coming up|upcoming/i
+    );
+  });
+
   test('the two calls to action are plain links to /schedule and /pricing', async ({
     page,
   }) => {
