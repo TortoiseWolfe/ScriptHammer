@@ -120,3 +120,14 @@ export function isNearStage(
 ): boolean {
   return Math.hypot(x - placement.x, z - placement.z) <= NEAR_STAGE_M;
 }
+
+/**
+ * Yaw for the VR viewer's origin at the audience spot, so a visitor who enters VR faces
+ * the stage. The viewer looks down -Z; rotating by `t` turns -Z into (-sin t, 0, -cos t),
+ * and a compass bearing b points along (sin b, 0, -cos b), so facing bearing b needs
+ * t = -b. The audience looks back at the stage, opposite the way the stage faces.
+ */
+export function audienceYaw(facingDeg: number): number {
+  const bearing = (((facingDeg + 180) % 360) + 360) % 360;
+  return -(bearing * Math.PI) / 180;
+}

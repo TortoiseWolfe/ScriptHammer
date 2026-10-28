@@ -83,6 +83,18 @@ export default function StageCore({
     timeRef.current += dt;
     rig.setTime(timeRef.current);
     onFrame?.(dt, timeRef.current);
+    // Headset session (feature 053b). The composer renders to offscreen targets
+    // at the canvas size, which a WebXR layer cannot use: three's WebXRManager
+    // only swaps in the per-eye array camera for a direct gl.render. So render
+    // raw, and encode sRGB here because the Grade pass that normally owns the
+    // single lin2srgb encode is bypassed (same reason as the ortho branch).
+    if (gl.xr.isPresenting) {
+      const colorSpace = gl.outputColorSpace;
+      gl.outputColorSpace = SRGBColorSpace;
+      gl.render(scene, camera);
+      gl.outputColorSpace = colorSpace;
+      return;
+    }
     // Top-down compare mode: TRUE orthographic projection, north-up. A
     // perspective camera splays box tops outward from the view centre even
     // when footprints register perfectly — orthographic is the only honest

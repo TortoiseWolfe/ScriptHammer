@@ -10,6 +10,7 @@ import {
   placeStage,
   isNearStage,
   hasStage,
+  audienceYaw,
   NEAR_STAGE_M,
   type StageSpot,
 } from '../bandStage/placement';
@@ -150,5 +151,29 @@ describe('isNearStage', () => {
     expect(isNearStage(p, 10, 20)).toBe(true);
     expect(isNearStage(p, 10 + NEAR_STAGE_M, 20)).toBe(true);
     expect(isNearStage(p, 10 + NEAR_STAGE_M + 1, 20)).toBe(false);
+  });
+});
+
+describe('audienceYaw', () => {
+  /** Which way the VR viewer looks after rotation: -Z turned by t about Y. */
+  const lookOf = (t: number) => [-Math.sin(t), -Math.cos(t)];
+
+  it('faces the chatt audience back at the stage', () => {
+    const p = placeStage(chattStage(), chattManifest());
+    const [lx, lz] = lookOf(audienceYaw(chattStage().facingDeg));
+    const dx = p.x - p.audience.x;
+    const dz = p.z - p.audience.z;
+    const len = Math.hypot(dx, dz);
+    // The look direction points at the stage, within a degree or so.
+    expect(lx * (dx / len) + lz * (dz / len)).toBeGreaterThan(0.999);
+  });
+
+  it('looks the opposite way the stage faces, for every compass quarter', () => {
+    for (const facing of [0, 90, 180, 270, -90, 450]) {
+      const [lx, lz] = lookOf(audienceYaw(facing));
+      const b = ((facing + 180) * Math.PI) / 180;
+      expect(lx).toBeCloseTo(Math.sin(b), 9);
+      expect(lz).toBeCloseTo(-Math.cos(b), 9);
+    }
   });
 });
