@@ -14,13 +14,8 @@ import { test, expect } from '@playwright/test';
  * container and longer on a loaded CI runner.
  */
 const WALK_ENGAGE_MS = 120_000;
-// One click or the state change it causes. On software GL the scene starves the page's
-// animation frames, and Playwright's "stable" check waits on two of them, so a click
-// that is instant on a laptop took more than the default 15 s on a CI runner. Same
-// budget as the compare-mode dock (tests/e2e/twins.spec.ts, #1395).
-const ACTION_MS = 60_000;
 const STAGE_PATH = '/chatt/?diorama&walk&at=35.05666,-85.31144&face=0';
-test.describe.configure({ timeout: 300_000 });
+test.describe.configure({ timeout: 200_000 });
 
 test.describe("band stage at Ross's Landing", () => {
   test('/band links to the stage in walk mode', async ({ page }) => {
@@ -66,15 +61,18 @@ test.describe("band stage at Ross's Landing", () => {
         'placed, or the walker spawned more than NEAR_STAGE_M from it'
     ).toBeVisible({ timeout: 30_000 });
 
-    await play.click({ timeout: ACTION_MS });
+    // force: the button is already proven visible above. Playwright's "stable" check
+    // waits on two animation frames, which the WebGL scene starves on software GL (the
+    // click timed out at 15 s on CI, three tries). The scene has no reduced-motion mode
+    // to switch the animation off, so the click skips that wait and the assertions
+    // below prove the click landed.
+    await play.click({ force: true });
     await expect(
       page.getByRole('button', { name: 'Pause the set' })
-    ).toBeVisible({ timeout: ACTION_MS });
+    ).toBeVisible();
     const mute = page.getByRole('button', { name: 'Mute band' });
     await expect(mute).toHaveAttribute('aria-pressed', 'false');
-    await mute.click({ timeout: ACTION_MS });
-    await expect(mute).toHaveAttribute('aria-pressed', 'true', {
-      timeout: ACTION_MS,
-    });
+    await mute.click({ force: true });
+    await expect(mute).toHaveAttribute('aria-pressed', 'true');
   });
 });
