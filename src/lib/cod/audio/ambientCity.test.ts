@@ -9,7 +9,14 @@
 
 import { describe, it, expect } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { useAmbientCity, planVehiclePass, VEHICLE_PEAK_CEIL } from './ambientCity';
+import {
+  useAmbientCity,
+  planVehiclePass,
+  VEHICLE_PEAK_CEIL,
+  ambientLevel,
+  AMBIENT_LEVEL,
+  DUCK_FACTOR,
+} from './ambientCity';
 import { Rng } from './rng';
 
 describe('planVehiclePass — passing-vehicle recipe (pure, deterministic)', () => {
@@ -60,11 +67,24 @@ describe('planVehiclePass — passing-vehicle recipe (pure, deterministic)', () 
 });
 
 describe('useAmbientCity', () => {
-  it('returns resume + start + stop callbacks', () => {
+  it('returns resume + start + stop + duck callbacks', () => {
     const { result } = renderHook(() => useAmbientCity());
     expect(typeof result.current.resume).toBe('function');
     expect(typeof result.current.start).toBe('function');
     expect(typeof result.current.stop).toBe('function');
+    expect(typeof result.current.duck).toBe('function');
+  });
+
+  it('duck() is a silent no-op without Web Audio, before or after start', () => {
+    const { result, unmount } = renderHook(() => useAmbientCity());
+    expect(() => {
+      result.current.duck(true);
+      result.current.start();
+      result.current.duck(false);
+      result.current.duck(true);
+      result.current.stop();
+      unmount();
+    }).not.toThrow();
   });
 
   it('is a silent no-op without Web Audio (jsdom) — never throws', () => {
@@ -76,5 +96,18 @@ describe('useAmbientCity', () => {
       result.current.stop(); // idempotent
       unmount();
     }).not.toThrow();
+  });
+});
+
+describe('ambientLevel — the duck while the band plays (#1413)', () => {
+  it('sits at the full bed level when not ducked', () => {
+    expect(ambientLevel(false)).toBe(AMBIENT_LEVEL);
+  });
+
+  it('drops to a fifth of the bed when ducked', () => {
+    expect(DUCK_FACTOR).toBe(0.2);
+    expect(ambientLevel(true)).toBeCloseTo(AMBIENT_LEVEL * 0.2, 10);
+    expect(ambientLevel(true)).toBeLessThan(ambientLevel(false));
+    expect(ambientLevel(true)).toBeGreaterThan(0);
   });
 });

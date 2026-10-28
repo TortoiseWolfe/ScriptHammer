@@ -28,6 +28,8 @@ interface AmbientState {
   nextChirp: number;
   /** AudioContext time of the next scheduled passing vehicle. */
   nextVehicle: number;
+  /** A louder source (the band stage, #1413) is playing: hold the bed low. */
+  ducked: boolean;
 }
 
 /** A passing vehicle's tunable parameters, derived deterministically from the
@@ -72,9 +74,20 @@ export function planVehiclePass(rng: Rng): VehiclePlan {
     rateFrom: rng.range(1.03, 1.08), // approaching
     rateTo: rng.range(0.92, 0.97), // receding — always below rateFrom
     band: rng.range(150, 260),
-    panFrom: (-dir) as -1 | 1,
+    panFrom: -dir as -1 | 1,
     panTo: dir,
   };
+}
+
+/** The bed's full level once faded in. */
+export const AMBIENT_LEVEL = 0.85;
+/** How far the bed drops while something louder plays: a fifth of its level. */
+export const DUCK_FACTOR = 0.2;
+
+/** The level the master gain should sit at. Pure, so the duck is testable
+ *  without Web Audio. */
+export function ambientLevel(ducked: boolean): number {
+  return AMBIENT_LEVEL * (ducked ? DUCK_FACTOR : 1);
 }
 
 export interface UseAmbientCity {
@@ -94,11 +107,20 @@ export interface UseAmbientCity {
   /** Fade out + stop the beds and the bird scheduler. Keeps the context alive so
    *  re-entering Walk can `start()` again. */
   stop: () => void;
+  /** Drop the bed to `DUCK_FACTOR` of its level (true) or bring it back (false),
+   *  over half a second. Remembered across stop/start, so re-entering Walk while
+   *  the band plays starts ducked. */
+  duck: (on: boolean) => void;
 }
 
 /** One tonal bird call: 2–4 rising sine syllables through a shared high-pass, so
  *  they sit above the low rumble. Nodes are short-lived and self-terminating. */
-function chirp(actx: AudioContext, rng: Rng, dest: AudioNode, t0: number): void {
+function chirp(
+  actx: AudioContext,
+  rng: Rng,
+  dest: AudioNode,
+  t0: number
+): void {
   const out = gain(actx, 0.5);
   const hp = biquad(actx, 'highpass', 1500, 0.7);
   out.connect(hp);
@@ -193,6 +215,7 @@ export function useAmbientCity(): UseAmbientCity {
     birdTimer: null,
     nextChirp: 0,
     nextVehicle: 0,
+    ducked: false,
   }).current;
 
   // Lazily construct the context/master/bank. Returns false when Web Audio is
@@ -262,10 +285,18 @@ export function useAmbientCity(): UseAmbientCity {
     // Master fade-in so entering Walk doesn't pop.
     master.gain.cancelScheduledValues(now);
     master.gain.setValueAtTime(Math.max(master.gain.value, 0.0001), now);
-    master.gain.linearRampToValueAtTime(0.85, now + 2.5);
+    master.gain.linearRampToValueAtTime(ambientLevel(s.ducked), now + 2.5);
 
     s.sources.push(wind, gust, traf, swell);
-    s.nodes.push(windLP, windGain, gustDepth, trafHP, trafLP, trafGain, swellDepth);
+    s.nodes.push(
+      windLP,
+      windGain,
+      gustDepth,
+      trafHP,
+      trafLP,
+      trafGain,
+      swellDepth
+    );
 
     // Sparse lookahead scheduler (standard Web Audio pattern): schedule the two
     // transient voices up to 1.5 s ahead, only while the context is running —
@@ -302,7 +333,10 @@ export function useAmbientCity(): UseAmbientCity {
     if (s.master) {
       try {
         s.master.gain.cancelScheduledValues(now);
-        s.master.gain.setValueAtTime(Math.max(s.master.gain.value, 0.0001), now);
+        s.master.gain.setValueAtTime(
+          Math.max(s.master.gain.value, 0.0001),
+          now
+        );
         s.master.gain.linearRampToValueAtTime(0.0001, now + 0.5);
       } catch {
         /* param already detached */
@@ -338,6 +372,26 @@ export function useAmbientCity(): UseAmbientCity {
     }, 700);
   }, [s]);
 
+  const duck = useCallback(
+    (on: boolean) => {
+      s.ducked = on;
+      const actx = s.actx;
+      if (!actx || !s.master || !s.running) return;
+      const now = actx.currentTime;
+      try {
+        s.master.gain.cancelScheduledValues(now);
+        s.master.gain.setValueAtTime(
+          Math.max(s.master.gain.value, 0.0001),
+          now
+        );
+        s.master.gain.linearRampToValueAtTime(ambientLevel(on), now + 0.5);
+      } catch {
+        /* param already detached */
+      }
+    },
+    [s]
+  );
+
   useEffect(
     () => () => {
       if (s.birdTimer) {
@@ -371,5 +425,5 @@ export function useAmbientCity(): UseAmbientCity {
     [s]
   );
 
-  return { resume, start, stop };
+  return { resume, start, stop, duck };
 }

@@ -6,6 +6,7 @@ import { projectConfig, getAssetUrl } from '@/config/project.config';
 import { BAND_NAME } from '@/lib/band/roster';
 import { THEME_SONG, HOOK, DUET_SONGS, DUET_SOURCES } from '@/lib/band/songs';
 import { SHOW_DESCRIPTION } from '@/lib/band/show';
+import { STAGE_HREF, STAGE_LINK_LABEL } from '@/lib/band/stage';
 import BandShow from '@/components/molecular/BandShow';
 import BandRoster from '@/components/molecular/BandRoster';
 import ThemeSongPlayer from '@/components/molecular/ThemeSongPlayer';
@@ -78,6 +79,13 @@ export default function BandPage() {
                 className={`${BUTTON} border-2 border-[#f5b335] text-[#f6ecd0] hover:bg-[#1c1f34]`}
               >
                 Keep your site playing
+              </Link>
+              <Link
+                href={STAGE_HREF}
+                prefetch={false}
+                className={`${BUTTON} border-2 border-[#f5b335] text-[#f6ecd0] hover:bg-[#1c1f34]`}
+              >
+                {STAGE_LINK_LABEL}
               </Link>
             </div>
           </div>

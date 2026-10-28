@@ -220,6 +220,28 @@ export function parseAtParam(
   return { lat, lon };
 }
 
+/**
+ * Parse `?face=<compass degrees>`: which way the walker looks on arrival (0 = north,
+ * 90 = east). Returns the bearing normalised to [0, 360), or null for anything malformed,
+ * so a bad value keeps the default heading rather than turning the camera to `NaN`.
+ * The band stage link (#1413) uses it to arrive looking at the stage.
+ */
+export function parseFaceParam(search: string): number | null {
+  const raw = new URLSearchParams(search).get('face');
+  if (raw === null || raw.trim() === '') return null;
+  const deg = Number(raw);
+  if (!Number.isFinite(deg)) return null;
+  return ((deg % 360) + 360) % 360;
+}
+
+/**
+ * The walk rig's yaw for a compass bearing. The rig looks along (-sin yaw, 0, -cos yaw)
+ * in ENU (north = -Z, east = +X), so north is yaw 0 and east is yaw -PI/2.
+ */
+export function yawForBearing(bearingDeg: number): number {
+  return -(bearingDeg * Math.PI) / 180;
+}
+
 export interface MarkerInput {
   lat: number;
   lon: number;

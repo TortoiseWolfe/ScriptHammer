@@ -8,6 +8,7 @@
 
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import {
+  AudioContext as ThreeAudioContext,
   NoToneMapping,
   LinearSRGBColorSpace,
   type Group,
@@ -41,6 +42,8 @@ import {
   type BikeView,
 } from '@/stage/embodiedWalk';
 import TwinWorld from '@/world/TwinWorld';
+import BandStage from '@/world/BandStage';
+import { hasStage } from '@/world/bandStage/placement';
 import Trolley from '@/agents/trolley';
 import Bike from '@/agents/bike';
 import PlayerCharacter from '@/agents/playerCharacter';
@@ -49,6 +52,7 @@ import Hud, { HudCaption, HudLink, HudOption, HudSlider } from '@/stage/Hud';
 import PlacementEditor from './PlacementEditor';
 import SelectedBuildingCard from './SelectedBuildingCard';
 import LocationHud from './LocationHud';
+import BandStageControls from '@/components/molecular/BandStageControls';
 import WarehouseGizmo from './WarehouseGizmo';
 import { useWarehouseEditor } from './useWarehouseEditor';
 import type {
@@ -81,6 +85,8 @@ import {
   type IndexedAddress,
   osmUrl,
   parseAtParam,
+  parseFaceParam,
+  yawForBearing,
 } from '@/lib/twin-location';
 import {
   createCommitScheduler,
@@ -240,6 +246,9 @@ function SceneInner({
   patchOverride,
   onGizmoLive,
   gizmoMode,
+  bandPlaying = false,
+  bandMuted = false,
+  onNearStage,
 }: {
   slug: string;
   manifest: Manifest;
@@ -288,6 +297,11 @@ function SceneInner({
   /** Display-only live values while a gizmo handle drags (null = ended). */
   onGizmoLive?: (patch: TwinPlacementOverride | null) => void;
   gizmoMode?: 'translate' | 'rotate';
+  /** The band stage (#1413): the DOM controls own these; the scene plays them. */
+  bandPlaying?: boolean;
+  bandMuted?: boolean;
+  /** The walker came within hearing range of the stage, or left it. */
+  onNearStage?: (near: boolean) => void;
 }) {
   const camera = useThree((s) => s.camera);
   const gl = useThree((s) => s.gl);
@@ -335,6 +349,7 @@ function SceneInner({
   // rigMode: rig input stays bound while Top-down renders, so drags during
   // ortho silently move the hidden perspective camera — exiting
   // ortho→Miniature keeps rigMode 'orbit' but must still re-frame cleanly.
+  const didFaceRef = useRef(false);
   useEffect(() => {
     const rigMode: RigMode = mode === 'ortho' ? 'orbit' : mode;
     if (rigMode === 'orbit' && !rig.tFocus) {
@@ -356,6 +371,23 @@ function SceneInner({
       rig.cam.lookAt(rig.focus);
     }
     rig.setMode(rigMode);
+    // First entry into Walk (#1413): arrive level. Walk used to inherit the orbit
+    // camera's pitch (setMode clamps it to at most 57 degrees down), so a deep link
+    // that engaged mid-glide put the player staring at the ground in front of their feet
+    // - a frame with no street in it. twin-walk-visible measured exactly that: the same
+    // dull brown frame (mean 0.3396, variance 0.00018) on the first try, passing only
+    // when a retry happened to catch the camera at another angle. `?face=<bearing>`
+    // also sets the heading, so the band stage link arrives looking at the stage.
+    // Once only, so a later return to Walk keeps the player's own view.
+    if (rigMode === 'walk' && !didFaceRef.current) {
+      didFaceRef.current = true;
+      rig.pitch = 0;
+      const face =
+        typeof window !== 'undefined'
+          ? parseFaceParam(window.location.search)
+          : null;
+      if (face !== null) rig.yaw = yawForBearing(face);
+    }
   }, [rig, mode, framing]);
 
   // R3F's Canvas camera options only apply at creation — sync the palette's
@@ -593,9 +625,15 @@ function SceneInner({
   /** Collision-object ids per slug, so an unmounted model's geometry can be
    *  removed again. Cleared whenever the world is rebuilt from scratch. */
   const colliderIdsRef = useRef<Map<string, number[]>>(new Map());
+  /** The same sampler as state, for things that must re-render when the ground
+   *  arrives (the band stage stands on it, #1413). */
+  const [groundAt, setGroundAt] = useState<
+    ((x: number, z: number) => number) | null
+  >(null);
   const handleGroundReady = useCallback(
     (fn: (x: number, z: number) => number) => {
       groundAtRef.current = fn;
+      setGroundAt(() => fn);
       tryBuildWalkRef.current?.();
     },
     []
@@ -618,8 +656,13 @@ function SceneInner({
     resume: resumeAmbient,
     start: startAmbient,
     stop: stopAmbient,
+    duck: duckAmbient,
   } = useAmbientCity();
   const { emit: emitDust, tick: tickDust } = useFootstepDust(256);
+  // The band plays over the city: hold the ambient bed low while it is audible.
+  useEffect(() => {
+    duckAmbient(bandPlaying && !bandMuted);
+  }, [bandPlaying, bandMuted, duckAmbient]);
   const { apply: applyCameraFeel } = useCameraFeel();
 
   const buildingsMeshRef = useRef<Mesh | null>(null);
@@ -949,6 +992,19 @@ function SceneInner({
     }
   }, [rig, mode, site.trolley]);
 
+  /* ---- The band stage (#1413) ------------------------------------------------ */
+
+  // Only a walker can be "near" the stage; the orbit camera hovering over it is not.
+  const getStagePlayer = useCallback(() => {
+    if (mode !== 'walk') return null;
+    const p = walkCtrlRef.current?.position;
+    return p ? { x: p.x, z: p.z } : null;
+  }, [mode]);
+  // A missing or broken stage file costs the stage, never the city.
+  const handleStageError = useCallback((message: string) => {
+    log.warn(`band stage not shown: ${message}`);
+  }, []);
+
   /* ---- Where am I (#706): the half that needs the controller ---------------- */
 
   // models.json anchors are in the NARROW frame; the wide city reprojects them the same
@@ -1111,6 +1167,18 @@ function SceneInner({
         onAddressIndex={handleAddressIndex}
         onTerrainMesh={handleTerrainMesh}
       />
+      {hasStage(slug) && (
+        <BandStage
+          slug={slug}
+          manifest={manifest}
+          groundAt={groundAt}
+          getPlayer={getStagePlayer}
+          playing={bandPlaying}
+          muted={bandMuted}
+          onNear={onNearStage}
+          onError={handleStageError}
+        />
+      )}
       {gizmoTarget && gizmoBase && patchOverride ? (
         <WarehouseGizmo
           target={gizmoTarget}
@@ -1346,6 +1414,22 @@ function TwinCanvasInner({
   useEffect(() => bus.on('player:stance', (e) => setStance(e.stance)), []);
   // Walk mode: true while standing next to the parked bike (drives the prompt).
   const [nearBike, setNearBike] = useState(false);
+  // Band stage at Ross's Landing (053): near drives the controls; playing and
+  // muted drive the stage's positional sound and the city-ambience duck.
+  const [nearStage, setNearStage] = useState(false);
+  const [bandPlaying, setBandPlaying] = useState(false);
+  const [bandMuted, setBandMuted] = useState(false);
+  const toggleBandPlaying = useCallback(() => {
+    // Browsers unlock audio only inside a user gesture, so resume three's
+    // shared AudioContext here in the click rather than in an effect later.
+    // @types/three declares getContext() as returning its own wrapper class; at
+    // runtime it is the browser's AudioContext, which is what has resume().
+    const ctx =
+      ThreeAudioContext.getContext() as unknown as globalThis.AudioContext;
+    void ctx.resume();
+    setBandPlaying((p) => !p);
+  }, []);
+  const toggleBandMuted = useCallback(() => setBandMuted((m) => !m), []);
 
   // --- Warehouse layer: directory + placement editor (#259) ---
   // The whole editor surface (edit mode, selection, overrides + persistence,
@@ -1596,6 +1680,9 @@ function TwinCanvasInner({
           registerRig={registerRig}
           onFps={showFps ? setFps : undefined}
           onNearBike={setNearBike}
+          bandPlaying={bandPlaying}
+          bandMuted={bandMuted}
+          onNearStage={setNearStage}
           onWalkReady={handleWalkReady}
           walkIntent={walkParam}
           onLocus={setLocus}
@@ -1690,6 +1777,15 @@ function TwinCanvasInner({
         >
           🚲 Press B to ride
         </div>
+      )}
+      {mode === 'walk' && (nearStage || bandPlaying) && (
+        <BandStageControls
+          playing={bandPlaying}
+          muted={bandMuted}
+          onPlayToggle={toggleBandPlaying}
+          onMuteToggle={toggleBandMuted}
+          style={{ position: 'absolute', top: 148, left: 16, zIndex: 11 }}
+        />
       )}
       {worldError && (
         <div

@@ -28,6 +28,7 @@ const ALLOWED = [
   // WebGL / GPU availability (#288).
   { file: 'tests/e2e/twin-walk-visible.spec.ts', cond: '!gpu.webgl' },
   { file: 'tests/e2e/twin-walk-visible.spec.ts', cond: '!hasWebGL' },
+  { file: 'tests/e2e/band-stage.spec.ts', cond: '!hasWebGL' },
   { file: 'tests/e2e/twins.spec.ts', cond: '!(await webglAvailable(page' },
   // Hosted lane: admin seeding is refused against a non-local backend.
   { file: 'tests/e2e/admin/', cond: '!isLocalSupabaseUrl(resolveBackendUrl(' },

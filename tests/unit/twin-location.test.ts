@@ -10,6 +10,8 @@ import {
   nearestLandmark,
   osmUrl,
   parseAtParam,
+  parseFaceParam,
+  yawForBearing,
   pointInRing,
 } from '@/lib/twin-location';
 import { addressOf, buildingLabelOf } from '@/lib/osm-tags';
@@ -102,6 +104,49 @@ describe('twin location (#706)', () => {
       ]) {
         expect(parseAtParam(bad), `"${bad}" should not parse`).toBeNull();
       }
+    });
+  });
+
+  describe('parseFaceParam (#1413)', () => {
+    it('reads a compass bearing and normalises it to [0, 360)', () => {
+      expect(parseFaceParam('?face=0')).toBe(0);
+      expect(parseFaceParam('?face=180')).toBe(180);
+      expect(parseFaceParam('?face=450')).toBe(90);
+      expect(parseFaceParam('?face=-90')).toBe(270);
+      expect(parseFaceParam('?at=35,-85&face=12.5')).toBe(12.5);
+    });
+
+    it('rejects anything malformed, keeping the default heading', () => {
+      for (const bad of [
+        '',
+        '?face=',
+        '?face=%20',
+        '?face=north',
+        '?face=NaN',
+        '?face=Infinity',
+      ]) {
+        expect(parseFaceParam(bad), `"${bad}" should not parse`).toBeNull();
+      }
+    });
+  });
+
+  describe('yawForBearing', () => {
+    // The rig's camera looks along (-sin yaw, 0, -cos yaw); north is -Z, east is +X.
+    const look = (yaw: number) => [-Math.sin(yaw), -Math.cos(yaw)];
+
+    it('north looks down -Z', () => {
+      const [x, z] = look(yawForBearing(0));
+      expect(x).toBeCloseTo(0, 10);
+      expect(z).toBeCloseTo(-1, 10);
+    });
+
+    it('east looks down +X, south down +Z', () => {
+      const [ex, ez] = look(yawForBearing(90));
+      expect(ex).toBeCloseTo(1, 10);
+      expect(ez).toBeCloseTo(0, 10);
+      const [sx, sz] = look(yawForBearing(180));
+      expect(sx).toBeCloseTo(0, 10);
+      expect(sz).toBeCloseTo(1, 10);
     });
   });
 
