@@ -14,8 +14,13 @@ import { test, expect } from '@playwright/test';
  * container and longer on a loaded CI runner.
  */
 const WALK_ENGAGE_MS = 120_000;
+// One click or the state change it causes. On software GL the scene starves the page's
+// animation frames, and Playwright's "stable" check waits on two of them, so a click
+// that is instant on a laptop took more than the default 15 s on a CI runner. Same
+// budget as the compare-mode dock (tests/e2e/twins.spec.ts, #1395).
+const ACTION_MS = 60_000;
 const STAGE_PATH = '/chatt/?diorama&walk&at=35.05666,-85.31144&face=0';
-test.describe.configure({ timeout: 150_000 });
+test.describe.configure({ timeout: 300_000 });
 
 test.describe("band stage at Ross's Landing", () => {
   test('/band links to the stage in walk mode', async ({ page }) => {
@@ -61,13 +66,15 @@ test.describe("band stage at Ross's Landing", () => {
         'placed, or the walker spawned more than NEAR_STAGE_M from it'
     ).toBeVisible({ timeout: 30_000 });
 
-    await play.click();
+    await play.click({ timeout: ACTION_MS });
     await expect(
       page.getByRole('button', { name: 'Pause the set' })
-    ).toBeVisible();
+    ).toBeVisible({ timeout: ACTION_MS });
     const mute = page.getByRole('button', { name: 'Mute band' });
     await expect(mute).toHaveAttribute('aria-pressed', 'false');
-    await mute.click();
-    await expect(mute).toHaveAttribute('aria-pressed', 'true');
+    await mute.click({ timeout: ACTION_MS });
+    await expect(mute).toHaveAttribute('aria-pressed', 'true', {
+      timeout: ACTION_MS,
+    });
   });
 });
