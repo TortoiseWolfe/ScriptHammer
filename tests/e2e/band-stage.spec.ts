@@ -65,14 +65,15 @@ test.describe("band stage at Ross's Landing", () => {
     // waits on two animation frames, which the WebGL scene starves on software GL (the
     // click timed out at 15 s on CI, three tries). The scene has no reduced-motion mode
     // to switch the animation off, so the click skips that wait and the assertions
-    // below prove the click landed.
-    await play.click({ force: true });
+    // below prove the click landed. noWaitAfter: the click lands ("click action done"),
+    // then Playwright's wait for scheduled navigations starves the same way.
+    await play.click({ force: true, noWaitAfter: true });
     await expect(
       page.getByRole('button', { name: 'Pause the set' })
     ).toBeVisible();
     const mute = page.getByRole('button', { name: 'Mute band' });
     await expect(mute).toHaveAttribute('aria-pressed', 'false');
-    await mute.click({ force: true });
+    await mute.click({ force: true, noWaitAfter: true });
     await expect(mute).toHaveAttribute('aria-pressed', 'true');
   });
 });

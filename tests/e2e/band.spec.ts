@@ -123,19 +123,27 @@ test.describe('/band (#1408)', () => {
     }
   });
 
-  test('says nothing is coming up once the replay is over', async ({
-    page,
-  }) => {
-    // 2 Nov 2026, noon UTC: after the replay, before any real clock could matter.
-    await page.clock.install({ time: new Date('2026-11-02T12:00:00Z') });
-    await page.goto('/band');
-    await expect(page.getByTestId('band-show')).toHaveAttribute(
-      'data-state',
-      'over'
-    );
-    await expect(page.getByTestId('band-show')).not.toContainText(
-      /coming up|upcoming/i
-    );
+  // Signed out, because /band needs no account and the clock below jumps five days:
+  // the stored sign-in is then long expired, the app signs the visitor out and sends
+  // them to the home page, and that raced the assertions (the test passed or failed by
+  // timing, on main too).
+  test.describe('after the replay', () => {
+    test.use({ storageState: { cookies: [], origins: [] } });
+
+    test('says nothing is coming up once the replay is over', async ({
+      page,
+    }) => {
+      // 2 Nov 2026, noon UTC: after the replay, before any real clock could matter.
+      await page.clock.install({ time: new Date('2026-11-02T12:00:00Z') });
+      await page.goto('/band');
+      await expect(page.getByTestId('band-show')).toHaveAttribute(
+        'data-state',
+        'over'
+      );
+      await expect(page.getByTestId('band-show')).not.toContainText(
+        /coming up|upcoming/i
+      );
+    });
   });
 
   test('the two calls to action are plain links to /schedule and /pricing', async ({
