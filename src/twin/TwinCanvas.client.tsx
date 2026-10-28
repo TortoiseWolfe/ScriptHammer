@@ -371,19 +371,22 @@ function SceneInner({
       rig.cam.lookAt(rig.focus);
     }
     rig.setMode(rigMode);
-    // `?face=<bearing>` (#1413): the first entry into Walk looks the way the link asked,
-    // level, instead of inheriting the orbit camera's heading. Once only, so a later
-    // return to Walk keeps the player's own heading.
+    // First entry into Walk (#1413): arrive level. Walk used to inherit the orbit
+    // camera's pitch (setMode clamps it to at most 57 degrees down), so a deep link
+    // that engaged mid-glide put the player staring at the ground in front of their feet
+    // - a frame with no street in it. twin-walk-visible measured exactly that: the same
+    // dull brown frame (mean 0.3396, variance 0.00018) on the first try, passing only
+    // when a retry happened to catch the camera at another angle. `?face=<bearing>`
+    // also sets the heading, so the band stage link arrives looking at the stage.
+    // Once only, so a later return to Walk keeps the player's own view.
     if (rigMode === 'walk' && !didFaceRef.current) {
       didFaceRef.current = true;
+      rig.pitch = 0;
       const face =
         typeof window !== 'undefined'
           ? parseFaceParam(window.location.search)
           : null;
-      if (face !== null) {
-        rig.yaw = yawForBearing(face);
-        rig.pitch = 0;
-      }
+      if (face !== null) rig.yaw = yawForBearing(face);
     }
   }, [rig, mode, framing]);
 
