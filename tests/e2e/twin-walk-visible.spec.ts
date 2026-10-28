@@ -185,6 +185,7 @@ test.describe('walk scene is visible (not a dark void / empty frame)', () => {
     // 0.004 / 0.0000 over the strip).
     const W = 32;
     const H = 8;
+    await test.info().attach('strip', { body: shot, contentType: 'image/png' }); // TEMP-1414
     const { data, info } = await sharp(shot)
       .resize(W, H, { fit: 'fill' })
       .raw()
