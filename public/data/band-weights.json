@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "date": "2026-10-29",
+  "dateLabel": "29 Oct 2026",
+  "site": 1,
+  "twitch": 3,
+  "youtube": 3,
+  "owner": 3,
+  "siteCap": 25,
+  "minDays": 1,
+  "newDays": 14,
+  "changelog": [
+    {
+      "version": 1,
+      "date": "2026-10-29",
+      "dateLabel": "29 Oct 2026",
+      "change": "First published rule. Site votes weigh 1 (at most 25 points either way), Twitch chat votes 3, YouTube likes and dislikes 3, the owner's review votes 3. Ties go to plays a day since posted, then fewest down votes, then title."
+    }
+  ]
+}

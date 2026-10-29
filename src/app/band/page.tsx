@@ -8,6 +8,7 @@ import { THEME_SONG, HOOK, DUET_SONGS, DUET_SOURCES } from '@/lib/band/songs';
 import { SHOW_DESCRIPTION } from '@/lib/band/show';
 import { STAGE_HREF, STAGE_LINK_LABEL } from '@/lib/band/stage';
 import BandShow from '@/components/molecular/BandShow';
+import BandSongs from '@/components/molecular/BandSongs';
 import BandRoster from '@/components/molecular/BandRoster';
 import ThemeSongPlayer from '@/components/molecular/ThemeSongPlayer';
 
@@ -41,6 +42,10 @@ export const metadata: Metadata = {
  * no error reporting loads here. So, on purpose: no forms, accounts, comments,
  * embeds or outside fonts. Colours are fixed to the cover's night palette, so
  * contrast does not change with the visitor's theme.
+ *
+ * The one exception to "sends nothing" is a song vote (feature 054): one plain,
+ * anonymous request to the site's own Supabase function, sent only when a
+ * visitor presses Up or Down. No cookie, account, device id or address of ours.
  */
 const BUTTON =
   'inline-flex min-h-11 items-center justify-center rounded-xl px-6 py-3 text-lg font-bold focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-4 focus-visible:outline-[#f6ecd0]';
@@ -100,6 +105,8 @@ export default function BandPage() {
         </header>
 
         <BandShow className="mt-14 md:mt-20" />
+
+        <BandSongs className="mt-14 md:mt-20" />
 
         <section aria-labelledby="listen" className="mt-14 md:mt-20">
           <h2

@@ -46,6 +46,8 @@ const APP_DIR = join(process.cwd(), 'src/app');
 const EXCLUDED: Record<string, string> = {
   '/auth/callback':
     'transient OAuth handler — redirects on load, there is no UI to measure',
+  '/[houseband]':
+    'static redirect page (#1416): a meta refresh sends /HouseBand and /houseband to /band, which these sweeps measure on its own',
   '/twins/[slug]':
     'twin payloads are privacy-gated and gitignored; absent in a fresh checkout',
   '/chatt':

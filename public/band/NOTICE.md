@@ -30,4 +30,5 @@ under the repository's MIT licence.
 | `audio/band-wagon-duet-1.mp3`, `-duet-2.mp3` | The duet "Should the Machines Take Over?" in two takes (96 and 124 beats a minute), 80 s each, 128 kbps. Ivory sings for the machines, Chops against. |
 | `members/<name>-512.webp`, `-700.webp` | Portraits of the seven players |
 | `cover/band-wagon-*.{jpg,webp}` | The cover at 600, 1200 and 3000 px |
+| `songs/<id>.webp` | Song covers for the ranked list on `/band`, 160 px, composed in code from the same portraits and SVG |
 | `og-1200x630.jpg` | The social card |

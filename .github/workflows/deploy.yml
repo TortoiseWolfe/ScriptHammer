@@ -142,6 +142,10 @@ jobs:
           NEXT_PUBLIC_DEPLOY_URL: ${{ vars.NEXT_PUBLIC_DEPLOY_URL }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          # /band vote buttons (#1416). A VARIABLE: set to "true" only after cast_band_vote
+          # exists on the hosted project (apply the monolithic migration first). Unset means
+          # the Songs list shows with no vote buttons.
+          NEXT_PUBLIC_BAND_VOTE_OPEN: ${{ vars.NEXT_PUBLIC_BAND_VOTE_OPEN }}
 
       # Last line of defense before shipping (#294): `pnpm build` above can emit a
       # chunk the browser cannot PARSE (an inlined WASM template literal with

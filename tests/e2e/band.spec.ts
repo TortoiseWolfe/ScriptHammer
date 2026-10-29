@@ -146,6 +146,83 @@ test.describe('/band (#1408)', () => {
     });
   });
 
+  test.describe('the ranked Songs list (#1416)', () => {
+    test('lists the songs in rank order with covers, counts and both links', async ({
+      page,
+    }) => {
+      await page.goto('/band/');
+      const songs = page.getByTestId('band-songs');
+      await expect(
+        songs.getByRole('heading', { level: 2, name: 'Songs' })
+      ).toBeVisible();
+      const rows = songs.getByTestId('band-song');
+      await expect(rows).toHaveCount(19);
+      // Covers are lazy: ask for them all so a missing file cannot hide below the fold.
+      await songs
+        .locator('img')
+        .evaluateAll((imgs) =>
+          (imgs as HTMLImageElement[]).forEach((i) => (i.loading = 'eager'))
+        );
+      await page.waitForFunction(() =>
+        Array.from(
+          document.querySelectorAll<HTMLImageElement>(
+            '[data-testid="band-songs"] img'
+          )
+        ).every((i) => i.complete && i.naturalWidth > 0)
+      );
+      // The list file is already in rank order, and the page keeps it.
+      const ids = await rows.evaluateAll((els) =>
+        els.map((e) => e.getAttribute('data-song-id'))
+      );
+      expect(new Set(ids).size).toBe(19);
+      for (const held of ['n02', 'n04', 'n06', 'psy-3', 'psy-3b']) {
+        expect(ids).not.toContain(held);
+      }
+      await expect(songs.getByTestId('counts-as-of')).toHaveText('Wed 28 Oct');
+      await expect(songs).toContainText('made with an AI music model');
+      await expect(
+        rows.first().getByRole('link', { name: /ScriptHammer on Twitch/ })
+      ).toHaveAttribute('href', 'https://twitch.tv/scripthammer');
+      await expect(songs.locator('iframe, audio, video')).toHaveCount(0);
+    });
+
+    test('"How the score works" is closed, plain and carries the privacy line', async ({
+      page,
+    }) => {
+      await page.goto('/band/');
+      const rules = page.getByTestId('score-rules');
+      await expect(rules).not.toHaveAttribute('open', /.*/);
+      await rules.getByText('How the score works').click();
+      await expect(rules.getByTestId('score-version')).toContainText(
+        'Version 1, 29 Oct 2026'
+      );
+      await expect(rules.getByTestId('score-example')).toContainText(
+        '(5 a day)'
+      );
+      await expect(rules.getByTestId('privacy-line')).toHaveText(
+        "Votes here are anonymous. We don't ask who you are, set no cookies and keep no address. Your browser remembers your own vote on your own device only."
+      );
+    });
+
+    test('opening the page sets no cookie of its own for voting', async ({
+      page,
+      context,
+    }) => {
+      await page.goto('/band/');
+      await page.waitForLoadState('networkidle');
+      const names = (await context.cookies()).map((c) => c.name);
+      expect(names.filter((n) => /band|vote/i.test(n))).toEqual([]);
+    });
+
+    test('/HouseBand and /houseband both lead to /band', async ({ page }) => {
+      for (const path of ['/HouseBand/', '/houseband/']) {
+        await page.goto(path);
+        await page.waitForURL(/\/band\/?$/);
+        await expect(page.getByTestId('band-page')).toBeVisible();
+      }
+    });
+  });
+
   test('the two calls to action are plain links to /schedule and /pricing', async ({
     page,
   }) => {
