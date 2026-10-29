@@ -38,6 +38,11 @@ The weights live in one file, `public/data/band-weights.json`. The page text is 
 - The platform's own gateway sees the visitor's address as any web host does. Treating that as fine rests on the Rule's internal-operations text (16 CFR 312.2); this is an inference, not a settled point.
 - Content Security Policy: `connect-src` already allows `https://*.supabase.co`; nothing changes.
 
+## Known limits (accepted, from the spec's own design)
+
+- **A changed vote trusts the browser's word about the old vote.** With no account there is nothing to check it against. The harm is bounded: each request still counts against the caps, a changed vote moves a counter by at most 2, and a song's site votes are capped at 25 points either way in the score. The hourly counters may go negative; the sum stays right.
+- **A flood can use up the hourly caps and show "later" to real visitors.** That is the price of having no address-based limit (the owner chose no identifiers). The signed-in sources (Twitch, YouTube, the owner's review votes) are unaffected, and the site's share of a score cannot pass 25 points.
+
 ## Content gate
 
 Every public string passes `CONTENT-RULE.md`: nothing may read as a figure near a child or as an invitation aimed at children. `BandSongs.test.tsx` checks every title, every cover description and all page text against banned wording.
