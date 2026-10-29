@@ -14,6 +14,12 @@ export interface CalendarEmbedProps {
     name?: string;
     email?: string;
     /**
+     * Text prefilled into the booking's notes box, for example the page the visitor came
+     * from. Cal.com reads `notes` from the same query string as `lead_ref`, and the visitor
+     * can still edit it.
+     */
+    notes?: string;
+    /**
      * The lead this booking belongs to (#562 T039).
      *
      * Cal.com turns `config` into the embed iframe's QUERY STRING, and a custom booking field

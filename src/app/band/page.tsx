@@ -74,7 +74,7 @@ export default function BandPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
-                href="/schedule"
+                href="/schedule?from=band"
                 className={`${BUTTON} bg-[#f5b335] text-[#14172b] hover:bg-[#f6ecd0]`}
               >
                 Book the band
@@ -191,6 +191,16 @@ export default function BandPage() {
               credits page
             </Link>{' '}
             says exactly how.
+          </p>
+          <p className="!mt-4 !mb-0 max-w-[68ch] text-lg leading-[1.65]">
+            Want the story behind the band? Read{' '}
+            <Link
+              href="/blog/the-band-wagon-house-band"
+              className="font-semibold text-[#f5b335] underline underline-offset-4"
+            >
+              Meet ScriptHammer, the house band
+            </Link>
+            .
           </p>
         </section>
       </div>
