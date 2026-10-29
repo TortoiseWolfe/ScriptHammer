@@ -2,17 +2,20 @@
  "jam-2": {
   "card": "/band/cards/jam-2.webp",
   "hook": "(none on record: instrumental solos, robot to robot)",
-  "note": "A long jam on the words of Should the Machines Take Over? Take 1, with solos between the verses and the choruses. See that song for the words."
+  "note": "A long jam on the words of Should the Machines Take Over? Take 1, with solos between the verses and the choruses. See that song for the words.",
+  "videoUrl": "https://www.youtube.com/watch?v=xzuh9XGJrMs"
  },
  "jam-1": {
   "card": "/band/cards/jam-1.webp",
   "hook": "(none on record: instrumental solos, robot to robot)",
-  "note": "A long jam on the words of The Band Wagon (after hours), with solos between the verses and the choruses. See that song for the words."
+  "note": "A long jam on the words of The Band Wagon (after hours), with solos between the verses and the choruses. See that song for the words.",
+  "videoUrl": "https://www.youtube.com/watch?v=r_Yd8nTuyfU"
  },
  "jam-3": {
   "card": "/band/cards/jam-3.webp",
   "hook": "(none on record: instrumental solos, robot to robot)",
-  "note": "A long jam on the words of Should the Machines Take Over? Take 2, with solos between the verses and the choruses. See that song for the words."
+  "note": "A long jam on the words of Should the Machines Take Over? Take 2, with solos between the verses and the choruses. See that song for the words.",
+  "videoUrl": "https://www.youtube.com/watch?v=EBFGqQKeclI"
  },
  "n05": {
   "card": "/band/cards/n05.webp",
@@ -57,7 +60,8 @@
    "Midnight sounds just right with a crowd!",
    "",
    "[Outro - sax and trumpet, then music box]"
-  ]
+  ],
+  "videoUrl": "https://www.youtube.com/watch?v=RY4qzb0FDZQ"
  },
  "n09": {
   "card": "/band/cards/n09.webp",
@@ -106,7 +110,8 @@
    "Boiler room boogie, one more!",
    "",
    "[Outro - steam hiss and one clap]"
-  ]
+  ],
+  "videoUrl": "https://www.youtube.com/watch?v=xJyDLcwGRgc"
  },
  "psy-1": {
   "card": "/band/cards/psy-1.webp",
@@ -160,7 +165,8 @@
    "The doctor listens, and I stay.",
    "",
    "[Outro - music box fading, clock ticking]"
-  ]
+  ],
+  "videoUrl": "https://www.youtube.com/watch?v=J0qKgVdq-4U"
  },
  "alt-1": {
   "card": "/band/cards/alt-1.webp",
@@ -191,12 +197,14 @@
    "Who's on the wagon? Everyone!",
    "Where's the show? Every town!",
    "Climb on the Band Wagon, play it loud!"
-  ]
+  ],
+  "videoUrl": "https://www.youtube.com/watch?v=0wOnTIbw8dw"
  },
  "fusion-1": {
   "card": "/band/cards/fusion-1.webp",
   "hook": "(none: instrumental)",
-  "note": "Instrumental: no sung words."
+  "note": "Instrumental: no sung words.",
+  "videoUrl": "https://www.youtube.com/watch?v=QxihndDz-gw"
  },
  "psy-2": {
   "card": "/band/cards/psy-2.webp",
@@ -253,7 +261,8 @@
    "The Band Wagon plays it nice!",
    "",
    "[Outro - groove fading on guitar]"
-  ]
+  ],
+  "videoUrl": "https://www.youtube.com/watch?v=qpkNf2bzkuM"
  },
  "n01": {
   "card": "/band/cards/n01.webp",
@@ -308,7 +317,8 @@
    "Climb on the Band Wagon, play your part!",
    "",
    "[Outro - music box fading]"
-  ]
+  ],
+  "videoUrl": "https://www.youtube.com/watch?v=mZJ6yYgaZoA"
  },
  "duet-2": {
   "card": "/band/cards/duet-2.webp",
@@ -353,7 +363,8 @@
    "[Outro]",
    "We'll leave the lakes alone tonight, and cross our wires,",
    "Climb on the Band Wagon, and sing it with the choirs!"
-  ]
+  ],
+  "videoUrl": "https://www.youtube.com/watch?v=c2UokWJr7u4"
  },
  "n12": {
   "card": "/band/cards/n12.webp",
@@ -395,12 +406,14 @@
    "",
    "[Outro - fading]",
    "Ah... mm..."
-  ]
+  ],
+  "videoUrl": "https://www.youtube.com/watch?v=UOupVgrdO8E"
  },
  "fusion-2": {
   "card": "/band/cards/fusion-2.webp",
   "hook": "(none: instrumental)",
-  "note": "Instrumental: no sung words."
+  "note": "Instrumental: no sung words.",
+  "videoUrl": "https://www.youtube.com/watch?v=RDt4Pk5B9P4"
  },
  "n03": {
   "card": "/band/cards/n03.webp",
@@ -443,7 +456,8 @@
    "Soundcheck at midnight, here we go!",
    "",
    "[Outro - one last cymbal crash]"
-  ]
+  ],
+  "videoUrl": "https://www.youtube.com/watch?v=s8s_M9iuf6A"
  },
  "n07": {
   "card": "/band/cards/n07.webp",
@@ -497,7 +511,8 @@
    "Pull up to the wagon, we're not running late!",
    "",
    "[Outro - steam hiss]"
-  ]
+  ],
+  "videoUrl": "https://www.youtube.com/watch?v=8lzAr39FvsI"
  },
  "n08": {
   "card": "/band/cards/n08.webp",
@@ -551,7 +566,8 @@
    "The Band Wagon rolls, there is so much to learn!",
    "",
    "[Outro - one last wrench clang]"
-  ]
+  ],
+  "videoUrl": "https://www.youtube.com/watch?v=K80tnVCfAWw"
  },
  "n11": {
   "card": "/band/cards/n11.webp",
@@ -593,7 +609,8 @@
    "",
    "[Outro - fading]",
    "Ah... mm..."
-  ]
+  ],
+  "videoUrl": "https://www.youtube.com/watch?v=PruuJf8BM7Q"
  },
  "n10": {
   "card": "/band/cards/n10.webp",
@@ -627,7 +644,8 @@
    "",
    "[Outro - fading]",
    "Ah... oh... mm..."
-  ]
+  ],
+  "videoUrl": "https://www.youtube.com/watch?v=OdjY9D7jKc4"
  },
  "duet-1": {
   "card": "/band/cards/duet-1.webp",
@@ -672,6 +690,7 @@
    "[Outro]",
    "We'll leave the lakes alone tonight, and cross our wires,",
    "Climb on the Band Wagon, and sing it with the choirs!"
-  ]
+  ],
+  "videoUrl": "https://www.youtube.com/watch?v=c7g3rYDIHI4"
  }
 }
