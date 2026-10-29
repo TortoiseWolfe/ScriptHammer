@@ -42,6 +42,8 @@ const BLOG = path.resolve(__dirname, '..', '..', 'public', 'blog');
 const PUBLIC_REPOS = new Set([
   'TortoiseWolfe/ScriptHammer',
   'TortoiseWolfe/RescueDogs',
+  'TortoiseWolfe/OBS_MCP_bot',
+  'TortoiseWolfe/wp-dev',
   'mshumer/Claude-of-Duty',
   'safishamsi/graphify',
   'supabase/auth-helpers',

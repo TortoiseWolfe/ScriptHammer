@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { useConsent } from '@/contexts/ConsentContext';
 import { scheduleLeadId } from '@/lib/leads/record-lead';
+import { bookingNotes } from '@/lib/leads/booking-source';
 import Icon from '@/components/atomic/Icon';
 
 const CalendarEmbed = dynamic(
@@ -33,7 +34,9 @@ const CalendarEmbed = dynamic(
  * attributed to a lead, which is what happened for every booking before this existed.
  */
 function ScheduleContent() {
-  const fromStorefront = useSearchParams()?.get('lead') ?? undefined;
+  const params = useSearchParams();
+  const fromStorefront = params?.get('lead') ?? undefined;
+  const notes = bookingNotes(params?.get('from'));
   const { consent } = useConsent();
   const [ownLead, setOwnLead] = useState<string | undefined>(undefined);
 
@@ -193,7 +196,10 @@ function ScheduleContent() {
           {/* Right column - Calendar embed */}
           <section className="lg:col-span-2">
             <div className="sh-well bg-base-100 rounded-box min-h-[1200px] p-4 lg:min-h-[1250px] lg:p-6">
-              <CalendarEmbed mode="inline" prefill={{ lead_ref: leadRef }} />
+              <CalendarEmbed
+                mode="inline"
+                prefill={{ lead_ref: leadRef, notes }}
+              />
             </div>
           </section>
         </div>

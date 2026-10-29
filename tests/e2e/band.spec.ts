@@ -229,7 +229,7 @@ test.describe('/band (#1408)', () => {
     await page.goto('/band/');
     await expect(
       page.getByRole('link', { name: 'Book the band' })
-    ).toHaveAttribute('href', /\/schedule\/?$/);
+    ).toHaveAttribute('href', /\/schedule\/?\?from=band$/);
     await expect(
       page.getByRole('link', { name: 'Keep your site playing' })
     ).toHaveAttribute('href', /\/pricing\/?$/);
