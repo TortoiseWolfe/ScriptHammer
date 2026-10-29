@@ -5491,6 +5491,12 @@ $$;
 REVOKE ALL ON FUNCTION public.cast_band_vote(TEXT, TEXT, TEXT) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.cast_band_vote(TEXT, TEXT, TEXT) TO anon;
 
+-- ============================================================================
+-- END-OF-FILE CLEANUP (not a section: never applied on its own)
+-- ============================================================================
+-- This banner ends the section above for the apply-migration-section workflow, which cuts
+-- a section from its banner to the next banner. Without it the last section would run on
+-- into the DROP FUNCTION ... CASCADE lines below.
 DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
 DROP FUNCTION IF EXISTS public.handle_updated_at() CASCADE;
 

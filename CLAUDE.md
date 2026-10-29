@@ -406,6 +406,16 @@ curl -X POST "https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query
 - Install database clients locally (pg, psql, etc.)
 - Try direct database connections from Docker (DNS issues)
 
+#### Applying one section to production (no token needed)
+
+The Management API token is also the repository secret `SUPABASE_ACCESS_TOKEN`, so a machine with no `.env` can still apply a section. Run the **Apply migration section** workflow (`.github/workflows/apply-migration-section.yml`, manual run only) from `main` with the section's banner title, for example `BAND PAGE ANONYMOUS SONG VOTES`:
+
+```bash
+gh workflow run apply-migration-section.yml -f banner="BAND PAGE ANONYMOUS SONG VOTES"
+```
+
+It cuts exactly that section out of `supabase/migrations/20251006_complete_monolithic_setup.sql` (from its banner to the next banner), prints the SQL, refuses a missing, ambiguous or empty section, wraps it in `BEGIN`/`COMMIT`, runs it through the `database/query` endpoint, then runs the Prod Schema Drift checks. There are no separate migration files: the monolithic file stays the only record. Write each new section so it can run twice (`IF NOT EXISTS`, `CREATE OR REPLACE`), and start it with a three-line banner (rule, title, rule). `scripts/ci/apply-migration-section.mjs --print "<title>"` shows the cut locally without touching a database.
+
 ### Example: Adding a Column
 
 ```sql
