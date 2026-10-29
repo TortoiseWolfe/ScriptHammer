@@ -150,6 +150,10 @@ export const GROUPS = [
       ['NEXT_PUBLIC_CAPTCHA_SITE_KEY', 'Sign-up captcha disabled.'],
       ['NEXT_PUBLIC_SITE_TWITTER_HANDLE', 'twitter:site omitted from cards.'],
       ['NEXT_PUBLIC_SOCIAL_PLATFORMS', 'Share buttons fall back to defaults.'],
+      [
+        'NEXT_PUBLIC_BAND_VOTE_OPEN',
+        'The /band Songs list shows with no vote buttons. Set it to "true" only after the monolithic migration (cast_band_vote) is applied to the hosted project.',
+      ],
     ],
   ],
 ];

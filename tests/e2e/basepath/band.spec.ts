@@ -49,6 +49,14 @@ test.describe('/band under the base path (#1408)', () => {
     expect(failures).toEqual([]);
   });
 
+  test('/HouseBand leads to /band under the prefix (#1416)', async ({
+    page,
+  }) => {
+    await page.goto(`${BASE_PATH}/HouseBand/`);
+    await page.waitForURL(/\/ScriptHammer\/band\/?$/);
+    await expect(page.getByTestId('band-page')).toBeVisible();
+  });
+
   test('consent given elsewhere still sends nothing to a tracker on /band', async ({
     page,
   }) => {

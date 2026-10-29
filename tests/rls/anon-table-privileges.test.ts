@@ -1,6 +1,6 @@
 /**
  * The effective privileges the client roles hold on the ten tables of #1073, and on the tables
- * added since that hold nothing for a client (stripe_checkout_sessions, #1345).
+ * added since that hold nothing for a client (stripe_checkout_sessions, #1345; band_site_votes, #1416).
  *
  * WHY THIS EXISTS. Supabase's platform defaults grant `anon` and `authenticated` ALL
  * privileges on every table in `public`. A narrower `GRANT` sits on top of a wider one and
@@ -69,6 +69,8 @@ const ALLOWED: Record<string, string[]> = {
   webhook_events: [],
   // Written and read only by create-stripe-checkout with the service role (#1345).
   stripe_checkout_sessions: [],
+  // Anonymous /band votes (#1416): counters only, reached through cast_band_vote and nothing else.
+  band_site_votes: [],
   orders: ['SELECT'],
   payment_results: ['SELECT'],
   // SELECT only. UPDATE is column-scoped to the cancellation surface (checked below),

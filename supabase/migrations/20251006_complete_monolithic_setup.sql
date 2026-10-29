@@ -5383,6 +5383,114 @@ ALTER TABLE webhook_events
   ADD CONSTRAINT webhook_events_provider_check
   CHECK (provider IN ('stripe', 'paypal', 'calcom', 'calendly'));
 
+-- ============================================================================
+-- BAND PAGE ANONYMOUS SONG VOTES (#1416, feature 054)
+-- ============================================================================
+-- /band lists the house band's songs and lets any visitor vote up or down on each one.
+-- The page is a kid-safe route and every visitor counts as under 13 (COPPA, the United
+-- States children's privacy law), so a vote carries NO identity: no account, no session,
+-- no cookie, no address kept by us. The browser sends one plain POST to cast_band_vote and
+-- remembers its own vote in its own storage, which never leaves the device.
+--
+-- WHAT IS STORED. Counters only: (song id, hour rounded down) -> up, down, requests. There
+-- is no row per voter. A visitor who changes their vote sends the earlier direction as
+-- `p_previous`; the function takes one off that column, so a counter in a later hour can be
+-- below zero while the sum over all hours is right. That is deliberate, it is not a bug.
+--
+-- WHO CAN DO WHAT. RLS is on and there is NO policy, and every table privilege is revoked
+-- from anon and authenticated, so nobody can read or write the table directly. The only way
+-- in is cast_band_vote, which `anon` may run and nothing else. The tower reads the counters
+-- with the service-role key (never in the repository or the page) and writes
+-- public/data/band-votes-site.json.
+--
+-- ABUSE LIMIT WITHOUT AN IDENTIFIER. Each song takes at most 30 requests an hour and all
+-- songs together 300. Past a cap the function records nothing and answers 'later'. A flood
+-- cannot be traced to anyone, and cannot move a score far: the page also caps a song's site
+-- votes at 25 points either way when it scores them.
+--
+-- THE SONG LIST IS FIXED HERE, and a test (BandSongs.test.tsx) fails when it and
+-- public/data/band-ranking.json disagree. Adding a song means adding its id below in the
+-- same pull request that adds it to the JSON, and applying this file again.
+--
+-- SECURITY DEFINER is needed: the caller has no table privilege. It is safe because the
+-- function takes three text arguments, checks each against a fixed list, pins search_path,
+-- and writes only to this table.
+CREATE TABLE IF NOT EXISTS band_site_votes (
+  song_id  TEXT        NOT NULL,
+  hour     TIMESTAMPTZ NOT NULL,
+  up       INT         NOT NULL DEFAULT 0,
+  down     INT         NOT NULL DEFAULT 0,
+  requests INT         NOT NULL DEFAULT 0,
+  PRIMARY KEY (song_id, hour)
+);
+
+ALTER TABLE band_site_votes ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE band_site_votes FROM PUBLIC, anon, authenticated;
+
+CREATE OR REPLACE FUNCTION public.cast_band_vote(
+  p_song_id   TEXT,
+  p_direction TEXT,
+  p_previous  TEXT DEFAULT NULL
+)
+RETURNS TEXT
+SECURITY DEFINER
+SET search_path = public, pg_temp
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  c_song_ids CONSTANT TEXT[] := ARRAY['jam-2', 'jam-1', 'jam-3', 'n05', 'n09', 'psy-1', 'alt-1', 'fusion-1', 'psy-2', 'n01', 'duet-2', 'n12', 'fusion-2', 'n03', 'n07', 'n08', 'n11', 'n10', 'duet-1'];
+  c_per_song_cap CONSTANT INT := 30;
+  c_overall_cap  CONSTANT INT := 300;
+  v_hour     TIMESTAMPTZ := date_trunc('hour', now());
+  v_previous TEXT := NULLIF(p_previous, '');
+  v_song_n   INT;
+  v_total_n  INT;
+BEGIN
+  IF p_song_id IS NULL OR NOT (p_song_id = ANY (c_song_ids)) THEN
+    RAISE EXCEPTION 'unknown song' USING ERRCODE = '22023';
+  END IF;
+  IF p_direction IS NULL OR p_direction NOT IN ('up', 'down') THEN
+    RAISE EXCEPTION 'direction must be up or down' USING ERRCODE = '22023';
+  END IF;
+  IF v_previous IS NOT NULL AND v_previous NOT IN ('up', 'down') THEN
+    RAISE EXCEPTION 'previous must be up, down or empty' USING ERRCODE = '22023';
+  END IF;
+
+  -- One writer at a time, so the two caps cannot be passed by votes that arrive together.
+  PERFORM pg_advisory_xact_lock(hashtext('band_site_votes'));
+
+  SELECT COALESCE(SUM(requests) FILTER (WHERE song_id = p_song_id), 0),
+         COALESCE(SUM(requests), 0)
+    INTO v_song_n, v_total_n
+    FROM band_site_votes
+   WHERE hour = v_hour;
+
+  IF v_song_n >= c_per_song_cap OR v_total_n >= c_overall_cap THEN
+    RETURN 'later';
+  END IF;
+
+  INSERT INTO band_site_votes AS b (song_id, hour, up, down, requests)
+  VALUES (
+    p_song_id,
+    v_hour,
+    (CASE WHEN p_direction = 'up'   THEN 1 ELSE 0 END)
+      - (CASE WHEN v_previous = 'up'   AND p_direction <> v_previous THEN 1 ELSE 0 END),
+    (CASE WHEN p_direction = 'down' THEN 1 ELSE 0 END)
+      - (CASE WHEN v_previous = 'down' AND p_direction <> v_previous THEN 1 ELSE 0 END),
+    1
+  )
+  ON CONFLICT (song_id, hour) DO UPDATE
+    SET up       = b.up + EXCLUDED.up,
+        down     = b.down + EXCLUDED.down,
+        requests = b.requests + 1;
+
+  RETURN 'ok';
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.cast_band_vote(TEXT, TEXT, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.cast_band_vote(TEXT, TEXT, TEXT) TO anon;
+
 DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
 DROP FUNCTION IF EXISTS public.handle_updated_at() CASCADE;
 

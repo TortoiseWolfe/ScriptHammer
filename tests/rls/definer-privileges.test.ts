@@ -37,6 +37,8 @@ const ANON_EXECUTABLE: Record<string, string> = {
     'an RLS policy helper; its body answers only about the caller',
   'is_conversation_owner(uuid,uuid)':
     'an RLS policy helper; its body answers only about the caller',
+  'cast_band_vote(text,text,text)':
+    'the anonymous song vote on /band (#1416): checks the song id against a fixed list, writes only band_site_votes counters, and caps votes per hour; see band-site-votes.test.ts',
   'log_auth_event(text,uuid,jsonb,boolean,text,text)':
     'pre-session telemetry (failed sign-ins, reset requests); what anon may write is bounded in the body',
 };

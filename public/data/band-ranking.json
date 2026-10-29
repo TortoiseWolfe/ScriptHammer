@@ -1,0 +1,461 @@
+{
+  "asOf": "2026-10-28",
+  "songs": [
+    {
+      "id": "jam-2",
+      "title": "Should the Machines Take Over? Take 1: long jam",
+      "cover": "/band/songs/jam-2.webp",
+      "posted": "2026-10-27",
+      "shortUrl": "https://youtube.com/shorts/jHzxaEVKdZ8",
+      "youtube": {
+        "plays": 15,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 2,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "jam-1",
+      "title": "The Band Wagon (after hours): long jam",
+      "cover": "/band/songs/jam-1.webp",
+      "posted": "2026-10-27",
+      "shortUrl": "https://youtube.com/shorts/r4HVjzPE_xU",
+      "youtube": {
+        "plays": 10,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 1,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "jam-3",
+      "title": "Should the Machines Take Over? Take 2: long jam",
+      "cover": "/band/songs/jam-3.webp",
+      "posted": "2026-10-27",
+      "shortUrl": "https://youtube.com/shorts/HY2H4pTaKDw",
+      "youtube": {
+        "plays": 14,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 0,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "n05",
+      "title": "The Night Watch",
+      "cover": "/band/songs/n05.webp",
+      "posted": "2026-10-27",
+      "shortUrl": "https://youtube.com/shorts/ioZVehs-Mng",
+      "youtube": {
+        "plays": 9,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 0,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "n09",
+      "title": "Boiler Room Boogie",
+      "cover": "/band/songs/n09.webp",
+      "posted": "2026-10-27",
+      "shortUrl": "https://youtube.com/shorts/F3C6f3-d9jI",
+      "youtube": {
+        "plays": 7,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 0,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "psy-1",
+      "title": "The Doctor Listens",
+      "cover": "/band/songs/psy-1.webp",
+      "posted": "2026-10-27",
+      "shortUrl": "https://youtube.com/shorts/8qHx7tpJy00",
+      "youtube": {
+        "plays": 7,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 0,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "alt-1",
+      "title": "The Band Wagon (after hours)",
+      "cover": "/band/songs/alt-1.webp",
+      "posted": "2026-10-25",
+      "shortUrl": "https://youtube.com/shorts/DxtWDOSHgcw",
+      "youtube": {
+        "plays": 19,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 0,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "fusion-1",
+      "title": "Breakbeat Bots",
+      "cover": "/band/songs/fusion-1.webp",
+      "posted": "2026-10-27",
+      "shortUrl": "https://youtube.com/shorts/96khkj4_PAU",
+      "youtube": {
+        "plays": 6,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 0,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "psy-2",
+      "title": "Rule Two Goes Sideways",
+      "cover": "/band/songs/psy-2.webp",
+      "posted": "2026-10-27",
+      "shortUrl": "https://youtube.com/shorts/YTXsaq9DAKU",
+      "youtube": {
+        "plays": 5,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 0,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "n01",
+      "title": "Seven Ghosts in the Wiring",
+      "cover": "/band/songs/n01.webp",
+      "posted": "2026-10-27",
+      "shortUrl": "https://youtube.com/shorts/vsuaMk5TPA8",
+      "youtube": {
+        "plays": 5,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 0,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "duet-2",
+      "title": "Should the Machines Take Over? Take 2",
+      "cover": "/band/songs/duet-2.webp",
+      "posted": "2026-10-25",
+      "shortUrl": "https://youtube.com/shorts/yIn9r1dckps",
+      "youtube": {
+        "plays": 15,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 0,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "n12",
+      "title": "Signal Lost, Signal Found",
+      "cover": "/band/songs/n12.webp",
+      "posted": "2026-10-27",
+      "shortUrl": "https://youtube.com/shorts/sRzUm-OyO_E",
+      "youtube": {
+        "plays": 5,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 0,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "fusion-2",
+      "title": "Warehouse Wagon",
+      "cover": "/band/songs/fusion-2.webp",
+      "posted": "2026-10-27",
+      "shortUrl": "https://youtube.com/shorts/WVws6PAN51Y",
+      "youtube": {
+        "plays": 5,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 0,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "n03",
+      "title": "Soundcheck at Midnight",
+      "cover": "/band/songs/n03.webp",
+      "posted": "2026-10-27",
+      "shortUrl": "https://youtube.com/shorts/AWe01QxTfz4",
+      "youtube": {
+        "plays": 4,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 0,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "n07",
+      "title": "Steam Hiss Shuffle",
+      "cover": "/band/songs/n07.webp",
+      "posted": "2026-10-27",
+      "shortUrl": "https://youtube.com/shorts/6TxM1TFQzYc",
+      "youtube": {
+        "plays": 4,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 0,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "n08",
+      "title": "Wrench in the Works",
+      "cover": "/band/songs/n08.webp",
+      "posted": "2026-10-27",
+      "shortUrl": "https://youtube.com/shorts/faqzdc7tLGs",
+      "youtube": {
+        "plays": 4,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 0,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "n11",
+      "title": "Ghost in the Music Box",
+      "cover": "/band/songs/n11.webp",
+      "posted": "2026-10-27",
+      "shortUrl": "https://youtube.com/shorts/1q09hm9TILg",
+      "youtube": {
+        "plays": 3,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 0,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "n10",
+      "title": "Static Snow",
+      "cover": "/band/songs/n10.webp",
+      "posted": "2026-10-27",
+      "shortUrl": "https://youtube.com/shorts/gmc_Q_ptzGU",
+      "youtube": {
+        "plays": 3,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 0,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    },
+    {
+      "id": "duet-1",
+      "title": "Should the Machines Take Over? Take 1",
+      "cover": "/band/songs/duet-1.webp",
+      "posted": "2026-10-25",
+      "shortUrl": "https://youtube.com/shorts/AY0P_iW1hUE",
+      "youtube": {
+        "plays": 6,
+        "up": 0,
+        "down": 0
+      },
+      "twitch": {
+        "up": 0,
+        "down": 0
+      },
+      "review": {
+        "up": 0,
+        "down": 0
+      },
+      "site": {
+        "up": 0,
+        "down": 0
+      }
+    }
+  ]
+}

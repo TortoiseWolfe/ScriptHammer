@@ -245,74 +245,75 @@ whole list is here rather than the four that usually matter.
 
 #### Stops the app working
 
-| Value                           | Tab      | Without it                                                                                                                       |
-| ------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Variable | No accounts, payments or messaging. The site builds and shows a "not configured" banner.                                         |
+| Value | Tab | Without it |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Variable | No accounts, payments or messaging. The site builds and shows a "not configured" banner. |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Variable | Same. Both are VARIABLES — put them in Secrets and they arrive empty, the deploy goes green, and the site ships with no backend. |
 
 #### Makes the site advertise the wrong address or project identity
 
-| Value                                  | Tab      | Without it                                                                                                                                                                                                       |
-| -------------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_DEPLOY_URL`               | Variable | Canonicals, sitemap, robots.txt and og:image fall back to a github.io origin. Also used as a fallback for asset retention when NEXT_PUBLIC_SITE_URL is unset.                                                    |
-| `NEXT_PUBLIC_SITE_URL`                 | Variable | Same family: the origin the app reports as its own. This is the one retain-previous-assets.mjs reads for asset retention; unset (and with no NEXT_PUBLIC_DEPLOY_URL either) each deploy carries nothing forward. |
-| `NEXT_PUBLIC_BASE_URL`                 | Variable | Same family.                                                                                                                                                                                                     |
-| `NEXT_PUBLIC_PROJECT_NAME`             | Variable | Overrides the name detect-project.js derives from the git remote. Usually unnecessary.                                                                                                                           |
-| `NEXT_PUBLIC_PROJECT_OWNER`            | Variable | Overrides the owner detect-project.js derives from the git remote.                                                                                                                                               |
-| `NEXT_PUBLIC_PROJECT_TAGLINE`          | Variable | Overrides the home-page title tagline; unset, the template tagline remains.                                                                                                                                      |
-| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Variable | The Search Console meta tag is skipped, so verification never ships and nothing says so (#917).                                                                                                                  |
+| Value | Tab | Without it |
+| --- | --- | --- |
+| `NEXT_PUBLIC_DEPLOY_URL` | Variable | Canonicals, sitemap, robots.txt and og:image fall back to a github.io origin. Also used as a fallback for asset retention when NEXT_PUBLIC_SITE_URL is unset. |
+| `NEXT_PUBLIC_SITE_URL` | Variable | Same family: the origin the app reports as its own. This is the one retain-previous-assets.mjs reads for asset retention; unset (and with no NEXT_PUBLIC_DEPLOY_URL either) each deploy carries nothing forward. |
+| `NEXT_PUBLIC_BASE_URL` | Variable | Same family. |
+| `NEXT_PUBLIC_PROJECT_NAME` | Variable | Overrides the name detect-project.js derives from the git remote. Usually unnecessary. |
+| `NEXT_PUBLIC_PROJECT_OWNER` | Variable | Overrides the owner detect-project.js derives from the git remote. |
+| `NEXT_PUBLIC_PROJECT_TAGLINE` | Variable | Overrides the home-page title tagline; unset, the template tagline remains. |
+| `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` | Variable | The Search Console meta tag is skipped, so verification never ships and nothing says so (#917). |
 
 #### Author identity on posts and the about surface
 
-| Value                         | Tab      | Without it                                  |
-| ----------------------------- | -------- | ------------------------------------------- |
-| `NEXT_PUBLIC_AUTHOR_NAME`     | Variable | Bylines fall back to the git owner.         |
-| `NEXT_PUBLIC_AUTHOR_EMAIL`    | Variable | Contact link on author surfaces is omitted. |
-| `NEXT_PUBLIC_AUTHOR_AVATAR`   | Variable | No author image.                            |
-| `NEXT_PUBLIC_AUTHOR_BIO`      | Variable | No author bio.                              |
-| `NEXT_PUBLIC_AUTHOR_ROLE`     | Variable | No role line.                               |
-| `NEXT_PUBLIC_AUTHOR_GITHUB`   | Variable | Social link omitted.                        |
-| `NEXT_PUBLIC_AUTHOR_LINKEDIN` | Variable | Social link omitted.                        |
-| `NEXT_PUBLIC_AUTHOR_TWITTER`  | Variable | Social link omitted.                        |
-| `NEXT_PUBLIC_AUTHOR_BLUESKY`  | Variable | Social link omitted.                        |
-| `NEXT_PUBLIC_AUTHOR_MASTODON` | Variable | Social link omitted.                        |
-| `NEXT_PUBLIC_AUTHOR_TWITCH`   | Variable | Social link omitted.                        |
-| `NEXT_PUBLIC_AUTHOR_WEBSITE`  | Variable | Social link omitted.                        |
+| Value | Tab | Without it |
+| --- | --- | --- |
+| `NEXT_PUBLIC_AUTHOR_NAME` | Variable | Bylines fall back to the git owner. |
+| `NEXT_PUBLIC_AUTHOR_EMAIL` | Variable | Contact link on author surfaces is omitted. |
+| `NEXT_PUBLIC_AUTHOR_AVATAR` | Variable | No author image. |
+| `NEXT_PUBLIC_AUTHOR_BIO` | Variable | No author bio. |
+| `NEXT_PUBLIC_AUTHOR_ROLE` | Variable | No role line. |
+| `NEXT_PUBLIC_AUTHOR_GITHUB` | Variable | Social link omitted. |
+| `NEXT_PUBLIC_AUTHOR_LINKEDIN` | Variable | Social link omitted. |
+| `NEXT_PUBLIC_AUTHOR_TWITTER` | Variable | Social link omitted. |
+| `NEXT_PUBLIC_AUTHOR_BLUESKY` | Variable | Social link omitted. |
+| `NEXT_PUBLIC_AUTHOR_MASTODON` | Variable | Social link omitted. |
+| `NEXT_PUBLIC_AUTHOR_TWITCH` | Variable | Social link omitted. |
+| `NEXT_PUBLIC_AUTHOR_WEBSITE` | Variable | Social link omitted. |
 
 #### Payments
 
-| Value                                | Tab      | Without it                 |
-| ------------------------------------ | -------- | -------------------------- |
+| Value | Tab | Without it |
+| --- | --- | --- |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Variable | Card checkout unavailable. |
-| `NEXT_PUBLIC_PAYPAL_CLIENT_ID`       | Secret   | PayPal button unavailable. |
-| `NEXT_PUBLIC_CASHAPP_CASHTAG`        | Variable | Cash App option hidden.    |
-| `NEXT_PUBLIC_CHIME_SIGN`             | Variable | Chime option hidden.       |
+| `NEXT_PUBLIC_PAYPAL_CLIENT_ID` | Secret | PayPal button unavailable. |
+| `NEXT_PUBLIC_CASHAPP_CASHTAG` | Variable | Cash App option hidden. |
+| `NEXT_PUBLIC_CHIME_SIGN` | Variable | Chime option hidden. |
 
 #### Contact and email
 
-| Value                              | Tab      | Without it                                                                                                                                                     |
-| ---------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY` | Secret   | The contact form cannot deliver. Production shipped this empty once, leaving /contact/ with no working channel (#784).                                         |
-| `NEXT_PUBLIC_EMAILJS_PUBLIC_KEY`   | Secret   | EmailJS fallback disabled.                                                                                                                                     |
-| `NEXT_PUBLIC_EMAILJS_SERVICE_ID`   | Variable | EmailJS fallback disabled.                                                                                                                                     |
-| `NEXT_PUBLIC_EMAILJS_TEMPLATE_ID`  | Variable | EmailJS fallback disabled.                                                                                                                                     |
-| `NEXT_PUBLIC_SUPPORT_EMAIL`        | Variable | No mailto is rendered when the form cannot deliver. Empty by default ON PURPOSE — a hardcoded address would put the template maintainer's inbox on every fork. |
+| Value | Tab | Without it |
+| --- | --- | --- |
+| `NEXT_PUBLIC_WEB3FORMS_ACCESS_KEY` | Secret | The contact form cannot deliver. Production shipped this empty once, leaving /contact/ with no working channel (#784). |
+| `NEXT_PUBLIC_EMAILJS_PUBLIC_KEY` | Secret | EmailJS fallback disabled. |
+| `NEXT_PUBLIC_EMAILJS_SERVICE_ID` | Variable | EmailJS fallback disabled. |
+| `NEXT_PUBLIC_EMAILJS_TEMPLATE_ID` | Variable | EmailJS fallback disabled. |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | Variable | No mailto is rendered when the form cannot deliver. Empty by default ON PURPOSE — a hardcoded address would put the template maintainer's inbox on every fork. |
 
 #### Analytics, monitoring and extras
 
-| Value                                   | Tab      | Without it                                                                                                                                                              |
-| --------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_GA_MEASUREMENT_ID`         | Variable | No Google Analytics.                                                                                                                                                    |
-| `NEXT_PUBLIC_OPENAI_PIXEL_ID`           | Variable | The OpenAI Ads pixel never mounts, so a paid campaign cannot be measured. Correct default for a fork: unset means no third-party ad script ships at all.                |
-| `NEXT_PUBLIC_PAGESPEED_API_KEY`         | Secret   | /status falls back to the unauthenticated PageSpeed quota, so its live scores may read 'over the anonymous quota'. It stopped the deploy until #987; it no longer does. |
-| `NEXT_PUBLIC_SENTRY_DSN`                | Variable | No error reporting.                                                                                                                                                     |
-| `NEXT_PUBLIC_DISQUS_SHORTNAME`          | Variable | Blog comments disabled.                                                                                                                                                 |
-| `NEXT_PUBLIC_CALENDAR_PROVIDER`         | Variable | Scheduling embed disabled.                                                                                                                                              |
-| `NEXT_PUBLIC_CALENDAR_URL`              | Variable | Scheduling embed disabled.                                                                                                                                              |
-| `NEXT_PUBLIC_CALENDAR_URL_OFFICE_HOURS` | Variable | Office-hours bookings fall back to the general call.                                                                                                                    |
-| `NEXT_PUBLIC_CAPTCHA_SITE_KEY`          | Variable | Sign-up captcha disabled.                                                                                                                                               |
-| `NEXT_PUBLIC_SITE_TWITTER_HANDLE`       | Variable | twitter:site omitted from cards.                                                                                                                                        |
-| `NEXT_PUBLIC_SOCIAL_PLATFORMS`          | Variable | Share buttons fall back to defaults.                                                                                                                                    |
+| Value | Tab | Without it |
+| --- | --- | --- |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | Variable | No Google Analytics. |
+| `NEXT_PUBLIC_OPENAI_PIXEL_ID` | Variable | The OpenAI Ads pixel never mounts, so a paid campaign cannot be measured. Correct default for a fork: unset means no third-party ad script ships at all. |
+| `NEXT_PUBLIC_PAGESPEED_API_KEY` | Secret | /status falls back to the unauthenticated PageSpeed quota, so its live scores may read 'over the anonymous quota'. It stopped the deploy until #987; it no longer does. |
+| `NEXT_PUBLIC_SENTRY_DSN` | Variable | No error reporting. |
+| `NEXT_PUBLIC_DISQUS_SHORTNAME` | Variable | Blog comments disabled. |
+| `NEXT_PUBLIC_CALENDAR_PROVIDER` | Variable | Scheduling embed disabled. |
+| `NEXT_PUBLIC_CALENDAR_URL` | Variable | Scheduling embed disabled. |
+| `NEXT_PUBLIC_CALENDAR_URL_OFFICE_HOURS` | Variable | Office-hours bookings fall back to the general call. |
+| `NEXT_PUBLIC_CAPTCHA_SITE_KEY` | Variable | Sign-up captcha disabled. |
+| `NEXT_PUBLIC_SITE_TWITTER_HANDLE` | Variable | twitter:site omitted from cards. |
+| `NEXT_PUBLIC_SOCIAL_PLATFORMS` | Variable | Share buttons fall back to defaults. |
+| `NEXT_PUBLIC_BAND_VOTE_OPEN` | Variable | The /band Songs list shows with no vote buttons. Set it to "true" only after the monolithic migration (cast_band_vote) is applied to the hosted project. |
 
 <!-- env-inventory:end -->
 
