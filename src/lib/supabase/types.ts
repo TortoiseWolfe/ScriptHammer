@@ -90,6 +90,30 @@ export type Database = {
         };
         Relationships: [];
       };
+      band_site_votes: {
+        Row: {
+          down: number;
+          hour: string;
+          requests: number;
+          song_id: string;
+          up: number;
+        };
+        Insert: {
+          down?: number;
+          hour: string;
+          requests?: number;
+          song_id: string;
+          up?: number;
+        };
+        Update: {
+          down?: number;
+          hour?: string;
+          requests?: number;
+          song_id?: string;
+          up?: number;
+        };
+        Relationships: [];
+      };
       conversation_keys: {
         Row: {
           conversation_id: string;
