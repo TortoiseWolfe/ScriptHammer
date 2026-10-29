@@ -14,6 +14,8 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { Client } from 'pg';
 import { hasRlsTestEnvironment, RLS_SKIP_REASON } from '../fixtures/test-users';
+import { sendVote } from '../../src/lib/band/vote';
+import rankingFile from '../../public/data/band-ranking.json';
 
 const DB = {
   host: process.env.SUPABASE_DB_HOST ?? 'supabase-db',
@@ -187,6 +189,58 @@ describe.skipIf(!hasRlsTestEnvironment())(
         'song_id',
         'up',
       ]);
+    });
+
+    // The page's own request, sent the way a browser sends it: through the REST gateway
+    // with the public key, not through a database connection. This is the round trip a
+    // visitor's click makes, and the only test that would catch a renamed parameter or
+    // a song the page lists that the function refuses.
+    describe('over HTTP, as the page sends it', () => {
+      const endpoint = () => {
+        const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (!base || !key) {
+          throw new Error(
+            'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set'
+          );
+        }
+        return {
+          url: `${base.replace(/\/+$/, '')}/rest/v1/rpc/cast_band_vote`,
+          key,
+        };
+      };
+
+      it('accepts a vote for every song the page lists, and counts each once', async () => {
+        const ids = rankingFile.songs.map((s) => s.id);
+        expect(ids.length).toBeGreaterThan(0);
+        for (const id of ids) {
+          expect(await sendVote(endpoint(), id, 'up', null)).toBe('ok');
+        }
+        const { rows } = await db.query(
+          'SELECT song_id, up, down FROM band_site_votes ORDER BY song_id'
+        );
+        expect(rows.map((r) => r.song_id)).toEqual([...ids].sort());
+        expect(rows.every((r) => r.up === 1 && r.down === 0)).toBe(true);
+      });
+
+      it('moves a changed vote from one side to the other', async () => {
+        expect(await sendVote(endpoint(), 'n05', 'up', null)).toBe('ok');
+        expect(await sendVote(endpoint(), 'n05', 'down', 'up')).toBe('ok');
+        const { rows } = await db.query(
+          "SELECT up, down FROM band_site_votes WHERE song_id = 'n05'"
+        );
+        expect(rows).toEqual([{ up: 0, down: 1 }]);
+      });
+
+      it('answers an unknown song with an error and records nothing', async () => {
+        expect(await sendVote(endpoint(), 'not-a-song', 'up', null)).toBe(
+          'error'
+        );
+        const { rows } = await db.query(
+          'SELECT count(*)::int AS n FROM band_site_votes'
+        );
+        expect(rows[0].n).toBe(0);
+      });
     });
   }
 );
