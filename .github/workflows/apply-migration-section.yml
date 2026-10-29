@@ -1,0 +1,79 @@
+# Apply ONE section of the monolithic migration to the hosted Supabase project.
+#
+# WHY. Prod Schema Drift only reports; nothing applied the migration, so a new table or
+# function reached production only when someone pasted SQL by hand with the Management API
+# token. The token already lives here as the SUPABASE_ACCESS_TOKEN secret (the one
+# prod-schema-drift.yml uses), so this is the lasting route. No new migration files: the
+# monolithic file stays the only record, and this cuts a section out of it.
+#
+# HOW. Run it by hand (Actions > Apply migration section > Run workflow) with the section's
+# banner title, for example "BAND PAGE ANONYMOUS SONG VOTES". The job prints the SQL it
+# will run, refuses a missing, ambiguous or empty section, wraps the section in
+# BEGIN/COMMIT, sends it to the Management API database/query endpoint, and then runs the
+# same two checks as Prod Schema Drift. See scripts/ci/apply-migration-section.mjs.
+#
+# NOT PR-TRIGGERED, DELIBERATELY (see prod-schema-drift.yml): this holds a production
+# credential. workflow_dispatch only, on a branch the person dispatching it chooses; run
+# it from main.
+#
+# The title goes in through an environment variable, never into the shell text.
+
+name: Apply migration section
+
+on:
+  workflow_dispatch:
+    inputs:
+      banner:
+        description: 'Banner title of the section to apply, e.g. BAND PAGE ANONYMOUS SONG VOTES'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apply-migration-section
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    name: Apply the section, then check production
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      BANNER: ${{ inputs.banner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Print first, on its own, so the log shows the SQL even when the next step refuses.
+      - name: Show the SQL that will run
+        run: node scripts/ci/apply-migration-section.mjs --print "$BANNER"
+
+      - name: Apply the section
+        id: apply
+        run: node scripts/ci/apply-migration-section.mjs "$BANNER"
+
+      # The same two detectors as Prod Schema Drift, each with its own verdict.
+      - name: Compare production against INTENDED
+        id: intended
+        if: ${{ !cancelled() && steps.apply.outcome == 'success' }}
+        run: node scripts/ci/check-prod-schema-drift.mjs
+
+      - name: Compare what the policies SAY (#1062)
+        id: predicates
+        if: ${{ !cancelled() && steps.apply.outcome == 'success' }}
+        run: node scripts/ci/policy-predicates.mjs
+
+      - name: Which detectors passed
+        if: ${{ !cancelled() && steps.apply.outcome == 'success' }}
+        run: |
+          printf '%-10s %s\n' \
+            "${{ steps.intended.outcome }}" "Production matches the intent parsed from the migration" \
+            "${{ steps.predicates.outcome }}" "Every policy SAYS the same thing on both sides (#1062)"
+        shell: bash
