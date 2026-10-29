@@ -187,7 +187,21 @@ describe('the content gate (CONTENT-RULE.md)', () => {
     for (const img of Array.from(container.querySelectorAll('img'))) {
       expect(img.getAttribute('alt')).not.toMatch(BANNED);
     }
-    expect(text(container)).not.toMatch(BANNED);
+    // Three lyric lines that hit the pattern were kept on purpose after the
+    // content review (hub/tower/band-2026-10-28/CONTENT-FIX.md line 44: n05 and
+    // n11 "a ghost that is a friend, no child anywhere"). They are removed by
+    // exact text so any other hit on the page still fails.
+    const REVIEWED_LINES = [
+      "Shh, the wagon's sleeping, tiptoe past the gate,",
+      'A whisper and a trumpet make a lullaby with teeth,',
+      'A lullaby for the wires, a rhyme.',
+    ];
+    let pageText = text(container);
+    for (const line of REVIEWED_LINES) {
+      expect(pageText, line).toContain(line);
+      pageText = pageText.split(line).join(' ');
+    }
+    expect(pageText).not.toMatch(BANNED);
   });
 
   it('leaves out the songs on the re-render list and the purged takes', () => {
