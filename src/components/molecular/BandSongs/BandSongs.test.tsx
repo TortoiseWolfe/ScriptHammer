@@ -1,13 +1,14 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { render, screen, within } from '@testing-library/react';
 import BandSongs from './BandSongs';
 import weightsFile from '../../../../public/data/band-weights.json';
 import rankingFile from '../../../../public/data/band-ranking.json';
+import tracksFile from '../../../../public/data/band-tracks.json';
 import { PRIVACY_LINE } from '@/lib/band/vote';
-import type { BandWeights } from '@/lib/band/ranking';
+import type { BandTracks, BandWeights } from '@/lib/band/ranking';
 
 const W = weightsFile as BandWeights;
 const text = (el: HTMLElement) =>
@@ -186,12 +187,108 @@ describe('the content gate (CONTENT-RULE.md)', () => {
     for (const img of Array.from(container.querySelectorAll('img'))) {
       expect(img.getAttribute('alt')).not.toMatch(BANNED);
     }
-    expect(text(container)).not.toMatch(BANNED);
+    // Three lyric lines that hit the pattern were kept on purpose after the
+    // content review (hub/tower/band-2026-10-28/CONTENT-FIX.md line 44: n05 and
+    // n11 "a ghost that is a friend, no child anywhere"). They are removed by
+    // exact text so any other hit on the page still fails.
+    const REVIEWED_LINES = [
+      "Shh, the wagon's sleeping, tiptoe past the gate,",
+      'A whisper and a trumpet make a lullaby with teeth,',
+      'A lullaby for the wires, a rhyme.',
+    ];
+    let pageText = text(container);
+    for (const line of REVIEWED_LINES) {
+      expect(pageText, line).toContain(line);
+      pageText = pageText.split(line).join(' ');
+    }
+    expect(pageText).not.toMatch(BANNED);
   });
 
   it('leaves out the songs on the re-render list and the purged takes', () => {
     const ids = rankingFile.songs.map((s) => s.id);
     for (const held of ['n02', 'n04', 'n06', 'psy-3', 'psy-3b'])
       expect(ids).not.toContain(held);
+  });
+  describe('track cards, lyrics and full-song links', () => {
+    const tracks = tracksFile as BandTracks;
+
+    it('shows card 1 with alt text on every row that has a track entry, and the file exists', () => {
+      render(<BandSongs />);
+      for (const row of screen.getAllByTestId('band-song')) {
+        const id = row.getAttribute('data-song-id')!;
+        const info = tracks[id];
+        expect(info, id).toBeDefined();
+        const img = within(row).getByAltText(
+          `Card for ${rankingFile.songs.find((s) => s.id === id)!.title}: ${info.hook}`
+        );
+        expect(img).toBeInTheDocument();
+        expect(
+          existsSync(join(process.cwd(), 'public', info.card)),
+          info.card
+        ).toBe(true);
+      }
+    });
+
+    it('puts the full lyrics in a details block under the card, with the may-differ line', () => {
+      render(<BandSongs />);
+      const row = screen
+        .getAllByTestId('band-song')
+        .find((r) => r.getAttribute('data-song-id') === 'n09')!;
+      const lyrics = within(row).getByTestId('track-lyrics');
+      expect(lyrics.tagName).toBe('DETAILS');
+      expect(text(lyrics)).toContain('Boiler room boogie, shake the pipes!');
+      expect(text(lyrics)).toContain('The sung version may differ');
+    });
+
+    it('says why a jam or an instrumental has no lyrics, and shows no lyrics block for it', () => {
+      render(<BandSongs />);
+      const row = screen
+        .getAllByTestId('band-song')
+        .find((r) => r.getAttribute('data-song-id') === 'fusion-1')!;
+      expect(within(row).getByTestId('track-note')).toHaveTextContent(
+        'Instrumental'
+      );
+      expect(within(row).queryByTestId('track-lyrics')).toBeNull();
+    });
+
+    it('links the full song only when its video is known', () => {
+      const song = rankingFile.songs[0];
+      const withVideo: BandTracks = {
+        [song.id]: {
+          ...tracks[song.id],
+          videoUrl: 'https://www.youtube.com/watch?v=abc',
+        },
+      };
+      render(<BandSongs ranking={rankingFile} tracks={withVideo} />);
+      expect(screen.getAllByTestId('full-song-link')).toHaveLength(1);
+      expect(screen.getByTestId('full-song-link')).toHaveAttribute(
+        'href',
+        'https://www.youtube.com/watch?v=abc'
+      );
+    });
+
+    it('shows no full-song link for a song with no video id yet', () => {
+      render(<BandSongs ranking={rankingFile} tracks={tracks} />);
+      expect(screen.queryAllByTestId('full-song-link')).toHaveLength(
+        Object.values(tracks).filter((i) => i.videoUrl).length
+      );
+    });
+
+    it('carries none of the old wording and no song held by the content gate', () => {
+      const all = JSON.stringify(tracks);
+      for (const old of [
+        'ROOM FOR EVERY KID',
+        'taps three times',
+        'children bring real instruments',
+        'so the little one',
+        'come sit with me',
+        'Follow the glow',
+        'sleepy houses',
+        'One light is waiting',
+      ])
+        expect(all.toLowerCase()).not.toContain(old.toLowerCase());
+      for (const held of ['n02', 'n04', 'n06', 'psy-3', 'psy-3b'])
+        expect(Object.keys(tracks)).not.toContain(held);
+    });
   });
 });

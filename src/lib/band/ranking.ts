@@ -37,6 +37,22 @@ export interface BandSong {
   site: Votes;
 }
 
+/** What a song's row shows beneath its counts (public/data/band-tracks.json, by song id). */
+export interface BandTrackInfo {
+  /** Card 1, a path under /public; run it through getAssetUrl before use. */
+  card: string;
+  /** The hook line printed on the card; the card's alt text carries it. */
+  hook: string;
+  /** The full-song video on YouTube, when there is one. */
+  videoUrl?: string;
+  /** Full lyrics, one entry per line, a blank string between stanzas. */
+  lyrics?: string[];
+  /** Shown instead of lyrics for an instrumental or a jam on another song's words. */
+  note?: string;
+}
+
+export type BandTracks = Record<string, BandTrackInfo>;
+
 export interface BandRankingFile {
   /** Day the numbers were taken, as YYYY-MM-DD. */
   asOf: string;

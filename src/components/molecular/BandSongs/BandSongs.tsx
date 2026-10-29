@@ -2,6 +2,7 @@ import React from 'react';
 import { getAssetUrl } from '@/config/project.config';
 import rankingFile from '../../../../public/data/band-ranking.json';
 import weightsFile from '../../../../public/data/band-weights.json';
+import tracksFile from '../../../../public/data/band-tracks.json';
 import {
   dayLabel,
   newMark,
@@ -10,6 +11,8 @@ import {
   score,
   type BandRankingFile,
   type BandSong,
+  type BandTrackInfo,
+  type BandTracks,
   type BandWeights,
 } from '@/lib/band/ranking';
 import { PRIVACY_LINE } from '@/lib/band/vote';
@@ -20,6 +23,8 @@ export interface BandSongsProps {
   /** Pin the list and the weights (tests and stories). */
   ranking?: BandRankingFile;
   weights?: BandWeights;
+  /** Card, hook line, full-song video and lyrics per song id (public/data/band-tracks.json). */
+  tracks?: BandTracks;
   className?: string;
 }
 
@@ -55,6 +60,78 @@ function workedExample(w: BandWeights) {
     older: { plays: 300, days: 60, perDay: round(playsPerDay(older, day, w)) },
     newer: { plays: 30, days: 3, perDay: round(playsPerDay(newer, day, w)) },
   };
+}
+
+/** Splits the lyrics into stanzas at blank lines. */
+function stanzas(lines: readonly string[]): string[][] {
+  const out: string[][] = [];
+  let cur: string[] = [];
+  for (const l of lines) {
+    if (l.trim() === '') {
+      if (cur.length) out.push(cur);
+      cur = [];
+    } else cur.push(l);
+  }
+  if (cur.length) out.push(cur);
+  return out;
+}
+
+function TrackBlock({ song, info }: { song: BandSong; info: BandTrackInfo }) {
+  return (
+    <div className="basis-full space-y-3" data-testid="band-track">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={getAssetUrl(info.card)}
+        width={600}
+        height={600}
+        alt={`Card for ${song.title}: ${info.hook}`}
+        loading="lazy"
+        className="h-auto w-full max-w-md rounded-lg border border-[#b5873a]"
+      />
+      {info.videoUrl ? (
+        <p className="!m-0">
+          <a
+            href={info.videoUrl}
+            rel="noopener noreferrer"
+            className={LINK}
+            data-testid="full-song-link"
+          >
+            Watch the full song on YouTube
+            <span className="sr-only"> for {song.title}</span>
+          </a>
+        </p>
+      ) : null}
+      {info.note ? (
+        <p className="!m-0 max-w-[68ch] text-base" data-testid="track-note">
+          {info.note}
+        </p>
+      ) : null}
+      {info.lyrics ? (
+        <details data-testid="track-lyrics">
+          <summary className="min-h-11 cursor-pointer py-2 text-lg font-semibold text-[#f5b335] underline underline-offset-4">
+            Full lyrics
+            <span className="sr-only"> for {song.title}</span>
+          </summary>
+          <div className="mt-2 max-w-[68ch] space-y-3 text-base leading-[1.6]">
+            {stanzas(info.lyrics).map((s, k) => (
+              <p key={k} className="!m-0">
+                {s.map((line, j) => (
+                  <React.Fragment key={j}>
+                    {j > 0 ? <br /> : null}
+                    {line}
+                  </React.Fragment>
+                ))}
+              </p>
+            ))}
+            <p className="!m-0 text-sm italic">
+              These are the words we gave the music model. The sung version may
+              differ a little.
+            </p>
+          </div>
+        </details>
+      ) : null}
+    </div>
+  );
 }
 
 function ScoreRules({ w }: { w: BandWeights }) {
@@ -164,6 +241,7 @@ function ScoreRules({ w }: { w: BandWeights }) {
 export default function BandSongs({
   ranking = rankingFile as BandRankingFile,
   weights = weightsFile as BandWeights,
+  tracks = tracksFile as BandTracks,
   className,
 }: BandSongsProps) {
   const songs = rankSongs(ranking.songs, ranking.asOf, weights);
@@ -260,6 +338,9 @@ export default function BandSongs({
                 </p>
                 <BandSongVote songId={song.id} title={song.title} />
               </div>
+              {tracks[song.id] ? (
+                <TrackBlock song={song} info={tracks[song.id]} />
+              ) : null}
             </li>
           );
         })}
