@@ -3,6 +3,7 @@ import { useThree, useFrame } from '@react-three/fiber';
 import { OrthographicCamera, SRGBColorSpace } from 'three';
 import { useEffect, useMemo, useRef } from 'react';
 import { buildComposer } from '@/post/tiltShift';
+import { createRenderScale } from './renderScale';
 
 export interface StageHandle {
   setLens: (focus: number, blur: number) => void;
@@ -45,6 +46,8 @@ export default function StageCore({
   const scene = useThree((s) => s.scene);
   const camera = useThree((s) => s.camera);
   const size = useThree((s) => s.size);
+  const setDpr = useThree((s) => s.setDpr);
+  const baseDpr = useThree((s) => s.viewport.initialDpr);
   const timeRef = useRef(0);
   const orthoCamRef = useRef<OrthographicCamera | null>(null);
 
@@ -79,7 +82,17 @@ export default function StageCore({
     return () => rig.dispose();
   }, [rig, registerHandle]);
 
+  // Adaptive render scale (#1423): slow frames (software GL, weak laptops) lower the
+  // pixel ratio so input stays quick; fast machines never leave full scale.
+  const scaleGov = useMemo(() => createRenderScale(), []);
+
   useFrame((_, dt) => {
+    const scale = scaleGov.sample(dt);
+    if (scale !== null) {
+      const dpr = baseDpr * scale;
+      setDpr(dpr);
+      rig.setPixelRatio(dpr);
+    }
     timeRef.current += dt;
     rig.setTime(timeRef.current);
     onFrame?.(dt, timeRef.current);

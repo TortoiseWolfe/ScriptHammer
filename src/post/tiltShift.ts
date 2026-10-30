@@ -90,6 +90,10 @@ export function buildComposer(
       (grade.uniforms.time as { value: number }).value = t;
     },
     setSize,
+    /** Resize the composer's buffers for a new render scale (the canvas keeps its CSS size). */
+    setPixelRatio(ratio: number) {
+      composer.setPixelRatio(ratio);
+    },
     dispose() {
       composer.dispose();
     },
