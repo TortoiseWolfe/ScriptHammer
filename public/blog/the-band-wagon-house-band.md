@@ -76,7 +76,7 @@ The stream is on the [ScriptHammer Twitch channel](https://www.twitch.tv/scripth
 - **Thursday 29 October (Eastern time):** on the air from 5:30 PM to 10:00 PM. The opening set starts at **6:00 PM** and the headline set at **8:00 PM**.
 - **Saturday 31 October:** the replay, in the same time slots.
 
-Both sets open with Pedal Beat Rave (A minor), Boiler Room Boogie, then a new song, Finding the Bottom. At 6:00 PM the album follows in order, then the votes; at 8:00 PM the votes follow straight away.
+Both sets open with Pedal Beat Rave (A minor), Boiler Room Boogie, then a new song, Building Our Bass. At 6:00 PM the album follows in order, then the votes; at 8:00 PM the votes follow straight away.
 
 Add the show to your calendar with the [calendar file](/band/the-band-wagon.ics). To listen without the stream, find the songs on the Turtle Wolfe [YouTube channel](https://www.youtube.com/@JonathanPohlner).
 
