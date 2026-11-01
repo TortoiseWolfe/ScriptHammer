@@ -275,6 +275,53 @@ describe('retain-previous-assets: chaining across a burst (#548)', () => {
     );
   });
 
+  it('uses the age table to retain unreferenced assets when the manifest is missing', async () => {
+    const a = makeGeneration(path.join(WORK, 'a10'), 'gen-a10');
+    const b = makeGeneration(path.join(WORK, 'b10'), 'gen-b10');
+    const historicalChunk = '_next/static/chunks/gen-a10-lazy.js';
+    const historicalPath = path.join(a, historicalChunk);
+    fs.mkdirSync(path.dirname(historicalPath), { recursive: true });
+    fs.writeFileSync(historicalPath, "console.log('historical chunk')");
+
+    // The live HTML does not name this chunk: it was loaded only by an older route.
+    // The age table is the only complete record of assets a returning visitor may need.
+    const firstSeen = new Date(Date.now() - 16 * 86400000).toISOString();
+    const ageDir = path.join(a, 'asset-ledger');
+    fs.mkdirSync(ageDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(ageDir, 'ASSET_AGES.txt'),
+      [
+        `_next/static/css/gen-a10.css`,
+        `_next/static/chunks/gen-a10.js`,
+        historicalChunk,
+      ]
+        .map((rel) => `1 ${firstSeen} ${rel}`)
+        .join('\n') + '\n'
+    );
+    assert.ok(
+      !fs.existsSync(path.join(ageDir, 'ASSET_MANIFEST.txt')),
+      'the fixture must exercise the missing-manifest fallback'
+    );
+
+    await retain(b, a);
+
+    assert.ok(
+      fs.existsSync(path.join(b, historicalChunk)),
+      'every historical asset in the age table must survive the HTML-only fallback'
+    );
+    assert.ok(manifestOf(b).includes(historicalChunk));
+    assert.strictEqual(
+      bornOf(b).get(historicalChunk),
+      Date.parse(firstSeen),
+      'the fallback must preserve the historical first-seen date'
+    );
+    const oldest = Math.min(...bornOf(b).values());
+    assert.ok(
+      (Date.now() - oldest) / 86400000 >= 14,
+      'the fallback must not reset a full retention window'
+    );
+  });
+
   it('still publishes a manifest when the live site is unreachable', async () => {
     // THE REGRESSION THIS FIX NEARLY INTRODUCED.
     //
@@ -450,6 +497,35 @@ describe('retain-previous-assets: chaining across a burst (#548)', () => {
       after,
       before,
       'the first-seen timestamp must survive a deploy unchanged'
+    );
+  });
+
+  it('preserves first-seen dates for assets already present in the new build', async () => {
+    const a = makeGeneration(path.join(WORK, 'a11'), 'shared');
+    const b = makeGeneration(path.join(WORK, 'b11'), 'shared');
+    const firstSeen = new Date(Date.now() - 16 * 86400000).toISOString();
+    const ageDir = path.join(a, 'asset-ledger');
+    fs.mkdirSync(ageDir, { recursive: true });
+
+    const files = [
+      '_next/static/css/shared.css',
+      '_next/static/chunks/shared.js',
+    ];
+    fs.writeFileSync(
+      path.join(ageDir, 'ASSET_MANIFEST.txt'),
+      files.join('\n') + '\n'
+    );
+    fs.writeFileSync(
+      path.join(ageDir, 'ASSET_AGES.txt'),
+      files.map((rel) => `1 ${firstSeen} ${rel}`).join('\n') + '\n'
+    );
+
+    await retain(b, a);
+
+    assert.strictEqual(
+      bornOf(b).get('_next/static/css/shared.css'),
+      Date.parse(firstSeen),
+      'an unchanged hashed asset must keep its original first-seen date'
     );
   });
 
