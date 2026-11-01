@@ -9,6 +9,7 @@ import {
   playsPerDay,
   rankSongs,
   score,
+  totalNet,
   type BandRankingFile,
   type BandSong,
   type BandTrackInfo,
@@ -18,6 +19,7 @@ import {
 import { PRIVACY_LINE } from '@/lib/band/vote';
 import { SHOW_CHANNEL_URL } from '@/lib/band/show';
 import BandSongVote from './BandSongVote';
+import BandGauges, { BandGaugeDefs } from '../BandGauges';
 
 export interface BandSongsProps {
   /** Pin the list and the weights (tests and stories). */
@@ -245,6 +247,11 @@ export default function BandSongs({
   className,
 }: BandSongsProps) {
   const songs = rankSongs(ranking.songs, ranking.asOf, weights);
+  // The right-hand end of every "a day" dial: the busiest song in this list.
+  const maxPerDay = Math.max(
+    1,
+    ...songs.map((s) => playsPerDay(s, ranking.asOf, weights))
+  );
 
   return (
     <section
@@ -266,6 +273,7 @@ export default function BandSongs({
       <p className="!mt-0 !mb-6 max-w-[68ch] text-lg leading-[1.65]">
         {PRIVACY_LINE}
       </p>
+      <BandGaugeDefs />
       <ol className="m-0 grid list-none gap-4 p-0">
         {songs.map((song, i) => {
           const mark = newMark(song, ranking.asOf, weights);
@@ -338,6 +346,13 @@ export default function BandSongs({
                 </p>
                 <BandSongVote songId={song.id} title={song.title} />
               </div>
+              <BandGauges
+                score={score(song, weights)}
+                perDay={playsPerDay(song, ranking.asOf, weights)}
+                maxPerDay={maxPerDay}
+                net={totalNet(song)}
+                className="sm:w-64 sm:shrink-0"
+              />
               {tracks[song.id] ? (
                 <TrackBlock song={song} info={tracks[song.id]} />
               ) : null}

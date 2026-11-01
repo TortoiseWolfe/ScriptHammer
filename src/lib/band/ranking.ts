@@ -107,6 +107,16 @@ export function totalDown(song: BandSong): number {
   );
 }
 
+/** Up votes minus down votes across all four sources, unweighted. */
+export function totalNet(song: BandSong): number {
+  return (
+    net(song.site) +
+    net(song.twitch) +
+    net({ up: song.youtube.up, down: song.youtube.down }) +
+    net(song.review)
+  );
+}
+
 const DAY_MS = 86_400_000;
 
 /** Whole days between two YYYY-MM-DD days (UTC midnight to UTC midnight). */
