@@ -88,7 +88,7 @@ export const CountdownBanner = () => {
 
   return (
     <aside
-      className="bg-warning text-warning-content fixed top-40 right-4 z-50 max-w-xs rounded-lg p-3 shadow-xl max-sm:top-56 max-sm:right-4 max-sm:left-4 max-sm:max-w-full"
+      className="bg-warning text-warning-content pointer-events-none fixed top-40 right-4 z-50 max-w-xs rounded-lg p-3 shadow-xl max-sm:top-56 max-sm:right-4 max-sm:left-4 max-sm:max-w-full"
       aria-label="Promotional countdown"
       aria-live="polite"
     >
@@ -109,13 +109,17 @@ export const CountdownBanner = () => {
             <div className="text-2xl font-bold">{price}</div>
             <div className="text-sm">Custom ScriptHammer Setup</div>
           </div>
-          <Button variant="accent" onClick={() => router.push('/schedule')}>
+          <Button
+            variant="accent"
+            className="pointer-events-auto"
+            onClick={() => router.push('/schedule')}
+          >
             Book Now
           </Button>
         </div>
 
         <button
-          className="btn btn-sm btn-circle btn-ghost absolute top-2 right-2"
+          className="btn btn-sm btn-circle btn-ghost pointer-events-auto absolute top-2 right-2"
           onClick={() => {
             try {
               localStorage.setItem(DISMISS_KEY, Date.now().toString());
