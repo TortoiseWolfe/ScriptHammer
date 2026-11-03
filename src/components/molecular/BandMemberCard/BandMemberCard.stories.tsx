@@ -33,4 +33,4 @@ type Story = StoryObj<typeof meta>;
 
 export const Ivory: Story = { args: { member: ROSTER[0] } };
 export const Crash: Story = { args: { member: ROSTER[1] } };
-export const Verse: Story = { args: { member: ROSTER[5] } };
+export const Chorus: Story = { args: { member: ROSTER[5] } };
