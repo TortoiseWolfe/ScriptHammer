@@ -88,6 +88,32 @@ function isBenignConsoleError(e: string): boolean {
 }
 
 test.describe('/twins/[slug]?diorama — the R3F exhibit (opt-in since #292)', () => {
+  // THE GROUND IMAGERY COMES FROM A THIRD PARTY, SO THESE TESTS ANSWER IT THEMSELVES.
+  // The diorama fetches its ground tiles at render time from Hamilton County's and the
+  // State of Tennessee's imagery servers (src/world/groundTiles.ts, IMAGERY_SERVICES).
+  // When the county's server is down (it answered HTTP 522 on 4 Nov 2026) the browser logs
+  // a CORS error and a failed load for every tile, and the compare-mode test below fails
+  // on those lines even though the page rendered fine and fell back to the baked ground.
+  // What these tests prove is the dock and the render loop, not the county's uptime, so
+  // each imagery request is fulfilled with a 1x1 image and the right CORS header. The test
+  // no longer depends on whether the county is up, and still drives the tile-texture path.
+  test.beforeEach(async ({ page }) => {
+    const onePixelPng = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+      'base64'
+    );
+    await page.route(
+      /^https:\/\/(mapsdev\.hamiltontn\.gov|tnmap\.tn\.gov)\//,
+      (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'image/png',
+          headers: { 'access-control-allow-origin': '*' },
+          body: onePixelPng,
+        })
+    );
+  });
+
   test('/twins/chatt/?diorama loads the baked manifest and shows the camera dock', async ({
     page,
   }) => {
