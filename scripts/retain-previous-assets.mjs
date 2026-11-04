@@ -28,10 +28,11 @@
  *
  * WHAT IT DOES
  *
- * Reads the CURRENTLY LIVE site, collects every `/_next/static/` URL its pages
- * reference, and downloads any that the new build does not contain into the
- * output directory. Additive only — it never overwrites a file the new build
- * produced.
+ * Reads the CURRENTLY LIVE site's asset manifest and age table, then downloads
+ * every still-in-window asset the new build does not contain into the output
+ * directory. If the manifest is unavailable, the age table supplies the complete
+ * list; crawling the pages is the fallback when neither ledger is available.
+ * Additive only — it never overwrites a file the new build produced.
  *
  * Usage:
  *   node scripts/retain-previous-assets.mjs <output-dir> <live-base-url>
@@ -513,13 +514,19 @@ console.log(`after one transitive pass: ${wanted.size} reference(s)`);
  * rather than a deploy count, and it is the whole fix. The generation number rides
  * along as a diagnostic only; nothing is dropped because of it.
  *
- * Absent on the currently-live build, every retained file starts dated now — the
- * ramp is one deploy, same as #476's. The same applies per-entry to the old
- * two-field lines, which is why the parser below still reads them.
+ * The age table is also the complete asset list when a manifest is unavailable or
+ * incoherent. Falling back to HTML alone loses old route chunks that the current
+ * pages no longer reference, collapsing the window on the next deploy.
+ *
+ * Absent from the age table, a retained file starts dated now — the ramp is one
+ * deploy, same as #476's. The same applies per-entry to the old two-field lines,
+ * which is why the parser below still reads them.
  */
 const liveAges = new Map();
 const liveFirstSeen = new Map();
 let undated = 0;
+let ageListedAssets = 0;
+const useAgeTableAsAssetList = !manifest || ledgerIncoherent;
 const usableAges = ledgerAgesText;
 if (usableAges) {
   for (const line of usableAges.split('\n')) {
@@ -529,15 +536,25 @@ if (usableAges) {
     // very deploy that introduces the fix.
     const dated = line.trim().match(/^(\d+)\s+(\S+T\S+Z)\s+(.+)$/);
     if (dated) {
-      liveAges.set(dated[3], Number(dated[1]));
+      const rel = dated[3];
+      liveAges.set(rel, Number(dated[1]));
       const t = Date.parse(dated[2]);
-      if (Number.isFinite(t)) liveFirstSeen.set(dated[3], t);
+      if (Number.isFinite(t)) liveFirstSeen.set(rel, t);
+      if (useAgeTableAsAssetList && rel.startsWith('_next/static/')) {
+        wanted.add(`/${rel}`);
+        ageListedAssets++;
+      }
       continue;
     }
     const legacy = line.trim().match(/^(\d+)\s+(.+)$/);
     if (legacy) {
-      liveAges.set(legacy[2], Number(legacy[1]));
+      const rel = legacy[2];
+      liveAges.set(rel, Number(legacy[1]));
       undated++;
+      if (useAgeTableAsAssetList && rel.startsWith('_next/static/')) {
+        wanted.add(`/${rel}`);
+        ageListedAssets++;
+      }
     }
   }
   console.log(
@@ -546,6 +563,12 @@ if (usableAges) {
         ? `, ${undated} without a timestamp — stamped now (one-deploy ramp)`
         : '')
   );
+  if (useAgeTableAsAssetList && ageListedAssets) {
+    console.log(
+      `age table supplied ${ageListedAssets} asset path(s) because the manifest ` +
+        `${manifest ? 'was incoherent' : 'was unavailable'}`
+    );
+  }
 } else {
   console.log(
     'no age table on the live build — retained files start at age 1, dated now'
@@ -578,6 +601,10 @@ for (const ref of wanted) {
   try {
     await access(dest);
     alreadyPresent++;
+    // The content hash means an asset already present is byte-for-byte unchanged.
+    // Keep its age instead of restamping it as new on every deploy.
+    if (liveAges.has(rel)) ages.set(rel, liveAges.get(rel) + 1);
+    if (liveFirstSeen.has(rel)) firstSeen.set(rel, liveFirstSeen.get(rel));
     continue; // The new build produced it. Never overwrite.
   } catch {
     /* not in the new build — that is exactly what we retain */
