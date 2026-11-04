@@ -87,40 +87,53 @@ test.describe('/band (#1408)', () => {
     }
   });
 
-  test('names the show, links the channel, ships the calendar file and the social text', async ({
-    page,
-    request,
-  }) => {
-    await page.goto('/band');
-    const show = page.getByTestId('band-show');
-    await expect(
-      show.getByRole('heading', {
-        level: 2,
-        name: 'The Band Wagon: One Night Only, Every City on Earth',
-      })
-    ).toBeVisible();
-    await expect(show).toContainText('LIVE Thursday 29 October');
-    await expect(show).toContainText('REPLAY Saturday 31 October');
-    await expect(
-      show.getByRole('link', { name: 'twitch.tv/scripthammer' })
-    ).toHaveAttribute('href', 'https://twitch.tv/scripthammer');
-    await expect(show.getByTestId('show-city')).toHaveCount(8);
+  // The show block is a clock-driven section: from 1 Nov 2026 on it collapses to
+  // "The show has played" and drops the dates, the channel link and the calendar
+  // file, by design. This test checks those parts, so it pins the visitor's clock
+  // to a day before the show instead of reading the real one (main went red on
+  // the nightly run of 3 Nov, the first run after the replay). Signed out, for the
+  // reason given on the "after the replay" block below.
+  test.describe('before the show', () => {
+    test.use({ storageState: { cookies: [], origins: [] } });
 
-    const icsHref = await show
-      .getByRole('link', { name: /calendar/i })
-      .getAttribute('href');
-    expect(icsHref).not.toBeNull();
-    const ics = await request.get(icsHref as string);
-    expect(ics.status()).toBe(200);
-    expect(await ics.text()).toContain('DTSTART:20261029T220000Z');
+    test('names the show, links the channel, ships the calendar file and the social text', async ({
+      page,
+      request,
+    }) => {
+      // 20 Oct 2026, noon UTC: nine days before the live night.
+      await page.clock.install({ time: new Date('2026-10-20T12:00:00Z') });
+      await page.goto('/band');
+      const show = page.getByTestId('band-show');
+      await expect(show).toHaveAttribute('data-state', 'before');
+      await expect(
+        show.getByRole('heading', {
+          level: 2,
+          name: 'The Band Wagon: One Night Only, Every City on Earth',
+        })
+      ).toBeVisible();
+      await expect(show).toContainText('LIVE Thursday 29 October');
+      await expect(show).toContainText('REPLAY Saturday 31 October');
+      await expect(
+        show.getByRole('link', { name: 'twitch.tv/scripthammer' })
+      ).toHaveAttribute('href', 'https://twitch.tv/scripthammer');
+      await expect(show.getByTestId('show-city')).toHaveCount(8);
 
-    for (const name of ['og:description', 'twitter:description']) {
-      const content = await page
-        .locator(`meta[property="${name}"], meta[name="${name}"]`)
-        .getAttribute('content');
-      expect(content).toContain('The Band Wagon');
-      expect(content).toContain('Thursday 29 October');
-    }
+      const icsHref = await show
+        .getByRole('link', { name: /calendar/i })
+        .getAttribute('href');
+      expect(icsHref).not.toBeNull();
+      const ics = await request.get(icsHref as string);
+      expect(ics.status()).toBe(200);
+      expect(await ics.text()).toContain('DTSTART:20261029T220000Z');
+
+      for (const name of ['og:description', 'twitter:description']) {
+        const content = await page
+          .locator(`meta[property="${name}"], meta[name="${name}"]`)
+          .getAttribute('content');
+        expect(content).toContain('The Band Wagon');
+        expect(content).toContain('Thursday 29 October');
+      }
+    });
   });
 
   // Signed out, because /band needs no account and the clock below jumps five days:
