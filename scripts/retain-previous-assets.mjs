@@ -117,18 +117,52 @@ const LEGACY_LEDGER_DIR = '_next/static';
  * — so this only bites at the new location. That is fine: at the new location it
  * is the whole point, and at the old one the fallback is a transition measure.
  */
+/**
+ * ONE FAILED READ MUST NOT BE ABLE TO ERASE TWO WEEKS OF RETENTION (#1442).
+ *
+ * This used to be a single attempt: any non-OK answer or thrown error became `null`,
+ * and `null` means "there is no ledger" — which is also the legitimate answer on the
+ * first deploy after the ledger was introduced. On 2026-10-30 (deploy 41051767797) the
+ * age table was read (316 entries) while the manifest, requested next from the same
+ * host, came back as nothing. The script fell back to crawling the live HTML, which
+ * only names the CURRENT build, carried 3 assets instead of 150, and the published
+ * ledger fell from 18 days of coverage to 0. It has regrown a day per day since, which
+ * is why "Production Smoke" is red. The log did not record the status of the failed
+ * read, so the failure below is now printed.
+ *
+ * A failure that can be transient (network error, 5xx, 429) is retried with backoff.
+ * A 404 is NOT retried: it is the real "no ledger here" answer, and the legacy-path
+ * fallback and the first-deploy ramp both need it promptly.
+ */
+const RETRY_DELAYS_MS = (process.env.RETAIN_FETCH_RETRY_MS ?? '500,2000,5000')
+  .split(',')
+  .map(Number);
+
 async function getFresh(url) {
-  const bust = `${url.includes('?') ? '&' : '?'}fresh=${Date.now()}`;
-  try {
-    const res = await fetch(url + bust, {
-      redirect: 'follow',
-      cache: 'no-store',
-      headers: { 'cache-control': 'no-cache', pragma: 'no-cache' },
-    });
-    if (!res.ok) return null;
-    return res;
-  } catch {
-    return null;
+  for (let attempt = 0; ; attempt++) {
+    const bust = `${url.includes('?') ? '&' : '?'}fresh=${Date.now()}`;
+    let transient = true;
+    let why;
+    try {
+      const res = await fetch(url + bust, {
+        redirect: 'follow',
+        cache: 'no-store',
+        headers: { 'cache-control': 'no-cache', pragma: 'no-cache' },
+      });
+      if (res.ok) return res;
+      why = `HTTP ${res.status}`;
+      transient = res.status >= 500 || res.status === 429;
+    } catch (e) {
+      why = `network error: ${e?.cause?.code ?? e?.message ?? e}`;
+    }
+    if (!transient || attempt >= RETRY_DELAYS_MS.length) {
+      if (transient) console.log(`gave up on ${url}: ${why}`);
+      return null;
+    }
+    console.log(
+      `${url}: ${why} — retry ${attempt + 1}/${RETRY_DELAYS_MS.length}`
+    );
+    await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
   }
 }
 
@@ -396,11 +430,28 @@ async function publishManifest() {
  * deploy after this lands falls back to crawling and writes the first manifest.
  * The deploy after that gets complete retention.
  */
-const manifestText = await getLedgerText(
-  'ASSET_MANIFEST.txt',
-  looksLikeManifest
-);
 const ledgerAgesText = await getLedgerText('ASSET_AGES.txt', looksLikeAges);
+let manifestText = await getLedgerText('ASSET_MANIFEST.txt', looksLikeManifest);
+
+/**
+ * The age table lists exactly the files the manifest does (both are written from the
+ * same `published` array). If the manifest alone could not be read, the age table
+ * still names every file — use that rather than crawling HTML, which names only the
+ * current build and silently drops everything older (#1442).
+ */
+if (!manifestText && ledgerAgesText) {
+  const paths = ledgerAgesText
+    .split('\n')
+    .map((l) => l.trim().split(/\s+/).pop())
+    .filter((p) => p?.startsWith('_next/static/'));
+  if (paths.length) {
+    manifestText = paths.join('\n') + '\n';
+    console.log(
+      `::warning::ASSET_MANIFEST.txt could not be read but the age table could — ` +
+        `using its ${paths.length} path(s) as the manifest instead of crawling HTML.`
+    );
+  }
+}
 
 /**
  * COHERENCE: the two ledger files are written from the same `published` array, so
