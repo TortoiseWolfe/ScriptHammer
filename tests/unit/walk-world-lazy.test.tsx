@@ -204,6 +204,23 @@ beforeEach(() => {
   H.world.props = null;
   fromMeshes = spyFromMeshes();
 
+  // TwinCanvas reads `prefers-reduced-motion` through useReducedMotion (#1449), which calls
+  // `window.matchMedia`. tests/setup.ts supplies a vi.fn() stub, but this file's afterEach
+  // runs vi.restoreAllMocks(), which strips that stub's implementation after the first case
+  // — so every later case rendered with matchMedia returning undefined. A plain function
+  // is not a mock, so restoreAllMocks cannot touch it. "No reduced-motion preference" is
+  // the default a visitor has, and it leaves the walk wiring under test unchanged.
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+
   // The scene's `<ambientLight>` / `<fog>` / `<color>` are R3F intrinsics, and rendering them
   // through the DOM renderer makes React complain about casing on every mount. Filter THAT
   // ONE message and pass everything else through — a blanket console.error stub here would
