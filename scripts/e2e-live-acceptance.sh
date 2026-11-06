@@ -2,7 +2,8 @@
 # Live-acceptance E2E runner — drives the payment specs against the REAL
 # provider sandboxes (Stripe test mode / PayPal sandbox) using the creds in
 # your gitignored .env. CI never runs these legs (its env carries no provider
-# keys, so the specs auto-skip); this script is how they actually get run.
+# keys, so playwright.config.ts excludes them unless LIVE_PROVIDER_TESTS is
+# set); this script sets it, and is how they actually get run.
 #
 # Run from the HOST (it orchestrates docker compose):
 #   pnpm run test:e2e:live                       # default: payment suite, chromium
@@ -174,6 +175,7 @@ echo "== 3/3 playwright: ${ARGS[*]}"
 docker compose exec -T \
   -e PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
   -e SKIP_WEBSERVER=1 \
+  -e LIVE_PROVIDER_TESTS=1 \
   -e BASE_URL=http://localhost:3001 \
   -e NEXT_PUBLIC_BASE_PATH= \
   "$COMPOSE_SERVICE" pnpm exec playwright test --reporter=list "${ARGS[@]}"

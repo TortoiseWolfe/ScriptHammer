@@ -49,14 +49,6 @@ test.describe('PayPal Subscription Creation Flow', () => {
       .waitFor({ state: 'visible', timeout: 15000 });
   });
 
-  // Kept skip (#188, #1193): needs server-side PayPal sandbox credentials, which no CI lane carries.
-  test.skip('should create PayPal subscription successfully', async ({
-    page,
-  }) => {
-    // Skip: Requires actual PayPal integration
-    test.skip(true, 'PayPal API keys not configured - skipping flow test');
-  });
-
   test('should show PayPal provider tab', async ({ page }) => {
     // Grant consent
     await page.getByRole('button', { name: /Accept/i }).click();
@@ -113,17 +105,9 @@ test.describe('PayPal Subscription Creation Flow', () => {
 
   // The grace-period + duplicate-prevention flows below run against a SEEDED
   // subscription row via the per-test fixture (seedIsolatedSubscription —
-  // service-role insert + cleanup, no provider creds). Cancel + failed-retry
-  // remain skipped: cancel drives the cancel-subscription edge function and
-  // failed-retry needs PayPal sandbox keys.
-
-  // Kept skip (#188): cancel drives the deployed Edge Function against PayPal; no CI lane has its credentials.
-  test.skip('should allow subscription cancellation', async ({ page }) => {
-    // Fixture exists (seedIsolatedSubscription) but cancel drives the
-    // cancel-subscription Edge Function end-to-end; un-skip once that flow is
-    // exercised against a deployed function with provider config.
-    test.skip(true, 'Cancel drives the cancel-subscription Edge Function');
-  });
+  // service-role insert + cleanup, no provider creds). The PayPal create, cancel
+  // and failed-retry flows need server-side PayPal credentials no CI lane has;
+  // they are recorded in #188 and #1193 rather than kept as empty skipped stubs.
 
   test('should show grace period warning', async ({ browser }) => {
     // Seed a grace_period subscription (expires in 5 days) for a throwaway user,
