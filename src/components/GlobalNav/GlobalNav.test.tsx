@@ -1,7 +1,9 @@
-import { render, screen, within, waitFor } from '@testing-library/react';
+import { render, screen, within, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GlobalNav } from './GlobalNav';
+import PWAInstall from '@/components/PWAInstall';
+import { resetInstallPromptForTests } from '@/lib/pwa/install-prompt';
 import { THEMES } from '@/config/themes';
 import { CONSENT_STORAGE_KEY } from '@/config/accessibility-tokens';
 
@@ -30,6 +32,9 @@ vi.mock('@/services/admin/admin-auth-service', () => ({
   },
 }));
 vi.mock('@/lib/supabase/client', () => ({ createClient: () => ({}) }));
+vi.mock('@/hooks/useAnalytics', () => ({
+  useAnalytics: () => ({ trackPWAEvent: vi.fn() }),
+}));
 
 // Heavy children, each already covered by its own suite. Stubbing keeps this
 // file about the NAV rather than about a logo's animation or a colour panel.
@@ -63,6 +68,7 @@ const setSearch = (search: string) =>
   window.history.replaceState({}, '', `/${search}`);
 
 beforeEach(() => {
+  resetInstallPromptForTests();
   pathname = '/';
   user = null;
   unread = 0;
@@ -454,5 +460,43 @@ describe('/chatt active state — exactly one destination lights up', () => {
       ).toBeLessThanOrEqual(1);
       unmount();
     }
+  });
+});
+
+describe('install prompt shared with PWAInstall (#1262)', () => {
+  // Both are mounted in layout.tsx. Each used to keep its own copy of the
+  // browser's one-shot install event, so the button tapped second did nothing.
+  it('offers one browser prompt to both buttons, and a tap on either uses it up for both', async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <GlobalNav />
+        <PWAInstall />
+      </>
+    );
+
+    const event = new Event('beforeinstallprompt', {
+      cancelable: true,
+    }) as Event & {
+      prompt: ReturnType<typeof vi.fn>;
+      userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+    };
+    event.prompt = vi.fn().mockResolvedValue(undefined);
+    event.userChoice = Promise.resolve({ outcome: 'accepted' as const });
+    await act(async () => {
+      window.dispatchEvent(event);
+    });
+
+    expect(
+      await screen.findByRole('button', { name: 'Install' })
+    ).toBeVisible();
+    await user.click(screen.getByRole('button', { name: /Install App/ }));
+
+    expect(event.prompt).toHaveBeenCalledTimes(1);
+    // The pill goes too, because there is nothing left to prompt.
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Install' })).toBeNull()
+    );
+    expect(screen.queryByRole('button', { name: /Install App/ })).toBeNull();
   });
 });

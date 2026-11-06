@@ -2,6 +2,7 @@ import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import PWAInstall from './PWAInstall';
+import { resetInstallPromptForTests } from '@/lib/pwa/install-prompt';
 
 const { trackPWAEvent } = vi.hoisted(() => ({ trackPWAEvent: vi.fn() }));
 vi.mock('@/hooks/useAnalytics', () => ({
@@ -42,6 +43,8 @@ const setSearch = (search: string) => {
 };
 
 beforeEach(() => {
+  // The install prompt lives in a shared module, so forget the last test's.
+  resetInstallPromptForTests();
   trackPWAEvent.mockClear();
   localStorage.clear();
   setSearch('');
@@ -193,7 +196,9 @@ describe('PWAInstall', () => {
     render(<PWAInstall />);
     await firePrompt();
     expect(
-      await screen.findByRole('button', { name: 'Install Progressive Web App' })
+      await screen.findByRole('button', {
+        name: 'Install Progressive Web App',
+      })
     ).toBeInTheDocument();
   });
 

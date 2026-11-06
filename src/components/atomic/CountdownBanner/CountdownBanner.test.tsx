@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
-// Mock Next.js router (required for useRouter hook)
+// Mock Next.js router (required for useRouter and usePathname hooks)
+let mockPathname = '/';
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: vi.fn(),
   }),
+  usePathname: () => mockPathname,
 }));
 
 import { CountdownBanner } from './CountdownBanner';
@@ -18,6 +20,7 @@ function mockDate(dateString: string) {
 describe('CountdownBanner', () => {
   beforeEach(() => {
     localStorage.clear();
+    mockPathname = '/';
   });
 
   afterEach(() => {
@@ -27,6 +30,30 @@ describe('CountdownBanner', () => {
   describe('during season (Oct 31 - Dec 31)', () => {
     beforeEach(() => {
       mockDate('2025-11-15T12:00:00');
+    });
+
+    // The card floats over the top-right of the page. On the chat pages the
+    // sender's own messages sit on that edge, so an open edit box put its Save
+    // button under the card's "Book Now" and the click landed on the card (#1436).
+    it.each([
+      '/messages',
+      '/messages/',
+      '/messages/new-group',
+      '/messages/setup',
+    ])('is not shown on the chat page %s', (path) => {
+      mockPathname = path;
+      render(<CountdownBanner />);
+      expect(
+        screen.queryByLabelText('Promotional countdown'),
+      ).not.toBeInTheDocument();
+    });
+
+    it('is still shown on a page whose path only starts with the same letters', () => {
+      mockPathname = '/messages-help';
+      render(<CountdownBanner />);
+      expect(
+        screen.getByLabelText('Promotional countdown'),
+      ).toBeInTheDocument();
     });
 
     it('renders countdown timer', () => {
@@ -45,13 +72,13 @@ describe('CountdownBanner', () => {
       render(<CountdownBanner />);
 
       expect(screen.getByLabelText('Promotional countdown')).toHaveClass(
-        'pointer-events-none'
+        'pointer-events-none',
       );
       expect(screen.getByRole('button', { name: 'Book Now' })).toHaveClass(
-        'pointer-events-auto'
+        'pointer-events-auto',
       );
       expect(
-        screen.getByRole('button', { name: 'Dismiss countdown banner' })
+        screen.getByRole('button', { name: 'Dismiss countdown banner' }),
       ).toHaveClass('pointer-events-auto');
     });
 

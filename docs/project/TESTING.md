@@ -355,18 +355,20 @@ Before committing:
 
 ### Overview
 
-End-to-end tests use Playwright to test complete user workflows in real browsers. E2E tests run in CI (chromium on PRs; firefox/webkit on push-to-main + cron, sharded) against a dummy-keyed static build. Tests that need REAL provider credentials auto-skip in CI and run locally instead — see "Live-acceptance E2E" below.
+End-to-end tests use Playwright to test complete user workflows in real browsers. E2E tests run in CI (chromium on PRs; firefox/webkit on push-to-main + cron, sharded) against a dummy-keyed static build. Tests that need REAL provider credentials are excluded from the CI lanes (not skipped, so the required check reports 0 skipped tests) and run locally instead — see "Live-acceptance E2E" below.
 
 ### Live-acceptance E2E (real Stripe/PayPal sandbox)
 
 CI's build bakes dummy payment keys. The Stripe one-time and subscription
 redirects in `01-stripe-onetime.spec.ts` still run there: they route-mock the
 checkout Edge Functions and the `checkout.stripe.com` hop, because the client
-never loads Stripe.js (#1370). What needs a real provider skips in CI and runs
-only locally, against the sandbox creds in your gitignored `.env`: the
+never loads Stripe.js (#1370). What needs a real provider is excluded from every CI project
+(`LIVE_PROVIDER_GLOBS` in `playwright.config.ts`, #1464) and runs only
+locally, against the sandbox creds in your gitignored env file: the
 cancel/resume lifecycle in `08-subscription-lifecycle.spec.ts`
-(`STRIPE_SECRET_KEY` / `NEXT_PUBLIC_STRIPE_PRICE_ID`) and the PayPal approval
-and cancel legs in `02-paypal-subscription.spec.ts` (#188):
+(`STRIPE_SECRET_KEY` / `NEXT_PUBLIC_STRIPE_PRICE_ID`). The PayPal approval
+and cancel legs have no spec at all until live PayPal keys exist (#188, #1193).
+The script sets `LIVE_PROVIDER_TESTS=1`, which lifts the exclusion:
 
 ```bash
 # whole payment suite (chromium), from the HOST:
