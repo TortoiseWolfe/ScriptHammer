@@ -27,6 +27,7 @@
  * RESPONSE
  *   200 OK: { success: true }
  *   401 Unauthorized: { error: string } (missing / invalid JWT)
+ *   409 Conflict: { error: string } (a subscription is still billing; cancel it first)
  *   500 Internal Server Error: { error: string }
  *
  * SECURITY MODEL
@@ -45,6 +46,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAuthenticatedUserId, UnauthorizedError } from '../_shared/auth.ts';
+import { deletionBlockedBy } from './resolve.ts';
 
 const supabaseUrl =
   Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
@@ -75,6 +77,27 @@ serve(async (req: Request) => {
   const admin = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
+
+  // A subscription that is still billing blocks the deletion (#1309). The delete would set its
+  // owner to NULL, after which nothing can cancel it and the provider keeps charging. Fail
+  // closed: a lookup that errors is not "no subscriptions".
+  const { data: subs, error: subsError } = await admin
+    .from('subscriptions')
+    .select('status')
+    .eq('template_user_id', userId);
+
+  if (subsError) {
+    return jsonResponse(
+      req,
+      { error: `Failed to check subscriptions: ${subsError.message}` },
+      500
+    );
+  }
+
+  const blocked = deletionBlockedBy(subs ?? []);
+  if (blocked) {
+    return jsonResponse(req, { error: blocked }, 409);
+  }
 
   const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
 
