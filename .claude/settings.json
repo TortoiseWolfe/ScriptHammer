@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/TurtleWolfe/.local/bin/graphify hook-guard search"
+            "command": "g=$(command -v graphify || echo \"$HOME/.local/bin/graphify\"); [ -x \"$g\" ] || exit 0; exec \"$g\" hook-guard search"
           }
         ]
       },
@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/TurtleWolfe/.local/bin/graphify hook-guard read"
+            "command": "g=$(command -v graphify || echo \"$HOME/.local/bin/graphify\"); [ -x \"$g\" ] || exit 0; exec \"$g\" hook-guard read"
           }
         ]
       }
