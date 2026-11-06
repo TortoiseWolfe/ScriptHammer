@@ -577,6 +577,47 @@ ON CONFLICT (id) DO UPDATE SET
   sort_order = EXCLUDED.sort_order, updated_at = NOW();
 
 -- ============================================================================
+-- ACCOUNT ERASURE KEEPS PAYMENT RECORDS
+-- ============================================================================
+-- #1309: erasing an account must not be blocked by the buyer's payment records.
+--
+-- payment_intents.template_user_id, subscriptions.template_user_id and orders.buyer_user_id
+-- were created as plain REFERENCES auth.users(id), which is NO ACTION. Every checkout writes
+-- a payment_intents row and an orders row, so for any buyer auth.admin.deleteUser (the
+-- delete-account Edge Function) failed with a foreign-key violation and the account survived.
+--
+-- RETENTION DECISION: anonymise, not delete. The rows are the accounting trail (amounts,
+-- provider ids, the buyer's email as typed at checkout), so ON DELETE SET NULL keeps them and
+-- only cuts the pointer to the erased account. CASCADE would have deleted payment history, and
+-- through orders.intent_id and payment_results a refund's audit trail with it.
+--
+-- Written as DROP/ADD rather than inline: CREATE TABLE IF NOT EXISTS never runs on a database
+-- that already has the table, so an inline ON DELETE would reach fresh databases only. The
+-- constraint names are Postgres's defaults (<table>_<column>_fkey), so the DROP finds them
+-- on existing databases and the ADD gives fresh ones the same names. Idempotent.
+--
+-- RLS is unaffected: every policy keyed on these columns is `auth.uid() = <column>`, and
+-- NULL never equals a uid, so an anonymised row is readable by nobody but service_role.
+-- subscriptions.template_user_id was NOT NULL (payment_intents already dropped it for guest
+-- checkout, above); SET NULL on a NOT NULL column would turn the FK error into a not-null one.
+ALTER TABLE subscriptions ALTER COLUMN template_user_id DROP NOT NULL;
+
+ALTER TABLE payment_intents DROP CONSTRAINT IF EXISTS payment_intents_template_user_id_fkey;
+ALTER TABLE payment_intents
+  ADD CONSTRAINT payment_intents_template_user_id_fkey
+  FOREIGN KEY (template_user_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_template_user_id_fkey;
+ALTER TABLE subscriptions
+  ADD CONSTRAINT subscriptions_template_user_id_fkey
+  FOREIGN KEY (template_user_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_buyer_user_id_fkey;
+ALTER TABLE orders
+  ADD CONSTRAINT orders_buyer_user_id_fkey
+  FOREIGN KEY (buyer_user_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+-- ============================================================================
 -- PART 2: AUTHENTICATION TABLES
 -- ============================================================================
 

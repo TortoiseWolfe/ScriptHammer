@@ -764,6 +764,47 @@ describe('GDPRService', () => {
       expect(mockSupabase.auth.signOut).not.toHaveBeenCalled();
     });
 
+    it('shows the reason the server gave when it refuses with an HTTP error status (#1309)', async () => {
+      mockSupabase.auth.getSession.mockResolvedValue({
+        data: { session: { user: { id: 'user-123', email: 't@e.com' } } },
+        error: null,
+      });
+      const del = vi.fn().mockResolvedValue(undefined);
+      for (const table of [
+        'messaging_private_keys',
+        'messaging_queued_messages',
+        'messaging_cached_messages',
+      ]) {
+        (vi.mocked(messagingDb.messagingDb) as any)[table] = {
+          where: vi.fn().mockReturnValue({
+            equals: vi.fn().mockReturnValue({ delete: del }),
+          }),
+        };
+      }
+
+      // supabase-js reports a non-2xx answer as a FunctionsHttpError whose message is
+      // generic and whose `context` is the Response. The reason is only in the body, so
+      // without reading it a user with a live subscription is told "non-2xx status code".
+      const refusal = Object.assign(
+        new Error('Edge Function returned a non-2xx status code'),
+        {
+          context: new Response(
+            JSON.stringify({ error: 'Cancel your subscription first.' }),
+            { status: 409 }
+          ),
+        }
+      );
+      mockSupabase.functions.invoke.mockResolvedValue({
+        data: null,
+        error: refusal,
+      });
+
+      await expect(gdprService.deleteUserAccount()).rejects.toThrow(
+        /Cancel your subscription first/
+      );
+      expect(del).not.toHaveBeenCalled();
+    });
+
     it('keeps the local keys and cached messages when the server refuses the deletion (#1309)', async () => {
       mockSupabase.auth.getSession.mockResolvedValue({
         data: { session: { user: { id: 'user-123', email: 't@e.com' } } },
