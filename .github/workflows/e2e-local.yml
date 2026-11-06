@@ -999,6 +999,16 @@ jobs:
                   )
           if tot["failed"]:
               problems.append(f"{tot['failed']} test(s) failed")
+          # Zero skips on the required PR lane (#1464). A skipped test is not a
+          # pass: specs that need live provider keys are EXCLUDED in
+          # playwright.config.ts (LIVE_PROVIDER_GLOBS), not skipped. Chromium mode
+          # only: full mode (nightly, full-e2e) legitimately carries registered
+          # firefox/webkit skips.
+          if browser_mode == "chromium" and tot["skipped"]:
+              problems.append(
+                  f"{tot['skipped']} test(s) skipped on the required lane — a skipped "
+                  "test is not a pass; exclude it in playwright.config.ts or fix it (#1464)"
+              )
           # A floor, not an equality: the test set legitimately grows. It catches
           # the shape an equality cannot — a run that goes green by silently
           # executing almost nothing. Per CLAUDE.md's #396 rule this is NEVER
