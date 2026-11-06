@@ -2,9 +2,14 @@ import { describe, it, expect } from 'vitest';
 import {
   ALREADY_PAID_MESSAGE,
   MAX_CHAIN_HOPS,
+  PAYMENT_PROCESSING_MESSAGE,
+  PENDING_CAPTURE_WINDOW_MS,
   chainAlreadyPaid,
   chainIntentIds,
+  chainPaymentProcessing,
   gateOnChainPaid,
+  isHeldCapture,
+  recordedCaptureStatus,
 } from '../../supabase/functions/_shared/payment-chain';
 import { RETRY_LIMIT } from '../../supabase/functions/create-order/resolve';
 import { MAX_RETRY_HOPS } from '../../supabase/functions/_shared/advance-order';
@@ -219,6 +224,191 @@ describe('gateOnChainPaid: what each money-moving function does with the answer'
       error:
         'Could not confirm this payment is not already paid. Please try again.',
     });
+  });
+});
+
+/**
+ * A PayPal capture PayPal answered PENDING is a payment in flight, not a failure (#1349). It used to
+ * be recorded failed, so the buyer saw "payment failed", paid again, and was charged twice when the
+ * first one cleared. The marker is the pair status 'pending' + verification_method 'redirect':
+ * create-paypal-order writes pending with no method, only capture-paypal-order writes 'redirect'.
+ */
+describe('a held PayPal capture (#1349)', () => {
+  const NOW = Date.parse('2026-11-06T12:00:00Z');
+  const fresh = '2026-11-05T12:00:00Z';
+  const held = {
+    status: 'pending',
+    verification_method: 'redirect',
+    updated_at: fresh,
+  };
+
+  describe('isHeldCapture', () => {
+    it('is true for a pending row the capture function touched', () => {
+      expect(isHeldCapture(held, NOW)).toBe(true);
+    });
+
+    it('is false for a pending row create-paypal-order wrote: an abandoned approval is what a retry follows', () => {
+      expect(isHeldCapture({ ...held, verification_method: null }, NOW)).toBe(
+        false
+      );
+    });
+
+    it('is false for any status but pending', () => {
+      for (const status of ['succeeded', 'failed']) {
+        expect(isHeldCapture({ ...held, status }, NOW)).toBe(false);
+      }
+    });
+
+    it('stops holding after the window, so a row no webhook settled cannot lock the buyer out for good', () => {
+      const edge = new Date(
+        NOW - PENDING_CAPTURE_WINDOW_MS + 1000
+      ).toISOString();
+      const past = new Date(
+        NOW - PENDING_CAPTURE_WINDOW_MS - 1000
+      ).toISOString();
+      expect(isHeldCapture({ ...held, updated_at: edge }, NOW)).toBe(true);
+      expect(isHeldCapture({ ...held, updated_at: past }, NOW)).toBe(false);
+    });
+
+    it('counts an unreadable stamp as held: the failure to avoid is a second charge', () => {
+      expect(isHeldCapture({ ...held, updated_at: 'nonsense' }, NOW)).toBe(
+        true
+      );
+      expect(isHeldCapture({ ...held, updated_at: null }, NOW)).toBe(true);
+    });
+  });
+
+  describe('recordedCaptureStatus', () => {
+    it('records COMPLETED as succeeded, PENDING as pending, anything else as failed', () => {
+      expect(recordedCaptureStatus('COMPLETED')).toBe('succeeded');
+      expect(recordedCaptureStatus('PENDING')).toBe('pending');
+      for (const other of ['DECLINED', 'FAILED', 'VOIDED', '']) {
+        expect(recordedCaptureStatus(other)).toBe('failed');
+      }
+    });
+  });
+
+  /**
+   * One intent with payment_results rows. Filters on status AND verification_method AND provider,
+   * so dropping any of those from the query fails a test. A succeeded row is returned only when
+   * the query asks for status 'succeeded' (the paid check).
+   */
+  type Result = {
+    id: string;
+    provider: string;
+    status: string;
+    verification_method: string | null;
+    updated_at: string | null;
+  };
+  function withResults(rows: Result[], { fail = false } = {}) {
+    const from = (table: string) => {
+      const f: Record<string, unknown> = {};
+      const chain: Record<string, unknown> = {};
+      chain.select = () => chain;
+      chain.eq = (c: string, v: unknown) => {
+        f[c] = v;
+        return chain;
+      };
+      chain.in = () => chain;
+      chain.limit = () => chain;
+      chain.maybeSingle = async () => ({
+        data: { id: 'int-1', parent_intent_id: null },
+        error: null,
+      });
+      chain.then = (res: (v: unknown) => unknown) => {
+        if (table === 'payment_intents')
+          return Promise.resolve({ data: [], error: null }).then(res);
+        if (fail)
+          return Promise.resolve({
+            data: null,
+            error: { code: '08006' },
+          }).then(res);
+        const hits = rows.filter(
+          (r) =>
+            (f.status === undefined || r.status === f.status) &&
+            (f.provider === undefined || r.provider === f.provider) &&
+            (f.verification_method === undefined ||
+              r.verification_method === f.verification_method)
+        );
+        return Promise.resolve({ data: hits, error: null }).then(res);
+      };
+      return chain;
+    };
+    return { from };
+  }
+  const row = (over: Partial<Result> = {}): Result => ({
+    id: 'pr-1',
+    provider: 'paypal',
+    status: 'pending',
+    verification_method: 'redirect',
+    updated_at: new Date().toISOString(),
+    ...over,
+  });
+
+  it('chainPaymentProcessing is true only for a fresh pending redirect row', async () => {
+    expect(await chainPaymentProcessing(withResults([row()]), 'int-1')).toBe(
+      true
+    );
+    expect(await chainPaymentProcessing(withResults([]), 'int-1')).toBe(false);
+    expect(
+      await chainPaymentProcessing(
+        withResults([row({ verification_method: null })]),
+        'int-1'
+      )
+    ).toBe(false);
+    expect(
+      await chainPaymentProcessing(
+        withResults([
+          row({
+            updated_at: new Date(
+              Date.now() - PENDING_CAPTURE_WINDOW_MS - 60_000
+            ).toISOString(),
+          }),
+        ]),
+        'int-1'
+      )
+    ).toBe(false);
+  });
+
+  it('chainPaymentProcessing throws on a read error so the gate fails closed', async () => {
+    await expect(
+      chainPaymentProcessing(withResults([], { fail: true }), 'int-1')
+    ).rejects.toMatchObject({ code: '08006' });
+  });
+
+  it('the gate refuses 409 payment_processing while a capture is held', async () => {
+    expect(await gateOnChainPaid(withResults([row()]), 'int-1')).toEqual({
+      kind: 'refuse',
+      status: 409,
+      code: 'payment_processing',
+      error: PAYMENT_PROCESSING_MESSAGE,
+    });
+    expect(PAYMENT_PROCESSING_MESSAGE).toBe(
+      'Your PayPal payment is still processing. Please wait for it to finish before paying another way.'
+    );
+  });
+
+  it('a paid chain still answers already_paid, not processing', async () => {
+    const gate = await gateOnChainPaid(
+      withResults([row(), row({ id: 'pr-2', status: 'succeeded' })]),
+      'int-1'
+    );
+    expect(gate).toMatchObject({ kind: 'refuse', code: 'already_paid' });
+  });
+
+  it('the gate proceeds when the only pending row is an abandoned approval', async () => {
+    expect(
+      await gateOnChainPaid(
+        withResults([row({ verification_method: null })]),
+        'int-1'
+      )
+    ).toEqual({ kind: 'proceed' });
+  });
+
+  it('the gate refuses 500 when the held check cannot be read', async () => {
+    expect(
+      await gateOnChainPaid(withResults([], { fail: true }), 'int-1')
+    ).toMatchObject({ kind: 'refuse', status: 500, code: 'paid_check_failed' });
   });
 });
 
