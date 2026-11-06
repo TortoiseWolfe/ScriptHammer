@@ -22,11 +22,7 @@ import AvatarDisplay from '@/components/atomic/AvatarDisplay';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { AdminAuthService } from '@/services/admin/admin-auth-service';
 import { createClient } from '@/lib/supabase/client';
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
+import { useInstallPrompt, promptInstall } from '@/lib/pwa/install-prompt';
 
 /**
  * Open state plus the three ways a nav popover must close: Escape (returning
@@ -265,10 +261,12 @@ export function GlobalNav() {
   const { profile } = useUserProfile();
   const unreadCount = useUnreadCount();
   const [theme, setTheme] = useState<string>('');
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-  const [showInstallButton, setShowInstallButton] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
+  // Shared with PWAInstall, so a tap on either install button uses the
+  // browser's one prompt up for both (#1262).
+  const { deferredPrompt, installed } = useInstallPrompt();
+  const [isStandalone, setIsStandalone] = useState(false);
+  const showInstallButton = !!deferredPrompt;
+  const isInstalled = installed || isStandalone;
   const [isAdmin, setIsAdmin] = useState(false);
   // Client-mount flag so the map nav highlight can read window.location.search
   // (the query that picks atlas vs diorama) without a hydration mismatch.
@@ -329,44 +327,14 @@ export function GlobalNav() {
   useEffect(() => {
     // Check if already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
-      return;
+      setIsStandalone(true);
     }
-
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowInstallButton(true);
-    };
-
-    const handleAppInstalled = () => {
-      setIsInstalled(true);
-      setShowInstallButton(false);
-      setDeferredPrompt(null);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    return () => {
-      window.removeEventListener(
-        'beforeinstallprompt',
-        handleBeforeInstallPrompt
-      );
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    if (outcome === 'accepted') {
-      setShowInstallButton(false);
-    }
-    setDeferredPrompt(null);
+    // The shared store clears the saved event, so the other install button
+    // goes too.
+    await promptInstall();
   };
 
   // Two maps of Chattanooga: the Three.js diorama and the Cesium globe atlas.
