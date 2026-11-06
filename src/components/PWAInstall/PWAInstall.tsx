@@ -4,19 +4,19 @@ import { useEffect, useRef, useState } from 'react';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { projectConfig } from '@/config/project.config';
 import { createLogger } from '@/lib/logger';
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
+import { useInstallPrompt, promptInstall } from '@/lib/pwa/install-prompt';
 
 const logger = createLogger('components:pwa');
 
 export default function PWAInstall() {
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
-  const [showInstallButton, setShowInstallButton] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
+  // The browser's install prompt is held in one shared store, because
+  // GlobalNav needs the same event (#1262).
+  const { deferredPrompt, installed } = useInstallPrompt();
+  const [isStandalone, setIsStandalone] = useState(false);
+  // ?pwa-debug=true forces the pill up without a browser prompt.
+  const [debugForced, setDebugForced] = useState(false);
+  const showInstallButton = !!deferredPrompt || debugForced;
+  const isInstalled = installed || isStandalone;
   const [isMinimized, setIsMinimized] = useState(false);
   // State, not a one-shot read (#1012). The old code consulted
   // `pwa-install-dismissed` inside a mount-only effect and called
@@ -128,43 +128,24 @@ export default function PWAInstall() {
   useEffect(() => {
     // Check if app is already installed
     if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true);
-      return;
+      setIsStandalone(true);
     }
-
-    // Listen for install prompt
-    const handleBeforeInstallPrompt = (e: Event) => {
-      logger.info('Install prompt captured');
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
-      setShowInstallButton(true);
-
-      // Track that the install prompt is available
-      trackPWAEventRef.current('install_prompt_shown');
-    };
-
-    // Check if the app was successfully installed
-    const handleAppInstalled = () => {
-      logger.info('PWA installed');
-      setIsInstalled(true);
-      setShowInstallButton(false);
-      setDeferredPrompt(null);
-
-      // Track successful installation
-      trackPWAEventRef.current('installed');
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    return () => {
-      window.removeEventListener(
-        'beforeinstallprompt',
-        handleBeforeInstallPrompt
-      );
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
   }, []);
+
+  // Report that the browser made the prompt available.
+  const hasPrompt = !!deferredPrompt;
+  useEffect(() => {
+    if (!hasPrompt || isStandalone) return;
+    logger.info('Install prompt captured');
+    trackPWAEventRef.current('install_prompt_shown');
+  }, [hasPrompt, isStandalone]);
+
+  // Report a successful install.
+  useEffect(() => {
+    if (!installed) return;
+    logger.info('PWA installed');
+    trackPWAEventRef.current('installed');
+  }, [installed]);
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -172,21 +153,16 @@ export default function PWAInstall() {
     // Track install button click
     trackPWAEvent('install_button_clicked');
 
-    // Show the install prompt
-    deferredPrompt.prompt();
-
-    // Wait for the user choice
-    const { outcome } = await deferredPrompt.userChoice;
+    // Show the install prompt and wait for the visitor's choice. The shared
+    // store clears the saved event, so the other install button goes too.
+    const outcome = await promptInstall();
+    if (!outcome) return;
     logger.info('User install choice', { outcome });
 
     // Track the outcome
     trackPWAEvent(
       outcome === 'accepted' ? 'install_accepted' : 'install_dismissed'
     );
-
-    // Clear the deferred prompt
-    setDeferredPrompt(null);
-    setShowInstallButton(false);
   };
 
   const handleMinimize = () => {
@@ -216,7 +192,7 @@ export default function PWAInstall() {
    */
   const handleDismiss = () => {
     setIsDismissed(true);
-    setShowInstallButton(false);
+    setDebugForced(false);
     localStorage.setItem('pwa-install-dismissed', 'true');
     trackPWAEvent('install_prompt_dismissed');
   };
@@ -229,14 +205,13 @@ export default function PWAInstall() {
 
     if (debugMode) {
       logger.debug('Debug mode enabled - forcing install prompt to show');
-      setShowInstallButton(true);
+      setDebugForced(true);
       setIsMinimized(false);
       // Clear dismissal in debug mode
       localStorage.removeItem('pwa-install-dismissed');
       localStorage.removeItem('pwa-install-minimized');
     } else if (localStorage.getItem('pwa-install-dismissed') === 'true') {
       setIsDismissed(true);
-      setShowInstallButton(false);
     } else if (localStorage.getItem('pwa-install-minimized') === 'true') {
       setIsMinimized(true);
     }
