@@ -145,7 +145,9 @@ describe('delete-account/index.ts', () => {
   );
 
   it('hands the whole decision to deleteAccount, so the database test runs the same code', () => {
-    expect(src).toContain('deleteAccount(admin, userId)');
+    expect(src).toMatch(
+      /deleteAccount\(\s*admin as unknown as AccountEraser,\s*userId\s*\)/
+    );
     // Nothing privileged is called inline any more: a second copy of the logic here would be
     // a path the database test does not cover.
     expect(src).not.toContain('admin.auth.admin.deleteUser(');

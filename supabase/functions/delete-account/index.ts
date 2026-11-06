@@ -46,7 +46,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAuthenticatedUserId, UnauthorizedError } from '../_shared/auth.ts';
-import { deleteAccount } from './resolve.ts';
+import { deleteAccount, type AccountEraser } from './resolve.ts';
 
 const supabaseUrl =
   Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
@@ -78,6 +78,9 @@ serve(async (req: Request) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const result = await deleteAccount(admin, userId);
+  // The cast narrows the client's very wide generic type to the slice deleteAccount uses.
+  // Without it Deno's checker gives up on matching the two ("Type instantiation is excessively
+  // deep", TS2589); the slice is what the database test also hands in, so both paths agree.
+  const result = await deleteAccount(admin as unknown as AccountEraser, userId);
   return jsonResponse(req, result.body, result.status);
 });
