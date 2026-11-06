@@ -22,7 +22,7 @@ import { writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 
 const API = 'https://3dwarehouse.sketchup.com/warehouse/v1.0';
-const USER_AGENT = 'scripthammer-twin-inventory/0.1 (jonpohlner@gmail.com)';
+const USER_AGENT = 'ScriptHammer-tools/1.0 (+https://github.com/TortoiseWolfe/ScriptHammer)';
 const CHATT_3D_CREATOR_ID = '1269677630914932972846048';
 const PAGE = 50;
 const DELAY_MS = 1100; // stay under 1 req/s

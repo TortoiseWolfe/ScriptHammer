@@ -1,4 +1,4 @@
-export const USER_AGENT = 'scripthammer-twin-bake/0.1 (jonpohlner@gmail.com)';
+export const USER_AGENT = 'ScriptHammer-tools/1.0 (+https://github.com/TortoiseWolfe/ScriptHammer)';
 const ENDPOINT = 'https://overpass-api.de/api/interpreter';
 
 export interface OverpassElement {

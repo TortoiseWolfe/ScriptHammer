@@ -31,7 +31,7 @@ import {
 import path from 'node:path';
 import { assignSlugs } from './lib';
 
-const USER_AGENT = 'scripthammer-twin-inventory/0.1 (jonpohlner@gmail.com)';
+const USER_AGENT = 'ScriptHammer-tools/1.0 (+https://github.com/TortoiseWolfe/ScriptHammer)';
 const ROOT = path.resolve('sites/_warehouse');
 const RAW = path.join(ROOT, 'raw');
 const DELAY_MS = 1500;
