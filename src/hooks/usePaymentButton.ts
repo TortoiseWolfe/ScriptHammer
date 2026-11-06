@@ -65,6 +65,11 @@ export interface UsePaymentButtonReturn {
   selectedProvider: PaymentProvider | null;
   isProcessing: boolean;
   error: Error | null;
+  /**
+   * Something the buyer should read that is not a failure: PayPal is holding their payment and may
+   * still complete it (#1349). Shown as information, never as an error, and never a success.
+   */
+  notice: string | null;
   queuedCount: number;
   hasConsent: boolean;
   /** False until the underlying consent hook has read localStorage. */
@@ -114,6 +119,7 @@ export function usePaymentButton(
     useState<PaymentProvider | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [queuedCount, setQueuedCount] = useState(0);
   // The PayPal SDK's onApprove only hands us order data, so we stash the
   // intent id created in createOrder to report it back via onSuccess.
@@ -142,6 +148,7 @@ export function usePaymentButton(
   const selectProvider = (provider: PaymentProvider) => {
     setSelectedProvider(provider);
     setError(null);
+    setNotice(null);
   };
 
   // Shared: create the Supabase payment_intent that both providers build on.
@@ -316,6 +323,11 @@ export function usePaymentButton(
             const orderId = data?.orderID;
             if (!orderId) throw new Error('PayPal approval missing orderID');
             const result = await approvePayPalOrder(orderId);
+            if (result.pending) {
+              // Held by PayPal, not failed and not paid: tell the buyer, send them nowhere.
+              setNotice(result.error ?? null);
+              return;
+            }
             if (!result.success) {
               throw new Error(result.error || 'PayPal capture failed');
             }
@@ -347,6 +359,7 @@ export function usePaymentButton(
     selectedProvider,
     isProcessing,
     error,
+    notice,
     queuedCount,
     hasConsent,
     consentReady,

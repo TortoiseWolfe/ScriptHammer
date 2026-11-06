@@ -129,6 +129,8 @@ describe('REPLAY_SAFE: every handled type, now that each handler is idempotent (
       'BILLING.SUBSCRIPTION.PAYMENT.FAILED',
       'BILLING.SUBSCRIPTION.UPDATED',
       'PAYMENT.CAPTURE.COMPLETED',
+      'PAYMENT.CAPTURE.DECLINED',
+      'PAYMENT.CAPTURE.DENIED',
       'PAYMENT.SALE.COMPLETED',
     ]);
     expect(REPLAY_SAFE.calcom).toEqual(['BOOKING_CREATED']);
