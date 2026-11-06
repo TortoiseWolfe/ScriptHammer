@@ -25,6 +25,19 @@ function createDeviceConfig(viewport: TestViewport) {
 }
 
 /**
+ * Specs that need live payment-provider keys (#188, #1464). No CI lane carries
+ * those keys, so these are EXCLUDED from every project rather than skipped:
+ * a skipped test reports as skipped on the required check, and the zero-skip
+ * gate in e2e-local.yml refuses a required run that contains one. They run
+ * through `scripts/e2e-live-acceptance.sh`, which sets LIVE_PROVIDER_TESTS=1.
+ * Excluded here (not tag + grep) because e2e.yml must stay grep-free: see
+ * scripts/__tests__/hosted-tag-lanes.test.js.
+ */
+const LIVE_PROVIDER_GLOBS = process.env.LIVE_PROVIDER_TESTS
+  ? []
+  : ['**/payment/08-subscription-lifecycle.spec.ts'];
+
+/**
  * #116 Phase 2 — messaging specs converted to per-test fixture isolation
  * (seedIsolatedConversation / openAsViewer). These own their data, so they run
  * in a parallel `*-msg-iso` project at workers>1 instead of the serial
@@ -250,6 +263,7 @@ export default defineConfig({
         '**/basepath/**', // basePath project only (root-anchored build here)
         '**/signup-mailer/**', // local-Mailpit only — playwright.signup-mailer.config.ts
         '**/smoke/**', // live-prod only — playwright.smoke.config.ts
+        ...LIVE_PROVIDER_GLOBS, // needs live Stripe keys — see the constant
       ],
       dependencies: ['setup'],
       use: {
@@ -291,6 +305,7 @@ export default defineConfig({
         '**/basepath/**', // basePath project only (root-anchored build here)
         '**/signup-mailer/**', // local-Mailpit only — playwright.signup-mailer.config.ts
         '**/smoke/**', // live-prod only — playwright.smoke.config.ts
+        ...LIVE_PROVIDER_GLOBS, // needs live Stripe keys — see the constant
       ],
       dependencies: ['setup'],
       use: {
@@ -332,6 +347,7 @@ export default defineConfig({
         '**/basepath/**', // basePath project only (root-anchored build here)
         '**/signup-mailer/**', // local-Mailpit only — playwright.signup-mailer.config.ts
         '**/smoke/**', // live-prod only — playwright.smoke.config.ts
+        ...LIVE_PROVIDER_GLOBS, // needs live Stripe keys — see the constant
       ],
       dependencies: ['setup'],
       use: {
@@ -352,6 +368,7 @@ export default defineConfig({
           '**/basepath/**', // basePath project only (root-anchored build here)
           '**/signup-mailer/**', // local-Mailpit only — playwright.signup-mailer.config.ts
           '**/smoke/**', // live-prod only — playwright.smoke.config.ts
+          ...LIVE_PROVIDER_GLOBS, // needs live Stripe keys — see the constant
         ],
         dependencies: ['setup'],
         use: {
@@ -373,6 +390,7 @@ export default defineConfig({
           '**/basepath/**', // basePath project only (root-anchored build here)
           '**/signup-mailer/**', // local-Mailpit only — playwright.signup-mailer.config.ts
           '**/smoke/**', // live-prod only — playwright.smoke.config.ts
+          ...LIVE_PROVIDER_GLOBS, // needs live Stripe keys — see the constant
         ],
         dependencies: ['setup'],
         use: {
