@@ -18,6 +18,7 @@ import {
 } from '@/lib/supabase/messaging-client';
 import { encryptionService } from '@/lib/messaging/encryption';
 import { keyManagementService } from './key-service';
+import { groupKeyService } from './group-key-service';
 import type {
   QueuedMessage,
   QueueStatus,
@@ -29,6 +30,26 @@ import {
   AuthenticationError,
   EncryptionError,
 } from '@/types/messaging';
+
+/**
+ * The phrase the server's group_message_key_version_guard puts in its refusal (#1301). It must
+ * match supabase/migrations/20251006_complete_monolithic_setup.sql; the pair is pinned by
+ * scripts/__tests__/group-message-key-version-guard.test.js.
+ */
+const STALE_KEY_VERSION_PHRASE = 'stale group key version';
+
+/** A queued message is re-encrypted at most this many times in one flush (two rotations in a row). */
+const MAX_REKEYS_PER_FLUSH = 2;
+
+function isStaleKeyVersionRefusal(error: {
+  code?: string;
+  message?: string;
+}): boolean {
+  return (
+    error.code === '42501' &&
+    (error.message ?? '').includes(STALE_KEY_VERSION_PHRASE)
+  );
+}
 
 export class OfflineQueueService {
   private syncInProgress = false;
@@ -221,6 +242,14 @@ export class OfflineQueueService {
           let inserted: unknown = null;
           let delivered = false;
           let conflictRetries = 3;
+          // What goes on the wire. Starts as queued, and is replaced when the server refuses the
+          // key version (#1301) and the message is re-encrypted at the current one.
+          let wire = {
+            encrypted_content: queuedMsg.encrypted_content,
+            initialization_vector: queuedMsg.initialization_vector,
+            key_version: queuedMsg.key_version,
+          };
+          let rekeys = 0;
           while (conflictRetries > 0) {
             const { data, error: insertError } = await msgClient
               .from('messages')
@@ -228,12 +257,12 @@ export class OfflineQueueService {
                 {
                   conversation_id: queuedMsg.conversation_id,
                   sender_id: queuedMsg.sender_id,
-                  encrypted_content: queuedMsg.encrypted_content,
-                  initialization_vector: queuedMsg.initialization_vector,
+                  encrypted_content: wire.encrypted_content,
+                  initialization_vector: wire.initialization_vector,
                   sequence_number: nextSequenceNumber,
                   client_generated_id: queuedMsg.id,
-                  ...(queuedMsg.key_version != null
-                    ? { key_version: queuedMsg.key_version }
+                  ...(wire.key_version != null
+                    ? { key_version: wire.key_version }
                     : {}),
                   deleted: false,
                   edited: false,
@@ -250,6 +279,23 @@ export class OfflineQueueService {
               inserted = data;
               delivered = true;
               break;
+            }
+            // #1301: the group rotated while this message sat in the queue. Re-encrypt it at
+            // the current version from the plaintext the queue already holds, then send again.
+            if (
+              isStaleKeyVersionRefusal(insertError) &&
+              rekeys < MAX_REKEYS_PER_FLUSH
+            ) {
+              rekeys++;
+              wire = await this.reencryptAtCurrentKeyVersion(
+                msgClient,
+                queuedMsg
+              );
+              await messagingDb.messaging_queued_messages.update(
+                queuedMsg.id,
+                wire
+              );
+              continue;
             }
             // #246: transient sequence collision → retry with a fresh read.
             if (insertError.code === '23505') {
@@ -309,6 +355,60 @@ export class OfflineQueueService {
     } finally {
       this.syncInProgress = false;
     }
+  }
+
+  /**
+   * Re-encrypt a queued group message at the group's current key version (#1301).
+   *
+   * Used when the server refuses the queued version because the group rotated its key after the
+   * message was written. The queue already keeps the plaintext (`content`) until the message is
+   * delivered, so this adds nothing new to IndexedDB: the plaintext lives exactly as long as it
+   * did, and is dropped on delivery (#1256).
+   *
+   * @throws EncryptionError when the queue has no plaintext to re-encrypt from, or the group
+   *   has no current version. The caller's retry accounting then marks the message failed
+   *   rather than sending it under a key the server will keep refusing.
+   */
+  private async reencryptAtCurrentKeyVersion(
+    msgClient: ReturnType<typeof createMessagingClient>,
+    queuedMsg: QueuedMessage
+  ): Promise<{
+    encrypted_content: string;
+    initialization_vector: string;
+    key_version: number;
+  }> {
+    const plaintext = queuedMsg.content ?? queuedMsg.plaintext_content;
+    if (plaintext == null) {
+      throw new EncryptionError(
+        'Cannot re-encrypt a queued message after a key rotation: no plaintext was kept'
+      );
+    }
+
+    const { data: conversation, error } = await msgClient
+      .from('conversations')
+      .select('current_key_version')
+      .eq('id', queuedMsg.conversation_id)
+      .single();
+    const version = conversation?.current_key_version;
+    if (error || version == null) {
+      throw new ConnectionError(
+        'Could not read the group key version: ' + (error?.message ?? 'no row')
+      );
+    }
+
+    const groupKey = await groupKeyService.getGroupKeyForConversation(
+      queuedMsg.conversation_id,
+      version
+    );
+    const encrypted = await encryptionService.encryptMessage(
+      plaintext,
+      groupKey
+    );
+    return {
+      encrypted_content: encrypted.ciphertext,
+      initialization_vector: encrypted.iv,
+      key_version: version,
+    };
   }
 
   /**
