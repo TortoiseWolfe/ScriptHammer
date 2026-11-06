@@ -88,26 +88,26 @@ export const CountdownBanner = () => {
 
   return (
     <aside
-      className="bg-warning text-warning-content pointer-events-none fixed top-40 right-4 z-50 max-w-xs rounded-lg p-3 shadow-xl max-sm:top-56 max-sm:right-4 max-sm:left-4 max-sm:max-w-full"
+      className="bg-warning text-warning-content pointer-events-none fixed top-40 right-4 z-50 w-60 rounded-lg p-2 shadow-xl max-sm:hidden"
       aria-label="Promotional countdown"
       aria-live="polite"
     >
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">⏰</span>
+          <span className="text-lg">⏰</span>
           <div>
-            <span className="font-bold">New Year Special</span>
-            <div className="font-mono text-lg">
+            <span className="text-sm font-bold">New Year Special</span>
+            <div className="font-mono text-sm">
               {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m{' '}
               {timeLeft.seconds}s
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="text-center">
-            <div className="text-2xl font-bold">{price}</div>
-            <div className="text-sm">Custom ScriptHammer Setup</div>
+            <div className="text-lg font-bold">{price}</div>
+            <div className="text-xs">Custom ScriptHammer Setup</div>
           </div>
           <Button
             variant="accent"
