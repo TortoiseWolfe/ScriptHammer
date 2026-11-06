@@ -7,6 +7,10 @@
  * old version, readable by every removed member who still holds that key.
  * `group_message_key_version_guard` makes the server refuse it.
  *
+ * An edit is the same door: a sender may rewrite the ciphertext for 15 minutes, so the guard fires
+ * on UPDATE OF encrypted_content, initialization_vector and key_version too, and lets an update
+ * through when none of them changed (mark-read on an old message must keep working).
+ *
  * Every refusal asserts its own phrase, because a refusal that could come from a different rule
  * proves nothing about this one. The CONTROLS (current version accepted, system message at v1
  * accepted, service role exempt) are what show the guard is a version check and not a blanket
@@ -172,6 +176,65 @@ describe.skipIf(!hasRlsTestEnvironment())(
 
       expect(error).toBeNull();
       expect(await stored(g)).toEqual([1]);
+    });
+
+    /** A message b sent at v1, before the group rotated to v2 (seeded by the service role). */
+    async function oldMessageFromB(): Promise<string> {
+      const g = await group('edits', 1);
+      const { data, error } = await service
+        .from('messages')
+        .insert(message(g, b, 1))
+        .select('id')
+        .single();
+      if (error || !data) throw new Error(`seed message: ${error?.message}`);
+      const { error: bump } = await service
+        .from('conversations')
+        .update({ current_key_version: 2 })
+        .eq('id', g);
+      if (bump) throw new Error(`rotate: ${bump.message}`);
+      editGroup = g;
+      return data.id as string;
+    }
+    let editGroup = '';
+
+    it('refuses an edit that rewrites the ciphertext but keeps the stale version', async () => {
+      const id = await oldMessageFromB();
+
+      const { error } = await bClient
+        .from('messages')
+        .update({ encrypted_content: 'edited-under-v1' })
+        .eq('id', id);
+
+      expect(error?.code).toBe('42501');
+      expect(error?.message).toMatch(STALE);
+    });
+
+    it('CONTROL: an edit re-keyed at the current version is accepted', async () => {
+      const id = await oldMessageFromB();
+
+      const { error } = await bClient
+        .from('messages')
+        .update({ encrypted_content: 'edited-under-v2', key_version: 2 })
+        .eq('id', id);
+
+      expect(error).toBeNull();
+      expect(await stored(editGroup)).toEqual([2]);
+    });
+
+    it('CONTROL: marking an old-version message read is not blocked', async () => {
+      const id = await oldMessageFromB();
+      const aClient = (await createAuthenticatedClient(
+        TEST_USERS.userA.email,
+        TEST_USERS.userA.password
+      )) as unknown as SupabaseClient;
+
+      const { error } = await aClient
+        .from('messages')
+        .update({ read_at: new Date().toISOString() })
+        .eq('id', id);
+
+      expect(error).toBeNull();
+      expect(await stored(editGroup)).toEqual([1]);
     });
 
     it('CONTROL: the service role is exempt', async () => {

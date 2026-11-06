@@ -62,7 +62,7 @@ test('the section stays small: it must not swallow a neighbour and re-run it in 
   assert.ok(section().split('\n').length < 100);
 });
 
-test('a BEFORE INSERT trigger on messages runs the guard function', () => {
+test('a BEFORE INSERT OR UPDATE trigger on messages runs the guard function', () => {
   const s = section();
   assert.match(
     s,
@@ -70,7 +70,15 @@ test('a BEFORE INSERT trigger on messages runs the guard function', () => {
   );
   assert.match(
     s,
-    /CREATE TRIGGER group_message_key_version_guard\s+BEFORE INSERT ON messages\s+FOR EACH ROW EXECUTE FUNCTION enforce_group_message_key_version\(\);/
+    /CREATE TRIGGER group_message_key_version_guard\s+BEFORE INSERT OR UPDATE OF encrypted_content, initialization_vector, key_version ON messages\s+FOR EACH ROW EXECUTE FUNCTION enforce_group_message_key_version\(\);/
+  );
+});
+
+test('an UPDATE that leaves the ciphertext and version alone passes (mark-read, delivered, soft-delete)', () => {
+  const s = section();
+  assert.match(
+    s,
+    /IF TG_OP = 'UPDATE'\s+AND NEW\.encrypted_content IS NOT DISTINCT FROM OLD\.encrypted_content\s+AND NEW\.initialization_vector IS NOT DISTINCT FROM OLD\.initialization_vector\s+AND NEW\.key_version IS NOT DISTINCT FROM OLD\.key_version\s+THEN\s+RETURN NEW;/
   );
 });
 

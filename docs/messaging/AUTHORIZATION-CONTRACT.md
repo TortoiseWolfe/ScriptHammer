@@ -211,8 +211,9 @@ method + both providers + .NET endpoint + conformance case):
   the new key, with every keyed member covered) and `group_key_insert_guard` →
   `enforce_group_key_insert` (who may write key rows, at which version, with whose JWK)
   (#1247). A group message must also carry the CURRENT version: `group_message_key_version_guard`
-  → `enforce_group_message_key_version` refuses (42501, "stale group key version") an insert
-  whose `key_version` differs from `conversations.current_key_version`, so a stale tab or a
+  → `enforce_group_message_key_version` refuses (42501, "stale group key version") an insert,
+  or an edit that rewrites the ciphertext, whose `key_version` differs from
+  `conversations.current_key_version`, so a stale tab or a
   message queued before a rotation cannot be stored under a key a removed member holds. 1:1
   rows, system messages and the service role are exempt; the offline queue recognises the
   refusal and re-encrypts from the plaintext it already keeps (#1301).

@@ -5065,7 +5065,8 @@ COMMENT ON TABLE group_keys IS 'Encrypted symmetric group keys per member per ve
 -- ============================================================================
 -- GROUP MESSAGES MUST USE THE CURRENT KEY VERSION
 -- ============================================================================
--- #1301 (#1247 B3): refuse a group message encrypted under any key version but the current one.
+-- #1301 (#1247 B3): refuse a group message encrypted under any key version but the current one,
+-- on insert and on an edit that rewrites the ciphertext.
 --
 -- #1247 B2 made rotation land: removing a member moves conversations.current_key_version
 -- forward. Nothing checked what a sender stamped on a message, so a tab running a bundle from
@@ -5084,6 +5085,13 @@ COMMENT ON TABLE group_keys IS 'Encrypted symmetric group keys per member per ve
 --     key version at all. A sender who flags ciphertext as a system message only gets it shown
 --     as a marker, so nothing is exposed.
 --   * Service role: same exemption block as the B1/B2 guards.
+--
+-- EDITS ARE THE SAME DOOR. A sender may rewrite encrypted_content, initialization_vector and
+-- key_version for 15 minutes ("Users can edit own messages"), so guarding INSERT alone left a
+-- stale tab free to store old-key ciphertext by editing. The trigger therefore also fires on
+-- UPDATE OF those three columns, and the function lets an UPDATE through when none of them
+-- changed, so mark-read, delivered and soft-delete on an old-version message keep working. The
+-- app already re-keys an edit at the current version, so a legitimate edit passes.
 --
 -- No row lock on the conversation: a send that read v1 just before an owner's bump commits at
 -- v1, which is the message of someone who still held the group's key when they wrote it.
@@ -5111,6 +5119,14 @@ BEGIN
     RETURN NEW;
   END IF;
 
+  IF TG_OP = 'UPDATE'
+     AND NEW.encrypted_content IS NOT DISTINCT FROM OLD.encrypted_content
+     AND NEW.initialization_vector IS NOT DISTINCT FROM OLD.initialization_vector
+     AND NEW.key_version IS NOT DISTINCT FROM OLD.key_version
+  THEN
+    RETURN NEW;
+  END IF;
+
   SELECT c.current_key_version INTO v_cur
   FROM conversations c WHERE c.id = NEW.conversation_id AND c.is_group;
   IF v_cur IS NULL THEN
@@ -5130,7 +5146,7 @@ $$;
 
 DROP TRIGGER IF EXISTS group_message_key_version_guard ON messages;
 CREATE TRIGGER group_message_key_version_guard
-  BEFORE INSERT ON messages
+  BEFORE INSERT OR UPDATE OF encrypted_content, initialization_vector, key_version ON messages
   FOR EACH ROW EXECUTE FUNCTION enforce_group_message_key_version();
 
 -- ============================================================================
