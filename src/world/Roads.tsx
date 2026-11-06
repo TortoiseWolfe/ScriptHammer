@@ -44,7 +44,13 @@ export default function Roads({
     const minE = minElevation(grid);
     const yAt = (x: number, z: number) =>
       elevationAt(grid, manifest, x, z) - minE + ROAD_LIFT;
-    const { positions, uvs } = roadRibbon(streets, yAt, ROAD_WIDTH);
+    // One terrain sample apart (the finer of the two axes), so a ribbon follows
+    // a hill instead of cutting a chord through it.
+    const step = Math.min(
+      manifest.groundWm / (grid.cols - 1),
+      manifest.groundHm / (grid.rows - 1)
+    );
+    const { positions, uvs } = roadRibbon(streets, yAt, ROAD_WIDTH, step);
     const g = new BufferGeometry();
     g.setAttribute('position', new Float32BufferAttribute(positions, 3));
     g.setAttribute('uv', new Float32BufferAttribute(uvs, 2));

@@ -1,4 +1,7 @@
-@import 'tailwindcss';
+@import 'tailwindcss' source('../');
+/* Tailwind scans src/ only (#1279). A bare import scans every file git does not ignore,
+ * so strings in tests, scripts and docs became production CSS rules.
+ * scripts/__tests__/tailwind-source-scope.test.js pins it. */
 /* Vendored @font-face declarations (#730). GENERATED — see
  * scripts/fonts/vendor-google-fonts.mjs. These are next/font/google's own output copied
  * verbatim and repointed at src/fonts/, so the BUILD no longer fetches from
