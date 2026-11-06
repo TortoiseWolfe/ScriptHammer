@@ -41,6 +41,20 @@ describe('CountdownBanner', () => {
       expect(screen.getByText('Book Now')).toBeInTheDocument();
     });
 
+    it('lets page interactions pass through outside its controls', () => {
+      render(<CountdownBanner />);
+
+      expect(screen.getByLabelText('Promotional countdown')).toHaveClass(
+        'pointer-events-none'
+      );
+      expect(screen.getByRole('button', { name: 'Book Now' })).toHaveClass(
+        'pointer-events-auto'
+      );
+      expect(
+        screen.getByRole('button', { name: 'Dismiss countdown banner' })
+      ).toHaveClass('pointer-events-auto');
+    });
+
     it('persists dismissal with timestamp', () => {
       render(<CountdownBanner />);
       const dismissButton = screen.getByLabelText(/dismiss/i);

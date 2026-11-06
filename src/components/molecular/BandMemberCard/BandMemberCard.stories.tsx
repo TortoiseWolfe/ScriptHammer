@@ -33,4 +33,8 @@ type Story = StoryObj<typeof meta>;
 
 export const Ivory: Story = { args: { member: ROSTER[0] } };
 export const Crash: Story = { args: { member: ROSTER[1] } };
-export const Verse: Story = { args: { member: ROSTER[5] } };
+export const Chorus: Story = { args: { member: ROSTER[5] } };
+/** No portrait yet: the card shows the text alone. */
+export const TimberTextOnly: Story = {
+  args: { member: ROSTER.find((m) => m.slug === 'timber')! },
+};

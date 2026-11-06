@@ -4,10 +4,10 @@ import BandRoster from './BandRoster';
 import { ROSTER } from '@/lib/band/roster';
 
 describe('BandRoster', () => {
-  it('shows all seven members by default', () => {
+  it('shows all eight members by default', () => {
     render(<BandRoster />);
-    expect(screen.getAllByRole('listitem')).toHaveLength(7);
-    expect(screen.getAllByTestId('band-member-card')).toHaveLength(7);
+    expect(screen.getAllByRole('listitem')).toHaveLength(8);
+    expect(screen.getAllByTestId('band-member-card')).toHaveLength(8);
   });
 
   it('shows only the members it is given', () => {

@@ -95,6 +95,7 @@ import {
 import { deriveFraming, type Framing, type OrthoFrame } from '@/lib/framing';
 import { getInternalUrl } from '@/config/project.config';
 import { createLogger } from '@/lib/logger';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 /** #727: the walk handover is the only path here that can fail silently. */
 const log = createLogger('twin:walk');
@@ -664,6 +665,14 @@ function SceneInner({
     duckAmbient(bandPlaying && !bandMuted);
   }, [bandPlaying, bandMuted, duckAmbient]);
   const { apply: applyCameraFeel } = useCameraFeel();
+  // #1449: Walk's head-bob and landing dip honour the OS reduced-motion setting. Held in a
+  // ref and read per frame by makeWalkMove, so flipping the setting needs no rebuild of
+  // the walk binding below.
+  const reducedMotion = useReducedMotion();
+  const reducedMotionRef = useRef(reducedMotion);
+  useEffect(() => {
+    reducedMotionRef.current = reducedMotion;
+  }, [reducedMotion]);
 
   const buildingsMeshRef = useRef<Mesh | null>(null);
   const terrainMeshRef = useRef<Mesh | null>(null);
@@ -906,6 +915,7 @@ function SceneInner({
         emitDust,
         tickDust,
         applyCameraFeel,
+        reducedMotion: () => reducedMotionRef.current,
         viewRef,
       });
       rig.collide = (pos) => walkCtrl.collide(pos, 0.4); // unboarded-follow reuse

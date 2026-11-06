@@ -43,10 +43,10 @@ All seven players use "they" and "them". Their names, instruments and roles come
 | Chops | Franken-guitar                | Harmonic Hacker | Rewires every riff until it sounds like nobody else.    |
 | Reed  | Alto sax                      | Lyrical Breeze  | Plays the line you hum on the way home.                 |
 | Brass | Trumpet                       | Frontline Flame | Takes the first note and sets the room on fire.         |
-| Verse | Vocoder and mic               | Soul Node       | A screen for a face, and a waveform where a smile goes. |
-| Form  | Control surface               | Architect       | Lays out the song, knob by knob and key by key.         |
+| Chorus | Vocoder and mic               | Soul Node       | A screen for a face, and a waveform where a smile goes. |
+| Switch | Control surface               | Architect       | Lays out the song, knob by knob and key by key.         |
 
-Ivory leads. Chops is the gravel-voiced skeptic. Verse is the most human of the seven, and Form rarely speaks but always has a hand on the board.
+Ivory leads. Chops is the gravel-voiced skeptic. Chorus is the most human of the seven, and Switch rarely speaks but always has a hand on the board.
 
 ## 🛠️ How It Was Made
 

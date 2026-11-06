@@ -16,7 +16,7 @@ describe('BandRoster Accessibility', () => {
     const { container } = render(<BandRoster />);
     const list = container.querySelector('ul');
     expect(list).toHaveAttribute('aria-label', 'Band members');
-    expect(list?.querySelectorAll(':scope > li')).toHaveLength(7);
+    expect(list?.querySelectorAll(':scope > li')).toHaveLength(8);
   });
 
   it('gives every image alt text', () => {

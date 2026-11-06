@@ -28,10 +28,11 @@
  *
  * WHAT IT DOES
  *
- * Reads the CURRENTLY LIVE site, collects every `/_next/static/` URL its pages
- * reference, and downloads any that the new build does not contain into the
- * output directory. Additive only — it never overwrites a file the new build
- * produced.
+ * Reads the CURRENTLY LIVE site's asset manifest and age table, then downloads
+ * every still-in-window asset the new build does not contain into the output
+ * directory. If the manifest is unavailable, the age table supplies the complete
+ * list; crawling the pages is the fallback when neither ledger is available.
+ * Additive only — it never overwrites a file the new build produced.
  *
  * Usage:
  *   node scripts/retain-previous-assets.mjs <output-dir> <live-base-url>
@@ -117,18 +118,52 @@ const LEGACY_LEDGER_DIR = '_next/static';
  * — so this only bites at the new location. That is fine: at the new location it
  * is the whole point, and at the old one the fallback is a transition measure.
  */
+/**
+ * ONE FAILED READ MUST NOT BE ABLE TO ERASE TWO WEEKS OF RETENTION (#1442).
+ *
+ * This used to be a single attempt: any non-OK answer or thrown error became `null`,
+ * and `null` means "there is no ledger" — which is also the legitimate answer on the
+ * first deploy after the ledger was introduced. On 2026-10-30 (deploy 41051767797) the
+ * age table was read (316 entries) while the manifest, requested next from the same
+ * host, came back as nothing. The script fell back to crawling the live HTML, which
+ * only names the CURRENT build, carried 3 assets instead of 150, and the published
+ * ledger fell from 18 days of coverage to 0. It has regrown a day per day since, which
+ * is why "Production Smoke" is red. The log did not record the status of the failed
+ * read, so the failure below is now printed.
+ *
+ * A failure that can be transient (network error, 5xx, 429) is retried with backoff.
+ * A 404 is NOT retried: it is the real "no ledger here" answer, and the legacy-path
+ * fallback and the first-deploy ramp both need it promptly.
+ */
+const RETRY_DELAYS_MS = (process.env.RETAIN_FETCH_RETRY_MS ?? '500,2000,5000')
+  .split(',')
+  .map(Number);
+
 async function getFresh(url) {
-  const bust = `${url.includes('?') ? '&' : '?'}fresh=${Date.now()}`;
-  try {
-    const res = await fetch(url + bust, {
-      redirect: 'follow',
-      cache: 'no-store',
-      headers: { 'cache-control': 'no-cache', pragma: 'no-cache' },
-    });
-    if (!res.ok) return null;
-    return res;
-  } catch {
-    return null;
+  for (let attempt = 0; ; attempt++) {
+    const bust = `${url.includes('?') ? '&' : '?'}fresh=${Date.now()}`;
+    let transient = true;
+    let why;
+    try {
+      const res = await fetch(url + bust, {
+        redirect: 'follow',
+        cache: 'no-store',
+        headers: { 'cache-control': 'no-cache', pragma: 'no-cache' },
+      });
+      if (res.ok) return res;
+      why = `HTTP ${res.status}`;
+      transient = res.status >= 500 || res.status === 429;
+    } catch (e) {
+      why = `network error: ${e?.cause?.code ?? e?.message ?? e}`;
+    }
+    if (!transient || attempt >= RETRY_DELAYS_MS.length) {
+      if (transient) console.log(`gave up on ${url}: ${why}`);
+      return null;
+    }
+    console.log(
+      `${url}: ${why} — retry ${attempt + 1}/${RETRY_DELAYS_MS.length}`
+    );
+    await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
   }
 }
 
@@ -396,11 +431,28 @@ async function publishManifest() {
  * deploy after this lands falls back to crawling and writes the first manifest.
  * The deploy after that gets complete retention.
  */
-const manifestText = await getLedgerText(
-  'ASSET_MANIFEST.txt',
-  looksLikeManifest
-);
 const ledgerAgesText = await getLedgerText('ASSET_AGES.txt', looksLikeAges);
+let manifestText = await getLedgerText('ASSET_MANIFEST.txt', looksLikeManifest);
+
+/**
+ * The age table lists exactly the files the manifest does (both are written from the
+ * same `published` array). If the manifest alone could not be read, the age table
+ * still names every file — use that rather than crawling HTML, which names only the
+ * current build and silently drops everything older (#1442).
+ */
+if (!manifestText && ledgerAgesText) {
+  const paths = ledgerAgesText
+    .split('\n')
+    .map((l) => l.trim().split(/\s+/).pop())
+    .filter((p) => p?.startsWith('_next/static/'));
+  if (paths.length) {
+    manifestText = paths.join('\n') + '\n';
+    console.log(
+      `::warning::ASSET_MANIFEST.txt could not be read but the age table could — ` +
+        `using its ${paths.length} path(s) as the manifest instead of crawling HTML.`
+    );
+  }
+}
 
 /**
  * COHERENCE: the two ledger files are written from the same `published` array, so
@@ -513,13 +565,19 @@ console.log(`after one transitive pass: ${wanted.size} reference(s)`);
  * rather than a deploy count, and it is the whole fix. The generation number rides
  * along as a diagnostic only; nothing is dropped because of it.
  *
- * Absent on the currently-live build, every retained file starts dated now — the
- * ramp is one deploy, same as #476's. The same applies per-entry to the old
- * two-field lines, which is why the parser below still reads them.
+ * The age table is also the complete asset list when a manifest is unavailable or
+ * incoherent. Falling back to HTML alone loses old route chunks that the current
+ * pages no longer reference, collapsing the window on the next deploy.
+ *
+ * Absent from the age table, a retained file starts dated now — the ramp is one
+ * deploy, same as #476's. The same applies per-entry to the old two-field lines,
+ * which is why the parser below still reads them.
  */
 const liveAges = new Map();
 const liveFirstSeen = new Map();
 let undated = 0;
+let ageListedAssets = 0;
+const useAgeTableAsAssetList = !manifest || ledgerIncoherent;
 const usableAges = ledgerAgesText;
 if (usableAges) {
   for (const line of usableAges.split('\n')) {
@@ -529,15 +587,25 @@ if (usableAges) {
     // very deploy that introduces the fix.
     const dated = line.trim().match(/^(\d+)\s+(\S+T\S+Z)\s+(.+)$/);
     if (dated) {
-      liveAges.set(dated[3], Number(dated[1]));
+      const rel = dated[3];
+      liveAges.set(rel, Number(dated[1]));
       const t = Date.parse(dated[2]);
-      if (Number.isFinite(t)) liveFirstSeen.set(dated[3], t);
+      if (Number.isFinite(t)) liveFirstSeen.set(rel, t);
+      if (useAgeTableAsAssetList && rel.startsWith('_next/static/')) {
+        wanted.add(`/${rel}`);
+        ageListedAssets++;
+      }
       continue;
     }
     const legacy = line.trim().match(/^(\d+)\s+(.+)$/);
     if (legacy) {
-      liveAges.set(legacy[2], Number(legacy[1]));
+      const rel = legacy[2];
+      liveAges.set(rel, Number(legacy[1]));
       undated++;
+      if (useAgeTableAsAssetList && rel.startsWith('_next/static/')) {
+        wanted.add(`/${rel}`);
+        ageListedAssets++;
+      }
     }
   }
   console.log(
@@ -546,6 +614,12 @@ if (usableAges) {
         ? `, ${undated} without a timestamp — stamped now (one-deploy ramp)`
         : '')
   );
+  if (useAgeTableAsAssetList && ageListedAssets) {
+    console.log(
+      `age table supplied ${ageListedAssets} asset path(s) because the manifest ` +
+        `${manifest ? 'was incoherent' : 'was unavailable'}`
+    );
+  }
 } else {
   console.log(
     'no age table on the live build — retained files start at age 1, dated now'
@@ -578,6 +652,10 @@ for (const ref of wanted) {
   try {
     await access(dest);
     alreadyPresent++;
+    // The content hash means an asset already present is byte-for-byte unchanged.
+    // Keep its age instead of restamping it as new on every deploy.
+    if (liveAges.has(rel)) ages.set(rel, liveAges.get(rel) + 1);
+    if (liveFirstSeen.has(rel)) firstSeen.set(rel, liveFirstSeen.get(rel));
     continue; // The new build produced it. Never overwrite.
   } catch {
     /* not in the new build — that is exactly what we retain */

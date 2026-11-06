@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { ROSTER } from './roster';
+import { ROSTER, PICTURED_ROSTER, hasPortrait } from './roster';
 import {
   THEME_SONG,
   HOOK,
@@ -15,33 +15,64 @@ const PUBLIC = join(process.cwd(), 'public');
 const onDisk = (p: string) => existsSync(join(PUBLIC, p));
 
 describe('band roster', () => {
-  it('has seven members with unique slugs and names', () => {
-    expect(ROSTER).toHaveLength(7);
-    expect(new Set(ROSTER.map((m) => m.slug)).size).toBe(7);
-    expect(new Set(ROSTER.map((m) => m.name)).size).toBe(7);
+  it('has eight members with unique slugs and names', () => {
+    expect(ROSTER).toHaveLength(8);
+    expect(new Set(ROSTER.map((m) => m.slug)).size).toBe(8);
+    expect(new Set(ROSTER.map((m) => m.name)).size).toBe(8);
   });
 
-  it('ships both portrait sizes for every member', () => {
+  it('lists the bass player Timber, text-only until the art is ready', () => {
+    const timber = ROSTER.find((m) => m.slug === 'timber');
+    expect(timber?.name).toBe('Timber');
+    expect(timber?.instrument).toMatch(/bass/i);
+    expect(timber ? hasPortrait(timber) : true).toBe(false);
+    expect(timber?.portrait512).toBeUndefined();
+    expect(timber?.portrait700).toBeUndefined();
+    expect(timber?.alt).toBeUndefined();
+  });
+
+  it('has a portrait for exactly the seven members who were pictured first', () => {
+    expect(PICTURED_ROSTER.map((m) => m.slug)).toEqual([
+      'ivory',
+      'crash',
+      'chops',
+      'reed',
+      'brass',
+      'verse',
+      'form',
+    ]);
+  });
+
+  it('never gives a member a half set of portrait fields', () => {
     for (const m of ROSTER) {
+      const set = [m.portrait512, m.portrait700, m.alt].filter(Boolean).length;
+      expect([0, 3], m.slug).toContain(set);
+    }
+  });
+
+  it('ships both portrait sizes for every pictured member', () => {
+    for (const m of PICTURED_ROSTER) {
       expect(onDisk(m.portrait512), m.portrait512).toBe(true);
       expect(onDisk(m.portrait700), m.portrait700).toBe(true);
     }
   });
 
   it('describes every picture, in words that are not just the name', () => {
-    for (const m of ROSTER) {
+    for (const m of PICTURED_ROSTER) {
       expect(m.alt.length, m.slug).toBeGreaterThan(30);
       expect(m.alt).toContain(m.name);
     }
   });
 
   it('never gives a member a gendered pronoun (none has been given)', () => {
-    const text = ROSTER.map((m) => `${m.blurb} ${m.alt} ${m.role}`).join(' ');
+    const text = ROSTER.map(
+      (m) => `${m.blurb} ${m.alt ?? ''} ${m.role} ${m.instrument}`
+    ).join(' ');
     expect(text).not.toMatch(/\b(he|she|him|her|his|hers|himself|herself)\b/i);
   });
 
   it('puts the base path in front of every portrait URL', () => {
-    for (const m of ROSTER) {
+    for (const m of PICTURED_ROSTER) {
       const url = getAssetUrl(m.portrait512);
       expect(url.startsWith(projectConfig.basePath)).toBe(true);
       expect(url.endsWith(m.portrait512)).toBe(true);

@@ -58,9 +58,16 @@ function makeGeneration(dir, tag) {
  * default is deliberately wide so the chaining tests below exercise chaining rather
  * than expiry, which is what they are about.
  */
-async function retain(outDir, liveDir, days = 14) {
+async function retain(outDir, liveDir, days = 14, intercept = undefined) {
   const server = createServer((req, res) => {
     const rel = decodeURIComponent((req.url ?? '/').split('?')[0]);
+    // Lets a test make one path fail the way a flaky edge does (#1442).
+    const forced = intercept?.(rel);
+    if (forced) {
+      res.writeHead(forced);
+      res.end('forced');
+      return;
+    }
     const file = path.join(liveDir, rel === '/' ? 'index.html' : rel);
     // READ BEFORE writeHead. Writing the 200 first and letting readFileSync
     // throw sends headers, then the catch calls writeHead again —
@@ -93,7 +100,11 @@ async function retain(outDir, liveDir, days = 14) {
       ],
       {
         encoding: 'utf8',
-        env: { ...process.env, RETAIN_DAYS: String(days) },
+        env: {
+          ...process.env,
+          RETAIN_DAYS: String(days),
+          RETAIN_FETCH_RETRY_MS: '1,1,1',
+        },
       }
     );
     return stdout;
@@ -275,6 +286,53 @@ describe('retain-previous-assets: chaining across a burst (#548)', () => {
     );
   });
 
+  it('uses the age table to retain unreferenced assets when the manifest is missing', async () => {
+    const a = makeGeneration(path.join(WORK, 'a10'), 'gen-a10');
+    const b = makeGeneration(path.join(WORK, 'b10'), 'gen-b10');
+    const historicalChunk = '_next/static/chunks/gen-a10-lazy.js';
+    const historicalPath = path.join(a, historicalChunk);
+    fs.mkdirSync(path.dirname(historicalPath), { recursive: true });
+    fs.writeFileSync(historicalPath, "console.log('historical chunk')");
+
+    // The live HTML does not name this chunk: it was loaded only by an older route.
+    // The age table is the only complete record of assets a returning visitor may need.
+    const firstSeen = new Date(Date.now() - 16 * 86400000).toISOString();
+    const ageDir = path.join(a, 'asset-ledger');
+    fs.mkdirSync(ageDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(ageDir, 'ASSET_AGES.txt'),
+      [
+        `_next/static/css/gen-a10.css`,
+        `_next/static/chunks/gen-a10.js`,
+        historicalChunk,
+      ]
+        .map((rel) => `1 ${firstSeen} ${rel}`)
+        .join('\n') + '\n'
+    );
+    assert.ok(
+      !fs.existsSync(path.join(ageDir, 'ASSET_MANIFEST.txt')),
+      'the fixture must exercise the missing-manifest fallback'
+    );
+
+    await retain(b, a);
+
+    assert.ok(
+      fs.existsSync(path.join(b, historicalChunk)),
+      'every historical asset in the age table must survive the HTML-only fallback'
+    );
+    assert.ok(manifestOf(b).includes(historicalChunk));
+    assert.strictEqual(
+      bornOf(b).get(historicalChunk),
+      Date.parse(firstSeen),
+      'the fallback must preserve the historical first-seen date'
+    );
+    const oldest = Math.min(...bornOf(b).values());
+    assert.ok(
+      (Date.now() - oldest) / 86400000 >= 14,
+      'the fallback must not reset a full retention window'
+    );
+  });
+
   it('still publishes a manifest when the live site is unreachable', async () => {
     // THE REGRESSION THIS FIX NEARLY INTRODUCED.
     //
@@ -300,7 +358,11 @@ describe('retain-previous-assets: chaining across a burst (#548)', () => {
           b,
           'http://127.0.0.1:1',
         ],
-        { encoding: 'utf8' }
+        {
+          encoding: 'utf8',
+          // Ledger reads retry network errors (#1442); do not wait out real backoff.
+          env: { ...process.env, RETAIN_FETCH_RETRY_MS: '1,1,1' },
+        }
       );
     } catch (err) {
       exitCode = err.code;
@@ -453,6 +515,35 @@ describe('retain-previous-assets: chaining across a burst (#548)', () => {
     );
   });
 
+  it('preserves first-seen dates for assets already present in the new build', async () => {
+    const a = makeGeneration(path.join(WORK, 'a11'), 'shared');
+    const b = makeGeneration(path.join(WORK, 'b11'), 'shared');
+    const firstSeen = new Date(Date.now() - 16 * 86400000).toISOString();
+    const ageDir = path.join(a, 'asset-ledger');
+    fs.mkdirSync(ageDir, { recursive: true });
+
+    const files = [
+      '_next/static/css/shared.css',
+      '_next/static/chunks/shared.js',
+    ];
+    fs.writeFileSync(
+      path.join(ageDir, 'ASSET_MANIFEST.txt'),
+      files.join('\n') + '\n'
+    );
+    fs.writeFileSync(
+      path.join(ageDir, 'ASSET_AGES.txt'),
+      files.map((rel) => `1 ${firstSeen} ${rel}`).join('\n') + '\n'
+    );
+
+    await retain(b, a);
+
+    assert.strictEqual(
+      bornOf(b).get('_next/static/css/shared.css'),
+      Date.parse(firstSeen),
+      'an unchanged hashed asset must keep its original first-seen date'
+    );
+  });
+
   it('writes the ledger OUTSIDE the immutable-cache prefix, and nowhere inside it', async () => {
     // THE WHOLE POINT OF #1061. `_next/static/*` is pinned `max-age=31536000` by a
     // Cloudflare rule written for content-hashed assets. These two files are
@@ -557,5 +648,75 @@ describe('RETAIN_DAYS is sized for a returning visitor', () => {
         'converts to a duration only via a merge rate nobody measures. Express the ' +
         'window in days.'
     );
+  });
+});
+
+/**
+ * #1442: on 2026-10-30 one failed read of ASSET_MANIFEST.txt, with the age table read
+ * fine a request earlier, sent the script into its crawl-the-HTML fallback. That names
+ * only the current build, so retention fell from 150 carried assets to 3 and 18 days of
+ * window became 0. These tests make the manifest fail the way that deploy saw it.
+ */
+describe('retain-previous-assets: a failed ledger read must not reset retention (#1442)', () => {
+  const MANIFEST = 'asset-ledger/ASSET_MANIFEST.txt';
+  before(() => {
+    fs.rmSync(WORK, { recursive: true, force: true });
+  });
+  after(() => {
+    fs.rmSync(WORK, { recursive: true, force: true });
+  });
+
+  it('retries a manifest read that fails twice with a 503, then uses it', async () => {
+    const a = makeGeneration(path.join(WORK, 'f-a'), 'gen-a');
+    const b = makeGeneration(path.join(WORK, 'f-b'), 'gen-b');
+    const c = makeGeneration(path.join(WORK, 'f-c'), 'gen-c');
+    await retain(b, a);
+
+    let hits = 0;
+    const out = await retain(c, b, 14, (rel) =>
+      rel === `/${MANIFEST}` && hits++ < 2 ? 503 : undefined
+    );
+
+    assert.ok(
+      hits >= 3,
+      `the manifest should have been requested again, got ${hits}`
+    );
+    assert.match(out, /manifest from the live build/);
+    assert.doesNotMatch(out, /falling back to crawling/);
+    assert.ok(
+      fs.existsSync(path.join(c, '_next/static/css/gen-a.css')),
+      "A's stylesheet must survive a transient manifest failure"
+    );
+  });
+
+  it('uses the age table as the manifest when the manifest stays unreadable', async () => {
+    const a = makeGeneration(path.join(WORK, 'g-a'), 'gen-a');
+    const b = makeGeneration(path.join(WORK, 'g-b'), 'gen-b');
+    const c = makeGeneration(path.join(WORK, 'g-c'), 'gen-c');
+    await retain(b, a);
+
+    const out = await retain(c, b, 14, (rel) =>
+      rel.endsWith('ASSET_MANIFEST.txt') ? 503 : undefined
+    );
+
+    assert.match(out, /age table could/);
+    assert.doesNotMatch(out, /falling back to crawling/);
+    assert.ok(
+      fs.existsSync(path.join(c, '_next/static/css/gen-a.css')),
+      "A's stylesheet must be carried from the age table when the manifest is down"
+    );
+    // Dates must come through, not restart at now.
+    assert.strictEqual(
+      bornOf(c).get('_next/static/css/gen-a.css'),
+      bornOf(b).get('_next/static/css/gen-a.css')
+    );
+  });
+
+  it('does not retry a 404 — that is the real no-ledger answer', async () => {
+    const a = makeGeneration(path.join(WORK, 'h-a'), 'gen-a');
+    const b = makeGeneration(path.join(WORK, 'h-b'), 'gen-b');
+    const out = await retain(b, a);
+    assert.doesNotMatch(out, /retry \d\/\d/);
+    assert.match(out, /falling back to crawling/);
   });
 });
