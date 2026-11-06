@@ -210,7 +210,12 @@ method + both providers + .NET endpoint + conformance case):
   `enforce_conversation_update` (one version at a time, by an active owner who already holds
   the new key, with every keyed member covered) and `group_key_insert_guard` →
   `enforce_group_key_insert` (who may write key rows, at which version, with whose JWK)
-  (#1247).
+  (#1247). A group message must also carry the CURRENT version: `group_message_key_version_guard`
+  → `enforce_group_message_key_version` refuses (42501, "stale group key version") an insert
+  whose `key_version` differs from `conversations.current_key_version`, so a stale tab or a
+  message queued before a rotation cannot be stored under a key a removed member holds. 1:1
+  rows, system messages and the service role are exempt; the offline queue recognises the
+  refusal and re-encrypts from the plaintext it already keeps (#1301).
 - **GDPR export / delete.** Account data export and erasure paths — direct Supabase.
 
 When one of these is ported into the seam, add its clause row above (with real rule text
