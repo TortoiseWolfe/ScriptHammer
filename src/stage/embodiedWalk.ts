@@ -44,6 +44,13 @@ export interface WalkFeelDeps {
     intensity: number
   ) => void;
   tickDust: (dt: number) => void;
+  /**
+   * True when the visitor has asked for reduced motion (#1449). Read every frame, so a
+   * change in system settings takes effect without a reload. While true the eye stays
+   * level and steady: no head-bob, no landing dip. Walking, turning and audio are
+   * untouched. Optional so callers that predate the setting keep their old behaviour.
+   */
+  reducedMotion?: () => boolean;
   /** Adds head-bob + landing dip onto `camera.position` in place. */
   applyCameraFeel: (
     camera: { position: Vec3Like },
@@ -85,7 +92,8 @@ export function makeWalkMove(
     // your character walk, crouch and lie down, not just ride.
     const vDown = rig.down('KeyV');
     if (vDown && !prevV) {
-      deps.viewRef.current = deps.viewRef.current === 'first' ? 'third' : 'first';
+      deps.viewRef.current =
+        deps.viewRef.current === 'first' ? 'third' : 'first';
     }
     prevV = vDown;
 
@@ -116,13 +124,32 @@ export function makeWalkMove(
       const ey = eye.position.y;
       const ez = eye.position.z;
       const b = chaseBackDir(rig.yaw, rig.pitch);
-      const allowed = ctrl.cameraDistance(ex, ey, ez, b.x, b.y, b.z, back, 0.35);
+      const allowed = ctrl.cameraDistance(
+        ex,
+        ey,
+        ez,
+        b.x,
+        b.y,
+        b.z,
+        back,
+        0.35
+      );
       eye.position.x = ex + b.x * allowed;
       eye.position.y = ey + b.y * allowed;
       eye.position.z = ez + b.z * allowed;
     } else {
-      // First-person / on-foot: fold head-bob + landing punch into the eye.
-      deps.applyCameraFeel(eye, ctrl, ctrl.movedThisFrame, dt, rig.yaw, ctrl.bobScale);
+      // First-person / on-foot: fold head-bob + landing punch into the eye, unless the
+      // visitor asked for reduced motion (#1449) — then the eye is simply the body's.
+      if (!deps.reducedMotion?.()) {
+        deps.applyCameraFeel(
+          eye,
+          ctrl,
+          ctrl.movedThisFrame,
+          dt,
+          rig.yaw,
+          ctrl.bobScale
+        );
+      }
     }
     // No footfalls while rolling on the bike.
     if (!ctrl.riding) {
