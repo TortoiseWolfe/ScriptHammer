@@ -14,7 +14,7 @@ import ThemeSongPlayer from '@/components/molecular/ThemeSongPlayer';
 
 const TITLE = 'ScriptHammer, the house band - free music and art';
 const DESCRIPTION =
-  'Seven animatronic bots play free music for everyone. Listen to the theme song, meet the band, and keep your own site playing.';
+  'Eight animatronic bots play free music for everyone. Listen to the theme song, meet the band, and keep your own site playing.';
 const OG_IMAGE = `${projectConfig.deployUrl}/band/og-1200x630.jpg`;
 
 export const metadata: Metadata = {
@@ -68,7 +68,7 @@ export default function BandPage() {
               {`${BAND_NAME}, the house band`}
             </h1>
             <p className="!m-0 max-w-[68ch] text-lg leading-[1.65]">
-              Seven animatronic bots, a little scary to look at, who play for
+              Eight animatronic bots, a little scary to look at, who play for
               everyone. The music and the art are free to listen to, share and
               remix. Press play on the theme song and stay a while.
             </p>
@@ -166,7 +166,7 @@ export default function BandPage() {
             Meet the band
           </h2>
           <p className="!mt-0 !mb-6 max-w-[68ch] text-lg leading-[1.65]">
-            Seven players, one wagon. None of them bites.
+            Eight players, one wagon. None of them bites.
           </p>
           <BandRoster />
         </section>

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * The house band's stage in a city twin (#1413): a deck, a back wall and seven portrait
+ * The house band's stage in a city twin (#1413): a deck, a back wall and a portrait
  * boards at Ross's Landing, with the band's theme as sound that comes from the stage.
  *
  * Placement is data (`public/twins/<slug>/stage.json`, see ./bandStage/placement.ts) and
@@ -19,7 +19,7 @@ import {
   type PositionalAudio as ThreePositionalAudio,
   type Texture,
 } from 'three';
-import { ROSTER } from '@/lib/band/roster';
+import { PICTURED_ROSTER } from '@/lib/band/roster';
 import { getAssetUrl } from '@/config/project.config';
 import { siteAssetUrl } from '@/lib/manifest';
 import {
@@ -69,7 +69,10 @@ function StageSound({ playing, muted }: { playing: boolean; muted: boolean }) {
 }
 
 function PortraitBoards({ deckTop }: { deckTop: number }) {
-  const urls = useMemo(() => ROSTER.map((m) => getAssetUrl(m.portrait512)), []);
+  const urls = useMemo(
+    () => PICTURED_ROSTER.map((m) => getAssetUrl(m.portrait512)),
+    []
+  );
   const textures = useTexture(urls) as Texture[];
   useEffect(() => {
     for (const t of textures) {
@@ -77,10 +80,11 @@ function PortraitBoards({ deckTop }: { deckTop: number }) {
       t.needsUpdate = true;
     }
   }, [textures]);
-  const span = ROSTER.length * BOARD + (ROSTER.length - 1) * BOARD_GAP;
+  const span =
+    PICTURED_ROSTER.length * BOARD + (PICTURED_ROSTER.length - 1) * BOARD_GAP;
   return (
     <>
-      {ROSTER.map((m, i) => (
+      {PICTURED_ROSTER.map((m, i) => (
         <Billboard
           key={m.slug}
           position={[
