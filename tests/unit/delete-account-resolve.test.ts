@@ -5,6 +5,8 @@ import {
   LIVE_SUBSCRIPTION_STATUSES,
   LIVE_SUBSCRIPTION_MESSAGE,
   deletionBlockedBy,
+  deleteAccount,
+  type AccountEraser,
 } from '../../supabase/functions/delete-account/resolve';
 
 /**
@@ -58,17 +60,94 @@ describe('deletionBlockedBy', () => {
   });
 });
 
+describe('deleteAccount', () => {
+  /** A fake admin client that records the order its calls arrive in. */
+  function fakeAdmin(
+    subs: Array<{ status: string }> | null,
+    opts: {
+      lookupError?: string;
+      deleteError?: string;
+      stillThere?: boolean;
+    } = {}
+  ) {
+    const calls: string[] = [];
+    const admin: AccountEraser = {
+      from: () => ({
+        select: () => ({
+          eq: async () => {
+            calls.push('lookup');
+            return {
+              data: subs,
+              error: opts.lookupError ? { message: opts.lookupError } : null,
+            };
+          },
+        }),
+      }),
+      auth: {
+        admin: {
+          deleteUser: async () => {
+            calls.push('delete');
+            return {
+              error: opts.deleteError ? { message: opts.deleteError } : null,
+            };
+          },
+          getUserById: async () => {
+            calls.push('confirm');
+            return { data: { user: opts.stillThere ? { id: 'u' } : null } };
+          },
+        },
+      },
+    };
+    return { admin, calls };
+  }
+
+  it('looks up subscriptions before it deletes, then confirms the user is gone', async () => {
+    const { admin, calls } = fakeAdmin([{ status: 'canceled' }]);
+    expect(await deleteAccount(admin, 'u')).toEqual({
+      status: 200,
+      body: { success: true },
+    });
+    expect(calls).toEqual(['lookup', 'delete', 'confirm']);
+  });
+
+  it('answers 409 and never deletes while a subscription is billing', async () => {
+    const { admin, calls } = fakeAdmin([{ status: 'active' }]);
+    expect(await deleteAccount(admin, 'u')).toEqual({
+      status: 409,
+      body: { error: LIVE_SUBSCRIPTION_MESSAGE },
+    });
+    expect(calls).toEqual(['lookup']);
+  });
+
+  it('fails closed when the subscription lookup errors', async () => {
+    const { admin, calls } = fakeAdmin(null, { lookupError: 'boom' });
+    const result = await deleteAccount(admin, 'u');
+    expect(result.status).toBe(500);
+    expect(calls).toEqual(['lookup']);
+  });
+
+  it('reports a delete that did not remove the user', async () => {
+    const { admin } = fakeAdmin([], { stillThere: true });
+    expect((await deleteAccount(admin, 'u')).status).toBe(500);
+  });
+
+  it('reports an error from the delete call', async () => {
+    const { admin, calls } = fakeAdmin([], { deleteError: 'nope' });
+    expect((await deleteAccount(admin, 'u')).status).toBe(500);
+    expect(calls).toEqual(['lookup', 'delete']);
+  });
+});
+
 describe('delete-account/index.ts', () => {
   const src = readFileSync(
     path.join(process.cwd(), 'supabase/functions/delete-account/index.ts'),
     'utf8'
   );
 
-  it('checks for a live subscription before it deletes the user', () => {
-    const check = src.indexOf('deletionBlockedBy(');
-    const del = src.indexOf('admin.auth.admin.deleteUser(');
-    expect(check).toBeGreaterThan(-1);
-    expect(del).toBeGreaterThan(-1);
-    expect(check).toBeLessThan(del);
+  it('hands the whole decision to deleteAccount, so the database test runs the same code', () => {
+    expect(src).toContain('deleteAccount(admin, userId)');
+    // Nothing privileged is called inline any more: a second copy of the logic here would be
+    // a path the database test does not cover.
+    expect(src).not.toContain('admin.auth.admin.deleteUser(');
   });
 });
