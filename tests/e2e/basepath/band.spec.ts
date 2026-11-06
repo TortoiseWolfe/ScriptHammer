@@ -24,7 +24,7 @@ test.describe('/band under the base path (#1408)', () => {
       }
     });
     await page.goto(`${BASE_PATH}/band/`);
-    await expect(page.getByTestId('band-member-card')).toHaveCount(7);
+    await expect(page.getByTestId('band-member-card')).toHaveCount(8);
     // Lazy portraits: ask for all of them so a bad prefix cannot hide below the fold.
     await page
       .locator('img')

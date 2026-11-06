@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import BandMemberCard from './BandMemberCard';
-import { ROSTER } from '@/lib/band/roster';
+import { ROSTER, PICTURED_ROSTER } from '@/lib/band/roster';
 import { getAssetUrl } from '@/config/project.config';
 
-const member = ROSTER[0];
+const member = PICTURED_ROSTER[0];
 
 describe('BandMemberCard', () => {
   it('shows name, instrument and role', () => {
@@ -25,6 +25,17 @@ describe('BandMemberCard', () => {
     );
     expect(img).toHaveAttribute('width', '512');
     expect(img).toHaveAttribute('height', '512');
+  });
+
+  it('shows a member with no portrait as text only, with no broken picture', () => {
+    const timber = ROSTER.find((m) => m.slug === 'timber')!;
+    render(<BandMemberCard member={timber} />);
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Timber' })
+    ).toBeInTheDocument();
+    expect(screen.getByText(timber.instrument)).toBeInTheDocument();
+    expect(screen.getByText(`${timber.role}.`)).toBeInTheDocument();
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 
   it('applies custom className when provided', () => {

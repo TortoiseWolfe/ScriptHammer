@@ -1,5 +1,6 @@
 /**
- * ScriptHammer, the house band: seven animatronic bots.
+ * ScriptHammer, the house band: eight animatronic bots. Seven have portraits; the
+ * eighth, the bass player Timber, is text-only until the art is ready.
  *
  * Kept out of src/twin, src/stage, src/world and src/lib/cod on purpose, so the
  * first-load budget's three.js gate ignores it and a later 3D stage can import it
@@ -18,11 +19,23 @@ export interface BandMember {
   role: string;
   /** One line for the card. */
   blurb: string;
-  /** Path under /public; run it through getAssetUrl before use. */
-  portrait512: string;
-  portrait700: string;
+  /**
+   * Path under /public; run it through getAssetUrl before use. All three of
+   * portrait512, portrait700 and alt are set together, or none are (a member
+   * with no picture yet shows as text only). Use hasPortrait() to narrow.
+   */
+  portrait512?: string;
+  portrait700?: string;
   /** Describes the picture, not the person. */
-  alt: string;
+  alt?: string;
+}
+
+/** A band member whose portrait files exist. */
+export type PicturedBandMember = BandMember &
+  Required<Pick<BandMember, 'portrait512' | 'portrait700' | 'alt'>>;
+
+export function hasPortrait(member: BandMember): member is PicturedBandMember {
+  return Boolean(member.portrait512 && member.portrait700 && member.alt);
 }
 
 export const BAND_NAME = 'ScriptHammer';
@@ -99,4 +112,17 @@ export const ROSTER: readonly BandMember[] = [
     portrait700: '/band/members/form-700.webp',
     alt: 'Switch, a blocky robot with a grille for a face and a chest covered in knobs, keys and buttons, hands on the handlebars of a bicycle.',
   },
+  // Text-only until the portrait is made (Hatch's art is pending). The look is
+  // turnaround v1b: a big round body with a tuning-peg crown, and an upright bass.
+  {
+    slug: 'timber',
+    name: 'Timber',
+    instrument: 'Upright bass',
+    role: 'Deep Anchor',
+    blurb: 'Holds the floor the rest of the band stands on.',
+  },
 ];
+
+/** The members who have a portrait, in roster order. */
+export const PICTURED_ROSTER: readonly PicturedBandMember[] =
+  ROSTER.filter(hasPortrait);

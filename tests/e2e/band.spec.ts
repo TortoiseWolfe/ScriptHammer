@@ -13,7 +13,7 @@ import {
 } from './utils/band-assertions';
 
 test.describe('/band (#1408)', () => {
-  test('shows the band: seven cards, two players, no form', async ({
+  test('shows the band: eight cards, two players, no form', async ({
     page,
   }) => {
     await page.goto('/band/');
@@ -23,7 +23,14 @@ test.describe('/band (#1408)', () => {
         name: /ScriptHammer, the house band/,
       })
     ).toBeVisible();
-    await expect(page.getByTestId('band-member-card')).toHaveCount(7);
+    await expect(page.getByTestId('band-member-card')).toHaveCount(8);
+    // Seven have a portrait; the bass player, Timber, is text-only for now.
+    await expect(
+      page.locator('[data-testid="band-member-card"] img')
+    ).toHaveCount(7);
+    await expect(
+      page.getByRole('heading', { level: 3, name: 'Timber' })
+    ).toBeVisible();
     await expect(page.getByTestId('song-player')).toHaveCount(4);
     // Every portrait actually loaded (a 404 leaves naturalWidth at 0). They are
     // lazy, so ask for them all first.
