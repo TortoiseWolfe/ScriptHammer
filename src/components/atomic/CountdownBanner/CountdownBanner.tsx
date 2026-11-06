@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import Button from '@/components/atomic/Button';
 
 const DISMISS_KEY = 'countdown-dismissed';
@@ -31,6 +31,12 @@ function isInSeason(now: Date): boolean {
 
 export const CountdownBanner = () => {
   const router = useRouter();
+  const pathname = usePathname();
+  // Not on the chat pages (#1436): the card is fixed at the right edge, exactly
+  // where a user's own messages sit, and it covered the Save button of the
+  // message edit box.
+  const onChatPage =
+    pathname === '/messages' || !!pathname?.startsWith('/messages/');
   const [mounted, setMounted] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
   const [inSeason, setInSeason] = useState(false);
@@ -59,7 +65,7 @@ export const CountdownBanner = () => {
 
   // Calculate and update countdown to Jan 1
   useEffect(() => {
-    if (!mounted || isDismissed || !inSeason) return;
+    if (!mounted || isDismissed || !inSeason || onChatPage) return;
 
     const calculateTimeLeft = () => {
       const targetDate = new Date(new Date().getFullYear() + 1, 0, 1);
@@ -80,9 +86,9 @@ export const CountdownBanner = () => {
     setTimeLeft(calculateTimeLeft());
     const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 1000);
     return () => clearInterval(timer);
-  }, [mounted, isDismissed, inSeason]);
+  }, [mounted, isDismissed, inSeason, onChatPage]);
 
-  if (!mounted || isDismissed || !inSeason) return null;
+  if (!mounted || isDismissed || !inSeason || onChatPage) return null;
 
   const price = getSeasonPrice(new Date().getFullYear());
 

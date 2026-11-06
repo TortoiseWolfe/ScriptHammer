@@ -7,6 +7,7 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: vi.fn(),
   }),
+  usePathname: () => '/',
 }));
 
 import { CountdownBanner } from './CountdownBanner';
@@ -47,7 +48,7 @@ describe('CountdownBanner Accessibility', () => {
 
     // Test keyboard navigation
     const focusableElements = container.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
     );
 
     focusableElements.forEach((element) => {
