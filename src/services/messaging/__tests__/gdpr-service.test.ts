@@ -764,6 +764,100 @@ describe('GDPRService', () => {
       expect(mockSupabase.auth.signOut).not.toHaveBeenCalled();
     });
 
+    it('keeps the local keys and cached messages when the server refuses the deletion (#1309)', async () => {
+      mockSupabase.auth.getSession.mockResolvedValue({
+        data: { session: { user: { id: 'user-123', email: 't@e.com' } } },
+        error: null,
+      });
+      const deletes = {
+        messaging_private_keys: vi.fn().mockResolvedValue(undefined),
+        messaging_queued_messages: vi.fn().mockResolvedValue(undefined),
+        messaging_cached_messages: vi.fn().mockResolvedValue(undefined),
+      };
+      for (const [table, del] of Object.entries(deletes)) {
+        (vi.mocked(messagingDb.messagingDb) as any)[table] = {
+          where: vi.fn().mockReturnValue({
+            equals: vi.fn().mockReturnValue({ delete: del }),
+          }),
+        };
+      }
+
+      // The server refuses (for example a foreign-key violation on a buyer's
+      // payment rows). The account survives, so the user must still be able to
+      // read their messages.
+      mockSupabase.functions.invoke.mockResolvedValue({
+        data: { error: 'update or delete violates foreign key constraint' },
+        error: null,
+      });
+
+      await expect(gdprService.deleteUserAccount()).rejects.toThrow(
+        /foreign key/
+      );
+
+      expect(deletes.messaging_private_keys).not.toHaveBeenCalled();
+      expect(deletes.messaging_queued_messages).not.toHaveBeenCalled();
+      expect(deletes.messaging_cached_messages).not.toHaveBeenCalled();
+    });
+
+    it('wipes the local keys only after the server has deleted the account (#1309)', async () => {
+      mockSupabase.auth.getSession.mockResolvedValue({
+        data: { session: { user: { id: 'user-123', email: 't@e.com' } } },
+        error: null,
+      });
+      const order: string[] = [];
+      for (const table of [
+        'messaging_private_keys',
+        'messaging_queued_messages',
+        'messaging_cached_messages',
+      ]) {
+        (vi.mocked(messagingDb.messagingDb) as any)[table] = {
+          where: vi.fn().mockReturnValue({
+            equals: vi.fn().mockReturnValue({
+              delete: vi.fn().mockImplementation(async () => {
+                order.push(table);
+              }),
+            }),
+          }),
+        };
+      }
+      mockSupabase.functions.invoke.mockImplementation(async () => {
+        order.push('server');
+        return { data: { success: true }, error: null };
+      });
+
+      await gdprService.deleteUserAccount();
+
+      expect(order[0]).toBe('server');
+      expect(order).toHaveLength(4);
+    });
+
+    it('does not report a failed deletion when only the local cleanup fails after the server succeeded (#1309)', async () => {
+      mockSupabase.auth.getSession.mockResolvedValue({
+        data: { session: { user: { id: 'user-123', email: 't@e.com' } } },
+        error: null,
+      });
+      for (const table of [
+        'messaging_private_keys',
+        'messaging_queued_messages',
+        'messaging_cached_messages',
+      ]) {
+        (vi.mocked(messagingDb.messagingDb) as any)[table] = {
+          where: vi.fn().mockReturnValue({
+            equals: vi.fn().mockReturnValue({
+              delete: vi.fn().mockRejectedValue(new Error('IndexedDB blocked')),
+            }),
+          }),
+        };
+      }
+      mockSupabase.functions.invoke.mockResolvedValue({
+        data: { success: true },
+        error: null,
+      });
+
+      // The account is gone on the server; telling the user it failed would be false.
+      await expect(gdprService.deleteUserAccount()).resolves.toBeUndefined();
+    });
+
     it('should throw AuthenticationError if user not signed in (T190)', async () => {
       mockSupabase.auth.getSession.mockResolvedValue({
         data: { session: null },

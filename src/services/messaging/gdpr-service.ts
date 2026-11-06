@@ -553,25 +553,12 @@ export class GDPRService {
     }
 
     try {
-      // Step 1: Delete encryption keys from IndexedDB
-      await messagingDb.messaging_private_keys
-        .where('userId')
-        .equals(user.id)
-        .delete();
-
-      // Delete queued messages
-      await messagingDb.messaging_queued_messages
-        .where('sender_id')
-        .equals(user.id)
-        .delete();
-
-      // Delete cached messages
-      await messagingDb.messaging_cached_messages
-        .where('sender_id')
-        .equals(user.id)
-        .delete();
-
-      // Step 2: Delete the ACCOUNT, server-side (#859).
+      // Step 1: Delete the ACCOUNT, server-side (#859).
+      //
+      // This runs BEFORE the local wipe (#1309). The server can refuse (a buyer's
+      // payment rows reference auth.users with no ON DELETE action), and when it
+      // does the account survives. If the private keys were already gone by then,
+      // the user would keep an account whose messages they can never decrypt.
       //
       // This used to be `.from('user_profiles').delete().eq('id', user.id)` from the
       // browser, with a comment claiming it triggered "auth.users deletion (ON DELETE
@@ -608,6 +595,25 @@ export class GDPRService {
         );
       }
 
+      // Step 2: the server confirmed, so the device-side copies go now. A failure
+      // here must not read as a failed deletion: the account is already gone, and
+      // the AuthContext sign-out that follows clears the session either way.
+      try {
+        await messagingDb.messaging_private_keys
+          .where('userId')
+          .equals(user.id)
+          .delete();
+        await messagingDb.messaging_queued_messages
+          .where('sender_id')
+          .equals(user.id)
+          .delete();
+        await messagingDb.messaging_cached_messages
+          .where('sender_id')
+          .equals(user.id)
+          .delete();
+      } catch {
+        // Nothing to retry against: the account no longer exists on the server.
+      }
     } catch (error) {
       if (
         error instanceof AuthenticationError ||
