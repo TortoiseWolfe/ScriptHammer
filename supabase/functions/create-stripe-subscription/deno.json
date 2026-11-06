@@ -1,7 +1,6 @@
 {
   "tasks": {
-    "serve": "deno run --allow-net --allow-env --allow-read index.ts",
-    "test": "deno test --allow-net --allow-env --allow-read index.test.ts"
+    "serve": "deno run --allow-net --allow-env --allow-read index.ts"
   },
   "compilerOptions": {
     "lib": ["deno.window"],
