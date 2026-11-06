@@ -1923,3 +1923,24 @@ body.twin-fullscreen [data-twin-footer] {
 body.twin-fullscreen [data-site-footer] {
   display: none !important;
 }
+
+/* /band ranked-song dials (#1434). The needle rests at its value; the sweep from the
+   bottom-left stop is a courtesy and is dropped entirely for reduced motion. */
+.band-needle {
+  transform-box: view-box;
+  transform-origin: 150px 150px;
+  transform: rotate(var(--needle-angle, -135deg));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .band-needle {
+    animation: band-needle-sweep 1.1s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  }
+}
+@keyframes band-needle-sweep {
+  from {
+    transform: rotate(-135deg);
+  }
+  to {
+    transform: rotate(var(--needle-angle, -135deg));
+  }
+}
