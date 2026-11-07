@@ -181,6 +181,13 @@ jobs:
             echo "$v=$pw" >> "$GITHUB_ENV"
             export "$v=$pw"
           done
+          # Export email vars so hasSecondaryUser()/hasTertiaryUser() return true in tests
+          echo "TEST_USER_PRIMARY_EMAIL=test@example.com" >> "$GITHUB_ENV"
+          echo "TEST_USER_SECONDARY_EMAIL=test-user-b@example.com" >> "$GITHUB_ENV"
+          echo "TEST_USER_TERTIARY_EMAIL=test-user-c@example.com" >> "$GITHUB_ENV"
+          export TEST_USER_PRIMARY_EMAIL=test@example.com
+          export TEST_USER_SECONDARY_EMAIL=test-user-b@example.com
+          export TEST_USER_TERTIARY_EMAIL=test-user-c@example.com
           pnpm exec tsx scripts/seed-test-users.ts
 
       - name: Run RLS + provider + admin conformance (pnpm test:rls)
