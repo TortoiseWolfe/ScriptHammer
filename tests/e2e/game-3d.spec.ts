@@ -234,7 +234,14 @@ test.describe('/game/3d — US-2: Theme-Aware 3D Scene', () => {
 });
 
 test.describe('/game/3d — US-1: Visit the 3D Game Route', () => {
-  test('navigating to /game/3d mounts a <canvas> element', async ({ page }) => {
+  test('navigating to /game/3d mounts a <canvas> element', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName === 'firefox',
+      'Firefox headless has no WebGL in CI; SwiftShader is Chromium-only (#792).'
+    );
     await page.goto('/game/3d');
 
     // The Scene's wrapper element renders regardless of WebGL availability;
@@ -247,15 +254,7 @@ test.describe('/game/3d — US-1: Visit the 3D Game Route', () => {
       .first()
       .getAttribute('data-webgl-ok');
 
-    // Firefox-on-Linux-CI occasionally fails the WebGL probe — that's a
-    // legitimate production state and the FallbackPanel handles it via
-    // FR-008. Skip the canvas-mount assertion in that case (covered by
-    // dedicated FR-008 tests at the top of this file).
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
-    test.skip(
-      webglOk !== 'true',
-      'WebGL probe failed at mount; FR-008 fallback path active'
-    );
+    expect(webglOk).toBe('true');
 
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible({ timeout: 5000 });
@@ -303,7 +302,12 @@ test.describe('/game/3d — US-1: Visit the 3D Game Route', () => {
 
   test('canvas drag triggers a re-render (orbit controls active)', async ({
     page,
+    browserName,
   }) => {
+    test.skip(
+      browserName === 'firefox',
+      'Firefox headless has no WebGL in CI; orbit-drag needs a real canvas (#792).'
+    );
     await page.goto('/game/3d');
 
     await expect(page.locator('[data-webgl-ok]').first()).toBeVisible({
@@ -313,11 +317,7 @@ test.describe('/game/3d — US-1: Visit the 3D Game Route', () => {
       .locator('[data-webgl-ok]')
       .first()
       .getAttribute('data-webgl-ok');
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
-    test.skip(
-      webglOk !== 'true',
-      'WebGL probe failed at mount; orbit-drag requires a real canvas'
-    );
+    expect(webglOk).toBe('true');
 
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible({ timeout: 5000 });
@@ -347,7 +347,11 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
   //
   // Skips when WebGL is unavailable because OrbitControls + camera state
   // are R3F-internal — there's no canvas in the fallback path.
-  test('mouse drag changes camera position', async ({ page }) => {
+  test('mouse drag changes camera position', async ({ page, browserName }) => {
+    test.skip(
+      browserName === 'firefox',
+      'Firefox headless has no WebGL in CI; SC-004 needs a working canvas (#792).'
+    );
     await page.goto('/game/3d');
     await expect(page.locator('[data-webgl-ok]').first()).toBeVisible({
       timeout: 5000,
@@ -356,11 +360,7 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
       .locator('[data-webgl-ok]')
       .first()
       .getAttribute('data-webgl-ok');
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
-    test.skip(
-      webglOk !== 'true',
-      'SC-004 multi-modality requires a working canvas; FR-008 fallback active'
-    );
+    expect(webglOk).toBe('true');
 
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
@@ -391,7 +391,14 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
       .not.toBe(initial);
   });
 
-  test('mouse wheel zoom changes camera position', async ({ page }) => {
+  test('mouse wheel zoom changes camera position', async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(
+      browserName === 'firefox',
+      'Firefox headless has no WebGL in CI; SC-004 needs a working canvas (#792).'
+    );
     await page.goto('/game/3d');
     await expect(page.locator('[data-webgl-ok]').first()).toBeVisible({
       timeout: 5000,
@@ -400,8 +407,7 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
       .locator('[data-webgl-ok]')
       .first()
       .getAttribute('data-webgl-ok');
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
-    test.skip(webglOk !== 'true', 'SC-004 requires working canvas');
+    expect(webglOk).toBe('true');
 
     const canvas = page.locator('canvas');
     const wrapper = page.locator('[data-camera-position]').first();
@@ -444,8 +450,7 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
       .locator('[data-webgl-ok]')
       .first()
       .getAttribute('data-webgl-ok');
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
-    test.skip(webglOk !== 'true', 'SC-004 requires working canvas');
+    expect(webglOk).toBe('true');
 
     const canvas = page.locator('canvas');
     const wrapper = page.locator('[data-camera-position]').first();
