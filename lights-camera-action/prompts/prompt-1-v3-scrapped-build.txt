@@ -1,0 +1,20 @@
+Build "Band Wagon Music Show" — a free, browser-based music game for kids (roughly ages 6–12). No login, no downloads: the game loads straight into play on a single page, with big touch-friendly buttons that work on tablets and phones.
+
+The setting is specific: Ross's Landing in Chattanooga, Tennessee — the riverfront concert lawn on the South Shore of the Tennessee River. The view is from the soundboard: the player sits facing the stage, the way a real sound engineer watches a show. Render the scene WITH depth and dimension — the stage in the middle distance with the Tennessee River and the downtown bridges behind it, the Tennessee Aquarium's glass peaks off to one side, warm golden-hour light — not flat clip-art. I am attaching photos of real concerts at Ross's Landing: match the place to them.
+
+On stage stand 8 friendly robot musicians, the band ScriptHammer. I am also attaching the band's turnaround sheets — the flat character reference drawings used to build their 3D models. Draw each robot to match those sheets: these are established characters with a set look, not new inventions. The band: Crash (drums), Timber (upright bass), Chops (guitar), Reed (saxophone), Ivory (piano), Brass (trumpet), Chorus (singer), Switch (synth board). Each robot animates and plays whenever their instrument sounds.
+
+Naming, so there's no mix-up: the band is ScriptHammer — that is the band's name. Their album is called The Band Wagon, and this game is named after that album.
+
+THE SOUNDBOARD (the core of the game): Along the bottom, one channel strip per musician with their name, a small portrait matching the turnaround art, a mute button, and an "Open" button. Opening a channel shows that instrument's own music editor, and the editor fits the instrument:
+
+- Crash (drums) gets a beatbox grid: a few rows for different drum sounds (deep drum, snap, tick) across 16 steps (4 beats of 4); tap a square to add or remove a hit.
+- Every melodic instrument (bass, guitar, saxophone, piano, trumpet, singer, synth) gets a REAL musical staff — five lines with the right clef for that instrument — laid across the same 16 steps. Kids tap a line or space at a step to place a note there, tap a note to remove it, and drag notes up, down, and sideways to change pitch and timing. Show the note's name (C, D, E…) on or under each placed note so kids learn what they're writing. Keep the pitch range friendly (about an octave and a half) and snap everything to the staff so it always looks like real sheet music.
+
+Each instrument makes its own simple synthesized sound in the browser at the pitch written: a bass pluck, guitar strum, sax tone, piano note, trumpet blast, a sung "la," a synth blip, drum hits.
+
+PLAYBACK: A big Play/Stop button and a tempo slider. When playing, a bright marker sweeps the 16 steps, every channel plays its programmed pattern in sync, and each robot animates when its own notes sound. The game starts with one complete song already programmed across all 8 channels so it sounds good the moment a kid presses Play — kids then open any channel and rearrange that instrument's part to make the song their own.
+
+THE LIGHT BOARD — THE SUN: The first light kids control is the sun itself. A simple "Sun" panel gives it the standard controls any stage light has: how fast it moves, its color, its angle/height in the sky, and its brightness. Moving the sun visibly relights the whole scene — sky color, stage light, and shadows follow it. During Play, the sun slowly arcs down behind the stage on its own (a sunset paced to the music) unless the kid grabs the controls and moves it themselves.
+
+Keep everything else minimal for now: no accounts, no scores, no menus beyond the stage, the soundboard, and the sun panel. Bright, friendly, rounded design; readable labels on everything.
