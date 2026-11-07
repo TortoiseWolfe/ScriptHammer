@@ -41,6 +41,9 @@ export default defineConfig({
       // These tests require specific configuration and will hit rate limits on shared instances
       // Run with: pnpm test tests/contract --run or pnpm test tests/integration when test DB is properly configured
       'tests/contract/auth/oauth.contract.test.ts', // 1 test - config mismatch
+      'tests/contract/auth/password-reset.contract.test.ts', // 2 tests - rate limit
+      'tests/contract/auth/sign-up.contract.test.ts', // 4 tests - rate limit + config
+      'tests/contract/profile/delete-account.contract.test.ts', // 4 tests - requires test data
       'tests/integration/auth/oauth-flow.test.ts', // 6 tests - rate limit
       'tests/integration/auth/password-reset-flow.test.ts', // 2 tests - rate limit
       'tests/integration/auth/protected-routes.test.ts', // 10 tests - flaky/rate limit
@@ -64,6 +67,10 @@ export default defineConfig({
       'tests/contract/messaging-provider.supabase.test.ts',
       'tests/contract/messaging-provider.dotnet.test.ts',
       // Exclude remaining contract/integration tests requiring service role key
+      'tests/contract/auth/sign-out.contract.test.ts',
+      'tests/contract/auth/sign-in.contract.test.ts',
+      'tests/contract/profile/get-profile.contract.test.ts',
+      'tests/contract/profile/update-profile.contract.test.ts',
       'tests/integration/messaging/connections.test.ts',
       'src/tests/integration/payment-isolation.test.ts',
       // Admin contract tests need live Supabase + a seeded admin; they run in conformance via vitest.rls.config.ts (#1379)

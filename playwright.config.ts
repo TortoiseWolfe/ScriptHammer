@@ -63,13 +63,6 @@ const MSG_ISO_GLOBS = [
   '**/messaging/group-chat-multiuser.spec.ts',
 ];
 
-const SWIFTSHADER_ARGS = [
-  '--use-gl=angle',
-  '--use-angle=swiftshader',
-  '--ignore-gpu-blocklist',
-  '--enable-unsafe-swiftshader',
-];
-
 /* Parallelism for the iso projects is driven by Playwright's `--workers` CLI
  * flag passed per CI job (so only the iso shard runs workers>1; gen/serial msg
  * stay at the global `workers:1`). Locally, `fullyParallel` on the iso project
@@ -148,7 +141,6 @@ export default defineConfig({
     contextOptions: {
       ignoreHTTPSErrors: true,
     },
-
   },
 
   /* Configure projects with ordered execution for rate-limiting isolation */
@@ -163,7 +155,6 @@ export default defineConfig({
       testMatch: /auth\.setup\.ts/,
       use: {
         storageState: './tests/e2e/fixtures/storage-state.json',
-        launchOptions: { args: SWIFTSHADER_ARGS },
       },
     },
 
@@ -183,7 +174,6 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: './tests/e2e/fixtures/storage-state.json',
-        launchOptions: { args: SWIFTSHADER_ARGS },
       },
     },
 
@@ -196,7 +186,6 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: './tests/e2e/fixtures/storage-state.json',
-        launchOptions: { args: SWIFTSHADER_ARGS },
       },
     },
 
@@ -209,7 +198,6 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: './tests/e2e/fixtures/storage-state.json',
-        launchOptions: { args: SWIFTSHADER_ARGS },
       },
     },
 
@@ -224,7 +212,6 @@ export default defineConfig({
       testMatch: '**/basepath/**',
       use: {
         ...devices['Desktop Chrome'],
-        launchOptions: { args: SWIFTSHADER_ARGS },
       },
     },
 
@@ -245,7 +232,6 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
-        launchOptions: { args: SWIFTSHADER_ARGS },
       },
     },
 
@@ -262,7 +248,6 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
-        launchOptions: { args: SWIFTSHADER_ARGS },
       },
     },
 
@@ -284,7 +269,6 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
-        launchOptions: { args: SWIFTSHADER_ARGS },
       },
     },
 
@@ -390,7 +374,6 @@ export default defineConfig({
         use: {
           ...createDeviceConfig(viewport),
           storageState: './tests/e2e/fixtures/storage-state-auth.json',
-          launchOptions: { args: SWIFTSHADER_ARGS },
         },
       })
     ),
@@ -413,7 +396,6 @@ export default defineConfig({
         use: {
           ...createDeviceConfig(viewport),
           storageState: './tests/e2e/fixtures/storage-state-auth.json',
-          launchOptions: { args: SWIFTSHADER_ARGS },
         },
       })
     ),
