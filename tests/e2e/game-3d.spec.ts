@@ -247,15 +247,11 @@ test.describe('/game/3d — US-1: Visit the 3D Game Route', () => {
       .first()
       .getAttribute('data-webgl-ok');
 
-    // Firefox-on-Linux-CI occasionally fails the WebGL probe — that's a
-    // legitimate production state and the FallbackPanel handles it via
-    // FR-008. Skip the canvas-mount assertion in that case (covered by
-    // dedicated FR-008 tests at the top of this file).
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
-    test.skip(
-      webglOk !== 'true',
-      'WebGL probe failed at mount; FR-008 fallback path active'
-    );
+    // With SwiftShader flags on Chromium projects, WebGL should be available.
+    // Firefox may still lack WebGL in headless CI; that's covered by FR-008 tests.
+    if (webglOk !== 'true') {
+      test.skip(true, 'WebGL probe failed at mount; FR-008 fallback path active');
+    }
 
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible({ timeout: 5000 });
@@ -313,11 +309,11 @@ test.describe('/game/3d — US-1: Visit the 3D Game Route', () => {
       .locator('[data-webgl-ok]')
       .first()
       .getAttribute('data-webgl-ok');
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
-    test.skip(
-      webglOk !== 'true',
-      'WebGL probe failed at mount; orbit-drag requires a real canvas'
-    );
+    // With SwiftShader flags on Chromium projects, WebGL should be available.
+    // Firefox may still lack WebGL in headless CI; orbit-drag requires a real canvas.
+    if (webglOk !== 'true') {
+      test.skip(true, 'WebGL probe failed at mount; orbit-drag requires a real canvas');
+    }
 
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible({ timeout: 5000 });
@@ -356,11 +352,11 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
       .locator('[data-webgl-ok]')
       .first()
       .getAttribute('data-webgl-ok');
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
-    test.skip(
-      webglOk !== 'true',
-      'SC-004 multi-modality requires a working canvas; FR-008 fallback active'
-    );
+    // With SwiftShader flags on Chromium projects, WebGL should be available.
+    // Firefox may still lack WebGL in headless CI; SC-004 requires a working canvas.
+    if (webglOk !== 'true') {
+      test.skip(true, 'SC-004 multi-modality requires a working canvas; FR-008 fallback active');
+    }
 
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
@@ -400,8 +396,11 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
       .locator('[data-webgl-ok]')
       .first()
       .getAttribute('data-webgl-ok');
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
-    test.skip(webglOk !== 'true', 'SC-004 requires working canvas');
+    // With SwiftShader flags on Chromium projects, WebGL should be available.
+    // Firefox may still lack WebGL in headless CI; SC-004 requires a working canvas.
+    if (webglOk !== 'true') {
+      test.skip(true, 'SC-004 requires working canvas');
+    }
 
     const canvas = page.locator('canvas');
     const wrapper = page.locator('[data-camera-position]').first();
@@ -444,8 +443,11 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
       .locator('[data-webgl-ok]')
       .first()
       .getAttribute('data-webgl-ok');
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
-    test.skip(webglOk !== 'true', 'SC-004 requires working canvas');
+    // With SwiftShader flags on Chromium projects, WebGL should be available.
+    // Firefox may still lack WebGL in headless CI; SC-004 requires a working canvas.
+    if (webglOk !== 'true') {
+      test.skip(true, 'SC-004 requires working canvas');
+    }
 
     const canvas = page.locator('canvas');
     const wrapper = page.locator('[data-camera-position]').first();
