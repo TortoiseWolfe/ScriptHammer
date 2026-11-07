@@ -35,7 +35,7 @@ describe('User Profile UPDATE Contract', () => {
       .from('user_profiles')
       .update({ username: newUsername })
       .eq('id', testUserId)
-      .select()
+      .select('id, username, display_name, bio')
       .single();
 
     expect(error).toBeNull();
@@ -49,7 +49,7 @@ describe('User Profile UPDATE Contract', () => {
       .from('user_profiles')
       .update({ display_name: newDisplayName })
       .eq('id', testUserId)
-      .select()
+      .select('id, username, display_name, bio')
       .single();
 
     expect(error).toBeNull();
@@ -63,7 +63,7 @@ describe('User Profile UPDATE Contract', () => {
       .from('user_profiles')
       .update({ bio: newBio })
       .eq('id', testUserId)
-      .select()
+      .select('id, username, display_name, bio')
       .single();
 
     expect(error).toBeNull();
