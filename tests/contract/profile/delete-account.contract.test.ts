@@ -110,7 +110,7 @@ describe('Account Deletion Contract', () => {
     const { error: insertError } = await admin.from('payment_intents').insert({
       template_user_id: testUserId,
       amount: 1000,
-      currency: 'USD',
+      currency: 'usd',
       customer_email: testEmail,
       type: 'one_time',
     });

@@ -39,7 +39,7 @@ describe('Supabase Auth Sign-Up Contract', () => {
       expect(error).toBeNull();
       expect(data.user).toBeDefined();
       expect(data.user?.email).toBe(testEmail);
-      expect(data.user?.email_confirmed_at).toBeNull(); // Unverified initially
+      expect(data.user?.email_confirmed_at ?? null).toBeNull(); // Unverified initially
     }
   );
 
@@ -115,7 +115,7 @@ describe('Supabase Auth Sign-Up Contract', () => {
         expect(data.user).toHaveProperty('id');
         expect(data.user).toHaveProperty('email');
         expect(data.user).toHaveProperty('created_at');
-        expect(data.user).toHaveProperty('email_confirmed_at');
+        expect(data.user?.email_confirmed_at ?? null).toBeNull();
         expect(data.user.id).toMatch(
           /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
         );

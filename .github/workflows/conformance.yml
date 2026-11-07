@@ -127,10 +127,11 @@ jobs:
           # confirmation/reset messages those tests request, so Mailpit is part
           # of the stack and auto-confirm is off.
           GOTRUE_MAILER_AUTOCONFIRM: 'false'
-          # password-reset sends three messages to the same address inside one
-          # minute; GoTrue's default one-minute wait would 429 the second and
-          # third. This stack is ephemeral, so the throttle buys nothing.
-          GOTRUE_SMTP_MAX_FREQUENCY: 1s
+          # password-reset sends three messages to the same address back to
+          # back; GoTrue's default one-minute wait (and even one second) would
+          # 429 the second and third. This stack is ephemeral, so the throttle
+          # buys nothing.
+          GOTRUE_SMTP_MAX_FREQUENCY: 1ms
         run: |
           # Only the services test:rls actually needs — NOT scripthammer (the
           # test runs on the runner, not in the app container) and not the
