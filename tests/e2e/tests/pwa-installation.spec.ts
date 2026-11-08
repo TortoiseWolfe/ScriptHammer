@@ -71,28 +71,39 @@ test.describe('PWA Installation', () => {
       expect(onlineHeading.length).toBeGreaterThan(0);
       expect(onlineHeading).not.toBe("You're Offline");
 
+      if (browserName === 'webkit') {
+        // Playwright's Linux WebKit cannot go offline with a service worker:
+        // page.reload() answers "WebKit encountered an internal error"
+        // (#1399) and an in-page fetch with the network off fails with "Load
+        // failed" instead of reaching the worker. So the offline step itself
+        // cannot run there. What the offline answer is made of can: the page
+        // the worker just cached, which is what it serves with the network
+        // off. Read it straight from Cache Storage; no network is involved.
+        await expect
+          .poll(
+            () =>
+              page.evaluate(async () => {
+                const cached = await caches.match(location.href);
+                return cached
+                  ? { ok: cached.ok, body: await cached.text() }
+                  : null;
+              }),
+            { message: 'the worker should have cached the home page' }
+          )
+          .toMatchObject({ ok: true });
+        const cachedBody = await page.evaluate(async () => {
+          const cached = await caches.match(location.href);
+          return cached ? await cached.text() : '';
+        });
+        expect(cachedBody).not.toContain("You're Offline");
+        // The hero heading is split across inline tags in the HTML, so the
+        // page title is the stable text to match.
+        expect(cachedBody).toContain(`<title>${onlineTitle}</title>`);
+        return;
+      }
+
       await context.setOffline(true);
       try {
-        if (browserName === 'webkit') {
-          // Playwright's Linux WebKit answers page.reload() while offline with
-          // "WebKit encountered an internal error" (#1399), so the reload
-          // itself cannot be the probe there. Ask the worker the same question
-          // from inside the page instead: a fetch of the home page with the
-          // network off is served by the service worker's cache or not at all.
-          const offline = await page.evaluate(async () => {
-            const response = await fetch(location.href, {
-              cache: 'no-store',
-            });
-            return { status: response.status, body: await response.text() };
-          });
-          expect(offline.status).toBe(200);
-          // The cached home page, not the worker's offline.html fallback.
-          expect(offline.body).not.toContain("You're Offline");
-          // The hero heading is split across inline tags in the HTML, so the
-          // page title is the stable text to match.
-          expect(offline.body).toContain(`<title>${onlineTitle}</title>`);
-          return;
-        }
         await page.reload();
         // The cached home page, not the worker's offline.html fallback.
         await expect(page.locator('h1').first()).toHaveText(onlineHeading);
