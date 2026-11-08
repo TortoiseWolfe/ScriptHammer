@@ -20,7 +20,7 @@ set -euo pipefail
 # MUST track @playwright/test in package.json. Playwright refuses to drive browsers
 # built for a different release, and the mismatch error points nowhere near the cause
 # (docker/Dockerfile.e2e:6-9 records the same warning).
-IMAGE="${PLAYWRIGHT_IMAGE:-mcr.microsoft.com/playwright:v1.55.0-noble}"
+IMAGE="${PLAYWRIGHT_IMAGE:-mcr.microsoft.com/playwright:v1.65.0-noble}"
 
 ENV_FILE="$(mktemp)"
 trap 'rm -f "$ENV_FILE"' EXIT

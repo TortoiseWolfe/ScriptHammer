@@ -173,7 +173,7 @@
     "@gltf-transform/extensions": "^4.4.1",
     "@gltf-transform/functions": "^4.4.1",
     "@next/bundle-analyzer": "^15.5.3",
-    "@playwright/test": "^1.55.0",
+    "@playwright/test": "^1.65.0",
     "@storybook/addon-a11y": "^10.2.8",
     "@storybook/addon-docs": "^10.2.8",
     "@storybook/addon-links": "^10.2.8",
