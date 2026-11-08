@@ -239,6 +239,20 @@ test.describe('/twins/[slug]?diorama — the R3F exhibit (opt-in since #292)', (
     ).toBeVisible({
       timeout: 15000,
     });
+    // WAIT FOR THE DOCK TO FINISH BUILDING BEFORE CLICKING IT. The "Miniature" button
+    // above appears about half a second after load, but the "1887 Victorian — As-Built"
+    // fly-to button is added to the same dock only once the wide city reports where the
+    // embedded twin sits (onTwinPlaced in TwinCanvas.client.tsx), 3 to 9 s later. It is
+    // inserted BEFORE "More controls" and pushes it about 94 px to the right. A click that
+    // lands in that moment presses on the ⋯ button and releases over its new neighbour,
+    // so the browser sends no click at all: the call succeeds, aria-expanded stays false
+    // and the next expect waits out its full 60 s. Reproduced on Firefox: 6 failures in
+    // 30 runs of this test with retries off; a recorded trace shows pointerdown on "More controls"
+    // and pointerup on a different button, 8 ms apart. Waiting for the last control to
+    // arrive is the real ready signal: nothing moves after it.
+    await expect(
+      page.getByRole('button', { name: /1887 Victorian/ })
+    ).toBeVisible({ timeout: DOCK_SETUP_MS });
     // Top-down is a secondary mode — it lives in the HUD's ⋯ overflow (#259
     // iter 7). The ⋯ button TOGGLES, so an idempotent open (click only when
     // collapsed, then wait for the expanded state) avoids racing the popover's
