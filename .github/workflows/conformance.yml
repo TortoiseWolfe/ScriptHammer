@@ -153,11 +153,17 @@ jobs:
             db=$(docker compose exec -T supabase-db pg_isready -U postgres -d postgres >/dev/null 2>&1 && echo ok || echo no)
             rest=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 -H "apikey: $ANON" http://localhost:54321/rest/v1/ 2>/dev/null)
             auth=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 -H "apikey: $ANON" http://localhost:54321/auth/v1/health 2>/dev/null)
-            edge=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 -H "apikey: $ANON" http://localhost:54321/functions/v1/ 2>/dev/null)
+            # 401 IS the ready signal, not 200: the router 400s on "/" because
+            # there is no function name, so a bare /functions/v1/ probe proves
+            # only that Kong answered. POSTing a real function with no token
+            # boots its worker and reaches _shared/auth.ts, which returns 401.
+            # Any other status means the worker failed to start (500) or the
+            # route is missing (404).
+            edge=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 -X POST http://localhost:54321/functions/v1/delete-account 2>/dev/null)
             net=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 http://localhost:5099/health 2>/dev/null)
             mail=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 http://localhost:54324/api/v1/info 2>/dev/null)
             echo "try $i: db=$db rest=$rest auth=$auth edge=$edge dotnet=$net mail=$mail"
-            if [ "$db" = ok ] && [ "$rest" = 200 ] && [ "$auth" = 200 ] && [ "$edge" = 200 ] && [ "$net" = 200 ] && [ "$mail" = 200 ]; then
+            if [ "$db" = ok ] && [ "$rest" = 200 ] && [ "$auth" = 200 ] && [ "$edge" = 401 ] && [ "$net" = 200 ] && [ "$mail" = 200 ]; then
               echo "stack ready"; break
             fi
             if [ "$i" = 60 ]; then

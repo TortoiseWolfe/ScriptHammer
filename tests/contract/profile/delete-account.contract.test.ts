@@ -137,8 +137,14 @@ describe('Account Deletion Contract', () => {
     expect(beforePayments?.length).toBeGreaterThan(0);
 
     const result = await callDeleteAccount(testAccessToken);
-    expect(result.success).toBe(false);
-    expect(result.error).toBeDefined();
+    // A refused delete answers 500 with { error } and NO success field, so
+    // assert on the error text the function actually sends rather than on a
+    // success flag that is absent. This still goes red if the function starts
+    // reporting success, or if it deletes the account despite the FK.
+    expect(result.success).not.toBe(true);
+    expect(result.error).toMatch(/Failed to delete account/);
+    const { data: stillUser } = await admin.auth.admin.getUserById(testUserId);
+    expect(stillUser?.user?.id).toBe(testUserId);
 
     const { data: afterPayments } = await admin
       .from('payment_intents')
