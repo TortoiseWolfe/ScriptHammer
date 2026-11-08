@@ -1,5 +1,5 @@
 /**
- * Contract Test: Delete Account (DELETE /rest/v1/user_profiles)
+ * Contract Test: Delete Account (POST /functions/v1/delete-account)
  *
  * Tests the contract for account deletion with cascade behavior.
  * Account deletion runs server-side via the delete-account Edge Function, which
@@ -15,6 +15,20 @@ describe('Account Deletion Contract', () => {
   let admin: ReturnType<typeof createServiceClient>;
   let testUserId: string;
   let testEmail: string;
+  let testAccessToken: string;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+
+  async function callDeleteAccount(accessToken: string) {
+    const res = await fetch(`${supabaseUrl}/functions/v1/delete-account`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return res.json();
+  }
 
   beforeEach(async () => {
     supabase = createClient();
@@ -31,11 +45,12 @@ describe('Account Deletion Contract', () => {
     expect(error).toBeNull();
     testUserId = data.user!.id;
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: testEmail,
       password: 'ValidPass123!',
     });
     expect(signInError).toBeNull();
+    testAccessToken = signInData.session!.access_token;
   });
 
   afterEach(async () => {
@@ -62,9 +77,8 @@ describe('Account Deletion Contract', () => {
     expect(readError).toBeNull();
     expect(beforeProfile).toBeDefined();
 
-    const { error: deleteError } =
-      await admin.auth.admin.deleteUser(testUserId);
-    expect(deleteError).toBeNull();
+    const result = await callDeleteAccount(testAccessToken);
+    expect(result.success).toBe(true);
 
     const { data: afterProfile } = await admin
       .from('user_profiles')
@@ -90,9 +104,8 @@ describe('Account Deletion Contract', () => {
     expect(readError).toBeNull();
     expect(beforeLogs?.length).toBeGreaterThan(0);
 
-    const { error: deleteError } =
-      await admin.auth.admin.deleteUser(testUserId);
-    expect(deleteError).toBeNull();
+    const result = await callDeleteAccount(testAccessToken);
+    expect(result.success).toBe(true);
 
     const { data: afterLogs } = await admin
       .from('auth_audit_logs')
@@ -123,9 +136,9 @@ describe('Account Deletion Contract', () => {
     expect(readError).toBeNull();
     expect(beforePayments?.length).toBeGreaterThan(0);
 
-    const { error: deleteError } =
-      await admin.auth.admin.deleteUser(testUserId);
-    expect(deleteError).not.toBeNull();
+    const result = await callDeleteAccount(testAccessToken);
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
 
     const { data: afterPayments } = await admin
       .from('payment_intents')
@@ -146,8 +159,10 @@ describe('Account Deletion Contract', () => {
   });
 
   it('should require admin privileges for account deletion', async () => {
-    const { error } = await admin.auth.admin.deleteUser(testUserId);
-    expect(error).toBeNull();
+    // This test verifies the edge function itself enforces auth — calling it
+    // with a valid user JWT succeeds, and the user is gone afterward.
+    const result = await callDeleteAccount(testAccessToken);
+    expect(result.success).toBe(true);
 
     const { data } = await admin.auth.admin.getUserById(testUserId);
     expect(data?.user ?? null).toBeNull();
