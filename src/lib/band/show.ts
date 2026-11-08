@@ -149,4 +149,4 @@ export function buildIcs(): string {
 
 /** The description shared by the page's og:description and twitter:description. */
 export const SHOW_DESCRIPTION =
-  'The Band Wagon: one night only, every city on earth. ScriptHammer, the house band, plays LIVE Thursday 29 October on Twitch, with a replay Saturday 31 October. Free for everyone.';
+  'The Band Wagon: one night only, every city on earth. ScriptHammer, the house band, played it live on Twitch on Thursday 29 October. Every song is free for everyone to listen to.';
