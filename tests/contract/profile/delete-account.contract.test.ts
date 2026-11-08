@@ -45,10 +45,11 @@ describe('Account Deletion Contract', () => {
     expect(error).toBeNull();
     testUserId = data.user!.id;
 
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email: testEmail,
-      password: 'ValidPass123!',
-    });
+    const { data: signInData, error: signInError } =
+      await supabase.auth.signInWithPassword({
+        email: testEmail,
+        password: 'ValidPass123!',
+      });
     expect(signInError).toBeNull();
     testAccessToken = signInData.session!.access_token;
   });
