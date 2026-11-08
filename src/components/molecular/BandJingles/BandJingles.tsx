@@ -17,6 +17,9 @@ const CARD =
 const LINK =
   'inline-flex min-h-11 items-center font-semibold text-[#f5b335] underline underline-offset-4 focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[#f6ecd0]';
 
+const CREDIT_LINK =
+  'font-semibold text-[#f5b335] underline underline-offset-4 hover:text-[#f6ecd0] focus-visible:outline focus-visible:outline-4 focus-visible:outline-offset-2 focus-visible:outline-[#f6ecd0]';
+
 /**
  * BandJingles component
  *
@@ -46,7 +49,20 @@ export default function BandJingles({ className }: BandJinglesProps) {
         data-testid="jingle-client-credit"
         className="!mt-0 !mb-6 max-w-[68ch] text-lg leading-[1.65]"
       >
-        {JINGLE_CLIENT_CREDIT}
+        {JINGLE_CLIENT_CREDIT.map((segment) =>
+          segment.href ? (
+            <a
+              key={segment.href}
+              href={segment.href}
+              rel="noopener noreferrer"
+              className={CREDIT_LINK}
+            >
+              {segment.text}
+            </a>
+          ) : (
+            <React.Fragment key={segment.text}>{segment.text}</React.Fragment>
+          )
+        )}
       </p>
 
       <div className="grid gap-6 lg:grid-cols-2">

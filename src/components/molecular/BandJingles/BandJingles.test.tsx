@@ -1,9 +1,11 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import BandJingles from './BandJingles';
 import { JINGLES, JINGLE_CLIENT_CREDIT } from '@/lib/band/jingles';
 import { getAssetUrl } from '@/config/project.config';
+
+const CREDIT_TEXT = JINGLE_CLIENT_CREDIT.map((segment) => segment.text).join('');
 
 describe('BandJingles', () => {
   it('names the section and says what a jingle is', () => {
@@ -16,11 +18,14 @@ describe('BandJingles', () => {
     ).toBeInTheDocument();
   });
 
-  it('shows the client credit line', () => {
+  it('shows the client credit line, with the product linked', () => {
     render(<BandJingles />);
-    expect(screen.getByTestId('jingle-client-credit')).toHaveTextContent(
-      JINGLE_CLIENT_CREDIT
-    );
+    const credit = screen.getByTestId('jingle-client-credit');
+    expect(credit).toHaveTextContent(CREDIT_TEXT);
+
+    const link = within(credit).getByRole('link', { name: 'Estimify' });
+    expect(link).toHaveAttribute('href', 'https://estimify.pro');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
   it('renders one player and one download link for each take', () => {

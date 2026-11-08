@@ -18,12 +18,21 @@ export interface Jingle {
   description: string;
 }
 
+export interface JingleCreditSegment {
+  text: string;
+  /** When present, this segment renders as a link to the segment's subject. */
+  href?: string;
+}
+
 /**
- * Placeholder until the client's own wording arrives. Keep this as one line so
- * swapping in the approved credit is a single change.
+ * The approved client credit, split so the product name carries its URL with
+ * it. Keep the wording here so a change to the credit stays a one-line edit.
  */
-export const JINGLE_CLIENT_CREDIT =
-  'A jingle the band made for Ata Yigit Ustundag of Nuvora LLC, for Estimify, the app contractors use to price jobs.';
+export const JINGLE_CLIENT_CREDIT: readonly JingleCreditSegment[] = [
+  { text: 'A jingle the band made for Ata Yigit Ustundag of Nuvora LLC, for ' },
+  { text: 'Estimify', href: 'https://estimify.pro' },
+  { text: ', the app contractors use to price jobs.' },
+];
 
 /** What a jingle is, in one plain line (the blog's wording). */
 export const JINGLE_INTRO =
