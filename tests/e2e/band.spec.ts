@@ -53,14 +53,12 @@ test.describe('/band (#1408)', () => {
     await expect(page.locator('main iframe')).toHaveCount(0);
   });
 
-  test('the Halloween duet is up, with both singers named', async ({
-    page,
-  }) => {
+  test('the duet is up, with both singers named', async ({ page }) => {
     await page.goto('/band/');
     await expect(
-      page.getByRole('heading', { level: 2, name: 'New for Halloween' })
+      page.getByRole('heading', { level: 2, name: 'The duet' })
     ).toBeVisible();
-    const section = page.locator('section[aria-labelledby="halloween"]');
+    const section = page.locator('section[aria-labelledby="duet"]');
     await expect(section.getByTestId('song-player')).toHaveCount(2);
     await expect(section).toContainText('Ivory sings for the machines');
     await expect(section).toContainText('Chops sings against');
