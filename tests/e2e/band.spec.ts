@@ -274,7 +274,11 @@ test.describe('/band (#1408)', () => {
       context,
     }) => {
       await page.goto('/band/');
-      await page.waitForLoadState('networkidle');
+      // Not 'networkidle': WebKit timed out waiting for it at 30 s on main's nightly
+      // and on #1470. A vote is only sent on a click, so the thing to wait for is the
+      // vote list being on screen and the page fully loaded.
+      await expect(page.getByTestId('band-songs')).toBeVisible();
+      await page.waitForLoadState('load');
       const names = (await context.cookies()).map((c) => c.name);
       expect(names.filter((n) => /band|vote/i.test(n))).toEqual([]);
     });
