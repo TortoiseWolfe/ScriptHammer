@@ -251,6 +251,16 @@ jobs:
           # service-role key at all (see #574).
           cp .env.local-supabase .env
           sed -i 's|host\.docker\.internal|localhost|g' .env
+          # Mask each test-user password BEFORE it goes into $GITHUB_ENV. GitHub only
+          # hides values that are stored repository secrets, so without this every
+          # later step's env block printed these values in the public run log.
+          # The values are read inside this loop and never echoed any other way.
+          grep -E '^(export )?TEST_USER_[A-Z_]*PASSWORD=' .env.local-supabase | while IFS= read -r line; do
+            pw="${line#*=}"
+            pw="${pw%$'\r'}"
+            case "$pw" in \"*\") pw="${pw#\"}"; pw="${pw%\"}" ;; \'*\') pw="${pw#\'}"; pw="${pw%\'}" ;; esac
+            if [ -n "$pw" ]; then echo "::add-mask::$pw"; fi
+          done
           grep -E '^(NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY|TEST_USER_)' .env.local-supabase >> "$GITHUB_ENV"
           {
             echo "NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321"
@@ -369,6 +379,16 @@ jobs:
           # service-role key at all (see #574).
           cp .env.local-supabase .env
           sed -i 's|host\.docker\.internal|localhost|g' .env
+          # Mask each test-user password BEFORE it goes into $GITHUB_ENV. GitHub only
+          # hides values that are stored repository secrets, so without this every
+          # later step's env block printed these values in the public run log.
+          # The values are read inside this loop and never echoed any other way.
+          grep -E '^(export )?TEST_USER_[A-Z_]*PASSWORD=' .env.local-supabase | while IFS= read -r line; do
+            pw="${line#*=}"
+            pw="${pw%$'\r'}"
+            case "$pw" in \"*\") pw="${pw#\"}"; pw="${pw%\"}" ;; \'*\') pw="${pw#\'}"; pw="${pw%\'}" ;; esac
+            if [ -n "$pw" ]; then echo "::add-mask::$pw"; fi
+          done
           grep -E '^(NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY|TEST_USER_)' .env.local-supabase >> "$GITHUB_ENV"
           {
             echo "NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321"

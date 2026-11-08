@@ -19,7 +19,7 @@
 - **`StageCore` imports nothing from `src/world`, `src/packs`, `src/agents`.** Enforced by an import-guard test.
 - **SSR boundary:** `app/page.tsx` is a server component that `dynamic()`-imports `ChattCanvas` with `{ssr:false}`. Nothing importing `postprocessing`, `three`, or the Rig may cross that boundary.
 - **Provenance string (verbatim, shown in HUD):** `© OpenStreetMap · USGS 3DEP · USGS NAIP`.
-- **Overpass requires a `User-Agent` header** (bare requests 406). Value: `chattanooga-mini-bake/0.1 (jonpohlner@gmail.com)`.
+- **Overpass requires a `User-Agent` header** (bare requests 406). Value: `ScriptHammer-tools/1.0 (+https://github.com/TortoiseWolfe/ScriptHammer)`.
 - **Hero-swap slots** are tagged `userData.swap = "<name>"`; `grep -r userData.swap src/` must find all 8.
 - **TDD, DRY, YAGNI, frequent commits.** Every code step shows real code. Commit from inside the container.
 
@@ -462,7 +462,7 @@ Expected: FAIL (`Cannot find module '../overpass'`).
 - [ ] **Step 3: Write `scripts/bake/overpass.ts`**
 
 ```ts
-export const USER_AGENT = 'chattanooga-mini-bake/0.1 (jonpohlner@gmail.com)';
+export const USER_AGENT = 'ScriptHammer-tools/1.0 (+https://github.com/TortoiseWolfe/ScriptHammer)';
 const ENDPOINT = 'https://overpass-api.de/api/interpreter';
 
 export interface OverpassElement {

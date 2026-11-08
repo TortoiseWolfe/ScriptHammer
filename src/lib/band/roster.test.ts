@@ -38,8 +38,8 @@ describe('band roster', () => {
       'chops',
       'reed',
       'brass',
-      'verse',
-      'form',
+      'chorus',
+      'switch',
     ]);
   });
 
