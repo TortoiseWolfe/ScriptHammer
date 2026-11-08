@@ -9,7 +9,7 @@
 # Playwright ships browser binaries inside this image and refuses to drive
 # browsers built for a different release, so a drifted tag fails with a
 # version-mismatch error that points nowhere near the real cause.
-FROM mcr.microsoft.com/playwright:v1.65.0-noble
+FROM mcr.microsoft.com/playwright:v1.55.0-noble
 
 WORKDIR /app
 

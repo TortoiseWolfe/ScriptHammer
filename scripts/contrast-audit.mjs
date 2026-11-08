@@ -18,7 +18,7 @@
  *   - Chromium installed at /usr/bin/chromium
  */
 
-import { chromium } from '/app/node_modules/.pnpm/playwright-core@1.65.0/node_modules/playwright-core/index.mjs';
+import { chromium } from '/app/node_modules/.pnpm/playwright-core@1.55.0/node_modules/playwright-core/index.mjs';
 import { writeFile } from 'node:fs/promises';
 
 // ---------------------------------------------------------------------------
