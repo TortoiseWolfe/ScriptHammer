@@ -184,7 +184,7 @@ jobs:
           # keys are used for Turnstile verification, so no real mail or CAPTCHA
           # credentials leave the runner (#361).
           TEST_USER_PRIMARY_EMAIL: scripthammer.e2e+local@gmail.com
-          TEST_USER_PRIMARY_PASSWORD: LocalStackTestPassword123!
+          TEST_USER_PRIMARY_PASSWORD: ${{ secrets.TEST_USER_PRIMARY_PASSWORD }}
           NEXT_PUBLIC_CAPTCHA_SITE_KEY: 1x00000000000000000000AA
           E2E_LOCAL_TURNSTILE_TESTS: 'true'
         run: scripts/ci/playwright-in-container.sh test --config playwright.signup-mailer.config.ts
