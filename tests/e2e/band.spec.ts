@@ -12,6 +12,31 @@ import {
   TRACKER_HOSTS,
 } from './utils/band-assertions';
 
+// The hold list (30 Oct plus the 6 Nov additions). None may be on the page.
+const HELD_SONGS = [
+  'n01',
+  'n02',
+  'n04',
+  'n05',
+  'n06',
+  'n07',
+  'n08',
+  'n09',
+  'n11',
+  'n12',
+  'psy-3',
+  'psy-3b',
+];
+const HELD_TITLES = [
+  'Seven Ghosts in the Wiring',
+  'The Night Watch',
+  'Steam Hiss Shuffle',
+  'Wrench in the Works',
+  'Boiler Room Boogie',
+  'Ghost in the Music Box',
+  'Signal Lost',
+];
+
 test.describe('/band (#1408)', () => {
   test('shows the band: eight cards, two players, no form', async ({
     page,
@@ -31,7 +56,10 @@ test.describe('/band (#1408)', () => {
     await expect(
       page.getByRole('heading', { level: 3, name: 'Timber' })
     ).toBeVisible();
-    await expect(page.getByTestId('song-player')).toHaveCount(4);
+    // Four featured players (the theme song, the hook and the two Halloween duet
+    // songs) plus one per song in the ranked list (12, counted on their own in the
+    // Songs tests below). They share a test id, so the page total is 4 + 12.
+    await expect(page.getByTestId('song-player')).toHaveCount(4 + 12);
     // Every portrait actually loaded (a 404 leaves naturalWidth at 0). They are
     // lazy, so ask for them all first.
     await page
@@ -69,7 +97,8 @@ test.describe('/band (#1408)', () => {
   }) => {
     await page.goto('/band/');
     const audios = page.locator('audio');
-    await expect(audios).toHaveCount(6);
+    // 6 on the theme, hook, duets and jingles, plus one for each of the 12 ranked songs
+    await expect(audios).toHaveCount(18);
     for (const el of await audios.all()) {
       await expect(el).toHaveAttribute('preload', 'none');
       await expect(el).not.toHaveAttribute('autoplay', /.*/);
@@ -86,7 +115,7 @@ test.describe('/band (#1408)', () => {
     for (const el of await page.locator('audio').all()) {
       const src = await el.getAttribute('src');
       expect(src, 'src goes through getAssetUrl').toMatch(
-        /\/band\/audio\/(band-wagon-(theme|hook|duet-1|duet-2)|estimify-jingle-(hook|full))\.mp3$/
+        /\/band\/audio\/(band-wagon-(theme|hook|duet-1|duet-2|jam-[123]|fusion-[12]|n03|n10|psy-[12])|estimify-jingle-(hook|full))\.mp3$/
       );
       await expectPlayableMp3(page, src!, browserName);
     }
@@ -174,7 +203,7 @@ test.describe('/band (#1408)', () => {
         songs.getByRole('heading', { level: 2, name: 'Songs' })
       ).toBeVisible();
       const rows = songs.getByTestId('band-song');
-      await expect(rows).toHaveCount(19);
+      await expect(rows).toHaveCount(12);
       // Covers are lazy: ask for them all so a missing file cannot hide below the fold.
       await songs
         .locator('img')
@@ -192,16 +221,31 @@ test.describe('/band (#1408)', () => {
       const ids = await rows.evaluateAll((els) =>
         els.map((e) => e.getAttribute('data-song-id'))
       );
-      expect(new Set(ids).size).toBe(19);
-      for (const held of ['n02', 'n04', 'n06', 'psy-3', 'psy-3b']) {
+      expect(new Set(ids).size).toBe(12);
+      for (const held of HELD_SONGS) {
         expect(ids).not.toContain(held);
+      }
+      // No held song's title is on the page either.
+      for (const title of HELD_TITLES) {
+        await expect(songs).not.toContainText(title);
       }
       await expect(songs.getByTestId('counts-as-of')).toHaveText('Wed 28 Oct');
       await expect(songs).toContainText('made with an AI music model');
       await expect(
         rows.first().getByRole('link', { name: /ScriptHammer on Twitch/ })
       ).toHaveAttribute('href', 'https://twitch.tv/scripthammer');
-      await expect(songs.locator('iframe, audio, video')).toHaveCount(0);
+      // One native player per song and nothing that loads from a video host.
+      await expect(songs.locator('iframe, video')).toHaveCount(0);
+      await expect(
+        songs.locator('audio[data-testid="song-player"]')
+      ).toHaveCount(12);
+      for (const row of await rows.all()) {
+        const player = row.getByTestId('song-player');
+        await expect(player).toHaveCount(1);
+        await expect(player).toHaveAttribute('preload', 'none');
+        await expect(player).not.toHaveAttribute('autoplay', /.*/);
+        await expect(player).toHaveAttribute('aria-label', /, \d+:\d{2}$/);
+      }
     });
 
     test('"How the score works" is closed, plain and carries the privacy line', async ({
@@ -227,7 +271,11 @@ test.describe('/band (#1408)', () => {
       context,
     }) => {
       await page.goto('/band/');
-      await page.waitForLoadState('networkidle');
+      // Not 'networkidle': WebKit timed out waiting for it at 30 s on main's nightly
+      // and on #1470. A vote is only sent on a click, so the thing to wait for is the
+      // vote list being on screen and the page fully loaded.
+      await expect(page.getByTestId('band-songs')).toBeVisible();
+      await page.waitForLoadState('load');
       const names = (await context.cookies()).map((c) => c.name);
       expect(names.filter((n) => /band|vote/i.test(n))).toEqual([]);
     });

@@ -5525,7 +5525,7 @@ SET search_path = public, pg_temp
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  c_song_ids CONSTANT TEXT[] := ARRAY['jam-2', 'jam-1', 'jam-3', 'n05', 'n09', 'psy-1', 'alt-1', 'fusion-1', 'psy-2', 'n01', 'duet-2', 'n12', 'fusion-2', 'n03', 'n07', 'n08', 'n11', 'n10', 'duet-1'];
+  c_song_ids CONSTANT TEXT[] := ARRAY['jam-2', 'jam-1', 'jam-3', 'psy-1', 'alt-1', 'fusion-1', 'psy-2', 'duet-2', 'fusion-2', 'n03', 'n10', 'duet-1'];
   c_per_song_cap CONSTANT INT := 30;
   c_overall_cap  CONSTANT INT := 300;
   v_hour     TIMESTAMPTZ := date_trunc('hour', now());

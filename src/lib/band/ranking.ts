@@ -43,6 +43,10 @@ export interface BandTrackInfo {
   card: string;
   /** The hook line printed on the card; the card's alt text carries it. */
   hook: string;
+  /** The song's audio file, a path under /public; run it through getAssetUrl before use. */
+  audio: string;
+  /** Length of the audio file as m:ss, for the player's accessible name. */
+  length: string;
   /** The full-song video on YouTube, when there is one. */
   videoUrl?: string;
   /** Full lyrics, one entry per line, a blank string between stanzas. */

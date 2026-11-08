@@ -252,7 +252,21 @@ describe('buildRanking', () => {
 });
 
 describe('the shipped files', () => {
-  const HELD = ['n02', 'n04', 'n06', 'psy-3', 'psy-3b'];
+  // The 30 Oct hold list plus the 6 Nov additions; none may be on the page.
+  const HELD = [
+    'n01',
+    'n02',
+    'n04',
+    'n05',
+    'n06',
+    'n07',
+    'n08',
+    'n09',
+    'n11',
+    'n12',
+    'psy-3',
+    'psy-3b',
+  ];
 
   it('lists no song that is held for a re-render', () => {
     const ids = shipped.songs.map((s) => s.id);
