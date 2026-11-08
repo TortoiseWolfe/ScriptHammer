@@ -122,12 +122,12 @@ export default function BandPage() {
           </div>
         </section>
 
-        <section aria-labelledby="halloween" className="mt-14 md:mt-20">
+        <section aria-labelledby="duet" className="mt-14 md:mt-20">
           <h2
-            id="halloween"
+            id="duet"
             className="sh-font-special-elite !mt-0 !mb-2 !text-3xl text-[#f6ecd0] md:!text-4xl"
           >
-            New for Halloween
+            The duet
           </h2>
           <p className="!mt-0 !mb-6 max-w-[68ch] text-lg leading-[1.65]">
             A duet with two sides. Ivory sings for the machines taking over and

@@ -37,13 +37,14 @@ const THU_OPENING = SHOW_SLOTS[0];
 const THU_HEADLINE = SHOW_SLOTS[1];
 
 /**
- * The Band Wagon show block on /band. Server output says "coming up"; once the
- * page is in a browser it reads the visitor's clock, so it never says "coming
- * up" about a show that has finished.
+ * The Band Wagon show block on /band. The show has played, so the server output
+ * (and a visitor with scripts off) says so, and never "coming up". Once the page
+ * is in a browser it reads the visitor's own clock, so a visitor whose clock is
+ * set before the show still sees the dates.
  */
 export default function BandShow({ now, className }: BandShowProps) {
   const [state, setState] = useState<ShowState>(
-    now === undefined ? 'before' : showState(now)
+    now === undefined ? 'over' : showState(now)
   );
 
   useEffect(() => {
