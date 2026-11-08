@@ -11,6 +11,23 @@ import { PRIVACY_LINE } from '@/lib/band/vote';
 import type { BandTracks, BandWeights } from '@/lib/band/ranking';
 
 const W = weightsFile as BandWeights;
+
+// Every song on the hold list (30 Oct list plus the 6 Nov additions). None may
+// be on the page, in the ranking file or in the track file.
+const HELD_SONGS = [
+  'n01',
+  'n02',
+  'n04',
+  'n05',
+  'n06',
+  'n07',
+  'n08',
+  'n09',
+  'n11',
+  'n12',
+  'psy-3',
+  'psy-3b',
+];
 const text = (el: HTMLElement) =>
   el.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 
@@ -47,11 +64,14 @@ describe('BandSongs', () => {
     }
   });
 
-  it('uses plain links to YouTube and Twitch, no embeds and no scripts', () => {
+  it('uses plain links to YouTube and Twitch, no embeds and no scripts, and only native audio players', () => {
     const { container } = render(<BandSongs />);
     expect(
-      container.querySelector('iframe, script, embed, object, video, audio')
+      container.querySelector('iframe, script, embed, object, video')
     ).toBeNull();
+    const audios = Array.from(container.querySelectorAll('audio'));
+    expect(audios).toHaveLength(rankingFile.songs.length);
+    for (const a of audios) expect(a).toHaveAttribute('preload', 'none');
   });
 
   it('says the songs were made with AI and when the numbers were taken', () => {
@@ -187,27 +207,15 @@ describe('the content gate (CONTENT-RULE.md)', () => {
     for (const img of Array.from(container.querySelectorAll('img'))) {
       expect(img.getAttribute('alt')).not.toMatch(BANNED);
     }
-    // Three lyric lines that hit the pattern were kept on purpose after the
-    // content review (hub/tower/band-2026-10-28/CONTENT-FIX.md line 44: n05 and
-    // n11 "a ghost that is a friend, no child anywhere"). They are removed by
-    // exact text so any other hit on the page still fails.
-    const REVIEWED_LINES = [
-      "Shh, the wagon's sleeping, tiptoe past the gate,",
-      'A whisper and a trumpet make a lullaby with teeth,',
-      'A lullaby for the wires, a rhyme.',
-    ];
-    let pageText = text(container);
-    for (const line of REVIEWED_LINES) {
-      expect(pageText, line).toContain(line);
-      pageText = pageText.split(line).join(' ');
-    }
-    expect(pageText).not.toMatch(BANNED);
+    // The three lyric lines that were kept on purpose after the content review
+    // belonged to n05, n11 and n12, which are held now and off the page, so
+    // nothing on the page is exempt any more.
+    expect(text(container)).not.toMatch(BANNED);
   });
 
-  it('leaves out the songs on the re-render list and the purged takes', () => {
+  it('leaves out the songs on the hold list and the purged takes', () => {
     const ids = rankingFile.songs.map((s) => s.id);
-    for (const held of ['n02', 'n04', 'n06', 'psy-3', 'psy-3b'])
-      expect(ids).not.toContain(held);
+    for (const held of HELD_SONGS) expect(ids).not.toContain(held);
   });
   describe('track cards, lyrics and full-song links', () => {
     const tracks = tracksFile as BandTracks;
@@ -229,14 +237,57 @@ describe('the content gate (CONTENT-RULE.md)', () => {
       }
     });
 
+    it('gives every song its own lazy player, with a file that exists and a length in its name', () => {
+      render(<BandSongs />);
+      const rows = screen.getAllByTestId('band-song');
+      expect(rows).toHaveLength(rankingFile.songs.length);
+      const srcs = new Set<string>();
+      for (const row of rows) {
+        const id = row.getAttribute('data-song-id')!;
+        const info = tracks[id];
+        const song = rankingFile.songs.find((s) => s.id === id)!;
+        const players = within(row).getAllByTestId('song-player');
+        expect(players, id).toHaveLength(1);
+        const player = players[0];
+        expect(player.tagName).toBe('AUDIO');
+        expect(player).toHaveAttribute('preload', 'none');
+        expect(player).toHaveAttribute('controls');
+        expect(player).not.toHaveAttribute('autoplay');
+        expect(player).toHaveAttribute(
+          'aria-label',
+          `${song.title}, ${info.length}`
+        );
+        expect(info.length, id).toMatch(/^\d+:\d{2}$/);
+        expect(player.getAttribute('src')).toContain(info.audio);
+        expect(
+          existsSync(join(process.cwd(), 'public', info.audio)),
+          info.audio
+        ).toBe(true);
+        srcs.add(info.audio);
+      }
+      // No two songs share a file.
+      expect(srcs.size).toBe(rows.length);
+    });
+
+    it('keeps the YouTube link next to the player', () => {
+      render(<BandSongs />);
+      for (const row of screen.getAllByTestId('band-song')) {
+        const id = row.getAttribute('data-song-id')!;
+        if (tracks[id].videoUrl)
+          expect(within(row).getByTestId('full-song-link')).toBeInTheDocument();
+      }
+    });
+
     it('puts the full lyrics in a details block under the card, with the may-differ line', () => {
       render(<BandSongs />);
       const row = screen
         .getAllByTestId('band-song')
-        .find((r) => r.getAttribute('data-song-id') === 'n09')!;
+        .find((r) => r.getAttribute('data-song-id') === 'n03')!;
       const lyrics = within(row).getByTestId('track-lyrics');
       expect(lyrics.tagName).toBe('DETAILS');
-      expect(text(lyrics)).toContain('Boiler room boogie, shake the pipes!');
+      expect(text(lyrics)).toContain(
+        'Check one, check two, is the night awake?'
+      );
       expect(text(lyrics)).toContain('The sung version may differ');
     });
 
@@ -287,7 +338,7 @@ describe('the content gate (CONTENT-RULE.md)', () => {
         'One light is waiting',
       ])
         expect(all.toLowerCase()).not.toContain(old.toLowerCase());
-      for (const held of ['n02', 'n04', 'n06', 'psy-3', 'psy-3b'])
+      for (const held of HELD_SONGS)
         expect(Object.keys(tracks)).not.toContain(held);
     });
   });
