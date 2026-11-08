@@ -74,54 +74,6 @@
       }
     },
     {
-      "id": "n05",
-      "title": "The Night Watch",
-      "cover": "/band/songs/n05.webp",
-      "posted": "2026-10-27",
-      "shortUrl": "https://youtube.com/shorts/ioZVehs-Mng",
-      "youtube": {
-        "plays": 9,
-        "up": 0,
-        "down": 0
-      },
-      "twitch": {
-        "up": 0,
-        "down": 0
-      },
-      "review": {
-        "up": 0,
-        "down": 0
-      },
-      "site": {
-        "up": 0,
-        "down": 0
-      }
-    },
-    {
-      "id": "n09",
-      "title": "Boiler Room Boogie",
-      "cover": "/band/songs/n09.webp",
-      "posted": "2026-10-27",
-      "shortUrl": "https://youtube.com/shorts/F3C6f3-d9jI",
-      "youtube": {
-        "plays": 7,
-        "up": 0,
-        "down": 0
-      },
-      "twitch": {
-        "up": 0,
-        "down": 0
-      },
-      "review": {
-        "up": 0,
-        "down": 0
-      },
-      "site": {
-        "up": 0,
-        "down": 0
-      }
-    },
-    {
       "id": "psy-1",
       "title": "The Doctor Listens",
       "cover": "/band/songs/psy-1.webp",
@@ -218,30 +170,6 @@
       }
     },
     {
-      "id": "n01",
-      "title": "Seven Ghosts in the Wiring",
-      "cover": "/band/songs/n01.webp",
-      "posted": "2026-10-27",
-      "shortUrl": "https://youtube.com/shorts/vsuaMk5TPA8",
-      "youtube": {
-        "plays": 5,
-        "up": 0,
-        "down": 0
-      },
-      "twitch": {
-        "up": 0,
-        "down": 0
-      },
-      "review": {
-        "up": 0,
-        "down": 0
-      },
-      "site": {
-        "up": 0,
-        "down": 0
-      }
-    },
-    {
       "id": "duet-2",
       "title": "Should the Machines Take Over? Take 2",
       "cover": "/band/songs/duet-2.webp",
@@ -249,30 +177,6 @@
       "shortUrl": "https://youtube.com/shorts/yIn9r1dckps",
       "youtube": {
         "plays": 15,
-        "up": 0,
-        "down": 0
-      },
-      "twitch": {
-        "up": 0,
-        "down": 0
-      },
-      "review": {
-        "up": 0,
-        "down": 0
-      },
-      "site": {
-        "up": 0,
-        "down": 0
-      }
-    },
-    {
-      "id": "n12",
-      "title": "Signal Lost, Signal Found",
-      "cover": "/band/songs/n12.webp",
-      "posted": "2026-10-27",
-      "shortUrl": "https://youtube.com/shorts/sRzUm-OyO_E",
-      "youtube": {
-        "plays": 5,
         "up": 0,
         "down": 0
       },
@@ -321,78 +225,6 @@
       "shortUrl": "https://youtube.com/shorts/AWe01QxTfz4",
       "youtube": {
         "plays": 4,
-        "up": 0,
-        "down": 0
-      },
-      "twitch": {
-        "up": 0,
-        "down": 0
-      },
-      "review": {
-        "up": 0,
-        "down": 0
-      },
-      "site": {
-        "up": 0,
-        "down": 0
-      }
-    },
-    {
-      "id": "n07",
-      "title": "Steam Hiss Shuffle",
-      "cover": "/band/songs/n07.webp",
-      "posted": "2026-10-27",
-      "shortUrl": "https://youtube.com/shorts/6TxM1TFQzYc",
-      "youtube": {
-        "plays": 4,
-        "up": 0,
-        "down": 0
-      },
-      "twitch": {
-        "up": 0,
-        "down": 0
-      },
-      "review": {
-        "up": 0,
-        "down": 0
-      },
-      "site": {
-        "up": 0,
-        "down": 0
-      }
-    },
-    {
-      "id": "n08",
-      "title": "Wrench in the Works",
-      "cover": "/band/songs/n08.webp",
-      "posted": "2026-10-27",
-      "shortUrl": "https://youtube.com/shorts/faqzdc7tLGs",
-      "youtube": {
-        "plays": 4,
-        "up": 0,
-        "down": 0
-      },
-      "twitch": {
-        "up": 0,
-        "down": 0
-      },
-      "review": {
-        "up": 0,
-        "down": 0
-      },
-      "site": {
-        "up": 0,
-        "down": 0
-      }
-    },
-    {
-      "id": "n11",
-      "title": "Ghost in the Music Box",
-      "cover": "/band/songs/n11.webp",
-      "posted": "2026-10-27",
-      "shortUrl": "https://youtube.com/shorts/1q09hm9TILg",
-      "youtube": {
-        "plays": 3,
         "up": 0,
         "down": 0
       },
