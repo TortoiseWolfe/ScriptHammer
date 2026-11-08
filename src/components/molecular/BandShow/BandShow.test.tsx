@@ -1,5 +1,6 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
+import { renderToString } from 'react-dom/server';
 import { render, screen } from '@testing-library/react';
 import BandShow from './BandShow';
 
@@ -55,6 +56,13 @@ describe('BandShow', () => {
       state
     );
     expect(screen.getByTestId('band-show-status')).toHaveTextContent(text);
+  });
+
+  it('says the show has played in the server output, before any clock is read', () => {
+    const html = renderToString(<BandShow />);
+    expect(html).toContain('data-state="over"');
+    expect(html).toContain('The show has played');
+    expect(html).not.toMatch(/coming up|upcoming/i);
   });
 
   it('never says "coming up" or "upcoming" after the replay ends', () => {
