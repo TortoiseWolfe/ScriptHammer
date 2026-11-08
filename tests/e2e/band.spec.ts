@@ -56,7 +56,11 @@ test.describe('/band (#1408)', () => {
     await expect(
       page.getByRole('heading', { level: 3, name: 'Timber' })
     ).toBeVisible();
-    await expect(page.getByTestId('song-player')).toHaveCount(4);
+    // The four featured tracks have a player each. The ranked songs list has one per
+    // song too and shares the test id, so count the featured ones inside their own block.
+    await expect(
+      page.getByTestId('band-track').getByTestId('song-player')
+    ).toHaveCount(4);
     // Every portrait actually loaded (a 404 leaves naturalWidth at 0). They are
     // lazy, so ask for them all first.
     await page
