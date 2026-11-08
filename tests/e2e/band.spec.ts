@@ -71,7 +71,7 @@ test.describe('/band (#1408)', () => {
   }) => {
     await page.goto('/band/');
     const audios = page.locator('audio');
-    await expect(audios).toHaveCount(4);
+    await expect(audios).toHaveCount(6);
     for (const el of await audios.all()) {
       await expect(el).toHaveAttribute('preload', 'none');
       await expect(el).not.toHaveAttribute('autoplay', /.*/);
@@ -88,7 +88,7 @@ test.describe('/band (#1408)', () => {
     for (const el of await page.locator('audio').all()) {
       const src = await el.getAttribute('src');
       expect(src, 'src goes through getAssetUrl').toMatch(
-        /\/band\/audio\/band-wagon-(theme|hook|duet-1|duet-2)\.mp3$/
+        /\/band\/audio\/(band-wagon-(theme|hook|duet-1|duet-2)|estimify-jingle-(hook|full))\.mp3$/
       );
       await expectPlayableMp3(page, src!, browserName);
     }

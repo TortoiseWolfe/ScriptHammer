@@ -5,6 +5,11 @@ Everything under `public/band/` (music, portraits, cover art and the lyrics show
 https://creativecommons.org/licenses/by-sa/4.0/). Credit it as "ScriptHammer, the house band". The site's code stays
 under the repository's MIT licence.
 
+**The client jingle sample is the exception.** `audio/estimify-jingle-hook.mp3` and
+`audio/estimify-jingle-full.mp3` were commissioned by a client and are published here so visitors can listen to and
+download the sample. They are not released under the CC BY-SA licence above, and that licence does not grant any
+right to reuse them.
+
 ## How it was made, said plainly
 
 - **The music is AI-generated.** The songs were made with ACE-Step 1.5 (https://github.com/ace-step/ACE-Step-1.5), whose
@@ -28,6 +33,8 @@ under the repository's MIT licence.
 | `audio/band-wagon-theme.mp3` | The theme song, "The Band Wagon (after hours)", 55 s, 128 kbps |
 | `audio/band-wagon-hook.mp3` | The hook, 18 s, 128 kbps |
 | `audio/band-wagon-duet-1.mp3`, `-duet-2.mp3` | The duet "Should the Machines Take Over?" in two takes (96 and 124 beats a minute), 80 s each, 128 kbps. Ivory sings for the machines, Chops against. |
+| `audio/estimify-jingle-hook.mp3` | The Estimify jingle, 10 s hook. A client commission, not CC BY-SA (see above). |
+| `audio/estimify-jingle-full.mp3` | The Estimify jingle, 27 s full cut. A client commission, not CC BY-SA (see above). |
 | `members/<name>-512.webp`, `-700.webp` | Portraits of the seven players |
 | `cover/band-wagon-*.{jpg,webp}` | The cover at 600, 1200 and 3000 px |
 | `songs/<id>.webp` | Song covers for the ranked list on `/band`, 160 px, composed in code from the same portraits and SVG |
