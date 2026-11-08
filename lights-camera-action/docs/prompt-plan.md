@@ -21,6 +21,14 @@ parked (renamed ARCHIVED, left unpublished, never submitted).
 6. **Orientation is LOCKED to landscape** (Jonathan's ruling, Nov 7, 1:40 PM).
    No portrait layout, no "rotate your device" screen, in any prompt. Every
    layout is landscape-only, so the bottom dock is always a landscape strip.
+7. **NO ASSUMPTIONS IN PROMPTS.** Every line in a builder prompt traces to
+   (1) Jonathan's actual words or rulings, (2) a design he approved, or (3)
+   data as delivered. Restrictions, limitations, and exclusions he never
+   stated do not go in — anything uncertain is pulled into a visible
+   'Assumptions — his call' list at the top of the draft, never buried in
+   the body. (Nov 7: wordless Chorus, Crash's four-sound kit, and 'never
+   lift off the deck' were all assumptions written in his name; he caught
+   every one.)
 
 ## The prompt map — 3 planned prompts + 1 reserve for the whole game
 
