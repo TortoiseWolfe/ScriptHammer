@@ -136,11 +136,12 @@ jobs:
           # Only the services test:rls actually needs — NOT scripthammer (the
           # test runs on the runner, not in the app container) and not the
           # studio/storage/realtime/meta extras. supabase-mail is required by
-          # the auth contract tests (see env above).
+          # the auth contract tests (see env above). supabase-edge-runtime is
+          # required by the delete-account contract test.
           docker compose --profile supabase --profile dotnet up -d --build \
-            supabase-db supabase-kong supabase-auth supabase-rest supabase-mail dotnet-messaging
+            supabase-db supabase-kong supabase-auth supabase-rest supabase-mail supabase-edge-runtime dotnet-messaging
 
-      - name: Wait for Postgres, Kong+Auth+REST, Mailpit, and the .NET server
+      - name: Wait for Postgres, Kong+Auth+REST, Edge Runtime, Mailpit, and the .NET server
         run: |
           # GitHub Actions runs this with `bash -eo pipefail`. The probes below
           # are EXPECTED to fail on early iterations (services still starting);
@@ -152,15 +153,16 @@ jobs:
             db=$(docker compose exec -T supabase-db pg_isready -U postgres -d postgres >/dev/null 2>&1 && echo ok || echo no)
             rest=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 -H "apikey: $ANON" http://localhost:54321/rest/v1/ 2>/dev/null)
             auth=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 -H "apikey: $ANON" http://localhost:54321/auth/v1/health 2>/dev/null)
+            edge=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 -H "apikey: $ANON" http://localhost:54321/functions/v1/ 2>/dev/null)
             net=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 http://localhost:5099/health 2>/dev/null)
             mail=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 http://localhost:54324/api/v1/info 2>/dev/null)
-            echo "try $i: db=$db rest=$rest auth=$auth dotnet=$net mail=$mail"
-            if [ "$db" = ok ] && [ "$rest" = 200 ] && [ "$auth" = 200 ] && [ "$net" = 200 ] && [ "$mail" = 200 ]; then
+            echo "try $i: db=$db rest=$rest auth=$auth edge=$edge dotnet=$net mail=$mail"
+            if [ "$db" = ok ] && [ "$rest" = 200 ] && [ "$auth" = 200 ] && [ "$edge" = 200 ] && [ "$net" = 200 ] && [ "$mail" = 200 ]; then
               echo "stack ready"; break
             fi
             if [ "$i" = 60 ]; then
               echo "::error::stack did not become ready within ~5 min"
-              docker compose logs --tail=80 supabase-db supabase-auth supabase-rest supabase-kong supabase-mail dotnet-messaging
+              docker compose logs --tail=80 supabase-db supabase-auth supabase-rest supabase-kong supabase-mail supabase-edge-runtime dotnet-messaging
               exit 1
             fi
             sleep 5
@@ -219,7 +221,7 @@ jobs:
 
       - name: Dump stack logs on failure
         if: failure()
-        run: docker compose logs --tail=120 supabase-db supabase-auth supabase-rest supabase-kong supabase-mail dotnet-messaging
+        run: docker compose logs --tail=120 supabase-db supabase-auth supabase-rest supabase-kong supabase-mail supabase-edge-runtime dotnet-messaging
 
       - name: Tear down
         if: always()
