@@ -23,7 +23,7 @@ export interface Jingle {
  * swapping in the approved credit is a single change.
  */
 export const JINGLE_CLIENT_CREDIT =
-  'A jingle the band made for Estimify, the app contractors use to price jobs.';
+  'A jingle the band made for Ata Yigit Ustundag of Nuvora LLC, for Estimify, the app contractors use to price jobs.';
 
 /** What a jingle is, in one plain line (the blog's wording). */
 export const JINGLE_INTRO =
