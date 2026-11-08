@@ -577,6 +577,47 @@ ON CONFLICT (id) DO UPDATE SET
   sort_order = EXCLUDED.sort_order, updated_at = NOW();
 
 -- ============================================================================
+-- ACCOUNT ERASURE KEEPS PAYMENT RECORDS
+-- ============================================================================
+-- #1309: erasing an account must not be blocked by the buyer's payment records.
+--
+-- payment_intents.template_user_id, subscriptions.template_user_id and orders.buyer_user_id
+-- were created as plain REFERENCES auth.users(id), which is NO ACTION. Every checkout writes
+-- a payment_intents row and an orders row, so for any buyer auth.admin.deleteUser (the
+-- delete-account Edge Function) failed with a foreign-key violation and the account survived.
+--
+-- RETENTION DECISION: anonymise, not delete. The rows are the accounting trail (amounts,
+-- provider ids, the buyer's email as typed at checkout), so ON DELETE SET NULL keeps them and
+-- only cuts the pointer to the erased account. CASCADE would have deleted payment history, and
+-- through orders.intent_id and payment_results a refund's audit trail with it.
+--
+-- Written as DROP/ADD rather than inline: CREATE TABLE IF NOT EXISTS never runs on a database
+-- that already has the table, so an inline ON DELETE would reach fresh databases only. The
+-- constraint names are Postgres's defaults (<table>_<column>_fkey), so the DROP finds them
+-- on existing databases and the ADD gives fresh ones the same names. Idempotent.
+--
+-- RLS is unaffected: every policy keyed on these columns is `auth.uid() = <column>`, and
+-- NULL never equals a uid, so an anonymised row is readable by nobody but service_role.
+-- subscriptions.template_user_id was NOT NULL (payment_intents already dropped it for guest
+-- checkout, above); SET NULL on a NOT NULL column would turn the FK error into a not-null one.
+ALTER TABLE subscriptions ALTER COLUMN template_user_id DROP NOT NULL;
+
+ALTER TABLE payment_intents DROP CONSTRAINT IF EXISTS payment_intents_template_user_id_fkey;
+ALTER TABLE payment_intents
+  ADD CONSTRAINT payment_intents_template_user_id_fkey
+  FOREIGN KEY (template_user_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+ALTER TABLE subscriptions DROP CONSTRAINT IF EXISTS subscriptions_template_user_id_fkey;
+ALTER TABLE subscriptions
+  ADD CONSTRAINT subscriptions_template_user_id_fkey
+  FOREIGN KEY (template_user_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_buyer_user_id_fkey;
+ALTER TABLE orders
+  ADD CONSTRAINT orders_buyer_user_id_fkey
+  FOREIGN KEY (buyer_user_id) REFERENCES auth.users(id) ON DELETE SET NULL;
+
+-- ============================================================================
 -- PART 2: AUTHENTICATION TABLES
 -- ============================================================================
 
@@ -5063,6 +5104,93 @@ COMMENT ON TABLE conversation_members IS 'Junction table linking users to group 
 COMMENT ON TABLE group_keys IS 'Encrypted symmetric group keys per member per version';
 
 -- ============================================================================
+-- GROUP MESSAGES MUST USE THE CURRENT KEY VERSION
+-- ============================================================================
+-- #1301 (#1247 B3): refuse a group message encrypted under any key version but the current one,
+-- on insert and on an edit that rewrites the ciphertext.
+--
+-- #1247 B2 made rotation land: removing a member moves conversations.current_key_version
+-- forward. Nothing checked what a sender stamped on a message, so a tab running a bundle from
+-- before B2 (which caches no key version and falls back to v1) or an offline-queued message
+-- written before a rotation was stored under the old version, readable by every removed member
+-- who still holds that key. This makes the server hold every sender to the rotation.
+--
+-- The refusal carries a stable phrase, 'stale group key version', which the offline queue
+-- matches on to re-encrypt and retry instead of dropping the message. A stale bundle has no such
+-- handling, so its send fails loudly rather than being stored quietly.
+--
+-- Not covered, on purpose:
+--   * 1-to-1 conversations: they have no rotation; key_version stays 1.
+--   * System messages (member_removed, member_added...): they are an unencrypted JSON marker,
+--     written by group-service after the very rotation that moved the version, so they carry no
+--     key version at all. A sender who flags ciphertext as a system message only gets it shown
+--     as a marker, so nothing is exposed.
+--   * Service role: same exemption block as the B1/B2 guards.
+--
+-- EDITS ARE THE SAME DOOR. A sender may rewrite encrypted_content, initialization_vector and
+-- key_version for 15 minutes ("Users can edit own messages"), so guarding INSERT alone left a
+-- stale tab free to store old-key ciphertext by editing. The trigger therefore also fires on
+-- UPDATE OF those three columns, and the function lets an UPDATE through when none of them
+-- changed, so mark-read, delivered and soft-delete on an old-version message keep working. The
+-- app already re-keys an edit at the current version, so a legitimate edit passes.
+--
+-- No row lock on the conversation: a send that read v1 just before an owner's bump commits at
+-- v1, which is the message of someone who still held the group's key when they wrote it.
+-- FOR SHARE here would also deadlock with the AFTER INSERT trigger's UPDATE of last_message_at
+-- when two members send at once.
+CREATE OR REPLACE FUNCTION enforce_group_message_key_version()
+RETURNS TRIGGER
+SECURITY DEFINER
+SET search_path = public
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_uid  uuid := auth.uid();
+  v_role text := auth.role();
+  v_cur  integer;
+BEGIN
+  IF v_uid IS NULL
+     AND (v_role IS NULL
+          OR v_role IN ('service_role', 'supabase_admin', 'supabase_auth_admin', 'postgres'))
+  THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.is_system_message IS TRUE THEN
+    RETURN NEW;
+  END IF;
+
+  IF TG_OP = 'UPDATE'
+     AND NEW.encrypted_content IS NOT DISTINCT FROM OLD.encrypted_content
+     AND NEW.initialization_vector IS NOT DISTINCT FROM OLD.initialization_vector
+     AND NEW.key_version IS NOT DISTINCT FROM OLD.key_version
+  THEN
+    RETURN NEW;
+  END IF;
+
+  SELECT c.current_key_version INTO v_cur
+  FROM conversations c WHERE c.id = NEW.conversation_id AND c.is_group;
+  IF v_cur IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.key_version IS DISTINCT FROM v_cur THEN
+    RAISE EXCEPTION 'stale group key version: message is under v% but the group is at v%',
+      NEW.key_version, v_cur
+      USING ERRCODE = '42501',
+            HINT = 'Re-encrypt the message with the current group key and send it again.';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS group_message_key_version_guard ON messages;
+CREATE TRIGGER group_message_key_version_guard
+  BEFORE INSERT OR UPDATE OF encrypted_content, initialization_vector, key_version ON messages
+  FOR EACH ROW EXECUTE FUNCTION enforce_group_message_key_version();
+
+-- ============================================================================
 -- MIGRATION COMPLETE
 -- ============================================================================
 -- Created:
@@ -5438,7 +5566,7 @@ SET search_path = public, pg_temp
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  c_song_ids CONSTANT TEXT[] := ARRAY['jam-2', 'jam-1', 'jam-3', 'n05', 'n09', 'psy-1', 'alt-1', 'fusion-1', 'psy-2', 'n01', 'duet-2', 'n12', 'fusion-2', 'n03', 'n07', 'n08', 'n11', 'n10', 'duet-1'];
+  c_song_ids CONSTANT TEXT[] := ARRAY['jam-2', 'jam-1', 'jam-3', 'psy-1', 'alt-1', 'fusion-1', 'psy-2', 'duet-2', 'fusion-2', 'n03', 'n10', 'duet-1'];
   c_per_song_cap CONSTANT INT := 30;
   c_overall_cap  CONSTANT INT := 300;
   v_hour     TIMESTAMPTZ := date_trunc('hour', now());

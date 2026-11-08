@@ -33,15 +33,15 @@ const SONGS = [
   'jam-1',
   'jam-2',
   'jam-3',
-  'n01',
+  'psy-1',
+  'psy-2',
+  'alt-1',
+  'fusion-1',
+  'fusion-2',
+  'duet-1',
+  'duet-2',
   'n03',
-  'n05',
-  'n07',
-  'n08',
-  'n09',
   'n10',
-  'n11',
-  'n12',
 ];
 
 describe.skipIf(!hasRlsTestEnvironment())(
@@ -114,7 +114,7 @@ describe.skipIf(!hasRlsTestEnvironment())(
       );
       await expect(
         asAnon(
-          "INSERT INTO band_site_votes (song_id, hour, up, down, requests) VALUES ('n05', now(), 99, 0, 1)"
+          "INSERT INTO band_site_votes (song_id, hour, up, down, requests) VALUES ('n03', now(), 99, 0, 1)"
         )
       ).rejects.toThrow(/permission denied/);
       await expect(asAnon('TRUNCATE band_site_votes')).rejects.toThrow(
@@ -123,20 +123,20 @@ describe.skipIf(!hasRlsTestEnvironment())(
     });
 
     it('counts an up vote, and a changed vote moves one from the old side to the new', async () => {
-      expect(await vote('n05', 'up')).toBe('ok');
-      expect(await vote('n05', 'down', 'up')).toBe('ok');
+      expect(await vote('n03', 'up')).toBe('ok');
+      expect(await vote('n03', 'down', 'up')).toBe('ok');
       const { rows } = await db.query(
-        "SELECT up, down, requests FROM band_site_votes WHERE song_id = 'n05'"
+        "SELECT up, down, requests FROM band_site_votes WHERE song_id = 'n03'"
       );
       expect(rows).toEqual([{ up: 0, down: 1, requests: 2 }]);
     });
 
     it('rejects an unknown song, a bad direction and a bad previous direction', async () => {
       await expect(vote('not-a-song', 'up')).rejects.toThrow(/unknown song/);
-      await expect(vote('n05', 'sideways')).rejects.toThrow(
+      await expect(vote('n03', 'sideways')).rejects.toThrow(
         /direction must be up or down/
       );
-      await expect(vote('n05', 'up', 'x')).rejects.toThrow(
+      await expect(vote('n03', 'up', 'x')).rejects.toThrow(
         /previous must be up, down or empty/
       );
       const { rows } = await db.query(
@@ -148,15 +148,15 @@ describe.skipIf(!hasRlsTestEnvironment())(
     it('stops one song at the hourly cap and records nothing past it', async () => {
       const answers: string[] = [];
       for (let i = 0; i < PER_SONG_CAP + 5; i++)
-        answers.push(await vote('n05', 'up'));
+        answers.push(await vote('n03', 'up'));
       expect(answers.filter((a) => a === 'ok')).toHaveLength(PER_SONG_CAP);
       expect(answers.filter((a) => a === 'later')).toHaveLength(5);
       const { rows } = await db.query(
-        "SELECT up, requests FROM band_site_votes WHERE song_id = 'n05'"
+        "SELECT up, requests FROM band_site_votes WHERE song_id = 'n03'"
       );
       expect(rows).toEqual([{ up: PER_SONG_CAP, requests: PER_SONG_CAP }]);
-      // Another song is not held back by n05's cap.
-      expect(await vote('n01', 'up')).toBe('ok');
+      // Another song is not held back by n03's cap.
+      expect(await vote('n10', 'up')).toBe('ok');
     });
 
     it('stops all songs together at the overall hourly cap', async () => {
@@ -224,10 +224,10 @@ describe.skipIf(!hasRlsTestEnvironment())(
       });
 
       it('moves a changed vote from one side to the other', async () => {
-        expect(await sendVote(endpoint(), 'n05', 'up', null)).toBe('ok');
-        expect(await sendVote(endpoint(), 'n05', 'down', 'up')).toBe('ok');
+        expect(await sendVote(endpoint(), 'n03', 'up', null)).toBe('ok');
+        expect(await sendVote(endpoint(), 'n03', 'down', 'up')).toBe('ok');
         const { rows } = await db.query(
-          "SELECT up, down FROM band_site_votes WHERE song_id = 'n05'"
+          "SELECT up, down FROM band_site_votes WHERE song_id = 'n03'"
         );
         expect(rows).toEqual([{ up: 0, down: 1 }]);
       });

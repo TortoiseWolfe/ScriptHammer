@@ -90,6 +90,16 @@ function TrackBlock({ song, info }: { song: BandSong; info: BandTrackInfo }) {
         loading="lazy"
         className="h-auto w-full max-w-md rounded-lg border border-[#b5873a]"
       />
+      <audio
+        controls
+        preload="none"
+        src={getAssetUrl(info.audio)}
+        aria-label={`${song.title}, ${info.length}`}
+        data-testid="song-player"
+        className="w-full max-w-md"
+      >
+        Your browser cannot play audio.
+      </audio>
       {info.videoUrl ? (
         <p className="!m-0">
           <a

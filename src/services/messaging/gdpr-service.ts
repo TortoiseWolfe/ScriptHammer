@@ -581,9 +581,20 @@ export class GDPRService {
       }>('delete-account', { method: 'POST' });
 
       if (deleteError) {
-        throw new ConnectionError(
-          'Failed to delete account: ' + deleteError.message
-        );
+        // A non-2xx answer arrives as a FunctionsHttpError with a generic message and
+        // the Response on `context`; the function's reason (for example "cancel your
+        // subscription first", 409) is only in that body.
+        let reason = deleteError.message;
+        const response = (deleteError as { context?: unknown }).context;
+        if (response instanceof Response) {
+          try {
+            const body = (await response.json()) as { error?: string };
+            if (body?.error) reason = body.error;
+          } catch {
+            // Not JSON: keep the generic message.
+          }
+        }
+        throw new ConnectionError('Failed to delete account: ' + reason);
       }
 
       // An invoke that returns 200 with an error payload is still a failure. Treating
