@@ -86,10 +86,11 @@ test.describe('/game/3d — US-5: Mobile-Responsive Canvas', () => {
 
     // Either the canvas (WebGL available) OR the FallbackPanel (WebGL
     // unavailable — legitimate FR-008 path) must render. Firefox on
-    // headless Linux CI occasionally fails its WebGL probe; that's a real
-    // production state and US-5's contract is about responsive layout, not
-    // WebGL availability. We assert the wrapper exposes the
-    // `data-webgl-ok` debug attribute either way, then branch on its value.
+    // Linux CI with Xvfb now gets WebGL via llvmpipe; the fallback path
+    // remains for environments without WebGL support. US-5's contract is
+    // about responsive layout, not WebGL availability. We assert the wrapper
+    // exposes the `data-webgl-ok` debug attribute either way, then branch
+    // on its value.
     const wrapper = page.locator('[data-webgl-ok]').first();
     await expect(wrapper).toBeVisible({ timeout: 5000 });
     const webglOk = await wrapper.getAttribute('data-webgl-ok');
@@ -130,9 +131,9 @@ test.describe('/game/3d — US-3: Respect Reduced Motion', () => {
   // These tests assert `data-autorotate-active` on the Scene wrapper. That
   // attribute is set in BOTH the canvas-rendering path AND the FallbackPanel
   // path (see Scene.tsx), so we only need the wrapper to be present — we do
-  // NOT require WebGL to be available. This matters on firefox-on-Linux-CI
-  // where the WebGL probe occasionally returns null even when the platform
-  // ostensibly supports it.
+  // NOT require WebGL to be available. Firefox on Linux CI with Xvfb now
+  // gets WebGL via llvmpipe; the fallback logic remains for environments
+  // without WebGL support.
 
   test('auto-orbit is disabled when prefers-reduced-motion: reduce', async ({
     page,
@@ -234,14 +235,7 @@ test.describe('/game/3d — US-2: Theme-Aware 3D Scene', () => {
 });
 
 test.describe('/game/3d — US-1: Visit the 3D Game Route', () => {
-  test('navigating to /game/3d mounts a <canvas> element', async ({
-    page,
-    browserName,
-  }) => {
-    test.skip(
-      browserName === 'firefox',
-      'Firefox headless has no WebGL in CI; SwiftShader is Chromium-only (#792).'
-    );
+  test('navigating to /game/3d mounts a <canvas> element', async ({ page }) => {
     await page.goto('/game/3d');
 
     // The Scene's wrapper element renders regardless of WebGL availability;
@@ -302,12 +296,7 @@ test.describe('/game/3d — US-1: Visit the 3D Game Route', () => {
 
   test('canvas drag triggers a re-render (orbit controls active)', async ({
     page,
-    browserName,
   }) => {
-    test.skip(
-      browserName === 'firefox',
-      'Firefox headless has no WebGL in CI; orbit-drag needs a real canvas (#792).'
-    );
     await page.goto('/game/3d');
 
     await expect(page.locator('[data-webgl-ok]').first()).toBeVisible({
@@ -347,11 +336,7 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
   //
   // Skips when WebGL is unavailable because OrbitControls + camera state
   // are R3F-internal — there's no canvas in the fallback path.
-  test('mouse drag changes camera position', async ({ page, browserName }) => {
-    test.skip(
-      browserName === 'firefox',
-      'Firefox headless has no WebGL in CI; SC-004 needs a working canvas (#792).'
-    );
+  test('mouse drag changes camera position', async ({ page }) => {
     await page.goto('/game/3d');
     await expect(page.locator('[data-webgl-ok]').first()).toBeVisible({
       timeout: 5000,
@@ -391,14 +376,7 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
       .not.toBe(initial);
   });
 
-  test('mouse wheel zoom changes camera position', async ({
-    page,
-    browserName,
-  }) => {
-    test.skip(
-      browserName === 'firefox',
-      'Firefox headless has no WebGL in CI; SC-004 needs a working canvas (#792).'
-    );
+  test('mouse wheel zoom changes camera position', async ({ page }) => {
     await page.goto('/game/3d');
     await expect(page.locator('[data-webgl-ok]').first()).toBeVisible({
       timeout: 5000,
@@ -432,15 +410,10 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
       .not.toBe(initial);
   });
 
-  test('touch drag changes camera position', async ({ page, browserName }) => {
+  test('touch drag changes camera position', async ({ page }) => {
     // Playwright's touch emulation requires a touch-enabled context.
     // We dispatch a touchstart/touchmove/touchend sequence directly because
     // the default page context isn't touch-enabled in the test matrix.
-    // Kept skip (#1399): Firefox's Playwright build ignores dispatched touch input; chromium and webkit run this.
-    test.skip(
-      browserName === 'firefox',
-      'Firefox does not synthesize touch events from page.dispatchEvent reliably; mobile is covered by the dedicated mobile viewport test (US-5).'
-    );
 
     await page.goto('/game/3d');
     await expect(page.locator('[data-webgl-ok]').first()).toBeVisible({
