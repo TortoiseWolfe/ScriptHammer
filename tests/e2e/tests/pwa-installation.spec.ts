@@ -79,6 +79,9 @@ test.describe('PWA Installation', () => {
         // cannot run there. What the offline answer is made of can: the page
         // the worker just cached, which is what it serves with the network
         // off. Read it straight from Cache Storage; no network is involved.
+        // This is a weaker check than the full offline reload on the other
+        // two browsers. Playwright 1.64+ fixes the WebKit bug; the upgrade and
+        // the full test come back in issue #1480.
         await expect
           .poll(
             () =>
