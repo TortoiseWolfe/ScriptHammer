@@ -51,14 +51,6 @@ test.describe('PWA Installation', () => {
       context,
       browserName,
     }) => {
-      // WebKit does not support page.reload() while offline with service workers —
-      // triggers "WebKit encountered an internal error". Known Playwright limitation.
-      // Kept skip (#1399); chromium and firefox run this.
-      test.skip(
-        browserName === 'webkit',
-        'WebKit does not support offline reload with service workers'
-      );
-
       await expect
         .poll(() => activeWorkerUrl(page), { timeout: 15000 })
         .toMatch(/\/sw\.js$/);
@@ -81,6 +73,26 @@ test.describe('PWA Installation', () => {
 
       await context.setOffline(true);
       try {
+        if (browserName === 'webkit') {
+          // Playwright's Linux WebKit answers page.reload() while offline with
+          // "WebKit encountered an internal error" (#1399), so the reload
+          // itself cannot be the probe there. Ask the worker the same question
+          // from inside the page instead: a fetch of the home page with the
+          // network off is served by the service worker's cache or not at all.
+          const offline = await page.evaluate(async () => {
+            const response = await fetch(location.href, {
+              cache: 'no-store',
+            });
+            return { status: response.status, body: await response.text() };
+          });
+          expect(offline.status).toBe(200);
+          // The cached home page, not the worker's offline.html fallback.
+          expect(offline.body).not.toContain("You're Offline");
+          // The hero heading is split across inline tags in the HTML, so the
+          // page title is the stable text to match.
+          expect(offline.body).toContain(`<title>${onlineTitle}</title>`);
+          return;
+        }
         await page.reload();
         // The cached home page, not the worker's offline.html fallback.
         await expect(page.locator('h1').first()).toHaveText(onlineHeading);
