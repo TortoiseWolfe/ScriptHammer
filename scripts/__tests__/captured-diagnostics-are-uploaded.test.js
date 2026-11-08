@@ -110,9 +110,9 @@ describe('the lane uploads the diagnostics it captures (#766)', () => {
     );
   });
 
-  it('does not upload them on green runs', () => {
-    // The other half. Uploading test-results/ unconditionally from 24 shards trades
-    // one waste for another, so the diagnostics step must be failure-gated.
+  it('uploads when the shard passes too, because a flaky test leaves a green shard', () => {
+    // A flaky test fails its first attempt and passes its retry, so the shard is green.
+    // A `failure()` gate throws away exactly the evidence needed to diagnose it.
     const lane = fs.readFileSync(LOCAL_LANE, 'utf8');
     const cfg = fs.readFileSync(CONFIG, 'utf8');
     const dir = outputDir(cfg);
@@ -122,10 +122,31 @@ describe('the lane uploads the diagnostics it captures (#766)', () => {
 
     assert.match(
       block,
-      /if:\s*failure\(\)/,
-      `the step uploading '${dir}/' is not gated on failure(). On a green run that ` +
-        `directory is noise, and 24 shards uploading it every time is the waste this ` +
-        `fix was meant to avoid.`
+      /if:\s*always\(\)/,
+      `the step uploading '${dir}/' is not gated on always(). A shard with a flaky ` +
+        `test is green, so a failure() gate discards the first attempt's trace.`
+    );
+  });
+
+  it('only keeps artefacts for failed attempts, so an always() upload is not noise', () => {
+    // The other half. Uploading from 24 shards on every run is only cheap because
+    // Playwright deletes the artefacts of passing tests. If any kind is switched to
+    // 'on' it is kept for every test, and that upload stops being cheap.
+    const cfg = fs.readFileSync(CONFIG, 'utf8');
+    for (const kind of capturedKinds(cfg)) {
+      assert.doesNotMatch(
+        kind,
+        /: on$/,
+        `playwright.config.ts has '${kind}', which keeps artefacts for every test; ` +
+          `with the diagnostics upload running on every shard that is thousands of ` +
+          `files nobody reads. Use a retain-on-failure style value.`
+      );
+    }
+    assert.match(
+      cfg,
+      /trace:\s*'retain-on-first-failure'/,
+      "the trace must cover the FIRST attempt: 'on-first-retry' traces the retry, " +
+        'which is the attempt that passed.'
     );
   });
 
@@ -136,9 +157,9 @@ describe('the lane uploads the diagnostics it captures (#766)', () => {
     assert.equal(outputDir('nothing here'), null);
 
     const cfgOn =
-      "trace: 'on-first-retry',\nvideo: 'retain-on-failure',\nscreenshot: 'off',";
+      "trace: 'retain-on-first-failure',\nvideo: 'retain-on-failure',\nscreenshot: 'off',";
     assert.deepEqual(capturedKinds(cfgOn), [
-      'trace: on-first-retry',
+      'trace: retain-on-first-failure',
       'video: retain-on-failure',
     ]);
 
