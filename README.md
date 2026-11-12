@@ -73,7 +73,7 @@ docker compose run --rm builder pnpm build
 ## Fork it
 
 ```bash
-gh repo fork TortoiseWolfe/ScriptHammer --clone
+gh repo fork TortoiseWolfe/ScriptHammer --clone --fork-name YourProjectName
 cd YourProjectName
 ./scripts/rebrand.sh MyProject myusername "My project description" --icon path/to/your-mark.svg
 cp .env.example .env

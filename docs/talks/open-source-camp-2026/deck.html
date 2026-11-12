@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ScriptHammer, forked live</title>
+<style>
+:root {
+  --ground: #16162a; --plate: #1a1a2e; --edge: #25254a; --ink: #e2e8f0;
+  --steel: #a8b2c1; --amber: #e8d4b8; --live: #7fd1a6; --hot: #f0a07c;
+  --err: #ffa8a8; --ink-shadow: rgba(6,6,16,.62); --ink-edge: rgba(226,232,240,.07);
+  --sh-plate: 0 1px 0 0 var(--ink-edge) inset, 0 14px 30px -14px var(--ink-shadow), 0 2px 4px -2px var(--ink-shadow);
+  --sh-well: 0 2px 6px -1px var(--ink-shadow) inset, 0 1px 0 0 var(--ink-edge);
+  --display: 'Archivo Black','Arial Black','Avenir Next Heavy',system-ui,sans-serif;
+  --body: 'Archivo',system-ui,-apple-system,'Helvetica Neue',sans-serif;
+  --mono: 'JetBrains Mono',ui-monospace,'SF Mono',Menlo,monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #0c0c1a; color: var(--ink); font-family: var(--body); overflow: hidden; }
+#stage { position: fixed; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: center center; background: var(--ground); overflow: hidden; }
+.slide { position: absolute; inset: 0; display: none; flex-direction: column; justify-content: center; padding: 110px 110px 90px; }
+.slide.on { display: flex; }
+/* Each slide's content sits in one box. A long app name or description makes the box taller than the slide; fitActive() then scales the box down so nothing is ever clipped. */
+.fit { display: flex; flex-direction: column; gap: 34px; flex: none; transform-origin: center center; }
+h1 { font-family: var(--display); font-size: 140px; line-height: 1; letter-spacing: -.02em; margin: 0; overflow-wrap: anywhere; }
+h2 { font-family: var(--display); font-size: 84px; line-height: 1.05; margin: 0; letter-spacing: -.015em; overflow-wrap: anywhere; }
+p, li, label, .t { font-size: 42px; line-height: 1.35; margin: 0; }
+.lede { color: var(--steel); }
+.small { font-size: 40px; color: var(--steel); }
+strong, em { color: var(--amber); font-style: normal; font-weight: 700; }
+.hl { overflow-wrap: anywhere; }
+.chips { display: flex; gap: 24px; flex-wrap: wrap; }
+.chip { font-family: var(--mono); font-size: 40px; padding: 10px 28px; border-radius: 40px; background: var(--plate); box-shadow: var(--sh-plate); color: var(--amber); border: 2px solid var(--edge); }
+.plate { background: var(--plate); box-shadow: var(--sh-plate); border: 2px solid var(--edge); border-radius: 14px; padding: 28px 34px; }
+input, textarea { width: 100%; font: 40px var(--body); color: var(--ink); background: var(--ground); border: 2px solid var(--edge); border-radius: 10px; padding: 8px 18px; min-height: 60px; box-shadow: var(--sh-well); }
+label { display: block; color: var(--steel); font-size: 40px; margin: 10px 0 6px; }
+button, a.btn { font: 700 40px var(--body); min-height: 60px; padding: 8px 30px; border-radius: 10px; border: 2px solid var(--amber); background: var(--amber); color: #16162a; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: .3em; text-align: left; }
+button.ghost, a.btn.ghost { background: var(--plate); color: var(--amber); }
+button[aria-pressed="true"] { background: var(--amber); color: #16162a; }
+button[aria-pressed="false"] { background: var(--plate); color: var(--amber); }
+button:disabled { opacity: .55; cursor: not-allowed; }
+:focus-visible { outline: 5px solid var(--live); outline-offset: 3px; }
+pre.cmd { font: 34px/1.4 var(--mono); background: var(--ground); box-shadow: var(--sh-well); border: 2px solid var(--edge); border-radius: 10px; padding: 18px 24px; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); }
+.err { color: var(--err); font-size: 40px; min-height: 0; }
+.note { color: var(--amber); font-size: 40px; }
+.meta { font-family: var(--mono); font-size: 40px; color: var(--steel); overflow-wrap: anywhere; }
+.meta b { color: var(--amber); font-weight: 400; }
+.cols { display: grid; grid-template-columns: 820px 1fr; gap: 50px; align-items: start; }
+.cap { font-size: 40px; color: var(--steel); }
+.row { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+#counter { position: absolute; right: 40px; bottom: 24px; font: 34px var(--mono); color: var(--steel); }
+#live { position: absolute; left: 40px; bottom: 24px; font: 34px var(--mono); color: var(--live); }
+.strip { position: absolute; top: 24px; left: 110px; right: 110px; display: flex; gap: 8px; }
+.strip.big { position: static; margin: 0; gap: 12px; }
+.st { flex: 1; border: 3px solid var(--steel); border-radius: 8px; padding: 6px 10px; font: 700 26px var(--body); color: var(--steel); text-align: center; min-height: 52px; }
+.strip.big .st { font-size: 36px; padding: 18px 10px; min-height: 120px; }
+.st small { display: block; font: 400 22px var(--body); color: var(--steel); }
+.strip.big .st small { font-size: 28px; }
+.strip:not(.big) .st small { display: none; }
+.st.done { background: var(--live); border-color: var(--live); color: #0c1a12; }
+.st.done small { color: #0c1a12; }
+.st.cur { border-color: var(--amber); color: var(--amber); animation: pulse 1.8s ease-in-out infinite; }
+@keyframes pulse { 50% { background: var(--edge); } }
+@media (prefers-reduced-motion: reduce) { .st.cur { animation: none; background: var(--edge); } }
+.clock { font: 190px var(--mono); color: var(--amber); line-height: 1; }
+.term { font: 44px var(--mono); color: var(--live); }
+.steps { display: flex; gap: 14px; flex-wrap: wrap; }
+.steps span { font: 36px var(--mono); padding: 8px 20px; background: var(--plate); border: 2px solid var(--edge); border-radius: 8px; color: var(--amber); }
+.wf { background: #e8d4b8; color: #1a1a2e; border-radius: 10px; padding: 24px 34px; }
+.wf h3 { font: 56px var(--display); margin: 0 0 10px; overflow-wrap: anywhere; }
+.wf p { color: #1a1a2e; overflow-wrap: anywhere; }
+.tour { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 40px; }
+.tour .item { display: flex; flex-direction: column; gap: 4px; }
+.tour small { font-size: 34px; color: var(--steel); }
+.big-name { font: 150px/1.05 var(--display); overflow-wrap: anywhere; }
+.term { overflow-wrap: anywhere; }
+.tag { position: absolute; top: 90px; right: 40px; font: 30px var(--mono); color: var(--hot); border: 2px solid var(--hot); padding: 4px 16px; border-radius: 6px; }
+.tick::before { content: "\2713  "; color: var(--live); }
+ul { margin: 0; padding-left: 50px; display: flex; flex-direction: column; gap: 12px; }
+</style>
+</head>
+<body>
+<div id="stage">
+<section class="slide" data-s="1" aria-label="Title">
+  <div class="fit">
+    <h1>ScriptHammer, forked live</h1>
+    <p class="lede" style="font-size:64px">Open Source Camp 2026, Chattanooga</p>
+    <p class="small">One template. Your name on it before we finish talking.</p>
+  </div>
+</section>
+
+<section class="slide" data-s="2" aria-label="What are we building" style="padding-top:60px">
+  <div class="fit" style="gap:12px">
+    <div class="cols" style="grid-template-columns:780px 1fr;gap:40px">
+      <div>
+        <h2 style="font-size:80px">What are we building?</h2>
+        <label for="in-name">App name</label>
+        <input id="in-name" type="text" autocomplete="off" placeholder="YourProjectName">
+        <div id="err-name" class="err" role="alert"></div>
+        <div class="meta" style="font-size:30px;line-height:1.3">
+          <div>Folder and repository: <b id="m-repo"></b></div>
+          <div>Technical name: <b id="m-tech"></b></div>
+          <div>Themes: <b id="m-themes"></b></div>
+          <div>Component prefix: <b id="m-comp"></b></div>
+        </div>
+        <label for="in-owner">Owner (GitHub user name)</label>
+        <input id="in-owner" type="text" autocomplete="off" placeholder="yourname">
+        <div id="err-owner" class="err" role="alert"></div>
+        <label for="in-desc">One-line description</label>
+        <input id="in-desc" type="text" autocomplete="off" placeholder="What your app does">
+        <div id="err-desc" class="err" role="alert"></div>
+        <div id="note-desc" class="note" style="font-size:34px"></div>
+        <label for="in-icon">Icon file (optional)</label>
+        <input id="in-icon" type="text" autocomplete="off" placeholder="path/to/your-mark.svg">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding-top:6px">
+        <div class="row">
+          <button id="mode-owner" type="button" aria-pressed="true">I own the template</button>
+          <button id="mode-att" type="button" aria-pressed="false">Attendee</button>
+        </div>
+        <div class="cap" style="font-size:36px">You'd type this</div>
+        <pre class="cmd" id="blk-att"></pre>
+        <div id="owner-wrap">
+          <div class="cap" style="font-size:36px">I own the template, so I type this instead</div>
+          <pre class="cmd" id="blk-own"></pre>
+        </div>
+        <div class="row">
+          <button id="copy-main" type="button"></button>
+          <button id="reset" type="button" class="ghost">Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-s="3" aria-label="Wireframe first">
+  <div class="fit" style="align-items:flex-start">
+    <h1 style="font-size:190px">Wireframe first.</h1>
+    <p class="lede" style="font-size:56px">Nothing gets planned or coded until a drawing of the screen is approved.</p>
+    <div class="chips"><span class="chip">Mobile first</span><span class="chip">Docker first</span><span class="chip">Wireframe first</span></div>
+  </div>
+</section>
+
+<section class="slide" data-s="4" aria-label="Progress">
+  <div class="fit">
+    <h2><span class="dn">Your app</span> is forking</h2>
+    <div class="strip big" data-strip></div>
+    <div class="clock" id="clock" aria-label="Elapsed time">00:00</div>
+    <div class="term" id="termline"></div>
+  </div>
+</section>
+
+<section class="slide" data-s="5" aria-label="Wireframes while it builds">
+  <div class="strip" data-strip></div>
+  <div class="fit">
+    <h2>While it builds: wireframes.</h2>
+    <p>71 wireframes across 28 features ship in the box.</p>
+    <div><a class="btn" data-tour="/wireframes" target="_blank" rel="noopener" href="#">Open the wireframe viewer</a></div>
+    <div class="wf">
+      <p style="font-size:34px;font-weight:700">Your idea, same shape</p>
+      <h3 class="dn">Your app</h3>
+      <p class="dd">What your app does</p>
+    </div>
+    <p class="cap">This is a text swap into a prepared wireframe. A real one is generated from the written spec and approved before any code.</p>
+  </div>
+</section>
+
+<section class="slide" data-s="6" aria-label="Spec Kit while it builds">
+  <div class="strip" data-strip></div>
+  <div class="fit">
+    <h2>While it builds: Spec Kit.</h2>
+    <p>Spec Kit is a set of fill-in forms and seven steps. You describe the feature in plain words, it asks you the questions you skipped, and only then does it plan and write code.</p>
+    <div class="steps"><span>specify</span><span>clarify</span><span>plan</span><span>checklist</span><span>tasks</span><span>analyze</span><span>implement</span></div>
+    <pre class="cmd" id="blk-spec"></pre>
+    <div class="row"><button id="copy-spec" type="button">Copy</button><span class="cap">A dry run: it names the feature branch and creates nothing.</span></div>
+  </div>
+</section>
+
+<section class="slide" data-s="7" aria-label="The tour">
+  <div class="strip" data-strip></div>
+  <div class="fit" style="gap:22px">
+    <h2 style="font-size:80px">The tour: works the minute you fork.</h2>
+    <div class="tour" id="tour"></div>
+    <div class="row"><label for="in-base" style="margin:0">Template address</label><input id="in-base" type="text" style="width:700px" autocomplete="off"></div>
+  </div>
+</section>
+
+<section class="slide" data-s="8" aria-label="Dark until you plug it in">
+  <div class="strip" data-strip></div>
+  <div class="fit">
+    <h2>Dark until you plug it in.</h2>
+    <p>Five things wait for a service you connect:</p>
+    <ul><li>sign-in</li><li>payments</li><li>messaging</li><li>the admin dashboard</li><li>contact-form mail</li></ul>
+    <p class="lede">The fork tells you so with a setup banner. It never pretends.</p>
+  </div>
+</section>
+
+<section class="slide" data-s="9" aria-label="The developer side">
+  <div class="strip" data-strip></div>
+  <div class="tag">skip if the build is early</div>
+  <div class="fit">
+    <h2>The developer side</h2>
+    <ul><li>tests</li><li>23 automatic check workflows</li><li>Docker</li><li>the component generator</li><li>the fork guide</li></ul>
+  </div>
+</section>
+
+<section class="slide" data-s="10" aria-label="The reveal">
+  <div class="strip" data-strip></div>
+  <div class="fit" style="gap:18px">
+    <h2 style="font-size:80px">The reveal:</h2>
+    <div class="big-name dn">Your app</div>
+    <div class="row">
+      <a class="btn" id="open-app" target="_blank" rel="noopener" href="#">Open <span class="dn">Your app</span></a>
+      <label for="in-port" style="margin:0">Port</label>
+      <input id="in-port" type="text" inputmode="numeric" style="width:200px" autocomplete="off">
+    </div>
+    <pre class="cmd" id="blk-port"></pre>
+    <div class="row"><button id="copy-port" type="button">Copy</button><span class="cap">Not on 3000? This prints the port.</span></div>
+    <ul style="font-size:40px">
+      <li class="tick">Tab title now says <span class="dn">Your app</span></li>
+      <li class="tick">Install name (web manifest) now says <span class="dn">Your app</span></li>
+      <li class="tick">Share card now says <span class="dn">Your app</span></li>
+    </ul>
+    <p class="cap" style="font-size:34px">The fork keeps the template's demo pages until you delete them.</p>
+  </div>
+</section>
+
+<section class="slide" data-s="11" aria-label="Take it home">
+  <div class="fit">
+    <h2>Take it home.</h2>
+    <pre class="cmd" id="blk-home"></pre>
+    <div class="row"><button id="copy-home" type="button">Copy the block</button></div>
+    <p>github.com/TortoiseWolfe/ScriptHammer</p>
+  </div>
+</section>
+<div id="counter" aria-hidden="true"></div>
+<div id="live" role="status" aria-live="polite"></div>
+</div>
+<script>
+'use strict';
+// Typical duration of each stage, filled in later from a timed run. Empty shows nothing.
+const STAGE_HINTS = ['', '', '', '', '', '', ''];
+const STAGES = [
+  { name: 'Updating files', line: 'Updating file contents...' },
+  { name: 'Themes', line: 'Scaffolding custom themes...' },
+  { name: 'Icons', line: 'Updating brand icons...' },
+  { name: 'Renaming', line: 'Renaming tracked paths...' },
+  { name: 'Verifying', line: 'Verifying rebrand postcondition...' },
+  { name: 'Build (quiet)', line: 'docker compose up -d  (image build, then the first start; long and silent)' },
+  { name: 'Up', line: 'the dev server answers' }
+];
+const QUIET_HINT = 'the long quiet one: this is when we tour';
+const TOUR = [
+  ['Home', '/', 'the landing page'],
+  ['Themes', '/themes', '35 themes, switch live'],
+  ['Wireframes', '/wireframes', '71 drawings, one viewer'],
+  ['3D Chattanooga', '/chatt', 'the city in 3D, needs internet'],
+  ['Pricing', '/pricing', 'browse only, nothing is bought'],
+  ['Docs', '/docs', 'seven guides'],
+  ['Accessibility', '/accessibility', 'text size, spacing, contrast controls'],
+  ['Status', '/status', 'is everything up']
+];
+const KEY = 'osc2026-deck';
+const DEFAULTS = { name: '', owner: '', desc: '', icon: '', mode: 'owner', base: 'http://localhost:3000', port: '3000', visited: {}, stage: -1, start: 0, end: 0 };
+const state = Object.assign({}, DEFAULTS, { visited: {} });
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) { const o = JSON.parse(raw); Object.keys(DEFAULTS).forEach(function (k) { if (o[k] !== undefined) state[k] = o[k]; }); }
+  } catch (e) { /* storage unavailable: run without it */ }
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* ignore */ } }
+
+function sanitizeName(n) {
+  return String(n).trim().replace(/[\s_]/g, '-').replace(/[^a-zA-Z0-9-]/g, '').toLowerCase();
+}
+function displayName(n) { return String(n).trim().replace(/[^a-zA-Z0-9 -]/g, ''); }
+function componentName(n) {
+  const words = String(n).trim().replace(/[^a-zA-Z0-9]+/g, ' ').split(' ').filter(Boolean);
+  let out = words.map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join('');
+  if (/^[0-9]/.test(out)) out = 'App' + out;
+  return out;
+}
+function cleanDescription(t) {
+  return String(t).replace(/["`$\\!]/g, '').replace(/\s+/g, ' ').trim();
+}
+function repoName(n) { return displayName(n).replace(/ +/g, '-').replace(/^-+|-+$/g, ''); }
+function validOwner(o) { return o.length >= 1 && o.length <= 39 && /^[A-Za-z0-9]+(-[A-Za-z0-9]+)*$/.test(o); }
+function q(s) { return /\s/.test(s) ? '"' + s + '"' : s; }
+
+function buildBlock(mode) {
+  const repo = repoName(state.name) || 'YourProjectName';
+  const dn = displayName(state.name) || 'YourProjectName';
+  const owner = state.owner.trim() || 'yourname';
+  const desc = cleanDescription(state.desc) || 'What your app does';
+  const icon = state.icon.trim();
+  const iconArg = icon ? '--icon ' + q(icon) + ' --force' : '--no-icon --force';
+  const first = mode === 'attendee'
+    ? 'gh repo fork TortoiseWolfe/ScriptHammer --clone --fork-name ' + repo
+    : 'gh repo create ' + repo + ' --template TortoiseWolfe/ScriptHammer --public --clone';
+  return [first, 'cd ' + repo,
+    './scripts/rebrand.sh ' + q(dn) + ' ' + owner + ' "' + desc + '" ' + iconArg,
+    'cp .env.example .env', 'docker compose up -d'].join('\n') + '\n';
+}
+function ownerLine() { return buildBlock('owner').split('\n')[0]; }
+
+function problems() {
+  const p = { name: '', owner: '', desc: '' };
+  const raw = state.name.trim();
+  if (!raw || !sanitizeName(raw) || !componentName(raw)) p.name = 'The name needs at least one letter or digit';
+  if (!validOwner(state.owner.trim())) p.owner = 'Owner: 1 to 39 letters, digits or single hyphens, none at either end';
+  if (!cleanDescription(state.desc)) p.desc = 'The description needs some words';
+  return p;
+}
+
+const $ = function (id) { return document.getElementById(id); };
+const slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+let cur = 1;
+
+function techName() { return sanitizeName(state.name) || 'yourprojectname'; }
+
+function render() {
+  const p = problems();
+  const typed = { name: state.name.trim() !== '', owner: state.owner.trim() !== '', desc: state.desc.trim() !== '' };
+  $('err-name').textContent = typed.name ? p.name : '';
+  $('err-owner').textContent = typed.owner ? p.owner : '';
+  $('err-desc').textContent = typed.desc ? p.desc : '';
+  const cd = cleanDescription(state.desc);
+  const collapsed = state.desc.trim().replace(/\s+/g, ' ');
+  $('note-desc').textContent = cd !== collapsed ? 'Removed characters the shell would trip on.' : '';
+  const t = techName();
+  $('m-repo').textContent = repoName(state.name) || 'YourProjectName';
+  $('m-tech').textContent = t;
+  $('m-themes').textContent = t + '-light, ' + t + '-dark';
+  $('m-comp').textContent = componentName(state.name) || 'YourProjectName';
+  $('blk-att').textContent = buildBlock('attendee');
+  $('blk-own').textContent = ownerLine();
+  $('owner-wrap').style.display = state.mode === 'owner' ? 'block' : 'none';
+  $('mode-owner').setAttribute('aria-pressed', String(state.mode === 'owner'));
+  $('mode-att').setAttribute('aria-pressed', String(state.mode !== 'owner'));
+  $('copy-main').textContent = state.mode === 'owner' ? 'Copy my block' : 'Copy the block';
+  const bad = !!(p.name || p.owner || p.desc);
+  $('copy-main').disabled = bad;
+  $('copy-home').disabled = bad;
+  const dn = displayName(state.name) || 'Your app';
+  Array.prototype.forEach.call(document.querySelectorAll('.dn'), function (e) { e.textContent = dn; });
+  Array.prototype.forEach.call(document.querySelectorAll('.dd'), function (e) { e.textContent = cd || 'What your app does'; });
+  $('blk-spec').textContent = 'bash .specify/scripts/bash/create-new-feature.sh --dry-run --json --short-name "' + t + '" "' + (cd || 'What your app does') + '"';
+  $('blk-port').textContent = 'docker compose port ' + t + ' 3000';
+  $('blk-home').textContent = buildBlock('attendee');
+  const port = String(state.port).trim() || '3000';
+  $('open-app').setAttribute('href', 'http://localhost:' + port);
+  // The reveal name is as large as its length allows: 150 px up to 14 characters, never under 80 px.
+  const big = Math.max(80, Math.min(150, Math.round(150 * 14 / Math.max(1, dn.length))));
+  Array.prototype.forEach.call(document.querySelectorAll('.big-name'), function (e) { e.style.fontSize = big + 'px'; });
+  renderTour();
+  renderStrips();
+  fitActive();
+}
+
+// Scale the visible slide's content box down when it is taller than the room the slide gives it.
+function fitActive() {
+  const s = slides[cur - 1];
+  const box = s && s.querySelector('.fit');
+  if (!box) return 1;
+  box.style.transform = '';
+  const cs = getComputedStyle(s);
+  const room = s.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  const h = box.offsetHeight;
+  const k = h > room && h > 0 ? room / h : 1;
+  if (k < 1) box.style.transform = 'scale(' + k.toFixed(4) + ')';
+  return k;
+}
+
+function baseUrl() { return String(state.base).trim().replace(/\/+$/, ''); }
+function renderTour() {
+  const box = $('tour');
+  if (!box.children.length) {
+    TOUR.forEach(function (it) {
+      const d = document.createElement('div'); d.className = 'item';
+      const a = document.createElement('a'); a.className = 'btn ghost'; a.target = '_blank'; a.rel = 'noopener';
+      a.setAttribute('data-path', it[1]); a.setAttribute('data-key', it[1]);
+      a.addEventListener('click', function () { state.visited[it[1]] = true; save(); render(); });
+      const s = document.createElement('small'); s.textContent = it[2];
+      d.appendChild(a); d.appendChild(s); box.appendChild(d);
+    });
+  }
+  Array.prototype.forEach.call(box.querySelectorAll('a'), function (a, i) {
+    const path = a.getAttribute('data-path');
+    a.href = baseUrl() + path;
+    a.textContent = (state.visited[path] ? '✓ ' : '') + TOUR[i][0];
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-tour]'), function (a) {
+    a.href = baseUrl() + a.getAttribute('data-tour');
+  });
+}
+
+function renderStrips() {
+  Array.prototype.forEach.call(document.querySelectorAll('[data-strip]'), function (el) {
+    el.textContent = '';
+    STAGES.forEach(function (s, i) {
+      const d = document.createElement('div');
+      const done = i < state.stage || (state.stage === 6 && i === 6);
+      d.className = 'st' + (done ? ' done' : (i === state.stage ? ' cur' : ''));
+      d.textContent = s.name;
+      const hint = i === 5 ? QUIET_HINT : STAGE_HINTS[i];
+      if (hint) { const sm = document.createElement('small'); sm.textContent = hint; d.appendChild(sm); }
+      el.appendChild(d);
+    });
+  });
+  $('termline').textContent = state.stage >= 0 ? (state.stage === 5 ? '$ ' : '') + STAGES[state.stage].line : '';
+  tick();
+}
+function tick() {
+  let ms = 0;
+  if (state.start) ms = (state.end || Date.now()) - state.start;
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const mm = String(Math.floor(s / 60)).padStart(2, '0');
+  $('clock').textContent = mm + ':' + String(s % 60).padStart(2, '0');
+}
+function stageMove(d) {
+  const n = Math.max(-1, Math.min(6, state.stage + d));
+  if (n === state.stage) return;
+  if (state.stage === -1 && n === 0) { state.start = Date.now(); state.end = 0; }
+  if (n === 6) state.end = Date.now(); else state.end = 0;
+  if (n === -1) state.start = 0;
+  state.stage = n; save(); renderStrips();
+}
+function stageReset() { state.stage = -1; state.start = 0; state.end = 0; save(); renderStrips(); }
+
+function go(n) {
+  n = Math.max(1, Math.min(slides.length, parseInt(n, 10) || 1));
+  cur = n;
+  slides.forEach(function (s, i) { s.classList.toggle('on', i === n - 1); });
+  $('counter').textContent = n + ' / ' + slides.length;
+  try { history.replaceState(null, '', '#' + n); } catch (e) { location.hash = String(n); }
+  fitActive();
+}
+
+function fit() {
+  const s = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+  $('stage').style.transform = 'translate(-50%, -50%) scale(' + s + ')';
+}
+
+let liveTimer = 0;
+function say(msg) {
+  const l = $('live'); l.textContent = '';
+  setTimeout(function () { l.textContent = msg; }, 30);
+  clearTimeout(liveTimer);
+  liveTimer = setTimeout(function () { l.textContent = ''; }, 2500);
+}
+function copyText(text) {
+  function fallback() {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.left = '-9999px';
+    document.body.appendChild(ta); ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    say(ok ? 'Copied' : 'Copy failed, select the text by hand');
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { say('Copied'); }, fallback);
+  } else { fallback(); }
+}
+
+function bindInput(id, key) {
+  const el = $(id);
+  el.value = state[key];
+  el.addEventListener('input', function () { state[key] = el.value; save(); render(); });
+}
+
+function init() {
+  load();
+  bindInput('in-name', 'name'); bindInput('in-owner', 'owner'); bindInput('in-desc', 'desc');
+  bindInput('in-icon', 'icon'); bindInput('in-base', 'base'); bindInput('in-port', 'port');
+  $('mode-owner').addEventListener('click', function () { state.mode = 'owner'; save(); render(); });
+  $('mode-att').addEventListener('click', function () { state.mode = 'attendee'; save(); render(); });
+  $('copy-main').addEventListener('click', function () { copyText(buildBlock(state.mode === 'owner' ? 'owner' : 'attendee')); });
+  $('copy-home').addEventListener('click', function () { copyText(buildBlock('attendee')); });
+  $('copy-spec').addEventListener('click', function () { copyText($('blk-spec').textContent + '\n'); });
+  $('copy-port').addEventListener('click', function () { copyText($('blk-port').textContent + '\n'); });
+  $('reset').addEventListener('click', function () {
+    if (!window.confirm('Clear everything you typed?')) return;
+    const keep = { stage: state.stage, start: state.start, end: state.end };
+    Object.keys(DEFAULTS).forEach(function (k) { state[k] = DEFAULTS[k]; });
+    state.visited = {};
+    Object.assign(state, keep);
+    ['in-name', 'in-owner', 'in-desc', 'in-icon', 'in-base', 'in-port'].forEach(function (id) {
+      const k = { 'in-name': 'name', 'in-owner': 'owner', 'in-desc': 'desc', 'in-icon': 'icon', 'in-base': 'base', 'in-port': 'port' }[id];
+      $(id).value = state[k];
+    });
+    save(); render();
+  });
+  document.addEventListener('keydown', function (e) {
+    const t = e.target, tag = t && t.tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+      if (e.key === 'Escape') t.blur();
+      return;
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const onControl = tag === 'BUTTON' || tag === 'A';
+    switch (e.key) {
+      case 'ArrowRight': case 'PageDown': go(cur + 1); break;
+      case ' ': if (onControl) return; go(cur + 1); break;
+      case 'ArrowLeft': case 'PageUp': go(cur - 1); break;
+      case 'Home': go(1); break;
+      case 'End': go(slides.length); break;
+      case ']': stageMove(1); break;
+      case '[': stageMove(-1); break;
+      case '0': stageReset(); break;
+      case 'f': case 'F':
+        if (document.fullscreenElement) document.exitFullscreen();
+        else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+        break;
+      default: return;
+    }
+    e.preventDefault();
+  });
+  window.addEventListener('resize', fit);
+  window.addEventListener('hashchange', function () { const n = parseInt(location.hash.slice(1), 10); if (n && n !== cur) go(n); });
+  fit(); render();
+  go(parseInt(location.hash.slice(1), 10) || 1);
+  setInterval(tick, 250);
+}
+
+window.deck = { state: state, sanitizeName: sanitizeName, displayName: displayName, componentName: componentName, cleanDescription: cleanDescription, buildBlock: buildBlock, go: go, fitActive: fitActive };
+init();
+</script>
+</body>
+</html>

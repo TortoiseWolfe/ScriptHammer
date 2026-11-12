@@ -12,7 +12,7 @@ test suite. Going live on your own domain is longer and mostly third-party — s
 
 ```bash
 # 1. Fork and clone
-gh repo fork TortoiseWolfe/ScriptHammer --clone
+gh repo fork TortoiseWolfe/ScriptHammer --clone --fork-name YourProjectName
 cd YourProjectName
 
 # 2. Run the rebrand script. It refuses without an icon decision -- see "Your brand
