@@ -73,16 +73,19 @@ docker compose run --rm builder pnpm build
 ## Fork it
 
 ```bash
-gh repo fork TortoiseWolfe/ScriptHammer --clone --fork-name YourProjectName
-cd YourProjectName
-./scripts/rebrand.sh MyProject myusername "My project description" --icon path/to/your-mark.svg
-cp .env.example .env
+gh repo fork TortoiseWolfe/ScriptHammer --clone --fork-name YourProjectName &&
+cd YourProjectName &&
+cp .env.example .env &&
+docker compose run --rm scripthammer ./scripts/rebrand.sh MyProject myusername "My project description" --icon path/to/your-mark.svg &&
 docker compose up -d
 ```
 
 The rebrand script rewrites every tracked file that carries the template's name. Your project name
-is picked up from the repository name automatically. The script runs on your own machine, outside
-the container, so it needs Node.js there and stops at once without it.
+is picked up from the repository name automatically. The script runs inside the project's
+container, so Docker is all your own machine needs: the script needs Node.js and stops at once
+without it, and the container has it. The `&&` at each line end stops the block at the first line
+that fails. Keep your icon file inside the project folder, because the container sees nothing
+outside it.
 
 **It will refuse to run until you decide about the app icons.** A rebrand substitutes strings, and a
 logo is not a string — so if nothing replaces the mark, every browser tab and every home-screen

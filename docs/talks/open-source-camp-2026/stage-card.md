@@ -10,11 +10,11 @@ The fork starts first. The tour is of ScriptHammer itself while the fork builds.
 - On slide 7, set the Template address to the ScriptHammer you are touring. Use a copy with its services connected, so sign-in, payments and messaging work on slide 8.
 - Sign in on that copy before the talk if slide 8's stops are on the tour.
 - Terminal full screen on screen 2, at 28 point or larger.
-- Start the terminal in an empty folder, never inside a copy of ScriptHammer. If the first line fails, the lines after it still run in the folder you are in.
-- In that terminal, check that `node --version` answers. The rebrand stops at once without Node.js.
+- Start the terminal in an empty folder, never inside a copy of ScriptHammer. The new copy lands in the folder you are in. Each line of the block ends in `&&`, so the block stops at the first line that fails.
+- In that terminal, check that `docker compose version` answers. The rebrand runs inside the container, so the laptop needs Docker and no Node.js.
 - Open each tour page once, so no first visit happens live.
 - Storybook is not on the tour.
-- Docker images already pulled.
+- Build the image once before the talk: in any fresh copy of ScriptHammer, run `docker compose build`. That keeps the large system downloads off the venue network. The two quiet builds on stage still run, because the rename changes the package file.
 - The fallback clip is on the desktop.
 
 ## Screen 1: the deck

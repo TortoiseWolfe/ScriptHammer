@@ -242,7 +242,7 @@ ul { margin: 0; padding-left: 50px; display: flex; flex-direction: column; gap: 
       <div style="display:flex;flex-direction:column;gap:14px">
         <p>github.com/TortoiseWolfe/ScriptHammer</p>
         <p class="cap">Point a phone camera at the square, or type the address.</p>
-        <p class="cap">You need git, the GitHub command line tool (gh), Docker and Node.js.</p>
+        <p class="cap">You need git, the GitHub command line tool (gh) and Docker. Nothing else is installed on your machine.</p>
       </div>
     </div>
   </div>
@@ -252,24 +252,28 @@ ul { margin: 0; padding-left: 50px; display: flex; flex-direction: column; gap: 
 </div>
 <script>
 'use strict';
-// Typical duration of each stage, filled in later from a timed run. Empty shows nothing.
-// Measured on 11 Nov 2026 on one Linux machine: the rebrand took 2 min 12 s, the image build
-// 8 min 29 s (5 min 38 s of it on a single step that prints nothing), and the first page
-// answered 24 s after that. A slower machine took 5 min 36 s for the rebrand alone, so these
-// are "about", never a promise. Index 5 is never shown: QUIET_HINT takes its place.
-const STAGE_HINTS = ['about 1:20', 'instant', 'instant', 'about 1 s', 'about 0:50', '', 'about 0:25 more'];
+// The stages follow the copy block, which runs the rebrand INSIDE the container. That route
+// builds the image twice: once so the rebrand has a container to run in, and once more for
+// "docker compose up -d", because the rename changes package.json and the cached image no
+// longer matches. Both builds sit on one step that prints nothing for minutes.
+// STAGE_HINTS is the typical duration of each stage, one entry per stage. They were measured
+// on 11 Nov 2026 on one Linux machine, with the image's system layers already built. Another
+// laptop will differ (a second machine ran the whole rebrand line in 5 min 36 s against
+// 14 min 21 s here), so every hint says "about" and none is a promise.
+const STAGE_HINTS = ['about 0:20', 'about 10:30, quiet: the tour starts', 'about 2:20', 'about 1:00', 'about 12:00, quiet: keep touring', 'about 0:15', 'about 27:00 in all'];
 const STAGES = [
-  // The script's "Updating file contents..." heading prints over a minute in, after a first
+  // cmd: true marks a line the presenter's terminal shows as a command, so it gets a "$ ".
+  { name: 'Copy', line: 'gh repo … --clone', cmd: true },
+  { name: 'Build 1 (quiet)', line: 'docker compose run …  (image build; one step prints nothing for minutes)', cmd: true },
+  // The script's "Updating file contents..." heading prints over two minutes in, after a first
   // unlabelled sweep of "Updated:" lines, so the cue is the line that prints first.
-  { name: 'Updating files', line: 'Rebranding: ScriptHammer → …  (file names scroll)' },
-  { name: 'Themes', line: 'Scaffolding custom themes...' },
-  { name: 'Icons', line: 'Updating brand icons...' },
-  { name: 'Renaming', line: 'Renaming tracked paths...' },
+  { name: 'Rebrand', line: 'Rebranding: ScriptHammer → …  (file names scroll)' },
   { name: 'Verifying', line: 'Verifying rebrand postcondition...' },
-  { name: 'Build (quiet)', line: 'docker compose up -d  (image build, about 8:30; one step sits silent for over 5 minutes)' },
+  { name: 'Build 2 (quiet)', line: 'docker compose up -d  (the image builds again for the renamed app)', cmd: true },
+  { name: 'Starting', line: 'Container … Started  (the dev server is compiling the first page)' },
   { name: 'Up', line: 'the dev server answers' }
 ];
-const QUIET_HINT = 'about 8:30, the long quiet one: this is when we tour';
+const LAST = STAGES.length - 1;
 const TOUR = [
   ['Home', '/', 'the landing page'],
   ['Themes', '/themes', '35 themes, switch live'],
@@ -319,11 +323,14 @@ function buildBlock(mode) {
   const first = mode === 'attendee'
     ? 'gh repo fork TortoiseWolfe/ScriptHammer --clone --fork-name ' + repo
     : 'gh repo create ' + repo + ' --template TortoiseWolfe/ScriptHammer --public --clone';
-  return [first, 'cd ' + repo,
-    './scripts/rebrand.sh ' + q(dn) + ' ' + owner + ' "' + desc + '" ' + iconArg,
-    'cp .env.example .env', 'docker compose up -d'].join('\n') + '\n';
+  // The rebrand runs INSIDE the container: scripts/rebrand.sh needs Node.js and stops without
+  // it, and a machine with only Docker has none. Each line ends in && so a pasted block stops
+  // at the first failure, and the lines after a running command are never read as its input.
+  return [first, 'cd ' + repo, 'cp .env.example .env',
+    'docker compose run --rm scripthammer ./scripts/rebrand.sh ' + q(dn) + ' ' + owner + ' "' + desc + '" ' + iconArg,
+    'docker compose up -d'].join(' &&\n') + '\n';
 }
-function ownerLine() { return buildBlock('owner').split('\n')[0]; }
+function ownerLine() { return buildBlock('owner').split('\n')[0].replace(/ &&$/, ''); }
 
 function problems() {
   const p = { name: '', owner: '', desc: '' };
@@ -429,15 +436,15 @@ function renderStrips() {
     el.textContent = '';
     STAGES.forEach(function (s, i) {
       const d = document.createElement('div');
-      const done = i < state.stage || (state.stage === 6 && i === 6);
+      const done = i < state.stage || (state.stage === LAST && i === LAST);
       d.className = 'st' + (done ? ' done' : (i === state.stage ? ' cur' : ''));
       d.textContent = s.name;
-      const hint = i === 5 ? QUIET_HINT : STAGE_HINTS[i];
+      const hint = STAGE_HINTS[i];
       if (hint) { const sm = document.createElement('small'); sm.textContent = hint; d.appendChild(sm); }
       el.appendChild(d);
     });
   });
-  $('termline').textContent = state.stage >= 0 ? (state.stage === 5 ? '$ ' : '') + STAGES[state.stage].line : '';
+  $('termline').textContent = state.stage >= 0 ? (STAGES[state.stage].cmd ? '$ ' : '') + STAGES[state.stage].line : '';
   tick();
 }
 function tick() {
@@ -448,10 +455,10 @@ function tick() {
   $('clock').textContent = mm + ':' + String(s % 60).padStart(2, '0');
 }
 function stageMove(d) {
-  const n = Math.max(-1, Math.min(6, state.stage + d));
+  const n = Math.max(-1, Math.min(LAST, state.stage + d));
   if (n === state.stage) return;
   if (state.stage === -1 && n === 0) { state.start = Date.now(); state.end = 0; }
-  if (n === 6) state.end = Date.now(); else state.end = 0;
+  if (n === LAST) state.end = Date.now(); else state.end = 0;
   if (n === -1) state.start = 0;
   state.stage = n; save(); renderStrips();
 }
