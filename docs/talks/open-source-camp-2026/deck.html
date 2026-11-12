@@ -72,6 +72,9 @@ pre.cmd { font: 34px/1.4 var(--mono); background: var(--ground); box-shadow: var
 .tour { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 40px; }
 .tour .item { display: flex; flex-direction: column; gap: 4px; }
 .tour small { font-size: 34px; color: var(--steel); }
+.walk { gap: 26px 40px; }
+.walk .row { gap: 12px; }
+.walk a.btn { padding: 8px 22px; }
 .big-name { font: 150px/1.05 var(--display); overflow-wrap: anywhere; }
 .term { overflow-wrap: anywhere; }
 .tag { position: absolute; top: 90px; right: 40px; font: 30px var(--mono); color: var(--hot); border: 2px solid var(--hot); padding: 4px 16px; border-radius: 6px; }
@@ -231,7 +234,20 @@ ul { margin: 0; padding-left: 50px; display: flex; flex-direction: column; gap: 
   </div>
 </section>
 
-<section class="slide" data-s="11" aria-label="Take it home">
+<section class="slide" data-s="11" aria-label="Walk the fork">
+  <div class="strip" data-strip></div>
+  <div class="fit" style="gap:22px">
+    <h2 style="font-size:80px">Walk the fork.</h2>
+    <div class="tour walk" id="walk"></div>
+    <div class="row">
+      <button id="warm-again" type="button" class="ghost">Warm the pages</button>
+      <span class="cap" id="walk-status" role="status"></span>
+    </div>
+    <p class="cap">The fork keeps my demo pages until you delete them.</p>
+  </div>
+</section>
+
+<section class="slide" data-s="12" aria-label="Take it home">
   <div class="fit">
     <h2>Take it home.</h2>
     <pre class="cmd" id="blk-home"></pre>
@@ -284,6 +300,24 @@ const TOUR = [
   ['Accessibility', '/accessibility', 'text size, spacing, contrast controls'],
   ['Status', '/status', 'is everything up']
 ];
+// WALK is the reveal: every page of the new fork, in the four groups the talk walks them in.
+// The tour above points at the template's address; these point at the fork's own port.
+const WALK = [
+  ['Yours now', [['Home', '/'], ['Themes', '/themes']]],
+  ['Works today', [['Wireframes', '/wireframes'], ['Docs', '/docs'], ['Accessibility', '/accessibility'], ['Status', '/status'], ['Blog', '/blog'], ['Game', '/game']]],
+  ['My demo content', [['3D Chattanooga', '/chatt'], ['Band', '/band'], ['Pricing', '/pricing'], ['Terms', '/terms'], ['Credits', '/credits']]],
+  ['Dark until you connect a service', [['Sign-in', '/sign-in'], ['Payments', '/payment-demo'], ['Messaging', '/messages'], ['Admin', '/admin'], ['Contact', '/contact']]]
+];
+const WALK_PATHS = [];
+WALK.forEach(function (g) { g[1].forEach(function (it) { WALK_PATHS.push(it[1]); }); });
+// The warm-up. A fresh development server builds each page the first time anyone asks for it,
+// 9 to 18 seconds a page, so the deck asks for every page of the walk once, in the background,
+// as soon as the port is known. These are the only requests this file ever makes, and they go
+// to localhost and nowhere else. One page at a time, so the new server never builds two at once.
+// delay: quiet time after the last keystroke in Port. timeout: how long one page may take.
+// retryWait and tries: a quick refusal means the server is still starting, so ask again.
+const WARM = { delay: 1500, timeout: 90000, retryWait: 5000, tries: 24 };
+const warm = { port: '', state: 'idle', done: 0, path: '', run: 0, timer: 0, ctrl: null };
 const KEY = 'osc2026-deck';
 const DEFAULTS = { name: '', owner: '', desc: '', icon: '', mode: 'owner', base: 'http://localhost:3000', port: '', visited: {}, stage: -1, start: 0, end: 0 };
 const state = Object.assign({}, DEFAULTS, { visited: {} });
@@ -381,8 +415,8 @@ function render() {
   $('blk-home').textContent = buildBlock('attendee');
   // A fresh fork gets a different free port on every start (the compose file maps
   // SH_PORT, default 0), so there is no address to open until the number is typed in.
-  const port = String(state.port).trim();
-  const havePort = /^\d{2,5}$/.test(port);
+  const port = forkPort();
+  const havePort = port !== '';
   $('open-app').setAttribute('href', havePort ? 'http://localhost:' + port : '#');
   $('open-app').setAttribute('aria-disabled', String(!havePort));
   $('open-app').classList.toggle('ghost', !havePort);
@@ -390,8 +424,104 @@ function render() {
   const big = Math.max(80, Math.min(150, Math.round(150 * 14 / Math.max(1, dn.length))));
   Array.prototype.forEach.call(document.querySelectorAll('.big-name'), function (e) { e.style.fontSize = big + 'px'; });
   renderTour();
+  renderWalk();
   renderStrips();
   fitActive();
+}
+
+// The fork's port as typed, or an empty string while it is missing or not a number.
+function forkPort() {
+  const p = String(state.port).trim();
+  return /^\d{2,5}$/.test(p) ? p : '';
+}
+
+function renderWalk() {
+  const box = $('walk');
+  if (!box.children.length) {
+    WALK.forEach(function (g, gi) {
+      const d = document.createElement('div'); d.className = 'item';
+      d.setAttribute('role', 'group'); d.setAttribute('aria-labelledby', 'walk-g' + gi);
+      const cap = document.createElement('div'); cap.className = 'cap'; cap.id = 'walk-g' + gi; cap.textContent = g[0];
+      const row = document.createElement('div'); row.className = 'row';
+      g[1].forEach(function (it) {
+        const a = document.createElement('a'); a.className = 'btn'; a.target = '_blank'; a.rel = 'noopener';
+        a.setAttribute('data-path', it[1]); a.setAttribute('data-label', it[0]);
+        a.addEventListener('click', function (e) {
+          // No port yet: open nothing, and take the presenter to the box that needs the number.
+          if (!forkPort()) { e.preventDefault(); go(10); $('in-port').focus(); return; }
+          state.visited['walk:' + it[1]] = true; save(); render();
+        });
+        row.appendChild(a);
+      });
+      d.appendChild(cap); d.appendChild(row); box.appendChild(d);
+    });
+  }
+  const port = forkPort();
+  Array.prototype.forEach.call(box.querySelectorAll('a'), function (a) {
+    const path = a.getAttribute('data-path');
+    a.setAttribute('href', port ? 'http://localhost:' + port + path : '#');
+    a.setAttribute('aria-disabled', String(!port));
+    a.classList.toggle('ghost', !port);
+    a.textContent = (state.visited['walk:' + path] ? '✓ ' : '') + a.getAttribute('data-label');
+  });
+  renderWarm();
+}
+
+function renderWarm() {
+  const n = WALK_PATHS.length, port = forkPort();
+  let msg;
+  if (!port) msg = 'No port yet. Type it on the reveal slide.';
+  else if (warm.port !== port || warm.state === 'idle') msg = 'Port ' + port + '. The pages are not warm yet.';
+  else if (warm.state === 'running') msg = 'Warming the pages on port ' + port + ': ' + warm.done + ' of ' + n + '.';
+  else if (warm.state === 'done') msg = 'All ' + n + ' pages are warm on port ' + port + '.';
+  else msg = 'No answer from ' + warm.path + ' on port ' + port + '. ' + warm.done + ' of ' + n + ' are warm.';
+  // Only a changed message is written, so a screen reader hears each step once.
+  if ($('walk-status').textContent !== msg) $('walk-status').textContent = msg;
+  $('warm-again').disabled = !port;
+}
+
+// Runs after every change to Port. A new number waits out WARM.delay first, so a port still
+// being typed is never asked for; the same number is warmed once; no number stops a run.
+function scheduleWarm() {
+  clearTimeout(warm.timer);
+  const port = forkPort();
+  if (!port) { stopWarm(); renderWarm(); return; }
+  if (port === warm.port) return;
+  warm.timer = setTimeout(function () { startWarm(port); }, WARM.delay);
+}
+function stopWarm() {
+  warm.run += 1;
+  if (warm.ctrl) warm.ctrl.abort();
+  warm.ctrl = null; warm.port = ''; warm.state = 'idle'; warm.done = 0; warm.path = '';
+}
+function startWarm(port) {
+  clearTimeout(warm.timer);
+  stopWarm();
+  const run = warm.run;
+  warm.port = port; warm.state = 'running';
+  renderWarm();
+  let i = 0, tries = 0;
+  function next() {
+    if (run !== warm.run) return;
+    if (i >= WALK_PATHS.length) { warm.state = 'done'; warm.ctrl = null; renderWarm(); return; }
+    const ctrl = new AbortController();
+    const began = Date.now();
+    const limit = setTimeout(function () { ctrl.abort(); }, WARM.timeout);
+    warm.ctrl = ctrl; warm.path = WALK_PATHS[i];
+    // no-cors: the deck never reads the answer, it only needs the server to have built the page.
+    fetch('http://localhost:' + port + WALK_PATHS[i], { mode: 'no-cors', cache: 'no-store', signal: ctrl.signal }).then(function () {
+      clearTimeout(limit);
+      if (run !== warm.run) return;
+      i += 1; tries = 0; warm.done = i; renderWarm(); next();
+    }, function () {
+      clearTimeout(limit);
+      if (run !== warm.run) return;
+      tries += 1;
+      if (tries < WARM.tries && Date.now() - began < 10000) { setTimeout(next, WARM.retryWait); return; }
+      warm.state = 'failed'; warm.ctrl = null; renderWarm();
+    });
+  }
+  next();
 }
 
 // Scale the visible slide's content box down when it is taller than the room the slide gives it.
@@ -519,6 +649,8 @@ function init() {
   $('open-app').addEventListener('click', function (e) {
     if (this.getAttribute('aria-disabled') === 'true') { e.preventDefault(); $('in-port').focus(); }
   });
+  $('in-port').addEventListener('input', scheduleWarm);
+  $('warm-again').addEventListener('click', function () { const port = forkPort(); if (port) startWarm(port); });
   $('reset').addEventListener('click', function () {
     if (!window.confirm('Clear everything you typed?')) return;
     const keep = { stage: state.stage, start: state.start, end: state.end };
@@ -529,7 +661,7 @@ function init() {
       const k = { 'in-name': 'name', 'in-owner': 'owner', 'in-desc': 'desc', 'in-icon': 'icon', 'in-base': 'base', 'in-port': 'port' }[id];
       $(id).value = state[k];
     });
-    save(); render();
+    save(); scheduleWarm(); render();
   });
   document.addEventListener('keydown', function (e) {
     const t = e.target, tag = t && t.tagName;
@@ -563,7 +695,7 @@ function init() {
   setInterval(tick, 250);
 }
 
-window.deck = { state: state, sanitizeName: sanitizeName, displayName: displayName, componentName: componentName, cleanDescription: cleanDescription, buildBlock: buildBlock, go: go, fitActive: fitActive };
+window.deck = { state: state, sanitizeName: sanitizeName, displayName: displayName, componentName: componentName, cleanDescription: cleanDescription, buildBlock: buildBlock, go: go, fitActive: fitActive, WALK_PATHS: WALK_PATHS, WARM: WARM, warm: warm };
 init();
 </script>
 </body>
