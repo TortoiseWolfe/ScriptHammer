@@ -54,7 +54,7 @@ pre.cmd { font: 34px/1.4 var(--mono); background: var(--ground); box-shadow: var
 .strip.big { position: static; margin: 0; gap: 12px; }
 .st { flex: 1; border: 3px solid var(--steel); border-radius: 8px; padding: 6px 10px; font: 700 26px var(--body); color: var(--steel); text-align: center; min-height: 52px; }
 .strip.big .st { font-size: 36px; padding: 18px 10px; min-height: 120px; }
-.st small { display: block; font: 400 22px var(--body); color: var(--steel); }
+.st small { display: block; font: 400 22px var(--body); color: var(--steel); text-wrap: balance; }
 .strip.big .st small { font-size: 28px; }
 .strip:not(.big) .st small { display: none; }
 .st.done { background: var(--live); border-color: var(--live); color: #0c1a12; }
@@ -77,28 +77,39 @@ pre.cmd { font: 34px/1.4 var(--mono); background: var(--ground); box-shadow: var
 .walk a.btn { padding: 8px 22px; }
 .big-name { font: 150px/1.05 var(--display); overflow-wrap: anywhere; }
 .term { overflow-wrap: anywhere; }
-.tag { position: absolute; top: 90px; right: 40px; font: 30px var(--mono); color: var(--hot); border: 2px solid var(--hot); padding: 4px 16px; border-radius: 6px; }
+.tag { position: absolute; top: 116px; right: 40px; font: 30px var(--mono); color: var(--hot); border: 2px solid var(--hot); padding: 4px 16px; border-radius: 6px; }
 .tick::before { content: "\2713  "; color: var(--live); }
 ul { margin: 0; padding-left: 50px; display: flex; flex-direction: column; gap: 12px; }
+/* No word is left alone on a last line: the browser evens out the lines of every heading and sentence. */
+h1, h2, h3, .lede { text-wrap: balance; }
+p, li, .cap { text-wrap: pretty; }
+/* The pace line: how long this slide gets and when the next one is due. It turns warm when the talk clock is past that mark. */
+#pace { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); font: 34px var(--mono); color: var(--steel); white-space: nowrap; }
+#pace.over { color: var(--hot); }
+.tag.stop { color: var(--steel); border-color: var(--steel); }
+/* An empty place kept for a QR code that does not exist yet. */
+.slot { border: 4px dashed var(--steel); border-radius: 14px; padding: 26px 34px; display: flex; flex-direction: column; gap: 10px; max-width: 860px; }
 </style>
 </head>
 <body>
 <div id="stage">
-<section class="slide" data-s="1" aria-label="Title">
+<!-- The slides are numbered by the script, in the order they stand here, so a slide can move or be added without renumbering the rest. data-min is the minutes a slide gets; the pace line at the bottom adds them up. -->
+<section class="slide" id="s-title" data-min="1" aria-label="Title">
   <div class="fit">
-    <h1>ScriptHammer, forked live</h1>
+    <h1>ScriptHammer,<br>forked live</h1>
     <p class="lede" style="font-size:64px">Open Source Camp 2026, Chattanooga</p>
     <p class="small">One template. Your name on it before we finish talking.</p>
   </div>
 </section>
 
-<section class="slide" data-s="2" aria-label="What are we building" style="padding-top:60px">
+<section class="slide" id="s-ask" data-min="4" aria-label="What are we building" style="padding-top:40px">
   <div class="fit" style="gap:12px">
     <div class="cols" style="grid-template-columns:780px 1fr;gap:40px">
       <div>
         <h2 style="font-size:80px">What are we building?</h2>
         <label for="in-name">App name</label>
-        <input id="in-name" type="text" autocomplete="off" placeholder="YourProjectName">
+        <!-- The four grey examples are the rehearsal app, PotluckPlanner, so the room sees one worked answer before it gives its own. -->
+        <input id="in-name" type="text" autocomplete="off" placeholder="PotluckPlanner">
         <div id="err-name" class="err" role="alert"></div>
         <div class="meta" style="font-size:30px;line-height:1.3">
           <div>Folder and repository: <b id="m-repo"></b></div>
@@ -107,14 +118,15 @@ ul { margin: 0; padding-left: 50px; display: flex; flex-direction: column; gap: 
           <div>Component prefix: <b id="m-comp"></b></div>
         </div>
         <label for="in-owner">Owner (GitHub user name)</label>
-        <input id="in-owner" type="text" autocomplete="off" placeholder="yourname">
+        <input id="in-owner" type="text" autocomplete="off" placeholder="TortoiseWolfe">
         <div id="err-owner" class="err" role="alert"></div>
         <label for="in-desc">One-line description</label>
-        <input id="in-desc" type="text" autocomplete="off" placeholder="What your app does">
+        <!-- Two rows, so the whole example sentence shows. Enter does not start a new line (see the keydown handler). -->
+        <textarea id="in-desc" rows="2" autocomplete="off" style="font-size:30px;line-height:1.25;resize:none;display:block" placeholder="It tracks who is bringing what to a shared meal, so nothing shows up twice."></textarea>
         <div id="err-desc" class="err" role="alert"></div>
         <div id="note-desc" class="note" style="font-size:34px"></div>
         <label for="in-icon">Icon file (optional)</label>
-        <input id="in-icon" type="text" autocomplete="off" placeholder="path/to/your-mark.svg">
+        <input id="in-icon" type="text" autocomplete="off" placeholder="placeholder-mark.svg">
       </div>
       <div style="display:flex;flex-direction:column;gap:10px;padding-top:6px">
         <div class="row">
@@ -136,15 +148,7 @@ ul { margin: 0; padding-left: 50px; display: flex; flex-direction: column; gap: 
   </div>
 </section>
 
-<section class="slide" data-s="3" aria-label="Wireframe first">
-  <div class="fit" style="align-items:flex-start">
-    <h1 style="font-size:190px">Wireframe first.</h1>
-    <p class="lede" style="font-size:56px">Nothing gets planned or coded until a drawing of the screen is approved.</p>
-    <div class="chips"><span class="chip">Mobile first</span><span class="chip">Docker first</span><span class="chip">Wireframe first</span></div>
-  </div>
-</section>
-
-<section class="slide" data-s="4" aria-label="Progress">
+<section class="slide" id="s-progress" data-min="1" aria-label="Progress">
   <div class="fit">
     <h2><span class="dn">Your app</span> is forking</h2>
     <div class="strip big" data-strip></div>
@@ -153,42 +157,17 @@ ul { margin: 0; padding-left: 50px; display: flex; flex-direction: column; gap: 
   </div>
 </section>
 
-<section class="slide" data-s="5" aria-label="Wireframes while it builds">
-  <div class="strip" data-strip></div>
-  <div class="fit">
-    <h2>While it builds: wireframes.</h2>
-    <p>71 wireframes across 28 features ship in the box.</p>
-    <div><a class="btn" data-tour="/wireframes" target="_blank" rel="noopener" href="#">Open the wireframe viewer</a></div>
-    <div class="wf">
-      <p style="font-size:34px;font-weight:700">Your idea, same shape</p>
-      <h3 class="dn">Your app</h3>
-      <p class="dd">What your app does</p>
-    </div>
-    <p class="cap">This is a text swap into a prepared wireframe. A real one is generated from the written spec and approved before any code.</p>
-  </div>
-</section>
-
-<section class="slide" data-s="6" aria-label="Spec Kit while it builds">
-  <div class="strip" data-strip></div>
-  <div class="fit">
-    <h2>While it builds: Spec Kit.</h2>
-    <p>Spec Kit is a set of fill-in forms and seven steps. You describe the feature in plain words, it asks you the questions you skipped, and only then does it plan and write code.</p>
-    <div class="steps"><span>specify</span><span>clarify</span><span>plan</span><span>checklist</span><span>tasks</span><span>analyze</span><span>implement</span></div>
-    <pre class="cmd" id="blk-spec"></pre>
-    <div class="row"><button id="copy-spec" type="button">Copy</button><span class="cap">A dry run: it names the feature branch and creates nothing.</span></div>
-  </div>
-</section>
-
-<section class="slide" data-s="7" aria-label="The tour">
+<!-- The tour comes first and is of ScriptHammer itself. This slide is the map; the eight slides after it, one per stop, are written by the script from the TOUR list and stand between this slide and the next one below. -->
+<section class="slide" id="s-tour" data-min="1" aria-label="The tour">
   <div class="strip" data-strip></div>
   <div class="fit" style="gap:22px">
-    <h2 style="font-size:80px">The tour: ScriptHammer, while yours builds.</h2>
+    <h2 style="font-size:80px">The tour: ScriptHammer itself.</h2>
     <div class="tour" id="tour"></div>
     <div class="row"><label for="in-base" style="margin:0">Template address</label><input id="in-base" type="text" style="width:700px" autocomplete="off"></div>
   </div>
 </section>
 
-<section class="slide" data-s="8" aria-label="Built in, dark on a fresh fork">
+<section class="slide" id="s-dark" data-min="3" aria-label="Built in, dark on a fresh fork">
   <div class="strip" data-strip></div>
   <div class="fit">
     <h2>Built in. Dark on a fresh fork.</h2>
@@ -204,16 +183,46 @@ ul { margin: 0; padding-left: 50px; display: flex; flex-direction: column; gap: 
   </div>
 </section>
 
-<section class="slide" data-s="9" aria-label="The developer side">
+<section class="slide" id="s-dev" data-min="2" aria-label="The developer side">
   <div class="strip" data-strip></div>
-  <div class="tag">skip if the build is early</div>
+  <div class="tag">skip if you are behind</div>
   <div class="fit">
     <h2>The developer side</h2>
     <ul><li>tests</li><li>23 automatic check workflows</li><li>Docker</li><li>the component generator</li><li>the fork guide</li></ul>
   </div>
 </section>
 
-<section class="slide" data-s="10" aria-label="The reveal">
+<!-- After the tour the fork is done, so the wireframe is drawn in the fork, not in ScriptHammer. The drawing is made by a coding agent in the fork's folder on the terminal screen; this slide only says what goes in and opens the fork's viewer. -->
+<section class="slide" id="s-wireframe" data-min="4" aria-label="Wireframe first, in the fork">
+  <div class="strip" data-strip></div>
+  <div class="fit" style="gap:20px">
+    <h2>Wireframe first.<br>Now in <span class="dn">Your app</span>.</h2>
+    <p class="lede">Nothing gets planned or coded until a drawing of the screen is approved.</p>
+    <div class="chips"><span class="chip">Mobile first</span><span class="chip">Docker first</span><span class="chip">Wireframe first</span></div>
+    <div class="wf">
+      <p style="font-size:34px;font-weight:700">The words the drawing is made from</p>
+      <h3 class="dn">Your app</h3>
+      <p class="dd">What your app does</p>
+    </div>
+    <div class="row">
+      <a class="btn" id="open-wf" target="_blank" rel="noopener" href="#">Open its wireframes</a>
+      <span class="cap">A coding agent in the fork's folder writes the spec, then draws the screen. The website only shows the drawings.</span>
+    </div>
+  </div>
+</section>
+
+<section class="slide" id="s-speckit" data-min="2" aria-label="Spec Kit">
+  <div class="strip" data-strip></div>
+  <div class="fit">
+    <h2>Spec Kit: words before code.</h2>
+    <p>Spec Kit is a set of fill-in forms and seven steps. You describe the feature in plain words, it asks you the questions you skipped, and only then does it plan and write code.</p>
+    <div class="steps"><span>specify</span><span>clarify</span><span>plan</span><span>checklist</span><span>tasks</span><span>analyze</span><span>implement</span></div>
+    <pre class="cmd" id="blk-spec"></pre>
+    <div class="row"><button id="copy-spec" type="button">Copy</button><span class="cap">A dry run: it names the feature branch and creates nothing.</span></div>
+  </div>
+</section>
+
+<section class="slide" id="s-reveal" data-min="2" aria-label="The reveal">
   <div class="strip" data-strip></div>
   <div class="fit" style="gap:18px">
     <h2 style="font-size:80px">The reveal:</h2>
@@ -234,7 +243,7 @@ ul { margin: 0; padding-left: 50px; display: flex; flex-direction: column; gap: 
   </div>
 </section>
 
-<section class="slide" data-s="11" aria-label="Walk the fork">
+<section class="slide" id="s-walk" data-min="4" aria-label="Walk the fork">
   <div class="strip" data-strip></div>
   <div class="fit" style="gap:22px">
     <h2 style="font-size:80px">Walk the fork.</h2>
@@ -247,7 +256,7 @@ ul { margin: 0; padding-left: 50px; display: flex; flex-direction: column; gap: 
   </div>
 </section>
 
-<section class="slide" data-s="12" aria-label="Take it home">
+<section class="slide" id="s-home" data-min="1" aria-label="Take it home">
   <div class="fit">
     <h2>Take it home.</h2>
     <pre class="cmd" id="blk-home"></pre>
@@ -263,6 +272,30 @@ ul { margin: 0; padding-left: 50px; display: flex; flex-direction: column; gap: 
     </div>
   </div>
 </section>
+
+<!-- The last slide stays up through questions, so it has no minutes of its own. -->
+<section class="slide" id="s-touch" aria-label="Stay in touch">
+  <div class="fit" style="gap:34px">
+    <h2>Fork it. Build yours.<br>Stay in touch.</h2>
+    <div class="row" style="gap:60px;flex-wrap:nowrap;align-items:flex-start">
+      <div style="display:flex;flex-direction:column;gap:12px;flex:none">
+        <!-- A QR code for https://scripthammer.com/schedule, drawn inline so the deck still needs no network. The white square includes the four-module quiet border a phone camera needs. Made with qr-svg.cjs (the qrcode library, error correction M). -->
+        <svg class="qr" id="qr-call" role="img" aria-label="QR code that opens scripthammer.com/schedule, the page for booking a call" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" shape-rendering="crispEdges" width="440" height="440" style="flex:none;border-radius:10px"><path fill="#ffffff" d="M0 0h37v37H0z"/><path stroke="#000000" d="M4 4.5h7m2 0h1m1 0h2m2 0h6m1 0h7M4 5.5h1m5 0h1m2 0h2m6 0h1m2 0h1m1 0h1m5 0h1M4 6.5h1m1 0h3m1 0h1m1 0h1m2 0h1m2 0h1m1 0h1m2 0h1m2 0h1m1 0h3m1 0h1M4 7.5h1m1 0h3m1 0h1m1 0h2m2 0h1m3 0h2m4 0h1m1 0h3m1 0h1M4 8.5h1m1 0h3m1 0h1m1 0h8m1 0h4m1 0h1m1 0h3m1 0h1M4 9.5h1m5 0h1m1 0h2m2 0h5m5 0h1m5 0h1M4 10.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M12 11.5h1m2 0h1m1 0h1m1 0h1m3 0h2M4 12.5h1m1 0h5m2 0h1m1 0h2m1 0h2m1 0h3m2 0h5M4 13.5h2m1 0h2m2 0h1m2 0h3m2 0h5m2 0h3m3 0h1M4 14.5h1m4 0h3m1 0h1m1 0h2m4 0h1m3 0h1m1 0h2M4 15.5h1m1 0h2m6 0h1m3 0h1m1 0h1m2 0h1m1 0h1m3 0h1m1 0h1M5 16.5h3m2 0h2m3 0h1m5 0h1m2 0h1m4 0h2M4 17.5h2m3 0h1m3 0h1m2 0h4m3 0h2m1 0h3m3 0h1M5 18.5h1m1 0h1m1 0h2m1 0h4m1 0h6m1 0h1m4 0h2M4 19.5h1m7 0h1m1 0h1m1 0h2m1 0h2m3 0h2m2 0h1m2 0h1M7 20.5h1m1 0h2m2 0h1m1 0h1m2 0h2m1 0h1m5 0h1m1 0h2M4 21.5h1m3 0h1m3 0h2m2 0h1m3 0h1m1 0h7m1 0h1m1 0h1M4 22.5h1m1 0h1m1 0h4m3 0h1m3 0h1m1 0h2m1 0h4m2 0h1M4 23.5h1m1 0h1m1 0h2m1 0h5m2 0h3m3 0h2m2 0h1m2 0h1M4 24.5h1m1 0h3m1 0h1m1 0h2m7 0h1m1 0h6m1 0h3M12 25.5h2m3 0h2m1 0h3m1 0h1m3 0h5M4 26.5h7m3 0h1m2 0h4m1 0h3m1 0h1m1 0h3M4 27.5h1m5 0h1m1 0h6m1 0h2m1 0h3m3 0h1M4 28.5h1m1 0h3m1 0h1m1 0h3m1 0h1m1 0h4m2 0h5m1 0h2M4 29.5h1m1 0h3m1 0h1m1 0h1m7 0h1m1 0h2m5 0h4M4 30.5h1m1 0h3m1 0h1m1 0h1m1 0h1m2 0h3m3 0h9M4 31.5h1m5 0h1m3 0h1m1 0h2m1 0h2m3 0h2m1 0h1m1 0h1m1 0h1M4 32.5h7m1 0h1m2 0h1m1 0h3m1 0h1m1 0h1m4 0h3"/></svg>
+        <p style="font-weight:700">Book a call</p>
+        <p class="cap">scripthammer.com/schedule</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:22px">
+        <p style="font-weight:700">Fork it on GitHub:</p>
+        <p style="font-family:var(--mono);font-size:38px">https://github.com/TortoiseWolfe/ScriptHammer</p>
+        <div class="slot" id="slot-wf">
+          <p style="font-weight:700"><span class="dn">Your app</span>: its wireframes</p>
+          <p class="cap">A QR code goes here once the fork has a web address of its own.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<div id="pace" aria-hidden="true"></div>
 <div id="counter" aria-hidden="true"></div>
 <div id="live" role="status" aria-live="polite"></div>
 </div>
@@ -271,16 +304,20 @@ ul { margin: 0; padding-left: 50px; display: flex; flex-direction: column; gap: 
 // The stages follow the copy block, which runs the rebrand INSIDE the container. That route
 // builds the image twice: once so the rebrand has a container to run in, and once more for
 // "docker compose up -d", because the rename changes package.json and the cached image no
-// longer matches. Both builds sit on one step that prints nothing for minutes.
-// STAGE_HINTS is the typical duration of each stage, one entry per stage. They were measured
-// on 11 Nov 2026 on one Linux machine, with the image's system layers already built. Another
-// laptop will differ (a second machine ran the whole rebrand line in 5 min 36 s against
-// 14 min 21 s here), so every hint says "about" and none is a promise.
-const STAGE_HINTS = ['about 0:20', 'about 10:30, quiet: the tour starts', 'about 2:20', 'about 1:00', 'about 12:00, quiet: keep touring', 'about 0:15', 'about 27:00 in all'];
+// longer matches. Both builds print nothing while they run.
+// STAGE_HINTS is the typical duration of each stage, one entry per stage. They come from two
+// dress runs on the stage laptop on 12 Nov 2026, with the image built beforehand: copy 21 and
+// 22 seconds, the first build 2 seconds from its cache, the rebrand 72 and 76 seconds, the app
+// answering 3 to 4 seconds after the start, the whole run under 5 minutes. A stage nobody timed
+// on that laptop carries no number. A laptop with no image built is far slower (26 min 44 s on
+// another machine on 11 Nov), so every figure says "about" and none is a promise.
+// The fork is therefore the opening beat of the talk, not its spine: the slides are paced by
+// the minutes each one carries (data-min), not by the build.
+const STAGE_HINTS = ['about 0:20', 'seconds when built ahead', 'about 1:15', '', 'quiet', 'a few seconds', 'under 5 min'];
 const STAGES = [
   // cmd: true marks a line the presenter's terminal shows as a command, so it gets a "$ ".
   { name: 'Copy', line: 'gh repo … --clone', cmd: true },
-  { name: 'Build 1 (quiet)', line: 'docker compose run …  (image build; one step prints nothing for minutes)', cmd: true },
+  { name: 'Build 1 (quiet)', line: 'docker compose run …  (image build; it prints nothing until it is done)', cmd: true },
   // The script's "Updating file contents..." heading prints over two minutes in, after a first
   // unlabelled sweep of "Updated:" lines, so the cue is the line that prints first.
   { name: 'Rebrand', line: 'Rebranding: ScriptHammer → …  (file names scroll)' },
@@ -290,15 +327,19 @@ const STAGES = [
   { name: 'Up', line: 'the dev server answers' }
 ];
 const LAST = STAGES.length - 1;
+// TOUR is the eight stops of the tour of ScriptHammer itself. Each entry is: the name, the page,
+// the short line under its button on the map, the minutes the stop gets, and the things to show
+// there. Every stop becomes a slide of its own (see buildStops), so the slide on screen always
+// says which stop this is and what not to forget.
 const TOUR = [
-  ['Home', '/', 'the landing page'],
-  ['Themes', '/themes', '35 themes, switch live'],
-  ['Wireframes', '/wireframes', '71 drawings, one viewer'],
-  ['3D Chattanooga', '/chatt', 'the city in 3D, needs internet'],
-  ['Pricing', '/pricing', 'browse only, nothing is bought'],
-  ['Docs', '/docs', 'seven guides'],
-  ['Accessibility', '/accessibility', 'text size, spacing, contrast controls'],
-  ['Status', '/status', 'is everything up']
+  ['Home', '/', 'the landing page', 2, ['Yours will say your name here.', 'Install steps, demo links and the theme strip.', 'Tip jar and book a call.']],
+  ['Themes', '/themes', '35 themes, switch live', 2.5, ['All 35 themes on one page.', 'Switch one live. No reload.', 'Each one shows its contrast figures.']],
+  ['Wireframes', '/wireframes', '71 drawings, one viewer', 2, ['71 drawings in one viewer.', 'Every feature here began as one of these.', 'Yours gets its own after the tour.']],
+  ['3D Chattanooga', '/chatt', 'the city in 3D, needs internet', 2, ['About 8,000 buildings over a satellite globe.', 'No keys or accounts. It needs internet.', 'Not drawn in ten seconds: say the fallback line, play the clip.']],
+  ['Pricing', '/pricing', 'browse only, nothing is bought', 1.5, ['Nine products, in tiers.', 'Browse only. Never click Buy.']],
+  ['Docs', '/docs', 'seven guides', 1.5, ['Seven guides, inside the app.', 'Open the first one: install and first run.']],
+  ['Accessibility', '/accessibility', 'text size, spacing, contrast controls', 2, ['Text size and line spacing.', 'Six fonts, two of them made for easier reading.', 'Colour-blind modes, and one reset.']],
+  ['Status', '/status', 'is everything up', 1.5, ['Scores from the automatic checks.', 'This visit, measured live.', 'It needs internet.']]
 ];
 // WALK is the reveal: every page of the new fork, in the four groups the talk walks them in.
 // The tour above points at the template's address; these point at the fork's own port.
@@ -319,7 +360,11 @@ WALK.forEach(function (g) { g[1].forEach(function (it) { WALK_PATHS.push(it[1]);
 const WARM = { delay: 1500, timeout: 90000, retryWait: 5000, tries: 24 };
 const warm = { port: '', state: 'idle', done: 0, path: '', run: 0, timer: 0, ctrl: null };
 const KEY = 'osc2026-deck';
-const DEFAULTS = { name: '', owner: '', desc: '', icon: '', mode: 'owner', base: 'http://localhost:3000', port: '', visited: {}, stage: -1, start: 0, end: 0 };
+// talk is the moment the talk clock started, or 0 while it is not running. TALK is the slot:
+// talking ends at 40 minutes and questions run to 45. A clock older than stale is one left
+// running by a rehearsal, so it is dropped when the deck opens.
+const TALK = { end: 40, slot: 45, stale: 3 * 60 * 60 * 1000 };
+const DEFAULTS = { name: '', owner: '', desc: '', icon: '', mode: 'owner', base: 'http://localhost:3000', port: '', visited: {}, stage: -1, start: 0, end: 0, talk: 0 };
 const state = Object.assign({}, DEFAULTS, { visited: {} });
 
 function load() {
@@ -327,6 +372,7 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) { const o = JSON.parse(raw); Object.keys(DEFAULTS).forEach(function (k) { if (o[k] !== undefined) state[k] = o[k]; }); }
   } catch (e) { /* storage unavailable: run without it */ }
+  if (state.talk && Date.now() - state.talk > TALK.stale) state.talk = 0;
 }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* ignore */ } }
 
@@ -376,8 +422,43 @@ function problems() {
 }
 
 const $ = function (id) { return document.getElementById(id); };
+
+// One slide per tour stop, written from TOUR and placed after the tour map. Each says which
+// stop this is, what to show there, and opens that page of ScriptHammer in a new tab.
+function buildStops() {
+  const after = $('s-dark');
+  TOUR.forEach(function (it, i) {
+    const s = document.createElement('section');
+    s.className = 'slide'; s.id = 's-stop-' + (i + 1);
+    s.setAttribute('data-min', String(it[3])); s.setAttribute('aria-label', 'Tour: ' + it[0]);
+    const strip = document.createElement('div'); strip.className = 'strip'; strip.setAttribute('data-strip', '');
+    const tag = document.createElement('div'); tag.className = 'tag stop'; tag.textContent = 'tour ' + (i + 1) + ' of ' + TOUR.length;
+    const fitBox = document.createElement('div'); fitBox.className = 'fit';
+    const h = document.createElement('h2'); h.textContent = it[0];
+    const ul = document.createElement('ul');
+    it[4].forEach(function (b) { const li = document.createElement('li'); li.textContent = b; ul.appendChild(li); });
+    const row = document.createElement('div'); row.className = 'row';
+    const a = document.createElement('a'); a.className = 'btn stop-open'; a.target = '_blank'; a.rel = 'noopener';
+    a.setAttribute('data-path', it[1]); a.setAttribute('data-label', it[0]);
+    a.addEventListener('click', function () { state.visited[it[1]] = true; save(); render(); });
+    const cap = document.createElement('span'); cap.className = 'cap'; cap.textContent = 'Opens this page of ScriptHammer in a new tab.';
+    row.appendChild(a); row.appendChild(cap);
+    fitBox.appendChild(h); fitBox.appendChild(ul); fitBox.appendChild(row);
+    s.appendChild(strip); s.appendChild(tag); s.appendChild(fitBox);
+    after.parentNode.insertBefore(s, after);
+  });
+}
+buildStops();
 const slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
 let cur = 1;
+// back is the slide the presenter was on before the P key took them to the Port box.
+let back = 0;
+// Slides are found by name, never by number, so the order can change without breaking a jump.
+function slideNo(id) { const i = slides.indexOf($(id)); return i < 0 ? 1 : i + 1; }
+function goId(id) { go(slideNo(id)); }
+// marks[n] is the minute slide n + 1 starts at; the last entry is where the last timed slide ends.
+const marks = [0];
+slides.forEach(function (s, i) { marks.push(marks[i] + (parseFloat(s.getAttribute('data-min')) || 0)); });
 
 function techName() { return sanitizeName(state.name) || 'yourprojectname'; }
 
@@ -420,6 +501,9 @@ function render() {
   $('open-app').setAttribute('href', havePort ? 'http://localhost:' + port : '#');
   $('open-app').setAttribute('aria-disabled', String(!havePort));
   $('open-app').classList.toggle('ghost', !havePort);
+  $('open-wf').setAttribute('href', havePort ? 'http://localhost:' + port + '/wireframes' : '#');
+  $('open-wf').setAttribute('aria-disabled', String(!havePort));
+  $('open-wf').classList.toggle('ghost', !havePort);
   // The reveal name is as large as its length allows: 150 px up to 14 characters, never under 80 px.
   const big = Math.max(80, Math.min(150, Math.round(150 * 14 / Math.max(1, dn.length))));
   Array.prototype.forEach.call(document.querySelectorAll('.big-name'), function (e) { e.style.fontSize = big + 'px'; });
@@ -448,7 +532,7 @@ function renderWalk() {
         a.setAttribute('data-path', it[1]); a.setAttribute('data-label', it[0]);
         a.addEventListener('click', function (e) {
           // No port yet: open nothing, and take the presenter to the box that needs the number.
-          if (!forkPort()) { e.preventDefault(); go(10); $('in-port').focus(); return; }
+          if (!forkPort()) { e.preventDefault(); back = cur; goId('s-reveal'); $('in-port').focus(); return; }
           state.visited['walk:' + it[1]] = true; save(); render();
         });
         row.appendChild(a);
@@ -556,6 +640,11 @@ function renderTour() {
     a.href = baseUrl() + path;
     a.textContent = (state.visited[path] ? '✓ ' : '') + TOUR[i][0];
   });
+  Array.prototype.forEach.call(document.querySelectorAll('.stop-open'), function (a) {
+    const path = a.getAttribute('data-path');
+    a.href = baseUrl() + path;
+    a.textContent = (state.visited[path] ? '✓ ' : '') + 'Open ' + a.getAttribute('data-label');
+  });
   Array.prototype.forEach.call(document.querySelectorAll('[data-tour]'), function (a) {
     a.href = baseUrl() + a.getAttribute('data-tour');
   });
@@ -583,7 +672,31 @@ function tick() {
   const s = Math.max(0, Math.floor(ms / 1000));
   const mm = String(Math.floor(s / 60)).padStart(2, '0');
   $('clock').textContent = mm + ':' + String(s % 60).padStart(2, '0');
+  renderPace();
 }
+
+// Minutes as m:ss, for the pace line.
+function clockText(min) {
+  const s = Math.max(0, Math.round(min * 60));
+  return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+}
+// The pace line says how long this slide gets and when the next one is due. Once the talk
+// clock runs (T, or the first step off the title) it shows the clock too, and turns warm when
+// the clock is past the mark. The last slide has no minutes: it stays up through questions.
+function renderPace() {
+  const due = marks[cur], here = marks[cur] - marks[cur - 1];
+  const last = cur === slides.length;
+  const now = state.talk ? (Date.now() - state.talk) / 60000 : -1;
+  let msg = last ? 'questions until ' + clockText(TALK.slot) : clockText(here) + ' here, next slide at ' + clockText(due);
+  if (now >= 0) msg = 'clock ' + clockText(now) + ' · ' + (last ? 'questions until ' + clockText(TALK.slot) : 'next slide at ' + clockText(due));
+  // the title is on screen while the room fills: no pace line there until the clock runs
+  if (cur === 1 && now < 0) msg = '';
+  const el = $('pace');
+  if (el.textContent !== msg) el.textContent = msg;
+  el.classList.toggle('over', now >= 0 && now > (last ? TALK.slot : due));
+}
+function talkStart() { state.talk = Date.now(); save(); renderPace(); say('Talk clock started'); }
+function talkClear() { state.talk = 0; save(); renderPace(); say('Talk clock cleared'); }
 function stageMove(d) {
   const n = Math.max(-1, Math.min(LAST, state.stage + d));
   if (n === state.stage) return;
@@ -596,11 +709,14 @@ function stageReset() { state.stage = -1; state.start = 0; state.end = 0; save()
 
 function go(n) {
   n = Math.max(1, Math.min(slides.length, parseInt(n, 10) || 1));
+  // The first step off the title starts the talk clock, so there is no extra key to remember.
+  if (cur === 1 && n === 2 && !state.talk) { state.talk = Date.now(); save(); }
   cur = n;
   slides.forEach(function (s, i) { s.classList.toggle('on', i === n - 1); });
   $('counter').textContent = n + ' / ' + slides.length;
   try { history.replaceState(null, '', '#' + n); } catch (e) { location.hash = String(n); }
   fitActive();
+  renderPace();
 }
 
 function fit() {
@@ -649,11 +765,16 @@ function init() {
   $('open-app').addEventListener('click', function (e) {
     if (this.getAttribute('aria-disabled') === 'true') { e.preventDefault(); $('in-port').focus(); }
   });
+  $('open-wf').addEventListener('click', function (e) {
+    // No port yet: open nothing, and take the presenter to the box that needs the number.
+    // B brings them back here once it is typed.
+    if (this.getAttribute('aria-disabled') === 'true') { e.preventDefault(); back = cur; goId('s-reveal'); $('in-port').focus(); }
+  });
   $('in-port').addEventListener('input', scheduleWarm);
   $('warm-again').addEventListener('click', function () { const port = forkPort(); if (port) startWarm(port); });
   $('reset').addEventListener('click', function () {
     if (!window.confirm('Clear everything you typed?')) return;
-    const keep = { stage: state.stage, start: state.start, end: state.end };
+    const keep = { stage: state.stage, start: state.start, end: state.end, talk: state.talk };
     Object.keys(DEFAULTS).forEach(function (k) { state[k] = DEFAULTS[k]; });
     state.visited = {};
     Object.assign(state, keep);
@@ -667,6 +788,8 @@ function init() {
     const t = e.target, tag = t && t.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
       if (e.key === 'Escape') t.blur();
+      // the description is one line: Enter in its two-row box must not start a second one
+      if (e.key === 'Enter' && t.id === 'in-desc') e.preventDefault();
       return;
     }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
@@ -680,6 +803,12 @@ function init() {
       case ']': stageMove(1); break;
       case '[': stageMove(-1); break;
       case '0': stageReset(); break;
+      // T starts the talk clock from zero; Shift and T clears it.
+      case 't': talkStart(); break;
+      case 'T': talkClear(); break;
+      // P jumps to the Port box on the reveal slide from anywhere; B goes back to where you were.
+      case 'p': case 'P': back = cur; goId('s-reveal'); $('in-port').focus(); break;
+      case 'b': case 'B': if (back) { go(back); back = 0; } break;
       case 'f': case 'F':
         if (document.fullscreenElement) document.exitFullscreen();
         else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
@@ -695,7 +824,7 @@ function init() {
   setInterval(tick, 250);
 }
 
-window.deck = { state: state, sanitizeName: sanitizeName, displayName: displayName, componentName: componentName, cleanDescription: cleanDescription, buildBlock: buildBlock, go: go, fitActive: fitActive, WALK_PATHS: WALK_PATHS, WARM: WARM, warm: warm };
+window.deck = { state: state, sanitizeName: sanitizeName, displayName: displayName, componentName: componentName, cleanDescription: cleanDescription, buildBlock: buildBlock, go: go, goId: goId, slideNo: slideNo, marks: marks, TOUR: TOUR, TALK: TALK, fitActive: fitActive, WALK_PATHS: WALK_PATHS, WARM: WARM, warm: warm };
 init();
 </script>
 </body>
