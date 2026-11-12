@@ -179,19 +179,25 @@ ul { margin: 0; padding-left: 50px; display: flex; flex-direction: column; gap: 
 <section class="slide" data-s="7" aria-label="The tour">
   <div class="strip" data-strip></div>
   <div class="fit" style="gap:22px">
-    <h2 style="font-size:80px">The tour: works the minute you fork.</h2>
+    <h2 style="font-size:80px">The tour: ScriptHammer, while yours builds.</h2>
     <div class="tour" id="tour"></div>
     <div class="row"><label for="in-base" style="margin:0">Template address</label><input id="in-base" type="text" style="width:700px" autocomplete="off"></div>
   </div>
 </section>
 
-<section class="slide" data-s="8" aria-label="Dark until you plug it in">
+<section class="slide" data-s="8" aria-label="Built in, dark on a fresh fork">
   <div class="strip" data-strip></div>
   <div class="fit">
-    <h2>Dark until you plug it in.</h2>
-    <p>Five things wait for a service you connect:</p>
-    <ul><li>sign-in</li><li>payments</li><li>messaging</li><li>the admin dashboard</li><li>contact-form mail</li></ul>
-    <p class="lede">The fork tells you so with a setup banner. It never pretends.</p>
+    <h2>Built in. Dark on a fresh fork.</h2>
+    <p>Five things wait for a service you connect. On a connected ScriptHammer they run:</p>
+    <div class="row" style="flex-wrap:wrap">
+      <a class="btn ghost" data-tour="/sign-in" target="_blank" rel="noopener" href="#">Sign-in</a>
+      <a class="btn ghost" data-tour="/payment-demo" target="_blank" rel="noopener" href="#">Payments</a>
+      <a class="btn ghost" data-tour="/messages" target="_blank" rel="noopener" href="#">Messaging</a>
+      <a class="btn ghost" data-tour="/admin" target="_blank" rel="noopener" href="#">Admin dashboard</a>
+      <a class="btn ghost" data-tour="/contact" target="_blank" rel="noopener" href="#">Contact form</a>
+    </div>
+    <p class="lede">Your fork has all five. Each shows a setup banner until you connect your own service. It never pretends.</p>
   </div>
 </section>
 
@@ -215,11 +221,11 @@ ul { margin: 0; padding-left: 50px; display: flex; flex-direction: column; gap: 
       <input id="in-port" type="text" inputmode="numeric" style="width:200px" autocomplete="off">
     </div>
     <pre class="cmd" id="blk-port"></pre>
-    <div class="row"><button id="copy-port" type="button">Copy</button><span class="cap">Not on 3000? This prints the port.</span></div>
+    <div class="row"><button id="copy-port" type="button">Copy</button><span class="cap">Run this in the new folder. Type the number after the colon into Port.</span></div>
     <ul style="font-size:40px">
-      <li class="tick">Tab title now says <span class="dn">Your app</span></li>
+      <li class="tick">Tab title now says <span class="tn">yourprojectname</span></li>
       <li class="tick">Install name (web manifest) now says <span class="dn">Your app</span></li>
-      <li class="tick">Share card now says <span class="dn">Your app</span></li>
+      <li class="tick">Its two themes are now <span class="tn">yourprojectname</span>-light and <span class="tn">yourprojectname</span>-dark</li>
     </ul>
     <p class="cap" style="font-size:34px">The fork keeps the template's demo pages until you delete them.</p>
   </div>
@@ -230,7 +236,15 @@ ul { margin: 0; padding-left: 50px; display: flex; flex-direction: column; gap: 
     <h2>Take it home.</h2>
     <pre class="cmd" id="blk-home"></pre>
     <div class="row"><button id="copy-home" type="button">Copy the block</button></div>
-    <p>github.com/TortoiseWolfe/ScriptHammer</p>
+    <div class="row" style="gap:44px;flex-wrap:nowrap">
+      <!-- A QR code for https://github.com/TortoiseWolfe/ScriptHammer, drawn inline so the deck still needs no network. The white square includes the quiet border a phone camera needs. -->
+      <svg class="qr" role="img" aria-label="QR code that opens github.com/TortoiseWolfe/ScriptHammer" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" shape-rendering="crispEdges" width="260" height="260" style="flex:none;border-radius:8px"><path fill="#ffffff" d="M0 0h37v37H0z"/><path stroke="#000000" d="M2 2.5h7m2 0h1m1 0h2m3 0h1m2 0h3m1 0h1m2 0h7M2 3.5h1m5 0h1m4 0h1m3 0h2m1 0h1m1 0h1m5 0h1m5 0h1M2 4.5h1m1 0h3m1 0h1m1 0h1m2 0h1m2 0h1m1 0h1m2 0h3m4 0h1m1 0h3m1 0h1M2 5.5h1m1 0h3m1 0h1m1 0h1m3 0h1m5 0h2m1 0h1m4 0h1m1 0h3m1 0h1M2 6.5h1m1 0h3m1 0h1m1 0h2m3 0h4m3 0h2m1 0h1m2 0h1m1 0h3m1 0h1M2 7.5h1m5 0h1m1 0h1m2 0h1m2 0h1m2 0h3m6 0h1m5 0h1M2 8.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M10 9.5h2m6 0h1m1 0h4M2 10.5h1m1 0h5m2 0h1m1 0h4m2 0h1m1 0h1m6 0h5M2 11.5h1m2 0h3m4 0h2m1 0h1m2 0h2m1 0h2m2 0h1m2 0h2m1 0h3M2 12.5h2m3 0h2m2 0h2m2 0h5m4 0h1m1 0h2m2 0h1m1 0h2M2 13.5h4m4 0h2m2 0h2m2 0h3m1 0h1m3 0h1m3 0h5M3 14.5h1m2 0h1m1 0h1m1 0h1m1 0h3m1 0h3m3 0h6m2 0h2m1 0h2M5 15.5h1m3 0h3m2 0h1m2 0h1m2 0h1m4 0h1m6 0h3M2 16.5h4m1 0h5m1 0h6m3 0h1m1 0h1m2 0h3m1 0h1m1 0h1M3 17.5h1m2 0h2m1 0h1m2 0h1m4 0h1m2 0h1m2 0h1m3 0h3m1 0h2M5 18.5h7m1 0h2m2 0h3m2 0h1m1 0h4m1 0h2m3 0h1M2 19.5h2m2 0h2m2 0h1m1 0h1m1 0h5m1 0h1m1 0h2m1 0h1m2 0h2m1 0h2m1 0h1M6 20.5h4m1 0h2m1 0h2m1 0h2m1 0h1m1 0h2m2 0h1m1 0h3m1 0h1M4 21.5h2m3 0h1m5 0h1m1 0h2m2 0h4m4 0h5M2 22.5h1m1 0h1m2 0h2m2 0h1m4 0h2m2 0h2m1 0h1m2 0h2m2 0h2m1 0h1M2 23.5h1m1 0h2m1 0h1m2 0h1m1 0h2m1 0h5m2 0h4m2 0h1m3 0h1m1 0h1M2 24.5h1m3 0h4m1 0h3m1 0h1m3 0h1m1 0h1m5 0h1m3 0h1m1 0h1M2 25.5h1m1 0h2m5 0h2m2 0h1m2 0h1m2 0h4m2 0h7M2 26.5h1m1 0h1m2 0h3m1 0h2m1 0h2m3 0h1m1 0h1m2 0h8m1 0h2M10 27.5h2m2 0h1m3 0h4m3 0h2m3 0h1m1 0h1m1 0h1M2 28.5h7m2 0h1m2 0h1m1 0h4m2 0h1m1 0h3m1 0h1m1 0h1m1 0h2M2 29.5h1m5 0h1m1 0h2m1 0h1m1 0h1m3 0h2m1 0h1m2 0h2m3 0h3m1 0h1M2 30.5h1m1 0h3m1 0h1m1 0h1m1 0h2m3 0h2m2 0h4m1 0h6m1 0h1M2 31.5h1m1 0h3m1 0h1m1 0h3m4 0h1m1 0h2m4 0h3m2 0h1m1 0h1m1 0h1M2 32.5h1m1 0h3m1 0h1m1 0h2m2 0h2m1 0h2m1 0h1m1 0h1m1 0h1m3 0h2M2 33.5h1m5 0h1m2 0h4m1 0h2m5 0h2m5 0h3M2 34.5h7m1 0h1m3 0h1m2 0h3m4 0h4m1 0h1m3 0h1"/></svg>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <p>github.com/TortoiseWolfe/ScriptHammer</p>
+        <p class="cap">Point a phone camera at the square, or type the address.</p>
+        <p class="cap">You need git, the GitHub command line tool (gh), Docker and Node.js.</p>
+      </div>
+    </div>
   </div>
 </section>
 <div id="counter" aria-hidden="true"></div>
@@ -239,17 +253,23 @@ ul { margin: 0; padding-left: 50px; display: flex; flex-direction: column; gap: 
 <script>
 'use strict';
 // Typical duration of each stage, filled in later from a timed run. Empty shows nothing.
-const STAGE_HINTS = ['', '', '', '', '', '', ''];
+// Measured on 11 Nov 2026 on one Linux machine: the rebrand took 2 min 12 s, the image build
+// 8 min 29 s (5 min 38 s of it on a single step that prints nothing), and the first page
+// answered 24 s after that. A slower machine took 5 min 36 s for the rebrand alone, so these
+// are "about", never a promise. Index 5 is never shown: QUIET_HINT takes its place.
+const STAGE_HINTS = ['about 1:20', 'instant', 'instant', 'about 1 s', 'about 0:50', '', 'about 0:25 more'];
 const STAGES = [
-  { name: 'Updating files', line: 'Updating file contents...' },
+  // The script's "Updating file contents..." heading prints over a minute in, after a first
+  // unlabelled sweep of "Updated:" lines, so the cue is the line that prints first.
+  { name: 'Updating files', line: 'Rebranding: ScriptHammer → …  (file names scroll)' },
   { name: 'Themes', line: 'Scaffolding custom themes...' },
   { name: 'Icons', line: 'Updating brand icons...' },
   { name: 'Renaming', line: 'Renaming tracked paths...' },
   { name: 'Verifying', line: 'Verifying rebrand postcondition...' },
-  { name: 'Build (quiet)', line: 'docker compose up -d  (image build, then the first start; long and silent)' },
+  { name: 'Build (quiet)', line: 'docker compose up -d  (image build, about 8:30; one step sits silent for over 5 minutes)' },
   { name: 'Up', line: 'the dev server answers' }
 ];
-const QUIET_HINT = 'the long quiet one: this is when we tour';
+const QUIET_HINT = 'about 8:30, the long quiet one: this is when we tour';
 const TOUR = [
   ['Home', '/', 'the landing page'],
   ['Themes', '/themes', '35 themes, switch live'],
@@ -261,7 +281,7 @@ const TOUR = [
   ['Status', '/status', 'is everything up']
 ];
 const KEY = 'osc2026-deck';
-const DEFAULTS = { name: '', owner: '', desc: '', icon: '', mode: 'owner', base: 'http://localhost:3000', port: '3000', visited: {}, stage: -1, start: 0, end: 0 };
+const DEFAULTS = { name: '', owner: '', desc: '', icon: '', mode: 'owner', base: 'http://localhost:3000', port: '', visited: {}, stage: -1, start: 0, end: 0 };
 const state = Object.assign({}, DEFAULTS, { visited: {} });
 
 function load() {
@@ -345,12 +365,20 @@ function render() {
   $('copy-home').disabled = bad;
   const dn = displayName(state.name) || 'Your app';
   Array.prototype.forEach.call(document.querySelectorAll('.dn'), function (e) { e.textContent = dn; });
+  // The tab title and the theme names carry the cleaned name, because the rebrand points the
+  // git remote at it and the app reads its name from the remote. Only the manifest keeps the spaces.
+  Array.prototype.forEach.call(document.querySelectorAll('.tn'), function (e) { e.textContent = t; });
   Array.prototype.forEach.call(document.querySelectorAll('.dd'), function (e) { e.textContent = cd || 'What your app does'; });
   $('blk-spec').textContent = 'bash .specify/scripts/bash/create-new-feature.sh --dry-run --json --short-name "' + t + '" "' + (cd || 'What your app does') + '"';
   $('blk-port').textContent = 'docker compose port ' + t + ' 3000';
   $('blk-home').textContent = buildBlock('attendee');
-  const port = String(state.port).trim() || '3000';
-  $('open-app').setAttribute('href', 'http://localhost:' + port);
+  // A fresh fork gets a different free port on every start (the compose file maps
+  // SH_PORT, default 0), so there is no address to open until the number is typed in.
+  const port = String(state.port).trim();
+  const havePort = /^\d{2,5}$/.test(port);
+  $('open-app').setAttribute('href', havePort ? 'http://localhost:' + port : '#');
+  $('open-app').setAttribute('aria-disabled', String(!havePort));
+  $('open-app').classList.toggle('ghost', !havePort);
   // The reveal name is as large as its length allows: 150 px up to 14 characters, never under 80 px.
   const big = Math.max(80, Math.min(150, Math.round(150 * 14 / Math.max(1, dn.length))));
   Array.prototype.forEach.call(document.querySelectorAll('.big-name'), function (e) { e.style.fontSize = big + 'px'; });
@@ -481,6 +509,9 @@ function init() {
   $('copy-home').addEventListener('click', function () { copyText(buildBlock('attendee')); });
   $('copy-spec').addEventListener('click', function () { copyText($('blk-spec').textContent + '\n'); });
   $('copy-port').addEventListener('click', function () { copyText($('blk-port').textContent + '\n'); });
+  $('open-app').addEventListener('click', function (e) {
+    if (this.getAttribute('aria-disabled') === 'true') { e.preventDefault(); $('in-port').focus(); }
+  });
   $('reset').addEventListener('click', function () {
     if (!window.confirm('Clear everything you typed?')) return;
     const keep = { stage: state.stage, start: state.start, end: state.end };
