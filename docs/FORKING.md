@@ -12,18 +12,22 @@ test suite. Going live on your own domain is longer and mostly third-party — s
 
 ```bash
 # 1. Fork and clone
-gh repo fork TortoiseWolfe/ScriptHammer --clone
+gh repo fork TortoiseWolfe/ScriptHammer --clone --fork-name YourProjectName
 cd YourProjectName
 
-# 2. Run the rebrand script. It refuses without an icon decision -- see "Your brand
-#    mark is not covered by any of that" below. Use --no-icon if you have no mark yet.
-./scripts/rebrand.sh MyProject myusername "My awesome project description" --icon path/to/mark.svg
-
-# 3. Create environment file
+# 2. Create environment file. It comes first: the container in step 3 reads it.
 cp .env.example .env
 # macOS/Linux: .env will hold service and payment credentials; make it owner-only now.
 chmod 600 .env
 # Edit .env - set UID and GID (run: id -u && id -g)
+
+# 3. Run the rebrand script INSIDE the container, so your machine needs no Node.js.
+#    The service is still called scripthammer here; the rebrand renames it to your
+#    project's name, which is why the later steps say myproject. The script refuses
+#    without an icon decision -- see "Your brand mark is not covered by any of that"
+#    below. Use --no-icon if you have no mark yet. Keep the mark inside the project
+#    folder: the container sees nothing outside it.
+docker compose run --rm scripthammer ./scripts/rebrand.sh MyProject myusername "My awesome project description" --icon path/to/mark.svg
 
 # 4. Start Docker
 docker compose up -d
