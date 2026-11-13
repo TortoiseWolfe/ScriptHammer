@@ -45,7 +45,9 @@ Each slide but the title shows a pace line at the bottom: how long this slide ge
 | 19    | Take it home: the copy block, and a QR code that opens the repository      | 40:00       |
 | 20    | Stay in touch: a QR code that opens the booking page, and the repo address | questions   |
 
-The example text in the boxes on slide 2 is the rehearsal app (PotluckPlanner). It is only an example: the copy block uses what you type, and a box you leave empty falls back to a neutral name.
+The grey text in the boxes on slide 2 is the rehearsal app (PotluckPlanner). Until you type, the whole deck shows that example: the copy block, the build line on slide 3, the wireframe words, the Spec Kit line and the reveal. A line on slide 2 says so while any of the three boxes is empty. The Copy buttons stay off until the three boxes are filled, so the example is never the block you paste. An empty Icon box still means no icon.
+
+On slide 2 you can start typing without clicking: the letters go into the first empty box, in the order name, owner, description. Press Enter to leave a box, then type again for the next one. To change a box that already has text, click it.
 
 Each tour slide (5 to 12) names one page, lists what to show there, and has one button that opens that page of ScriptHammer in a new tab. The slide is the checklist: read it, open the page, show the points, come back, press the right arrow.
 
@@ -75,7 +77,7 @@ The walk is by hand, on one screen: you click through the live app yourself. The
 - Press Enter.
 - Leave it visible.
 - When the terminal says the container started, paste the port command from slide 17. It prints an address that ends in a colon and a number.
-- Press P on any slide. The deck jumps to the Port box on slide 17. Type the number, press Escape, then press B to return to the slide you were on.
+- Press P on any slide but slide 2. The deck jumps to the Port box on slide 17. Type the number, press Enter, then press B to return to the slide you were on.
 
 ## The warm-up
 
@@ -90,22 +92,28 @@ A new development server builds each page the first time anyone asks for it, and
 
 ## Keys
 
-| Key                           | Does                                                         |
-| ----------------------------- | ------------------------------------------------------------ |
-| Right arrow, Space, Page Down | next slide                                                   |
-| Left arrow, Page Up           | previous slide                                               |
-| Home, End                     | first, last slide                                            |
-| ]                             | next stage on the strip (first press starts the build clock) |
-| [                             | back one stage                                               |
-| 0                             | reset the strip and the build clock                          |
-| T                             | start the talk clock again from zero                         |
-| Shift+T                       | clear the talk clock                                         |
-| P                             | jump to the Port box on the reveal slide                     |
-| B                             | back to the slide you left for the Port box                  |
-| F                             | full screen                                                  |
-| Escape                        | leave a text field                                           |
+| Key                           | Does                                                          |
+| ----------------------------- | ------------------------------------------------------------- |
+| Right arrow, Space, Page Down | next slide                                                    |
+| Left arrow, Page Up           | previous slide                                                |
+| Home, End                     | first, last slide                                             |
+| ]                             | next stage on the strip (first press starts the build clock)  |
+| [                             | back one stage                                                |
+| 0                             | reset the strip and the build clock                           |
+| T                             | start the talk clock again from zero                          |
+| Shift+T                       | clear the talk clock                                          |
+| P                             | jump to the Port box on the reveal slide                      |
+| B                             | back to the slide you left for the Port box                   |
+| F                             | full screen (the Full screen button on slide 1 does the same) |
+| Enter, Escape                 | leave a text field                                            |
 
-Keys do not navigate while you type in a field. In the description box, Enter does nothing, so it cannot break the copy block.
+Slide 1 shows the main keys and a Full screen button, so nothing has to be remembered to start.
+
+If slide 1 also shows an amber line that starts "This is a preview panel", the deck is open inside another app's panel and not in a browser window. Keys reach it only after a click inside, and full screen may be refused. Open the file in a browser. A viewer that runs no scripts shows one white sentence saying the same thing, and no slides.
+
+Keys do not navigate while you type in a field. Enter leaves the field and never adds a line, so it cannot break the copy block. In full screen, use Enter to leave a field: Escape leaves the field and full screen together.
+
+On slide 2 the letter keys are answers, never deck keys: T, P, B and F do nothing there except type. The arrows, Space and the bracket keys work as on every other slide.
 
 ## If something fails
 
@@ -113,7 +121,7 @@ Keys do not navigate while you type in a field. In the description box, Enter do
 - The fork command refuses: a repository of that name already exists. Pick another name.
 - The build runs long: stay on the tour, then show the fallback clip.
 - The Open button on the reveal slide does nothing: the Port box is empty. A fresh copy gets a new port on every start, so run the port command on that slide and type the number after the colon into the box.
-- The wireframes button on slide 15 jumps to slide 17: same cause, the Port box is empty. Type the number, press Escape, press B.
+- The wireframes button on slide 15 jumps to slide 17: same cause, the Port box is empty. Type the number, press Enter, press B.
 - A button on slide 18 jumps back to slide 17: same cause again. Type the number and go forward again.
 - Slide 18 says "No answer from" a page: the new copy is not up, or the port is wrong. Check the number against the terminal, wait for the container to start, then press Warm the pages.
 - A page of the new copy is slow to open: the warm-up had not reached it. Say "the server is building this page for the first time" and wait. It opens at normal speed after that.
