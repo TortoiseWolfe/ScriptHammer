@@ -49,7 +49,8 @@ pre.cmd { font: 34px/1.4 var(--mono); background: var(--ground); box-shadow: var
 .cap { font-size: 40px; color: var(--steel); }
 .row { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
 #counter { position: absolute; right: 40px; bottom: 24px; font: 34px var(--mono); color: var(--steel); }
-#live { position: absolute; left: 40px; bottom: 24px; font: 34px var(--mono); color: var(--live); }
+/* A long message reaches the pace line in the middle. It has the slide's own ground behind it, so it covers that line for its two seconds instead of printing through it. */
+#live { position: absolute; left: 28px; bottom: 24px; padding: 0 12px; font: 34px var(--mono); color: var(--live); background: var(--ground); z-index: 2; }
 .strip { position: absolute; top: 24px; left: 110px; right: 110px; display: flex; gap: 8px; }
 .strip.big { position: static; margin: 0; gap: 12px; }
 .st { flex: 1; border: 3px solid var(--steel); border-radius: 8px; padding: 6px 10px; font: 700 26px var(--body); color: var(--steel); text-align: center; min-height: 52px; }
@@ -89,9 +90,15 @@ p, li, .cap { text-wrap: pretty; }
 .tag.stop { color: var(--steel); border-color: var(--steel); }
 /* An empty place kept for a QR code that does not exist yet. */
 .slot { border: 4px dashed var(--steel); border-radius: 14px; padding: 26px 34px; display: flex; flex-direction: column; gap: 10px; max-width: 860px; }
+/* The keys line on the title slide: each key sits in its own small cap, followed by what it does. */
+.keys { font-size: 34px; color: var(--steel); }
+.keys kbd { font: 30px var(--mono); color: var(--amber); border: 2px solid var(--edge); border-radius: 8px; padding: 2px 14px; margin: 0 6px 0 22px; background: var(--plate); }
+.keys kbd:first-child { margin-left: 0; }
 </style>
 </head>
 <body>
+<!-- The slides are hidden until the script shows one, so a viewer that runs no scripts (a chat app's attachment preview, say) would show an empty page. This says why, in words. -->
+<noscript><p id="no-script" style="margin:8vh 8vw;font:28px/1.4 sans-serif;color:#fff">This viewer is not running the deck, so its slides stay hidden. Open this file in a browser (Safari, Chrome or Firefox) to see it.</p></noscript>
 <div id="stage">
 <!-- The slides are numbered by the script, in the order they stand here, so a slide can move or be added without renumbering the rest. data-min is the minutes a slide gets; the pace line at the bottom adds them up. -->
 <section class="slide" id="s-title" data-min="1" aria-label="Title">
@@ -99,6 +106,13 @@ p, li, .cap { text-wrap: pretty; }
     <h1>ScriptHammer,<br>forked live</h1>
     <p class="lede" style="font-size:64px">Open Source Camp 2026, Chattanooga</p>
     <p class="small">One template. Your name on it before we finish talking.</p>
+    <!-- The controls are written on the first slide, so nobody has to remember a key to find full screen. The button does what F does. -->
+    <div class="row" id="title-controls">
+      <button id="full-btn" type="button" class="ghost">Full screen</button>
+      <span class="keys"><kbd>F</kbd> full screen <kbd>→</kbd> next <kbd>←</kbd> back <kbd>]</kbd> next build step <kbd>T</kbd> restart the clock</span>
+    </div>
+    <!-- Shown only when the deck sits inside another page's panel. There the keys reach the deck only after a click inside it, and the panel decides whether full screen is allowed. -->
+    <p class="note" id="framed-note" hidden>This is a preview panel, not a browser window. Click inside it before a key will work, and full screen may be refused. For the talk, open the file in a browser.</p>
   </div>
 </section>
 
@@ -133,6 +147,8 @@ p, li, .cap { text-wrap: pretty; }
           <button id="mode-owner" type="button" aria-pressed="true">I own the template</button>
           <button id="mode-att" type="button" aria-pressed="false">Attendee</button>
         </div>
+        <!-- Says so while the block is still built from the grey example text; empty once the three boxes are filled. -->
+        <div class="note" id="eg-note" style="font-size:30px"></div>
         <div class="cap" style="font-size:36px">You'd type this</div>
         <pre class="cmd" id="blk-att"></pre>
         <div id="owner-wrap">
@@ -316,17 +332,21 @@ p, li, .cap { text-wrap: pretty; }
 const STAGE_HINTS = ['about 0:20', 'seconds when built ahead', 'about 1:15', '', 'quiet', 'a few seconds', 'under 5 min'];
 const STAGES = [
   // cmd: true marks a line the presenter's terminal shows as a command, so it gets a "$ ".
-  { name: 'Copy', line: 'gh repo … --clone', cmd: true },
-  { name: 'Build 1 (quiet)', line: 'docker compose run …  (image build; it prints nothing until it is done)', cmd: true },
-  // The script's "Updating file contents..." heading prints over two minutes in, after a first
-  // unlabelled sweep of "Updated:" lines, so the cue is the line that prints first.
-  { name: 'Rebrand', line: 'Rebranding: ScriptHammer → …  (file names scroll)' },
-  { name: 'Verifying', line: 'Verifying rebrand postcondition...' },
-  { name: 'Build 2 (quiet)', line: 'docker compose up -d  (the image builds again for the renamed app)', cmd: true },
-  { name: 'Starting', line: 'Container … Started  (the dev server is compiling the first page)' },
-  { name: 'Up', line: 'the dev server answers' }
+  // What each stage's line says is in stageLine(), because the lines carry the app's own name.
+  { name: 'Copy', cmd: true },
+  { name: 'Build 1 (quiet)', cmd: true },
+  { name: 'Rebrand' },
+  { name: 'Verifying' },
+  { name: 'Build 2 (quiet)', cmd: true },
+  { name: 'Starting' },
+  { name: 'Up' }
 ];
 const LAST = STAGES.length - 1;
+// EXAMPLE is the rehearsal app. It is the grey text in the boxes on the second slide, and every
+// place the deck needs a name, an owner or a description before one is typed uses it too, so an
+// untouched deck reads as one worked example from the first slide to the last. The Copy buttons
+// stay off until the three boxes are filled, so the example is never the block that gets pasted.
+const EXAMPLE = { name: 'PotluckPlanner', owner: 'TortoiseWolfe', desc: 'It tracks who is bringing what to a shared meal, so nothing shows up twice.', icon: 'placeholder-mark.svg' };
 // TOUR is the eight stops of the tour of ScriptHammer itself. Each entry is: the name, the page,
 // the short line under its button on the map, the minutes the stop gets, and the things to show
 // there. Every stop becomes a slide of its own (see buildStops), so the slide on screen always
@@ -393,11 +413,18 @@ function repoName(n) { return displayName(n).replace(/ +/g, '-').replace(/^-+|-+
 function validOwner(o) { return o.length >= 1 && o.length <= 39 && /^[A-Za-z0-9]+(-[A-Za-z0-9]+)*$/.test(o); }
 function q(s) { return /\s/.test(s) ? '"' + s + '"' : s; }
 
+// What the deck shows for each answer: the typed text, or the example while a box is empty.
+function shownName() { return displayName(state.name) || EXAMPLE.name; }
+function shownDesc() { return cleanDescription(state.desc) || EXAMPLE.desc; }
+// True while at least one of the three required boxes is empty, so the example is still on show.
+function usingExample() { return !state.name.trim() || !state.owner.trim() || !state.desc.trim(); }
+
 function buildBlock(mode) {
-  const repo = repoName(state.name) || 'YourProjectName';
-  const dn = displayName(state.name) || 'YourProjectName';
-  const owner = state.owner.trim() || 'yourname';
-  const desc = cleanDescription(state.desc) || 'What your app does';
+  const repo = repoName(state.name) || repoName(EXAMPLE.name);
+  const dn = shownName();
+  const owner = state.owner.trim() || EXAMPLE.owner;
+  const desc = shownDesc();
+  // The icon is optional: an empty box means no icon, whatever the grey example says.
   const icon = state.icon.trim();
   const iconArg = icon ? '--icon ' + q(icon) + ' --force' : '--no-icon --force';
   const first = mode === 'attendee'
@@ -411,6 +438,25 @@ function buildBlock(mode) {
     'docker compose up -d'].join(' &&\n') + '\n';
 }
 function ownerLine() { return buildBlock('owner').split('\n')[0].replace(/ &&$/, ''); }
+// The line under the build clock: what the presenter's terminal shows at each stage, with the
+// app's own name in it. The two command stages show the real line of the copy block, for the
+// mode in use. The "Updating file contents..." heading prints over two minutes into the rebrand,
+// after a first unlabelled sweep of "Updated:" lines, so that stage's cue is the line that
+// prints first. The container's full name starts with the Compose project, which this file
+// cannot know, so the "Starting" stage names only the part it does know.
+function stageLine(i) {
+  const lines = buildBlock(state.mode === 'owner' ? 'owner' : 'attendee').trim().split(' &&\n');
+  switch (i) {
+    case 0: return lines[0];
+    case 1: return lines[3] + '  (image build; it prints nothing until it is done)';
+    case 2: return 'Rebranding: ScriptHammer → ' + shownName() + '  (file names scroll)';
+    case 3: return 'Verifying rebrand postcondition...';
+    case 4: return lines[4] + '  (the image builds again for the renamed app)';
+    case 5: return 'A Container line that names ' + techName() + ' says Started  (the dev server is compiling the first page)';
+    case 6: return 'the dev server answers';
+    default: return '';
+  }
+}
 
 function problems() {
   const p = { name: '', owner: '', desc: '' };
@@ -460,7 +506,7 @@ function goId(id) { go(slideNo(id)); }
 const marks = [0];
 slides.forEach(function (s, i) { marks.push(marks[i] + (parseFloat(s.getAttribute('data-min')) || 0)); });
 
-function techName() { return sanitizeName(state.name) || 'yourprojectname'; }
+function techName() { return sanitizeName(state.name) || sanitizeName(EXAMPLE.name); }
 
 function render() {
   const p = problems();
@@ -472,10 +518,12 @@ function render() {
   const collapsed = state.desc.trim().replace(/\s+/g, ' ');
   $('note-desc').textContent = cd !== collapsed ? 'Removed characters the shell would trip on.' : '';
   const t = techName();
-  $('m-repo').textContent = repoName(state.name) || 'YourProjectName';
+  $('m-repo').textContent = repoName(state.name) || repoName(EXAMPLE.name);
   $('m-tech').textContent = t;
   $('m-themes').textContent = t + '-light, ' + t + '-dark';
-  $('m-comp').textContent = componentName(state.name) || 'YourProjectName';
+  $('m-comp').textContent = componentName(state.name) || componentName(EXAMPLE.name);
+  const eg = usingExample() ? 'Grey text is the example. Start typing, or click a box.' : '';
+  if ($('eg-note').textContent !== eg) $('eg-note').textContent = eg;
   $('blk-att').textContent = buildBlock('attendee');
   $('blk-own').textContent = ownerLine();
   $('owner-wrap').style.display = state.mode === 'owner' ? 'block' : 'none';
@@ -485,13 +533,14 @@ function render() {
   const bad = !!(p.name || p.owner || p.desc);
   $('copy-main').disabled = bad;
   $('copy-home').disabled = bad;
-  const dn = displayName(state.name) || 'Your app';
+  const dn = shownName();
+  const sd = shownDesc();
   Array.prototype.forEach.call(document.querySelectorAll('.dn'), function (e) { e.textContent = dn; });
   // The tab title and the theme names carry the cleaned name, because the rebrand points the
   // git remote at it and the app reads its name from the remote. Only the manifest keeps the spaces.
   Array.prototype.forEach.call(document.querySelectorAll('.tn'), function (e) { e.textContent = t; });
-  Array.prototype.forEach.call(document.querySelectorAll('.dd'), function (e) { e.textContent = cd || 'What your app does'; });
-  $('blk-spec').textContent = 'bash .specify/scripts/bash/create-new-feature.sh --dry-run --json --short-name "' + t + '" "' + (cd || 'What your app does') + '"';
+  Array.prototype.forEach.call(document.querySelectorAll('.dd'), function (e) { e.textContent = sd; });
+  $('blk-spec').textContent = 'bash .specify/scripts/bash/create-new-feature.sh --dry-run --json --short-name "' + t + '" "' + sd + '"';
   $('blk-port').textContent = 'docker compose port ' + t + ' 3000';
   $('blk-home').textContent = buildBlock('attendee');
   // A fresh fork gets a different free port on every start (the compose file maps
@@ -663,7 +712,7 @@ function renderStrips() {
       el.appendChild(d);
     });
   });
-  $('termline').textContent = state.stage >= 0 ? (STAGES[state.stage].cmd ? '$ ' : '') + STAGES[state.stage].line : '';
+  $('termline').textContent = state.stage >= 0 ? (STAGES[state.stage].cmd ? '$ ' : '') + stageLine(state.stage) : '';
   tick();
 }
 function tick() {
@@ -746,16 +795,64 @@ function copyText(text) {
   } else { fallback(); }
 }
 
+// A box and the answer it holds. "input" is the event every browser sends while someone types;
+// "change" and "keyup" are listened to as well, so an answer that reaches the box by a route
+// that sends no "input" (a browser's autofill, a paste from a menu) still reaches the deck.
 function bindInput(id, key) {
   const el = $(id);
   el.value = state[key];
-  el.addEventListener('input', function () { state[key] = el.value; save(); render(); });
+  function sync() { if (state[key] === el.value) return; state[key] = el.value; save(); render(); }
+  ['input', 'change', 'keyup'].forEach(function (ev) { el.addEventListener(ev, sync); });
 }
+
+// The three boxes that must be filled, in the order they are asked.
+const ASK = [['in-name', 'name'], ['in-owner', 'owner'], ['in-desc', 'desc']];
+// A letter typed on the boxes slide while no box has the cursor. Before, it ran a deck key
+// instead: a P left the slide for the Port box and a T restarted the talk clock, so an answer
+// typed without a click first never reached a box. Now the letter starts the first empty box,
+// which takes the cursor, and the rest of the answer follows it there.
+function typeThrough(ch) {
+  const hit = ASK.filter(function (a) { return !state[a[1]].trim(); })[0];
+  if (!hit) { say('Click a box to change it'); return; }
+  const el = $(hit[0]);
+  el.focus();
+  el.value = ch;
+  try { el.setSelectionRange(ch.length, ch.length); } catch (e) { /* the cursor stays where the browser put it */ }
+  state[hit[1]] = el.value; save(); render();
+}
+
+// Full screen, for the F key and the button on the title slide. Older Safari knows only the
+// names that start with "webkit". A browser that refuses says so on the slide.
+function fullEl() { return document.fullscreenElement || document.webkitFullscreenElement || null; }
+function toggleFull() {
+  const d = document, r = d.documentElement;
+  const no = 'Full screen was refused. Use the browser’s View menu.';
+  try {
+    if (fullEl()) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
+    const req = r.requestFullscreen || r.webkitRequestFullscreen;
+    if (!req) { say(no); return; }
+    const p = req.call(r);
+    if (p && p.catch) p.catch(function () { say(no); });
+  } catch (e) { say(no); }
+}
+function renderFull() { $('full-btn').textContent = fullEl() ? 'Leave full screen' : 'Full screen'; }
 
 function init() {
   load();
   bindInput('in-name', 'name'); bindInput('in-owner', 'owner'); bindInput('in-desc', 'desc');
   bindInput('in-icon', 'icon'); bindInput('in-base', 'base'); bindInput('in-port', 'port');
+  // The grey text in the boxes comes from EXAMPLE, the same place the blocks read it from.
+  $('in-name').placeholder = EXAMPLE.name; $('in-owner').placeholder = EXAMPLE.owner;
+  $('in-desc').placeholder = EXAMPLE.desc; $('in-icon').placeholder = EXAMPLE.icon;
+  // The button blurs itself afterwards, so a later Space moves on a slide instead of pressing it again.
+  $('full-btn').addEventListener('click', function () { toggleFull(); this.blur(); });
+  ['fullscreenchange', 'webkitfullscreenchange'].forEach(function (ev) { document.addEventListener(ev, renderFull); });
+  // Some browsers report a refusal only as an event, with no promise to catch.
+  ['fullscreenerror', 'webkitfullscreenerror'].forEach(function (ev) {
+    document.addEventListener(ev, function () { say('Full screen was refused. Use the browser’s View menu.'); });
+  });
+  // Inside another page's panel the window is not the top one. Say so on the title slide.
+  if (window.self !== window.top) $('framed-note').hidden = false;
   $('mode-owner').addEventListener('click', function () { state.mode = 'owner'; save(); render(); });
   $('mode-att').addEventListener('click', function () { state.mode = 'attendee'; save(); render(); });
   $('copy-main').addEventListener('click', function () { copyText(buildBlock(state.mode === 'owner' ? 'owner' : 'attendee')); });
@@ -770,7 +867,7 @@ function init() {
     // B brings them back here once it is typed.
     if (this.getAttribute('aria-disabled') === 'true') { e.preventDefault(); back = cur; goId('s-reveal'); $('in-port').focus(); }
   });
-  $('in-port').addEventListener('input', scheduleWarm);
+  ['input', 'change'].forEach(function (ev) { $('in-port').addEventListener(ev, scheduleWarm); });
   $('warm-again').addEventListener('click', function () { const port = forkPort(); if (port) startWarm(port); });
   $('reset').addEventListener('click', function () {
     if (!window.confirm('Clear everything you typed?')) return;
@@ -788,11 +885,14 @@ function init() {
     const t = e.target, tag = t && t.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
       if (e.key === 'Escape') t.blur();
-      // the description is one line: Enter in its two-row box must not start a second one
-      if (e.key === 'Enter' && t.id === 'in-desc') e.preventDefault();
+      // Enter leaves the box, as Escape does. In full screen Escape also leaves full screen, so
+      // Enter is the key to use there. The description is one line: Enter must not start a second.
+      if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); t.blur(); }
       return;
     }
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+    // On the boxes slide a letter is an answer, never a deck key (see typeThrough).
+    if (slides[cur - 1].id === 's-ask' && !e.isComposing && /^[a-zA-Z]$/.test(e.key)) { typeThrough(e.key); e.preventDefault(); return; }
     const onControl = tag === 'BUTTON' || tag === 'A';
     switch (e.key) {
       case 'ArrowRight': case 'PageDown': go(cur + 1); break;
@@ -809,10 +909,7 @@ function init() {
       // P jumps to the Port box on the reveal slide from anywhere; B goes back to where you were.
       case 'p': case 'P': back = cur; goId('s-reveal'); $('in-port').focus(); break;
       case 'b': case 'B': if (back) { go(back); back = 0; } break;
-      case 'f': case 'F':
-        if (document.fullscreenElement) document.exitFullscreen();
-        else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
-        break;
+      case 'f': case 'F': toggleFull(); break;
       default: return;
     }
     e.preventDefault();
@@ -824,7 +921,7 @@ function init() {
   setInterval(tick, 250);
 }
 
-window.deck = { state: state, sanitizeName: sanitizeName, displayName: displayName, componentName: componentName, cleanDescription: cleanDescription, buildBlock: buildBlock, go: go, goId: goId, slideNo: slideNo, marks: marks, TOUR: TOUR, TALK: TALK, fitActive: fitActive, WALK_PATHS: WALK_PATHS, WARM: WARM, warm: warm };
+window.deck = { EXAMPLE: EXAMPLE, stageLine: stageLine, render: render, state: state, sanitizeName: sanitizeName, displayName: displayName, componentName: componentName, cleanDescription: cleanDescription, buildBlock: buildBlock, go: go, goId: goId, slideNo: slideNo, marks: marks, TOUR: TOUR, TALK: TALK, fitActive: fitActive, WALK_PATHS: WALK_PATHS, WARM: WARM, warm: warm };
 init();
 </script>
 </body>
