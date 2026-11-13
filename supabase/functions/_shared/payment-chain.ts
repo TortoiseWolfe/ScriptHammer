@@ -55,6 +55,76 @@ export async function chainAlreadyPaid(
   return (paid ?? []).length > 0;
 }
 
+/** One sentence for the buyer whose PayPal capture is held (#1349), whichever door they come through. */
+export const PAYMENT_PROCESSING_MESSAGE =
+  'Your PayPal payment is still processing. Please wait for it to finish before paying another way.';
+
+/**
+ * How long a held PayPal capture counts as "in flight". PayPal holds a capture (an eCheck, or one
+ * under review) for up to about five business days, so seven days covers it. Past that, a row that
+ * no webhook ever settled stops blocking the buyer, who would otherwise be locked out of paying
+ * for good; paypal-webhook still settles it if the event arrives later.
+ */
+export const PENDING_CAPTURE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * A PayPal capture PayPal answered PENDING and may still complete (#1349).
+ *
+ * `pending` alone cannot say so: create-paypal-order writes a pending row for every order, and an
+ * abandoned approval stays pending for ever, which is what a legitimate retry follows. A row that
+ * capture-paypal-order has touched carries verification_method = 'redirect' and nothing else
+ * writes that to a pending row, so the pair is the marker. No schema change.
+ */
+export function isHeldCapture(
+  row: {
+    status: string;
+    verification_method: string | null;
+    updated_at: string | null;
+  },
+  now: number = Date.now()
+): boolean {
+  if (row.status !== 'pending' || row.verification_method !== 'redirect') {
+    return false;
+  }
+  const touched = row.updated_at ? Date.parse(row.updated_at) : NaN;
+  // An unreadable stamp counts as held: the failure to avoid is a second charge.
+  return Number.isNaN(touched) || now - touched < PENDING_CAPTURE_WINDOW_MS;
+}
+
+/**
+ * What capture-paypal-order records for the status PayPal answered. PENDING is its own state, not a
+ * failure: PayPal may still complete it, and recording it failed let the buyer pay again (#1349).
+ */
+export function recordedCaptureStatus(
+  paypalStatus: string
+): 'succeeded' | 'pending' | 'failed' {
+  if (paypalStatus === 'COMPLETED') return 'succeeded';
+  if (paypalStatus === 'PENDING') return 'pending';
+  return 'failed';
+}
+
+/**
+ * Whether any intent in the chain has a PayPal capture on hold (#1349). Throws on a read error,
+ * like chainAlreadyPaid, so the gate fails closed.
+ */
+export async function chainPaymentProcessing(
+  supabase: any,
+  intentId: string
+): Promise<boolean> {
+  const ids = await chainIntentIds(supabase, intentId);
+  const { data: held, error } = await supabase
+    .from('payment_results')
+    .select('id, status, verification_method, updated_at')
+    .in('intent_id', ids)
+    .eq('provider', 'paypal')
+    .eq('status', 'pending')
+    .eq('verification_method', 'redirect');
+  if (error) throw error;
+  return ((held ?? []) as Parameters<typeof isHeldCapture>[0][]).some((r) =>
+    isHeldCapture(r)
+  );
+}
+
 /**
  * Every intent in `intentId`'s retry chain: up to the purchase, then every descendant of it, level
  * by level, within MAX_CHAIN_HOPS. Throws on a read error. The walk chainAlreadyPaid answers over,
@@ -110,7 +180,7 @@ export type PaidGate =
   | {
       kind: 'refuse';
       status: 409 | 500;
-      code: 'already_paid' | 'paid_check_failed';
+      code: 'already_paid' | 'payment_processing' | 'paid_check_failed';
       error: string;
     };
 
@@ -125,8 +195,12 @@ export async function gateOnChainPaid(
   intentId: string
 ): Promise<PaidGate> {
   let paid: boolean;
+  let processing = false;
   try {
     paid = await chainAlreadyPaid(supabase, intentId);
+    // A capture on hold is a payment in flight, not a failure (#1349). Asked only once the chain
+    // is known unpaid, so a paid chain still answers "already paid".
+    if (!paid) processing = await chainPaymentProcessing(supabase, intentId);
   } catch (err) {
     console.error(
       `payment-chain: could not check whether ${intentId} is paid`,
@@ -140,12 +214,20 @@ export async function gateOnChainPaid(
         'Could not confirm this payment is not already paid. Please try again.',
     };
   }
-  return paid
+  if (paid) {
+    return {
+      kind: 'refuse',
+      status: 409,
+      code: 'already_paid',
+      error: ALREADY_PAID_MESSAGE,
+    };
+  }
+  return processing
     ? {
         kind: 'refuse',
         status: 409,
-        code: 'already_paid',
-        error: ALREADY_PAID_MESSAGE,
+        code: 'payment_processing',
+        error: PAYMENT_PROCESSING_MESSAGE,
       }
     : { kind: 'proceed' };
 }

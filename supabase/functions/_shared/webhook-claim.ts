@@ -62,6 +62,9 @@ export const REPLAY_SAFE: Readonly<Record<WebhookProvider, readonly string[]>> =
       // path; the order advance is the same compare-and-swap.
       'PAYMENT.CAPTURE.COMPLETED',
       'PAYMENT.SALE.COMPLETED',
+      // A compare-and-swap on status = 'pending' (#1349): a replay finds nothing left to change.
+      'PAYMENT.CAPTURE.DENIED',
+      'PAYMENT.CAPTURE.DECLINED',
       // Stage 2, as for Stripe's subscription events.
       'BILLING.SUBSCRIPTION.CREATED',
       'BILLING.SUBSCRIPTION.ACTIVATED',
