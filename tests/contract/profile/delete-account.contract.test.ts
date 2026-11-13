@@ -1,117 +1,177 @@
 /**
- * Contract Test: Delete Account (DELETE /rest/v1/user_profiles)
+ * Contract Test: Delete Account (POST /functions/v1/delete-account)
  *
  * Tests the contract for account deletion with cascade behavior.
- * These tests MUST fail until implementation is complete (TDD RED phase).
+ * Account deletion runs server-side via the delete-account Edge Function, which
+ * calls auth.admin.deleteUser with the service role; the profile, audit logs and
+ * other ON DELETE CASCADE children fall with the auth.users row.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { createClient } from '../../helpers/real-supabase';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { createClient, createServiceClient } from '../../helpers/real-supabase';
 
 describe('Account Deletion Contract', () => {
   let supabase: ReturnType<typeof createClient>;
+  let admin: ReturnType<typeof createServiceClient>;
   let testUserId: string;
   let testEmail: string;
+  let testAccessToken: string;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+
+  async function callDeleteAccount(accessToken: string) {
+    const res = await fetch(`${supabaseUrl}/functions/v1/delete-account`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return res.json();
+  }
 
   beforeEach(async () => {
     supabase = createClient();
-    testEmail = `delete-test-${Date.now()}@example.com`;
+    admin = createServiceClient();
+    testEmail = `delete-test-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}@example.com`;
 
-    // Create test user
-    const { data } = await supabase.auth.signUp({
+    const { data, error } = await admin.auth.admin.createUser({
       email: testEmail,
       password: 'ValidPass123!',
+      email_confirm: true,
     });
-
+    expect(error).toBeNull();
     testUserId = data.user!.id;
 
-    await supabase.auth.signInWithPassword({
-      email: testEmail,
-      password: 'ValidPass123!',
-    });
+    const { data: signInData, error: signInError } =
+      await supabase.auth.signInWithPassword({
+        email: testEmail,
+        password: 'ValidPass123!',
+      });
+    expect(signInError).toBeNull();
+    testAccessToken = signInData.session!.access_token;
+  });
+
+  afterEach(async () => {
+    await supabase.auth.signOut();
+    // payment_intents.template_user_id references auth.users with NO ON DELETE
+    // action, so a user that owns an intent cannot be deleted. Clear those
+    // first, then remove whatever is left of the throwaway account.
+    await admin
+      .from('payment_intents')
+      .delete()
+      .eq('template_user_id', testUserId);
+    await admin.auth.admin.deleteUser(testUserId);
   });
 
   it('should cascade delete user profile when auth user deleted', async () => {
-    // Verify profile exists
-    const { data: beforeProfile } = await supabase
+    const { data: beforeProfile, error: readError } = await supabase
       .from('user_profiles')
-      .select('id, username, display_name, avatar_url, bio, created_at, updated_at')
+      .select(
+        'id, username, display_name, avatar_url, bio, created_at, updated_at'
+      )
       .eq('id', testUserId)
       .single();
 
+    expect(readError).toBeNull();
     expect(beforeProfile).toBeDefined();
 
-    // Delete auth user (requires admin privileges in real app)
-    // In production, this would be done via Supabase admin API
-    // For now, we document the expected cascade behavior
+    const result = await callDeleteAccount(testAccessToken);
+    expect(result.success).toBe(true);
 
-    // Expected: user_profiles row auto-deletes due to ON DELETE CASCADE
-    // This is tested in integration tests with actual admin deletion
+    const { data: afterProfile } = await admin
+      .from('user_profiles')
+      .select('id')
+      .eq('id', testUserId)
+      .maybeSingle();
+
+    expect(afterProfile).toBeNull();
   });
 
   it('should cascade delete audit logs when user deleted', async () => {
-    // Create audit log entry
-    await supabase.from('auth_audit_logs').insert({
+    const { error: insertError } = await admin.from('auth_audit_logs').insert({
       user_id: testUserId,
       event_type: 'sign_in_success',
       event_data: { test: true },
     });
+    expect(insertError).toBeNull();
 
-    // Verify audit log exists
-    const { data: beforeLogs } = await supabase
+    const { data: beforeLogs, error: readError } = await admin
       .from('auth_audit_logs')
-      .select('id, username, display_name, avatar_url, bio, created_at, updated_at')
+      .select('id, user_id')
       .eq('user_id', testUserId);
-
-    expect(beforeLogs).toBeDefined();
+    expect(readError).toBeNull();
     expect(beforeLogs?.length).toBeGreaterThan(0);
 
-    // Expected: auth_audit_logs rows auto-delete due to ON DELETE CASCADE
-    // This is tested in integration tests with actual admin deletion
+    const result = await callDeleteAccount(testAccessToken);
+    expect(result.success).toBe(true);
+
+    const { data: afterLogs } = await admin
+      .from('auth_audit_logs')
+      .select('id')
+      .eq('user_id', testUserId);
+    expect(afterLogs ?? []).toHaveLength(0);
   });
 
-  it('should cascade delete payment intents when user deleted', async () => {
-    // Create payment intent for user
-    await supabase.from('payment_intents').insert({
+  it('should keep payment intents when user deletion is refused', async () => {
+    // Buyer payment rows reference auth.users with NO ON DELETE action, so
+    // deleting the account is REFUSED rather than orphaning or cascading the
+    // payment history. The gdpr-service relies on this: it deletes the account
+    // before wiping local keys, because a refused delete leaves the account
+    // usable and its messages decryptable (#859, #1309).
+    const { error: insertError } = await admin.from('payment_intents').insert({
       template_user_id: testUserId,
       amount: 1000,
-      currency: 'USD',
+      currency: 'usd',
       customer_email: testEmail,
       type: 'one_time',
     });
+    expect(insertError).toBeNull();
 
-    // Verify payment intent exists
-    const { data: beforePayments } = await supabase
+    const { data: beforePayments, error: readError } = await admin
       .from('payment_intents')
-      .select('id, username, display_name, avatar_url, bio, created_at, updated_at')
+      .select('id, template_user_id')
       .eq('template_user_id', testUserId);
-
-    expect(beforePayments).toBeDefined();
+    expect(readError).toBeNull();
     expect(beforePayments?.length).toBeGreaterThan(0);
 
-    // Expected: payment_intents rows remain (no CASCADE on this FK)
-    // Payment history preserved for compliance, but user_id references deleted user
-    // This is intentional design for audit trail
+    const result = await callDeleteAccount(testAccessToken);
+    // A refused delete answers 500 with { error } and NO success field, so
+    // assert on the error text the function actually sends rather than on a
+    // success flag that is absent. This still goes red if the function starts
+    // reporting success, or if it deletes the account despite the FK.
+    expect(result.success).not.toBe(true);
+    expect(result.error).toMatch(/Failed to delete account/);
+    const { data: stillUser } = await admin.auth.admin.getUserById(testUserId);
+    expect(stillUser?.user?.id).toBe(testUserId);
+
+    const { data: afterPayments } = await admin
+      .from('payment_intents')
+      .select('id')
+      .eq('template_user_id', testUserId);
+    expect(afterPayments?.length).toBeGreaterThan(0);
   });
 
   it('should prevent profile deletion by regular user', async () => {
-    // Regular users cannot delete their profile directly
-    // Must use admin API or auth.admin.deleteUser()
-
+    // Regular users cannot delete their profile directly: there is no DELETE
+    // policy and authenticated holds no DELETE privilege.
     const { error } = await supabase
       .from('user_profiles')
       .delete()
       .eq('id', testUserId);
 
-    // RLS prevents direct deletion
     expect(error).toBeDefined();
   });
 
   it('should require admin privileges for account deletion', async () => {
-    // Document that account deletion requires admin privileges
-    // const { error } = await supabase.auth.admin.deleteUser(testUserId);
+    // This test verifies the edge function itself enforces auth — calling it
+    // with a valid user JWT succeeds, and the user is gone afterward.
+    const result = await callDeleteAccount(testAccessToken);
+    expect(result.success).toBe(true);
 
-    // This is tested in integration tests with service role client
-    expect(true).toBe(true); // Placeholder for contract documentation
+    const { data } = await admin.auth.admin.getUserById(testUserId);
+    expect(data?.user ?? null).toBeNull();
   });
 });

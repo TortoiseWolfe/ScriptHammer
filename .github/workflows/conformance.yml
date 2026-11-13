@@ -118,14 +118,30 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Bring up the dual-provider stack (local Supabase + .NET)
+        env:
+          # The auth contract tests moved into this lane (#1468) and assert the
+          # production signup contract: an unconfirmed address until the user
+          # clicks the link (supabase/config.toml sets
+          # auth.email.enable_confirmations = true, and production deploys with
+          # mailer_autoconfirm false). Without a mail sink GoTrue cannot send the
+          # confirmation/reset messages those tests request, so Mailpit is part
+          # of the stack and auto-confirm is off.
+          GOTRUE_MAILER_AUTOCONFIRM: 'false'
+          # password-reset sends three messages to the same address back to
+          # back; GoTrue's default one-minute wait (and even one second) would
+          # 429 the second and third. This stack is ephemeral, so the throttle
+          # buys nothing.
+          GOTRUE_SMTP_MAX_FREQUENCY: 1ms
         run: |
           # Only the services test:rls actually needs — NOT scripthammer (the
           # test runs on the runner, not in the app container) and not the
-          # studio/mail/storage/realtime/meta extras.
+          # studio/storage/realtime/meta extras. supabase-mail is required by
+          # the auth contract tests (see env above). supabase-edge-runtime is
+          # required by the delete-account contract test.
           docker compose --profile supabase --profile dotnet up -d --build \
-            supabase-db supabase-kong supabase-auth supabase-rest dotnet-messaging
+            supabase-db supabase-kong supabase-auth supabase-rest supabase-mail supabase-edge-runtime dotnet-messaging
 
-      - name: Wait for Postgres, Kong+Auth+REST, and the .NET server
+      - name: Wait for Postgres, Kong+Auth+REST, Edge Runtime, Mailpit, and the .NET server
         run: |
           # GitHub Actions runs this with `bash -eo pipefail`. The probes below
           # are EXPECTED to fail on early iterations (services still starting);
@@ -137,14 +153,22 @@ jobs:
             db=$(docker compose exec -T supabase-db pg_isready -U postgres -d postgres >/dev/null 2>&1 && echo ok || echo no)
             rest=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 -H "apikey: $ANON" http://localhost:54321/rest/v1/ 2>/dev/null)
             auth=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 -H "apikey: $ANON" http://localhost:54321/auth/v1/health 2>/dev/null)
+            # 401 IS the ready signal, not 200: the router 400s on "/" because
+            # there is no function name, so a bare /functions/v1/ probe proves
+            # only that Kong answered. POSTing a real function with no token
+            # boots its worker and reaches _shared/auth.ts, which returns 401.
+            # Any other status means the worker failed to start (500) or the
+            # route is missing (404).
+            edge=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 -X POST http://localhost:54321/functions/v1/delete-account 2>/dev/null)
             net=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 http://localhost:5099/health 2>/dev/null)
-            echo "try $i: db=$db rest=$rest auth=$auth dotnet=$net"
-            if [ "$db" = ok ] && [ "$rest" = 200 ] && [ "$auth" = 200 ] && [ "$net" = 200 ]; then
+            mail=$(curl -s -o /dev/null -w '%{http_code}' --max-time 3 http://localhost:54324/api/v1/info 2>/dev/null)
+            echo "try $i: db=$db rest=$rest auth=$auth edge=$edge dotnet=$net mail=$mail"
+            if [ "$db" = ok ] && [ "$rest" = 200 ] && [ "$auth" = 200 ] && [ "$edge" = 401 ] && [ "$net" = 200 ] && [ "$mail" = 200 ]; then
               echo "stack ready"; break
             fi
             if [ "$i" = 60 ]; then
               echo "::error::stack did not become ready within ~5 min"
-              docker compose logs --tail=80 supabase-db supabase-auth supabase-rest supabase-kong dotnet-messaging
+              docker compose logs --tail=80 supabase-db supabase-auth supabase-rest supabase-kong supabase-mail supabase-edge-runtime dotnet-messaging
               exit 1
             fi
             sleep 5
@@ -181,6 +205,13 @@ jobs:
             echo "$v=$pw" >> "$GITHUB_ENV"
             export "$v=$pw"
           done
+          # Export email vars so hasSecondaryUser()/hasTertiaryUser() return true in tests
+          echo "TEST_USER_PRIMARY_EMAIL=test@example.com" >> "$GITHUB_ENV"
+          echo "TEST_USER_SECONDARY_EMAIL=test-user-b@example.com" >> "$GITHUB_ENV"
+          echo "TEST_USER_TERTIARY_EMAIL=test-user-c@example.com" >> "$GITHUB_ENV"
+          export TEST_USER_PRIMARY_EMAIL=test@example.com
+          export TEST_USER_SECONDARY_EMAIL=test-user-b@example.com
+          export TEST_USER_TERTIARY_EMAIL=test-user-c@example.com
           pnpm exec tsx scripts/seed-test-users.ts
 
       - name: Run RLS + provider + admin conformance (pnpm test:rls)
@@ -196,7 +227,7 @@ jobs:
 
       - name: Dump stack logs on failure
         if: failure()
-        run: docker compose logs --tail=120 supabase-db supabase-auth supabase-rest supabase-kong dotnet-messaging
+        run: docker compose logs --tail=120 supabase-db supabase-auth supabase-rest supabase-kong supabase-mail supabase-edge-runtime dotnet-messaging
 
       - name: Tear down
         if: always()
