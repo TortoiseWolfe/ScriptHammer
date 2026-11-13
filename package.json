@@ -2,6 +2,7 @@
   "name": "scripthammer",
   "version": "0.0.1",
   "description": "ScriptHammer - A production Next.js and Supabase platform with auth, payments, encrypted messaging, and an accessible offline-capable PWA",
+  "license": "MIT",
   "packageManager": "pnpm@10.16.1",
   "keywords": [
     "nextjs",
