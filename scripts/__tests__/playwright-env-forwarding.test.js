@@ -94,8 +94,17 @@ describe('the container gets every variable the suite reads (#829)', () => {
   });
 
   it('forwards every variable the suite reads', () => {
-    const patterns = filterPatterns(fs.readFileSync(SCRIPT, 'utf8'));
-    const dropped = readsEnv().filter((n) => !forwards(patterns, n));
+    const src = fs.readFileSync(SCRIPT, 'utf8');
+    const patterns = filterPatterns(src);
+    // A variable the container sets for itself is never forwarded: forwarding the
+    // runner's own value would be wrong. Each one must be proven set by the script,
+    // so this list cannot quietly become a way to excuse a real drop.
+    const setInsideContainer = ['DISPLAY'].filter((n) =>
+      src.includes(`export ${n}=`)
+    );
+    const dropped = readsEnv().filter(
+      (n) => !forwards(patterns, n) && !setInsideContainer.includes(n)
+    );
 
     assert.deepEqual(
       dropped,

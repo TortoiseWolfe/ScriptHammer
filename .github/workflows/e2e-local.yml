@@ -584,6 +584,18 @@ jobs:
         run: |
           npx serve out -l 3000 &
           npx wait-on http://localhost:3000 --timeout 60000
+          # WEBKIT FLAKE EVIDENCE (#1480). On run 42530313985 three WebKit tests lost
+          # every request at once ("WebKit encountered an internal error", the app origin
+          # AND the Supabase origin together), about 2.5 minutes into the browser's life on
+          # two different runners. That reads as WebKit's network process dying, and
+          # nothing the run keeps says why. Record memory, container deaths and the kernel
+          # log for WebKit shards so the next occurrence names its cause. Read-only; the
+          # tests never see it.
+          mkdir -p ci-monitor
+          if [ "${{ matrix.browser }}" = "webkit" ]; then
+            ( while true; do echo "== $(date -u +%T) $(free -m | awk 'NR==2{print "used="$3"MB free="$4"MB avail="$7"MB"}') load=$(cut -d' ' -f1-3 /proc/loadavg)"; sleep 5; done ) > ci-monitor/host.log 2>&1 &
+            docker events --format '{{.Time}} {{.Type}} {{.Action}} {{.Actor.Attributes.name}}' --filter event=die --filter event=oom --filter event=kill --filter event=restart --filter event=health_status > ci-monitor/docker-events.log 2>&1 &
+          fi
           # JSON as well as line: parity is decided on COUNTS, and the line
           # reporter's summary is not machine-readable. `|| true` so a failing
           # shard still uploads its results — a parity run that discards the
@@ -639,6 +651,12 @@ jobs:
               $WORKERS_FLAG \
               --grep-invert='@hosted' \
               --reporter=line,json,./tests/e2e/reporters/assertion-count-reporter.ts || true
+          if [ "${{ matrix.browser }}" = "webkit" ]; then
+            kill $(jobs -p) 2>/dev/null || true
+            # A killed process or a crash shows here when the kernel did it. `|| true`
+            # because dmesg may be restricted; the other two logs still tell the story.
+            { sudo dmesg -T 2>/dev/null || dmesg -T 2>/dev/null || true; } | grep -iE 'oom|out of memory|killed process|segfault|webkit' > ci-monitor/dmesg.log || true
+          fi
         env:
           CI: 'true'
           SKIP_WEBSERVER: 'true'
@@ -781,17 +799,33 @@ jobs:
       # run then discards. That cost real time on #757, where three occurrences were
       # diagnosed from log text because the trace it advertised did not exist.
       #
-      # ONLY ON FAILURE, deliberately. On a green run this directory is noise, and
-      # uploading it from every selected shard would trade one waste for another. The
-      # artifact is worth having exactly when someone is about to go looking for it.
+      # ALSO WHEN THE SHARD PASSES. A flaky test fails its first attempt and passes its
+      # retry, so the shard is green and `failure()` is false: the first attempt's trace,
+      # the only evidence of what went wrong, was deleted with the runner. Playwright
+      # removes the artifacts of every test that passed (trace `retain-on-first-failure`,
+      # video `retain-on-failure`, screenshot `only-on-failure`), so a clean shard leaves
+      # this directory empty and uploads nothing (`if-no-files-found: ignore`); a shard
+      # with a flaky test uploads just that test's first attempt.
       - name: Upload failure diagnostics
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v6
         with:
           name: e2e-local-diagnostics-${{ steps.slug.outputs.id }}
           path: test-results/
           retention-days: 3
           # A green shard in a red run has nothing here; that is not an error.
+          if-no-files-found: ignore
+
+      # The host log, container-death log and kernel log recorded around the WebKit run
+      # (see "WEBKIT FLAKE EVIDENCE" in the Run step). Uploaded always: the shard that
+      # flakes passes on retry, so only an unconditional upload keeps the evidence.
+      - name: Upload WebKit host monitor
+        if: always() && matrix.browser == 'webkit'
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-local-monitor-${{ steps.slug.outputs.id }}
+          path: ci-monitor/
+          retention-days: 3
           if-no-files-found: ignore
 
   # ==========================================================================

@@ -185,8 +185,8 @@ test.describe('Colour vision controls (Display popover) - Accessibility', () => 
     // Re-query for select after navigation
     select = page.getByRole('combobox');
 
-    // Verify mode is still selected
-    const selectedOption = await select.inputValue();
-    expect(selectedOption).toContain('deuteranopia');
+    // Verify mode is still selected. toHaveValue auto-waits for the mount
+    // effect that rehydrates the mode from localStorage.
+    await expect(select).toHaveValue(/deuteranopia/);
   });
 });

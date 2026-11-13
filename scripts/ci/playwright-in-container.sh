@@ -55,10 +55,31 @@ fi
 # --user: without it the reports land root-owned and the upload steps fail.
 # ./node_modules/.bin/playwright: pnpm is not in the image, and corepack would
 #   download it per shard, reintroducing the fetch this removes.
+# Xvfb: headless Firefox in this image has no WebGL, which made browser tests
+#   skip themselves. Headed Firefox on a virtual display gets software
+#   WebGL, so start one and export DISPLAY (playwright.config.ts reads it). Not
+#   xvfb-run: it hangs in this image. Chromium and WebKit ignore the display.
+#   The screen is 4096x2304 on purpose: an X pointer starts at the screen
+#   centre, and on a 1280x1024 screen that is inside the Firefox window, so the
+#   page's submit button sat in :hover and the AAA contrast test measured its
+#   darker hover colour (6.54:1) instead of the resting one. At this size the
+#   centre (2048,1152) is outside every test viewport.
 exec docker run --rm --network=host \
   --user "$(id -u):$(id -g)" \
   --env-file "$ENV_FILE" \
   -e HOME=/tmp \
   -v "$PWD":/work -w /work \
   "$IMAGE" \
-  ./node_modules/.bin/playwright "$@"
+  bash -c '
+    Xvfb :99 -screen 0 4096x2304x24 -nolisten tcp >/dev/null 2>&1 &
+    for _ in $(seq 50); do
+      [ -S /tmp/.X11-unix/X99 ] && break
+      sleep 0.1
+    done
+    if [ ! -S /tmp/.X11-unix/X99 ]; then
+      echo "::error::Xvfb did not start" >&2
+      exit 1
+    fi
+    export DISPLAY=:99
+    exec ./node_modules/.bin/playwright "$@"
+  ' playwright-with-display "$@"

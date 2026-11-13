@@ -151,7 +151,7 @@ test.describe('/twins/[slug]?diorama — the R3F exhibit (opt-in since #292)', (
     ).toBeVisible({
       timeout: 15000,
     });
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
+    // Guard only: Firefox runs under Xvfb in CI (#792) and has WebGL, so this skips only on a runner with none.
     test.skip(
       !(await webglAvailable(page)),
       'WebGL unavailable in this browser/runner; the twin route has no fallback panel'
@@ -174,7 +174,7 @@ test.describe('/twins/[slug]?diorama — the R3F exhibit (opt-in since #292)', (
         errors.push(`${msg.text()} [${msg.location()?.url ?? ''}]`);
     });
     await page.goto('/twins/chatt/?ortho');
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
+    // Guard only: Firefox runs under Xvfb in CI (#792) and has WebGL, so this skips only on a runner with none.
     test.skip(
       !(await webglAvailable(page)),
       'WebGL unavailable in this browser/runner; the twin route has no fallback panel'
@@ -228,7 +228,7 @@ test.describe('/twins/[slug]?diorama — the R3F exhibit (opt-in since #292)', (
     // could not satisfy them the test failed instead of skipping. A precondition checked
     // after the fact is not a precondition.
     await announceRenderer(page);
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
+    // Guard only: Firefox runs under Xvfb in CI (#792) and has WebGL, so this skips only on a runner with none.
     test.skip(
       !(await webglAvailable(page)),
       'WebGL unavailable in this browser/runner; the twin route has no fallback panel'
@@ -239,6 +239,20 @@ test.describe('/twins/[slug]?diorama — the R3F exhibit (opt-in since #292)', (
     ).toBeVisible({
       timeout: 15000,
     });
+    // WAIT FOR THE DOCK TO FINISH BUILDING BEFORE CLICKING IT. The "Miniature" button
+    // above appears about half a second after load, but the "1887 Victorian — As-Built"
+    // fly-to button is added to the same dock only once the wide city reports where the
+    // embedded twin sits (onTwinPlaced in TwinCanvas.client.tsx), 3 to 9 s later. It is
+    // inserted BEFORE "More controls" and pushes it about 94 px to the right. A click that
+    // lands in that moment presses on the ⋯ button and releases over its new neighbour,
+    // so the browser sends no click at all: the call succeeds, aria-expanded stays false
+    // and the next expect waits out its full 60 s. Reproduced on Firefox: 6 failures in
+    // 30 runs of this test with retries off; a recorded trace shows pointerdown on "More controls"
+    // and pointerup on a different button, 8 ms apart. Waiting for the last control to
+    // arrive is the real ready signal: nothing moves after it.
+    await expect(
+      page.getByRole('button', { name: /1887 Victorian/ })
+    ).toBeVisible({ timeout: DOCK_SETUP_MS });
     // Top-down is a secondary mode — it lives in the HUD's ⋯ overflow (#259
     // iter 7). The ⋯ button TOGGLES, so an idempotent open (click only when
     // collapsed, then wait for the expanded state) avoids racing the popover's
@@ -385,7 +399,7 @@ test.describe('/chatt — the atlas is the default (#292)', () => {
     await expect(page.getByText('Atlas —').first()).toBeVisible({
       timeout: 20000,
     });
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
+    // Guard only: Firefox runs under Xvfb in CI (#792) and has WebGL, so this skips only on a runner with none.
     test.skip(
       !(await webglAvailable(page)),
       'WebGL unavailable in this browser/runner; Cesium cannot initialise'
@@ -446,7 +460,7 @@ test.describe('/chatt — the atlas is the default (#292)', () => {
     await expect(page.getByText('Atlas —').first()).toBeVisible({
       timeout: 20000,
     });
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
+    // Guard only: Firefox runs under Xvfb in CI (#792) and has WebGL, so this skips only on a runner with none.
     test.skip(
       !(await webglAvailable(page)),
       'WebGL unavailable in this browser/runner; the type chip renders only behind `ready`'
@@ -632,7 +646,7 @@ test.describe('/chatt — the atlas is the default (#292)', () => {
     await expect(page.getByText('Atlas —').first()).toBeVisible({
       timeout: 20000,
     });
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
+    // Guard only: Firefox runs under Xvfb in CI (#792) and has WebGL, so this skips only on a runner with none.
     test.skip(
       !(await webglAvailable(page)),
       'WebGL unavailable in this browser/runner; the count renders only behind `ready`'

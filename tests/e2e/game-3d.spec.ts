@@ -86,10 +86,11 @@ test.describe('/game/3d — US-5: Mobile-Responsive Canvas', () => {
 
     // Either the canvas (WebGL available) OR the FallbackPanel (WebGL
     // unavailable — legitimate FR-008 path) must render. Firefox on
-    // headless Linux CI occasionally fails its WebGL probe; that's a real
-    // production state and US-5's contract is about responsive layout, not
-    // WebGL availability. We assert the wrapper exposes the
-    // `data-webgl-ok` debug attribute either way, then branch on its value.
+    // Linux CI with Xvfb now gets WebGL via llvmpipe; the fallback path
+    // remains for environments without WebGL support. US-5's contract is
+    // about responsive layout, not WebGL availability. We assert the wrapper
+    // exposes the `data-webgl-ok` debug attribute either way, then branch
+    // on its value.
     const wrapper = page.locator('[data-webgl-ok]').first();
     await expect(wrapper).toBeVisible({ timeout: 5000 });
     const webglOk = await wrapper.getAttribute('data-webgl-ok');
@@ -130,9 +131,9 @@ test.describe('/game/3d — US-3: Respect Reduced Motion', () => {
   // These tests assert `data-autorotate-active` on the Scene wrapper. That
   // attribute is set in BOTH the canvas-rendering path AND the FallbackPanel
   // path (see Scene.tsx), so we only need the wrapper to be present — we do
-  // NOT require WebGL to be available. This matters on firefox-on-Linux-CI
-  // where the WebGL probe occasionally returns null even when the platform
-  // ostensibly supports it.
+  // NOT require WebGL to be available. Firefox on Linux CI with Xvfb now
+  // gets WebGL via llvmpipe; the fallback logic remains for environments
+  // without WebGL support.
 
   test('auto-orbit is disabled when prefers-reduced-motion: reduce', async ({
     page,
@@ -247,15 +248,7 @@ test.describe('/game/3d — US-1: Visit the 3D Game Route', () => {
       .first()
       .getAttribute('data-webgl-ok');
 
-    // Firefox-on-Linux-CI occasionally fails the WebGL probe — that's a
-    // legitimate production state and the FallbackPanel handles it via
-    // FR-008. Skip the canvas-mount assertion in that case (covered by
-    // dedicated FR-008 tests at the top of this file).
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
-    test.skip(
-      webglOk !== 'true',
-      'WebGL probe failed at mount; FR-008 fallback path active'
-    );
+    expect(webglOk).toBe('true');
 
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible({ timeout: 5000 });
@@ -313,11 +306,7 @@ test.describe('/game/3d — US-1: Visit the 3D Game Route', () => {
       .locator('[data-webgl-ok]')
       .first()
       .getAttribute('data-webgl-ok');
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
-    test.skip(
-      webglOk !== 'true',
-      'WebGL probe failed at mount; orbit-drag requires a real canvas'
-    );
+    expect(webglOk).toBe('true');
 
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible({ timeout: 5000 });
@@ -356,11 +345,7 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
       .locator('[data-webgl-ok]')
       .first()
       .getAttribute('data-webgl-ok');
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
-    test.skip(
-      webglOk !== 'true',
-      'SC-004 multi-modality requires a working canvas; FR-008 fallback active'
-    );
+    expect(webglOk).toBe('true');
 
     const canvas = page.locator('canvas');
     await expect(canvas).toBeVisible();
@@ -400,8 +385,7 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
       .locator('[data-webgl-ok]')
       .first()
       .getAttribute('data-webgl-ok');
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
-    test.skip(webglOk !== 'true', 'SC-004 requires working canvas');
+    expect(webglOk).toBe('true');
 
     const canvas = page.locator('canvas');
     const wrapper = page.locator('[data-camera-position]').first();
@@ -426,15 +410,10 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
       .not.toBe(initial);
   });
 
-  test('touch drag changes camera position', async ({ page, browserName }) => {
+  test('touch drag changes camera position', async ({ page }) => {
     // Playwright's touch emulation requires a touch-enabled context.
     // We dispatch a touchstart/touchmove/touchend sequence directly because
     // the default page context isn't touch-enabled in the test matrix.
-    // Kept skip (#1399): Firefox's Playwright build ignores dispatched touch input; chromium and webkit run this.
-    test.skip(
-      browserName === 'firefox',
-      'Firefox does not synthesize touch events from page.dispatchEvent reliably; mobile is covered by the dedicated mobile viewport test (US-5).'
-    );
 
     await page.goto('/game/3d');
     await expect(page.locator('[data-webgl-ok]').first()).toBeVisible({
@@ -444,8 +423,7 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
       .locator('[data-webgl-ok]')
       .first()
       .getAttribute('data-webgl-ok');
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
-    test.skip(webglOk !== 'true', 'SC-004 requires working canvas');
+    expect(webglOk).toBe('true');
 
     const canvas = page.locator('canvas');
     const wrapper = page.locator('[data-camera-position]').first();
