@@ -8,8 +8,9 @@ The fork starts first and is the opening beat, not the spine: on the stage lapto
 
 - Open deck.html from disk in a browser on screen 1.
 - Press Shift+T once, so no talk clock is left over from a rehearsal.
-- On slide 4, set the Template address to the ScriptHammer you are touring. Use a copy with its services connected, so sign-in, payments and messaging work on slide 13.
-- Sign in on that copy before the talk if slide 13's stops are on the tour.
+- The tour runs on scripthammer.com, which has its services connected, so sign-in, payments and messaging work on slide 13.
+- Sign in on scripthammer.com before the talk if slide 13's stops are on the tour.
+- Check that port 3000 is free on this laptop. The new copy always answers on http://localhost:3000, because the copied block pins it there.
 - Terminal full screen on screen 2, at 28 point or larger.
 - Start the terminal in an empty folder, never inside a copy of ScriptHammer. The new copy lands in the folder you are in. Each line of the block ends in `&&`, so the block stops at the first line that fails.
 - In that terminal, check that `docker compose version` answers. The rebrand runs inside the container, so the laptop needs Docker and no Node.js.
@@ -22,28 +23,28 @@ The fork starts first and is the opening beat, not the spine: on the stage lapto
 
 Each slide but the title shows a pace line at the bottom: how long this slide gets and the minute the next one is due. The right-hand column below is that minute.
 
-| Slide | What it is                                                                 | Leave it at |
-| ----- | -------------------------------------------------------------------------- | ----------- |
-| 1     | Title                                                                      | 1:00        |
-| 2     | What are we building? Type name, owner, description. Copy the block.       | 5:00        |
-| 3     | Progress: the big clock and the stage strip                                | 6:00        |
-| 4     | The tour map: eight ScriptHammer pages, and the Template address           | 7:00        |
-| 5     | Tour 1 of 8: Home                                                          | 9:00        |
-| 6     | Tour 2 of 8: Themes                                                        | 11:30       |
-| 7     | Tour 3 of 8: Wireframes                                                    | 13:30       |
-| 8     | Tour 4 of 8: 3D Chattanooga                                                | 15:30       |
-| 9     | Tour 5 of 8: Pricing                                                       | 17:00       |
-| 10    | Tour 6 of 8: Docs                                                          | 18:30       |
-| 11    | Tour 7 of 8: Accessibility                                                 | 20:30       |
-| 12    | Tour 8 of 8: Status                                                        | 22:00       |
-| 13    | Built in, dark on a fresh fork: five things need a service, shown working  | 25:00       |
-| 14    | The developer side (skip if you are behind)                                | 27:00       |
-| 15    | Wireframe first, now in the fork: the drawing is made in the new copy      | 31:00       |
-| 16    | Spec Kit: words before code                                                | 33:00       |
-| 17    | The reveal: type the port, open the new app                                | 35:00       |
-| 18    | Walk the fork: 18 buttons in four groups, each opens one page              | 39:00       |
-| 19    | Take it home: the copy block, and a QR code that opens the repository      | 40:00       |
-| 20    | Stay in touch: a QR code that opens the booking page, and the repo address | questions   |
+| Slide | What it is                                                                | Leave it at |
+| ----- | ------------------------------------------------------------------------- | ----------- |
+| 1     | Title                                                                     | 1:00        |
+| 2     | What are we building? Type name, owner, description. Copy the block.      | 5:00        |
+| 3     | Progress: the big clock and the stage strip                               | 6:00        |
+| 4     | The tour map: eight ScriptHammer pages                                    | 7:00        |
+| 5     | Tour 1 of 8: Home                                                         | 9:00        |
+| 6     | Tour 2 of 8: Themes                                                       | 11:30       |
+| 7     | Tour 3 of 8: Wireframes                                                   | 13:30       |
+| 8     | Tour 4 of 8: 3D Chattanooga                                               | 15:30       |
+| 9     | Tour 5 of 8: Pricing                                                      | 17:00       |
+| 10    | Tour 6 of 8: Docs                                                         | 18:30       |
+| 11    | Tour 7 of 8: Accessibility                                                | 20:30       |
+| 12    | Tour 8 of 8: Status                                                       | 22:00       |
+| 13    | Built in, dark on a fresh fork: five things need a service, shown working | 25:00       |
+| 14    | The developer side (skip if you are behind)                               | 27:00       |
+| 15    | Wireframe first, now in the fork: the drawing is made in the new copy     | 31:00       |
+| 16    | Spec Kit: words before code                                               | 33:00       |
+| 17    | The reveal: open the new app at localhost:3000                            | 35:00       |
+| 18    | Walk the fork: 18 buttons in four groups, each opens one page             | 39:00       |
+| 19    | Take it home: the copy block, and a QR code that opens the repository     | 40:00       |
+| 20    | Stay in touch: booking QR code, repo address, the fork on GitHub Pages    | questions   |
 
 The grey text in the boxes on slide 2 is the rehearsal app (PotluckPlanner). Until you type, the whole deck shows that example: the copy block, the build line on slide 3, the wireframe words, the Spec Kit line and the reveal. A line on slide 2 says so while any of the three boxes is empty. The Copy buttons stay off until the three boxes are filled, so the example is never the block you paste. An empty Icon box still means no icon.
 
@@ -51,7 +52,9 @@ On slide 2 you can start typing without clicking: the letters go into the first 
 
 Each tour slide (5 to 12) names one page, lists what to show there, and has one button that opens that page of ScriptHammer in a new tab. The slide is the checklist: read it, open the page, show the points, come back, press the right arrow.
 
-Slide 15 is the wireframe beat, and it happens in the fork. A coding agent in the new copy's folder writes the spec and draws the screen; the website only shows drawings. The button on that slide opens the fork's own wireframes page, and needs the port (see "Screen 2").
+Slide 15 is the wireframe beat, and it happens in the fork. A coding agent in the new copy's folder writes the spec and draws the screen; the website only shows drawings. The button on that slide opens the fork's own wireframes page, http://localhost:3000/wireframes/.
+
+Where the buttons go: before the fork they open scripthammer.com (the tour, slides 5 to 13). After it they open the new copy on this laptop, http://localhost:3000 (slides 15, 17 and 18). At the end, slide 20 opens the fork's own GitHub Pages address: the deck asks that address every 15 seconds and turns the button on once Pages answers.
 
 The four groups on slide 18, in the order to walk them:
 
@@ -76,53 +79,48 @@ The walk is by hand, on one screen: you click through the live app yourself. The
 - Paste the copied block.
 - Press Enter.
 - Leave it visible.
-- When the terminal says the container started, paste the port command from slide 17. It prints an address that ends in a colon and a number.
-- Press P on any slide but slide 2. The deck jumps to the Port box on slide 17. Type the number, press Enter, then press B to return to the slide you were on.
+- Nothing to type later: the block writes SH_PORT=3000 into the new copy's settings, so it always answers on http://localhost:3000.
 
 ## The warm-up
 
 A new development server builds each page the first time anyone asks for it, and that takes 9 to 18 seconds a page. So the deck asks for all 18 pages itself, in the background, one at a time.
 
-- It starts a second and a half after you stop typing in Port. You press nothing.
-- Type the port as early as you can: the moment the terminal says the container started, even if you are still on the tour. The warm-up needs a few minutes to get through 18 pages.
-- Slide 18 shows how far it has got, for example "Warming the pages on port 32772: 7 of 18."
+- It starts by itself when you reach the wireframe slide (15). You press nothing and type nothing.
+- It needs a few minutes to get through 18 pages, which is why it starts three slides before the walk.
+- Slide 18 shows how far it has got, for example "Warming the fork’s pages: 7 of 18."
 - If the server is still starting, the deck keeps asking for about two minutes before it gives up.
 - The Warm the pages button on slide 18 runs it again.
 - These requests go to the new copy on your own laptop and nowhere else. They are the only requests the deck ever makes.
 
 ## Keys
 
-| Key                           | Does                                                          |
-| ----------------------------- | ------------------------------------------------------------- |
-| Right arrow, Space, Page Down | next slide                                                    |
-| Left arrow, Page Up           | previous slide                                                |
-| Home, End                     | first, last slide                                             |
-| ]                             | next stage on the strip (first press starts the build clock)  |
-| [                             | back one stage                                                |
-| 0                             | reset the strip and the build clock                           |
-| T                             | start the talk clock again from zero                          |
-| Shift+T                       | clear the talk clock                                          |
-| P                             | jump to the Port box on the reveal slide                      |
-| B                             | back to the slide you left for the Port box                   |
-| F                             | full screen (the Full screen button on slide 1 does the same) |
-| Enter, Escape                 | leave a text field                                            |
+| Key                           | Does                                                         |
+| ----------------------------- | ------------------------------------------------------------ |
+| Right arrow, Space, Page Down | next slide                                                   |
+| Left arrow, Page Up           | previous slide                                               |
+| Home, End                     | first, last slide                                            |
+| ]                             | next stage on the strip (first press starts the build clock) |
+| [                             | back one stage                                               |
+| 0                             | reset the strip and the build clock                          |
+| T                             | start the talk clock again from zero                         |
+| Shift+T                       | clear the talk clock                                         |
+| F                             | full screen (every slide has a Full screen button)           |
+| Enter, Escape                 | leave a text field                                           |
 
-Slide 1 shows the main keys and a Full screen button, so nothing has to be remembered to start.
+Slide 1 shows the main keys, and every slide has a Full screen button at the bottom right, so nothing has to be remembered to start.
 
 If slide 1 also shows an amber line that starts "This is a preview panel", the deck is open inside another app's panel and not in a browser window. Keys reach it only after a click inside, and full screen may be refused. Open the file in a browser. A viewer that runs no scripts shows one white sentence saying the same thing, and no slides.
 
 Keys do not navigate while you type in a field. Enter leaves the field and never adds a line, so it cannot break the copy block. In full screen, use Enter to leave a field: Escape leaves the field and full screen together.
 
-On slide 2 the letter keys are answers, never deck keys: T, P, B and F do nothing there except type. The arrows, Space and the bracket keys work as on every other slide.
+On slide 2 the letter keys are answers, never deck keys: T and F do nothing there except type. The arrows, Space and the bracket keys work as on every other slide.
 
 ## If something fails
 
 - No internet: skip 3D Chattanooga (slide 8). Everything else is local.
 - The fork command refuses: a repository of that name already exists. Pick another name.
 - The build runs long: stay on the tour, then show the fallback clip.
-- The Open button on the reveal slide does nothing: the Port box is empty. A fresh copy gets a new port on every start, so run the port command on that slide and type the number after the colon into the box.
-- The wireframes button on slide 15 jumps to slide 17: same cause, the Port box is empty. Type the number, press Enter, press B.
-- A button on slide 18 jumps back to slide 17: same cause again. Type the number and go forward again.
-- Slide 18 says "No answer from" a page: the new copy is not up, or the port is wrong. Check the number against the terminal, wait for the container to start, then press Warm the pages.
+- The Open, wireframes or walk buttons give "can't connect to the server": the new copy is not up yet, or something else held port 3000 on this laptop. Run `docker compose ps` in the new copy's folder. Free port 3000 before the talk so this cannot happen.
+- Slide 18 says "No answer from localhost:3000": the new copy's container has not started. Wait for the terminal to say it started, then press Warm the pages.
 - A page of the new copy is slow to open: the warm-up had not reached it. Say "the server is building this page for the first time" and wait. It opens at normal speed after that.
 - The drawing on slide 15 is not ready in its four minutes: show the fork's wireframes page as it is, say the agent is still drawing, and move to slide 16. Come back to it during the walk.
