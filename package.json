@@ -62,7 +62,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "storybook": "storybook dev -p 6006 --no-open",
-    "build-storybook": "rm -rf storybook-static && STORYBOOK_SKIP_STATIC=1 storybook build && cp -r public/* storybook-static/ && rm -rf storybook-static/cesium",
+    "build-storybook": "rm -rf storybook-static && STORYBOOK_SKIP_STATIC=1 storybook build && node scripts/fix-storybook-root-paths.mjs storybook-static && cp -r public/* storybook-static/ && rm -rf storybook-static/cesium",
     "sprint:plan": "node scripts/sprint-planning.js full",
     "sprint:spec": "node scripts/sprint-planning.js spec",
     "sprint:tasks": "node scripts/sprint-planning.js tasks",
