@@ -147,6 +147,8 @@ kbd { display: inline-block; font: 700 30px var(--mono); color: var(--amber); bo
 .dots span { width: 26px; height: 26px; border-radius: 50%; border: 3px solid #7d879a; }
 .dots span.here { background: var(--amber); border-color: var(--amber); }
 .dots span.seen { background: var(--live); border-color: var(--live); }
+.subs { display: flex; flex-wrap: wrap; gap: 14px; }
+.subs .btn { font-size: 28px; min-height: 58px; padding: 6px 22px; }
 .wait { font-size: 30px; color: var(--steel); line-height: 1.3; }
 .wait b { color: var(--hot); }
 ul { margin: 0; padding-left: 54px; display: flex; flex-direction: column; gap: 14px; }
@@ -280,7 +282,7 @@ p, li, .cap, .why { text-wrap: pretty; }
   </div>
 </section>
 
-<!-- The tour comes first and is of ScriptHammer itself, on the live site, while the fork builds. This slide is the map; the twelve slides after it, one per stop, are written by the script from the TOUR list and stand between this slide and s-dark. -->
+<!-- The tour comes first and is of ScriptHammer itself, on the live site, while the fork builds. This slide is the map; the nineteen slides after it, one per stop, are written by the script from the TOUR list and stand between this slide and s-up. -->
 <section class="slide" id="s-tour" data-min="1" aria-label="The tour">
   <div class="strip" data-strip></div>
   <div class="fit">
@@ -292,19 +294,15 @@ p, li, .cap, .why { text-wrap: pretty; }
   </div>
 </section>
 
-<section class="slide" id="s-dark" data-min="3" aria-label="Built in, waiting for your keys">
+<!-- The tour of ScriptHammer ends here and the tour of the fork starts on the wireframe slide, so the fork is started here, by hand, with the last line of the fork's README. Running it again when the copy block already started the fork changes nothing. -->
+<section class="slide" id="s-up" data-min="0.5" aria-label="Start the fork">
   <div class="strip" data-strip></div>
   <div class="fit">
-    <h2>Built in. Waiting for your keys.</h2>
-    <p class="lede">Your fork draws all six and shows a setup banner until you connect your own service. It never pretends. Here they're connected:</p>
-    <div class="grid-3">
-      <div class="card"><a class="btn ghost" data-tour="/sign-in" target="_blank" rel="noopener" href="#">Sign-in</a><p class="wait">Email, GitHub, Google. Waits for <b>Supabase</b>, the login&nbsp;service.</p></div>
-      <div class="card"><a class="btn ghost" data-tour="/checkout" target="_blank" rel="noopener" href="#">Checkout</a><p class="wait"><b>Stripe</b> and <b>PayPal</b>. Waits for their&nbsp;keys.</p></div>
-      <div class="card"><a class="btn ghost" data-tour="/messages" target="_blank" rel="noopener" href="#">Messaging</a><p class="wait">Encrypted messages. Waits for <b>Supabase</b> and a signed-in&nbsp;user.</p></div>
-      <div class="card"><a class="btn ghost" data-tour="/privacy-controls" target="_blank" rel="noopener" href="#">Privacy controls</a><p class="wait">Consent, export and delete. <b>Works on a fresh fork</b>, in the&nbsp;browser.</p></div>
-      <div class="card"><a class="btn ghost" data-tour="/admin" target="_blank" rel="noopener" href="#">Admin dashboard</a><p class="wait">Waits for <b>Supabase</b>.</p></div>
-      <div class="card"><a class="btn ghost" data-tour="/contact" target="_blank" rel="noopener" href="#">Contact form</a><p class="wait">Sending waits for <b>a mail provider</b>.</p></div>
-    </div>
+    <h2>Now start <span class="dn">Your app</span>.</h2>
+    <p class="lede">On the terminal, in the fork's folder, <span class="addr" id="up-dir" style="font-size:inherit"></span>:</p>
+    <pre class="cmd" id="blk-up">docker compose up -d</pre>
+    <div class="row"><button id="copy-up" type="button">Copy</button><span class="cap">The last line of the fork's README. Already running? Docker says so and changes&nbsp;nothing.</span></div>
+    <p class="cap">Then it answers on this laptop at <span class="addr" id="up-addr" style="font-size:inherit"></span></p>
   </div>
 </section>
 
@@ -504,23 +502,31 @@ const FORK = 'http://localhost:3000';
 function slashed(path) { return path === '/' || /\.[a-z]+$/.test(path) ? path : path + '/'; }
 function tourUrl(path) { return SITE + slashed(path); }
 function forkUrl(path) { return FORK + slashed(path); }
-// TOUR is the twelve stops of the tour of ScriptHammer itself. Each entry is: the name, the page,
-// the short line under its button on the map, the minutes the stop gets, and the things to show
-// there. Every stop becomes a slide of its own (see buildStops), so the slide on screen always
+// TOUR is the nineteen stops of the tour of ScriptHammer itself. Their minutes add up to 20, so
+// with the other slides the talk paces to 40 minutes (TALK.end). Each entry is: the name, the page,
+// the short line under its button on the map, the minutes the stop gets, the things to show
+// there, and (optional) its subpages as [label, page] pairs, each a small button on the stop. Every stop becomes a slide of its own (see buildStops), so the slide on screen always
 // says which stop this is and what not to forget.
 const TOUR = [
   ['Home', '/', 'the landing page', 2, ['Yours will say your name here.', 'Install steps, demo links and the theme strip.', 'Tip jar and book a call.']],
-  ['Themes', '/themes', '35 themes, switch live', 2, ['All 35 themes on one page.', 'Switch one live. No reload.', 'Each one shows its contrast figures.']],
+  ['Themes', '/themes', '35 themes, switch live', 1.5,['All 35 themes on one page.', 'Switch one live. No reload.', 'Each one shows its contrast figures.']],
   ['Wireframes', '/wireframes', '71 drawings, one viewer', 1.5, ['71 drawings in one viewer.', 'Every feature here began as one of these.', 'Yours gets its own after the tour.']],
   ['Storybook', '/storybook', '155 component stories', 1.5, ['155 stories, one per component state.', 'Click one: it is the real component, live.', 'Every deploy publishes your fork’s own.']],
   ['3D Chattanooga', '/chatt', 'the city in 3D', 1.5, ['About 8,000 buildings over a satellite globe.', 'No keys or accounts. It needs internet.', 'Not drawn in ten seconds: say the fallback line, play the clip.']],
   ['Map', '/map', 'a street map', 1, ['A street map, no key needed.', 'It asks before it uses your location.', 'It needs internet.']],
-  ['3D game', '/game/3d', 'a 3D scene, built in code', 1.5, ['A 3D scene, built with Three.js.', 'Sky, surfaces and sound are made in code. No files to download.', 'The game toolkit comes with your fork.']],
-  ['Offline app', '/offline.html', 'install it, it works offline', 2, ['Install it: in Safari, File, then Add to Dock.', 'No connection? Pages you opened still load. The rest show this page.', 'A message written offline sends when you’re back.']],
-  ['Pricing', '/pricing', 'browse only', 1, ['Nine products, in tiers.', 'Browse only. Never click Buy.']],
-  ['Docs', '/docs', 'seven guides', 1, ['Seven guides, inside the app.', 'Open the first one: install and first run.']],
-  ['Accessibility', '/accessibility', 'text size, contrast', 1.5, ['Text size and line spacing.', 'Six fonts, two of them made for easier reading.', 'Colour-blind modes, and one reset.']],
-  ['Status', '/status', 'is everything up', 1, ['Scores from the automatic checks.', 'This visit, measured live.', 'It needs internet.']]
+  ['3D game', '/game/3d', 'a 3D scene, built in code', 1, ['A 3D scene, built with Three.js.', 'Sky, surfaces and sound are made in code. No files to download.', 'The game toolkit comes with your fork.']],
+  ['Offline app', '/offline.html', 'install it, it works offline', 1.5, ['Install it: in Safari, File, then Add to Dock.', 'No connection? Pages you opened still load. The rest show this page.', 'A message written offline sends when you’re back.']],
+  ['Contact', '/contact', 'sends when you’re back', 1, ['Sending needs a mail provider. Here it has one.', 'Go offline and send: it is saved on this device, and the form says it is queued.', 'Back online, it sends itself, once.']],
+  ['Pricing', '/pricing', 'browse only', 0.5, ['Nine products, in tiers.', 'Browse only. Never click Buy.']],
+  ['Checkout', '/checkout', 'Stripe and PayPal', 1, ['Stripe and PayPal, both connected here.', 'Your fork shows a setup banner until you add their keys.', 'Look, never pay.']],
+  ['Sign-in', '/sign-in', 'email, GitHub, Google', 1, ['Email and password, GitHub or Google.', 'Your fork waits for Supabase, the login service, and says so.', 'Sign in now: the next two stops need it.']],
+  ['Messaging', '/messages', 'encrypted, needs sign-in', 1, ['Messages are encrypted on the device before they leave it.', 'It needs a sign-in, so sign in first.', 'Set up makes the key; New group starts a group chat.'], [['Set up', '/messages/setup'], ['New group', '/messages/new-group']]],
+  ['Admin', '/admin', 'six admin pages', 1, ['Payments, orders, audit trail, users, messaging, email.', 'Only an admin account gets in. Anyone else is sent away.', 'Not signed in as admin? Say so and move on.'], [['Payments', '/admin/payments'], ['Orders', '/admin/orders'], ['Audit trail', '/admin/audit'], ['Users', '/admin/users'], ['Messaging', '/admin/messaging'], ['Email', '/admin/email']]],
+  ['Privacy controls', '/privacy-controls', 'consent, export, delete', 0.5, ['Consent, export and delete, in one place.', 'Works on a fresh fork, in the browser.']],
+  ['Blog', '/blog', '20 posts, with tags', 0.5, ['20 posts, each one a Markdown file.', 'Tags group them. Yours keeps these until you delete them.']],
+  ['Docs', '/docs', 'seven guides', 0.5, ['Seven guides, inside the app.', 'Open the first one: install and first run.']],
+  ['Accessibility', '/accessibility', 'text size, contrast', 1,['Text size and line spacing.', 'Six fonts, two of them made for easier reading.', 'Colour-blind modes, and one reset.']],
+  ['Status', '/status', 'is everything up', 0.5,['Scores from the automatic checks.', 'This visit, measured live.', 'It needs internet.']]
 ];
 // WALK is the reveal: every page of the new fork, in the four groups the talk walks them in.
 // The tour above points at the live site; these point at the fork on this laptop.
@@ -667,7 +673,7 @@ function keepLast(s) { return s.replace(/ (\S+)$/, ' $1'); }
 // One slide per tour stop, written from TOUR and placed after the tour map. Each says which
 // stop this is, what to show there, and opens that page of the live site in a new tab.
 function buildStops() {
-  const after = $('s-dark');
+  const after = $('s-up');
   TOUR.forEach(function (it, i) {
     const s = document.createElement('section');
     s.className = 'slide'; s.id = 's-stop-' + (i + 1);
@@ -691,7 +697,18 @@ function buildStops() {
     const cap = document.createElement('p'); cap.className = 'cap'; cap.textContent = keepLast('Opens this page of ScriptHammer in a new tab.');
     const dots = document.createElement('div'); dots.className = 'dots'; dots.setAttribute('aria-hidden', 'true');
     TOUR.forEach(function (t2, j) { const d = document.createElement('span'); d.setAttribute('data-path', t2[1]); if (j === i) d.className = 'here'; dots.appendChild(d); });
-    card.appendChild(k2); card.appendChild(a); card.appendChild(addr); card.appendChild(cap); card.appendChild(dots);
+    card.appendChild(k2); card.appendChild(a); card.appendChild(addr); card.appendChild(cap);
+    if (it[5]) {
+      const subs = document.createElement('div'); subs.className = 'subs';
+      it[5].forEach(function (sp) {
+        const b = document.createElement('a'); b.className = 'btn ghost stop-sub'; b.target = '_blank'; b.rel = 'noopener';
+        b.setAttribute('data-path', sp[1]); b.setAttribute('data-label', sp[0]);
+        b.addEventListener('click', function () { state.visited[sp[1]] = true; save(); render(); });
+        subs.appendChild(b);
+      });
+      card.appendChild(subs);
+    }
+    card.appendChild(dots);
     grid.appendChild(left); grid.appendChild(card);
     fitBox.appendChild(grid);
     s.appendChild(strip); s.appendChild(fitBox);
@@ -755,6 +772,8 @@ function render() {
   // Phase 2: the fork on this laptop, at the fixed port.
   $('open-app').setAttribute('href', forkUrl('/'));
   $('app-addr').textContent = forkUrl('/');
+  $('up-dir').textContent = repoName(state.name) || repoName(EXAMPLE.name);
+  $('up-addr').textContent = forkUrl('/');
   $('open-wf').setAttribute('href', forkUrl('/wireframes'));
   $('wf-addr').textContent = forkUrl('/wireframes');
   // The reveal name is as large as its length allows: 150 px up to 10 characters, never under 72 px.
@@ -806,6 +825,9 @@ function renderWarm() {
   if (warm.state === 'idle') msg = 'The pages warm up by themselves from the wireframe slide on.';
   else if (warm.state === 'running') msg = 'Warming the fork’s pages: ' + warm.done + ' of ' + n + '.';
   else if (warm.state === 'done') msg = 'All ' + n + ' pages are warm.';
+  // waiting: the fork refused, and the deck is still asking every few seconds in case it is
+  // starting. Said at once, so the line never sits on "0 of 22" with nothing running.
+  else if (warm.state === 'waiting') msg = 'No answer from localhost:3000' + warm.path + ' yet. ' + warm.done + ' of ' + n + ' are warm. Is the fork up? Asking again every ' + (WARM.retryWait / 1000) + ' seconds.';
   else msg = 'No answer from localhost:3000' + warm.path + '. ' + warm.done + ' of ' + n + ' are warm. Is the fork up?';
   setText('walk-status', msg);
 }
@@ -831,12 +853,12 @@ function startWarm() {
     fetch(forkUrl(WALK_PATHS[i]), { mode: 'no-cors', cache: 'no-store', signal: ctrl.signal }).then(function () {
       clearTimeout(limit);
       if (run !== warm.run) return;
-      i += 1; tries = 0; warm.done = i; renderWarm(); next();
+      i += 1; tries = 0; warm.done = i; warm.state = 'running'; renderWarm(); next();
     }, function () {
       clearTimeout(limit);
       if (run !== warm.run) return;
       tries += 1;
-      if (tries < WARM.tries && Date.now() - began < 10000) { setTimeout(next, WARM.retryWait); return; }
+      if (tries < WARM.tries && Date.now() - began < 10000) { warm.state = 'waiting'; renderWarm(); setTimeout(next, WARM.retryWait); return; }
       warm.state = 'failed'; warm.ctrl = null; renderWarm();
     });
   }
@@ -881,11 +903,13 @@ function renderTour() {
     a.href = tourUrl(path);
     a.textContent = (state.visited[path] ? '✓ ' : '') + 'Open ' + a.getAttribute('data-label');
   });
+  Array.prototype.forEach.call(document.querySelectorAll('.stop-sub'), function (a) {
+    const path = a.getAttribute('data-path');
+    a.href = tourUrl(path);
+    a.textContent = (state.visited[path] ? '✓ ' : '') + a.getAttribute('data-label');
+  });
   Array.prototype.forEach.call(document.querySelectorAll('.dots span'), function (d) {
     d.classList.toggle('seen', !d.classList.contains('here') && !!state.visited[d.getAttribute('data-path')]);
-  });
-  Array.prototype.forEach.call(document.querySelectorAll('[data-tour]'), function (a) {
-    a.href = tourUrl(a.getAttribute('data-tour'));
   });
 }
 
@@ -1095,6 +1119,7 @@ function init() {
   $('copy-main').addEventListener('click', function () { copyText(buildBlock(state.mode === 'owner' ? 'owner' : 'attendee')); });
   $('copy-home').addEventListener('click', function () { copyText(buildBlock('attendee')); });
   $('copy-spec').addEventListener('click', function () { copyText($('blk-spec').textContent + '\n'); });
+  $('copy-up').addEventListener('click', function () { copyText($('blk-up').textContent + '\n'); });
   $('open-pages').addEventListener('click', function (e) {
     if (this.getAttribute('aria-disabled') === 'true') { e.preventDefault(); say($('pages-why').textContent); }
   });
