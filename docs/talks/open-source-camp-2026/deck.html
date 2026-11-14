@@ -280,42 +280,42 @@ p, li, .cap, .why { text-wrap: pretty; }
   </div>
 </section>
 
-<!-- The tour comes first and is of ScriptHammer itself, on the live site, while the fork builds. This slide is the map; the eight slides after it, one per stop, are written by the script from the TOUR list and stand between this slide and s-dark. -->
+<!-- The tour comes first and is of ScriptHammer itself, on the live site, while the fork builds. This slide is the map; the twelve slides after it, one per stop, are written by the script from the TOUR list and stand between this slide and s-dark. -->
 <section class="slide" id="s-tour" data-min="1" aria-label="The tour">
   <div class="strip" data-strip></div>
   <div class="fit">
     <div class="head">
-      <h2>The tour: ScriptHammer itself.</h2>
-      <span class="chip live">Live site · scripthammer.com</span>
+      <h2>The tour</h2>
+      <span class="chip live">ScriptHammer itself, live at scripthammer.com</span>
     </div>
     <div class="grid-4" id="tour"></div>
   </div>
 </section>
 
-<section class="slide" id="s-dark" data-min="3" aria-label="Built in, dark on a fresh fork">
+<section class="slide" id="s-dark" data-min="3" aria-label="Built in, waiting for your keys">
   <div class="strip" data-strip></div>
   <div class="fit">
-    <h2>Built in. Dark on a fresh fork.</h2>
-    <p class="lede">Five things wait for a service you connect. On scripthammer.com they're connected, so they run:</p>
-    <div class="grid-5">
-      <div class="card"><a class="btn ghost" data-tour="/sign-in" target="_blank" rel="noopener" href="#">Sign-in</a><p class="wait">Waits for <b>Supabase</b>, the database and login&nbsp;service.</p></div>
-      <div class="card"><a class="btn ghost" data-tour="/payment-demo" target="_blank" rel="noopener" href="#">Payments</a><p class="wait">Waits for <b>Supabase</b>, plus <b>Stripe or PayPal</b>&nbsp;keys.</p></div>
-      <div class="card"><a class="btn ghost" data-tour="/messages" target="_blank" rel="noopener" href="#">Messaging</a><p class="wait">Waits for <b>Supabase</b>.</p></div>
+    <h2>Built in. Waiting for your keys.</h2>
+    <p class="lede">Your fork draws all six and shows a setup banner until you connect your own service. It never pretends. Here they're connected:</p>
+    <div class="grid-3">
+      <div class="card"><a class="btn ghost" data-tour="/sign-in" target="_blank" rel="noopener" href="#">Sign-in</a><p class="wait">Email, GitHub, Google. Waits for <b>Supabase</b>, the login&nbsp;service.</p></div>
+      <div class="card"><a class="btn ghost" data-tour="/checkout" target="_blank" rel="noopener" href="#">Checkout</a><p class="wait"><b>Stripe</b> and <b>PayPal</b>. Waits for their&nbsp;keys.</p></div>
+      <div class="card"><a class="btn ghost" data-tour="/messages" target="_blank" rel="noopener" href="#">Messaging</a><p class="wait">Encrypted messages. Waits for <b>Supabase</b> and a signed-in&nbsp;user.</p></div>
+      <div class="card"><a class="btn ghost" data-tour="/privacy-controls" target="_blank" rel="noopener" href="#">Privacy controls</a><p class="wait">Consent, export and delete. <b>Works on a fresh fork</b>, in the&nbsp;browser.</p></div>
       <div class="card"><a class="btn ghost" data-tour="/admin" target="_blank" rel="noopener" href="#">Admin dashboard</a><p class="wait">Waits for <b>Supabase</b>.</p></div>
       <div class="card"><a class="btn ghost" data-tour="/contact" target="_blank" rel="noopener" href="#">Contact form</a><p class="wait">Sending waits for <b>a mail provider</b>.</p></div>
     </div>
-    <p class="lede">Your fork has all five. Each shows a setup banner until you connect your own service. It never pretends.</p>
   </div>
 </section>
 
-<section class="slide" id="s-dev" data-min="2" aria-label="The developer side">
+<section class="slide" id="s-dev" data-min="1.5" aria-label="The developer side">
   <div class="strip" data-strip></div>
   <div class="tag">skip if you are behind</div>
   <div class="fit">
     <h2>The developer side</h2>
     <div class="grid-5">
-      <div class="card"><h3>Tests</h3><p class="cap">Unit, end-to-end and accessibility checks.</p></div>
-      <div class="card"><h3>23 check workflows</h3><p class="cap">They run on GitHub for every change.</p></div>
+      <div class="card"><h3>Tests</h3><p class="cap">Vitest, Playwright, Pa11y and visual tests.</p></div>
+      <div class="card"><h3>23 workflows</h3><p class="cap">7 checks must pass before anything merges.</p></div>
       <div class="card"><h3>Docker</h3><p class="cap">Nothing installed on your own machine.</p></div>
       <div class="card"><h3>Component generator</h3><p class="cap">Five files per component, made for you.</p></div>
       <div class="card"><h3>Fork guide</h3><p class="cap">What to change first, step by step.</p></div>
@@ -349,7 +349,7 @@ p, li, .cap, .why { text-wrap: pretty; }
   </div>
 </section>
 
-<section class="slide" id="s-speckit" data-min="2" aria-label="Spec Kit">
+<section class="slide" id="s-speckit" data-min="1.5" aria-label="Spec Kit">
   <div class="strip" data-strip></div>
   <div class="fit">
     <h2>Spec Kit: words before code.</h2>
@@ -360,7 +360,7 @@ p, li, .cap, .why { text-wrap: pretty; }
   </div>
 </section>
 
-<section class="slide" id="s-reveal" data-min="2" aria-label="The reveal">
+<section class="slide" id="s-reveal" data-min="1.5" aria-label="The reveal">
   <div class="strip" data-strip></div>
   <div class="fit">
     <div class="grid-2" style="align-items:center;grid-template-columns:1fr 1.3fr">
@@ -384,7 +384,7 @@ p, li, .cap, .why { text-wrap: pretty; }
   </div>
 </section>
 
-<section class="slide" id="s-walk" data-min="4" aria-label="Walk the fork">
+<section class="slide" id="s-walk" data-min="3" aria-label="Walk the fork">
   <div class="strip" data-strip></div>
   <div class="fit">
     <div class="head">
@@ -500,29 +500,35 @@ const EXAMPLE = { name: 'PotluckPlanner', owner: 'TortoiseWolfe', desc: 'It trac
 // without one only answers with a redirect.
 const SITE = 'https://scripthammer.com';
 const FORK = 'http://localhost:3000';
-function tourUrl(path) { return SITE + (path === '/' ? '/' : path + '/'); }
-function forkUrl(path) { return FORK + (path === '/' ? '/' : path + '/'); }
-// TOUR is the eight stops of the tour of ScriptHammer itself. Each entry is: the name, the page,
+// A path to a file (offline.html) takes no slash: with one it is a 404.
+function slashed(path) { return path === '/' || /\.[a-z]+$/.test(path) ? path : path + '/'; }
+function tourUrl(path) { return SITE + slashed(path); }
+function forkUrl(path) { return FORK + slashed(path); }
+// TOUR is the twelve stops of the tour of ScriptHammer itself. Each entry is: the name, the page,
 // the short line under its button on the map, the minutes the stop gets, and the things to show
 // there. Every stop becomes a slide of its own (see buildStops), so the slide on screen always
 // says which stop this is and what not to forget.
 const TOUR = [
   ['Home', '/', 'the landing page', 2, ['Yours will say your name here.', 'Install steps, demo links and the theme strip.', 'Tip jar and book a call.']],
-  ['Themes', '/themes', '35 themes, switch live', 2.5, ['All 35 themes on one page.', 'Switch one live. No reload.', 'Each one shows its contrast figures.']],
-  ['Wireframes', '/wireframes', '71 drawings, one viewer', 2, ['71 drawings in one viewer.', 'Every feature here began as one of these.', 'Yours gets its own after the tour.']],
-  ['3D Chattanooga', '/chatt', 'the city in 3D, needs internet', 2, ['About 8,000 buildings over a satellite globe.', 'No keys or accounts. It needs internet.', 'Not drawn in ten seconds: say the fallback line, play the clip.']],
-  ['Pricing', '/pricing', 'browse only, nothing is bought', 1.5, ['Nine products, in tiers.', 'Browse only. Never click Buy.']],
-  ['Docs', '/docs', 'seven guides', 1.5, ['Seven guides, inside the app.', 'Open the first one: install and first run.']],
-  ['Accessibility', '/accessibility', 'text size, spacing, contrast controls', 2, ['Text size and line spacing.', 'Six fonts, two of them made for easier reading.', 'Colour-blind modes, and one reset.']],
-  ['Status', '/status', 'is everything up', 1.5, ['Scores from the automatic checks.', 'This visit, measured live.', 'It needs internet.']]
+  ['Themes', '/themes', '35 themes, switch live', 2, ['All 35 themes on one page.', 'Switch one live. No reload.', 'Each one shows its contrast figures.']],
+  ['Wireframes', '/wireframes', '71 drawings, one viewer', 1.5, ['71 drawings in one viewer.', 'Every feature here began as one of these.', 'Yours gets its own after the tour.']],
+  ['Storybook', '/storybook', '155 component stories', 1.5, ['155 stories, one per component state.', 'Click one: it is the real component, live.', 'Every deploy publishes your fork’s own.']],
+  ['3D Chattanooga', '/chatt', 'the city in 3D', 1.5, ['About 8,000 buildings over a satellite globe.', 'No keys or accounts. It needs internet.', 'Not drawn in ten seconds: say the fallback line, play the clip.']],
+  ['Map', '/map', 'a street map', 1, ['A street map, no key needed.', 'It asks before it uses your location.', 'It needs internet.']],
+  ['3D game', '/game/3d', 'a 3D scene, built in code', 1.5, ['A 3D scene, built with Three.js.', 'Sky, surfaces and sound are made in code. No files to download.', 'The game toolkit comes with your fork.']],
+  ['Offline app', '/offline.html', 'install it, it works offline', 2, ['Install it: in Safari, File, then Add to Dock.', 'No connection? Pages you opened still load. The rest show this page.', 'A message written offline sends when you’re back.']],
+  ['Pricing', '/pricing', 'browse only', 1, ['Nine products, in tiers.', 'Browse only. Never click Buy.']],
+  ['Docs', '/docs', 'seven guides', 1, ['Seven guides, inside the app.', 'Open the first one: install and first run.']],
+  ['Accessibility', '/accessibility', 'text size, contrast', 1.5, ['Text size and line spacing.', 'Six fonts, two of them made for easier reading.', 'Colour-blind modes, and one reset.']],
+  ['Status', '/status', 'is everything up', 1, ['Scores from the automatic checks.', 'This visit, measured live.', 'It needs internet.']]
 ];
 // WALK is the reveal: every page of the new fork, in the four groups the talk walks them in.
 // The tour above points at the live site; these point at the fork on this laptop.
 const WALK = [
   ['Yours now', [['Home', '/'], ['Themes', '/themes']]],
-  ['Works today', [['Wireframes', '/wireframes'], ['Docs', '/docs'], ['Accessibility', '/accessibility'], ['Status', '/status'], ['Blog', '/blog'], ['Game', '/game']]],
+  ['Works today', [['Wireframes', '/wireframes'], ['Docs', '/docs'], ['Accessibility', '/accessibility'], ['Status', '/status'], ['Blog', '/blog'], ['Game', '/game'], ['3D game', '/game/3d'], ['Map', '/map'], ['Privacy', '/privacy-controls']]],
   ['My demo content', [['3D Chattanooga', '/chatt'], ['Band', '/band'], ['Pricing', '/pricing'], ['Terms', '/terms'], ['Credits', '/credits']]],
-  ['Dark until you connect a service', [['Sign-in', '/sign-in'], ['Payments', '/payment-demo'], ['Messaging', '/messages'], ['Admin', '/admin'], ['Contact', '/contact']]]
+  ['Waiting for your keys', [['Sign-in', '/sign-in'], ['Checkout', '/checkout'], ['Payments', '/payment-demo'], ['Messaging', '/messages'], ['Admin', '/admin'], ['Contact', '/contact']]]
 ];
 const WALK_PATHS = [];
 WALK.forEach(function (g) { g[1].forEach(function (it) { WALK_PATHS.push(it[1]); }); });
