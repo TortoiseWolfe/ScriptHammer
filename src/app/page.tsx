@@ -57,6 +57,12 @@ const TERMINAL_LINES: readonly {
   { prompt: false, done: true, text: '→ ready · localhost:3000' },
 ];
 
+// The terminal screen is a fixed near-black in every theme, so its accent
+// colour has to be a fixed light amber too. `var(--color-secondary)` is a
+// dark brown in the light theme (2.13:1 on the screen, #1506) and only
+// clears contrast in dark ones. This is the dark theme's secondary.
+const TERMINAL_ACCENT = 'oklch(87.91% 0.043 76.31)';
+
 // The terminal's right-hand column in the design. Its last row reads
 // "ci — 2,431 tests + a11y audit wired to every push"; that count is mockup
 // data, so this states what is true without inventing a figure.
@@ -367,11 +373,7 @@ export default function Home() {
                       <span className="text-accent select-none">$ </span>
                     )}
                     <span
-                      style={
-                        line.done
-                          ? { color: 'var(--color-secondary)' }
-                          : undefined
-                      }
+                      style={line.done ? { color: TERMINAL_ACCENT } : undefined}
                     >
                       {line.text}
                     </span>
@@ -400,7 +402,7 @@ export default function Home() {
                     <div key={key} className="flex flex-wrap gap-x-2">
                       <dt
                         className="shrink-0"
-                        style={{ color: 'var(--color-secondary)' }}
+                        style={{ color: TERMINAL_ACCENT }}
                       >
                         {key}
                       </dt>
