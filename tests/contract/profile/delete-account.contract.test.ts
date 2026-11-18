@@ -16,6 +16,7 @@ describe('Account Deletion Contract', () => {
   let testUserId: string;
   let testEmail: string;
   let testAccessToken: string;
+  let paymentIntentId: string | undefined;
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
@@ -56,9 +57,13 @@ describe('Account Deletion Contract', () => {
 
   afterEach(async () => {
     await supabase.auth.signOut();
-    // payment_intents.template_user_id references auth.users with NO ON DELETE
-    // action, so a user that owns an intent cannot be deleted. Clear those
-    // first, then remove whatever is left of the throwaway account.
+    // A deleted account's payment rows are kept with no owner (#1309), so they
+    // are found by id, not by user. Remove them, then whatever is left of the
+    // throwaway account.
+    if (paymentIntentId) {
+      await admin.from('payment_intents').delete().eq('id', paymentIntentId);
+      paymentIntentId = undefined;
+    }
     await admin
       .from('payment_intents')
       .delete()
@@ -115,43 +120,40 @@ describe('Account Deletion Contract', () => {
     expect(afterLogs ?? []).toHaveLength(0);
   });
 
-  it('should keep payment intents when user deletion is refused', async () => {
-    // Buyer payment rows reference auth.users with NO ON DELETE action, so
-    // deleting the account is REFUSED rather than orphaning or cascading the
-    // payment history. The gdpr-service relies on this: it deletes the account
-    // before wiping local keys, because a refused delete leaves the account
-    // usable and its messages decryptable (#859, #1309).
-    const { error: insertError } = await admin.from('payment_intents').insert({
-      template_user_id: testUserId,
-      amount: 1000,
-      currency: 'usd',
-      customer_email: testEmail,
-      type: 'one_time',
-    });
-    expect(insertError).toBeNull();
-
-    const { data: beforePayments, error: readError } = await admin
+  it('should delete the account and keep its payment records, ownerless', async () => {
+    // A buyer's payment rows reference auth.users with ON DELETE SET NULL
+    // (#1309): the delete goes through and the accounting row stays, with no
+    // owner. This goes through the real Edge Function over HTTP. It goes red
+    // if the function starts refusing the delete again, or if the row is
+    // deleted along with the account instead of kept.
+    const { data: inserted, error: insertError } = await admin
       .from('payment_intents')
-      .select('id, template_user_id')
-      .eq('template_user_id', testUserId);
-    expect(readError).toBeNull();
-    expect(beforePayments?.length).toBeGreaterThan(0);
+      .insert({
+        template_user_id: testUserId,
+        amount: 1000,
+        currency: 'usd',
+        customer_email: testEmail,
+        type: 'one_time',
+      })
+      .select('id')
+      .single();
+    expect(insertError).toBeNull();
+    paymentIntentId = inserted!.id;
 
     const result = await callDeleteAccount(testAccessToken);
-    // A refused delete answers 500 with { error } and NO success field, so
-    // assert on the error text the function actually sends rather than on a
-    // success flag that is absent. This still goes red if the function starts
-    // reporting success, or if it deletes the account despite the FK.
-    expect(result.success).not.toBe(true);
-    expect(result.error).toMatch(/Failed to delete account/);
-    const { data: stillUser } = await admin.auth.admin.getUserById(testUserId);
-    expect(stillUser?.user?.id).toBe(testUserId);
+    expect(result.success).toBe(true);
 
-    const { data: afterPayments } = await admin
+    const { data: gone } = await admin.auth.admin.getUserById(testUserId);
+    expect(gone?.user ?? null).toBeNull();
+
+    const { data: kept, error: keptError } = await admin
       .from('payment_intents')
-      .select('id')
-      .eq('template_user_id', testUserId);
-    expect(afterPayments?.length).toBeGreaterThan(0);
+      .select('id, template_user_id, amount')
+      .eq('id', paymentIntentId)
+      .single();
+    expect(keptError).toBeNull();
+    expect(kept?.amount).toBe(1000);
+    expect(kept?.template_user_id).toBeNull();
   });
 
   it('should prevent profile deletion by regular user', async () => {
