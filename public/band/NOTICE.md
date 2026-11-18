@@ -28,14 +28,17 @@ right to reuse them.
 
 ## Files
 
-| Path | What |
-|---|---|
-| `audio/band-wagon-theme.mp3` | The theme song, "The Band Wagon (after hours)", 55 s, 128 kbps |
-| `audio/band-wagon-hook.mp3` | The hook, 18 s, 128 kbps |
-| `audio/band-wagon-duet-1.mp3`, `-duet-2.mp3` | The duet "Should the Machines Take Over?" in two takes (96 and 124 beats a minute), 80 s each, 128 kbps. Ivory sings for the machines, Chops against. |
-| `audio/estimify-jingle-hook.mp3` | The Estimify jingle, 10 s hook. A client commission, not CC BY-SA (see above). |
-| `audio/estimify-jingle-full.mp3` | The Estimify jingle, 27 s full cut. A client commission, not CC BY-SA (see above). |
-| `members/<name>-512.webp`, `-700.webp` | Portraits of the seven players |
-| `cover/band-wagon-*.{jpg,webp}` | The cover at 600, 1200 and 3000 px |
-| `songs/<id>.webp` | Song covers for the ranked list on `/band`, 160 px, composed in code from the same portraits and SVG |
-| `og-1200x630.jpg` | The social card |
+| Path                                                                       | What                                                                                                                                                  |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `audio/band-wagon-theme.mp3`                                               | The theme song, "The Band Wagon (after hours)", 55 s, 128 kbps                                                                                        |
+| `audio/band-wagon-hook.mp3`                                                | The hook, 18 s, 128 kbps                                                                                                                              |
+| `audio/band-wagon-duet-1.mp3`, `-duet-2.mp3`                               | The duet "Should the Machines Take Over?" in two takes (96 and 124 beats a minute), 80 s each, 128 kbps. Ivory sings for the machines, Chops against. |
+| `audio/band-wagon-jam-1.mp3`, `-jam-2.mp3`, `-jam-3.mp3`                   | The three long jams of the ranked list, 7 minutes each, 128 kbps                                                                                      |
+| `audio/band-wagon-fusion-1.mp3`, `-fusion-2.mp3`, `-n03.mp3`, `-psy-2.mp3` | Four ranked songs, 150 s each, 128 kbps                                                                                                               |
+| `audio/band-wagon-psy-1.mp3`, `-n10.mp3`                                   | "The Doctor Listens" (165 s) and "Static Snow" (163 s), 128 kbps, from the album masters, the takes published on YouTube                              |
+| `audio/estimify-jingle-hook.mp3`                                           | The Estimify jingle, 10 s hook. A client commission, not CC BY-SA (see above).                                                                        |
+| `audio/estimify-jingle-full.mp3`                                           | The Estimify jingle, 27 s full cut. A client commission, not CC BY-SA (see above).                                                                    |
+| `members/<name>-512.webp`, `-700.webp`                                     | Portraits of the seven players                                                                                                                        |
+| `cover/band-wagon-*.{jpg,webp}`                                            | The cover at 600, 1200 and 3000 px                                                                                                                    |
+| `songs/<id>.webp`                                                          | Song covers for the ranked list on `/band`, 160 px, composed in code from the same portraits and SVG                                                  |
+| `og-1200x630.jpg`                                                          | The social card                                                                                                                                       |

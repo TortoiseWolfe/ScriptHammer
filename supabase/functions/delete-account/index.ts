@@ -27,6 +27,7 @@
  * RESPONSE
  *   200 OK: { success: true }
  *   401 Unauthorized: { error: string } (missing / invalid JWT)
+ *   409 Conflict: { error: string } (a subscription is still billing; cancel it first)
  *   500 Internal Server Error: { error: string }
  *
  * SECURITY MODEL
@@ -45,6 +46,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAuthenticatedUserId, UnauthorizedError } from '../_shared/auth.ts';
+import { deleteAccount, type AccountEraser } from './resolve.ts';
 
 const supabaseUrl =
   Deno.env.get('SUPABASE_URL') ?? Deno.env.get('NEXT_PUBLIC_SUPABASE_URL')!;
@@ -76,27 +78,9 @@ serve(async (req: Request) => {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  const { error: deleteError } = await admin.auth.admin.deleteUser(userId);
-
-  if (deleteError) {
-    return jsonResponse(
-      req,
-      { error: `Failed to delete account: ${deleteError.message}` },
-      500
-    );
-  }
-
-  // Confirm rather than assume. #859 was a deletion that returned no error and removed
-  // nothing; a success response that has not been checked is the same failure wearing a
-  // different status code.
-  const { data: stillThere } = await admin.auth.admin.getUserById(userId);
-  if (stillThere?.user) {
-    return jsonResponse(
-      req,
-      { error: 'Account deletion reported success but the user still exists' },
-      500
-    );
-  }
-
-  return jsonResponse(req, { success: true });
+  // The cast narrows the client's very wide generic type to the slice deleteAccount uses.
+  // Without it Deno's checker gives up on matching the two ("Type instantiation is excessively
+  // deep", TS2589); the slice is what the database test also hands in, so both paths agree.
+  const result = await deleteAccount(admin as unknown as AccountEraser, userId);
+  return jsonResponse(req, result.body, result.status);
 });
