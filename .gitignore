@@ -61,6 +61,10 @@ yarn-error.log*
 .env.cloud
 # NOTE: .env.local-supabase is intentionally TRACKED — it holds only safe demo
 # local values (no secrets) and is the source for `pnpm run use:local`.
+# The rule below is a backstop only: an ignore rule does NOT untrack an
+# already-tracked file (see the manifest.json note further down), so a stray
+# untracked copy is skipped while the tracked one keeps showing its diffs.
+.env.local-supabase
 
 # Legacy JSON input for `pnpm supabase:secrets --config` (the default input is .env).
 # The .example.json placeholder IS tracked; a filled copy must stay owner-only and
@@ -76,6 +80,7 @@ next-env.d.ts
 
 # playwright
 test-results/
+ci-monitor/
 playwright-report/
 tests/e2e/fixtures/storage-state-auth.json
 tests/e2e/fixtures/storage-state-auth-b.json

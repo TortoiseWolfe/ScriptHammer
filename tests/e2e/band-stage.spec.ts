@@ -42,7 +42,7 @@ test.describe("band stage at Ross's Landing", () => {
       const c = document.createElement('canvas');
       return !!(c.getContext('webgl2') || c.getContext('webgl'));
     });
-    // Kept skip (#792): Firefox's Playwright build has no WebGL on CI; chromium and webkit run this.
+    // Guard only: Firefox runs under Xvfb in CI (#792) and has WebGL, so this skips only on a runner with none.
     test.skip(
       !hasWebGL,
       'no WebGL in this browser (see #288) — the scene cannot produce the meshes walk ' +
