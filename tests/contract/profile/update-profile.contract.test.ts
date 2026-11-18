@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createClient } from '../../helpers/real-supabase';
+import { createClient, createServiceClient } from '../../helpers/real-supabase';
 import { TEST_EMAIL, TEST_PASSWORD } from '../../fixtures/test-user';
 
 describe('User Profile UPDATE Contract', () => {
@@ -101,15 +101,49 @@ describe('User Profile UPDATE Contract', () => {
   });
 
   it('should enforce RLS - users cannot update other profiles', async () => {
-    const fakeId = '00000000-0000-0000-0000-000000000000';
+    // Target a REAL second account. An update aimed at an id that does not
+    // exist matches no rows whether or not RLS is on, so it proves nothing.
+    const admin = createServiceClient();
+    const victimEmail = `rls-victim-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}@example.com`;
+    const { data: created, error: createError } =
+      await admin.auth.admin.createUser({
+        email: victimEmail,
+        password: 'ValidPass123!',
+        email_confirm: true,
+      });
+    expect(createError).toBeNull();
+    const victimId = created.user!.id;
 
-    const { error } = await supabase
-      .from('user_profiles')
-      .update({ username: 'hacker' })
-      .eq('id', fakeId);
+    try {
+      const { data: before } = await admin
+        .from('user_profiles')
+        .select('username, display_name, bio')
+        .eq('id', victimId)
+        .single();
+      expect(before).not.toBeNull();
 
-    // RLS blocks update to other profiles
-    expect(error).toBeDefined();
+      // RLS hides the other user's row from the update: no rows change. Some
+      // setups answer with an error instead of an empty result; both mean the
+      // update was refused, so the check is on the rows, not on the error.
+      const { data: changed } = await supabase
+        .from('user_profiles')
+        .update({ username: 'hacker', display_name: 'hacked', bio: 'hacked' })
+        .eq('id', victimId)
+        .select('id');
+      expect(changed ?? []).toHaveLength(0);
+
+      // Control: read the row back with the service client. It is untouched.
+      const { data: after } = await admin
+        .from('user_profiles')
+        .select('username, display_name, bio')
+        .eq('id', victimId)
+        .single();
+      expect(after).toEqual(before);
+    } finally {
+      await admin.auth.admin.deleteUser(victimId);
+    }
   });
 
   it('should auto-update updated_at timestamp', async () => {

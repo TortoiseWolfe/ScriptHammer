@@ -106,20 +106,22 @@ describe('Supabase Auth Sign-Up Contract', () => {
   it.skipIf(!hasSecondaryUser())(
     'should return user metadata structure',
     async () => {
-      const { data } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: `test-${Date.now()}@example.com`,
         password: 'ValidPass123!',
       });
 
-      if (data.user) {
-        expect(data.user).toHaveProperty('id');
-        expect(data.user).toHaveProperty('email');
-        expect(data.user).toHaveProperty('created_at');
-        expect(data.user?.email_confirmed_at ?? null).toBeNull();
-        expect(data.user.id).toMatch(
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-        );
-      }
+      // A sign-up that returns no user must fail the test, not skip its checks.
+      expect(error).toBeNull();
+      expect(data.user).not.toBeNull();
+      const user = data.user!;
+      expect(user).toHaveProperty('id');
+      expect(user).toHaveProperty('email');
+      expect(user).toHaveProperty('created_at');
+      expect(user.email_confirmed_at ?? null).toBeNull();
+      expect(user.id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+      );
     }
   );
 

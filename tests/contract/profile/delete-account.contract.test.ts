@@ -164,16 +164,29 @@ describe('Account Deletion Contract', () => {
       .delete()
       .eq('id', testUserId);
 
-    expect(error).toBeDefined();
+    // A refusal, not an empty result: the role has no DELETE privilege at all.
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe('42501');
+
+    // Control: the profile is still there.
+    const { data: stillThere } = await admin
+      .from('user_profiles')
+      .select('id')
+      .eq('id', testUserId)
+      .maybeSingle();
+    expect(stillThere?.id).toBe(testUserId);
   });
 
-  it('should require admin privileges for account deletion', async () => {
-    // This test verifies the edge function itself enforces auth — calling it
-    // with a valid user JWT succeeds, and the user is gone afterward.
-    const result = await callDeleteAccount(testAccessToken);
-    expect(result.success).toBe(true);
+  it('should refuse account deletion with no token', async () => {
+    // The edge function itself enforces auth: a call with no user token is a
+    // 401 and the account is left alone.
+    const res = await fetch(`${supabaseUrl}/functions/v1/delete-account`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    expect(res.status).toBe(401);
 
     const { data } = await admin.auth.admin.getUserById(testUserId);
-    expect(data?.user ?? null).toBeNull();
+    expect(data?.user?.id).toBe(testUserId);
   });
 });
