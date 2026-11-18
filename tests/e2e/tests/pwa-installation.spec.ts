@@ -51,14 +51,6 @@ test.describe('PWA Installation', () => {
       context,
       browserName,
     }) => {
-      // WebKit does not support page.reload() while offline with service workers —
-      // triggers "WebKit encountered an internal error". Known Playwright limitation.
-      // Kept skip (#1399); chromium and firefox run this.
-      test.skip(
-        browserName === 'webkit',
-        'WebKit does not support offline reload with service workers'
-      );
-
       await expect
         .poll(() => activeWorkerUrl(page), { timeout: 15000 })
         .toMatch(/\/sw\.js$/);
@@ -78,6 +70,40 @@ test.describe('PWA Installation', () => {
       const onlineTitle = await page.title();
       expect(onlineHeading.length).toBeGreaterThan(0);
       expect(onlineHeading).not.toBe("You're Offline");
+
+      if (browserName === 'webkit') {
+        // Playwright's Linux WebKit cannot go offline with a service worker:
+        // page.reload() answers "WebKit encountered an internal error"
+        // (#1399) and an in-page fetch with the network off fails with "Load
+        // failed" instead of reaching the worker. So the offline step itself
+        // cannot run there. What the offline answer is made of can: the page
+        // the worker just cached, which is what it serves with the network
+        // off. Read it straight from Cache Storage; no network is involved.
+        // This is a weaker check than the full offline reload on the other
+        // two browsers. Playwright 1.64+ fixes the WebKit bug; the upgrade and
+        // the full test come back in issue #1480.
+        await expect
+          .poll(
+            () =>
+              page.evaluate(async () => {
+                const cached = await caches.match(location.href);
+                return cached
+                  ? { ok: cached.ok, body: await cached.text() }
+                  : null;
+              }),
+            { message: 'the worker should have cached the home page' }
+          )
+          .toMatchObject({ ok: true });
+        const cachedBody = await page.evaluate(async () => {
+          const cached = await caches.match(location.href);
+          return cached ? await cached.text() : '';
+        });
+        expect(cachedBody).not.toContain("You're Offline");
+        // The hero heading is split across inline tags in the HTML, so the
+        // page title is the stable text to match.
+        expect(cachedBody).toContain(`<title>${onlineTitle}</title>`);
+        return;
+      }
 
       await context.setOffline(true);
       try {

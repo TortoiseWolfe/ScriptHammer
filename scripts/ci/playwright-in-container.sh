@@ -55,10 +55,47 @@ fi
 # --user: without it the reports land root-owned and the upload steps fail.
 # ./node_modules/.bin/playwright: pnpm is not in the image, and corepack would
 #   download it per shard, reintroducing the fetch this removes.
+# Xvfb: headless Firefox in this image has no WebGL, which made browser tests
+#   skip themselves. Headed Firefox on a virtual display gets software
+#   WebGL, so start one and export DISPLAY (playwright.config.ts reads it). Not
+#   xvfb-run: it hangs in this image. ONLY the firefox-gen project gets the
+#   display, because the WebGL tests all live outside messaging/. WebKit does
+#   NOT ignore a display: with DISPLAY set, Playwright's WebKit build crashed its
+#   network and GPU processes (libsoup and SkiaGPUWorker segfaults, "WebKit
+#   encountered an internal error", #1480) in 2 of 6 general shards of one full
+#   run, where main's runs, which have no display, had none. A headed
+#   firefox-msg-iso also flaked a Send-button click twice.
+#   The screen is 4096x2304 on purpose: an X pointer starts at the screen
+#   centre, and on a 1280x1024 screen that is inside the Firefox window, so the
+#   page's submit button sat in :hover and the AAA contrast test measured its
+#   darker hover colour (6.54:1) instead of the resting one. At this size the
+#   centre (2048,1152) is outside every test viewport.
+NEED_DISPLAY=0
+for arg in "$@"; do
+  case "$arg" in
+    --project=firefox-gen) NEED_DISPLAY=1 ;;
+  esac
+done
+
 exec docker run --rm --network=host \
   --user "$(id -u):$(id -g)" \
   --env-file "$ENV_FILE" \
   -e HOME=/tmp \
+  -e NEED_DISPLAY="$NEED_DISPLAY" \
   -v "$PWD":/work -w /work \
   "$IMAGE" \
-  ./node_modules/.bin/playwright "$@"
+  bash -c '
+    if [ "$NEED_DISPLAY" = 1 ]; then
+      Xvfb :99 -screen 0 4096x2304x24 -nolisten tcp >/dev/null 2>&1 &
+      for _ in $(seq 50); do
+        [ -S /tmp/.X11-unix/X99 ] && break
+        sleep 0.1
+      done
+      if [ ! -S /tmp/.X11-unix/X99 ]; then
+        echo "::error::Xvfb did not start" >&2
+        exit 1
+      fi
+      export DISPLAY=:99
+    fi
+    exec ./node_modules/.bin/playwright "$@"
+  ' playwright-with-display "$@"

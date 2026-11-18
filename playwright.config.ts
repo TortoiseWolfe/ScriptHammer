@@ -63,6 +63,13 @@ const MSG_ISO_GLOBS = [
   '**/messaging/group-chat-multiuser.spec.ts',
 ];
 
+const SWIFTSHADER_ARGS = [
+  '--use-gl=angle',
+  '--use-angle=swiftshader',
+  '--ignore-gpu-blocklist',
+  '--enable-unsafe-swiftshader',
+];
+
 /* Parallelism for the iso projects is driven by Playwright's `--workers` CLI
  * flag passed per CI job (so only the iso shard runs workers>1; gen/serial msg
  * stay at the global `workers:1`). Locally, `fullyParallel` on the iso project
@@ -76,6 +83,16 @@ const MSG_ISO_GLOBS = [
  * "needs to sign in". Size the budget to the work this slice actually does.
  * Scoped to the iso projects so real hangs elsewhere still fail fast. */
 const MSG_ISO_TIMEOUT = 180_000;
+
+// Headless Firefox in the CI image gets no WebGL at all, so the 3D game
+// and twin tests skip themselves. Headed Firefox on a virtual display gets
+// software WebGL. scripts/ci/playwright-in-container.sh starts that display
+// and exports DISPLAY for the firefox-gen project only, so Firefox runs headed
+// only there in CI; local dev containers stay headless. Only firefox-gen needs
+// it: every WebGL test is outside messaging/, and the messaging projects stay
+// headless like main's (a headed firefox-msg-iso flaked "locator.click timed
+// out" on the Send button in two full runs, main's headless runs in none).
+const FIREFOX_HEADLESS = !(process.env.CI && process.env.DISPLAY);
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -116,7 +133,11 @@ export default defineConfig({
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: process.env.BASE_URL || 'http://localhost:3000',
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
+    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer
+     * Do NOT trace the first attempt ('retain-on-first-failure' or 'on'): it makes
+     * Playwright's WebKit build crash in libsoup 3.6.5 (Playwright issue 42803), which shows
+     * up as "page.reload: WebKit encountered an internal error" flakes (#1480). Same code,
+     * WebKit only: tracing the first attempt gave 2 flaky; 'on-first-retry' gave 0 of 786. */
     trace: 'on-first-retry',
     /* Screenshot on failure — and `only-on-failure` is the value that means that.
      * This read `'on'`, which captures one for EVERY test, while the comment beside
@@ -155,6 +176,7 @@ export default defineConfig({
       testMatch: /auth\.setup\.ts/,
       use: {
         storageState: './tests/e2e/fixtures/storage-state.json',
+        launchOptions: { args: SWIFTSHADER_ARGS },
       },
     },
 
@@ -174,6 +196,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: './tests/e2e/fixtures/storage-state.json',
+        launchOptions: { args: SWIFTSHADER_ARGS },
       },
     },
 
@@ -186,6 +209,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: './tests/e2e/fixtures/storage-state.json',
+        launchOptions: { args: SWIFTSHADER_ARGS },
       },
     },
 
@@ -198,6 +222,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: './tests/e2e/fixtures/storage-state.json',
+        launchOptions: { args: SWIFTSHADER_ARGS },
       },
     },
 
@@ -212,6 +237,7 @@ export default defineConfig({
       testMatch: '**/basepath/**',
       use: {
         ...devices['Desktop Chrome'],
+        launchOptions: { args: SWIFTSHADER_ARGS },
       },
     },
 
@@ -232,6 +258,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
+        launchOptions: { args: SWIFTSHADER_ARGS },
       },
     },
 
@@ -248,6 +275,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
+        launchOptions: { args: SWIFTSHADER_ARGS },
       },
     },
 
@@ -269,6 +297,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
+        launchOptions: { args: SWIFTSHADER_ARGS },
       },
     },
 
@@ -311,6 +340,7 @@ export default defineConfig({
       use: {
         ...devices['Desktop Firefox'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
+        headless: FIREFOX_HEADLESS,
       },
     },
 
@@ -374,6 +404,7 @@ export default defineConfig({
         use: {
           ...createDeviceConfig(viewport),
           storageState: './tests/e2e/fixtures/storage-state-auth.json',
+          launchOptions: { args: SWIFTSHADER_ARGS },
         },
       })
     ),
@@ -396,6 +427,7 @@ export default defineConfig({
         use: {
           ...createDeviceConfig(viewport),
           storageState: './tests/e2e/fixtures/storage-state-auth.json',
+          launchOptions: { args: SWIFTSHADER_ARGS },
         },
       })
     ),
