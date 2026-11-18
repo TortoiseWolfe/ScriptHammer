@@ -130,13 +130,12 @@ export default defineConfig({
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
     baseURL: process.env.BASE_URL || 'http://localhost:3000',
-    /* Trace the FIRST attempt of every test and keep it only if that attempt fails.
-     * This read 'on-first-retry', which traces the RETRY, and a test that flaked passes
-     * its retry: the trace it produced showed the attempt that worked. Three flakes in
-     * the 1469 run (a Firefox compare-mode click, a Chromium skip-link focus check and a
-     * Firefox messaging click) could only be reasoned about from log text for that
-     * reason. See https://playwright.dev/docs/trace-viewer */
-    trace: 'retain-on-first-failure',
+    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer
+     * Do NOT trace the first attempt ('retain-on-first-failure' or 'on'): it makes
+     * Playwright's WebKit build crash in libsoup 3.6.5 (Playwright issue 42803), which shows
+     * up as "page.reload: WebKit encountered an internal error" flakes (#1480). Same code,
+     * WebKit only: tracing the first attempt gave 2 flaky; 'on-first-retry' gave 0 of 786. */
+    trace: 'on-first-retry',
     /* Screenshot on failure — and `only-on-failure` is the value that means that.
      * This read `'on'`, which captures one for EVERY test, while the comment beside
      * it claimed failures only. Across 24 shards that is thousands of images nobody
