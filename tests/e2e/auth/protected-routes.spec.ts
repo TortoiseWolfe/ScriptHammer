@@ -118,80 +118,6 @@ test.describe('Protected Routes E2E', () => {
     }
   });
 
-  test('should enforce RLS policies on payment access', async ({ page }) => {
-    // Two sign-outs + two sign-ins + payment-demo navigations; with 30s
-    // waitFor budgets inside signOutViaDropdown this easily exceeds the
-    // default 30s test timeout on Supabase Cloud under shard load.
-    test.setTimeout(120000);
-
-    // Every lane that runs this spec sets the secondary user. A lane that lost
-    // it must fail, not skip the RLS check silently (#1398).
-    expect(
-      process.env.TEST_USER_SECONDARY_EMAIL,
-      'TEST_USER_SECONDARY_EMAIL is not set; the RLS payment check needs a second user (#1398)'
-    ).toBeTruthy();
-
-    // Step 1: Already authenticated as user 1 via storageState
-    // Access payment demo and verify user's own data
-    await page.goto('/payment-demo', { waitUntil: 'domcontentloaded' });
-    const escapedEmail1 = testUser.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    await expect(
-      page.getByText(new RegExp(`Logged in as: ${escapedEmail1}`))
-    ).toBeVisible();
-
-    // Step 2: Sign out via dropdown menu
-    await signOutViaDropdown(page);
-    // Wait for sign-out redirect to fully settle — WebKit may async-refresh
-    // the Supabase token after sign-out, briefly re-authenticating and
-    // triggering a middleware redirect away from /sign-in.
-    await page.waitForLoadState('networkidle');
-    await page.waitForURL(
-      (url) => url.pathname === '/' || url.pathname.startsWith('/sign-in'),
-      { timeout: 10000 }
-    );
-    // Retry goto — WebKit's async token refresh can interrupt the navigation
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
-        break;
-      } catch {
-        if (attempt === 2)
-          throw new Error('Failed to navigate to /sign-in after 3 attempts');
-        await page.waitForTimeout(1000);
-      }
-    }
-
-    // Step 3: Sign in as second user
-    await dismissCookieBanner(page);
-    const result2 = await performSignIn(
-      page,
-      testUser2.email,
-      testUser2.password
-    );
-    if (!result2.success) {
-      throw new Error(`Sign-in failed for user 2: ${result2.error}`);
-    }
-
-    // Step 4: Verify user 2 sees their own email, not user 1's
-    await page.goto('/payment-demo', { waitUntil: 'domcontentloaded' });
-    const escapedEmail2 = testUser2.email.replace(
-      /[.*+?^${}()|[\]\\]/g,
-      '\\$&'
-    );
-    await expect(
-      page.getByText(new RegExp(`Logged in as: ${escapedEmail2}`))
-    ).toBeVisible();
-    // User 1's email should not appear in "Logged in as" text
-    await expect(
-      page.getByText(new RegExp(`Logged in as: ${escapedEmail1}`))
-    ).not.toBeVisible();
-
-    // RLS policy prevents user 2 from seeing user 1's payment data
-
-    // Clean up - sign out via dropdown menu
-    await signOutViaDropdown(page);
-  });
-
   // REMOVED (#850): 'should show email verification notice for unverified users'.
   // It ran zero assertions on every shard and could never have run any — an
   // unverified user cannot hold a session. Probed straight against GoTrue:
@@ -371,5 +297,101 @@ test.describe('Protected Routes E2E', () => {
       // Clean up via admin API if user still exists
       await deleteTestUserByEmail(deleteEmail);
     }
+  });
+});
+
+// ============================================================
+// Test that signs out, so it gets a session of its own (#1402)
+// ============================================================
+test.describe('Protected Routes: RLS payment access', () => {
+  // Start unauthenticated: the shared storageState session must stay alive
+  // for the other tests, and signing out deletes a session on the server.
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test('should enforce RLS policies on payment access', async ({ page }) => {
+    // Two sign-outs + two sign-ins + payment-demo navigations; with 30s
+    // waitFor budgets inside signOutViaDropdown this easily exceeds the
+    // default 30s test timeout on Supabase Cloud under shard load.
+    test.setTimeout(120000);
+
+    // Every lane that runs this spec sets the secondary user. A lane that lost
+    // it must fail, not skip the RLS check silently (#1398).
+    expect(
+      process.env.TEST_USER_SECONDARY_EMAIL,
+      'TEST_USER_SECONDARY_EMAIL is not set; the RLS payment check needs a second user (#1398)'
+    ).toBeTruthy();
+
+    // Step 1: Sign in as user 1 in this test's own session. The test signs out
+    // below, and signing out deletes the session on the server. Starting from the
+    // shared storageState session would delete it for every other test and shard
+    // that reuses it (#1402).
+    await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
+    await dismissCookieBanner(page);
+    const result1 = await performSignIn(
+      page,
+      testUser.email,
+      testUser.password
+    );
+    if (!result1.success) {
+      throw new Error(`Sign-in failed for user 1: ${result1.error}`);
+    }
+    // Access payment demo and verify user's own data
+    await page.goto('/payment-demo', { waitUntil: 'domcontentloaded' });
+    const escapedEmail1 = testUser.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    await expect(
+      page.getByText(new RegExp(`Logged in as: ${escapedEmail1}`))
+    ).toBeVisible();
+
+    // Step 2: Sign out via dropdown menu
+    await signOutViaDropdown(page);
+    // Wait for sign-out redirect to fully settle — WebKit may async-refresh
+    // the Supabase token after sign-out, briefly re-authenticating and
+    // triggering a middleware redirect away from /sign-in.
+    await page.waitForLoadState('networkidle');
+    await page.waitForURL(
+      (url) => url.pathname === '/' || url.pathname.startsWith('/sign-in'),
+      { timeout: 10000 }
+    );
+    // Retry goto — WebKit's async token refresh can interrupt the navigation
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        await page.goto('/sign-in', { waitUntil: 'domcontentloaded' });
+        break;
+      } catch {
+        if (attempt === 2)
+          throw new Error('Failed to navigate to /sign-in after 3 attempts');
+        await page.waitForTimeout(1000);
+      }
+    }
+
+    // Step 3: Sign in as second user
+    await dismissCookieBanner(page);
+    const result2 = await performSignIn(
+      page,
+      testUser2.email,
+      testUser2.password
+    );
+    if (!result2.success) {
+      throw new Error(`Sign-in failed for user 2: ${result2.error}`);
+    }
+
+    // Step 4: Verify user 2 sees their own email, not user 1's
+    await page.goto('/payment-demo', { waitUntil: 'domcontentloaded' });
+    const escapedEmail2 = testUser2.email.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      '\\$&'
+    );
+    await expect(
+      page.getByText(new RegExp(`Logged in as: ${escapedEmail2}`))
+    ).toBeVisible();
+    // User 1's email should not appear in "Logged in as" text
+    await expect(
+      page.getByText(new RegExp(`Logged in as: ${escapedEmail1}`))
+    ).not.toBeVisible();
+
+    // RLS policy prevents user 2 from seeing user 1's payment data
+
+    // Clean up - sign out via dropdown menu
+    await signOutViaDropdown(page);
   });
 });

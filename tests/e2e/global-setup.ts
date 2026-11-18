@@ -293,8 +293,14 @@ async function globalSetup(): Promise<void> {
       });
     } else {
       console.log('✓ PRIMARY user credentials verified');
-      // Sign out to clean up
-      await credentialCheckClient.auth.signOut();
+      // Sign out to clean up — LOCAL scope only. supabase-js's signOut()
+      // defaults to scope 'global', which deletes EVERY session the PRIMARY
+      // user holds. Every shard runs this setup against the same project, so
+      // a shard that started later logged out the shards already running:
+      // their saved sessions still looked valid in the browser, then the
+      // server answered 403 on /auth/v1/user and 401 "Auth session missing!"
+      // on create-order (#1402). 'local' ends only the session this check made.
+      await credentialCheckClient.auth.signOut({ scope: 'local' });
     }
   }
 
