@@ -87,8 +87,11 @@ const MSG_ISO_TIMEOUT = 180_000;
 // Headless Firefox in the CI image gets no WebGL at all, so the 3D game
 // and twin tests skip themselves. Headed Firefox on a virtual display gets
 // software WebGL. scripts/ci/playwright-in-container.sh starts that display
-// and exports DISPLAY, so Firefox runs headed only where a display exists
-// in CI; local dev containers stay headless.
+// and exports DISPLAY for the firefox-gen project only, so Firefox runs headed
+// only there in CI; local dev containers stay headless. Only firefox-gen needs
+// it: every WebGL test is outside messaging/, and the messaging projects stay
+// headless like main's (a headed firefox-msg-iso flaked "locator.click timed
+// out" on the Send button in two full runs, main's headless runs in none).
 const FIREFOX_HEADLESS = !(process.env.CI && process.env.DISPLAY);
 
 /**
@@ -307,7 +310,6 @@ export default defineConfig({
       use: {
         ...devices['Desktop Firefox'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
-        headless: FIREFOX_HEADLESS,
       },
     },
     {
@@ -319,7 +321,6 @@ export default defineConfig({
       use: {
         ...devices['Desktop Firefox'],
         storageState: './tests/e2e/fixtures/storage-state-auth.json',
-        headless: FIREFOX_HEADLESS,
       },
     },
     {
