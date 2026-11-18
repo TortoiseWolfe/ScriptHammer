@@ -16,11 +16,14 @@ describe('User Profile UPDATE Contract', () => {
     supabase = createClient();
 
     // Sign in with pre-confirmed static test user
-    const { data } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: TEST_EMAIL,
       password: TEST_PASSWORD,
     });
 
+    // Every check below runs as this user; a failed sign-in must stop here.
+    expect(error).toBeNull();
+    expect(data.user).not.toBeNull();
     testUserId = data.user!.id;
   });
 
@@ -76,7 +79,9 @@ describe('User Profile UPDATE Contract', () => {
       .update({ username: 'ab' })
       .eq('id', testUserId);
 
-    expect(error).toBeDefined();
+    // 23514 is Postgres check_violation: the database refused the value.
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe('23514');
     expect(error?.message).toContain('check');
   });
 
@@ -86,7 +91,9 @@ describe('User Profile UPDATE Contract', () => {
       .update({ username: 'a'.repeat(31) })
       .eq('id', testUserId);
 
-    expect(error).toBeDefined();
+    // 23514 is Postgres check_violation: the database refused the value.
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe('23514');
     expect(error?.message).toContain('check');
   });
 
@@ -96,7 +103,9 @@ describe('User Profile UPDATE Contract', () => {
       .update({ bio: 'a'.repeat(501) })
       .eq('id', testUserId);
 
-    expect(error).toBeDefined();
+    // 23514 is Postgres check_violation: the database refused the value.
+    expect(error).not.toBeNull();
+    expect(error?.code).toBe('23514');
     expect(error?.message).toContain('check');
   });
 

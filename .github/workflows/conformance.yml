@@ -12,8 +12,11 @@
 #   - messaging-provider.supabase.test.ts  (C7-C14, [supabase])
 #   - messaging-provider.dotnet.test.ts    (C7-C14, [dotnet], live ASP.NET)
 #   - admin/admin-access.contract.test.ts  (admin RPC shapes; needs a seeded admin)
+#   - auth/{sign-out,sign-in,sign-up,password-reset}.contract.test.ts and
+#     profile/{get-profile,update-profile,delete-account}.contract.test.ts
+#                                          (seven suites; real users, real Mailpit mail)
 # A skipped or todo test FAILS the job (assert-no-skipped.mjs, #1379).
-# Verified locally 19 Oct 2026: 28 files, 346 passed, 0 skipped.
+# Last full run: 406 passed, 0 skipped (the count grows as suites are added).
 #
 # NOTE ON CONCURRENCY: unlike e2e.yml, this job does NOT need the repo-wide
 # `e2e-supabase` mutex. That mutex exists because every E2E run shares ONE cloud

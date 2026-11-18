@@ -8,6 +8,10 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient, createServiceClient } from '../../helpers/real-supabase';
+import {
+  extractConfirmationLink,
+  waitForMessageTo,
+} from '../../e2e/utils/mailpit';
 import { hasSecondaryUser } from '../../fixtures/test-user';
 
 describe('Supabase Auth Sign-Up Contract', () => {
@@ -37,7 +41,7 @@ describe('Supabase Auth Sign-Up Contract', () => {
       });
 
       expect(error).toBeNull();
-      expect(data.user).toBeDefined();
+      expect(data.user).not.toBeNull();
       expect(data.user?.email).toBe(testEmail);
       expect(data.user?.email_confirmed_at ?? null).toBeNull(); // Unverified initially
     }
@@ -51,7 +55,7 @@ describe('Supabase Auth Sign-Up Contract', () => {
         password: 'ValidPass123!',
       });
 
-      expect(error).toBeDefined();
+      expect(error).not.toBeNull();
       expect(error?.message).toContain('email');
     }
   );
@@ -62,7 +66,7 @@ describe('Supabase Auth Sign-Up Contract', () => {
       password: 'weak',
     });
 
-    expect(error).toBeDefined();
+    expect(error).not.toBeNull();
     expect(error?.message.toLowerCase()).toContain('password');
   });
 
@@ -87,15 +91,16 @@ describe('Supabase Auth Sign-Up Contract', () => {
         password: 'ValidPass123!',
       });
 
-      if (error) {
-        // Auto-confirm on: GoTrue rejects the duplicate outright.
-        expect(error.message.toLowerCase()).toContain('already registered');
-      } else {
-        // Confirmations on: the anti-enumeration response is a synthetic user
-        // with no identities and a fresh id, so the real account does not leak.
-        expect(data.user?.identities ?? []).toHaveLength(0);
-        expect(data.user?.id).not.toBe(existing.user?.id);
-      }
+      // This lane runs with confirmations on (conformance.yml sets
+      // GOTRUE_MAILER_AUTOCONFIRM=false), so GoTrue answers a duplicate with
+      // its anti-enumeration response: no error, and a synthetic user with no
+      // identities and a fresh id, so the real account does not leak. With
+      // auto-confirm on it would reject the duplicate with an error instead;
+      // that setting is not this contract, and the check below fails on it.
+      expect(error).toBeNull();
+      expect(data.user).not.toBeNull();
+      expect(data.user?.identities ?? []).toHaveLength(0);
+      expect(data.user?.id).not.toBe(existing.user?.id);
 
       if (existing.user) {
         await admin.auth.admin.deleteUser(existing.user.id);
@@ -126,13 +131,25 @@ describe('Supabase Auth Sign-Up Contract', () => {
   );
 
   it.skipIf(!hasSecondaryUser())('should send verification email', async () => {
+    const email = `test-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}@example.com`;
     const { data, error } = await supabase.auth.signUp({
-      email: `test-${Date.now()}@example.com`,
+      email,
       password: 'ValidPass123!',
     });
 
     expect(error).toBeNull();
-    // Supabase sends verification email automatically
-    // We can't test email delivery in unit tests, but contract ensures no error
+    expect(data.user).not.toBeNull();
+
+    // The conformance stack's mail sink (Mailpit) receives the message, and it
+    // carries the signup verification link. waitForMessageTo throws if no
+    // mail arrives (the #287 failure).
+    const message = await waitForMessageTo(email, { timeoutMs: 30_000 });
+    expect(extractConfirmationLink(message)).toContain('type=signup');
+
+    if (data.user) {
+      await createServiceClient().auth.admin.deleteUser(data.user.id);
+    }
   });
 });

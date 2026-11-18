@@ -81,7 +81,8 @@ describe('Account Deletion Contract', () => {
       .single();
 
     expect(readError).toBeNull();
-    expect(beforeProfile).toBeDefined();
+    expect(beforeProfile).not.toBeNull();
+    expect(beforeProfile?.id).toBe(testUserId);
 
     const result = await callDeleteAccount(testAccessToken);
     expect(result.success).toBe(true);

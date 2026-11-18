@@ -43,7 +43,14 @@ describe('Supabase Auth Password Reset Contract', () => {
 
       expect(error).toBeNull();
       // Supabase returns empty object on success
-      expect(data).toBeDefined();
+      expect(data).toEqual({});
+
+      // The request really produced a mail: it reaches the Mailpit sink and
+      // carries a recovery link.
+      const message = await waitForMessageTo(TEST_EMAIL_SECONDARY!, {
+        timeoutMs: 30_000,
+      });
+      expect(extractConfirmationLink(message)).toContain('type=recovery');
     }
   );
 
@@ -57,7 +64,7 @@ describe('Supabase Auth Password Reset Contract', () => {
     );
 
     expect(error).toBeNull();
-    expect(data).toBeDefined();
+    expect(data).toEqual({});
   });
 
   it('should reject invalid email format', async () => {
@@ -68,7 +75,7 @@ describe('Supabase Auth Password Reset Contract', () => {
       }
     );
 
-    expect(error).toBeDefined();
+    expect(error).not.toBeNull();
     expect(error?.message).toContain('email');
   });
 
