@@ -270,11 +270,19 @@ test.describe('Landmarks and skip link', () => {
     ).toBeVisible();
 
     await page.keyboard.press('Enter');
-    const movedTo = await page.evaluate(() => document.activeElement?.id ?? '');
-    expect(
-      movedTo,
+    // Wait for focus to arrive, do not read it once. In the production build
+    // `keyboard.press` can return before the browser has finished the
+    // in-page jump, so a single `document.activeElement` read right after
+    // Enter saw the skip link still focused (id '') about once in a few
+    // hundred runs under load, then `main-content` a moment later. Measured
+    // against the static export with the CPU busy: the one-shot read failed,
+    // a poll of the same page reached `main-content` every time (#1470).
+    // A skip link that only scrolls never gets there, so this still fails for
+    // that case.
+    await expect(
+      page.locator('#main-content'),
       'activating the skip link must MOVE FOCUS to the content wrapper, not ' +
         'merely scroll to it — that is what tabIndex={-1} on the target is for'
-    ).toBe('main-content');
+    ).toBeFocused();
   });
 });
