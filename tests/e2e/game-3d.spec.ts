@@ -334,8 +334,10 @@ test.describe('/game/3d — SC-004: Multi-modality camera input', () => {
   // (read from `data-camera-position` on the Scene wrapper). Runs against
   // chromium + firefox + webkit per the matrix in .github/workflows/e2e.yml.
   //
-  // Skips when WebGL is unavailable because OrbitControls + camera state
-  // are R3F-internal — there's no canvas in the fallback path.
+  // FAILS (does not skip) when WebGL is unavailable, because OrbitControls +
+  // camera state are R3F-internal — there's no canvas in the fallback path.
+  // CI gives Chromium SwiftShader and runs Firefox headed under Xvfb so WebGL
+  // exists; a local headless Firefox has no WebGL and fails these tests.
   test('mouse drag changes camera position', async ({ page }) => {
     await page.goto('/game/3d');
     await expect(page.locator('[data-webgl-ok]').first()).toBeVisible({
