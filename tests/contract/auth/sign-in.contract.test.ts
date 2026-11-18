@@ -32,8 +32,8 @@ describe('Supabase Auth Sign-In Contract', () => {
     });
 
     expect(error).toBeNull();
-    expect(data.session).toBeDefined();
-    expect(data.user).toBeDefined();
+    expect(data.session).not.toBeNull();
+    expect(data.user).not.toBeNull();
     expect(data.user?.email).toBe(TEST_EMAIL);
   });
 
@@ -44,6 +44,7 @@ describe('Supabase Auth Sign-In Contract', () => {
     });
 
     expect(error).toBeNull();
+    expect(data.session).not.toBeNull();
     expect(data.session).toHaveProperty('access_token');
     expect(data.session).toHaveProperty('refresh_token');
     expect(data.session).toHaveProperty('expires_in');
@@ -58,7 +59,7 @@ describe('Supabase Auth Sign-In Contract', () => {
       password: TEST_PASSWORD,
     });
 
-    expect(error).toBeDefined();
+    expect(error).not.toBeNull();
     expect(error?.message).toContain('Invalid');
     expect(data.session).toBeNull();
   });
@@ -69,7 +70,7 @@ describe('Supabase Auth Sign-In Contract', () => {
       password: 'WrongPassword123!',
     });
 
-    expect(error).toBeDefined();
+    expect(error).not.toBeNull();
     expect(error?.message).toContain('Invalid');
     expect(data.session).toBeNull();
   });

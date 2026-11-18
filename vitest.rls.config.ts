@@ -23,6 +23,15 @@ export default defineConfig({
       // password arrives as SEED_ADMIN_PASSWORD (#1246, #1379). Excluded from the
       // default config; conformance.yml seeds the admin and runs it here.
       'tests/contract/admin/admin-access.contract.test.ts',
+      // Contract auth tests: need live Supabase + service role for user lifecycle.
+      // Conformance lane brings up local stack and seeds test users.
+      'tests/contract/auth/sign-out.contract.test.ts',
+      'tests/contract/auth/sign-in.contract.test.ts',
+      'tests/contract/auth/sign-up.contract.test.ts',
+      'tests/contract/auth/password-reset.contract.test.ts',
+      'tests/contract/profile/get-profile.contract.test.ts',
+      'tests/contract/profile/update-profile.contract.test.ts',
+      'tests/contract/profile/delete-account.contract.test.ts',
     ],
     globals: true,
     // conformance.yml sets VITEST_JSON_REPORT so assert-no-skipped.mjs can read a

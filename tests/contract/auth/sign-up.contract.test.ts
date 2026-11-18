@@ -7,12 +7,12 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { createClient } from '../../helpers/real-supabase';
+import { createClient, createServiceClient } from '../../helpers/real-supabase';
 import {
-  TEST_EMAIL_SECONDARY,
-  TEST_PASSWORD_SECONDARY,
-  hasSecondaryUser,
-} from '../../fixtures/test-user';
+  extractConfirmationLink,
+  waitForMessageTo,
+} from '../../e2e/utils/mailpit';
+import { hasSecondaryUser } from '../../fixtures/test-user';
 
 describe('Supabase Auth Sign-Up Contract', () => {
   let supabase: ReturnType<typeof createClient>;
@@ -29,7 +29,6 @@ describe('Supabase Auth Sign-Up Contract', () => {
     }
   });
 
-  // Kept skip (#1263): no Vitest config includes this file, so it runs nowhere until #1263 item 5 is settled.
   it.skipIf(!hasSecondaryUser())(
     'should accept valid email and password',
     async () => {
@@ -42,13 +41,12 @@ describe('Supabase Auth Sign-Up Contract', () => {
       });
 
       expect(error).toBeNull();
-      expect(data.user).toBeDefined();
+      expect(data.user).not.toBeNull();
       expect(data.user?.email).toBe(testEmail);
-      expect(data.user?.email_confirmed_at).toBeNull(); // Unverified initially
+      expect(data.user?.email_confirmed_at ?? null).toBeNull(); // Unverified initially
     }
   );
 
-  // Kept skip (#1263): no Vitest config includes this file, so it runs nowhere until #1263 item 5 is settled.
   it.skipIf(!hasSecondaryUser())(
     'should reject invalid email format',
     async () => {
@@ -57,72 +55,103 @@ describe('Supabase Auth Sign-Up Contract', () => {
         password: 'ValidPass123!',
       });
 
-      expect(error).toBeDefined();
+      expect(error).not.toBeNull();
       expect(error?.message).toContain('email');
     }
   );
 
-  // Kept skip (#1263): no Vitest config includes this file, so it runs nowhere until #1263 item 5 is settled.
   it.skipIf(!hasSecondaryUser())('should reject weak password', async () => {
     const { data, error } = await supabase.auth.signUp({
       email: `test-${Date.now()}@example.com`,
       password: 'weak',
     });
 
-    expect(error).toBeDefined();
-    expect(error?.message).toContain('password');
+    expect(error).not.toBeNull();
+    expect(error?.message.toLowerCase()).toContain('password');
   });
 
-  // Kept skip (#1263): no Vitest config includes this file, so it runs nowhere until #1263 item 5 is settled.
-  it.skipIf(!hasSecondaryUser())('should reject duplicate email', async () => {
-    const testEmail = `duplicate-${Date.now()}@example.com`;
-
-    // First sign-up should succeed
-    await supabase.auth.signUp({
-      email: testEmail,
-      password: 'ValidPass123!',
-    });
-
-    // Second sign-up with same email should fail
-    const { data, error } = await supabase.auth.signUp({
-      email: testEmail,
-      password: 'ValidPass123!',
-    });
-
-    expect(error).toBeDefined();
-    expect(error?.message).toContain('already registered');
-  });
-
-  // Kept skip (#1263): no Vitest config includes this file, so it runs nowhere until #1263 item 5 is settled.
   it.skipIf(!hasSecondaryUser())(
-    'should return user metadata structure',
+    'should not create a second account for a duplicate email',
     async () => {
-      const { data } = await supabase.auth.signUp({
-        email: `test-${Date.now()}@example.com`,
+      const testEmail = `duplicate-${Date.now()}@example.com`;
+      const admin = createServiceClient();
+
+      // A confirmed account makes GoTrue take its duplicate branch; an
+      // unconfirmed one is treated as a resend and returns the real user.
+      const { data: existing, error: createError } =
+        await admin.auth.admin.createUser({
+          email: testEmail,
+          password: 'ValidPass123!',
+          email_confirm: true,
+        });
+      expect(createError).toBeNull();
+
+      const { data, error } = await supabase.auth.signUp({
+        email: testEmail,
         password: 'ValidPass123!',
       });
 
-      if (data.user) {
-        expect(data.user).toHaveProperty('id');
-        expect(data.user).toHaveProperty('email');
-        expect(data.user).toHaveProperty('created_at');
-        expect(data.user).toHaveProperty('email_confirmed_at');
-        expect(data.user.id).toMatch(
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
-        );
+      // This lane runs with confirmations on (conformance.yml sets
+      // GOTRUE_MAILER_AUTOCONFIRM=false and GOTRUE_SMS_AUTOCONFIRM=false), so
+      // GoTrue answers a duplicate with its anti-enumeration response: no
+      // error, and a synthetic user with no identities and a fresh id, so the
+      // real account does not leak. If either auto-confirm flag is true it
+      // rejects the duplicate with a "User already registered" error instead
+      // (the SMS flag counts even though phone sign-in is off); that setting
+      // is not this contract, and the check below fails on it.
+      expect(error).toBeNull();
+      expect(data.user).not.toBeNull();
+      expect(data.user?.identities ?? []).toHaveLength(0);
+      expect(data.user?.id).not.toBe(existing.user?.id);
+
+      if (existing.user) {
+        await admin.auth.admin.deleteUser(existing.user.id);
       }
     }
   );
 
-  // Kept skip (#1263): no Vitest config includes this file, so it runs nowhere until #1263 item 5 is settled.
+  it.skipIf(!hasSecondaryUser())(
+    'should return user metadata structure',
+    async () => {
+      const { data, error } = await supabase.auth.signUp({
+        email: `test-${Date.now()}@example.com`,
+        password: 'ValidPass123!',
+      });
+
+      // A sign-up that returns no user must fail the test, not skip its checks.
+      expect(error).toBeNull();
+      expect(data.user).not.toBeNull();
+      const user = data.user!;
+      expect(user).toHaveProperty('id');
+      expect(user).toHaveProperty('email');
+      expect(user).toHaveProperty('created_at');
+      expect(user.email_confirmed_at ?? null).toBeNull();
+      expect(user.id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+      );
+    }
+  );
+
   it.skipIf(!hasSecondaryUser())('should send verification email', async () => {
+    const email = `test-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}@example.com`;
     const { data, error } = await supabase.auth.signUp({
-      email: `test-${Date.now()}@example.com`,
+      email,
       password: 'ValidPass123!',
     });
 
     expect(error).toBeNull();
-    // Supabase sends verification email automatically
-    // We can't test email delivery in unit tests, but contract ensures no error
+    expect(data.user).not.toBeNull();
+
+    // The conformance stack's mail sink (Mailpit) receives the message, and it
+    // carries the signup verification link. waitForMessageTo throws if no
+    // mail arrives (the #287 failure).
+    const message = await waitForMessageTo(email, { timeoutMs: 30_000 });
+    expect(extractConfirmationLink(message)).toContain('type=signup');
+
+    if (data.user) {
+      await createServiceClient().auth.admin.deleteUser(data.user.id);
+    }
   });
 });

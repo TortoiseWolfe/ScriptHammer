@@ -14,11 +14,14 @@ describe('User Profile GET Contract', () => {
 
   beforeAll(async () => {
     // Sign in with pre-confirmed static test user
-    const { data } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: TEST_EMAIL,
       password: TEST_PASSWORD,
     });
 
+    // Every check below runs as this user; a failed sign-in must stop here.
+    expect(error).toBeNull();
+    expect(data.user).not.toBeNull();
     testUserId = data.user!.id;
   });
 
@@ -29,12 +32,14 @@ describe('User Profile GET Contract', () => {
   it('should return user profile structure', async () => {
     const { data, error } = await supabase
       .from('user_profiles')
-      .select('id, username, display_name, avatar_url, bio, created_at, updated_at')
+      .select(
+        'id, username, display_name, avatar_url, bio, created_at, updated_at'
+      )
       .eq('id', testUserId)
       .single();
 
     expect(error).toBeNull();
-    expect(data).toBeDefined();
+    expect(data).not.toBeNull();
     expect(data).toHaveProperty('id');
     expect(data).toHaveProperty('username');
     expect(data).toHaveProperty('display_name');
@@ -47,21 +52,28 @@ describe('User Profile GET Contract', () => {
   it('should have profile matching user ID', async () => {
     const { data, error } = await supabase
       .from('user_profiles')
-      .select('id, username, display_name, avatar_url, bio, created_at, updated_at')
+      .select(
+        'id, username, display_name, avatar_url, bio, created_at, updated_at'
+      )
       .eq('id', testUserId)
       .single();
 
     expect(error).toBeNull();
     expect(data?.id).toBe(testUserId);
-    expect(data?.username).toBeDefined(); // Static test user has username already set
+    expect(data?.username).not.toBeNull(); // Static test user has username already set
+    expect(data?.username).toBeTruthy();
   });
 
   it('should allow viewing all profiles for friend search (Feature 023)', async () => {
     // Query all profiles - Feature 023 requires this for friend search functionality
-    const { data, error } = await supabase.from('user_profiles').select('id, username, display_name, avatar_url, bio, created_at, updated_at');
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select(
+        'id, username, display_name, avatar_url, bio, created_at, updated_at'
+      );
 
     expect(error).toBeNull();
-    expect(data).toBeDefined();
+    expect(data).not.toBeNull();
     expect(Array.isArray(data)).toBe(true);
 
     // Should return at least the current user's profile
@@ -86,11 +98,15 @@ describe('User Profile GET Contract', () => {
 
     const { data, error } = await supabase
       .from('user_profiles')
-      .select('id, username, display_name, avatar_url, bio, created_at, updated_at')
+      .select(
+        'id, username, display_name, avatar_url, bio, created_at, updated_at'
+      )
       .eq('id', fakeId)
       .single();
 
-    // Returns null because profile doesn't exist (not because of RLS)
+    // .single() on zero rows is PGRST116 ("no rows"). Asserting the code keeps
+    // this from passing on an unrelated failure (bad request, auth error).
     expect(data).toBeNull();
+    expect(error?.code).toBe('PGRST116');
   });
 });
