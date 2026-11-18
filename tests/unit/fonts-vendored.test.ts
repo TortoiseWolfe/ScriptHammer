@@ -124,24 +124,48 @@ describe('fonts are vendored, so the build never calls Google (#730)', () => {
 
   /**
    * NO FONT PRELOADS (#1480). The eight `<link rel="preload" as="font">` tags added in #740
-   * made WebKit's `load` event never fire on about 3% of navigations (11 stalled loads in 400
-   * with them, 0 in 400 without, same HTML otherwise). `swap` and the size-adjust fallbacks
-   * already prevent layout shift, so the preloads only moved the swap earlier on a cold
-   * connection. A page that never reaches `load` fails every test that waits for it and
-   * leaves a browser tab spinning, which costs more than the earlier swap gained.
+   * made WebKit's `load` event never fire on some navigations. The measurements are in
+   * #1480. `swap` and the size-adjust fallbacks already prevent layout shift, so the
+   * preloads only moved the swap earlier on a cold connection. A page that never reaches
+   * `load` fails every test that waits for it and leaves a browser tab spinning, which
+   * costs more than the earlier swap gained.
+   *
+   * The scan covers every source file under src/app, not only the root layout: a nested
+   * layout, a template, a page, or a `metadata` / `viewport` export can add the same tag
+   * (a `<link>` element, a `links` entry, or React's `preload()` call).
    */
-  it('the document head carries no font preload links', () => {
-    const layout = readFileSync(join(ROOT, 'src/app/layout.tsx'), 'utf8');
-    // Strip comments so the explanation above the <html> tag cannot trip its own guard.
-    const code = layout
-      .replace(/\/\*[\s\S]*?\*\//g, '')
-      .replace(/^\s*\/\/.*$/gm, '');
+  it('no file under src/app adds a font preload link', () => {
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (
+          /\.(ts|tsx)$/.test(entry.name) &&
+          !/\.(test|stories|accessibility\.test)\.tsx?$/.test(entry.name)
+        )
+          files.push(full);
+      }
+    };
+    walk(join(ROOT, 'src/app'));
     expect(
-      code,
-      'a font preload link in layout.tsx makes WebKit skip the load event on some navigations'
-    ).not.toMatch(/rel=["']preload["']/);
-    expect(code).not.toMatch(/as=["']font["']/);
-    expect(code).not.toMatch(/fonts-preload/);
+      files.length,
+      'the scan found no files; the path is wrong'
+    ).toBeGreaterThan(0);
+    expect(files.some((f) => f.endsWith(join('app', 'layout.tsx')))).toBe(true);
+
+    for (const file of files) {
+      // Strip comments so the explanation in layout.tsx cannot trip its own guard.
+      const code = readFileSync(file, 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, '');
+      const where = file.slice(ROOT.length + 1);
+      const why = `${where}: a font preload makes WebKit skip the load event on some navigations (#1480)`;
+      expect(code, why).not.toMatch(/rel\s*[=:]\s*["']preload["']/);
+      expect(code, why).not.toMatch(/as\s*[=:]\s*["']font["']/);
+      expect(code, why).not.toMatch(/fonts-preload/);
+      expect(code, why).not.toMatch(/\bpreload\s*\(/);
+    }
   });
 
   it('no url() still points at Google', () => {

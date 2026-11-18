@@ -131,11 +131,10 @@ export default function RootLayout({
     // level too deep for either to see, so both silently fell through to their
     // ui-sans-serif fallback while the font downloaded perfectly.
     // NO `<link rel="preload" as="font">` HERE, and that is deliberate (#1480). The eight
-    // preloads added in #740 made WebKit's `load` event never fire on a measurable share of
-    // navigations: DOMContentLoaded fired, nothing was pending, and `readyState` stayed
-    // "interactive" until the 30 s test timeout. Measured on /admin pages in Playwright
-    // WebKit at 2 CPUs: 11 stalled loads in 400 with the preloads, 0 in 400 with the
-    // same HTML minus the preloads. tests/unit/fonts-vendored.test.ts fails if they return.
+    // preloads added in #740 made WebKit's `load` event never fire on some navigations:
+    // DOMContentLoaded fired, nothing was pending, and `readyState` stayed "interactive"
+    // until the test timeout. The measurements are in #1480.
+    // tests/unit/fonts-vendored.test.ts fails if they return.
     <html lang="en" suppressHydrationWarning>
       <body
         className="flex min-h-screen flex-col antialiased"
