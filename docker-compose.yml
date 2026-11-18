@@ -312,7 +312,12 @@ services:
       # E2E (#1352) asks for a resend seconds after signing up, so that lane shortens it.
       GOTRUE_SMTP_MAX_FREQUENCY: ${GOTRUE_SMTP_MAX_FREQUENCY:-1m0s}
       GOTRUE_EXTERNAL_PHONE_ENABLED: 'false'
-      GOTRUE_SMS_AUTOCONFIRM: 'true'
+      # Phone sign-in is off, but GoTrue still treats this flag as "auto-confirm
+      # is on" when a sign-up reuses an address: with it true, a duplicate gets
+      # a "User already registered" error even when the mailer wants a click.
+      # Production answers a duplicate quietly (a stand-in user, no error), so
+      # the conformance lane sets this to false to see that same answer (#1468).
+      GOTRUE_SMS_AUTOCONFIRM: ${GOTRUE_SMS_AUTOCONFIRM:-true}
       # CI may enable CAPTCHA with Cloudflare's published test keys for the
       # local signup-mailer E2E. Defaults preserve the normal local stack.
       GOTRUE_SECURITY_CAPTCHA_ENABLED: ${GOTRUE_SECURITY_CAPTCHA_ENABLED:-false}

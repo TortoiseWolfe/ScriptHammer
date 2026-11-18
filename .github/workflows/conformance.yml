@@ -130,6 +130,10 @@ jobs:
           # confirmation/reset messages those tests request, so Mailpit is part
           # of the stack and auto-confirm is off.
           GOTRUE_MAILER_AUTOCONFIRM: 'false'
+          # GoTrue also reads the SMS auto-confirm flag when a sign-up reuses an
+          # address: with it true the duplicate is rejected with an error, which
+          # is not what production answers. Phone sign-in is off here anyway.
+          GOTRUE_SMS_AUTOCONFIRM: 'false'
           # password-reset sends three messages to the same address back to
           # back; GoTrue's default one-minute wait (and even one second) would
           # 429 the second and third. This stack is ephemeral, so the throttle

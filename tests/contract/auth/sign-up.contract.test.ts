@@ -92,11 +92,13 @@ describe('Supabase Auth Sign-Up Contract', () => {
       });
 
       // This lane runs with confirmations on (conformance.yml sets
-      // GOTRUE_MAILER_AUTOCONFIRM=false), so GoTrue answers a duplicate with
-      // its anti-enumeration response: no error, and a synthetic user with no
-      // identities and a fresh id, so the real account does not leak. With
-      // auto-confirm on it would reject the duplicate with an error instead;
-      // that setting is not this contract, and the check below fails on it.
+      // GOTRUE_MAILER_AUTOCONFIRM=false and GOTRUE_SMS_AUTOCONFIRM=false), so
+      // GoTrue answers a duplicate with its anti-enumeration response: no
+      // error, and a synthetic user with no identities and a fresh id, so the
+      // real account does not leak. If either auto-confirm flag is true it
+      // rejects the duplicate with a "User already registered" error instead
+      // (the SMS flag counts even though phone sign-in is off); that setting
+      // is not this contract, and the check below fails on it.
       expect(error).toBeNull();
       expect(data.user).not.toBeNull();
       expect(data.user?.identities ?? []).toHaveLength(0);
