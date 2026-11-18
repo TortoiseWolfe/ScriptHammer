@@ -123,63 +123,25 @@ describe('fonts are vendored, so the build never calls Google (#730)', () => {
   });
 
   /**
-   * THE PRELOAD LIST IS DERIVED, NOT MAINTAINED (#740).
-   *
-   * Vendoring cost the eight `<link rel="preload">` tags next/font emitted. They are back,
-   * generated from the committed stylesheet by scripts/fonts/generate-preload-list.mjs.
-   *
-   * This asserts the generated module still matches the stylesheet. Re-vendor a font and
-   * forget to regenerate, and the page preloads a face nothing uses — bytes downloaded for
-   * nothing, which is worse than the missing preload was.
+   * NO FONT PRELOADS (#1480). The eight `<link rel="preload" as="font">` tags added in #740
+   * made WebKit's `load` event never fire on about 3% of navigations (11 stalled loads in 400
+   * with them, 0 in 400 without, same HTML otherwise). `swap` and the size-adjust fallbacks
+   * already prevent layout shift, so the preloads only moved the swap earlier on a cold
+   * connection. A page that never reaches `load` fails every test that waits for it and
+   * leaves a browser tab spinning, which costs more than the earlier swap gained.
    */
-  it('the preload list matches the .p faces in the stylesheet', () => {
-    const preloadModule = readFileSync(
-      join(ROOT, 'src/app/fonts-preload.generated.ts'),
-      'utf8'
-    );
-
-    const css = readFileSync(GENERATED, 'utf8');
-    const inCss = [
-      ...new Set(
-        Array.from(
-          css.matchAll(/\.\.\/fonts\/([\w-]+-s\.p\.woff2)/g),
-          (m) => m[1]
-        )
-      ),
-    ].sort();
-    const inModule = [
-      ...new Set(
-        Array.from(
-          preloadModule.matchAll(/from '\.\.\/fonts\/([^']+)'/g),
-          (m) => m[1]
-        )
-      ),
-    ].sort();
-
+  it('the document head carries no font preload links', () => {
+    const layout = readFileSync(join(ROOT, 'src/app/layout.tsx'), 'utf8');
+    // Strip comments so the explanation above the <html> tag cannot trip its own guard.
+    const code = layout
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
     expect(
-      inCss.length,
-      'the stylesheet references no preloadable (.p) faces — this check would be vacuous'
-    ).toBeGreaterThan(0);
-    expect(
-      inModule,
-      'fonts-preload.generated.ts is out of sync with fonts.generated.css — run ' +
-        '`node scripts/fonts/generate-preload-list.mjs`'
-    ).toEqual(inCss);
-  });
-
-  it('preloads are IMPORTED so the bundler resolves the hash, never hardcoded', () => {
-    // The bundler adds a second hash (x-s.p.woff2 -> x-s.p.1a4aa509.woff2), so a literal
-    // URL is wrong the moment a font changes — and wrong silently, because a 404 preload
-    // logs a console warning and nothing else.
-    const preloadModule = readFileSync(
-      join(ROOT, 'src/app/fonts-preload.generated.ts'),
-      'utf8'
-    );
-    expect(preloadModule).toMatch(/^import face0 from '\.\.\/fonts\//m);
-    expect(
-      preloadModule,
-      'a literal _next/static path in the preload list will not survive a rebuild'
-    ).not.toMatch(/_next\/static/);
+      code,
+      'a font preload link in layout.tsx makes WebKit skip the load event on some navigations'
+    ).not.toMatch(/rel=["']preload["']/);
+    expect(code).not.toMatch(/as=["']font["']/);
+    expect(code).not.toMatch(/fonts-preload/);
   });
 
   it('no url() still points at Google', () => {
