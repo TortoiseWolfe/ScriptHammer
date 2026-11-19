@@ -17,11 +17,31 @@
 import { test, expect } from '@playwright/test';
 import path from 'path';
 import { dismissCookieBanner } from '../utils/test-user-factory';
+import {
+  createIsolatedAvatarUser,
+  signPageIn,
+  type IsolatedAvatarUser,
+} from '../utils/isolated-avatar-user';
 
-// Auth comes from storageState (setup project) - no sign-in needed
+// This file signs in as its own throwaway user (#1514), made once in beforeAll
+// so its setup is not charged to every test's time limit. These tests upload and
+// remove avatars, and three browser shards used to do that to ONE shared user,
+// so a file one shard deleted could still be requested by another's page.
 test.describe('Avatar Upload Flow', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  let avatarUser: IsolatedAvatarUser;
+
+  test.beforeAll(async () => {
+    avatarUser = await createIsolatedAvatarUser();
+  });
+
+  test.afterAll(async () => {
+    await avatarUser?.cleanup();
+  });
+
   test.beforeEach(async ({ page }) => {
-    // Navigate to Account Settings (already authenticated via storageState)
+    await signPageIn(page, avatarUser);
     await page.goto('/account');
     await page.waitForLoadState('networkidle');
     await dismissCookieBanner(page);
@@ -51,9 +71,12 @@ test.describe('Avatar Upload Flow', () => {
     const accountAvatar = profilePictureCard.getByRole('img', {
       name: /avatar/i,
     });
-    const initialAvatarSrc = await accountAvatar
-      .getAttribute('src')
-      .catch(() => null);
+    // A fresh user has no avatar yet. Reading the attribute of an image that is
+    // not there waits out the whole 15 s action timeout, so look first.
+    const initialAvatarSrc =
+      (await accountAvatar.count()) > 0
+        ? await accountAvatar.getAttribute('src')
+        : null;
 
     // Find and click upload button
     const uploadButton = page.getByRole('button', { name: /upload avatar/i });

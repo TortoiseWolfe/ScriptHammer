@@ -4,6 +4,7 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import AvatarDisplay from '@/components/atomic/AvatarDisplay';
+import { resolveAvatarUrl } from '@/lib/avatar/resolve';
 
 export interface UserProfileCardProps {
   /** Additional CSS classes */
@@ -20,15 +21,18 @@ export default function UserProfileCard({
   className = '',
 }: UserProfileCardProps) {
   const { user } = useAuth();
-  const { profile, loading } = useUserProfile();
+  const { profile, loading, error } = useUserProfile();
 
   if (!user) {
     return null;
   }
 
-  // Use database profile data, fallback to user_metadata for avatars (upload saves there)
-  const avatarUrl =
-    profile?.avatar_url || (user.user_metadata?.avatar_url as string) || null;
+  // The profile row is the source of truth; the auth-metadata copy is only a
+  // fallback for an account with no row (#1514). See resolveAvatarUrl.
+  const avatarUrl = resolveAvatarUrl(
+    { profile, loading, error },
+    user.user_metadata?.avatar_url
+  );
   const displayName = profile?.display_name || user.email || 'User';
 
   if (loading) {
