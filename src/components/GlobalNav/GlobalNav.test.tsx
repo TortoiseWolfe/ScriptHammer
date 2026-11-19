@@ -15,12 +15,16 @@ const { signOut, checkIsAdmin } = vi.hoisted(() => ({
 let pathname = '/';
 vi.mock('next/navigation', () => ({ usePathname: () => pathname }));
 
-let user: { id: string } | null = null;
+let user: { id: string; user_metadata?: Record<string, unknown> } | null = null;
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({ user, signOut }),
 }));
+let profileState: {
+  profile: { display_name: string; avatar_url?: string | null } | null;
+  loading: boolean;
+} = { profile: { display_name: 'Ada' }, loading: false };
 vi.mock('@/hooks/useUserProfile', () => ({
-  useUserProfile: () => ({ profile: { display_name: 'Ada' } }),
+  useUserProfile: () => profileState,
 }));
 
 let unread = 0;
@@ -51,7 +55,9 @@ vi.mock('@/components/navigation/FontSizeControl', () => ({
   TextSettingsPanel: () => <div data-testid="text-settings-panel" />,
 }));
 vi.mock('@/components/atomic/AvatarDisplay', () => ({
-  default: () => <span data-testid="avatar" />,
+  default: ({ avatarUrl }: { avatarUrl?: string | null }) => (
+    <span data-testid="avatar" data-avatar-url={avatarUrl ?? ''} />
+  ),
 }));
 
 let renderer: 'atlas' | 'diorama' = 'atlas';
@@ -71,6 +77,7 @@ beforeEach(() => {
   resetInstallPromptForTests();
   pathname = '/';
   user = null;
+  profileState = { profile: { display_name: 'Ada' }, loading: false };
   unread = 0;
   renderer = 'atlas';
   signOut.mockClear();
@@ -226,6 +233,50 @@ describe('GlobalNav authentication', () => {
     render(<GlobalNav />);
     expect(screen.getByLabelText('User account menu')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Sign In' })).toBeNull();
+  });
+
+  // #1514: the auth-metadata avatar is only a mirror and can point at a file
+  // that remove already deleted. Requesting it makes storage answer HTTP 400,
+  // which WebKit logs as a console error and fails every "no console errors" test.
+  describe('avatar source (#1514)', () => {
+    const MIRROR = 'http://storage.test/avatars/u1/gone.webp';
+    const NEW = 'http://storage.test/avatars/u1/new.webp';
+
+    it('does not request the metadata avatar when the profile has none', () => {
+      user = { id: 'user-1', user_metadata: { avatar_url: MIRROR } };
+      profileState = {
+        profile: { display_name: 'Ada', avatar_url: null },
+        loading: false,
+      };
+      render(<GlobalNav />);
+      expect(screen.getByTestId('avatar')).toHaveAttribute(
+        'data-avatar-url',
+        ''
+      );
+    });
+
+    it('does not request the metadata avatar while the profile is still loading', () => {
+      user = { id: 'user-1', user_metadata: { avatar_url: MIRROR } };
+      profileState = { profile: null, loading: true };
+      render(<GlobalNav />);
+      expect(screen.getByTestId('avatar')).toHaveAttribute(
+        'data-avatar-url',
+        ''
+      );
+    });
+
+    it('shows the profile avatar when there is one', () => {
+      user = { id: 'user-1', user_metadata: { avatar_url: MIRROR } };
+      profileState = {
+        profile: { display_name: 'Ada', avatar_url: NEW },
+        loading: false,
+      };
+      render(<GlobalNav />);
+      expect(screen.getByTestId('avatar')).toHaveAttribute(
+        'data-avatar-url',
+        NEW
+      );
+    });
   });
 
   it('makes the account trigger a real button that reports its state (#1018)', async () => {

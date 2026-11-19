@@ -18,6 +18,7 @@ import {
 import { selectRenderer } from '@/twin/renderer-select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { resolveAvatarUrl } from '@/lib/avatar/resolve';
 import AvatarDisplay from '@/components/atomic/AvatarDisplay';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { AdminAuthService } from '@/services/admin/admin-auth-service';
@@ -258,7 +259,7 @@ type NavEntry = NavLeaf | NavGroup;
 export function GlobalNav() {
   const pathname = usePathname();
   const { user, signOut } = useAuth();
-  const { profile } = useUserProfile();
+  const { profile, loading: profileLoading } = useUserProfile();
   const unreadCount = useUnreadCount();
   const [theme, setTheme] = useState<string>('');
   // Shared with PWAInstall, so a tap on either install button uses the
@@ -611,11 +612,10 @@ export function GlobalNav() {
                 panelClass="menu menu-sm absolute bg-base-100 rounded-box -right-2 z-[1] mt-3 w-48 max-w-[calc(100vw-4rem)] p-2 shadow sm:w-52"
                 icon={
                   <AvatarDisplay
-                    avatarUrl={
-                      profile?.avatar_url ||
-                      (user.user_metadata?.avatar_url as string) ||
-                      null
-                    }
+                    avatarUrl={resolveAvatarUrl(
+                      { profile, loading: profileLoading },
+                      user.user_metadata?.avatar_url
+                    )}
                     displayName={profile?.display_name || user.email || 'User'}
                     size="sm"
                   />

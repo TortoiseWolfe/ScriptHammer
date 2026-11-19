@@ -17,6 +17,11 @@
 
 import { test, expect } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
+import {
+  createIsolatedAvatarUser,
+  signPageIn,
+  type IsolatedAvatarUser,
+} from '../utils/isolated-avatar-user';
 
 // Auth comes from storageState (setup project) - no sign-in needed
 
@@ -96,8 +101,23 @@ async function removeTestAvatar(page: import('@playwright/test').Page) {
   await expect(removeButton).toHaveCount(0, { timeout: 20000 });
 }
 test.describe('Avatar Upload Accessibility (WCAG 2.1 AA)', () => {
+  // This file signs in as its own throwaway user (#1514), made once in beforeAll. These tests upload and
+  // remove avatars, and three browser shards used to do that to ONE shared user,
+  // so a file one shard deleted could still be requested by another's page.
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  let avatarUser: IsolatedAvatarUser;
+
+  test.beforeAll(async () => {
+    avatarUser = await createIsolatedAvatarUser();
+  });
+
+  test.afterAll(async () => {
+    await avatarUser?.cleanup();
+  });
+
   test.beforeEach(async ({ page }) => {
-    // Already authenticated via storageState - navigate directly
+    await signPageIn(page, avatarUser);
     await page.goto('/account', { waitUntil: 'domcontentloaded' });
     await page.waitForLoadState('networkidle');
 
@@ -106,7 +126,7 @@ test.describe('Avatar Upload Accessibility (WCAG 2.1 AA)', () => {
     // restore, which is a failure (#1398).
     await expect(
       page,
-      'stored session was not restored: /account redirected to /sign-in (#1398)'
+      'session was not restored: /account redirected to /sign-in (#1398)'
     ).not.toHaveURL(/\/sign-in/);
     await dismissCookieBanner(page);
   });

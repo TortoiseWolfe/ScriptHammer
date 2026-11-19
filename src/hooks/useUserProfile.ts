@@ -33,6 +33,8 @@ export function useUserProfile(): UseUserProfileReturn {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  // The user id whose profile fetch has finished. See the return value below.
+  const [settledFor, setSettledFor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchProfile = useCallback(async () => {
@@ -74,6 +76,7 @@ export function useUserProfile(): UseUserProfileReturn {
       setError('Failed to load profile');
     } finally {
       setLoading(false);
+      setSettledFor(user.id);
     }
   }, [user?.id]);
 
@@ -81,9 +84,16 @@ export function useUserProfile(): UseUserProfileReturn {
     fetchProfile();
   }, [fetchProfile]);
 
+  // `loading` is only set to true inside the effect, which runs AFTER the render
+  // where `user` first appears. That render has loading false and no profile,
+  // which reads as "this user has no profile row", so callers briefly fell back
+  // to the account's own avatar copy and asked storage for a file that may be
+  // gone (#1514). Treat a user whose fetch has not finished as still loading.
+  const awaitingFirstFetch = Boolean(user?.id) && settledFor !== user?.id;
+
   return {
     profile,
-    loading,
+    loading: loading || awaitingFirstFetch,
     error,
     refetch: fetchProfile,
   };
