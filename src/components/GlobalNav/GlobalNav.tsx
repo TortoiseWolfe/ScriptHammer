@@ -280,7 +280,12 @@ export function GlobalNav() {
     }
     const supabase = createClient();
     const service = new AdminAuthService(supabase);
-    service.checkIsAdmin(user.id).then(setIsAdmin);
+    // checkIsAdmin throws when the request fails. Here that only means the admin
+    // link stays hidden; nothing is redirected from the nav.
+    service
+      .checkIsAdmin(user.id)
+      .then(setIsAdmin)
+      .catch(() => setIsAdmin(false));
   }, [user?.id]);
 
   // Theme management — read existing theme, don't overwrite ThemeScript's work.

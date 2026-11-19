@@ -1,4 +1,10 @@
-import { render, screen, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  act,
+  fireEvent,
+} from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { User } from '@supabase/supabase-js';
 import { AdminGate } from './AdminGate';
@@ -16,6 +22,9 @@ import { AdminGate } from './AdminGate';
  *   - The `cancelled` flag preventing post-unmount setState.
  *   - The dep-array re-running checkIsAdmin when `user.id` changes.
  *   - The "no children, no redirect spam" terminal state for non-admins.
+ *   - A failed admin-check request (#1520) is retried, then shown as a
+ *     "could not check" alert with Try again. It never redirects, and a
+ *     pending retry is dropped on unmount.
  *
  * Mocking strategy mirrors ProtectedRoute.test.tsx: override the global
  * AuthContext mock with a per-test reconfigurable object, mock
@@ -250,5 +259,100 @@ describe('AdminGate', () => {
       </AdminGate>
     );
     expect(mockCheckIsAdmin).not.toHaveBeenCalled();
+  });
+
+  // The admin check THROWS when the request itself fails (a dropped connection,
+  // a 5xx). That is "could not ask", not "not an admin": only a server answer of
+  // false may redirect. The sparkline flake in admin-dashboard.spec.ts bounced
+  // a real admin to / because a failed request used to come back as false.
+  describe('when the admin check request fails', () => {
+    it('retries, and recovers without ever redirecting after a transient failure', async () => {
+      vi.useFakeTimers();
+      mockCheckIsAdmin
+        .mockRejectedValueOnce(new Error('network down'))
+        .mockResolvedValueOnce(true);
+      render(
+        <AdminGate>
+          <div>admin content</div>
+        </AdminGate>
+      );
+      // First call fails; the retry waits 500 ms.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(600);
+      });
+      expect(mockCheckIsAdmin).toHaveBeenCalledTimes(2);
+      expect(screen.getByText('admin content')).toBeInTheDocument();
+      expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('drops a pending retry when the gate unmounts, so no check runs afterwards', async () => {
+      vi.useFakeTimers();
+      mockCheckIsAdmin.mockRejectedValue(new Error('network down'));
+      const { unmount } = render(
+        <AdminGate>
+          <div>admin content</div>
+        </AdminGate>
+      );
+      // First call fails and the 500 ms retry wait starts.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(100);
+      });
+      expect(mockCheckIsAdmin).toHaveBeenCalledTimes(1);
+      expect(vi.getTimerCount()).toBeGreaterThan(0);
+      unmount();
+      expect(vi.getTimerCount()).toBe(0);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+      expect(mockCheckIsAdmin).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows a message and a Try again button, and never redirects, when every try fails', async () => {
+      vi.useFakeTimers();
+      mockCheckIsAdmin.mockRejectedValue(new Error('network down'));
+      render(
+        <AdminGate>
+          <div>admin content</div>
+        </AdminGate>
+      );
+      // 500 + 1000 + 2000 ms of retries, with headroom.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(4000);
+      });
+      expect(mockCheckIsAdmin).toHaveBeenCalledTimes(4);
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'could not check your admin access'
+      );
+      expect(
+        screen.getByRole('button', { name: 'Try again' })
+      ).toBeInTheDocument();
+      expect(screen.queryByText('admin content')).toBeNull();
+      expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('runs the check again when Try again is pressed, and shows the console on success', async () => {
+      vi.useFakeTimers();
+      mockCheckIsAdmin.mockRejectedValue(new Error('network down'));
+      render(
+        <AdminGate>
+          <div>admin content</div>
+        </AdminGate>
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(4000);
+      });
+      expect(screen.getByRole('alert')).toBeInTheDocument();
+
+      mockCheckIsAdmin.mockReset();
+      mockCheckIsAdmin.mockResolvedValue(true);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(mockCheckIsAdmin).toHaveBeenCalledTimes(1);
+      expect(screen.getByText('admin content')).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).toBeNull();
+      expect(mockPush).not.toHaveBeenCalled();
+    });
   });
 });
