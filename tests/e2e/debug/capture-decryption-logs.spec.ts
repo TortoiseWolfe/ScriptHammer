@@ -34,7 +34,7 @@ const getAdminClient = (): SupabaseClient | null => {
 };
 
 test.describe('Capture Decryption Logs', () => {
-  test('capture console output from message exchange', async ({ browser }) => {
+  test('capture console output from message exchange', { tag: '@local-only' }, async ({ browser }) => {
     test.setTimeout(120000);
     // Signs both participants in through the real form, which cannot be
     // submitted without a Turnstile token.

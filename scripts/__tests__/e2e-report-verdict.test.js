@@ -76,12 +76,8 @@ const report = (specs, stats) => ({
 
 const HEALTHY = () =>
   report(
-    [
-      spec('passes fine', 12, 'expected'),
-      spec('also passes', 70, 'expected'),
-      spec('deliberately skipped', 60, 'skipped'),
-    ],
-    { expected: 2, unexpected: 0, flaky: 0, skipped: 1 }
+    [spec('passes fine', 12, 'expected'), spec('also passes', 70, 'expected')],
+    { expected: 2, unexpected: 0, flaky: 0, skipped: 0 }
   );
 
 /** Run the CLI on a temp file; returns {code, stdout, stderr, summary}. */
@@ -195,6 +191,30 @@ describe('the E2E test-report verdict (#1069)', () => {
     assert.strictEqual(r.code, 0, 'a flake must not fail this job');
     assert.match(r.summary, /⚠️/);
     assert.match(r.summary, /retried then passed/);
+  });
+
+  it('fails on a skipped test, and names it — the hosted lane allows none (#1510)', () => {
+    // The lane used to end at "30 skipped" and this gate accepted it, so a 31st skip would
+    // have been invisible. The 30 that cannot run on the shared hosted backend are now
+    // excluded by tag, so any skip that reaches this report is new.
+    const r = run(
+      report(
+        [
+          spec('passes fine', 12, 'expected'),
+          spec('quietly skipped', 60, 'skipped'),
+        ],
+        { expected: 1, skipped: 1 }
+      )
+    );
+    assert.strictEqual(r.code, 1, 'a skipped test must fail the job');
+    assert.match(r.summary, /1 skipped/);
+    assert.match(r.summary, /quietly skipped/);
+    assert.match(r.summary, /pricing-links\.spec\.ts:60/);
+    assert.match(
+      r.stderr,
+      /::error file=tests\/e2e\/commerce\/pricing-links\.spec\.ts,line=60::/
+    );
+    assert.match(r.stderr, /allows none/);
   });
 
   it('does not count an expected failure as a failure', () => {
