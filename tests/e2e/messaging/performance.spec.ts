@@ -16,7 +16,7 @@
  *
  *   virtualization  the thread renders far FEWER `message-bubble` nodes than the 150 seeded
  *                   (MessageThread.tsx:92 switches on `messages.length >= 100`)
- *   pagination      `pagination-loader` appears AND the scroll height grows — under
+ *   pagination      the next-page request (`sequence_number=lt.`) fires AND the scroll height grows — under
  *                   virtualization the loaded count is not directly countable in the DOM,
  *                   so total height is the honest signal
  *   jump-to-bottom  `data-show-scroll-button` flips true, then the scroll lands at the end
@@ -110,6 +110,38 @@ async function scrollThreadToTop(page: Page) {
   });
 }
 
+/**
+ * Scroll to the top and wait for the request that loads the next page of history.
+ *
+ * The request is the direct evidence that `onLoadMore` fired (MessageThread.tsx:244 →
+ * ConversationView's handleLoadMore → loadMessages(true)): only a page after the first
+ * carries a `sequence_number=lt.<cursor>` filter. The old check waited for the
+ * `pagination-loader` spinner instead, but against a local database that spinner is on
+ * screen for only ~100-140 ms (measured on WebKit: on at 6 ms, off at 109 ms), about the
+ * same as Playwright's polling gap, so a poll could land on either side of it and report
+ * "never loaded" for a page that did load (#1513 run 44432183217, #1516).
+ *
+ * The wait is registered BEFORE the scroll, so the response cannot arrive unobserved.
+ */
+async function scrollToTopAndWaitForNextPage(page: Page) {
+  const nextPage = page.waitForResponse(
+    (response) =>
+      response.url().includes('/rest/v1/messages?') &&
+      response.url().includes('sequence_number=lt.') &&
+      response.ok(),
+    { timeout: 15000 }
+  );
+  await scrollThreadToTop(page);
+  try {
+    await nextPage;
+  } catch (error) {
+    throw new Error(
+      'scrolling to the top did not trigger a successful next-page request ' +
+        `(sequence_number=lt.): ${(error as Error).message}`
+    );
+  }
+}
+
 test.describe('Large-history message thread', () => {
   let fixture: IsolatedConversation | null = null;
 
@@ -161,23 +193,9 @@ test.describe('Large-history message thread', () => {
         'thread is not scrollable, so pagination cannot be triggered — fixture problem'
       ).toBeGreaterThan(before.clientHeight);
 
-      // Register the wait BEFORE scrolling. The request for the next page is the direct
-      // evidence that `onLoadMore` fired (MessageThread.tsx:209 → ConversationView's
-      // handleLoadMore → loadMessages(true)): only a page after the first carries a
-      // `sequence_number=lt.<cursor>` filter. The old check waited for the
-      // `pagination-loader` spinner instead, but against a local database that spinner is
-      // on screen for only ~100-140 ms (measured on WebKit: on at 6 ms, off at 109 ms),
-      // about the same as Playwright's polling gap, so a poll could land on either side
-      // of it and report "never loaded" for a page that did load (#1513 run 44432183217).
-      const nextPage = viewer.page.waitForResponse(
-        (response) =>
-          response.url().includes('/rest/v1/messages') &&
-          response.url().includes('sequence_number=lt.') &&
-          response.ok(),
-        { timeout: 15000 }
-      );
-      await scrollThreadToTop(viewer.page);
-      await nextPage;
+      // See scrollToTopAndWaitForNextPage for why this waits for the request and not
+      // for the spinner.
+      await scrollToTopAndWaitForNextPage(viewer.page);
 
       // And the consequence: more history is now in the list. Under virtualization the
       // loaded count is not countable in the DOM, so total scroll height is the honest
@@ -251,10 +269,8 @@ test.describe('Large-history message thread', () => {
       await settleFrames(viewer.page);
 
       const before = await threadMetrics(viewer.page);
-      await scrollThreadToTop(viewer.page);
-      await expect(
-        viewer.page.locator('[data-testid="pagination-loader"]')
-      ).toBeVisible({ timeout: 15000 });
+      // Same spinner race as T167, so the same wait: the next-page request, not the loader.
+      await scrollToTopAndWaitForNextPage(viewer.page);
 
       // THE ACTUAL RESTORATION CLAIM, POLLED — because restoration necessarily happens
       // AFTER the growth that triggers it, and asserting once in between measures the gap.
