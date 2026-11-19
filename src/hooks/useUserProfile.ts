@@ -5,7 +5,7 @@
  * Fetches current user's profile from user_profiles table
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createLogger } from '@/lib/logger';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
@@ -37,13 +37,22 @@ export function useUserProfile(): UseUserProfileReturn {
   const [settledFor, setSettledFor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // The user id the hook is serving right now. A fetch that finishes after the
+  // user changed must not write its result over the new user's state.
+  const currentUserId = useRef<string | null>(null);
+  currentUserId.current = user?.id ?? null;
+
   const fetchProfile = useCallback(async () => {
     if (!user?.id) {
       setProfile(null);
       setLoading(false);
+      // Forget the last user, so signing back in as the same user is treated as
+      // a fresh load and not as "already fetched, no profile row".
+      setSettledFor(null);
       return;
     }
 
+    const fetchedFor = user.id;
     setLoading(true);
     setError(null);
 
@@ -60,6 +69,8 @@ export function useUserProfile(): UseUserProfileReturn {
         .eq('id', user.id)
         .single();
 
+      if (currentUserId.current !== fetchedFor) return;
+
       if (fetchError) {
         // PGRST116 means no rows found - not an error for new users
         if (fetchError.code === 'PGRST116') {
@@ -73,10 +84,13 @@ export function useUserProfile(): UseUserProfileReturn {
       }
     } catch (err) {
       logger.error('Error in useUserProfile', { error: err });
-      setError('Failed to load profile');
+      if (currentUserId.current === fetchedFor)
+        setError('Failed to load profile');
     } finally {
-      setLoading(false);
-      setSettledFor(user.id);
+      if (currentUserId.current === fetchedFor) {
+        setLoading(false);
+        setSettledFor(fetchedFor);
+      }
     }
   }, [user?.id]);
 

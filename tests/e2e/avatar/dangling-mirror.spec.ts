@@ -8,6 +8,12 @@
  * lane. The profile row (`user_profiles.avatar_url`) is the source of truth,
  * so a profile that says "no avatar" must mean no avatar request at all.
  *
+ * Assumption: the sign-up trigger (`create_user_profile`) inserts only the id,
+ * so a new user's profile row has no avatar even when the account metadata has
+ * one. The one place that copies metadata into the row is a one-time backfill
+ * UPDATE in the monolithic migration. If a trigger ever starts copying it, this
+ * test fails for that reason and not because the app regressed.
+ *
  * Before the fix this test failed on WebKit with two 400 image responses.
  */
 
