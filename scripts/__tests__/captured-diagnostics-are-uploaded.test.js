@@ -76,6 +76,18 @@ function uploadStepFor(lane, dir) {
   );
 }
 
+/**
+ * The id of the step whose `flaky` output also opens the upload gate, or null.
+ * Requires `failure()` AND the flaky output compared to 'true' on one `if:` line.
+ */
+function flakyGateStepId(block) {
+  const m =
+    /^\s*if:\s*failure\(\)\s*\|\|\s*steps\.([\w-]+)\.outputs\.flaky\s*==\s*'true'\s*$/m.exec(
+      block
+    );
+  return m ? m[1] : null;
+}
+
 describe('the lane uploads the diagnostics it captures (#766)', () => {
   it('reads both files and finds a real output directory', () => {
     // Non-vacuity. If either parse breaks, every assertion below would pass against
@@ -129,7 +141,67 @@ describe('the lane uploads the diagnostics it captures (#766)', () => {
     );
   });
 
+  it('also uploads them when a test flaked, so a flake carries its own evidence (#1524)', () => {
+    // A flaky test passes on its retry: the shard is green and `failure()` is false,
+    // so a failure-only gate threw away the screenshot, video and error-context of
+    // the attempt that failed. landmarks.spec.ts:256 flaked once with no evidence.
+    const lane = fs.readFileSync(LOCAL_LANE, 'utf8');
+    const dir = outputDir(fs.readFileSync(CONFIG, 'utf8'));
+    const block = uploadStepFor(lane, dir);
+    assert.ok(block, 'output directory is not uploaded at all');
+
+    const id = flakyGateStepId(block);
+    assert.ok(
+      id,
+      `the step uploading '${dir}/' must also run when a test flaked: expected ` +
+        `\`if: failure() || steps.<id>.outputs.flaky == 'true'\` (#1524).`
+    );
+
+    // The step it points at must exist, run even after a failure, and read the count
+    // Playwright writes to results.json. Otherwise the gate reads an output nobody sets
+    // and is silently always false.
+    const detector = steps(lane).find((s) =>
+      new RegExp(`^\\s*id:\\s*${id}\\s*$`, 'm').test(s)
+    );
+    assert.ok(
+      detector,
+      `no step has id '${id}', so the upload gate is always false`
+    );
+    assert.match(
+      detector,
+      /if:\s*always\(\)/,
+      'the flaky check must run after a failed step too'
+    );
+    assert.match(
+      detector,
+      /\.stats\.flaky/,
+      'the flaky check must read stats.flaky from results.json'
+    );
+    assert.match(detector, /flaky=true/, 'the flaky check must set flaky=true');
+  });
+
   it('the detector can actually fail', () => {
+    // The flaky-gate parser: it must accept the real shape and refuse near misses.
+    assert.equal(
+      flakyGateStepId("if: failure() || steps.flaky.outputs.flaky == 'true'"),
+      'flaky'
+    );
+    assert.equal(
+      flakyGateStepId('if: failure()'),
+      null,
+      'failure-only has no flaky gate'
+    );
+    assert.equal(
+      flakyGateStepId("if: steps.flaky.outputs.flaky == 'true'"),
+      null,
+      'a gate without failure() would skip real failures'
+    );
+    assert.equal(
+      flakyGateStepId("if: failure() || steps.flaky.outputs.flaky == 'false'"),
+      null,
+      'comparing to false is not a flaky gate'
+    );
+
     // Controls. A parser that returned null for everything would report the repo as
     // correct, and a matcher that accepted any string would never catch a regression.
     assert.equal(outputDir("outputDir: 'test-results/',"), 'test-results');
