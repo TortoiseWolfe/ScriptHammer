@@ -7,8 +7,8 @@
  * hosted project. A shard that started later therefore logged out the shards
  * already running: the browser still held a token that looked valid, then the
  * server answered 403 on /auth/v1/user and 401 "Auth session missing!" on
- * create-order. Ten payment and messaging tests failed that way on every hosted
- * run from 6 Nov. Nothing in a single shard can see it, which is why it gets a guard.
+ * create-order. Ten payment and messaging tests were hit that way (nine failed
+ * in the last red hosted run) on the hosted runs from 6 Nov. Nothing in a single shard can see it, which is why it gets a guard.
  */
 const { describe, it } = require('node:test');
 const assert = require('node:assert');
@@ -36,20 +36,53 @@ describe('E2E global setup signs out locally (#1402)', () => {
     assert.ok(code.includes('signInWithPassword'), 'credential check moved?');
   });
 
-  it('never calls signOut() without a scope', () => {
-    const bare = code.match(/\.signOut\(\s*\)/g) || [];
+  it("every signOut() call passes the literal scope 'local'", () => {
+    // Count ALL calls, then count the ones written exactly right. A bare
+    // signOut(), signOut({}), signOut(options) or { scope: someVariable } all
+    // default to or can become 'global', and none of them matches the second
+    // pattern, so the two counts differ and this fails.
+    const calls = code.match(/\.signOut\(/g) || [];
+    const local =
+      code.match(/\.signOut\(\s*\{\s*scope:\s*(['"])local\1\s*,?\s*\}\s*\)/g) ||
+      [];
+    assert.ok(calls.length > 0, 'the credential check no longer signs out?');
     assert.strictEqual(
-      bare.length,
-      0,
-      "signOut() defaults to scope 'global' and revokes the primary user's sessions in every other shard"
+      local.length,
+      calls.length,
+      "signOut() without the literal { scope: 'local' } defaults to 'global' and revokes the primary user's sessions in every other shard"
     );
   });
 
-  it("never signs out with the 'global' or 'others' scope", () => {
-    assert.doesNotMatch(code, /scope:\s*['"](global|others)['"]/);
-  });
+  it("no other E2E file calls signOut() without the literal scope 'local'", () => {
+    // The helpers and specs sign out through the app menu, which ends one
+    // session. A direct supabase-js call anywhere under tests/e2e must follow
+    // the same rule as the setup file.
+    const root = path.join(__dirname, '..', '..', 'tests', 'e2e');
+    const files = [];
+    const walk = (dir) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (/\.tsx?$/.test(entry.name)) files.push(full);
+      }
+    };
+    walk(root);
+    assert.ok(files.length > 10, 'tests/e2e moved? found too few files');
 
-  it("signs out with scope 'local' after the credential check", () => {
-    assert.match(code, /\.signOut\(\s*\{\s*scope:\s*'local'\s*\}\s*\)/);
+    const offenders = [];
+    for (const file of files) {
+      const src = fs
+        .readFileSync(file, 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, '');
+      const calls = src.match(/\.signOut\(/g) || [];
+      const local =
+        src.match(
+          /\.signOut\(\s*\{\s*scope:\s*(['"])local\1\s*,?\s*\}\s*\)/g
+        ) || [];
+      if (calls.length !== local.length)
+        offenders.push(path.relative(root, file));
+    }
+    assert.deepStrictEqual(offenders, []);
   });
 });
