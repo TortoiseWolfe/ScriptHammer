@@ -190,9 +190,9 @@ test.describe('Admin Dashboard E2E', () => {
       // A dropped request is "could not ask", not "not an admin". AdminGate used
       // to read the failure as false and send the admin to / for good, which is
       // the signed-out-looking page the sparkline flake kept landing on. The
-      // first three is_admin calls are dropped: that is every call the page
-      // makes while it loads (AdminGate's and the nav's), so AdminGate's first
-      // one is always among them. Its retry then gets a real answer.
+      // first three is_admin calls are dropped. The page makes two while it
+      // loads (the nav's and AdminGate's), so AdminGate's first call is always
+      // dropped, and so is its first retry. Its second retry gets the answer.
       let calls = 0;
       let dropped = 0;
       await page.route('**/rest/v1/rpc/is_admin*', (route) => {

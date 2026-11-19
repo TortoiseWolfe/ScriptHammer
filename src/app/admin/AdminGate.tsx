@@ -23,9 +23,14 @@ import { ADMIN_SECTIONS } from '@/config/admin-sections';
  * - `cancelled` flag: the async `checkIsAdmin` resolution must not call
  *   setState after the effect cleaned up (different user signed in, or
  *   component unmounted).
- * - Dep array `[user, authLoading, router]`: a `user` change re-runs the
- *   check against the new user. Removing `user` from deps reintroduces a
+ * - Dep array `[user, authLoading, router, attempt]`: a `user` change re-runs
+ *   the check against the new user. Removing `user` from deps reintroduces a
  *   stale-state bug where the previous user's admin verdict persists.
+ * - A failed `is_admin` request is not "not an admin" (#1520). Only a server
+ *   answer may redirect to `/`. A failed request is retried a few times, then
+ *   the page shows a "could not check" alert with a Try again button. This
+ *   includes an expired-token 401: it shows the alert rather than redirecting,
+ *   because the request failing says nothing about the role.
  */
 /**
  * One source of truth for the console's nav labels AND its page titles (#430).
@@ -76,6 +81,7 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
     if (authLoading) return;
     if (!user) return; // ProtectedRoute renders the sign-in card path
     let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
     (async () => {
       const service = new AdminAuthService(supabase);
       setCheckFailed(false);
@@ -94,15 +100,17 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
             setCheckFailed(true);
             return;
           }
-          await new Promise((resolve) =>
-            setTimeout(resolve, CHECK_RETRY_DELAYS_MS[i])
-          );
+          await new Promise((resolve) => {
+            retryTimer = setTimeout(resolve, CHECK_RETRY_DELAYS_MS[i]);
+          });
           if (cancelled) return;
         }
       }
     })();
     return () => {
       cancelled = true;
+      // Drop a pending retry so it does not fire after unmount or a user change.
+      clearTimeout(retryTimer);
     };
   }, [user, authLoading, router, attempt]);
 
