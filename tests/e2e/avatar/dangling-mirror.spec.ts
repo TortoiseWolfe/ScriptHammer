@@ -35,6 +35,8 @@ test.describe('Stale avatar copy on the auth account (#1514)', () => {
       process.env.NEXT_PUBLIC_SUPABASE_URL ||
       process.env.SUPABASE_ADMIN_URL ||
       '';
+    // An empty URL would make `gone` a relative path that never reaches storage.
+    expect(supabaseUrl, 'a Supabase URL is configured').not.toBe('');
     const gone = `${supabaseUrl}/storage/v1/object/public/avatars/00000000-0000-4000-8000-000000000000/deleted-${Date.now()}.webp`;
 
     const avatarResponses: string[] = [];
@@ -55,11 +57,13 @@ test.describe('Stale avatar copy on the auth account (#1514)', () => {
 
     await page.goto('/');
     await dismissCookieBanner(page);
-    await expect(
-      page
-        .getByRole('navigation')
-        .getByRole('button', { name: 'User account menu' })
-    ).toBeVisible({ timeout: 15000 });
+    const accountMenu = page
+      .getByRole('navigation')
+      .getByRole('button', { name: 'User account menu' });
+    await expect(accountMenu).toBeVisible({ timeout: 15000 });
+    // The avatar rendered something (the initials), so an empty request list below
+    // means "nothing was asked for", not "nothing was drawn".
+    await expect(accountMenu).toContainText(/\S/);
     await page.waitForLoadState('networkidle');
 
     expect(

@@ -7,7 +7,8 @@
  * asked for a file another shard had just deleted got a 400 from storage, and
  * WebKit logs that as a console error that the hosted lane treats as a failure.
  *
- * Each test now gets its own user, so nothing else can touch its avatar.
+ * Each spec file now makes its own user (per worker, in `beforeAll`) and the
+ * stale-copy spec makes one per test, so no other shard can touch its avatar.
  */
 
 import type { Page } from '@playwright/test';
@@ -97,6 +98,12 @@ export async function signInAsIsolatedAvatarUser(
   options?: { metadata?: Record<string, unknown> }
 ): Promise<IsolatedAvatarUser> {
   const user = await createIsolatedAvatarUser(options);
-  await signPageIn(page, user);
+  try {
+    await signPageIn(page, user);
+  } catch (error) {
+    // The caller never receives `user`, so nothing else would delete it.
+    await user.cleanup();
+    throw error;
+  }
   return user;
 }

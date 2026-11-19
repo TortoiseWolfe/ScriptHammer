@@ -44,6 +44,15 @@ describe('resolveAvatarUrl', () => {
     ).toBe(MIRROR_URL);
   });
 
+  it('shows nothing when the profile fetch failed, even if the mirror has an address', () => {
+    expect(
+      resolveAvatarUrl(
+        { profile: null, loading: false, error: 'Failed to load profile' },
+        MIRROR_URL
+      )
+    ).toBeNull();
+  });
+
   it('returns null when the mirror is missing or not a string', () => {
     expect(
       resolveAvatarUrl({ profile: null, loading: false }, undefined)

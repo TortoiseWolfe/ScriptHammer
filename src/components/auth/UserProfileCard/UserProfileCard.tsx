@@ -21,7 +21,7 @@ export default function UserProfileCard({
   className = '',
 }: UserProfileCardProps) {
   const { user } = useAuth();
-  const { profile, loading } = useUserProfile();
+  const { profile, loading, error } = useUserProfile();
 
   if (!user) {
     return null;
@@ -30,7 +30,7 @@ export default function UserProfileCard({
   // The profile row is the source of truth; the auth-metadata copy is only a
   // fallback for an account with no row (#1514). See resolveAvatarUrl.
   const avatarUrl = resolveAvatarUrl(
-    { profile, loading },
+    { profile, loading, error },
     user.user_metadata?.avatar_url
   );
   const displayName = profile?.display_name || user.email || 'User';

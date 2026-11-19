@@ -23,7 +23,7 @@ import {
   type IsolatedAvatarUser,
 } from '../utils/isolated-avatar-user';
 
-// Auth comes from storageState (setup project) - no sign-in needed
+// Auth comes from a throwaway user signed in below (#1514), not from storageState
 
 /**
  * Put the account into the state these tests claim to inspect.
@@ -37,9 +37,10 @@ import {
  * which silently turns "remove the avatar" into "do nothing". That is the same defect
  * shape as 04-gdpr-consent's decline test.
  *
- * These two tests mutate one shared user, so they must not run concurrently. In CI they
- * cannot: `fullyParallel: !process.env.CI` is false there and the shard runs a file
- * serially. A local run without CI=1 is the only place they could race.
+ * These two tests mutate one user that is private to this file (made in `beforeAll`),
+ * so no other spec or shard can touch it, but they must not run concurrently with each
+ * other. In CI they cannot: `fullyParallel: !process.env.CI` is false there and the
+ * shard runs a file serially. A local run without CI=1 is the only place they could race.
  */
 async function startAvatarUpload(page: import('@playwright/test').Page) {
   const dataUrl = await page.evaluate(() => {
