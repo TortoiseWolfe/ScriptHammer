@@ -124,7 +124,8 @@ describe('the lane uploads the diagnostics it captures (#766)', () => {
 
   it('does not upload them on green runs', () => {
     // The other half. Uploading test-results/ unconditionally from 24 shards trades
-    // one waste for another, so the diagnostics step must be failure-gated.
+    // one waste for another, so the diagnostics step must be gated on failure (and,
+    // since #1524, on a flaky test: the next test covers that half).
     const lane = fs.readFileSync(LOCAL_LANE, 'utf8');
     const cfg = fs.readFileSync(CONFIG, 'utf8');
     const dir = outputDir(cfg);
@@ -178,6 +179,14 @@ describe('the lane uploads the diagnostics it captures (#766)', () => {
       'the flaky check must read stats.flaky from results.json'
     );
     assert.match(detector, /flaky=true/, 'the flaky check must set flaky=true');
+
+    // Order matters: a step output read before its step has run is an empty string,
+    // with no error, so the gate would be silently always false.
+    const all = steps(lane);
+    assert.ok(
+      all.indexOf(detector) < all.indexOf(block),
+      'the flaky check must come BEFORE the upload that reads its output'
+    );
   });
 
   it('the detector can actually fail', () => {

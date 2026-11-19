@@ -803,8 +803,8 @@ jobs:
       # noise, and uploading it from every selected shard would trade one waste for
       # another. Someone looks when a shard failed, AND when a test flaked (#1524):
       # a flaky test passes on its retry, so the shard is green, `failure()` is false,
-      # and the screenshot, video, `error-context.md` and retry trace of the attempt
-      # that failed were thrown away. That is how landmarks.spec.ts:256 flaked once
+      # and the failed attempt's screenshot, video and `error-context.md`, plus the
+      # retry's trace, were thrown away. That is how landmarks.spec.ts:256 flaked once
       # (run 44398167419) and the artifacts that would have named the cause did not
       # exist. Playwright keeps the failed attempt's files when the retry passes, and
       # `results.json` counts it in `stats.flaky`, so the step below reads that.
