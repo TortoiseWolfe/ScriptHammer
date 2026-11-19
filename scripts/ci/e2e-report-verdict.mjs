@@ -53,7 +53,7 @@ function summary(line) {
  */
 export function collect(
   suites,
-  acc = { failed: [], flaky: [], passed: 0, skipped: 0 }
+  acc = { failed: [], flaky: [], passed: 0, skipped: 0, skippedWhere: [] }
 ) {
   for (const suite of suites ?? []) {
     for (const spec of suite.specs ?? []) {
@@ -66,8 +66,10 @@ export function collect(
         };
         if (test.status === 'unexpected') acc.failed.push(where);
         else if (test.status === 'flaky') acc.flaky.push(where);
-        else if (test.status === 'skipped') acc.skipped++;
-        else acc.passed++;
+        else if (test.status === 'skipped') {
+          acc.skipped++;
+          acc.skippedWhere.push(where);
+        } else acc.passed++;
       }
     }
     if (suite.suites) collect(suite.suites, acc);
@@ -165,7 +167,8 @@ export function main(argv = process.argv) {
     );
   }
 
-  const icon = acc.failed.length ? '❌' : acc.flaky.length ? '⚠️' : '✅';
+  const icon =
+    acc.failed.length || acc.skipped ? '❌' : acc.flaky.length ? '⚠️' : '✅';
   summary(
     `## ${icon} E2E result — ${acc.failed.length} failed, ${acc.flaky.length} flaky, ` +
       `${acc.passed} passed, ${acc.skipped} skipped`
@@ -183,6 +186,14 @@ export function main(argv = process.argv) {
         `| ${f.title.replace(/\|/g, '\\|')} | \`${f.file}:${f.line}\` (${f.project}) | ${err} |`
       );
     }
+    summary('');
+  }
+
+  if (acc.skipped) {
+    summary(`### Skipped (${acc.skipped}) — the hosted lane allows none`);
+    summary('');
+    for (const f of acc.skippedWhere)
+      summary(`- ${f.title} — \`${f.file}:${f.line}\` (${f.project})`);
     summary('');
   }
 
@@ -216,6 +227,28 @@ export function main(argv = process.argv) {
       `::error::[e2e-verdict] ${acc.failed.length} E2E test(s) failed on the hosted lane. ` +
         'The named tests above ran against the REAL production backend, so a failure here ' +
         'can mean a defect the local lane cannot see by construction (#1069).'
+    );
+    return 1;
+  }
+
+  // ZERO SKIPPED (#1510). The hosted lane used to end at "30 skipped" and this gate accepted
+  // it: a skipped test is not a passed one, and a baseline of 30 hides the 31st. The 30 that
+  // cannot run on the shared hosted backend now carry the `@local-only` tag and this lane
+  // leaves them out with `--grep-invert='@local-only'`, so they are never listed here. They
+  // still run, and are counted, on the required local lane. Anything that skips on this lane
+  // now is new, and it is a failure.
+  if (acc.skipped) {
+    for (const f of acc.skippedWhere) {
+      console.error(
+        `::error file=${f.file},line=${f.line}::[e2e-verdict] skipped on the hosted lane: ` +
+          `${f.title} (${f.project})`
+      );
+    }
+    console.error(
+      `::error::[e2e-verdict] ${acc.skipped} test(s) skipped on the hosted lane, which ` +
+        'allows none. A test that cannot run on the hosted backend is tagged `@local-only` ' +
+        "and excluded with --grep-invert='@local-only' in e2e.yml, where the guard test " +
+        '(hosted-tag-lanes.test.js) pins how many there are (#1510).'
     );
     return 1;
   }

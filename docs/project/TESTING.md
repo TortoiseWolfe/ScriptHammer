@@ -752,6 +752,18 @@ project is CAPTCHA-protected by design, so there they could only skip. `e2e.yml`
 with `--grep-invert @local-captcha`, and they run — with 0 skipped, enforced by a gate step — in the
 required `Signup Mailer result` lane (`playwright.signup-mailer.config.ts`, project `captcha-blocked`).
 
+**`@local-only` (#1510).** Thirty more tests cannot run on the hosted lane and carry
+`@local-only`: 27 admin tests (`tests/e2e/admin/admin-dashboard`, `admin-user-pagination` and
+`admin-conversation-list`, tagged on the top-level describe) that seed and delete data, which the
+shared hosted backend must not allow, and 3 (two in `auth/session-persistence`, one in
+`debug/capture-decryption-logs`) that submit a real sign-in form, which the CAPTCHA-protected hosted
+project refuses. The three hosted shard jobs in `e2e.yml` pass `--grep-invert='@local-only'`, so
+the hosted lane lists none of them and ends at 0 skipped; `e2e-report-verdict.mjs` now fails the
+job on any skip. They still run, and are counted, on the required local lane (`e2e-local.yml`),
+which does not exclude the tag. `scripts/__tests__/hosted-tag-lanes.test.js` pins the number (30),
+the files that carry the tag, and the flag in each hosted job. Jonathan chose this on 18 Nov 2026
+(option 2 on #1510) rather than keep a baseline of 30 skips.
+
 #### For Forked Projects
 
 1. **Increase rate limits** via the Management API if a hosted run is being throttled (see above).

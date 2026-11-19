@@ -219,3 +219,151 @@ describe('the @hosted lane split (#725)', () => {
     );
   });
 });
+
+/**
+ * THE MIRROR IMAGE: `@local-only` (#1510).
+ *
+ * Thirty tests cannot run on the hosted lane and used to be reported there as "30 skipped":
+ * 27 admin tests that seed and delete data (the hosted backend is the shared project, #944)
+ * and 3 that submit a real sign-in form (the hosted project is CAPTCHA-protected, #353).
+ * Jonathan chose to tag them and leave them out of the hosted run rather than keep a
+ * baseline of 30 skips (18 Nov 2026). They still run, and are counted, on the required
+ * local lane, which does not exclude this tag.
+ *
+ * What can drift, and how each way fails silently:
+ *
+ *   - tag a 31st test       -> it silently stops running against real production data
+ *   - drop a tag            -> the hosted lane goes back to reporting skips, which the
+ *                              verdict gate now fails
+ *   - exclude the tag in e2e-local.yml -> the 30 run NOWHERE, every check stays green
+ *   - drop the flag from one of the three hosted shard jobs -> that job's skips fail it
+ */
+describe('the @local-only lane split (#1510)', () => {
+  const LOCAL_ONLY = '@local-only';
+
+  // Specs where the tag sits on the top-level describe, so every test in the file carries it.
+  const DESCRIBE_TAGGED = {
+    'tests/e2e/admin/admin-dashboard.spec.ts': 20,
+    'tests/e2e/admin/admin-user-pagination.spec.ts': 5,
+    'tests/e2e/admin/admin-conversation-list.spec.ts': 2,
+  };
+  // Specs where individual tests carry the tag (the others in the file run on the hosted lane).
+  const TEST_TAGGED = {
+    'tests/e2e/auth/session-persistence.spec.ts': [
+      'should extend session duration with Remember Me checked',
+      'should use short session without Remember Me',
+    ],
+    'tests/e2e/debug/capture-decryption-logs.spec.ts': [
+      'capture console output from message exchange',
+    ],
+  };
+  const EXPECTED_TOTAL = 30;
+
+  const read = (rel) => fs.readFileSync(path.join(REPO_ROOT, rel), 'utf8');
+
+  /** Every spec under tests/e2e that mentions the tag, so a stray one is found. */
+  function filesMentioningTag() {
+    const out = [];
+    const walk = (dir) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) walk(full);
+        else if (
+          entry.name.endsWith('.ts') &&
+          fs.readFileSync(full, 'utf8').includes(LOCAL_ONLY)
+        )
+          out.push(path.relative(REPO_ROOT, full));
+      }
+    };
+    walk(path.join(REPO_ROOT, 'tests', 'e2e'));
+    return out.sort();
+  }
+
+  it('the tag is on exactly the thirty tests, no more and no fewer', () => {
+    let total = 0;
+
+    for (const [rel, expected] of Object.entries(DESCRIBE_TAGGED)) {
+      const src = read(rel);
+      const found = readTests(src).length;
+      assert.strictEqual(
+        found,
+        expected,
+        `${rel} has ${found} tests, expected ${expected}. They are all tagged through the ` +
+          'describe, so a new test here silently becomes local-only. Count it on purpose.'
+      );
+      const describes = [
+        ...src.matchAll(
+          /^test\.describe\((['"])[^'"]*\1,\s*\{\s*tag:\s*(['"])@local-only\2\s*\}/gm
+        ),
+      ];
+      assert.strictEqual(
+        describes.length,
+        1,
+        `${rel}: the top-level describe must carry { tag: '${LOCAL_ONLY}' }`
+      );
+      total += found;
+    }
+
+    for (const [rel, titles] of Object.entries(TEST_TAGGED)) {
+      const tagged = readTests(read(rel))
+        .filter((t) => t.tag === LOCAL_ONLY)
+        .map((t) => t.title);
+      assert.deepStrictEqual(tagged.sort(), [...titles].sort(), rel);
+      total += tagged.length;
+    }
+
+    assert.strictEqual(
+      total,
+      EXPECTED_TOTAL,
+      `${total} tests are tagged ${LOCAL_ONLY}, expected ${EXPECTED_TOTAL}. Each one is a ` +
+        'test the hosted lane no longer runs against real production data.'
+    );
+  });
+
+  it('no other spec carries the tag', () => {
+    assert.deepStrictEqual(
+      filesMentioningTag(),
+      [...Object.keys(DESCRIBE_TAGGED), ...Object.keys(TEST_TAGGED)].sort()
+    );
+  });
+
+  it('every hosted shard job excludes the tag, and the local lane does not', () => {
+    const hosted = readGrepFlags(
+      read('.github/workflows/e2e.yml'),
+      'grep-invert'
+    );
+    // Three matrix jobs run `--shard`: the gen/msg-iso shards of each browser group.
+    const shardJobs = (
+      stripYamlComments(read('.github/workflows/e2e.yml')).match(/--shard=/g) ||
+      []
+    ).length;
+    assert.strictEqual(shardJobs, 3, 'expected three --shard invocations');
+    assert.deepStrictEqual(
+      hosted,
+      [[LOCAL_ONLY], [LOCAL_ONLY], [LOCAL_ONLY]],
+      "each of the three hosted shard jobs needs --grep-invert='@local-only', or that " +
+        'job reports the tagged tests as skipped and the verdict gate fails it'
+    );
+    const local = readGrepFlags(
+      read('.github/workflows/e2e-local.yml'),
+      'grep-invert'
+    );
+    for (const tokens of local)
+      assert.ok(
+        !tokens.includes(LOCAL_ONLY),
+        'e2e-local.yml excludes @local-only, so the thirty tests run nowhere'
+      );
+  });
+
+  it('the control can fail — a stray tag and a missing flag are both seen', () => {
+    const stray = readTests(
+      "test('x', { tag: '@local-only' }, async () => {});"
+    );
+    assert.strictEqual(stray[0].tag, LOCAL_ONLY);
+    assert.deepStrictEqual(
+      readGrepFlags("--grep-invert='@hosted' \\", 'grep-invert'),
+      [['@hosted']],
+      'a flag for another tag must not read as @local-only'
+    );
+  });
+});

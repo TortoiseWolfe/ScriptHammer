@@ -50,7 +50,7 @@ test.describe('Session Persistence E2E', () => {
     await dismissCookieBanner(page);
   });
 
-  test('should extend session duration with Remember Me checked', async ({
+  test('should extend session duration with Remember Me checked', { tag: '@local-only' }, async ({
     page,
   }) => {
     // Sign in with Remember Me (already on sign-in page from beforeEach)
@@ -112,7 +112,7 @@ test.describe('Session Persistence E2E', () => {
     ).toMatch(/sb-.*-auth-token/);
   });
 
-  test('should use short session without Remember Me', async ({ page }) => {
+  test('should use short session without Remember Me', { tag: '@local-only' }, async ({ page }) => {
     // Before signing in, not after: against a captcha-protected backend this
     // test cannot measure anything (see the note below), so there is no reason
     // to spend a sign-in discovering that.
