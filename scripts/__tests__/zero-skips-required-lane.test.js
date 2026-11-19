@@ -10,7 +10,8 @@
  *      its registered firefox/webkit skips, so the check must be mode-scoped.
  *   2. `playwright.config.ts` — `LIVE_PROVIDER_GLOBS` EXCLUDES the live-Stripe spec from
  *      every project unless `LIVE_PROVIDER_TESTS` is set. Excluded, not skipped, and not
- *      tag + grep: `e2e.yml` must stay grep-free (see hosted-tag-lanes.test.js).
+ *      tag + grep: `e2e.yml` takes no positive --grep, and its one --grep-invert is
+ *      `@local-only` (see hosted-tag-lanes.test.js).
  *   3. `scripts/e2e-live-acceptance.sh` — sets `LIVE_PROVIDER_TESTS=1`, otherwise the live
  *      spec could not be run by anyone.
  *   4. `tests/e2e/payment/*` — no empty `test.skip(...)` stub bodies come back.
@@ -115,12 +116,39 @@ describe('zero skipped tests on the required E2E lane (#1464)', () => {
     );
   });
 
-  it('e2e.yml stays grep-free (the exclusion is by config, not by tag)', () => {
+  it('e2e.yml has no positive --grep, and its only --grep-invert is @local-only (#1510)', () => {
+    // A positive --grep can leave a shard with nothing to run, and Playwright hides
+    // "No tests found" under --shard, so that shard would be an empty green tick.
+    // --grep-invert='@local-only' can only REMOVE the 30 tagged tests, which are spread
+    // over five spec files while the smallest hosted shard holds over 100 tests, so it
+    // cannot empty one. Two of the 30 sit inside session-persistence.spec.ts next to
+    // tests that must keep running, so a config-level file exclusion (as for the
+    // live-Stripe spec above) cannot express them. Any other grep still fails here.
     const hosted = stripHashComments(read('.github', 'workflows', 'e2e.yml'));
     assert.ok(
-      !/--grep(-invert)?=/.test(hosted),
-      'e2e.yml gained a --grep; Playwright hides "No tests found" under --shard'
+      !/--grep=/.test(hosted),
+      'e2e.yml gained a positive --grep; Playwright hides "No tests found" under --shard'
     );
+    const inverts = [...hosted.matchAll(/--grep-invert=(\S+)/g)].map(
+      (m) => m[1]
+    );
+    for (const value of inverts) {
+      assert.strictEqual(
+        value,
+        "'@local-only'",
+        `e2e.yml has --grep-invert=${value}; only '@local-only' (#1510) is allowed`
+      );
+    }
+  });
+
+  it('the grep rule can fail — a positive grep and a foreign invert are both rejected', () => {
+    const positive = "--grep='@x' \\\n";
+    const foreign = "--grep-invert='@other' \\\n";
+    assert.ok(/--grep=/.test(positive));
+    const value = [...foreign.matchAll(/--grep-invert=(\S+)/g)].map(
+      (m) => m[1]
+    )[0];
+    assert.notStrictEqual(value, "'@local-only'");
   });
 
   it('no empty skipped stub is left in the payment specs', () => {
