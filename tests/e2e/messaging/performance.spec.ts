@@ -161,15 +161,23 @@ test.describe('Large-history message thread', () => {
         'thread is not scrollable, so pagination cannot be triggered — fixture problem'
       ).toBeGreaterThan(before.clientHeight);
 
-      await scrollThreadToTop(viewer.page);
-
-      // The loader is the component saying "I am fetching another page" — the direct
+      // Register the wait BEFORE scrolling. The request for the next page is the direct
       // evidence that `onLoadMore` fired (MessageThread.tsx:209 → ConversationView's
-      // handleLoadMore → loadMessages(true)).
-      await expect(
-        viewer.page.locator('[data-testid="pagination-loader"]'),
-        'scrolling to the top did not trigger a page load'
-      ).toBeVisible({ timeout: 15000 });
+      // handleLoadMore → loadMessages(true)): only a page after the first carries a
+      // `sequence_number=lt.<cursor>` filter. The old check waited for the
+      // `pagination-loader` spinner instead, but against a local database that spinner is
+      // on screen for only ~100-140 ms (measured on WebKit: on at 6 ms, off at 109 ms),
+      // about the same as Playwright's polling gap, so a poll could land on either side
+      // of it and report "never loaded" for a page that did load (#1513 run 44432183217).
+      const nextPage = viewer.page.waitForResponse(
+        (response) =>
+          response.url().includes('/rest/v1/messages') &&
+          response.url().includes('sequence_number=lt.') &&
+          response.ok(),
+        { timeout: 15000 }
+      );
+      await scrollThreadToTop(viewer.page);
+      await nextPage;
 
       // And the consequence: more history is now in the list. Under virtualization the
       // loaded count is not countable in the DOM, so total scroll height is the honest
