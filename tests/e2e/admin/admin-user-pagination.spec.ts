@@ -228,19 +228,48 @@ test.describe('Admin User Pagination E2E', () => {
     const indicator = page.locator('[data-testid="user-pagination-indicator"]');
     await expect(indicator).toContainText('Page 2 of', { timeout: 10000 });
 
-    // Now search — should reset to page 1
+    // Now search — should reset to page 1.
+    //
+    // The page resets to page 1 the moment the search box changes
+    // (handleSearchChange sets currentPage to 0 at once), but the user count
+    // only changes when the search request comes back. In between, the old
+    // pagination bar is still on screen. A fixed wait followed by one
+    // "is it visible" look raced that gap (#1523): when the answer arrived
+    // after the look and before the check, the bar vanished under the check.
+    //
+    // So hold the search request for a second so the gap is wide on every
+    // run, wait for the response that carries this search, and assert only
+    // the end state that the response itself calls for. Nothing here reads
+    // the page before that response, so no clock decides the result. Only the
+    // search call is held: it is the only admin_list_users call that carries
+    // p_search.
+    const SEARCH_TERM = 'alice';
+    await page.route('**/rest/v1/rpc/admin_list_users', async (route) => {
+      if (route.request().postDataJSON()?.p_search === SEARCH_TERM) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+      await route.continue();
+    });
+    const searchResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes('/rest/v1/rpc/admin_list_users') &&
+        response.request().postDataJSON()?.p_search === SEARCH_TERM
+    );
+
     const searchInput = page.locator('[data-testid="user-search"]');
-    await searchInput.fill('alice');
+    await searchInput.fill(SEARCH_TERM);
 
-    // Wait for debounce (300ms) + network
-    await page.waitForTimeout(500);
+    const searchResult = await (await searchResponse).json();
+    expect(typeof searchResult.total).toBe('number');
+    expect(Array.isArray(searchResult.users)).toBe(true);
 
-    // Page should reset — either back to "Page 1 of" or pagination hidden (results fit one page)
-    const paginationStillVisible = await pagination
-      .isVisible()
-      .catch(() => false);
-    if (paginationStillVisible) {
+    // After the response: the bar is on page 1 if the matches need more than
+    // one page (more matches than the first page returned), and gone if they
+    // fit on one.
+    if (searchResult.total > searchResult.users.length) {
       await expect(indicator).toContainText('Page 1 of');
+    } else {
+      await expect(pagination).toBeHidden();
     }
 
     // Table should still be present after search (results may be empty or
