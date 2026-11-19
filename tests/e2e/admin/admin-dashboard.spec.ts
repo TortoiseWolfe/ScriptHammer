@@ -184,6 +184,40 @@ test.describe('Admin Dashboard E2E', () => {
       expect(hasNonZero).toBe(true);
     });
 
+    test('keeps an admin on /admin when the first admin-check requests are dropped', async ({
+      page,
+    }) => {
+      // A dropped request is "could not ask", not "not an admin". AdminGate used
+      // to read the failure as false and send the admin to / for good, which is
+      // the signed-out-looking page the sparkline flake kept landing on. The
+      // first three is_admin calls are dropped: that is every call the page
+      // makes while it loads (AdminGate's and the nav's), so AdminGate's first
+      // one is always among them. Its retry then gets a real answer.
+      let calls = 0;
+      let dropped = 0;
+      await page.route('**/rest/v1/rpc/is_admin*', (route) => {
+        calls++;
+        if (dropped < 3) {
+          dropped++;
+          return route.abort('failed');
+        }
+        return route.continue();
+      });
+
+      await page.goto(`${BP}/admin`);
+
+      await expect(page.locator('[data-testid="admin-overview"]')).toBeVisible({
+        timeout: 15000,
+      });
+      // Still on /admin (the static export serves it with a trailing slash).
+      expect(new URL(page.url()).pathname).toMatch(
+        new RegExp(`^${BP}/admin/?$`)
+      );
+      // The control: requests really were dropped, and the check ran again.
+      expect(dropped).toBe(3);
+      expect(calls).toBeGreaterThan(3);
+    });
+
     test('should display sparkline trend charts', async ({ page }) => {
       await page.goto(`${BP}/admin`);
       await page.waitForLoadState('networkidle');

@@ -284,6 +284,18 @@ describe('GlobalNav authentication', () => {
     expect(screen.queryByRole('link', { name: 'Admin Dashboard' })).toBeNull();
   });
 
+  it('hides the admin link, with no unhandled rejection, when the admin check request fails', async () => {
+    // checkIsAdmin throws when the request fails. An unhandled rejection fails
+    // the whole vitest run, so reaching the assertions is itself the proof.
+    user = { id: 'user-1' };
+    checkIsAdmin.mockRejectedValue(new Error('network down'));
+    const u = userEvent.setup();
+    render(<GlobalNav />);
+    await u.click(screen.getByLabelText('User account menu'));
+    await waitFor(() => expect(checkIsAdmin).toHaveBeenCalledWith('user-1'));
+    expect(screen.queryByRole('link', { name: 'Admin Dashboard' })).toBeNull();
+  });
+
   it('shows it to an admin', async () => {
     user = { id: 'admin-1' };
     checkIsAdmin.mockResolvedValue(true);
