@@ -7,7 +7,11 @@ import BandSongs from './BandSongs';
 import weightsFile from '../../../../public/data/band-weights.json';
 import rankingFile from '../../../../public/data/band-ranking.json';
 import tracksFile from '../../../../public/data/band-tracks.json';
-import { PRIVACY_LINE } from '@/lib/band/vote';
+import {
+  ALBUM_VOTE_LINE,
+  BASE44_VOTE_URL,
+  PRIVACY_LINE,
+} from '@/lib/band/vote';
 import type { BandTracks, BandWeights } from '@/lib/band/ranking';
 
 const W = weightsFile as BandWeights;
@@ -84,6 +88,17 @@ describe('BandSongs', () => {
     render(<BandSongs />);
     expect(screen.getAllByText(PRIVACY_LINE).length).toBeGreaterThanOrEqual(2);
     expect(screen.getByTestId('privacy-line')).toHaveTextContent(PRIVACY_LINE);
+  });
+
+  it('says the votes help choose the sound of the game album and links the Base44 vote', () => {
+    render(<BandSongs />);
+    expect(screen.getByTestId('album-vote-line')).toHaveTextContent(
+      ALBUM_VOTE_LINE
+    );
+    const link = screen.getByTestId('base44-vote-link');
+    expect(link).toHaveAttribute('href', BASE44_VOTE_URL);
+    expect(BASE44_VOTE_URL).toBe('https://base44.com/launchpad');
+    expect(link).toHaveAccessibleName(/Base44 Launchpad/);
   });
 
   it('marks a recently posted song New and leaves an old one plain', () => {
