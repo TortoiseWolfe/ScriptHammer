@@ -479,7 +479,7 @@ describe('MessageService Integration', () => {
     const supabase = createClient();
     await supabase.auth.signInWithPassword({
       email: 'test@example.com',
-      password: 'TestPassword123!',
+      password: '$TEST_USER_PRIMARY_PASSWORD',
     });
   });
 

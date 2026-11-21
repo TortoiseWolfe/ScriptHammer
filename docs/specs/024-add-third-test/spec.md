@@ -9,7 +9,7 @@
 
 ### Session 2025-11-24
 
-- Q: What should the password be for the third test user (`test-user-b@example.com`)? → A: TestPassword456!
+- Q: What should the password be for the third test user (`test-user-b@example.com`)? → A: <set in .env>
 - Q: What should the username be for the third test user's profile (`test-user-b@example.com`)? → A: testuser-b
 
 ## User Scenarios & Testing _(mandatory)_
@@ -86,7 +86,7 @@ As a developer, I need to run E2E tests inside Docker locally before pushing to 
 
 ### Functional Requirements
 
-- **FR-001**: System MUST provide a third test user with email `test-user-b@example.com` and password `TestPassword456!` stored in .env as TEST_USER_TERTIARY_PASSWORD
+- **FR-001**: System MUST provide a third test user with email `test-user-b@example.com` and password `<set in .env>` stored in .env as TEST_USER_TERTIARY_PASSWORD
 - **FR-002**: System MUST create user profile record for third test user with username `testuser-b`
 - **FR-003**: E2E tests MUST verify both test users (`test@example.com` and `test-user-b@example.com`) can sign in successfully
 - **FR-004**: E2E tests MUST verify user search functionality at `/messages/connections` returns correct results

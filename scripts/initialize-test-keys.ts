@@ -14,10 +14,16 @@ requireApprovedTarget('initialize-test-keys');
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-// Test user credentials
+// Test user credentials: both seeded users share the primary password (#1246: never a literal).
+const TEST_PASSWORD = process.env.TEST_USER_PRIMARY_PASSWORD;
+if (!TEST_PASSWORD) {
+  console.error('Missing TEST_USER_PRIMARY_PASSWORD in the environment');
+  process.exit(1);
+}
+
 const TEST_USERS = [
-  { username: 'testuser', password: 'TestPassword123!' },
-  { username: 'testuser-b', password: 'TestPassword123!' },
+  { username: 'testuser', password: TEST_PASSWORD },
+  { username: 'testuser-b', password: TEST_PASSWORD },
 ];
 
 async function initializeTestKeys() {
@@ -121,7 +127,7 @@ async function initializeTestKeys() {
   }
 
   console.log(
-    '\n🎉 Done! Users can now unlock messaging with password: TestPassword123!'
+    '\n🎉 Done! Users can now unlock messaging with password from TEST_USER_PRIMARY_PASSWORD'
   );
 }
 

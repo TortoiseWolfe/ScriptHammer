@@ -3075,7 +3075,10 @@ GRANT ALL ON orders TO service_role;
 -- ============================================================================
 -- PART 8: SEED TEST USER (Primary)
 -- ============================================================================
--- Creates: test@example.com / TestPassword123!
+-- Creates: test@example.com. Its password is never written in this file (#1246): it comes from
+-- the database setting app.test_user_password when one is set for the session
+-- (SET app.test_user_password = '...'); otherwise it is a random value nobody knows, so the
+-- account exists but cannot be signed in to until its password is set on purpose.
 -- Email is already confirmed (bypasses verification requirement)
 -- Note: User was deleted at start of script for idempotency
 --
@@ -3102,6 +3105,11 @@ GRANT ALL ON orders TO service_role;
 -- admin API, after GoTrue has migrated itself. Nothing is lost.
 
 DO $seed_test_user$
+DECLARE
+  seed_password text := coalesce(
+    nullif(current_setting('app.test_user_password', true), ''),
+    gen_random_uuid()::text
+  );
 BEGIN
   -- Create the user in auth.users with confirmed email
   INSERT INTO auth.users (
@@ -3126,7 +3134,7 @@ BEGIN
     gen_random_uuid(),
     '00000000-0000-0000-0000-000000000000',
     'test@example.com',
-    crypt('TestPassword123!', gen_salt('bf')),  -- Hashed password using bcrypt
+    crypt(seed_password, gen_salt('bf')),  -- Hashed password using bcrypt
     now(),  -- Email already confirmed
     now(),
     now(),

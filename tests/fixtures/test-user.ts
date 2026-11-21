@@ -9,13 +9,14 @@
  * MUST be a real email address you control if running those tests.
  */
 
+import { requireEnv } from '../utils/require-env';
+
 /**
  * Primary test user - pre-confirmed in Supabase
  */
 export const TEST_EMAIL =
   process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com';
-export const TEST_PASSWORD =
-  process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
+export const TEST_PASSWORD = requireEnv('TEST_USER_PRIMARY_PASSWORD');
 
 /**
  * Secondary test user - configurable for email verification tests
@@ -29,8 +30,7 @@ export const TEST_PASSWORD_SECONDARY = process.env.TEST_USER_SECONDARY_PASSWORD;
  */
 export const TEST_EMAIL_TERTIARY =
   process.env.TEST_USER_TERTIARY_EMAIL || 'test-user-b@example.com';
-export const TEST_PASSWORD_TERTIARY =
-  process.env.TEST_USER_TERTIARY_PASSWORD || 'TestPassword456!';
+export const TEST_PASSWORD_TERTIARY = requireEnv('TEST_USER_TERTIARY_PASSWORD');
 export const TEST_USERNAME_TERTIARY = 'testuser-b';
 
 /**
