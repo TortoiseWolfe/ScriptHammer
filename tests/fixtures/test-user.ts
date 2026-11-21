@@ -16,7 +16,10 @@ import { requireEnv } from '../utils/require-env';
  */
 export const TEST_EMAIL =
   process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com';
-export const TEST_PASSWORD = requireEnv('TEST_USER_PRIMARY_PASSWORD');
+// Read lazily: a suite that only needs the email must not fail at import
+// because the password is not set.
+export const getTestPassword = (): string =>
+  requireEnv('TEST_USER_PRIMARY_PASSWORD');
 
 /**
  * Secondary test user - configurable for email verification tests
@@ -30,7 +33,8 @@ export const TEST_PASSWORD_SECONDARY = process.env.TEST_USER_SECONDARY_PASSWORD;
  */
 export const TEST_EMAIL_TERTIARY =
   process.env.TEST_USER_TERTIARY_EMAIL || 'test-user-b@example.com';
-export const TEST_PASSWORD_TERTIARY = requireEnv('TEST_USER_TERTIARY_PASSWORD');
+export const getTestPasswordTertiary = (): string =>
+  requireEnv('TEST_USER_TERTIARY_PASSWORD');
 export const TEST_USERNAME_TERTIARY = 'testuser-b';
 
 /**
@@ -46,7 +50,7 @@ export function hasSecondaryUser(): boolean {
  * @returns true if both email and password are set
  */
 export function hasTertiaryUser(): boolean {
-  return !!(TEST_EMAIL_TERTIARY && TEST_PASSWORD_TERTIARY);
+  return !!(TEST_EMAIL_TERTIARY && process.env.TEST_USER_TERTIARY_PASSWORD);
 }
 
 /**
