@@ -8,7 +8,7 @@ import { rankSongs, type BandRankingFile, type BandWeights } from './ranking';
 // The deploy runs this file before the build; these tests run its real functions.
 import {
   applySiteVotes,
-  readVoteRows,
+  readVoteTotals,
 } from '../../../scripts/ci/refresh-band-ranking.mjs';
 
 const W = weights as BandWeights;
@@ -85,26 +85,27 @@ describe('refresh-band-ranking: a vote row reaches the ranking', () => {
   });
 });
 
-describe('refresh-band-ranking: reading the table', () => {
-  it('reads every page and sends the key only in headers', async () => {
-    const calls: string[] = [];
-    const page = (n: number) =>
-      Array.from({ length: n }, () => ({ song_id: 'jam-2', up: 1, down: 0 }));
+describe('refresh-band-ranking: reading the totals', () => {
+  it('makes one POST to the function, with the key only in headers and an empty body', async () => {
+    const seen: Array<{ url: string; init: RequestInit }> = [];
+    const totals = [
+      { song_id: 'jam-2', up: 4, down: 1 },
+      { song_id: 'jam-3', up: 0, down: 2 },
+    ];
     const fake = (async (url: string, init: RequestInit) => {
-      calls.push(url);
-      const headers = init.headers as Record<string, string>;
-      expect(headers.apikey).toBe('k');
-      expect(url).not.toContain('k=');
-      return {
-        ok: true,
-        status: 200,
-        json: async () => (calls.length === 1 ? page(1000) : page(3)),
-      };
+      seen.push({ url, init });
+      return { ok: true, status: 200, json: async () => totals };
     }) as unknown as typeof fetch;
-    const rows = await readVoteRows('https://x.test', 'k', fake);
-    expect(rows).toHaveLength(1003);
-    expect(calls).toHaveLength(2);
-    expect(calls[1]).toContain('offset=1000');
+    const rows = await readVoteTotals('https://x.test', 'k', fake);
+    expect(rows).toEqual(totals);
+    expect(seen).toHaveLength(1);
+    expect(seen[0].url).toBe('https://x.test/rest/v1/rpc/get_band_vote_totals');
+    expect(seen[0].init.method).toBe('POST');
+    expect(seen[0].init.body).toBe('{}');
+    const headers = seen[0].init.headers as Record<string, string>;
+    expect(headers.apikey).toBe('k');
+    expect(headers.Authorization).toBe('Bearer k');
+    expect(seen[0].url).not.toContain('k=');
   });
 
   it('throws a message with the status and no key on a failed read', async () => {
@@ -113,28 +114,57 @@ describe('refresh-band-ranking: reading the table', () => {
       status: 401,
       json: async () => ({}),
     })) as unknown as typeof fetch;
-    await expect(
-      readVoteRows('https://x.test', 'secret-value-123', fake)
-    ).rejects.toThrow(/HTTP 401/);
-    await expect(
-      readVoteRows('https://x.test', 'secret-value-123', fake)
-    ).rejects.not.toThrow(/secret-value-123/);
+    const failure = readVoteTotals('https://x.test', 'secret-value-123', fake);
+    await expect(failure).rejects.toThrow(/HTTP 401/);
+    await expect(failure).rejects.toSatisfy(
+      (e: Error) => !e.message.includes('secret-value-123')
+    );
+  });
+
+  it('throws when the answer is not a list', async () => {
+    const fake = (async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ message: 'oops' }),
+    })) as unknown as typeof fetch;
+    await expect(readVoteTotals('https://x.test', 'k', fake)).rejects.toThrow(
+      /did not answer a list/
+    );
   });
 });
 
 describe('refresh-band-ranking: run as a script', () => {
-  it('leaves the file as committed and exits 0 with no key (a fork)', () => {
-    const file = join(process.cwd(), 'public/data/band-ranking.json');
+  const file = join(process.cwd(), 'public/data/band-ranking.json');
+  const script = join(process.cwd(), 'scripts/ci/refresh-band-ranking.mjs');
+  const run = (env: Record<string, string>) =>
+    execFileSync(process.execPath, [script], {
+      env: { PATH: process.env.PATH ?? '', NODE_ENV: 'test', ...env },
+      encoding: 'utf8',
+    });
+
+  it('leaves the file as committed and exits 0 with no URL (a fork)', () => {
     const before = readFileSync(file, 'utf8');
-    const out = execFileSync(
-      process.execPath,
-      [join(process.cwd(), 'scripts/ci/refresh-band-ranking.mjs')],
-      {
-        env: { PATH: process.env.PATH ?? '', NODE_ENV: 'test' },
-        encoding: 'utf8',
-      }
-    );
+    const out = run({});
     expect(out).toContain('left as committed');
+    expect(out).toContain('no NEXT_PUBLIC_SUPABASE_URL');
+    expect(readFileSync(file, 'utf8')).toBe(before);
+  });
+
+  it('leaves the file as committed and exits 0 with a URL but no anon key', () => {
+    const before = readFileSync(file, 'utf8');
+    const out = run({ NEXT_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:1' });
+    expect(out).toContain('no NEXT_PUBLIC_SUPABASE_ANON_KEY');
+    expect(readFileSync(file, 'utf8')).toBe(before);
+  });
+
+  it('never fails the deploy when the database cannot be reached', () => {
+    const before = readFileSync(file, 'utf8');
+    const out = run({
+      NEXT_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:1',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: 'not-a-real-key-123',
+    });
+    expect(out).toContain('::warning::band ranking: left as committed');
+    expect(out).not.toContain('not-a-real-key-123');
     expect(readFileSync(file, 'utf8')).toBe(before);
   });
 });

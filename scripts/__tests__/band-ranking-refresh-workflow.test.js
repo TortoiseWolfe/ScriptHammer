@@ -1,11 +1,11 @@
 /**
- * The deploy must refresh the band ranking from the vote table BEFORE it builds (#1527), and the
- * service role key must reach that one step only.
+ * The deploy must refresh the band ranking from the vote totals BEFORE it builds (#1527), and it
+ * must do so without any service role key.
  *
  * Two ways this goes wrong without a check. The step is moved below the build, or deleted: every
- * check stays green and the page goes back to showing 0 site votes, with no error anywhere. Or the
- * key is added to the build step's environment: `pnpm run build` runs project code and every
- * dependency's install scripts, which should never see a service role key.
+ * check stays green and the page goes back to showing 0 site votes, with no error anywhere. Or a
+ * service role key creeps back into the deploy: the totals come from the read-only database
+ * function get_band_vote_totals, which the public anon key may call, so no such key is needed.
  *
  * Comments are stripped before matching, because the step's own comment names the script.
  */
@@ -46,26 +46,23 @@ describe('deploy.yml refreshes the band ranking', () => {
     );
   });
 
-  it('gives the refresh step the service role key and the project URL', () => {
-    assert.match(
-      refresh.text,
-      /SUPABASE_SERVICE_ROLE_KEY: \$\{\{ secrets\.SUPABASE_SERVICE_ROLE_KEY \}\}/
-    );
+  it('gives the refresh step the project URL and the public anon key', () => {
     assert.match(
       refresh.text,
       /NEXT_PUBLIC_SUPABASE_URL: \$\{\{ vars\.NEXT_PUBLIC_SUPABASE_URL \}\}/
     );
+    assert.match(
+      refresh.text,
+      /NEXT_PUBLIC_SUPABASE_ANON_KEY: \$\{\{ vars\.NEXT_PUBLIC_SUPABASE_ANON_KEY \}\}/
+    );
   });
 
-  it('keeps the service role key out of every other step', () => {
-    const holders = lines.filter((l) =>
-      l.includes('SUPABASE_SERVICE_ROLE_KEY')
+  it('names no service role key anywhere in the deploy', () => {
+    const holders = lines.filter((l) => /SERVICE_ROLE/i.test(l));
+    assert.deepStrictEqual(
+      holders,
+      [],
+      'the deploy reads totals through get_band_vote_totals and needs no service role key'
     );
-    assert.strictEqual(
-      holders.length,
-      1,
-      'only the refresh step may name the service role key'
-    );
-    assert.ok(!build.text.includes('SUPABASE_SERVICE_ROLE_KEY'));
   });
 });
