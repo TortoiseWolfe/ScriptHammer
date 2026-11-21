@@ -300,7 +300,9 @@ unchanged, back to 200 within ~2 minutes (watch for `[self-heal]` in
 **Primary** (required):
 
 - Email: `test@example.com`
-- Password: `TestPassword123!`
+- Password: whatever `TEST_USER_PRIMARY_PASSWORD` holds in your `.env`. It is never written in the
+  repository (#1246). `pnpm run use:local` fills a random one in your `.env` the first time, and CI
+  makes a fresh random one for every run.
 
 **Secondary** (optional - for email verification tests):
 

@@ -613,7 +613,7 @@ import { supabase } from '@/lib/supabase/client';
 describe('Sign-Up Flow', () => {
   const testEmail = process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com';
   const testPassword =
-    process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
+    process.env.TEST_USER_PRIMARY_PASSWORD || '$TEST_USER_PRIMARY_PASSWORD';
 
   it('should sign in with valid credentials', async () => {
     const { data, error } = await supabase.auth.signInWithPassword({
