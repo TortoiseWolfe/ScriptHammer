@@ -16,6 +16,7 @@ import { Client } from 'pg';
 import { hasRlsTestEnvironment, RLS_SKIP_REASON } from '../fixtures/test-users';
 import { sendVote } from '../../src/lib/band/vote';
 import rankingFile from '../../public/data/band-ranking.json';
+import { readVoteTotals } from '../../scripts/ci/refresh-band-ranking.mjs';
 
 const DB = {
   host: process.env.SUPABASE_DB_HOST ?? 'supabase-db',
@@ -189,6 +190,162 @@ describe.skipIf(!hasRlsTestEnvironment())(
         'song_id',
         'up',
       ]);
+    });
+
+    // get_band_vote_totals() (#1527): the read-only door the deploy uses, with the anon key,
+    // because the table itself is closed to every client role.
+    describe('get_band_vote_totals: the deploy reads totals without a service role key', () => {
+      const SIG = 'public.get_band_vote_totals()';
+      const totals = () =>
+        asAnon<{ song_id: string; up: string; down: string }>(
+          'SELECT * FROM get_band_vote_totals()'
+        );
+
+      /**
+       * Run a body against the table with exactly the rows given, then roll everything back, so
+       * a test about "the whole table" never depends on rows left by an earlier test.
+       */
+      async function withRows(
+        rows: Array<[string, string, number, number]>,
+        body: () => Promise<void>
+      ) {
+        await db.query('BEGIN');
+        try {
+          await db.query('DELETE FROM band_site_votes');
+          for (const [song, hourAgo, up, down] of rows) {
+            await db.query(
+              `INSERT INTO band_site_votes (song_id, hour, up, down, requests)
+               VALUES ($1, date_trunc('hour', now()) - $2::interval, $3, $4, 1)`,
+              [song, hourAgo, up, down]
+            );
+          }
+          await body();
+        } finally {
+          await db.query('ROLLBACK');
+        }
+      }
+
+      it('lets anon run it, and not authenticated or PUBLIC', async () => {
+        const { rows } = await db.query(
+          `SELECT has_function_privilege('anon', '${SIG}', 'EXECUTE') AS anon,
+                  has_function_privilege('authenticated', '${SIG}', 'EXECUTE') AS authd,
+                  (SELECT p.proacl IS NOT NULL
+                          AND NOT EXISTS (SELECT 1 FROM aclexplode(p.proacl) a WHERE a.grantee = 0)
+                     FROM pg_proc p WHERE p.oid = '${SIG}'::regprocedure) AS public_closed`
+        );
+        // A null proacl means the default grant, which includes PUBLIC, so it must be non-null.
+        expect(rows).toEqual([
+          { anon: true, authd: false, public_closed: true },
+        ]);
+        await db.query('SET ROLE authenticated');
+        try {
+          await expect(
+            db.query('SELECT * FROM get_band_vote_totals()')
+          ).rejects.toThrow(/permission denied/);
+        } finally {
+          await db.query('RESET ROLE');
+        }
+      });
+
+      it('only reads, and pins its search path', async () => {
+        const { rows } = await db.query(
+          `SELECT prosecdef, provolatile, proretset, proconfig
+             FROM pg_proc WHERE oid = '${SIG}'::regprocedure`
+        );
+        expect(rows).toHaveLength(1);
+        expect(rows[0].prosecdef).toBe(true);
+        // 's' is STABLE: the database itself refuses a write from a STABLE function.
+        expect(rows[0].provolatile).toBe('s');
+        expect(rows[0].proconfig).toEqual(['search_path=public, pg_temp']);
+      });
+
+      it('returns exactly the columns song_id, up and down', async () => {
+        await withRows([['n03', '0 hours', 2, 1]], async () => {
+          const rows = await totals();
+          expect(Object.keys(rows[0]).sort()).toEqual([
+            'down',
+            'song_id',
+            'up',
+          ]);
+        });
+      });
+
+      it('adds the hourly rows of each song together, a negative hour included', async () => {
+        await withRows(
+          [
+            ['n03', '0 hours', 3, 1],
+            ['n03', '1 hour', 4, 2],
+            // A changed vote takes one off the old side in a later hour: -1 up.
+            ['n03', '2 hours', -1, 5],
+            ['n10', '0 hours', 0, 7],
+          ],
+          async () => {
+            const rows = await totals();
+            expect(rows).toEqual([
+              { song_id: 'n03', up: '6', down: '8' },
+              { song_id: 'n10', up: '0', down: '7' },
+            ]);
+          }
+        );
+      });
+
+      it('matches what cast_band_vote recorded, including a changed vote', async () => {
+        await withRows([], async () => {
+          expect(await vote('n03', 'up')).toBe('ok');
+          expect(await vote('n03', 'up')).toBe('ok');
+          expect(await vote('n03', 'down', 'up')).toBe('ok');
+          expect(await totals()).toEqual([
+            { song_id: 'n03', up: '1', down: '1' },
+          ]);
+        });
+      });
+
+      it('gives no rows for an empty table', async () => {
+        await withRows([], async () => {
+          expect(await totals()).toEqual([]);
+        });
+      });
+
+      it('writes nothing', async () => {
+        await withRows([['n03', '0 hours', 2, 1]], async () => {
+          const before = await db.query(
+            'SELECT song_id, hour, up, down, requests FROM band_site_votes ORDER BY 1, 2'
+          );
+          await totals();
+          await totals();
+          const after = await db.query(
+            'SELECT song_id, hour, up, down, requests FROM band_site_votes ORDER BY 1, 2'
+          );
+          expect(after.rows).toEqual(before.rows);
+        });
+      });
+
+      it('leaves the table itself closed to anon', async () => {
+        await expect(asAnon('SELECT * FROM band_site_votes')).rejects.toThrow(
+          /permission denied/
+        );
+      });
+
+      it('answers the same totals over HTTP with only the public anon key', async () => {
+        const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        if (!base || !key) {
+          throw new Error(
+            'NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set'
+          );
+        }
+        // Through the function the deploy script itself uses, not a copy of its request.
+        expect(await vote('n03', 'up')).toBe('ok');
+        expect(await vote('n10', 'down')).toBe('ok');
+        const rows = (await readVoteTotals(
+          base.replace(/\/+$/, ''),
+          key
+        )) as Array<{ song_id: string; up: number; down: number }>;
+        expect(rows.filter((r) => ['n03', 'n10'].includes(r.song_id))).toEqual([
+          { song_id: 'n03', up: 1, down: 0 },
+          { song_id: 'n10', up: 0, down: 1 },
+        ]);
+      });
     });
 
     // The page's own request, sent the way a browser sends it: through the REST gateway
