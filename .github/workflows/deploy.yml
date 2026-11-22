@@ -68,6 +68,16 @@ jobs:
           NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }}
           NEXT_PUBLIC_PAGESPEED_API_KEY: ${{ secrets.NEXT_PUBLIC_PAGESPEED_API_KEY }}
 
+      # (#1527) Bring the votes cast on /band into the ranking. It rewrites only the `site`
+      # counts in this checkout's band-ranking.json (nothing is committed) and never fails the
+      # deploy. It reads the totals with the public anon key through the read-only database
+      # function get_band_vote_totals, so no service role key is involved anywhere in this file.
+      - name: Refresh band ranking from site votes
+        run: node scripts/ci/refresh-band-ranking.mjs
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
       - name: Build Next.js app
         run: pnpm run build
         env:

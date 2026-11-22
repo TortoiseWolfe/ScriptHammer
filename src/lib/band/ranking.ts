@@ -8,7 +8,9 @@
  *
  * The weights live in public/data/band-weights.json and nowhere else; the page text
  * reads them from there and a test fails when the two disagree. The list lives in
- * public/data/band-ranking.json and is refreshed by a commit, never by a job.
+ * public/data/band-ranking.json and is refreshed by a commit. The one exception is each
+ * song's `site` count: the deploy rewrites it in its own checkout from the vote table
+ * (scripts/ci/refresh-band-ranking.mjs, #1527) and commits nothing.
  *
  * Pure functions only, no three.js and no browser APIs, so the kid-safe /band page
  * stays light.

@@ -5628,6 +5628,41 @@ REVOKE ALL ON FUNCTION public.cast_band_vote(TEXT, TEXT, TEXT) FROM PUBLIC, anon
 GRANT EXECUTE ON FUNCTION public.cast_band_vote(TEXT, TEXT, TEXT) TO anon;
 
 -- ============================================================================
+-- BAND PAGE VOTE TOTALS FOR THE DEPLOY (#1527)
+-- ============================================================================
+-- band_site_votes (section above) is closed to every client role, so the deploy that rewrites
+-- public/data/band-ranking.json could only read it with the service-role key. That key is kept
+-- out of workflows that run on code (service-role-key-not-in-pr-ci.test.js, #575), so the
+-- deploy reads the totals through this function instead, with the public anon key.
+--
+-- WHAT IT RETURNS. One row per song that has any votes: (song_id, up, down), each count the sum
+-- over all hours. Nothing else: no hour, no request count, no row per voter. The summed counts
+-- are the same numbers the page already shows once a deploy has run, so nothing new is exposed.
+-- A song's up or down can be below zero in one hour (a changed vote takes one off the old
+-- side); the sum over all hours is right, so this sums before it returns.
+--
+-- WHO CAN DO WHAT. The function only reads. `anon` may run it and nothing else may
+-- (authenticated and PUBLIC are revoked, as for cast_band_vote). The table stays closed.
+--
+-- SECURITY DEFINER is needed: the caller has no table privilege. It is safe because the function
+-- takes no arguments, runs one fixed SELECT, writes nothing, and pins search_path.
+CREATE OR REPLACE FUNCTION public.get_band_vote_totals()
+RETURNS TABLE (song_id TEXT, up BIGINT, down BIGINT)
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+LANGUAGE sql
+AS $$
+  SELECT v.song_id, SUM(v.up)::BIGINT, SUM(v.down)::BIGINT
+    FROM band_site_votes v
+   GROUP BY v.song_id
+   ORDER BY v.song_id;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_band_vote_totals() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_band_vote_totals() TO anon;
+
+-- ============================================================================
 -- END-OF-FILE CLEANUP (not a section: never applied on its own)
 -- ============================================================================
 -- This banner ends the section above for the apply-migration-section workflow, which cuts
