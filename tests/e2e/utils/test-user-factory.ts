@@ -10,6 +10,7 @@
  * This enables self-contained E2E tests that don't rely on pre-seeded users.
  */
 
+import { randomUUID } from 'node:crypto';
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { expect, type Page, type Browser } from '@playwright/test';
 import { KeyDerivationService } from '@/lib/messaging/key-derivation';
@@ -507,9 +508,19 @@ export function generateTestEmail(prefix = 'e2e-test'): string {
 }
 
 /**
- * Default test password that meets Supabase requirements
+ * A fresh password that meets Supabase requirements (upper, lower, digit,
+ * symbol). Made per run, so no password is ever written down in the repo.
  */
-export const DEFAULT_TEST_PASSWORD = 'TestPassword123!';
+function randomPassword(): string {
+  return `Aa1!${randomUUID()}`;
+}
+
+/**
+ * Default test password: the lane's TEST_USER_PRIMARY_PASSWORD when it is set,
+ * otherwise a random one for this run.
+ */
+export const DEFAULT_TEST_PASSWORD =
+  process.env.TEST_USER_PRIMARY_PASSWORD || randomPassword();
 
 /**
  * Dismiss cookie consent banner and promotional banners if visible.
@@ -604,8 +615,7 @@ export async function handleReAuthModal(
   page: Page,
   password?: string
 ): Promise<boolean> {
-  const testPassword =
-    password || process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
+  const testPassword = password || DEFAULT_TEST_PASSWORD;
 
   // Check if the CURRENT user's private key is in IndexedDB. After the
   // batch 7c migration, keys live in MessagingDB.messaging_private_keys

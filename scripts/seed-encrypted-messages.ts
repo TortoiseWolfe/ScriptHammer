@@ -15,8 +15,12 @@ requireApprovedTarget('seed-encrypted-messages');
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-// Test user credentials (same password for both)
-const TEST_PASSWORD = 'TestPassword123!';
+// Test user credentials (same password for both): TEST_USER_PRIMARY_PASSWORD, never a literal (#1246)
+const TEST_PASSWORD = process.env.TEST_USER_PRIMARY_PASSWORD;
+if (!TEST_PASSWORD) {
+  console.error('Missing TEST_USER_PRIMARY_PASSWORD in the environment');
+  process.exit(1);
+}
 
 // Helper: Convert ArrayBuffer to base64
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
@@ -260,8 +264,8 @@ async function seedMessages() {
   console.log('Created', testMessages.length, 'encrypted messages');
   console.log('\nTo test:');
   console.log('1. Open http://localhost:3000/messages');
-  console.log('2. Sign in as test@example.com with TestPassword123!');
-  console.log('3. Enter TestPassword123! in the "Unlock Messaging" modal');
+  console.log('2. Sign in as test@example.com with TEST_USER_PRIMARY_PASSWORD');
+  console.log('3. Enter the same password in the "Unlock Messaging" modal');
   console.log('4. You should see the decrypted messages!');
 }
 

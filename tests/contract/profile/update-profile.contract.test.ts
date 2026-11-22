@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient } from '../../helpers/real-supabase';
-import { TEST_EMAIL, TEST_PASSWORD } from '../../fixtures/test-user';
+import { TEST_EMAIL, getTestPassword } from '../../fixtures/test-user';
 
 describe('User Profile UPDATE Contract', () => {
   let supabase: ReturnType<typeof createClient>;
@@ -18,7 +18,7 @@ describe('User Profile UPDATE Contract', () => {
     // Sign in with pre-confirmed static test user
     const { data } = await supabase.auth.signInWithPassword({
       email: TEST_EMAIL,
-      password: TEST_PASSWORD,
+      password: getTestPassword(),
     });
 
     testUserId = data.user!.id;
