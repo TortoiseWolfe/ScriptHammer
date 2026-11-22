@@ -7,7 +7,7 @@
 
 import { describe, it, expect, beforeAll, afterEach } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
-import { TEST_EMAIL, TEST_PASSWORD } from '../../fixtures/test-user';
+import { TEST_EMAIL, getTestPassword } from '../../fixtures/test-user';
 
 // Contract tests use real Supabase - create client directly
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -28,7 +28,7 @@ describe('Supabase Auth Sign-In Contract', () => {
   it('should accept valid credentials', async () => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: TEST_EMAIL,
-      password: TEST_PASSWORD,
+      password: getTestPassword(),
     });
 
     expect(error).toBeNull();
@@ -40,7 +40,7 @@ describe('Supabase Auth Sign-In Contract', () => {
   it('should return session with access token', async () => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: TEST_EMAIL,
-      password: TEST_PASSWORD,
+      password: getTestPassword(),
     });
 
     expect(error).toBeNull();
@@ -55,7 +55,7 @@ describe('Supabase Auth Sign-In Contract', () => {
   it('should reject invalid email', async () => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: 'nonexistent@example.com',
-      password: TEST_PASSWORD,
+      password: getTestPassword(),
     });
 
     expect(error).toBeDefined();
@@ -77,7 +77,7 @@ describe('Supabase Auth Sign-In Contract', () => {
   it('should handle case-insensitive email', async () => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: TEST_EMAIL.toUpperCase(),
-      password: TEST_PASSWORD,
+      password: getTestPassword(),
     });
 
     // Supabase normalizes email to lowercase

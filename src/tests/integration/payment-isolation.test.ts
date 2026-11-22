@@ -2,6 +2,7 @@
 // Feature 017 - Task T011
 // Purpose: Test RLS enforcement prevents cross-user payment data access
 
+import { requireEnv } from '../../../tests/utils/require-env';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
@@ -9,12 +10,12 @@ import type { Database } from '@/lib/supabase/types';
 // Test users from seed-test-user.sql
 const TEST_USER_A = {
   email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-  password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
+  password: requireEnv('TEST_USER_PRIMARY_PASSWORD'),
 };
 
 const TEST_USER_B = {
   email: process.env.TEST_USER_SECONDARY_EMAIL || 'test2@example.com',
-  password: process.env.TEST_USER_SECONDARY_PASSWORD || 'TestPassword123!',
+  password: requireEnv('TEST_USER_SECONDARY_PASSWORD'),
 };
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;

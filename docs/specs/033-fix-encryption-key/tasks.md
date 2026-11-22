@@ -42,7 +42,7 @@
 
 **Goal**: Users with valid encryption keys can unlock messages without "Your account needs to be updated" error
 
-**Independent Test**: Sign in as test@example.com / TestPassword123! and verify encryption unlock works
+**Independent Test**: Sign in as test@example.com / $TEST_USER_PRIMARY_PASSWORD and verify encryption unlock works
 
 ### Tests for User Story 1
 
@@ -61,7 +61,7 @@
   - Reference: `specs/033-fix-encryption-key/quickstart.md` lines 37-70
 
 - [ ] T008 [US1] Verify fix with manual test
-  - Sign in as test@example.com / TestPassword123!
+  - Sign in as test@example.com / $TEST_USER_PRIMARY_PASSWORD
   - Confirm no "Your account needs to be updated" error appears
   - Confirm encryption unlock modal accepts password
 
@@ -140,7 +140,7 @@
 - [ ] T017 [P] Run unit tests: `docker compose exec scripthammer pnpm test`
 - [x] T018 [P] Update plan.md progress tracking to mark all phases complete
 - [ ] T019 Manual E2E verification per quickstart.md test scenarios:
-  1. Sign in as test@example.com / TestPassword123!
+  1. Sign in as test@example.com / $TEST_USER_PRIMARY_PASSWORD
   2. Verify no "Your account needs to be updated" error
   3. Check database: only valid-salt keys should be non-revoked
   4. Verify TypeScript compilation succeeds
