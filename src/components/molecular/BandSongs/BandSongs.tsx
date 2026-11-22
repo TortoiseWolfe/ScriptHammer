@@ -16,7 +16,11 @@ import {
   type BandTracks,
   type BandWeights,
 } from '@/lib/band/ranking';
-import { PRIVACY_LINE } from '@/lib/band/vote';
+import {
+  ALBUM_VOTE_LINE,
+  BASE44_VOTE_URL,
+  PRIVACY_LINE,
+} from '@/lib/band/vote';
 import { SHOW_CHANNEL_URL } from '@/lib/band/show';
 import BandSongVote from './BandSongVote';
 import BandGauges, { BandGaugeDefs } from '../BandGauges';
@@ -279,6 +283,22 @@ export default function BandSongs({
         The most liked songs are at the top. Every song here was made with an AI
         music model. Counts as of{' '}
         <span data-testid="counts-as-of">{dayLabel(ranking.asOf)}</span>.
+      </p>
+      <p
+        className="!mt-0 !mb-2 max-w-[68ch] text-lg leading-[1.65]"
+        data-testid="album-vote-line"
+      >
+        {ALBUM_VOTE_LINE}{' '}
+        <a
+          href={BASE44_VOTE_URL}
+          rel="noopener noreferrer"
+          className={LINK}
+          data-testid="base44-vote-link"
+        >
+          Vote for the band&apos;s game on Base44 Launchpad
+        </a>
+        , where players pick their favorites in the Base44 x Nitro Web Game
+        Contest.
       </p>
       <p className="!mt-0 !mb-6 max-w-[68ch] text-lg leading-[1.65]">
         {PRIVACY_LINE}

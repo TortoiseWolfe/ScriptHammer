@@ -22,6 +22,12 @@ export interface VoteFlag {
 
 export const VOTE_KEY_PREFIX = 'band-site-vote:';
 
+/** Where the Base44 x Nitro Web Game Contest community vote runs. */
+export const BASE44_VOTE_URL = 'https://base44.com/launchpad';
+
+export const ALBUM_VOTE_LINE =
+  "Your up and down votes help choose the sound of the band's game album.";
+
 export const PRIVACY_LINE =
   "Votes here are anonymous. We don't ask who you are, set no cookies and keep no address. Your browser remembers your own vote on your own device only.";
 
