@@ -46,6 +46,26 @@ describe('deploy.yml refreshes the band ranking', () => {
     );
   });
 
+  it('brings the band files in first, and only when the script has arrived', () => {
+    // The band is all rights reserved and lives in a private repository. The refresh script ships
+    // with it, so the overlay step must precede the refresh step, and the refresh step must skip
+    // itself when the script is absent (a fork or a template has no band and no key).
+    const overlay = step('Bring in the house band');
+    assert.match(overlay.text, /bash scripts\/ci\/band-overlay\.sh/);
+    assert.match(
+      overlay.text,
+      /BAND_DEPLOY_KEY: \$\{\{ secrets\.BAND_DEPLOY_KEY \}\}/
+    );
+    assert.ok(
+      overlay.start < refresh.start,
+      'the overlay step must come before the refresh step'
+    );
+    assert.match(
+      refresh.text,
+      /if: hashFiles\('scripts\/ci\/refresh-band-ranking\.mjs'\) != ''/
+    );
+  });
+
   it('gives the refresh step the project URL and the public anon key', () => {
     assert.match(
       refresh.text,

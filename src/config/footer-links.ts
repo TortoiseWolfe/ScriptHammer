@@ -20,3 +20,18 @@ export const FOOTER_LINKS = [
     label: 'ScriptHammer', // rebrand:keep
   },
 ] as const;
+
+/**
+ * Where a visitor can get this site's source code. ScriptHammer is AGPL-3.0,
+ * and section 13 says users who talk to a modified copy over a network must be
+ * offered its source, so both footers carry this link.
+ *
+ * Deliberately NOT in FOOTER_LINKS: that array is destructured by position in
+ * Footer.tsx, and it models brand links, not a licence duty. A fork that
+ * changes the code points this at its own repository.
+ */
+export const SOURCE_LINK = {
+  href: 'https://github.com/TortoiseWolfe/ScriptHammer', // rebrand:keep
+  label: 'Source code (AGPL-3.0)',
+  shortLabel: 'Source',
+} as const;

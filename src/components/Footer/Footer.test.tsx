@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { Footer } from './Footer';
-import { FOOTER_LINKS } from '@/config/footer-links';
+import { FOOTER_LINKS, SOURCE_LINK } from '@/config/footer-links';
 
 describe('Footer', () => {
   it('renders a contentinfo landmark', () => {
@@ -26,6 +26,14 @@ describe('Footer', () => {
       const anchor = screen.getByRole('link', { name: link.label });
       expect(anchor).toHaveAttribute('href', link.href);
     }
+  });
+
+  it('offers the source code, because the licence is AGPL-3.0 (section 13)', () => {
+    render(<Footer />);
+    const anchor = screen.getByRole('link', { name: SOURCE_LINK.label });
+    expect(anchor).toHaveAttribute('href', SOURCE_LINK.href);
+    expect(anchor).toHaveAttribute('target', '_blank');
+    expect(anchor.getAttribute('rel') ?? '').toMatch(/noopener/);
   });
 
   it('opens external links safely', () => {
