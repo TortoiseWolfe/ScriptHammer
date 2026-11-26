@@ -33,4 +33,12 @@ if [ ! -d "$work/band/overlay" ]; then
 fi
 
 cp -a "$work/band/overlay/." .
+
+# The blog index (src/lib/blog/blog-data.json) is tracked and built from public/blog, and this
+# public repository carries no band post, so the index has no entry for it. Rebuild the index when
+# the overlay brought a post in, or the band's blog page is never generated and answers 404.
+# The generator is deterministic (stable ids), so the other posts come out as committed.
+if [ -d "$work/band/overlay/public/blog" ]; then
+  node scripts/generate-blog-data.js
+fi
 echo "::notice::House band files copied in from $repo@$(git -C "$work/band" rev-parse --short HEAD)"
