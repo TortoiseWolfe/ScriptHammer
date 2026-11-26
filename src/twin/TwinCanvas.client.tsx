@@ -42,8 +42,11 @@ import {
   type BikeView,
 } from '@/stage/embodiedWalk';
 import TwinWorld from '@/world/TwinWorld';
-import BandStage from '@/world/BandStage';
-import { hasStage } from '@/world/bandStage/placement';
+import {
+  BandStage,
+  BandStageControls,
+  hasStage,
+} from '@/extensions/house-band';
 import Trolley from '@/agents/trolley';
 import Bike from '@/agents/bike';
 import PlayerCharacter from '@/agents/playerCharacter';
@@ -52,7 +55,6 @@ import Hud, { HudCaption, HudLink, HudOption, HudSlider } from '@/stage/Hud';
 import PlacementEditor from './PlacementEditor';
 import SelectedBuildingCard from './SelectedBuildingCard';
 import LocationHud from './LocationHud';
-import BandStageControls from '@/components/molecular/BandStageControls';
 import WarehouseGizmo from './WarehouseGizmo';
 import { useWarehouseEditor } from './useWarehouseEditor';
 import type {

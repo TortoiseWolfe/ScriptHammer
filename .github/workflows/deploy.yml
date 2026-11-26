@@ -68,11 +68,22 @@ jobs:
           NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION: ${{ vars.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }}
           NEXT_PUBLIC_PAGESPEED_API_KEY: ${{ secrets.NEXT_PUBLIC_PAGESPEED_API_KEY }}
 
+      # The house band is all rights reserved and lives in a private repository, so this public
+      # repo carries none of it. A read-only deploy key copies its files over the checkout here, and
+      # without the secret (a fork, a template) the step does nothing and the site builds with no
+      # band. It must run before the ranking refresh and the build below.
+      - name: Bring in the house band
+        run: bash scripts/ci/band-overlay.sh
+        env:
+          BAND_DEPLOY_KEY: ${{ secrets.BAND_DEPLOY_KEY }}
+
       # (#1527) Bring the votes cast on /band into the ranking. It rewrites only the `site`
       # counts in this checkout's band-ranking.json (nothing is committed) and never fails the
       # deploy. It reads the totals with the public anon key through the read-only database
       # function get_band_vote_totals, so no service role key is involved anywhere in this file.
       - name: Refresh band ranking from site votes
+        # The script ships with the band files, so it exists only after the overlay step above.
+        if: hashFiles('scripts/ci/refresh-band-ranking.mjs') != ''
         run: node scripts/ci/refresh-band-ranking.mjs
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}

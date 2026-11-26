@@ -213,7 +213,7 @@ stable tooling, rather than risking a partial rewrite. Same-identity reruns are
 still explicit no-ops.
 
 **Removing the attribution is a one-line edit and you are welcome to make it.**
-It is MIT. The default is "kept" so that losing it is a decision rather than an
+It is a courtesy, not a licence term. The default is "kept" so that losing it is a decision rather than an
 accident.
 
 ### Exit Codes

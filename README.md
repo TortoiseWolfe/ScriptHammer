@@ -328,4 +328,14 @@ Read its "Current Open Issues" section for where things actually stand. Do not t
 
 ## License
 
-MIT. See [LICENSE](./LICENSE).
+**AGPL-3.0.** See [LICENSE](./LICENSE). Copyright 2026 Jonathan Pohlner.
+
+- **Use it, change it, host it.** If you run a changed copy as a website, the AGPL requires you to offer your visitors
+  the source of that copy. The footer's source link is how this site does it.
+- **A closed licence is possible.** If you need one for a client project, ask: the copyright holder can license the same
+  code under separate terms by written agreement.
+- **The house band is not included.** Its music, art, names and members are all rights reserved and live in a private
+  repository, so a repository made from this template carries none of them.
+- **Earlier copies keep their terms.** Versions before this change were released under the MIT licence, and the band's
+  files were offered under CC BY-SA 4.0. Copies taken under those terms stay under them.
+- **Vendored code keeps its own licence.** The game toolkit under `src/lib/cod` is MIT, as its own LICENSE says.
