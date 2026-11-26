@@ -47,6 +47,7 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({
     selectedProvider,
     isProcessing,
     error,
+    notice,
     queuedCount,
     hasConsent,
     consentReady,
@@ -194,6 +195,13 @@ export const PaymentButton: React.FC<PaymentButtonProps> = ({
           >
             Dismiss
           </button>
+        </div>
+      )}
+
+      {/* PayPal is holding the payment (#1349): information, not an error */}
+      {notice && (
+        <div role="status" className="alert alert-info">
+          <span>{notice}</span>
         </div>
       )}
 

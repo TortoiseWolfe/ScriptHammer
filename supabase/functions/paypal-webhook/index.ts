@@ -131,6 +131,10 @@ serve(async (req) => {
             webhookEvent.id
           );
           break;
+        case 'PAYMENT.CAPTURE.DENIED':
+        case 'PAYMENT.CAPTURE.DECLINED':
+          processResult = await handleCaptureDenied(supabase, event);
+          break;
         case 'BILLING.SUBSCRIPTION.CREATED':
         case 'BILLING.SUBSCRIPTION.ACTIVATED':
         case 'BILLING.SUBSCRIPTION.UPDATED':
@@ -422,6 +426,46 @@ async function handlePaymentCompleted(
     provider: 'paypal',
   });
   return { handled: true, related_payment_id: inserted.id };
+}
+
+/**
+ * A capture PayPal held (recorded `pending`, #1349) was denied: the buyer was not charged. Settle the
+ * order's row to `failed`, which lets the buyer pay again.
+ *
+ * Only a row that is still `pending`, in one compare-and-swap. A `succeeded` row (a second order's
+ * capture, or this one completed first) is never taken back by an event about a different outcome,
+ * and a replay finds nothing left to change, so the event is replay-safe. With no order id there is
+ * no way to say which row the event is about, so nothing is written.
+ */
+async function handleCaptureDenied(
+  supabase: any,
+  event: any
+): Promise<WebhookHandlerResult> {
+  const resource = event.resource;
+  const intentId = resource.custom_id || resource.invoice_id;
+  if (!isOurIntentRef(intentId)) {
+    return { handled: false, reason: 'not_our_intent' };
+  }
+  const orderId: string | undefined =
+    resource.supplementary_data?.related_ids?.order_id;
+  if (!orderId) return { handled: false, reason: 'no_order_id' };
+
+  const { data: updated, error } = await supabase
+    .from('payment_results')
+    .update({
+      status: 'failed',
+      webhook_verified: true,
+      verification_method: 'webhook',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('intent_id', intentId)
+    .eq('provider', 'paypal')
+    .eq('transaction_id', orderId)
+    .eq('status', 'pending')
+    .select('id');
+  if (error) throw error;
+  if (!updated?.length) return { handled: false, reason: 'nothing_pending' };
+  return { handled: true, related_payment_id: updated[0].id };
 }
 
 async function handleSubscriptionEvent(

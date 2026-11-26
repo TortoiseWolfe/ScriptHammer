@@ -47,7 +47,12 @@ import { handleCors, jsonResponse } from '../_shared/cors.ts';
 import { getAuthenticatedUserId, UnauthorizedError } from '../_shared/auth.ts';
 import { getPayPalAccessToken } from '../_shared/paypal.ts';
 import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno';
-import { chainIntentIds, gateOnChainPaid } from '../_shared/payment-chain.ts';
+import {
+  chainIntentIds,
+  gateOnChainPaid,
+  isHeldCapture,
+  recordedCaptureStatus,
+} from '../_shared/payment-chain.ts';
 import {
   retirePriorSessions,
   sessionDepsFor,
@@ -119,7 +124,9 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { data: result, error: fetchError } = await supabase
       .from('payment_results')
-      .select('id, intent_id, status, payment_intents!inner(template_user_id)')
+      .select(
+        'id, intent_id, status, verification_method, updated_at, payment_intents!inner(template_user_id)'
+      )
       .eq('transaction_id', orderId)
       .single();
 
@@ -147,6 +154,13 @@ serve(async (req) => {
     // capture again, and before the chain check below, which would call it "already paid".
     if (result.status === 'succeeded') {
       return jsonResponse(req, { status: 'COMPLETED', already_captured: true });
+    }
+
+    // ALREADY CAPTURED AND ON HOLD (#1349): PayPal answered PENDING for this order earlier. Asking
+    // it to capture again would only be refused (ORDER_ALREADY_CAPTURED) and read as a failure, so
+    // say it is still processing. The webhook settles the row either way.
+    if (isHeldCapture(result)) {
+      return jsonResponse(req, { status: 'PENDING', already_captured: true });
     }
 
     // NOT IF ANOTHER ATTEMPT IN THE CHAIN WAS PAID (#1342). Approving an order moves no money;
@@ -231,7 +245,7 @@ serve(async (req) => {
     const { error: recordError } = await supabase
       .from('payment_results')
       .update({
-        status: status === 'COMPLETED' ? 'succeeded' : 'failed',
+        status: recordedCaptureStatus(status),
         verification_method: 'redirect',
         updated_at: new Date().toISOString(),
       })
@@ -267,9 +281,9 @@ serve(async (req) => {
     // opened on it is not in the list read before. A failed walk falls back to that list, inside
     // its own try, because a throw here would answer 500 for a payment PayPal has taken.
     //
-    // Only on COMPLETED. Any other status is recorded as failed above, so by our own record the
-    // purchase is unpaid and a Stripe session is still a way to pay it. A PENDING capture, which
-    // PayPal may complete later, is the gap in that: #1349.
+    // Only on COMPLETED. A PENDING capture is recorded as pending, not failed (#1349), and the paid
+    // gate refuses to open a Stripe session or another order beside it, so nothing new can be
+    // started after it. Any other status is recorded as failed, and a session is then a way to pay.
     if (status === 'COMPLETED') {
       let sweepIds = chainIds;
       try {

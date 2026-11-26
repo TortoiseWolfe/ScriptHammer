@@ -26,6 +26,7 @@ vi.mock('@/hooks/usePaymentButton', () => ({
     selectedProvider: null,
     isProcessing: false,
     error: null,
+    notice: null,
     queuedCount: 0,
     hasConsent: true,
     consentReady: true,
@@ -148,6 +149,7 @@ describe('PaymentButton', () => {
       selectedProvider: 'stripe',
       isProcessing: false,
       error: null,
+      notice: null,
       queuedCount: 0,
       hasConsent: true,
       consentReady: true,
@@ -170,6 +172,7 @@ describe('PaymentButton', () => {
       selectedProvider: 'stripe',
       isProcessing: false,
       error: testError,
+      notice: null,
       queuedCount: 0,
       hasConsent: true,
       consentReady: true,
@@ -183,12 +186,37 @@ describe('PaymentButton', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Payment failed');
   });
 
+  it('shows a held PayPal payment as information, not as an error (#1349)', async () => {
+    const { usePaymentButton } = await import('@/hooks/usePaymentButton');
+    vi.mocked(usePaymentButton).mockReturnValue({
+      selectedProvider: 'paypal',
+      isProcessing: false,
+      error: null,
+      notice: 'Your PayPal payment is still processing.',
+      queuedCount: 0,
+      hasConsent: true,
+      consentReady: true,
+      selectProvider: vi.fn(),
+      initiatePayment: vi.fn(),
+      mountPayPalButtons: vi.fn(),
+      clearError: vi.fn(),
+    });
+
+    render(<PaymentButton {...defaultProps} />);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your PayPal payment is still processing.'
+    );
+    // A failure alert is what made buyers pay again.
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('displays offline queue notice when items queued', async () => {
     const { usePaymentButton } = await import('@/hooks/usePaymentButton');
     vi.mocked(usePaymentButton).mockReturnValue({
       selectedProvider: null,
       isProcessing: false,
       error: null,
+      notice: null,
       queuedCount: 3,
       hasConsent: true,
       consentReady: true,
@@ -210,6 +238,7 @@ describe('PaymentButton', () => {
       selectedProvider: null,
       isProcessing: false,
       error: null,
+      notice: null,
       queuedCount: 0,
       hasConsent: false,
       consentReady: true,
@@ -231,6 +260,7 @@ describe('PaymentButton', () => {
       selectedProvider: 'stripe',
       isProcessing: true,
       error: null,
+      notice: null,
       queuedCount: 0,
       hasConsent: true,
       consentReady: true,

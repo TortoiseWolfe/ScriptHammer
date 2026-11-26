@@ -112,9 +112,22 @@ export async function createPayPalOrder(
 /**
  * Approve PayPal order (after user approval)
  */
+/**
+ * The sentence for a capture PayPal is holding (#1349). The same one create-stripe-checkout and the
+ * other order functions refuse with (PAYMENT_PROCESSING_MESSAGE in _shared/payment-chain.ts), so a
+ * buyer reads one wording whether they see it on this page or after trying another way to pay.
+ */
+export const PAYPAL_PROCESSING_MESSAGE =
+  'Your PayPal payment is still processing. Please wait for it to finish before paying another way.';
+
+/**
+ * `pending` means PayPal accepted the capture but is holding it (an eCheck, or a review) and may
+ * still complete it. That is neither paid nor failed: callers must not send the buyer to a
+ * success page, and must not show a failure, because a buyer who reads one pays again.
+ */
 export async function approvePayPalOrder(
   orderId: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; pending?: boolean; error?: string }> {
   try {
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/capture-paypal-order`,
@@ -137,6 +150,12 @@ export async function approvePayPalOrder(
 
     if (status === 'COMPLETED') {
       return { success: true };
+    } else if (status === 'PENDING') {
+      return {
+        success: false,
+        pending: true,
+        error: PAYPAL_PROCESSING_MESSAGE,
+      };
     } else {
       return { success: false, error: `Order status: ${status}` };
     }

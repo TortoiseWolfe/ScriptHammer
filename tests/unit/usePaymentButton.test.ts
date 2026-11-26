@@ -9,7 +9,11 @@ import {
   createCheckoutSession,
   createSubscriptionCheckout,
 } from '@/lib/payments/stripe';
-import { renderPayPalButtons, createPayPalOrder } from '@/lib/payments/paypal';
+import {
+  renderPayPalButtons,
+  createPayPalOrder,
+  approvePayPalOrder,
+} from '@/lib/payments/paypal';
 import { createPayPalSubscription } from '@/lib/payments/paypal';
 
 // Mock dependencies
@@ -252,6 +256,67 @@ describe('usePaymentButton', () => {
       })
     );
     expect(result.current.error).toBeNull();
+  });
+
+  // #1349. PayPal can answer a capture PENDING and complete it days later. Reading that as a
+  // failure sent the buyer to a card, and then both charged.
+  describe('a PayPal capture that comes back PENDING (#1349)', () => {
+    async function approve(result: {
+      success: boolean;
+      pending?: boolean;
+      error?: string;
+    }) {
+      vi.mocked(approvePayPalOrder).mockResolvedValueOnce(result);
+      const onSuccess = vi.fn();
+      const onError = vi.fn();
+      const hook = renderHook(() =>
+        usePaymentButton({ ...defaultOptions, onSuccess, onError })
+      );
+      await act(async () => {
+        await hook.result.current.mountPayPalButtons('container-id');
+      });
+      const call = vi.mocked(renderPayPalButtons).mock.calls[0][1] as {
+        onApprove: (d: { orderID: string }) => Promise<void>;
+      };
+      await act(async () => {
+        await call.onApprove({ orderID: 'order-1' });
+      });
+      return { hook, onSuccess, onError };
+    }
+
+    it('says it is processing: a notice, no error, and no trip to the success page', async () => {
+      const { hook, onSuccess, onError } = await approve({
+        success: false,
+        pending: true,
+        error: 'Your PayPal payment is still processing.',
+      });
+
+      expect(hook.result.current.notice).toBe(
+        'Your PayPal payment is still processing.'
+      );
+      expect(hook.result.current.error).toBeNull();
+      expect(onError).not.toHaveBeenCalled();
+      expect(onSuccess).not.toHaveBeenCalled();
+    });
+
+    it('CONTROL: a completed capture still reports success, with no notice', async () => {
+      const { hook, onSuccess, onError } = await approve({ success: true });
+
+      expect(onSuccess).toHaveBeenCalledTimes(1);
+      expect(onError).not.toHaveBeenCalled();
+      expect(hook.result.current.notice).toBeNull();
+    });
+
+    it('CONTROL: a real failure is still an error, not a notice', async () => {
+      const { hook, onError } = await approve({
+        success: false,
+        error: 'Order status: DECLINED',
+      });
+
+      expect(hook.result.current.error?.message).toBe('Order status: DECLINED');
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect(hook.result.current.notice).toBeNull();
+    });
   });
 
   // #1337. "Use a different payment method" is a second attempt at the SAME purchase.
