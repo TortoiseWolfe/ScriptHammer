@@ -8,6 +8,7 @@ import { THEME_SONG, HOOK, DUET_SONGS, DUET_SOURCES } from '@/lib/band/songs';
 import { SHOW_DESCRIPTION } from '@/lib/band/show';
 import { STAGE_HREF, STAGE_LINK_LABEL } from '@/lib/band/stage';
 import BandShow from '@/components/molecular/BandShow';
+import BandSchedule from '@/components/molecular/BandSchedule';
 import BandSongs from '@/components/molecular/BandSongs';
 import BandJingles from '@/components/molecular/BandJingles';
 import BandRoster from '@/components/molecular/BandRoster';
@@ -106,6 +107,8 @@ export default function BandPage() {
         </header>
 
         <BandShow className="mt-14 md:mt-20" />
+
+        <BandSchedule className="mt-14 md:mt-20" />
 
         <BandSongs className="mt-14 md:mt-20" />
 
