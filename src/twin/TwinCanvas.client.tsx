@@ -46,7 +46,7 @@ import {
   BandStage,
   BandStageControls,
   hasStage,
-} from '@/extensions/house-band';
+} from '@/extensions/house-band-stage';
 import Trolley from '@/agents/trolley';
 import Bike from '@/agents/bike';
 import PlayerCharacter from '@/agents/playerCharacter';

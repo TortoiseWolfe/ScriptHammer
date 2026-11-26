@@ -7,27 +7,12 @@
  * over this one, which switches the band on. A repository made from the template keeps this
  * version, so it builds and runs with no band at all.
  *
- * Props are deliberately loose here. The real components declare their own, and the call sites
- * pass them either way.
+ * Nothing 3D belongs in this file: pages with no 3D read it. The stage lives in
+ * house-band-stage.tsx, which only the twin canvas imports.
  */
-
-type LooseProps = Record<string, unknown>;
 
 /** True only in a build that has the band files copied over. */
 export const HOUSE_BAND_PRESENT = false;
-
-/** Whether this twin has a band stage. */
-export function hasStage(_slug: string): boolean {
-  return false;
-}
-
-export function BandStage(_props: LooseProps): null {
-  return null;
-}
-
-export function BandStageControls(_props: LooseProps): null {
-  return null;
-}
 
 /** The credits page section about the band's music and art. */
 export function HouseBandCredits(): null {
