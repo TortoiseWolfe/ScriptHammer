@@ -38,14 +38,21 @@ const ESC = String.fromCharCode(27);
  * test passed while exercising a branch that never fires in CI. `shape` lets each case say
  * which form it means; the default is the one production actually produces.
  */
-const spec = (title, line, status, error, shape = 'errors') => ({
+const spec = (
+  title,
+  line,
+  status,
+  error,
+  shape = 'errors',
+  projectName = 'chromium-gen'
+) => ({
   title,
   file: 'tests/e2e/commerce/pricing-links.spec.ts',
   line,
   tests: [
     {
       status,
-      projectName: 'chromium-gen',
+      projectName,
       results: [
         error
           ? shape === 'errors'
@@ -215,6 +222,47 @@ describe('the E2E test-report verdict (#1069)', () => {
       /::error file=tests\/e2e\/commerce\/pricing-links\.spec\.ts,line=60::/
     );
     assert.match(r.stderr, /allows none/);
+  });
+
+  it('allows a registered firefox or webkit skip, but still lists it (full-browser runs)', () => {
+    // The weekly cron, a `full-e2e` PR and a full dispatch run firefox and webkit too, and
+    // those carry registered skips (runtime WebGL test.skip in the twins specs). The local
+    // lane allows them in full mode; the hosted verdict must not be stricter than that.
+    const r = run(
+      report(
+        [
+          spec('passes fine', 12, 'expected'),
+          spec('webgl twin', 60, 'skipped', undefined, 'errors', 'webkit-gen'),
+          spec('webgl twin', 60, 'skipped', undefined, 'errors', 'firefox-gen'),
+        ],
+        { expected: 1, skipped: 2 }
+      )
+    );
+    assert.strictEqual(r.code, 0, 'firefox/webkit skips must not fail the job');
+    assert.match(r.summary, /webgl twin/);
+    assert.match(r.summary, /webkit-gen/);
+  });
+
+  it('still fails a chromium skip when firefox and webkit skips sit beside it', () => {
+    // The control for the test above: the carve-out must be per browser, not a blanket pass.
+    const r = run(
+      report(
+        [
+          spec('webgl twin', 60, 'skipped', undefined, 'errors', 'webkit-gen'),
+          spec(
+            'quietly skipped',
+            61,
+            'skipped',
+            undefined,
+            'errors',
+            'chromium-msg'
+          ),
+        ],
+        { expected: 0, skipped: 2 }
+      )
+    );
+    assert.strictEqual(r.code, 1);
+    assert.match(r.stderr, /1 chromium test\(s\) skipped/);
   });
 
   it('does not count an expected failure as a failure', () => {

@@ -167,8 +167,15 @@ export function main(argv = process.argv) {
     );
   }
 
+  const blockingSkips = acc.skippedWhere.filter((f) =>
+    /^chromium/.test(f.project)
+  );
   const icon =
-    acc.failed.length || acc.skipped ? '❌' : acc.flaky.length ? '⚠️' : '✅';
+    acc.failed.length || blockingSkips.length
+      ? '❌'
+      : acc.flaky.length
+        ? '⚠️'
+        : '✅';
   summary(
     `## ${icon} E2E result — ${acc.failed.length} failed, ${acc.flaky.length} flaky, ` +
       `${acc.passed} passed, ${acc.skipped} skipped`
@@ -190,7 +197,10 @@ export function main(argv = process.argv) {
   }
 
   if (acc.skipped) {
-    summary(`### Skipped (${acc.skipped}) — the hosted lane allows none`);
+    summary(
+      `### Skipped (${acc.skipped}) — chromium allows none (${blockingSkips.length} here); ` +
+        'firefox and webkit may carry registered skips'
+    );
     summary('');
     for (const f of acc.skippedWhere)
       summary(`- ${f.title} — \`${f.file}:${f.line}\` (${f.project})`);
@@ -237,15 +247,21 @@ export function main(argv = process.argv) {
   // leaves them out with `--grep-invert='@local-only'`, so they are never listed here. They
   // still run, and are counted, on the required local lane. Anything that skips on this lane
   // now is new, and it is a failure.
-  if (acc.skipped) {
-    for (const f of acc.skippedWhere) {
+  //
+  // CHROMIUM ONLY. The weekly cron, a `full-e2e` PR and a full dispatch also run firefox and
+  // webkit, which legitimately carry registered skips (the runtime WebGL `test.skip` calls in
+  // twins.spec.ts and twin-walk-visible.spec.ts). The required local lane draws the same line
+  // in e2e-local.yml: zero skips in chromium mode, registered firefox/webkit skips allowed.
+  // Those skips are still listed in the summary; they just do not fail the job.
+  if (blockingSkips.length) {
+    for (const f of blockingSkips) {
       console.error(
         `::error file=${f.file},line=${f.line}::[e2e-verdict] skipped on the hosted lane: ` +
           `${f.title} (${f.project})`
       );
     }
     console.error(
-      `::error::[e2e-verdict] ${acc.skipped} test(s) skipped on the hosted lane, which ` +
+      `::error::[e2e-verdict] ${blockingSkips.length} chromium test(s) skipped on the hosted lane, which ` +
         'allows none. A test that cannot run on the hosted backend is tagged `@local-only` ' +
         "and excluded with --grep-invert='@local-only' in e2e.yml, where the guard test " +
         '(hosted-tag-lanes.test.js) pins how many there are (#1510).'
