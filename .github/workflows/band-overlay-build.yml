@@ -1,0 +1,101 @@
+name: Band overlay build
+
+# Build the site the way the deploy does: WITH the house band copied in (#1537).
+#
+# THE GAP. The band is all rights reserved and lives in a private repository. The deploy copies it
+# over the checkout (scripts/ci/band-overlay.sh) just before the build, but every other workflow
+# builds the public tree with no band at all. So a break that only exists once the band is in
+# place is invisible to a pull request and shows up on main, in the deploy. It happened twice on
+# 26 Nov 2026: the three.js budget check failed after #1533 (fixed in #1535), and the next deploy
+# left the band's blog post at 404 because the blog index had no entry for it (fixed in #1536).
+# CI was green on all three pull requests each time.
+#
+# WHAT THIS RUNS. The overlay, then the production build, the chunk-parse check and the three.js
+# first-load budget: the same steps, in the same order, as deploy.yml. It does not deploy, and it
+# does not read the vote totals (that step never gates, and needs the database).
+#
+# WHO IT RUNS FOR. Pull requests from this repository only. A fork's pull request, and Dependabot's,
+# cannot read BAND_DEPLOY_KEY, and a job that quietly built without the band would be a green check
+# that proves nothing, so those pull requests skip the job instead. The first step then FAILS when
+# the key is missing, for the same reason: a same-repo pull request that cannot reach the band must
+# say so, not pass.
+#
+# WHY IT HAS NO `paths:` FILTER. An overlay-only break can come from any change in the public tree,
+# and the two that happened were in an extension seam and a blog script. It is not a required
+# check, so it is free to be skipped for forks. Making it required would leave every fork's pull
+# request waiting on a check that never reports, so that needs an always-reporting aggregate job
+# first, the way the other required checks have one.
+#
+# WHY pull_request AND NOT pull_request_target. The job reads a deploy key, so it must never run a
+# pull request's code with the base repository's privileges on behalf of a stranger. With
+# `pull_request` a same-repo branch gets the key, and a fork gets nothing. Anyone who can push a
+# branch here could already change this file; the key is read-only and covers one private repo.
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# One run per pull request; a newer push supersedes the older one (same shape as ci.yml, #1119).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build-with-band:
+    name: Build with band overlay
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    # Cap: the deploy's build job is observed at ~3 min; a stuck run is worse than a failed one (#1119).
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.16.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Require the band deploy key
+        run: |
+          if [ -z "$BAND_DEPLOY_KEY" ]; then
+            echo "::error::BAND_DEPLOY_KEY is not available to this pull request, so the band overlay cannot be built. A check that builds without the band would pass for the wrong reason."
+            exit 1
+          fi
+        env:
+          BAND_DEPLOY_KEY: ${{ secrets.BAND_DEPLOY_KEY }}
+
+      - name: Bring in the house band
+        run: bash scripts/ci/band-overlay.sh
+        env:
+          BAND_DEPLOY_KEY: ${{ secrets.BAND_DEPLOY_KEY }}
+
+      # The overlay script exits 0 and prints a notice when it has nothing to do, so check for
+      # the band's own page: without it, the build below would prove nothing about the overlay.
+      - name: Confirm the band is in place
+        run: test -f src/app/band/page.tsx
+
+      - name: Build Next.js app
+        run: pnpm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          # Same variable the deploy sets, so the vote buttons are built the way production has them.
+          NEXT_PUBLIC_BAND_VOTE_OPEN: ${{ vars.NEXT_PUBLIC_BAND_VOTE_OPEN }}
+
+      - name: Verify chunks parse in a browser (#294)
+        run: node scripts/check-chunks-parse.mjs
+
+      - name: Verify three.js is off non-3D routes (#291)
+        run: node scripts/check-first-load-budget.mjs
