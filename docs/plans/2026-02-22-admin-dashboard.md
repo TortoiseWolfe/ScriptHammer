@@ -1499,7 +1499,8 @@ describe('Admin Access Contract Tests', () => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     await supabase.auth.signInWithPassword({
       email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
+      password:
+        process.env.TEST_USER_PRIMARY_PASSWORD || '$TEST_USER_PRIMARY_PASSWORD',
     });
     const { data } = await supabase.rpc('admin_payment_stats');
     expect(data).toEqual({});
@@ -1509,7 +1510,8 @@ describe('Admin Access Contract Tests', () => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     await supabase.auth.signInWithPassword({
       email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
+      password:
+        process.env.TEST_USER_PRIMARY_PASSWORD || '$TEST_USER_PRIMARY_PASSWORD',
     });
     const { data } = await supabase.rpc('admin_auth_stats');
     expect(data).toEqual({});
@@ -1519,7 +1521,8 @@ describe('Admin Access Contract Tests', () => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     await supabase.auth.signInWithPassword({
       email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
+      password:
+        process.env.TEST_USER_PRIMARY_PASSWORD || '$TEST_USER_PRIMARY_PASSWORD',
     });
     const { data } = await supabase.rpc('admin_user_stats');
     expect(data).toEqual({});
@@ -1529,7 +1532,8 @@ describe('Admin Access Contract Tests', () => {
     const supabase = createClient(supabaseUrl, supabaseKey);
     await supabase.auth.signInWithPassword({
       email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
+      password:
+        process.env.TEST_USER_PRIMARY_PASSWORD || '$TEST_USER_PRIMARY_PASSWORD',
     });
     const { data } = await supabase.rpc('admin_messaging_stats');
     expect(data).toEqual({});

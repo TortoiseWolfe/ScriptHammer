@@ -13,6 +13,7 @@ Thank you for your interest in contributing to ScriptHammer. This guide will hel
 - [Testing Requirements](#testing-requirements)
 - [Submitting Changes](#submitting-changes)
 - [Style Guide](#style-guide)
+- [License and contributor agreement](#license)
 
 ---
 
@@ -596,7 +597,22 @@ Two issue templates exist — `.github/ISSUE_TEMPLATE/accessibility.md` and
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the same license as the project.
+ScriptHammer's code is licensed under the GNU Affero General Public License v3.0
+(see [LICENSE](LICENSE)). The band (its music, art, names and members) is not part of
+the code licence and lives in a private repository, all rights reserved.
+
+### Contributor agreement
+
+Before an outside pull request can be merged, its author needs to agree in writing
+that the project may distribute their contribution under AGPL-3.0 **and** under other
+licences, for example a commercial licence for a client who cannot use AGPL code.
+Without that agreement, a contribution would lock those client licences out, because
+the project could no longer relicense a file you wrote.
+
+How it works: open your pull request as usual. If you are not the repository owner, a
+maintainer will reply with the short agreement text. Reply "I agree" from the same
+GitHub account, and the pull request can go ahead. You keep the copyright in your work.
+Changes by the repository owner and by people working for them need no extra step.
 
 ---
 

@@ -326,10 +326,10 @@ async function main() {
   console.log('Test credentials:');
   console.log(`  Admin:    admin@scripthammer.com (ScriptHammer)`);
   console.log(
-    `  Primary:  test@example.com / ${process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!'}`
+    `  Primary:  test@example.com / (password: TEST_USER_PRIMARY_PASSWORD in your .env)`
   );
   console.log(
-    `  Tertiary: test-user-b@example.com / ${process.env.TEST_USER_TERTIARY_PASSWORD || 'TestPassword456!'}`
+    `  Tertiary: test-user-b@example.com / (password: TEST_USER_TERTIARY_PASSWORD in your .env)`
   );
   console.log('');
 }

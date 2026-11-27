@@ -24,7 +24,7 @@ This document provides actionable implementation tasks for adding a third test u
 
 - [ ] **T001** [US2] Add tertiary test user credentials to `.env` file
   - **File**: `.env`
-  - **Action**: Add `TEST_USER_TERTIARY_EMAIL=test-user-b@example.com` and `TEST_USER_TERTIARY_PASSWORD=TestPassword456!`
+  - **Action**: Add `TEST_USER_TERTIARY_EMAIL=test-user-b@example.com` and `TEST_USER_TERTIARY_PASSWORD=<set in .env>`
   - **Success**: Environment variables exist and are loadable
   - **Ref**: FR-001, Data-Model §Environment Configuration
 
@@ -68,7 +68,7 @@ This document provides actionable implementation tasks for adding a third test u
 
 - [ ] **T005** [US2] Verify third test user can sign in successfully
   - **Action**: Manual verification or simple test script
-  - **Command**: Sign in with test-user-b@example.com / TestPassword456!
+  - **Command**: Sign in with test-user-b@example.com / <set in .env>
   - **Success**: Authentication succeeds, session created
   - **Ref**: FR-001, FR-002, User Story 2 Scenario 3
 
@@ -190,7 +190,7 @@ This document provides actionable implementation tasks for adding a third test u
   - **Action**:
     - Create separate browser context for User B (isolated from User A)
     - Navigate to /sign-in
-    - Fill email (TEST_USER_TERTIARY_EMAIL) and password (TestPassword456!)
+    - Fill email (TEST_USER_TERTIARY_EMAIL) and password (<set in .env>)
     - Click sign-in button
     - Wait for redirect to home page
     - Assert session exists for User B
@@ -431,7 +431,7 @@ This document provides actionable implementation tasks for adding a third test u
 # Run in parallel
 docker compose exec scripthammer sh -c "
   echo 'TEST_USER_TERTIARY_EMAIL=test-user-b@example.com' >> .env &
-  echo 'TEST_USER_TERTIARY_PASSWORD=TestPassword456!' >> .env &
+  echo 'TEST_USER_TERTIARY_PASSWORD=<set in .env>' >> .env &
   # Update .env.example in separate operation
   wait
 "

@@ -9,6 +9,7 @@
  * Uses pre-existing test users from environment variables.
  */
 
+import { requireEnv } from '../../utils/require-env';
 import { test, expect } from '@playwright/test';
 import {
   dismissCookieBanner,
@@ -20,8 +21,7 @@ import { skipIfBackendCaptchaProtected } from '../utils/captcha-guard';
 
 // Use pre-existing test user (must exist in Supabase)
 const testEmail = process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com';
-const testPassword =
-  process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
+const testPassword = requireEnv('TEST_USER_PRIMARY_PASSWORD');
 
 test.describe('Session Persistence E2E', () => {
   // These tests explicitly test sign-in/sign-out flows, so they need

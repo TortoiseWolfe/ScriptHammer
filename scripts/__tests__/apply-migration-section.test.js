@@ -123,6 +123,27 @@ describe('the real migration', () => {
     assert.doesNotMatch(s.sql, /^COMMIT;/m);
   });
 
+  it('cuts the vote totals section: the read-only function, granted to anon only', async () => {
+    const { extractSection } = await import(MODULE);
+    const s = extractSection(sql, 'BAND PAGE VOTE TOTALS FOR THE DEPLOY');
+    assert.match(
+      s.sql,
+      /CREATE OR REPLACE FUNCTION public\.get_band_vote_totals\(\)/
+    );
+    assert.match(
+      s.sql,
+      /REVOKE ALL ON FUNCTION public\.get_band_vote_totals\(\) FROM PUBLIC, anon, authenticated/
+    );
+    assert.match(
+      s.sql,
+      /GRANT EXECUTE ON FUNCTION public\.get_band_vote_totals\(\) TO anon/
+    );
+    // Its comment names cast_band_vote, but the cut must not carry that function's own code.
+    assert.doesNotMatch(s.sql, /FUNCTION public\.cast_band_vote/);
+    assert.doesNotMatch(s.sql, /CREATE TABLE/);
+    assert.doesNotMatch(s.sql, /^COMMIT;/m);
+  });
+
   it('every banner title in the file is found, so a title can be named', async () => {
     const { findBanners } = await import(MODULE);
     const titles = findBanners(sql.split('\n')).map((b) => b.title);
