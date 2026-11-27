@@ -1,20 +1,25 @@
 /**
- * `Conformance` must stay REQUIRABLE — i.e. it must always report (#572 item 6).
+ * `Conformance` must stay REQUIRABLE and must actually RUN on every pull request
+ * (#572 item 6; the path decision was then removed so the check reports a real pass
+ * rather than a skip).
  *
- * WHAT WENT WRONG. `conformance.yml` carried a trigger `paths:` filter, so it reported
- * nothing on an unrelated PR. A required check that never reports is **pending forever**,
- * not skipped, so it could not be required — and on 2026-08-18 it was red on every push
- * from `e0add554` to `007a60de`, six merges, while all three required checks stayed green,
- * because none of them runs `pnpm test:rls`.
+ * WHAT WENT WRONG, TWICE.
+ *   1. `conformance.yml` carried a trigger `paths:` filter, so it reported nothing on an
+ *      unrelated PR. A required check that never reports is **pending forever**, not
+ *      skipped — and on 2026-08-18 it was red on every push from `e0add554` to
+ *      `007a60de`, six merges, while all three required checks stayed green, because none
+ *      of them runs `pnpm test:rls`.
+ *   2. The fix moved the decision into a `changes` job that skipped the suite on an
+ *      unrelated PR. That made the check requirable, but most PRs then showed the suite as
+ *      SKIPPED: a job that did not run, next to a green tick that says nothing about the
+ *      change. The stack is local and ephemeral (public demo keys, no secrets, no real
+ *      mail), so nothing stops it running every time.
  *
- * Nothing routed that anywhere a person looks. It was found only because the owner
- * happened to ask about a failure notification.
- *
- * WHAT THIS PINS. The three properties that together make the workflow requirable:
- *   1. no trigger `paths:` filter, so it always reports;
- *   2. an aggregate job that runs `if: always()`, so it reports even when the suite is
- *      skipped or cancelled;
- *   3. the aggregate does not treat a cancelled suite as a pass.
+ * WHAT THIS PINS.
+ *   1. no trigger `paths:` filter;
+ *   2. no `changes` job and no `if:` on the suite, so it cannot be skipped;
+ *   3. an aggregate job that runs `if: always()` and needs the suite;
+ *   4. the aggregate passes ONLY on `success`: a skipped or cancelled suite is not a pass.
  *
  * WHAT IT CANNOT CHECK: that branch protection actually requires the context. That lives
  * in a GitHub setting, not this repo — `required-checks-documented.test.js` is the check
@@ -29,7 +34,6 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
 const WORKFLOW = path.join(ROOT, '.github', 'workflows', 'conformance.yml');
-const DECIDER = path.join(ROOT, 'scripts', 'ci', 'conformance-changes.mjs');
 
 function workflow() {
   return fs.readFileSync(WORKFLOW, 'utf8');
@@ -44,7 +48,16 @@ function triggerBlock(src) {
   return end === -1 ? rest : rest.slice(0, end);
 }
 
-describe('Conformance can be a required check (#572)', () => {
+/** The text of one top-level job, from its key to the next job. */
+function job(src, name) {
+  const start = src.search(new RegExp(`^ {2}${name}:`, 'm'));
+  assert.ok(start !== -1, `no \`${name}:\` job found`);
+  const rest = src.slice(start + 1);
+  const end = rest.search(/^ {2}[a-z][a-z-]*:/m);
+  return end === -1 ? rest : rest.slice(0, end);
+}
+
+describe('Conformance runs on every PR and can be a required check (#572)', () => {
   it('reads the workflow and finds a real trigger block', () => {
     // Non-vacuity. Every assertion below is over this text; if the parse breaks they all
     // pass against nothing, which is the shape this file exists to prevent.
@@ -60,79 +73,60 @@ describe('Conformance can be a required check (#572)', () => {
       'conformance.yml has a trigger `paths:` filter again. That makes it report ' +
         'NOTHING on an unrelated PR, and a required check that never reports is ' +
         'PENDING FOREVER — so the check cannot be required, which is how Conformance ' +
-        'stayed red across six merges (#572). Filter inside the `changes` job instead.'
+        'stayed red across six merges (#572).'
     );
   });
 
-  it('has an aggregate job that reports even when the suite does not run', () => {
+  it('has no path-deciding job and no `if:` on the suite, so it cannot be skipped', () => {
     const src = workflow();
-    assert.match(
-      src,
-      /^\s{2}result:/m,
-      'no `result:` aggregate job — without one there is no context that always reports'
+    assert.ok(
+      !/^ {2}changes:/m.test(src),
+      'a `changes` job is back. It decides whether the suite runs, and a suite that ' +
+        'does not run shows as SKIPPED — a check that observed nothing. Run on every PR.'
     );
-    const result = src.slice(src.search(/^\s{2}result:/m));
+    assert.ok(
+      !/conformance-changes/.test(src),
+      'the workflow references the retired path decider'
+    );
+    const suite = job(src, 'rls-conformance');
+    assert.ok(
+      !/^ {4}if:/m.test(suite),
+      'the `rls-conformance` job has a job-level `if:`, which is a skip by another name'
+    );
+    assert.ok(
+      !/^ {4}needs:/m.test(suite),
+      'the `rls-conformance` job waits on another job; it should start on its own'
+    );
+  });
+
+  it('has an aggregate job that reports even when the suite did not finish', () => {
+    const result = job(workflow(), 'result');
     assert.match(
       result,
       /if:\s*always\(\)/,
       'the `result` job is not `if: always()`, so it is skipped when the suite is ' +
-        'skipped — and a skipped required check is pending forever'
+        'cancelled — and a skipped required check is pending forever'
     );
     assert.match(
       result,
-      /needs:\s*\[changes,\s*rls-conformance\]/,
-      'the `result` job must depend on both the decider and the suite'
+      /needs:\s*\[rls-conformance\]/,
+      'the `result` job must depend on the suite'
     );
   });
 
-  it('does NOT treat a cancelled suite as a pass', () => {
-    const src = workflow();
-    const result = src.slice(src.search(/^\s{2}result:/m));
+  it('passes ONLY on success: a skipped or cancelled suite is not a pass', () => {
+    const result = job(workflow(), 'result');
     // The whole family of defects here is a signal that reports success without
-    // observing its subject. A cancelled run observed nothing.
+    // observing its subject. A cancelled or skipped run observed nothing.
     assert.ok(
       /success\)\s*echo[^\n]*exit 0/.test(result) &&
         /\*\)\s*echo[^\n]*exit 1/.test(result),
-      'the `result` job must pass ONLY on success and fail on anything else. A ' +
-        'cancelled run observed nothing, and calling that green is the #396 shape.'
-    );
-  });
-
-  it('the decider can say both yes and no', async () => {
-    // A gate that can only reach one answer is not a gate. Exercised through the real
-    // module rather than a reimplementation of its rule.
-    const { needsConformance, CONFORMANCE_PATHS } = await import(
-      `file://${DECIDER}`
-    );
-
-    assert.ok(
-      needsConformance([
-        'supabase/migrations/20251006_complete_monolithic_setup.sql',
-      ]),
-      'a migration change must require conformance'
+      'the `result` job must pass ONLY on success and fail on anything else.'
     );
     assert.ok(
-      needsConformance(['tests/rls/whatever.test.ts']),
-      'an RLS test change must require conformance'
+      !/skipped\)[^\n]*exit 0/.test(result) &&
+        !/= "skipped"[\s\S]{0,80}exit 0/.test(result),
+      'the `result` job reports green on a skipped suite'
     );
-    assert.ok(
-      !needsConformance(['README.md', 'docs/anything.md']),
-      'a docs-only change must NOT require conformance'
-    );
-    assert.ok(CONFORMANCE_PATHS.length > 5, 'the path list looks truncated');
-  });
-
-  it('covers the paths the six-merge outage came through', async () => {
-    const { needsConformance } = await import(`file://${DECIDER}`);
-    // #565 changed a GRANT, which moved a refusal from RLS to the privilege layer. The
-    // old trigger filter did not list `scripts/supabase/` or `supabase/functions/`, so a
-    // change of that shape could skip the only suite that would notice.
-    for (const f of [
-      'scripts/supabase/set-auth-config.ts',
-      'supabase/functions/delete-account/index.ts',
-      'pnpm-lock.yaml',
-    ]) {
-      assert.ok(needsConformance([f]), `${f} must require conformance`);
-    }
   });
 });
