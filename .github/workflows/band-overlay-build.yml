@@ -10,9 +10,10 @@ name: Band overlay build
 # left the band's blog post at 404 because the blog index had no entry for it (fixed in #1536).
 # CI was green on all three pull requests each time.
 #
-# WHAT THIS RUNS. The overlay, then the production build, the chunk-parse check and the three.js
-# first-load budget: the same steps, in the same order, as deploy.yml. It does not deploy, and it
-# does not read the vote totals (that step never gates, and needs the database).
+# WHAT THIS RUNS. The overlay, then the production build, the chunk-parse check, the three.js
+# first-load budget and the canonical check: the same steps, in the same order, as deploy.yml. It
+# does not deploy, and it does not read the vote totals (that step never gates, and needs the
+# database).
 #
 # WHO IT RUNS FOR. Pull requests from this repository only. A fork's pull request, and Dependabot's,
 # cannot read BAND_DEPLOY_KEY, and a job that quietly built without the band would be a green check
@@ -45,7 +46,7 @@ concurrency:
 jobs:
   build-with-band:
     name: Build with band overlay
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]'
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     # Cap: the deploy's build job is observed at ~3 min; a stuck run is worse than a failed one (#1119).
     timeout-minutes: 20
@@ -99,3 +100,8 @@ jobs:
 
       - name: Verify three.js is off non-3D routes (#291)
         run: node scripts/check-first-load-budget.mjs
+
+      # The overlay adds routes (/band and the band's blog post), and this check reads the routes
+      # that exist in out/, so a wrong canonical on a band page fails the deploy and only here.
+      - name: Verify no route canonicals to a different page (#668)
+        run: node scripts/ci/check-canonicals.mjs out

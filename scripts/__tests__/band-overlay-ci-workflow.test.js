@@ -57,7 +57,12 @@ describe('band-overlay-build.yml', () => {
       text,
       /if: github\.event\.pull_request\.head\.repo\.full_name == github\.repository/
     );
-    assert.match(text, /github\.actor != 'dependabot\[bot\]'/);
+    // The pull request's author, not github.actor: the actor changes when someone re-runs the job.
+    assert.match(
+      text,
+      /github\.event\.pull_request\.user\.login != 'dependabot\[bot\]'/
+    );
+    assert.doesNotMatch(text, /github\.actor/);
   });
 
   it('has a timeout and cancels a superseded run', () => {
@@ -88,27 +93,38 @@ describe('band-overlay-build.yml', () => {
     assert.ok(overlay.start < confirm.start && confirm.start < build.start);
   });
 
-  it('runs the same build and the two post-build checks the deploy runs, in the same order', () => {
-    const build = step('Build Next.js app');
-    const chunks = step('Verify chunks parse in a browser (#294)');
-    const budget = step('Verify three.js is off non-3D routes (#291)');
-    assert.match(build.text, /run: pnpm run build/);
-    assert.match(chunks.text, /node scripts\/check-chunks-parse\.mjs/);
-    assert.match(budget.text, /node scripts\/check-first-load-budget\.mjs/);
-    assert.ok(build.start < chunks.start && chunks.start < budget.start);
-
-    // The deploy is the thing this job mirrors: if one of these commands changes there, it must
-    // change here, or this job stops predicting the deploy.
+  it('runs the build and every post-build check the deploy runs, in the same order', () => {
+    // The list comes from the deploy, not from this file: a hand-written list missed
+    // check-canonicals once, and would miss the next gate added to the deploy.
     const dl = strip(fs.readFileSync(DEPLOY, 'utf8'));
-    assert.match(
-      stepIn(dl, 'Verify chunks parse in a browser (#294)').text,
-      /node scripts\/check-chunks-parse\.mjs/
+    const buildAt = dl.findIndex((l) =>
+      l.includes('- name: Build Next.js app')
     );
-    assert.match(
-      stepIn(dl, 'Verify three.js is off non-3D routes (#291)').text,
-      /node scripts\/check-first-load-budget\.mjs/
+    const storybookAt = dl.findIndex((l) =>
+      l.includes('- name: Build Storybook')
     );
-    assert.match(stepIn(dl, 'Build Next.js app').text, /run: pnpm run build/);
+    assert.ok(
+      buildAt >= 0 && storybookAt > buildAt,
+      'deploy.yml layout changed'
+    );
+    const deployCommands = dl
+      .slice(buildAt, storybookAt)
+      .map((l) => l.match(/^\s+run:\s+(.+?)\s*$/))
+      .filter(Boolean)
+      .map((m) => m[1]);
+    // The build and at least the three gates known when this was written.
+    assert.ok(deployCommands.length >= 4, deployCommands.join(' | '));
+    assert.equal(deployCommands[0], 'pnpm run build');
+
+    const mineAt = lines.findIndex((l) =>
+      l.includes('- name: Build Next.js app')
+    );
+    const mine = lines
+      .slice(mineAt)
+      .map((l) => l.match(/^\s+run:\s+(.+?)\s*$/))
+      .filter(Boolean)
+      .map((m) => m[1]);
+    assert.deepEqual(mine, deployCommands);
   });
 
   it('reads no service role key', () => {
