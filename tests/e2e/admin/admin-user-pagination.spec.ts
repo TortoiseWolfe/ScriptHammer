@@ -41,6 +41,9 @@ import {
 // Next.js basePath — empty in local dev, '/ScriptHammer' in CI/prod
 const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
+// Rows per page on /admin/users (PAGE_SIZE in src/app/admin/users/page.tsx).
+const PAGE_SIZE = 50;
+
 // Local-only spec (skipped in CI). The Node test process reaches local Kong via
 // SUPABASE_ADMIN_URL (compose-internal supabase-kong:8000); the browser reaches
 // it via NEXT_PUBLIC_SUPABASE_URL (host.docker.internal:54321). No proxy /
@@ -219,32 +222,80 @@ test.describe('Admin User Pagination E2E', () => {
     const table = page.locator('[data-testid="user-table"]');
     await expect(table).toBeVisible({ timeout: 10000 });
 
-    // Navigate to page 2 first
+    // Navigate to page 2 first. handlePageChange sets the page number BEFORE
+    // its fetch returns, so "Page 2 of" can show while the page-2 request is
+    // still in flight, and whichever answer lands last decides the total. Wait
+    // for that response (the only call with offset 50) and for the count line
+    // it produces, so the search below starts from a settled page 2.
     const nextBtn = page.locator('button[aria-label="Next page"]');
     const pagination = page.locator('[data-testid="user-pagination"]');
+    const countLine = page.locator('[data-testid="user-count"]');
     await expect(pagination).toBeVisible({ timeout: 5000 });
+    const page2Response = page.waitForResponse(
+      (response) =>
+        response.url().includes('/rest/v1/rpc/admin_list_users') &&
+        response.request().postDataJSON()?.p_offset === PAGE_SIZE
+    );
     await nextBtn.click();
+    await page2Response;
 
     const indicator = page.locator('[data-testid="user-pagination-indicator"]');
     await expect(indicator).toContainText('Page 2 of', { timeout: 10000 });
+    await expect(countLine).toContainText(`Showing ${PAGE_SIZE + 1}`);
 
-    // Now search — should reset to page 1
+    // Now search — should reset to page 1.
+    //
+    // The page resets to page 1 the moment the search box changes
+    // (handleSearchChange sets currentPage to 0 at once), but the user count
+    // only changes when the search request comes back. In between, the old
+    // pagination bar is still on screen. A fixed wait followed by one
+    // "is it visible" look raced that gap (#1523): when the answer arrived
+    // after the look and before the check, the bar vanished under the check.
+    //
+    // So hold the search request for a second so the gap is wide on every
+    // run, wait for the response that carries this search, and assert only
+    // the end state that the response itself calls for. Nothing here reads
+    // the page before that response, so no clock decides the result. Only the
+    // search call is held: it is the only admin_list_users call that carries
+    // p_search.
+    const SEARCH_TERM = 'alice';
+    await page.route('**/rest/v1/rpc/admin_list_users', async (route) => {
+      if (route.request().postDataJSON()?.p_search === SEARCH_TERM) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+      await route.continue();
+    });
+    const searchResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes('/rest/v1/rpc/admin_list_users') &&
+        response.request().postDataJSON()?.p_search === SEARCH_TERM
+    );
+
     const searchInput = page.locator('[data-testid="user-search"]');
-    await searchInput.fill('alice');
+    await searchInput.fill(SEARCH_TERM);
 
-    // Wait for debounce (300ms) + network
-    await page.waitForTimeout(500);
+    const searchResult = await (await searchResponse).json();
+    expect(typeof searchResult.total).toBe('number');
+    // The seed has a user called alice. With no match the count line would
+    // read "Showing 0\u20130 of 0" on any page and could not show a reset.
+    expect(searchResult.total).toBeGreaterThan(0);
 
-    // Page should reset — either back to "Page 1 of" or pagination hidden (results fit one page)
-    const paginationStillVisible = await pagination
-      .isVisible()
-      .catch(() => false);
-    if (paginationStillVisible) {
+    // The page reset is read from the count line, which is computed from the
+    // current page: without the reset it would read "Showing 51\u20131 of 1".
+    // (The pagination bar cannot show it when the matches fit on one page,
+    // because it is hidden whatever the current page is.)
+    await expect(countLine).toHaveText(
+      `Showing 1\u2013${Math.min(PAGE_SIZE, searchResult.total)} of ${searchResult.total}`
+    );
+
+    // The bar follows the page's own rule: shown, on page 1, when the matches
+    // need more than one page; gone when they fit on one.
+    if (Math.ceil(searchResult.total / PAGE_SIZE) > 1) {
       await expect(indicator).toContainText('Page 1 of');
+    } else {
+      await expect(pagination).toBeHidden();
     }
 
-    // Table should still be present after search (results may be empty or
-    // filtered — both are valid; the real assertion is the page-reset above).
     await expect(table).toBeVisible();
   });
 
