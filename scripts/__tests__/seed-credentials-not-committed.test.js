@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
+const { execFileSync } = require('node:child_process');
 const path = require('node:path');
 
 /**
@@ -78,4 +79,102 @@ test('CONTROL: the comment stripper leaves code alone', () => {
     stripComments("const x = 1; // note\n/* c */ const y = 'p';"),
     /const y = 'p'/
   );
+});
+
+/**
+ * The three seeded TEST_USER_*_PASSWORD values used to be one public literal: in the tracked
+ * env files, as the `||` fallback in about twenty specs and scripts, in the migration's seed
+ * and in CLAUDE.md. That made the account's password known to anyone who read the repository.
+ * None of these checks prints a value: they match the SHAPE of a fallback or an assignment.
+ */
+// A password variable read with a quoted string as its fallback: `|| 'x'`, `?? "x"`, `|| `x``.
+const LITERAL_FALLBACK =
+  /(?:process\.env\.|\$\{?)TEST_USER_[A-Z_]*PASSWORD\}?\s*(?:\|\||\?\?)\s*['"`]/;
+// `NAME=value` (live or commented out) where the value is not blank, for the env-file checks.
+const NONBLANK_ASSIGNMENT =
+  /^\s*#?\s*(?:export\s+)?TEST_USER_[A-Z_]*PASSWORD=\s*[^\s#]/m;
+// A bcrypt hash made from a quoted literal: crypt('...', gen_salt(...)).
+const CRYPT_LITERAL = /crypt\(\s*'[^']*'\s*,\s*gen_salt/;
+
+const trackedSources = () =>
+  execFileSync('git', ['ls-files', 'tests', 'scripts', 'src'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  })
+    .split('\n')
+    .filter((f) => /\.(?:ts|tsx|js|mjs|cjs)$/.test(f))
+    // This file spells the patterns out, so it is not a place a fallback can live.
+    .filter((f) => !f.endsWith('seed-credentials-not-committed.test.js'));
+
+test('no test or script reads a test-user password with a quoted fallback', () => {
+  const offenders = trackedSources().filter((f) =>
+    LITERAL_FALLBACK.test(stripComments(read(f)))
+  );
+  assert.deepEqual(offenders, [], 'files with a literal password fallback');
+});
+
+test('.env.local-supabase assigns no test-user password', () => {
+  assert.doesNotMatch(read('.env.local-supabase'), NONBLANK_ASSIGNMENT);
+});
+
+test('.env.example gives no test-user password, even in a commented example', () => {
+  assert.doesNotMatch(read('.env.example'), NONBLANK_ASSIGNMENT);
+});
+
+test('the local E2E lane generates its test-user passwords instead of copying them', () => {
+  const wf = readFileSync(
+    path.join(ROOT, '.github', 'workflows', 'e2e-local.yml'),
+    'utf8'
+  );
+  const steps = wf
+    .split(/^\s*- name: /m)
+    .filter((s) =>
+      /TEST_USER_\)' \.env\.local-supabase >> "\$GITHUB_ENV"/.test(s)
+    );
+  assert.ok(steps.length >= 2, 'parser control: the build and run steps');
+  for (const step of steps) {
+    assert.match(step, /openssl rand/, 'a step with no generated password');
+    assert.match(step, /TEST_USER_PRIMARY_PASSWORD/);
+    assert.match(step, /TEST_USER_SECONDARY_PASSWORD/);
+    assert.match(step, /TEST_USER_TERTIARY_PASSWORD/);
+  }
+});
+
+test('the migration seeds the primary user without a password literal', () => {
+  const sql = read(
+    'supabase/migrations/20251006_complete_monolithic_setup.sql'
+  );
+  assert.doesNotMatch(sql, CRYPT_LITERAL, 'a crypt() of a quoted literal');
+  assert.match(sql, /current_setting\('app\.test_user_password', true\)/);
+  assert.match(sql, /crypt\(seed_password, gen_salt\('bf'\)\)/);
+  assert.doesNotMatch(read('supabase/seed-test-user.sql'), CRYPT_LITERAL);
+});
+
+test('CONTROL: the fallback, assignment and crypt matchers catch what they should', () => {
+  assert.match(
+    "x = process.env.TEST_USER_PRIMARY_PASSWORD || 'abc'",
+    LITERAL_FALLBACK
+  );
+  assert.match(
+    'x = process.env.TEST_USER_TERTIARY_PASSWORD ?? "abc"',
+    LITERAL_FALLBACK
+  );
+  assert.doesNotMatch(
+    "x = requireEnv('TEST_USER_PRIMARY_PASSWORD')",
+    LITERAL_FALLBACK
+  );
+  assert.doesNotMatch(
+    'x = process.env.TEST_USER_PRIMARY_PASSWORD || DEFAULT',
+    LITERAL_FALLBACK
+  );
+  assert.match('TEST_USER_PRIMARY_PASSWORD=abc', NONBLANK_ASSIGNMENT);
+  assert.match('export TEST_USER_SECONDARY_PASSWORD=abc', NONBLANK_ASSIGNMENT);
+  assert.doesNotMatch('TEST_USER_PRIMARY_PASSWORD=\n', NONBLANK_ASSIGNMENT);
+  assert.match('# TEST_USER_PRIMARY_PASSWORD=abc', NONBLANK_ASSIGNMENT);
+  assert.doesNotMatch(
+    '# TEST_USER_PRIMARY_PASSWORD=   # a hint',
+    NONBLANK_ASSIGNMENT
+  );
+  assert.match("crypt('abc', gen_salt('bf'))", CRYPT_LITERAL);
+  assert.doesNotMatch("crypt(seed_password, gen_salt('bf'))", CRYPT_LITERAL);
 });

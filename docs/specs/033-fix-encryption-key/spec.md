@@ -19,7 +19,7 @@ As a user who has set up encryption, I want to be able to unlock my messages aft
 
 **Why this priority**: This is the core user-facing bug - users cannot access their encrypted messages due to the "Your account needs to be updated" error loop.
 
-**Independent Test**: Can be fully tested by signing in as test@example.com with password TestPassword123! and verifying the encryption unlock modal works without errors.
+**Independent Test**: Can be fully tested by signing in as test@example.com with password $TEST_USER_PRIMARY_PASSWORD and verifying the encryption unlock modal works without errors.
 
 **Acceptance Scenarios**:
 
