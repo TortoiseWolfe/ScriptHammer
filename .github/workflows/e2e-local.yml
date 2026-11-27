@@ -801,11 +801,30 @@ jobs:
       # run then discards. That cost real time on #757, where three occurrences were
       # diagnosed from log text because the trace it advertised did not exist.
       #
-      # ONLY ON FAILURE, deliberately. On a green run this directory is noise, and
-      # uploading it from every selected shard would trade one waste for another. The
-      # artifact is worth having exactly when someone is about to go looking for it.
+      # ONLY WHEN SOMEONE WILL LOOK, deliberately. On a green run this directory is
+      # noise, and uploading it from every selected shard would trade one waste for
+      # another. Someone looks when a shard failed, AND when a test flaked (#1524):
+      # a flaky test passes on its retry, so the shard is green, `failure()` is false,
+      # and the failed attempt's screenshot, video and `error-context.md`, plus the
+      # retry's trace, were thrown away. That is how landmarks.spec.ts:256 flaked once
+      # (run 44398167419) and the artifacts that would have named the cause did not
+      # exist. Playwright keeps the failed attempt's files when the retry passes, and
+      # `results.json` counts it in `stats.flaky`, so the step below reads that.
+      - name: Did this shard record a flaky test?
+        if: always()
+        id: flaky
+        run: |
+          n=$(jq -r '.stats.flaky // 0' results.json 2>/dev/null || echo 0)
+          n=${n:-0}
+          echo "flaky tests in this shard: $n"
+          if [ "$n" -gt 0 ]; then
+            echo "flaky=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "flaky=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Upload failure diagnostics
-        if: failure()
+        if: failure() || steps.flaky.outputs.flaky == 'true'
         uses: actions/upload-artifact@v6
         with:
           name: e2e-local-diagnostics-${{ steps.slug.outputs.id }}
