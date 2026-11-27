@@ -34,9 +34,9 @@ name: Conformance
 # from e0add554 to 007a60de — six merges — while all three required checks stayed green,
 # because none of them runs `pnpm test:rls`.
 #
-# Filtering now happens in the `changes` job below and the always-reporting `result` job
-# at the bottom, the same shim that made `e2e-local.yml` requirable. Pinned by
-# scripts/__tests__/conformance-requirable.test.js.
+# Nor is there any filtering inside the workflow: `rls-conformance` runs on every pull
+# request, and the always-reporting `result` job at the bottom is the context to require.
+# Pinned by scripts/__tests__/conformance-requirable.test.js.
 on:
   push:
     branches: [main]
@@ -51,42 +51,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
-    name: Does this change need conformance?
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      run: ${{ steps.decide.outputs.run }}
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          # Full history: the PR case diffs against the merge base, which a shallow
-          # clone does not contain.
-          fetch-depth: 0
-
-      - name: Decide
-        id: decide
-        run: |
-          set -euo pipefail
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            # push to main and workflow_dispatch always run. A dispatch is a deliberate
-            # request, and main is the branch whose state everything else is measured
-            # against — neither is a place to guess.
-            echo "run=true" >> "$GITHUB_OUTPUT"
-            echo "  ${{ github.event_name }} — running unconditionally"
-            exit 0
-          fi
-          BASE="${{ github.event.pull_request.base.sha }}"
-          HEAD="${{ github.event.pull_request.head.sha }}"
-          echo "  base=$BASE head=$HEAD"
-          node scripts/ci/conformance-changes.mjs "$BASE" "$HEAD"
-
+  # RUNS ON EVERY PULL REQUEST. There is no path decision any more.
+  #
+  # This job used to sit behind a `changes` job that skipped it when a PR touched nothing
+  # conformance-relevant, so most PRs showed it as SKIPPED: a job that did not run, next
+  # to a green tick that says nothing about the change. The stack is local and ephemeral
+  # (public demo keys, no shared backend, no secrets, no real mail), so nothing stops it
+  # running every time. Pinned by scripts/__tests__/conformance-requirable.test.js.
   rls-conformance:
     name: RLS + provider conformance (local dual-provider stack)
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    needs: changes
-    if: needs.changes.outputs.run == 'true'
 
     steps:
       - name: Checkout code
@@ -203,33 +178,25 @@ jobs:
         run: docker compose --profile supabase --profile dotnet down -v
 
   # The always-reporting aggregate. THIS is the context to require, not
-  # `rls-conformance` — this one reports on every PR, including those that skip the
-  # suite, so it can never be pending forever.
+  # `rls-conformance` — this one reports even when the suite was cancelled or never
+  # started, so it can never be pending forever.
   result:
     name: Conformance result
     runs-on: ubuntu-latest
     # Cap: aggregate only; observed max 0.1 min. Uncapped, a hung job runs to the 360-minute default (#1119).
     timeout-minutes: 5
-    needs: [changes, rls-conformance]
+    needs: [rls-conformance]
     if: always()
     steps:
       - name: Verdict
         run: |
           set -euo pipefail
-          RAN="${{ needs.changes.outputs.run }}"
           RESULT="${{ needs.rls-conformance.result }}"
-          echo "  changes.run=$RAN  rls-conformance.result=$RESULT"
+          echo "  rls-conformance.result=$RESULT"
 
-          if [ "$RAN" != "true" ]; then
-            # Nothing conformance-relevant changed. Green, and say so out loud rather
-            # than reporting a bare success nobody can interpret.
-            echo "  no conformance-relevant paths changed — suite skipped, reporting green"
-            exit 0
-          fi
-
-          # It ran, so its verdict is the verdict. `cancelled` is NOT treated as a pass:
-          # a cancelled run observed nothing, and calling that green is the #396 shape
-          # this whole issue is about.
+          # Only `success` is a pass. `skipped` and `cancelled` both mean the suite
+          # observed nothing, and calling that green is the #396 shape this whole issue
+          # is about.
           case "$RESULT" in
             success) echo "  conformance passed"; exit 0 ;;
             *) echo "  conformance did not pass (result=$RESULT)"; exit 1 ;;
