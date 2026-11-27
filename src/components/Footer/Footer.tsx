@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { FOOTER_LINKS } from '@/config/footer-links';
+import { FOOTER_LINKS, SOURCE_LINK } from '@/config/footer-links';
 
 const [CRUDGAMES, GEOLARP_SITE, SCRIPTHAMMER] = FOOTER_LINKS;
 
@@ -45,6 +45,15 @@ export function Footer() {
             {SCRIPTHAMMER.label}
           </a>{' '}
           template
+          {' · '}
+          <a
+            href={SOURCE_LINK.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="link-hover link"
+          >
+            {SOURCE_LINK.label}
+          </a>
         </p>
         {/* Deliberately NOT in FOOTER_LINKS. That array is destructured
             positionally at the top of this file, so adding an entry silently

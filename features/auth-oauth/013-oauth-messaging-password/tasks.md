@@ -58,7 +58,7 @@ Welcome-message helper extraction so both modal-setup AND page-setup paths share
 
 **Goal**: Regression-only. Email users see the same modal copy and behavior as before this feature.
 
-**Independent test**: Sign in with email/password test user (`test@example.com` / `TestPassword123!`) → navigate to `/messages` (with keys, IndexedDB cleared) → modal opens with the original "Enter Your Messaging Password" title, "Password" label (not "Messaging Password"), no provider badge, no OAuth-specific subtext. Submit correct password → modal closes.
+**Independent test**: Sign in with email/password test user (`test@example.com` / `$TEST_USER_PRIMARY_PASSWORD`) → navigate to `/messages` (with keys, IndexedDB cleared) → modal opens with the original "Enter Your Messaging Password" title, "Password" label (not "Messaging Password"), no provider badge, no OAuth-specific subtext. Submit correct password → modal closes.
 
 ### Tests
 

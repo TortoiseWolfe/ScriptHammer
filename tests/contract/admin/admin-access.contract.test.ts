@@ -20,6 +20,7 @@
  * card reads " failed attempts" with no number because `undefined` renders
  * as nothing.
  */
+import { requireEnv } from '../../utils/require-env';
 import { describe, it, expect, beforeAll } from 'vitest';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
@@ -52,7 +53,7 @@ describe('Admin Access Contract Tests', () => {
     nonAdmin = createClient(supabaseUrl, supabaseKey);
     const { error } = await nonAdmin.auth.signInWithPassword({
       email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-      password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
+      password: requireEnv('TEST_USER_PRIMARY_PASSWORD'),
     });
     // Without this a failed sign-in makes the caller anonymous, and anonymous is
     // refused with the same 42501 — the refusal tests below would pass for the
