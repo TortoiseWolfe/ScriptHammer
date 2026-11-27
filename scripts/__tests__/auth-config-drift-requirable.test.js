@@ -1,24 +1,34 @@
 /**
- * `Auth Config Drift` must stay REQUIRABLE — i.e. it must always report
- * (#870, pattern established for Conformance in #869).
+ * `Auth Config Drift` must stay REQUIRABLE and must actually RUN on every same-repo pull
+ * request (#870, pattern established for Conformance in #869; the path decision was then
+ * removed so the check reports a real pass rather than a skip).
  *
- * WHAT WENT WRONG. The workflow carried a trigger `paths:` filter, so it reported nothing
- * on an unrelated PR. A required check that never reports is **pending forever**, not
- * skipped — which is why CLAUDE.md lists this check, alongside `Build`, as one that
- * cannot be required as written. #572 catalogued the pattern: only two of thirteen
- * workflows could actually block a merge.
+ * WHAT WENT WRONG, TWICE.
+ *   1. The workflow carried a trigger `paths:` filter, so it reported nothing on an
+ *      unrelated PR. A required check that never reports is **pending forever**, not
+ *      skipped (#572 catalogued the pattern: only two of thirteen workflows could
+ *      actually block a merge).
+ *   2. The fix moved the decision into a `changes` job that skipped the drift check on an
+ *      unrelated PR. That made the check requirable, but most PRs then showed it as
+ *      SKIPPED: a job that did not run, next to a green tick that says nothing about the
+ *      change. The call is one read-only Management API request per run, so nothing
+ *      stops it running every time.
  *
- * THE FORK CASE, which makes this workflow different from the other two. The `drift` job
- * carries its own `if:` that SKIPS on fork PRs, because secrets are withheld there and it
- * cannot authenticate. The aggregate must therefore treat `skipped` as green — otherwise
- * requiring this context makes every fork PR permanently unmergeable, which is the same
- * trap the paths filter created, arriving from the other direction.
+ * THE TWO SKIPS THAT REMAIN, which make this workflow different from the other three.
+ *   - `preflight` finds no Supabase project (a fork): nothing to compare against.
+ *   - the `drift` job skips itself on fork PRs, because secrets are withheld there and it
+ *     cannot authenticate.
+ * The aggregate must treat both as green — otherwise requiring this context makes every
+ * fork PR permanently unmergeable, the same trap the paths filter created, arriving from
+ * the other direction. A same-repo PR in a configured repo can never skip.
  *
- * WHAT THIS PINS. The properties that together make the workflow requirable:
- *   1. no trigger `paths:` filter, so it always reports;
- *   2. an aggregate job that runs `if: always()`, so it reports even when the suite is
- *      skipped or cancelled;
- *   3. the aggregate does not treat a cancelled suite as a pass.
+ * WHAT THIS PINS.
+ *   1. no trigger `paths:` filter;
+ *   2. no `changes` job and no path decision in the workflow;
+ *   3. the `drift` job's `if:` names only the two unavoidable skips;
+ *   4. an aggregate job that runs `if: always()` and needs the preflight and the drift job;
+ *   5. a failed preflight (half-configured project) is not laundered into green;
+ *   6. a success passes, a cancelled run fails, and the two named skips pass.
  *
  * WHAT IT CANNOT CHECK: that branch protection actually requires the context. That lives
  * in a GitHub setting, not this repo — `required-checks-documented.test.js` reconciles
@@ -38,12 +48,6 @@ const WORKFLOW = path.join(
   'workflows',
   'auth-config-drift.yml'
 );
-const DECIDER = path.join(
-  ROOT,
-  'scripts',
-  'ci',
-  'auth-config-drift-changes.mjs'
-);
 
 function workflow() {
   return fs.readFileSync(WORKFLOW, 'utf8');
@@ -58,7 +62,16 @@ function triggerBlock(src) {
   return end === -1 ? rest : rest.slice(0, end);
 }
 
-describe('Auth Config Drift can be a required check (#870)', () => {
+/** The text of one top-level job, from its key to the next job. */
+function job(src, name) {
+  const start = src.search(new RegExp(`^ {2}${name}:`, 'm'));
+  assert.ok(start !== -1, `no \`${name}:\` job found`);
+  const rest = src.slice(start + 1);
+  const end = rest.search(/^ {2}[a-z][a-z-]*:/m);
+  return end === -1 ? rest : rest.slice(0, end);
+}
+
+describe('Auth Config Drift runs on every PR and can be a required check (#870)', () => {
   it('reads the workflow and finds a real trigger block', () => {
     // Non-vacuity. Every assertion below is over this text; if the parse breaks they all
     // pass against nothing, which is the shape this file exists to prevent.
@@ -73,85 +86,98 @@ describe('Auth Config Drift can be a required check (#870)', () => {
       !/^\s+paths:/m.test(on),
       'auth-config-drift.yml has a trigger `paths:` filter again. That makes it report ' +
         'NOTHING on an unrelated PR, and a required check that never reports is ' +
-        'PENDING FOREVER — so the check cannot be required, which is how Conformance ' +
-        'stayed red across six merges (#572). Filter inside the `changes` job instead.'
+        'PENDING FOREVER — so the check cannot be required (#572).'
     );
   });
 
-  it('has an aggregate job that reports even when the suite does not run', () => {
+  it('has no path-deciding job, so an unrelated PR is not skipped', () => {
     const src = workflow();
-    assert.match(
-      src,
-      /^\s{2}result:/m,
-      'no `result:` aggregate job — without one there is no context that always reports'
+    assert.ok(
+      !/^ {2}changes:/m.test(src),
+      'a `changes` job is back. It decides whether the drift check runs, and a check that ' +
+        'does not run shows as SKIPPED. Run on every PR.'
     );
-    const result = src.slice(src.search(/^\s{2}result:/m));
+    assert.ok(
+      !/auth-config-drift-changes/.test(src),
+      'the workflow references the retired path decider'
+    );
+    assert.ok(
+      !/outputs\.run\b/.test(src),
+      'something still reads a `run` output, which only a path decision produces'
+    );
+  });
+
+  it('skips the drift job only for an unconfigured project or a fork PR', () => {
+    const drift = job(workflow(), 'drift');
+    const cond = drift.match(/^ {4}if:\s*(.+)$/m);
+    assert.ok(cond, 'the `drift` job has no `if:` guard for fork PRs');
+    assert.match(cond[1], /needs\.preflight\.outputs\.configured == 'true'/);
+    assert.match(cond[1], /github\.event\.pull_request\.head\.repo\.full_name/);
+    // Anything else in the condition is a skip nobody has justified.
+    const stripped = cond[1]
+      .replace(/needs\.preflight\.outputs\.configured == 'true'/g, '')
+      .replace(/github\.event_name != 'pull_request'/g, '')
+      .replace(
+        /github\.event\.pull_request\.head\.repo\.full_name == github\.repository/g,
+        ''
+      )
+      .replace(/[\s$(){}&|]+/g, '');
+    assert.strictEqual(
+      stripped,
+      '',
+      `the \`drift\` job's \`if:\` carries a condition beyond the two unavoidable skips: ${cond[1]}`
+    );
+  });
+
+  it('has an aggregate job that reports even when the check did not finish', () => {
+    const result = job(workflow(), 'result');
     assert.match(
       result,
       /if:\s*always\(\)/,
       'the `result` job is not `if: always()`, so it is skipped when the suite is ' +
-        'skipped — and a skipped required check is pending forever'
+        'cancelled — and a skipped required check is pending forever'
     );
     assert.match(
       result,
-      /needs:\s*\[changes,\s*drift\]/,
-      'the `result` job must depend on both the decider and the drift job'
+      /needs:\s*\[preflight,\s*drift\]/,
+      'the `result` job must depend on the preflight and the drift job'
     );
   });
 
-  it('does NOT treat a cancelled suite as a pass', () => {
-    const src = workflow();
-    const result = src.slice(src.search(/^\s{2}result:/m));
+  it('does not launder a failed preflight into green', () => {
+    const result = job(workflow(), 'result');
+    // A half-configured project makes the preflight exit 1. The skip branches below that
+    // check would otherwise report green, retiring the daily gate silently.
+    const guard = result.indexOf('needs.preflight.result');
+    const firstGreenSkip = result.search(/CONFIGURED" != "true"/);
+    assert.ok(
+      guard !== -1,
+      'the aggregate never looks at the preflight result'
+    );
+    assert.ok(
+      guard < firstGreenSkip,
+      'the preflight-result check must come BEFORE the configured=false green branch'
+    );
+  });
+
+  it('passes on success, fails on anything else, and names both green skips', () => {
+    const result = job(workflow(), 'result');
     // The whole family of defects here is a signal that reports success without
     // observing its subject. A cancelled run observed nothing.
     assert.ok(
       /success\)\s*echo[^\n]*exit 0/.test(result) &&
         /\*\)\s*echo[^\n]*exit 1/.test(result),
-      'the `result` job must pass ONLY on success and fail on anything else. A ' +
+      'the `result` job must pass on success and fail on cancelled or failed. A ' +
         'cancelled run observed nothing, and calling that green is the #396 shape.'
     );
-  });
-
-  it('the decider can say both yes and no', async () => {
-    // A gate that can only reach one answer is not a gate. Exercised through the real
-    // module rather than a reimplementation of its rule.
-    const { needsDriftCheck, DRIFT_PATHS } = await import(`file://${DECIDER}`);
-
-    assert.ok(
-      needsDriftCheck(['scripts/supabase/auth-config.json']),
-      'a desired-state change must require the drift check'
+    // Green skip 1: no Supabase project to compare against.
+    assert.match(
+      result,
+      /"\$CONFIGURED" != "true"\ \]; then[\s\S]{0,300}?exit 0/,
+      'an unconfigured project must report green: there is nothing to compare against'
     );
-    assert.ok(
-      needsDriftCheck(['scripts/supabase/set-auth-config.ts']),
-      'a change to the applier must require it'
-    );
-    assert.ok(
-      !needsDriftCheck(['README.md', 'src/components/Button.tsx']),
-      'an unrelated change must NOT require the drift check'
-    );
-    assert.ok(DRIFT_PATHS.length > 3, 'the path list looks truncated');
-  });
-
-  it('covers the paths the old trigger filter missed', async () => {
-    const { needsDriftCheck } = await import(`file://${DECIDER}`);
-    // The check compares the LIVE project against the desired state, so anything that
-    // changes what "desired" means can change the verdict. #734 documents fork overrides
-    // for these values in .env.example, and a fork editing them is exactly who needs it.
-    for (const f of [
-      '.env.example',
-      'tests/unit/auth-config-validity.test.ts',
-      'scripts/supabase/anything-else.ts',
-    ]) {
-      assert.ok(needsDriftCheck([f]), `${f} must require the drift check`);
-    }
-  });
-
-  it('treats a SKIPPED drift job as green, for fork PRs', () => {
-    // Without this the workflow trades one un-mergeable state for another: secrets are
-    // withheld from fork PRs, `drift` skips itself, and a required context that failed on
-    // `skipped` would block every outside contribution.
-    const src = workflow();
-    const result = src.slice(src.search(/^\s{2}result:/m));
+    // Green skip 2: a fork PR. Without this the workflow trades one un-mergeable state
+    // for another, since secrets are withheld from fork PRs and `drift` skips itself.
     assert.match(
       result,
       /RESULT.*=.*"skipped".*\n[\s\S]{0,200}?exit 0/,
