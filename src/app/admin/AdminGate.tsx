@@ -23,9 +23,14 @@ import { ADMIN_SECTIONS } from '@/config/admin-sections';
  * - `cancelled` flag: the async `checkIsAdmin` resolution must not call
  *   setState after the effect cleaned up (different user signed in, or
  *   component unmounted).
- * - Dep array `[user, authLoading, router]`: a `user` change re-runs the
- *   check against the new user. Removing `user` from deps reintroduces a
+ * - Dep array `[user, authLoading, router, attempt]`: a `user` change re-runs
+ *   the check against the new user. Removing `user` from deps reintroduces a
  *   stale-state bug where the previous user's admin verdict persists.
+ * - A failed `is_admin` request is not "not an admin" (#1520). Only a server
+ *   answer may redirect to `/`. A failed request is retried a few times, then
+ *   the page shows a "could not check" alert with a Try again button. This
+ *   includes an expired-token 401: it shows the alert rather than redirecting,
+ *   because the request failing says nothing about the role.
  */
 /**
  * One source of truth for the console's nav labels AND its page titles (#430).
@@ -43,6 +48,10 @@ import { ADMIN_SECTIONS } from '@/config/admin-sections';
  * grep tests/e2e for SUBSTRING collisions first (#378, #408).
  */
 const SECTIONS = ADMIN_SECTIONS;
+
+// How long to wait before each retry when the admin check request fails: three
+// retries over 3.5 s, then the page says the check failed and offers a button.
+const CHECK_RETRY_DELAYS_MS = [500, 1000, 2000];
 
 export function AdminGate({ children }: { children: React.ReactNode }) {
   const { user, isLoading: authLoading } = useAuth();
@@ -62,27 +71,77 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
     if (isAdmin === true) wasAdmin.current = true;
   }, [isAdmin]);
 
+  // The check could not be completed (the request failed), as opposed to the
+  // server saying "not an admin". Only a server answer may send someone away.
+  const [checkFailed, setCheckFailed] = useState(false);
+  // Bumped by the Retry button to run the check again.
+  const [attempt, setAttempt] = useState(0);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) return; // ProtectedRoute renders the sign-in card path
     let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
     (async () => {
       const service = new AdminAuthService(supabase);
-      const admin = await service.checkIsAdmin(user.id);
-      if (cancelled) return;
-      setIsAdmin(admin);
-      if (!admin && !wasAdmin.current) router.push('/');
+      setCheckFailed(false);
+      for (let i = 0; i <= CHECK_RETRY_DELAYS_MS.length; i++) {
+        try {
+          const admin = await service.checkIsAdmin(user.id);
+          if (cancelled) return;
+          setIsAdmin(admin);
+          if (!admin && !wasAdmin.current) router.push('/');
+          return;
+        } catch {
+          // The request failed. That says nothing about the role, so it must
+          // never redirect: try again a few times, then say so on the page.
+          if (cancelled) return;
+          if (i === CHECK_RETRY_DELAYS_MS.length) {
+            setCheckFailed(true);
+            return;
+          }
+          await new Promise((resolve) => {
+            retryTimer = setTimeout(resolve, CHECK_RETRY_DELAYS_MS[i]);
+          });
+          if (cancelled) return;
+        }
+      }
     })();
     return () => {
       cancelled = true;
+      // Drop a pending retry so it does not fire after unmount or a user change.
+      clearTimeout(retryTimer);
     };
-  }, [user, authLoading, router]);
+  }, [user, authLoading, router, attempt]);
 
-  if (authLoading || isAdmin === null) {
+  if (authLoading || (isAdmin === null && !checkFailed)) {
     return (
       <main className="container mx-auto p-6 lg:px-8">
         <div className="flex min-h-[50vh] items-center justify-center">
           <span className="loading loading-spinner loading-lg" />
+        </div>
+      </main>
+    );
+  }
+
+  if (checkFailed && isAdmin !== true) {
+    return (
+      <main className="container mx-auto p-6 lg:px-8">
+        <div
+          role="alert"
+          className="alert alert-warning mx-auto flex max-w-xl flex-col items-start gap-3 sm:flex-row sm:items-center"
+        >
+          <span>
+            We could not check your admin access because the request failed.
+            Your account was not signed out.
+          </span>
+          <button
+            type="button"
+            className="btn btn-sm min-h-11 min-w-11"
+            onClick={() => setAttempt((n) => n + 1)}
+          >
+            Try again
+          </button>
         </div>
       </main>
     );

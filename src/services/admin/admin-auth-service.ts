@@ -9,6 +9,14 @@ export interface AdminProfile {
   is_admin: boolean;
 }
 
+/** The is_admin() request failed, so we do not know whether the user is an admin. */
+export class AdminCheckError extends Error {
+  constructor(message: string) {
+    super(`Could not check admin status: ${message}`);
+    this.name = 'AdminCheckError';
+  }
+}
+
 export class AdminAuthService {
   private supabase: SupabaseClient;
 
@@ -40,9 +48,16 @@ export class AdminAuthService {
     // future non-self check should be a DIFFERENT method rather than this one
     // quietly answering a question the caller did not ask.
     void userId;
+    //
+    // The answer is true or false ONLY when the server answered. When the request
+    // itself failed (a dropped connection, a 5xx), this THROWS instead of returning
+    // false: "I could not ask" is not "no". It used to return false, and AdminGate
+    // read that as "not an admin" and sent a real admin to the home page for good
+    // after a one-second network blip. Throwing never grants admin either: no caller
+    // can treat a throw as true.
     const { data, error } = await this.supabase.rpc('is_admin');
 
-    if (error) return false;
+    if (error) throw new AdminCheckError(error.message);
     return data === true;
   }
 }

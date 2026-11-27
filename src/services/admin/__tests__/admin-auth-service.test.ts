@@ -11,7 +11,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { AdminAuthService } from '../admin-auth-service';
+import { AdminAuthService, AdminCheckError } from '../admin-auth-service';
 
 function makeClient(rpcImpl: (fn: string, args: unknown) => unknown) {
   const rpc = vi.fn(rpcImpl);
@@ -66,14 +66,17 @@ describe('AdminAuthService.checkIsAdmin (#240 single source of truth)', () => {
     expect(await svc.checkIsAdmin('user-123')).toBe(false);
   });
 
-  it('returns false on RPC error (fail closed, never grants admin on error)', async () => {
+  it('throws on RPC error: "could not ask" is not "no", and it never grants admin', async () => {
     const { client } = makeClient(() => ({
       data: null,
       error: { message: 'boom' },
     }));
     const svc = new AdminAuthService(client);
 
-    expect(await svc.checkIsAdmin('user-123')).toBe(false);
+    // Returning false here made AdminGate send a real admin home for good after
+    // a dropped request. A throw cannot be read as "not an admin" or as true.
+    await expect(svc.checkIsAdmin('user-123')).rejects.toThrow(AdminCheckError);
+    await expect(svc.checkIsAdmin('user-123')).rejects.toThrow('boom');
   });
 
   it('treats a non-true RPC result as not-admin', async () => {
