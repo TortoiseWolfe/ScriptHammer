@@ -58,7 +58,7 @@ const STALE_LAST_MESSAGE = new Date(
 // = 4, variant nibble = a) in case anything downstream validates format.
 const STALE_CONV_ID = 'eeeeeeee-eeee-4eee-aeee-000000000e2e';
 
-test.describe('Admin Conversation List E2E', () => {
+test.describe('Admin Conversation List E2E', { tag: '@local-only' }, () => {
   // SKIP ON THE CAPABILITY, NOT ON `CI` (#914).
   //
   // This read `test.skip(!!process.env.CI, 'requires local Docker Supabase')`, which

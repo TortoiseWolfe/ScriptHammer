@@ -865,6 +865,12 @@ jobs:
           # auth-state artifact, which we downloaded above. Without --no-deps,
           # Playwright tries to re-run setup with the matrix browser, which
           # fails because firefox/webkit shards don't install chromium.
+          #
+          # --grep-invert='@local-only' (#1510): thirty tests (27 admin tests that seed and
+          # delete data, 3 that submit a real sign-in form) cannot run against the shared,
+          # CAPTCHA-protected hosted project. They used to be listed here as "30 skipped".
+          # They still run on the required local lane. The same flag is on the other two
+          # shard jobs below, and the report job's verdict now fails any skip on this lane.
           WORKERS_FLAG=""
           if [ -n "$WORKERS" ]; then
             WORKERS_FLAG="--workers=$WORKERS"
@@ -875,6 +881,7 @@ jobs:
             --reporter=blob,list,./tests/e2e/reporters/assertion-count-reporter.ts \
             --trace=on-first-retry \
             --no-deps \
+            --grep-invert='@local-only' \
             $WORKERS_FLAG
 
       - name: Upload blob report
@@ -1052,6 +1059,7 @@ jobs:
             --reporter=blob,list,./tests/e2e/reporters/assertion-count-reporter.ts \
             --trace=on-first-retry \
             --no-deps \
+            --grep-invert='@local-only' \
             $WORKERS_FLAG
       - name: Upload blob report
         if: always()
@@ -1209,6 +1217,7 @@ jobs:
             --reporter=blob,list,./tests/e2e/reporters/assertion-count-reporter.ts \
             --trace=on-first-retry \
             --no-deps \
+            --grep-invert='@local-only' \
             $WORKERS_FLAG
       - name: Upload blob report
         if: always()

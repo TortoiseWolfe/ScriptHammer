@@ -50,115 +50,121 @@ test.describe('Session Persistence E2E', () => {
     await dismissCookieBanner(page);
   });
 
-  test('should extend session duration with Remember Me checked', async ({
-    page,
-  }) => {
-    // Sign in with Remember Me (already on sign-in page from beforeEach)
-    const result = await performSignIn(page, testEmail, testPassword, {
-      rememberMe: true,
-    });
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
+  test(
+    'should extend session duration with Remember Me checked',
+    { tag: '@local-only' },
+    async ({ page }) => {
+      // Sign in with Remember Me (already on sign-in page from beforeEach)
+      const result = await performSignIn(page, testEmail, testPassword, {
+        rememberMe: true,
+      });
+      if (!result.success) {
+        throw new Error(`Sign-in failed: ${result.error}`);
+      }
+
+      // Verify localStorage has refresh token for persistence.
+      //
+      // This assertion is only meaningful when the REAL form was submitted. Under
+      // the captcha-protected path `performSignIn` injects a session and writes a
+      // `refresh_token` into localStorage itself (test-user-factory.ts:1756), so
+      // it would pass no matter what Remember Me did — the same cannot-fail shape
+      // #587 removed from the sibling test below. The guard keeps it honest and
+      // lets it run for real wherever captcha is off.
+      // Kept skip (#1387): skips only on a CAPTCHA-protected backend (#353), i.e. the hosted lane; local stacks run it.
+      await skipIfBackendCaptchaProtected(
+        'Remember Me putting a refresh token in localStorage (#375)'
+      );
+
+      const localStorage = await page.evaluate(() =>
+        JSON.stringify(window.localStorage)
+      );
+      expect(localStorage).toContain('refresh_token');
+
+      // #845: what stood here was an `if (authCookie)` block asserting a ~30 day cookie
+      // expiry. THIS APP NEVER SETS AN AUTH COOKIE — `client.ts` installs
+      // `storage: createAuthStorage()`, which picks between sessionStorage (:144) and
+      // localStorage (:145); `document.cookie` appears nowhere in the file, and
+      // supabase-js writes none either. The guard was false on every run, so
+      // the only duration assertion in this test had never executed.
+      //
+      // It was the wrong contract too. Since #375 "Remember me" does not extend an
+      // expiry — it chooses WHICH STORE holds the token. That is what is asserted now,
+      // by key shape rather than by the substring above, so a token written under the
+      // wrong key cannot satisfy it.
+      //
+      // Placement is deliberate: this sits AFTER the captcha guard because under the
+      // captcha-protected path `performSignIn` injects a server-minted session straight
+      // into localStorage (test-user-factory.ts:1756) and the assertion would pass no
+      // matter what Remember Me did.
+      //
+      // NOT asserted here, on purpose:
+      //   - `sh-auth-persistence`. `setSessionPersistence()` early-returns when the
+      //     preference is unchanged (client.ts:171-172) and 'local' is the default, so
+      //     with Remember Me CHECKED the key is never written. The sibling test below can
+      //     assert it because unchecking is a real change; mirroring it here would fail.
+      //   - "the token is absent from sessionStorage". It cannot fail in this flow —
+      //     nothing ever writes sessionStorage on the checked path — and adding an
+      //     assertion that cannot fail is the exact defect this ticket is about. The
+      //     "exactly one home" invariant is covered where it CAN fail, by
+      //     tests/unit/auth-session-persistence.test.ts:79.
+      expect(
+        localStorage,
+        'Remember Me checked: the auth token must persist in localStorage'
+      ).toMatch(/sb-.*-auth-token/);
     }
+  );
 
-    // Verify localStorage has refresh token for persistence.
-    //
-    // This assertion is only meaningful when the REAL form was submitted. Under
-    // the captcha-protected path `performSignIn` injects a session and writes a
-    // `refresh_token` into localStorage itself (test-user-factory.ts:1756), so
-    // it would pass no matter what Remember Me did — the same cannot-fail shape
-    // #587 removed from the sibling test below. The guard keeps it honest and
-    // lets it run for real wherever captcha is off.
-    // Kept skip (#1387): skips only on a CAPTCHA-protected backend (#353), i.e. the hosted lane; local stacks run it.
-    await skipIfBackendCaptchaProtected(
-      'Remember Me putting a refresh token in localStorage (#375)'
-    );
+  test(
+    'should use short session without Remember Me',
+    { tag: '@local-only' },
+    async ({ page }) => {
+      // Before signing in, not after: against a captcha-protected backend this
+      // test cannot measure anything (see the note below), so there is no reason
+      // to spend a sign-in discovering that.
+      // Kept skip (#1387): skips only on a CAPTCHA-protected backend (#353), i.e. the hosted lane; local stacks run it.
+      await skipIfBackendCaptchaProtected(
+        'Where the auth token is stored after a real form sign-in (#375)'
+      );
 
-    const localStorage = await page.evaluate(() =>
-      JSON.stringify(window.localStorage)
-    );
-    expect(localStorage).toContain('refresh_token');
+      // Sign in WITHOUT Remember Me (already on sign-in page from beforeEach)
+      const result = await performSignIn(page, testEmail, testPassword, {
+        rememberMe: false,
+      });
+      if (!result.success) {
+        throw new Error(`Sign-in failed: ${result.error}`);
+      }
 
-    // #845: what stood here was an `if (authCookie)` block asserting a ~30 day cookie
-    // expiry. THIS APP NEVER SETS AN AUTH COOKIE — `client.ts` installs
-    // `storage: createAuthStorage()`, which picks between sessionStorage (:144) and
-    // localStorage (:145); `document.cookie` appears nowhere in the file, and
-    // supabase-js writes none either. The guard was false on every run, so
-    // the only duration assertion in this test had never executed.
-    //
-    // It was the wrong contract too. Since #375 "Remember me" does not extend an
-    // expiry — it chooses WHICH STORE holds the token. That is what is asserted now,
-    // by key shape rather than by the substring above, so a token written under the
-    // wrong key cannot satisfy it.
-    //
-    // Placement is deliberate: this sits AFTER the captcha guard because under the
-    // captcha-protected path `performSignIn` injects a server-minted session straight
-    // into localStorage (test-user-factory.ts:1756) and the assertion would pass no
-    // matter what Remember Me did.
-    //
-    // NOT asserted here, on purpose:
-    //   - `sh-auth-persistence`. `setSessionPersistence()` early-returns when the
-    //     preference is unchanged (client.ts:171-172) and 'local' is the default, so
-    //     with Remember Me CHECKED the key is never written. The sibling test below can
-    //     assert it because unchecking is a real change; mirroring it here would fail.
-    //   - "the token is absent from sessionStorage". It cannot fail in this flow —
-    //     nothing ever writes sessionStorage on the checked path — and adding an
-    //     assertion that cannot fail is the exact defect this ticket is about. The
-    //     "exactly one home" invariant is covered where it CAN fail, by
-    //     tests/unit/auth-session-persistence.test.ts:79.
-    expect(
-      localStorage,
-      'Remember Me checked: the auth token must persist in localStorage'
-    ).toMatch(/sb-.*-auth-token/);
-  });
+      // #587: this used to read `expect(sessionStorage).toBeDefined()` on a
+      // JSON.stringify result — a string is ALWAYS defined, so the assertion could
+      // not fail. It was hedged by a comment claiming "Supabase SSR may still use
+      // localStorage even without Remember Me", which was true before #375 and is
+      // not now. A gate that cannot fail plus a comment excusing it is how #375's
+      // regression would have gone unnoticed.
+      //
+      // What actually happens with rememberMe:false, observed on a real run:
+      //   localStorage == {"cookie-consent":…,"playwright_e2e":"true",
+      //                    "sh-auth-persistence":"session"}
+      // i.e. the app records its choice in `sh-auth-persistence` and keeps the
+      // token OUT of localStorage. Assert exactly that — it is what #375 fixed.
+      //
+      // That observation holds ONLY where the real form is submitted. Against a
+      // captcha-protected backend `performSignIn` injects a server-minted session
+      // instead (test-user-factory.ts:1756 writes `sb-<host>-auth-token` straight
+      // into localStorage) and the component that records the preference never
+      // runs — so BOTH assertions below are false, and measured false on CI:
+      //   {"cookie-consent":…,"sb-ozbdyopxmeqmwnfsmglp-auth-token":…,
+      //    "playwright_e2e":"true"}
+      // `client.ts` already said as much in prose; the guard above makes it true
+      // in code. It probes, so this resumes automatically wherever captcha is off
+      // — which is the local-Supabase run where real-form coverage belongs.
+      const localStorageDump = await page.evaluate(() =>
+        JSON.stringify(window.localStorage)
+      );
 
-  test('should use short session without Remember Me', async ({ page }) => {
-    // Before signing in, not after: against a captcha-protected backend this
-    // test cannot measure anything (see the note below), so there is no reason
-    // to spend a sign-in discovering that.
-    // Kept skip (#1387): skips only on a CAPTCHA-protected backend (#353), i.e. the hosted lane; local stacks run it.
-    await skipIfBackendCaptchaProtected(
-      'Where the auth token is stored after a real form sign-in (#375)'
-    );
-
-    // Sign in WITHOUT Remember Me (already on sign-in page from beforeEach)
-    const result = await performSignIn(page, testEmail, testPassword, {
-      rememberMe: false,
-    });
-    if (!result.success) {
-      throw new Error(`Sign-in failed: ${result.error}`);
+      expect(localStorageDump).toContain('sh-auth-persistence');
+      expect(localStorageDump).not.toMatch(/sb-.*-auth-token/);
     }
-
-    // #587: this used to read `expect(sessionStorage).toBeDefined()` on a
-    // JSON.stringify result — a string is ALWAYS defined, so the assertion could
-    // not fail. It was hedged by a comment claiming "Supabase SSR may still use
-    // localStorage even without Remember Me", which was true before #375 and is
-    // not now. A gate that cannot fail plus a comment excusing it is how #375's
-    // regression would have gone unnoticed.
-    //
-    // What actually happens with rememberMe:false, observed on a real run:
-    //   localStorage == {"cookie-consent":…,"playwright_e2e":"true",
-    //                    "sh-auth-persistence":"session"}
-    // i.e. the app records its choice in `sh-auth-persistence` and keeps the
-    // token OUT of localStorage. Assert exactly that — it is what #375 fixed.
-    //
-    // That observation holds ONLY where the real form is submitted. Against a
-    // captcha-protected backend `performSignIn` injects a server-minted session
-    // instead (test-user-factory.ts:1756 writes `sb-<host>-auth-token` straight
-    // into localStorage) and the component that records the preference never
-    // runs — so BOTH assertions below are false, and measured false on CI:
-    //   {"cookie-consent":…,"sb-ozbdyopxmeqmwnfsmglp-auth-token":…,
-    //    "playwright_e2e":"true"}
-    // `client.ts` already said as much in prose; the guard above makes it true
-    // in code. It probes, so this resumes automatically wherever captcha is off
-    // — which is the local-Supabase run where real-form coverage belongs.
-    const localStorageDump = await page.evaluate(() =>
-      JSON.stringify(window.localStorage)
-    );
-
-    expect(localStorageDump).toContain('sh-auth-persistence');
-    expect(localStorageDump).not.toMatch(/sb-.*-auth-token/);
-  });
+  );
 
   test('should automatically refresh token before expiration', async ({
     page,

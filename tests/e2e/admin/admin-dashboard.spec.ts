@@ -54,7 +54,7 @@ const BP = process.env.NEXT_PUBLIC_BASE_PATH || '';
 // the Node side via SUPABASE_ADMIN_URL (compose-internal supabase-kong:8000), the browser
 // side via NEXT_PUBLIC_SUPABASE_URL — so this file no longer restates that mapping (#121).
 
-test.describe('Admin Dashboard E2E', () => {
+test.describe('Admin Dashboard E2E', { tag: '@local-only' }, () => {
   // SKIP ON THE CAPABILITY, NOT ON `CI` (#914).
   //
   // This read `test.skip(!!process.env.CI, 'requires local Docker Supabase')`, which
