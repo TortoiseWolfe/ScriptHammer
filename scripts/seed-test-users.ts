@@ -8,9 +8,9 @@
  *   - Tertiary: test-user-c@example.com (username: testuser-c) - group chat tests
  *
  * Passwords are read from environment variables:
- *   - TEST_USER_PRIMARY_PASSWORD (default: TestPassword123!)
- *   - TEST_USER_SECONDARY_PASSWORD (default: TestPassword456!)
- *   - TEST_USER_TERTIARY_PASSWORD (default: TestPassword789!)
+ *   - TEST_USER_PRIMARY_PASSWORD (required, no default)
+ *   - TEST_USER_SECONDARY_PASSWORD (required, no default)
+ *   - TEST_USER_TERTIARY_PASSWORD (required, no default)
  *
  * Usage: docker compose exec scripthammer pnpm exec tsx scripts/seed-test-users.ts
  * Environment: Requires NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY

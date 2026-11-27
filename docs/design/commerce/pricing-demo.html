@@ -320,7 +320,7 @@ const CATALOG = {
   product: [
     { sku:'prd-forge', name:'Forge', amount:0, type:'free',
       tagline:'The starter. Take it, ship it, keep it.',
-      feats:['Next.js 15 + React 19 + TypeScript','680+ tests, PWA, 34 themes','Auth, payments, encrypted messaging','MIT licensed, community support'] },
+      feats:['Next.js 15 + React 19 + TypeScript','680+ tests, PWA, 34 themes','Auth, payments, encrypted messaging','AGPL-3.0 licensed, community support'] },
     { sku:'prd-anvil', name:'Anvil', amount:14900, type:'one_time', feat:true, tag:'Best value',
       tagline:'A vertical, productized.',
       feats:['One industry template (Roofer, HVAC, Plumber, Landscaper)','Copy, layout, and schema tuned for the trade','Commercial license, unlimited client sites','Lifetime updates to that pack'] },
@@ -637,7 +637,7 @@ $('#talkBtn').addEventListener('click',()=>{
 
 /* free tier */
 function stepFree(){
-  $('#dbody').innerHTML = `<div class="notice ok"><b>Forge is free and MIT licensed.</b> No checkout, no email wall.</div>
+  $('#dbody').innerHTML = `<div class="notice ok"><b>Forge is free and AGPL-3.0 licensed.</b> No checkout, no email wall.</div>
    <pre style="background:var(--surface-2);border:1px solid var(--line);padding:14px;border-radius:4px;color:var(--text)">git clone https://github.com/\n  TortoiseWolfe/ScriptHammer.git\n\npnpm install\ndocker compose up</pre>
    <div class="notice">Give back: file bugs, report what your users do with it, and come on the stream to talk about what you built.</div>
    <button class="btn alt" id="done2">Close</button>`;

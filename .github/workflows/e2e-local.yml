@@ -251,15 +251,16 @@ jobs:
           # service-role key at all (see #574).
           cp .env.local-supabase .env
           sed -i 's|host\.docker\.internal|localhost|g' .env
-          # Mask each test-user password BEFORE it goes into $GITHUB_ENV. GitHub only
-          # hides values that are stored repository secrets, so without this every
-          # later step's env block printed these values in the public run log.
-          # The values are read inside this loop and never echoed any other way.
-          grep -E '^(export )?TEST_USER_[A-Z_]*PASSWORD=' .env.local-supabase | while IFS= read -r line; do
-            pw="${line#*=}"
-            pw="${pw%$'\r'}"
-            case "$pw" in \"*\") pw="${pw#\"}"; pw="${pw%\"}" ;; \'*\') pw="${pw#\'}"; pw="${pw%\'}" ;; esac
-            if [ -n "$pw" ]; then echo "::add-mask::$pw"; fi
+          # The three test-user passwords are not in any tracked file: nothing seeded may be
+          # a public password. Each is generated here for this run only. Mask it BEFORE it
+          # goes into $GITHUB_ENV: GitHub only hides values that are stored repository
+          # secrets, so without the mask every later step's env block would print it in the
+          # public run log. The values are never echoed any other way.
+          for v in TEST_USER_PRIMARY_PASSWORD TEST_USER_SECONDARY_PASSWORD TEST_USER_TERTIARY_PASSWORD; do
+            pw=$(openssl rand -base64 32)
+            echo "::add-mask::$pw"
+            echo "$v=$pw" >> "$GITHUB_ENV"
+            echo "$v=$pw" >> .env
           done
           grep -E '^(NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY|TEST_USER_)' .env.local-supabase >> "$GITHUB_ENV"
           {
@@ -379,15 +380,16 @@ jobs:
           # service-role key at all (see #574).
           cp .env.local-supabase .env
           sed -i 's|host\.docker\.internal|localhost|g' .env
-          # Mask each test-user password BEFORE it goes into $GITHUB_ENV. GitHub only
-          # hides values that are stored repository secrets, so without this every
-          # later step's env block printed these values in the public run log.
-          # The values are read inside this loop and never echoed any other way.
-          grep -E '^(export )?TEST_USER_[A-Z_]*PASSWORD=' .env.local-supabase | while IFS= read -r line; do
-            pw="${line#*=}"
-            pw="${pw%$'\r'}"
-            case "$pw" in \"*\") pw="${pw#\"}"; pw="${pw%\"}" ;; \'*\') pw="${pw#\'}"; pw="${pw%\'}" ;; esac
-            if [ -n "$pw" ]; then echo "::add-mask::$pw"; fi
+          # The three test-user passwords are not in any tracked file: nothing seeded may be
+          # a public password. Each is generated here for this run only. Mask it BEFORE it
+          # goes into $GITHUB_ENV: GitHub only hides values that are stored repository
+          # secrets, so without the mask every later step's env block would print it in the
+          # public run log. The values are never echoed any other way.
+          for v in TEST_USER_PRIMARY_PASSWORD TEST_USER_SECONDARY_PASSWORD TEST_USER_TERTIARY_PASSWORD; do
+            pw=$(openssl rand -base64 32)
+            echo "::add-mask::$pw"
+            echo "$v=$pw" >> "$GITHUB_ENV"
+            echo "$v=$pw" >> .env
           done
           grep -E '^(NEXT_PUBLIC_SUPABASE_ANON_KEY|SUPABASE_SERVICE_ROLE_KEY|TEST_USER_)' .env.local-supabase >> "$GITHUB_ENV"
           {

@@ -211,6 +211,33 @@ GUIDE
 }
 INDEX
 
+    # THE HOUSE BAND'S DEPLOY PLUMBING. The band's files live in a private repository
+    # and the template carries none of them, but its deploy workflow has two steps that
+    # pull them in for scripthammer.com. A fork must not inherit those.
+    mkdir -p .github/workflows scripts/ci
+    printf '#!/usr/bin/env bash\necho band\n' > scripts/ci/band-overlay.sh
+    cat > .github/workflows/deploy.yml <<'DEPLOY'
+jobs:
+  build:
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # The house band is all rights reserved and lives in a private repository.
+      - name: Bring in the house band
+        run: bash scripts/ci/band-overlay.sh
+        env:
+          BAND_DEPLOY_KEY: ${{ secrets.BAND_DEPLOY_KEY }}
+
+      # Bring the votes cast on /band into the ranking.
+      - name: Refresh band ranking from site votes
+        if: hashFiles('scripts/ci/refresh-band-ranking.mjs') != ''
+        run: node scripts/ci/refresh-band-ranking.mjs
+
+      - name: Build Next.js app
+        run: pnpm run build
+DEPLOY
+
     # THE DESCRIPTION EVERY USER-VISIBLE SURFACE ACTUALLY READS (#923).
     #
     # DESCRIPTION reached package.json and stopped there. og:description,
@@ -1724,6 +1751,38 @@ test_keep_blog_opts_out() {
     cd "$REPO_ROOT"
 }
 ##
+# The house band is all rights reserved and not the fork's: its deploy plumbing goes.
+##
+test_band_overlay_removed() {
+    run_test "test_band_overlay_removed"
+    setup_temp_dir
+
+    local output
+    output=$(safe_rebrand "Widget Works" "testuser" "A widget" --force --no-icon 2>&1) || true
+
+    if [ ! -e "$TEMP_DIR/scripts/ci/band-overlay.sh" ]; then
+        log_pass "The band overlay script is removed from a fork"
+    else
+        log_fail "Band overlay script" "removed" "still present; rebrand said: $(echo "$output" | tail -8)"
+    fi
+
+    local deploy="$TEMP_DIR/.github/workflows/deploy.yml"
+    if ! grep -q -i "band" "$deploy"; then
+        log_pass "deploy.yml carries no band step or key name after a rebrand"
+    else
+        log_fail "deploy.yml band steps" "none" "$(grep -n -i band "$deploy" | tr '\n' ' ')"
+    fi
+
+    # The steps around the band's must survive, or the strip is a demolition.
+    if grep -q "name: Checkout" "$deploy" && grep -q "name: Build Next.js app" "$deploy"; then
+        log_pass "The neighbouring deploy steps are untouched"
+    else
+        log_fail "Neighbouring steps" "Checkout and Build kept" "$(cat "$deploy")"
+    fi
+
+    cd "$REPO_ROOT"
+}
+##
 # package.json's repository URL must match the fork's actual remote (#972).
 #
 # `update_package_json()` searched for `github.com/<upstream-owner>/<UpstreamName>` and
@@ -2152,6 +2211,7 @@ run_all_tests() {
     test_hostile_description_is_escaped
     test_fork_does_not_republish_the_template_blog
     test_keep_blog_opts_out
+    test_band_overlay_removed
     test_repository_url_matches_the_remote
     test_fork_does_not_inherit_the_lockup
     test_fork_does_not_keep_our_social_card
@@ -2244,6 +2304,9 @@ if [ $# -eq 1 ]; then
             ;;
         test_keep_blog_opts_out)
             test_keep_blog_opts_out
+            ;;
+        test_band_overlay_removed)
+            test_band_overlay_removed
             ;;
         test_repository_url_matches_the_remote)
             test_repository_url_matches_the_remote

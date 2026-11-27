@@ -24,8 +24,9 @@ describe('Footer Accessibility', () => {
     // FOOTER_LINKS models the three EXTERNAL brand links only. The tip jar is a
     // fourth, internal link added directly in the component -- deliberately not
     // in that array, which Footer.tsx destructures positionally and whose
-    // entries the sibling spec asserts open in a new tab (T051).
-    expect(links.length).toBe(FOOTER_LINKS.length + 1);
+    // entries the sibling spec asserts open in a new tab (T051). The AGPL source
+    // link (SOURCE_LINK) is a fifth, kept out of the array for the same reason.
+    expect(links.length).toBe(FOOTER_LINKS.length + 2);
     for (const link of links) {
       expect((link.textContent ?? '').trim().length).toBeGreaterThan(0);
     }
