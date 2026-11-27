@@ -16,7 +16,10 @@ async function testAutoKeyGeneration() {
 
   // Test user credentials (testuser2)
   const testEmail = 'testuser2@example.com';
-  const testPassword = 'TestPassword123!';
+  const testPassword = process.env.TEST_USER_PRIMARY_PASSWORD;
+  if (!testPassword) {
+    throw new Error('Missing TEST_USER_PRIMARY_PASSWORD in the environment');
+  }
 
   try {
     // Step 1: Check if testuser2 has keys before login

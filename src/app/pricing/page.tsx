@@ -190,7 +190,7 @@ const DEVELOPERS: Product[] = [
       'Next.js 15 + React 19 + TypeScript',
       `2,400+ tests, PWA, ${THEME_COUNT} themes`,
       'Auth, payments, encrypted messaging',
-      'MIT licensed, community support',
+      'AGPL-3.0 licensed, community support',
     ],
     cta: 'Clone the repo',
     href: 'https://github.com/TortoiseWolfe/ScriptHammer',
@@ -205,9 +205,9 @@ const DEVELOPERS: Product[] = [
     // would leave a live Select dead-ending on "That package is not available"
     // (checkout/page.tsx:185, :336) -- worse than doing nothing. Both halves.
     //
-    // The licence bullet is DELETED rather than deferred: MIT (LICENSE:1) grants
-    // commercial use and unlimited sites already, and the free Forge card says so
-    // on this same page, so it was untrue in every tense. The other three are
+    // The licence bullet is DELETED rather than deferred: the AGPL-3.0
+    // (LICENSE) already allows commercial use on unlimited sites, so long as the source
+    // of a hosted copy stays available, and the free Forge card says so on this same page, so it was untrue in every tense. The other three are
     // kept as the stated intent of an unbuilt product, which "Coming soon" makes
     // an honest frame. What $149 actually buys is still open -- see #1201.
     sku: 'prd-anvil',

@@ -5,6 +5,7 @@
  * This test captures and prints [Decryption] console logs for debugging
  */
 
+import { requireEnv } from '../../utils/require-env';
 import { test, expect } from '@playwright/test';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { dismissCookieBanner } from '../utils/test-user-factory';
@@ -12,12 +13,12 @@ import { skipIfBackendCaptchaProtected } from '../utils/captcha-guard';
 
 const USER_A = {
   email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-  password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
+  password: requireEnv('TEST_USER_PRIMARY_PASSWORD'),
 };
 
 const USER_B = {
   email: process.env.TEST_USER_TERTIARY_EMAIL || 'test-user-b@example.com',
-  password: process.env.TEST_USER_TERTIARY_PASSWORD || 'TestPassword456!',
+  password: requireEnv('TEST_USER_TERTIARY_PASSWORD'),
 };
 
 let adminClient: SupabaseClient | null = null;

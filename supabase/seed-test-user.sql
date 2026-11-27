@@ -1,5 +1,6 @@
 -- Seed Test User for Contract Tests
--- Creates: test@example.com / TestPassword123!
+-- Creates: test@example.com with the password you pass in (never stored in this file).
+-- Run:     psql -v test_password="$TEST_USER_PRIMARY_PASSWORD" -f supabase/seed-test-user.sql
 -- Email is already confirmed (bypasses verification requirement)
 -- Safe to run multiple times (deletes and recreates user)
 
@@ -29,7 +30,7 @@ VALUES (
   gen_random_uuid(),
   '00000000-0000-0000-0000-000000000000',
   'test@example.com',
-  crypt('TestPassword123!', gen_salt('bf')),  -- Hashed password using bcrypt
+  crypt(:'test_password', gen_salt('bf')),  -- Hashed password using bcrypt
   now(),  -- Email already confirmed
   now(),
   now(),

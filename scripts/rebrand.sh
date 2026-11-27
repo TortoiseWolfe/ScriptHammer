@@ -64,7 +64,7 @@
 #
 #   The attribution link in src/config/footer-links.ts is protected this way,
 #   which is why --preserve-attribution is now a no-op. Removing the attribution
-#   is a one-line edit you are welcome to make. It is MIT.
+#   is a one-line edit you are welcome to make; it is a courtesy, not a licence term.
 #
 # Case and postcondition:
 #   Matching is ASCII case-insensitive and replacement preserves the matched
@@ -1041,6 +1041,79 @@ NODE
     fi
 }
 
+# THE HOUSE BAND IS NOT THE FORK'S.
+#
+# The band's music, art and pages are all rights reserved and live in a private
+# repository; the template carries none of the files. What it does carry is the
+# deploy plumbing that pulls them in for the studio's own site: scripts/ci/band-overlay.sh
+# and two steps in .github/workflows/deploy.yml. Without BAND_DEPLOY_KEY they do
+# nothing, so they are harmless but misleading in a fork, and the key's name points at
+# a repository the fork has no access to. Remove them, plus any band files or pages a
+# fork may have copied over by hand from an older template.
+remove_band_overlay() {
+    local deploy="$REPO_ROOT/.github/workflows/deploy.yml"
+    local overlay="$REPO_ROOT/scripts/ci/band-overlay.sh"
+    local ranking="$REPO_ROOT/scripts/ci/refresh-band-ranking.mjs"
+
+    if [ "$DRY_RUN" = true ]; then
+        log_verbose "[DRY-RUN] Would remove the house band's deploy steps and any band files"
+        return 0
+    fi
+
+    local changed=0
+    local path
+    for path in "$overlay" "$ranking" "$REPO_ROOT/public/band" "$REPO_ROOT/src/app/band"; do
+        if [ -e "$path" ]; then
+            rm -rf "$path"
+            mark_modified "$path"
+            changed=1
+        fi
+    done
+
+    if [ -f "$deploy" ]; then
+        local result
+        result=$(node - "$deploy" <<'NODE'
+const fs = require('node:fs');
+const file = process.argv[2];
+const lines = fs.readFileSync(file, 'utf8').split('\n');
+const out = [];
+let removed = 0;
+for (let i = 0; i < lines.length; i++) {
+  const m = lines[i].match(/^(\s*)- name: (Bring in the house band|Refresh band ranking from site votes)\s*$/);
+  if (!m) {
+    out.push(lines[i]);
+    continue;
+  }
+  // Drop the comment block directly above the step, then the step itself: every
+  // line after its `- name:` that is indented deeper than the dash.
+  while (out.length && /^\s*#/.test(out[out.length - 1])) out.pop();
+  const indent = m[1].length;
+  let j = i + 1;
+  while (j < lines.length && (lines[j].trim() === '' || lines[j].match(/^\s*/)[0].length > indent)) j++;
+  // Keep the blank line that separated this step from the next.
+  i = j - 1;
+  removed++;
+}
+if (removed) fs.writeFileSync(file, out.join('\n').replace(/\n{3,}/g, '\n\n'));
+process.stdout.write(String(removed));
+NODE
+        ) || {
+            log_error "Could not strip the house band steps from deploy.yml"
+            exit 1
+        }
+        if [ "${result:-0}" -gt 0 ]; then
+            mark_modified "$deploy"
+            changed=1
+        fi
+    fi
+
+    if [ "$changed" -eq 1 ]; then
+        log_success "Removed the house band's deploy steps and files (not part of a fork)"
+    else
+        log_verbose "No house band plumbing to remove"
+    fi
+}
+
 # THE CUSTOM DOMAIN IS CONFIGURATION NOW (#980).
 #
 # `config/deployment.json` holds it; `public/CNAME` is generated from that key by
@@ -1887,6 +1960,10 @@ main() {
     echo ""
     echo "Clearing the template's blog..."
     clear_template_blog
+
+    echo ""
+    echo "Removing the house band's deploy plumbing..."
+    remove_band_overlay
 
     # LAST MUTATIONS, and the position is load-bearing for the same reason as CNAME
     # and the blog (#961): this DELETES a tracked path when it cannot render a
