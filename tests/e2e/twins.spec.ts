@@ -32,7 +32,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
-import { FOOTER_LINKS } from '@/config/footer-links';
+import { FOOTER_LINKS, SOURCE_LINK } from '@/config/footer-links';
 
 // The diorama's "it rendered" signal — a dock button, not the (occluded)
 // wordmark. 'Miniature' is unconditional: modesForSite() always includes it,
@@ -610,7 +610,10 @@ test.describe('/chatt — the atlas is the default (#292)', () => {
     expect(footers.shownIsStrip).toBe(true);
     // Driven by the shared config, so the strip cannot silently drift from the
     // site footer's links.
-    expect(footers.hrefs).toEqual(FOOTER_LINKS.map((l) => l.href));
+    expect(footers.hrefs).toEqual([
+      ...FOOTER_LINKS.map((l) => l.href),
+      SOURCE_LINK.href,
+    ]);
   });
 
   test('the atlas reports a real building count, not an empty scene', async ({

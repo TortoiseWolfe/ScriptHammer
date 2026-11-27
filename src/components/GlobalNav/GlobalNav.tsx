@@ -23,6 +23,7 @@ import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { AdminAuthService } from '@/services/admin/admin-auth-service';
 import { createClient } from '@/lib/supabase/client';
 import { useInstallPrompt, promptInstall } from '@/lib/pwa/install-prompt';
+import { HOUSE_BAND_PRESENT } from '@/extensions/house-band';
 
 /**
  * Open state plus the three ways a nav popover must close: Escape (returning
@@ -378,10 +379,14 @@ export function GlobalNav() {
         { href: '/game', label: 'Game' },
         { href: '/payment-demo', label: 'Payments' },
         { href: '/schedule', label: 'Schedule' },
+        // The band page exists only in a build that has the band files copied in
+        // (see src/extensions/house-band.tsx), so the link does too.
         // `reload: true`: /band is a kid-safe route (no trackers). A full document
         // load is the strongest way in: nothing from the page you came from, such
         // as an analytics script that consent loaded, survives into it (#1408).
-        { href: '/band', label: 'Band', reload: true },
+        ...(HOUSE_BAND_PRESENT
+          ? [{ href: '/band', label: 'Band', reload: true }]
+          : []),
       ],
     },
     { href: '/themes', label: 'Themes' },

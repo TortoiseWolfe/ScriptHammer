@@ -2,18 +2,19 @@
 // Feature 017 - Task T016
 // Purpose: Test end-to-end payment data isolation between users
 
+import { requireEnv } from '../../utils/require-env';
 import { test, expect, type Page } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
 // Test users
 const USER_A = {
   email: process.env.TEST_USER_PRIMARY_EMAIL || 'test@example.com',
-  password: process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!',
+  password: requireEnv('TEST_USER_PRIMARY_PASSWORD'),
 };
 
 const USER_B = {
   email: process.env.TEST_USER_SECONDARY_EMAIL || 'test2@example.com',
-  password: process.env.TEST_USER_SECONDARY_PASSWORD || 'TestPassword123!',
+  password: requireEnv('TEST_USER_SECONDARY_PASSWORD'),
 };
 
 /**

@@ -11,12 +11,17 @@
  * - Foreign key constraints
  */
 
+import { randomUUID } from 'node:crypto';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { createClient } from '@supabase/supabase-js';
 import type { ConnectionService } from '@/services/messaging/connection-service';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+// The users below are created and signed in by this file alone, so each run makes up
+// its own password. Nothing here is a credential anyone can look up.
+const TEST_USER_PASSWORD = `Aa1!${randomUUID()}`;
 
 // Service role client for test setup/teardown (bypasses RLS)
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
@@ -31,17 +36,17 @@ describe('ConnectionService Integration Tests', () => {
     // Create test users
     const { data: user1 } = await supabaseAdmin.auth.admin.createUser({
       email: 'connection-test-user1@example.com',
-      password: 'TestPassword123!',
+      password: TEST_USER_PASSWORD,
       email_confirm: true,
     });
     const { data: user2 } = await supabaseAdmin.auth.admin.createUser({
       email: 'connection-test-user2@example.com',
-      password: 'TestPassword123!',
+      password: TEST_USER_PASSWORD,
       email_confirm: true,
     });
     const { data: user3 } = await supabaseAdmin.auth.admin.createUser({
       email: 'connection-test-user3@example.com',
-      password: 'TestPassword123!',
+      password: TEST_USER_PASSWORD,
       email_confirm: true,
     });
 
@@ -330,7 +335,7 @@ describe('ConnectionService Integration Tests', () => {
       // Sign in as test user 1
       const { data: session } = await supabaseAdmin.auth.signInWithPassword({
         email: 'connection-test-user1@example.com',
-        password: 'TestPassword123!',
+        password: TEST_USER_PASSWORD,
       });
 
       const authenticatedClient = createClient(

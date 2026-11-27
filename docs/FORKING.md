@@ -213,7 +213,7 @@ stable tooling, rather than risking a partial rewrite. Same-identity reruns are
 still explicit no-ops.
 
 **Removing the attribution is a one-line edit and you are welcome to make it.**
-It is MIT. The default is "kept" so that losing it is a decision rather than an
+It is a courtesy, not a licence term. The default is "kept" so that losing it is a decision rather than an
 accident.
 
 ### Exit Codes
@@ -289,11 +289,11 @@ These enable full E2E test coverage:
 ```
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 TEST_USER_PRIMARY_EMAIL=yourname+test-a@gmail.com
-TEST_USER_PRIMARY_PASSWORD=TestPassword123!
+TEST_USER_PRIMARY_PASSWORD=$TEST_USER_PRIMARY_PASSWORD
 TEST_USER_SECONDARY_EMAIL=yourname+test-b@gmail.com
-TEST_USER_SECONDARY_PASSWORD=TestPassword456!
+TEST_USER_SECONDARY_PASSWORD=$TEST_USER_SECONDARY_PASSWORD
 TEST_USER_TERTIARY_EMAIL=yourname+test-c@gmail.com
-TEST_USER_TERTIARY_PASSWORD=TestPassword789!
+TEST_USER_TERTIARY_PASSWORD=$TEST_USER_TERTIARY_PASSWORD
 TEST_EMAIL_DOMAIN=yourname+e2e@gmail.com
 ```
 

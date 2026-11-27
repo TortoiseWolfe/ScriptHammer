@@ -26,7 +26,7 @@ docker compose up -d
 docker compose exec scripthammer pnpm run dev   # http://localhost:3000
 ```
 
-Test user (from `CLAUDE.md`): `test@example.com` / `TestPassword123!`
+Test user (from `CLAUDE.md`): `test@example.com` / `$TEST_USER_PRIMARY_PASSWORD`
 
 > These are **verification** tasks, not implementation. The goal is to confirm the shipped state matches the claim (or produce the evidence that it doesn't). Report findings as a comment on the issue.
 

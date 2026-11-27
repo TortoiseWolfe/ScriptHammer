@@ -89,7 +89,7 @@ if (needsMigration) {
 
 ## Testing
 
-1. Sign in as test@example.com / TestPassword123!
+1. Sign in as test@example.com / $TEST_USER_PRIMARY_PASSWORD
 2. Verify no "Your account needs to be updated" error
 3. Check database: only valid-salt keys should be non-revoked
 4. Verify TypeScript compilation with new rotateKeys(password) signature
