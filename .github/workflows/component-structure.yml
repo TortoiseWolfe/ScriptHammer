@@ -7,8 +7,8 @@ name: Component Structure Validation
 # `Validate Component Structure` among the checks that cannot be required as written, and
 # why a broken component structure could reach main behind three green checks.
 #
-# Filtering now happens in the `changes` job below, and the always-reporting `result` job
-# at the bottom is the context to require. Pinned by
+# Nor is there any filtering inside the workflow: `validate` runs on every pull request, and
+# the always-reporting `result` job at the bottom is the context to require. Pinned by
 # scripts/__tests__/component-structure-requirable.test.js.
 on:
   push:
@@ -39,39 +39,18 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  changes:
-    name: Does this change need structure validation?
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      run: ${{ steps.decide.outputs.run }}
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          # Full history: the PR case diffs against the merge base, which a shallow
-          # clone does not contain.
-          fetch-depth: 0
-
-      - name: Decide
-        id: decide
-        run: |
-          set -euo pipefail
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-            echo "  ${{ github.event_name }} — running unconditionally"
-            exit 0
-          fi
-          node scripts/ci/component-structure-changes.mjs \
-            "${{ github.event.pull_request.base.sha }}" \
-            "${{ github.event.pull_request.head.sha }}"
-
+  # RUNS ON EVERY PULL REQUEST. There is no path decision any more.
+  #
+  # This job used to sit behind a `changes` job that skipped it when a PR touched nothing
+  # near the components, so most PRs showed `Validate Component Structure` as SKIPPED. A
+  # skipped job is a check that did not run: the green next to it said nothing about the
+  # change. The suite costs about half a minute, so the saving never paid for the
+  # ambiguity. Pinned by scripts/__tests__/component-structure-requirable.test.js.
   validate:
     name: Validate Component Structure
     runs-on: ubuntu-latest
     # Cap: observed max 0.5 min. Uncapped, a hung job runs to the 360-minute default (#1119).
     timeout-minutes: 10
-    needs: changes
-    if: needs.changes.outputs.run == 'true'
 
     steps:
       - name: Checkout code
@@ -139,29 +118,24 @@ jobs:
           fi
 
   # The always-reporting aggregate. THIS is the context to require, not `validate` —
-  # this one reports on every PR, including those that skip the suite.
+  # this one reports even when the suite was cancelled or never started.
   result:
     name: Component Structure result
     runs-on: ubuntu-latest
     # Cap: aggregate only; observed max 0.1 min. Uncapped, a hung job runs to the 360-minute default (#1119).
     timeout-minutes: 5
-    needs: [changes, validate]
+    needs: [validate]
     if: always()
     steps:
       - name: Verdict
         run: |
           set -euo pipefail
-          RAN="${{ needs.changes.outputs.run }}"
           RESULT="${{ needs.validate.result }}"
-          echo "  changes.run=$RAN  validate.result=$RESULT"
+          echo "  validate.result=$RESULT"
 
-          if [ "$RAN" != "true" ]; then
-            echo "  no component-relevant paths changed — suite skipped, reporting green"
-            exit 0
-          fi
-
-          # `cancelled` is NOT a pass: a cancelled run observed nothing, and calling that
-          # green is the #396 shape this whole issue is about.
+          # Only `success` is a pass. `skipped` and `cancelled` both mean the suite
+          # observed nothing, and calling that green is the #396 shape this whole issue
+          # is about.
           case "$RESULT" in
             success) echo "  component structure validated"; exit 0 ;;
             *) echo "  validation did not pass (result=$RESULT)"; exit 1 ;;

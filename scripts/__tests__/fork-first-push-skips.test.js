@@ -119,12 +119,12 @@ describe('a fresh fork skips what it has not configured (#985)', () => {
     const src = () => body('auth-config-drift.yml');
 
     it('the preflight publishes an output, because a secret cannot be read in a job-level if:', () => {
-      const changes = job(src(), 'changes');
+      const preflightJob = job(src(), 'preflight');
       assert.match(
-        changes,
+        preflightJob,
         /configured:\s*\$\{\{\s*steps\.configured\.outputs\.configured\s*\}\}/
       );
-      const preflight = step(changes, 'Is a Supabase project configured?');
+      const preflight = step(preflightJob, 'Is a Supabase project configured?');
       assert.match(
         preflight,
         /SUPABASE_ACCESS_TOKEN:\s*\$\{\{\s*secrets\.SUPABASE_ACCESS_TOKEN/
@@ -138,13 +138,13 @@ describe('a fresh fork skips what it has not configured (#985)', () => {
     it('the drift job runs only when a project is configured', () => {
       assert.match(
         job(src(), 'drift'),
-        /needs\.changes\.outputs\.configured\s*==\s*'true'/
+        /needs\.preflight\.outputs\.configured\s*==\s*'true'/
       );
     });
 
     it('half-configured FAILS rather than skipping', () => {
       const preflight = step(
-        job(src(), 'changes'),
+        job(src(), 'preflight'),
         'Is a Supabase project configured?'
       );
       assert.match(preflight, /exit 1/, 'the half-configured branch must fail');
@@ -158,7 +158,7 @@ describe('a fresh fork skips what it has not configured (#985)', () => {
       assert.match(result, /CONFIGURED.*!=.*true/s);
       assert.match(
         result,
-        /needs\.changes\.result\s*\}\}"\s*!=\s*"success"/,
+        /needs\.preflight\.result\s*\}\}"\s*!=\s*"success"/,
         'a failed preflight must not be laundered into green by the skip branch'
       );
     });
