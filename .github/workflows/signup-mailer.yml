@@ -25,8 +25,8 @@ name: Signup Mailer E2E
 # This suite is the only coverage of a REAL form signup against a real mailbox (#288);
 # it going red without blocking anything is exactly the #572 defect.
 #
-# The `changes` job below gates the 25-minute run on the same paths the filter named, so
-# an unrelated PR costs one trivial job rather than a full local stack. Pinned by
+# Nor is there any filtering inside the workflow: the suite runs on every pull request, so
+# every PR shows a real pass rather than a skip. Pinned by
 # scripts/__tests__/signup-mailer-requirable.test.js.
 on:
   push:
@@ -41,36 +41,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
-    name: Does this change need the signup mailer suite?
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      run: ${{ steps.decide.outputs.run }}
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Decide
-        id: decide
-        run: |
-          set -euo pipefail
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-            echo "  ${{ github.event_name }} — running unconditionally"
-            exit 0
-          fi
-          node scripts/ci/signup-mailer-changes.mjs \
-            "${{ github.event.pull_request.base.sha }}" \
-            "${{ github.event.pull_request.head.sha }}"
-
+  # RUNS ON EVERY PULL REQUEST. There is no path decision any more.
+  #
+  # This job used to sit behind a `changes` job that skipped it when a PR touched nothing
+  # signup-related, so most PRs showed it as SKIPPED: a job that did not run, next to a
+  # green tick that says nothing about the change. Nothing here reaches outside the runner:
+  # the mailbox is a local Mailpit, the backend an ephemeral local Supabase on the public
+  # demo keys, and the CAPTCHA keys are Cloudflare's published test values. No real mail is
+  # sent, no quota is spent. Pinned by scripts/__tests__/signup-mailer-requirable.test.js.
   signup-mailer:
     name: Real-form signup + email confirmation (local Mailpit)
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    needs: changes
-    if: needs.changes.outputs.run == 'true'
 
     steps:
       - name: Checkout code
@@ -246,22 +228,17 @@ jobs:
     runs-on: ubuntu-latest
     # Cap: aggregate only; observed max 0.1 min. Uncapped, a hung job runs to the 360-minute default (#1119).
     timeout-minutes: 5
-    needs: [changes, signup-mailer]
+    needs: [signup-mailer]
     if: always()
     steps:
       - name: Verdict
         run: |
           set -euo pipefail
-          RAN="${{ needs.changes.outputs.run }}"
           RESULT="${{ needs.signup-mailer.result }}"
-          echo "  changes.run=$RAN  signup-mailer.result=$RESULT"
+          echo "  signup-mailer.result=$RESULT"
 
-          if [ "$RAN" != "true" ]; then
-            echo "  no signup-relevant paths changed — suite skipped, reporting green"
-            exit 0
-          fi
-
-          # A cancelled run observed nothing. This suite is cancel-in-progress on its own
+          # Only `success` is a pass. A skipped run observed nothing, and neither did a
+          # cancelled one. This suite is cancel-in-progress on its own
           # ref, so a rapid second push cancels the first — and calling that green would
           # mean a fast-follow push silently drops the only real-signup coverage there is.
           case "$RESULT" in

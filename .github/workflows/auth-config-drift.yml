@@ -9,9 +9,8 @@
 # Secrets already exist in the repo (SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF).
 # Read-only — it never PATCHes (that needs --apply, which this does not pass).
 #
-# Runs: on push to main (after a merge), on PRs that touch the auth config or this
-# workflow (validates + gives PR-time feedback), daily (catches OUT-OF-BAND prod
-# changes with no repo change), and on demand.
+# Runs: on push to main (after a merge), on every pull request (PR-time feedback),
+# daily (catches OUT-OF-BAND prod changes with no repo change), and on demand.
 
 name: Auth Config Drift
 
@@ -20,10 +19,14 @@ name: Auth Config Drift
 # A `paths:` filter means this reports NOTHING on an unrelated PR — and a required check
 # that never reports is PENDING FOREVER, not skipped, so it could never be required.
 #
-# This does NOT increase the number of live Supabase calls. The `changes` job below gates
-# the drift job on exactly the paths the filter used to name, so an unrelated PR still
-# makes no API call; only the trivial aggregate runs. Pinned by
-# scripts/__tests__/auth-config-drift-requirable.test.js.
+# NOR ANY PATH DECISION INSIDE THE WORKFLOW. The drift check runs on every pull request.
+# It used to sit behind a `changes` job that skipped it when a PR touched nothing
+# auth-related, so most PRs showed it as SKIPPED: a job that did not run, next to a green
+# tick that says nothing about the change. The call is one read-only Management API
+# request per run, cancelled when a newer push arrives on the same ref, so there is no
+# rate or cost reason to skip it. The two skips that remain are named in the `drift` job:
+# a fork with no Supabase project, and a fork PR, where GitHub withholds secrets.
+# Pinned by scripts/__tests__/auth-config-drift-requirable.test.js.
 on:
   push:
     branches: [main]
@@ -38,33 +41,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
-    name: Does this change need a drift check?
+  preflight:
+    name: Is a Supabase project configured?
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      run: ${{ steps.decide.outputs.run }}
       configured: ${{ steps.configured.outputs.configured }}
     steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-
-      - name: Decide
-        id: decide
-        run: |
-          set -euo pipefail
-          if [ "${{ github.event_name }}" != "pull_request" ]; then
-            # push, schedule and dispatch always run — the daily cron is the whole point
-            # of this workflow, and main is the reference state.
-            echo "run=true" >> "$GITHUB_OUTPUT"
-            echo "  ${{ github.event_name }} — running unconditionally"
-            exit 0
-          fi
-          node scripts/ci/auth-config-drift-changes.mjs \
-            "${{ github.event.pull_request.base.sha }}" \
-            "${{ github.event.pull_request.head.sha }}"
-
       # IS THERE A PROJECT TO INTERROGATE? (#985)
       #
       # A fresh fork has no Supabase project, so this workflow asked a live API about
@@ -103,11 +86,13 @@ jobs:
           exit 1
 
   drift:
-    needs: changes
+    needs: preflight
     name: Live auth config matches the repo
-    # Secrets aren't passed to fork PRs — skip there instead of failing on a
-    # missing token (same-repo PRs, push, schedule, dispatch all still run).
-    if: ${{ needs.changes.outputs.run == 'true' && needs.changes.outputs.configured == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    # THE ONLY TWO SKIPS, both unavoidable and both named: a fork with no Supabase project
+    # (`configured` is false, so there is nothing to compare against), and a fork PR,
+    # where GitHub withholds secrets and the job could not authenticate. Same-repo PRs,
+    # push, schedule and dispatch all run.
+    if: ${{ needs.preflight.outputs.configured == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -163,27 +148,21 @@ jobs:
     runs-on: ubuntu-latest
     # Cap: aggregate only; observed max 0.1 min. Uncapped, a hung job runs to the 360-minute default (#1119).
     timeout-minutes: 5
-    needs: [changes, drift]
+    needs: [preflight, drift]
     if: always()
     steps:
       - name: Verdict
         run: |
           set -euo pipefail
-          RAN="${{ needs.changes.outputs.run }}"
-          CONFIGURED="${{ needs.changes.outputs.configured }}"
+          CONFIGURED="${{ needs.preflight.outputs.configured }}"
           RESULT="${{ needs.drift.result }}"
-          echo "  changes.run=$RAN  changes.configured=$CONFIGURED  drift.result=$RESULT"
+          echo "  preflight.configured=$CONFIGURED  drift.result=$RESULT"
 
-          # The `changes` job itself fails on a half-configured project, and that
+          # The preflight itself fails on a half-configured project, and that
           # failure must not be laundered into green by the skip branches below.
-          if [ "${{ needs.changes.result }}" != "success" ]; then
-            echo "  the preflight did not pass (result=${{ needs.changes.result }})"
+          if [ "${{ needs.preflight.result }}" != "success" ]; then
+            echo "  the preflight did not pass (result=${{ needs.preflight.result }})"
             exit 1
-          fi
-
-          if [ "$RAN" != "true" ]; then
-            echo "  no auth-config paths changed — drift check skipped, reporting green"
-            exit 0
           fi
 
           if [ "$CONFIGURED" != "true" ]; then
