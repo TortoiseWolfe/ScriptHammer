@@ -32,7 +32,7 @@ describe('group-key fixture round-trip (real crypto)', () => {
   it('creator-wrapped group key unwraps for a member and decrypts a message', async () => {
     const kds = new KeyDerivationService();
     const gks = new GroupKeyService();
-    const password = 'TestPassword123!';
+    const password = 'unit-test-passphrase';
 
     // Two members: creator C (= group_keys.created_by) and member B. The fixture
     // stores each user's salt as base64; re-derive from the base64 form to
@@ -100,7 +100,7 @@ describe('group-key fixture round-trip (real crypto)', () => {
   it('#243: group history survives the creator rotating their personal keys', async () => {
     const kds = new KeyDerivationService();
     const gks = new GroupKeyService();
-    const password = 'TestPassword123!';
+    const password = 'unit-test-passphrase';
 
     const creatorSalt = kds.generateSalt();
     const memberSalt = kds.generateSalt();

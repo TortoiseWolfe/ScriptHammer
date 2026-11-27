@@ -7,6 +7,7 @@
  * @module tests/fixtures/test-users
  */
 
+import { randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { assertRlsTargetApproved } from './rls-target';
@@ -84,11 +85,11 @@ export interface TestUser {
 export const TEST_USERS = {
   userA: {
     email: 'test-user-a@scripthammer.test',
-    password: 'TestPassword123!',
+    password: `Aa1!${randomUUID()}`,
   },
   userB: {
     email: 'test-user-b@scripthammer.test',
-    password: 'TestPassword456!',
+    password: `Aa1!${randomUUID()}`,
   },
   admin: {
     email: 'test-admin@scripthammer.test',

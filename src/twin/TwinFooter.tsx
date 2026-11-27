@@ -1,5 +1,5 @@
 import React from 'react';
-import { FOOTER_LINKS } from '@/config/footer-links';
+import { FOOTER_LINKS, SOURCE_LINK } from '@/config/footer-links';
 
 /**
  * The twin routes' compact footer — a glass strip pinned over the scene (#301).
@@ -54,6 +54,14 @@ export function TwinFooter() {
           {link.label}
         </a>
       ))}
+      <a
+        href={SOURCE_LINK.href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="link link-hover inline-flex min-h-11 items-center px-1 text-xs font-medium"
+      >
+        {SOURCE_LINK.shortLabel}
+      </a>
     </footer>
   );
 }

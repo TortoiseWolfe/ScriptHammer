@@ -50,7 +50,9 @@ async function listUsers() {
   console.log('\n');
   console.log('🔑 TEST CREDENTIALS (from seed data):');
   console.log('   Email: test@example.com');
-  console.log('   Password: TestPassword123!');
+  console.log(
+    '   Password: the value of TEST_USER_PRIMARY_PASSWORD in your .env'
+  );
   console.log(
     '\n   Note: If testuser2 needs different credentials, they may need to be reset.'
   );

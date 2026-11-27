@@ -6,6 +6,7 @@ import PWAInstall from '@/components/PWAInstall';
 import { resetInstallPromptForTests } from '@/lib/pwa/install-prompt';
 import { THEMES } from '@/config/themes';
 import { CONSENT_STORAGE_KEY } from '@/config/accessibility-tokens';
+import { HOUSE_BAND_PRESENT } from '@/extensions/house-band';
 
 const { signOut, checkIsAdmin } = vi.hoisted(() => ({
   signOut: vi.fn(),
@@ -148,7 +149,7 @@ describe('GlobalNav destinations', () => {
       'Game',
       'Payments',
       'Schedule',
-      'Band',
+      ...(HOUSE_BAND_PRESENT ? ['Band'] : []),
     ]) {
       expect(screen.getByRole('menuitem', { name: label })).toBeInTheDocument();
     }
@@ -166,14 +167,17 @@ describe('GlobalNav destinations', () => {
     expect(atlas.getAttribute('href')).toContain('/chatt');
   });
 
-  it('opens /band with a FULL document load, so no tracker survives into it (#1408)', async () => {
-    const u = userEvent.setup();
-    render(<GlobalNav />);
-    await u.click(screen.getByRole('button', { name: 'Demos' }));
-    const band = screen.getByRole('menuitem', { name: 'Band' });
-    expect(band.tagName).toBe('A');
-    expect(band.getAttribute('href')).toContain('/band');
-  });
+  it.runIf(HOUSE_BAND_PRESENT)(
+    'opens /band with a FULL document load, so no tracker survives into it (#1408)',
+    async () => {
+      const u = userEvent.setup();
+      render(<GlobalNav />);
+      await u.click(screen.getByRole('button', { name: 'Demos' }));
+      const band = screen.getByRole('menuitem', { name: 'Band' });
+      expect(band.tagName).toBe('A');
+      expect(band.getAttribute('href')).toContain('/band');
+    }
+  );
 });
 
 describe('GlobalNav active state', () => {
