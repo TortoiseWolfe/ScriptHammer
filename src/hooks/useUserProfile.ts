@@ -5,7 +5,7 @@
  * Fetches current user's profile from user_profiles table
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createLogger } from '@/lib/logger';
 import { useAuth } from '@/contexts/AuthContext';
 import { createClient } from '@/lib/supabase/client';
@@ -33,15 +33,26 @@ export function useUserProfile(): UseUserProfileReturn {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  // The user id whose profile fetch has finished. See the return value below.
+  const [settledFor, setSettledFor] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // The user id the hook is serving right now. A fetch that finishes after the
+  // user changed must not write its result over the new user's state.
+  const currentUserId = useRef<string | null>(null);
+  currentUserId.current = user?.id ?? null;
 
   const fetchProfile = useCallback(async () => {
     if (!user?.id) {
       setProfile(null);
       setLoading(false);
+      // Forget the last user, so signing back in as the same user is treated as
+      // a fresh load and not as "already fetched, no profile row".
+      setSettledFor(null);
       return;
     }
 
+    const fetchedFor = user.id;
     setLoading(true);
     setError(null);
 
@@ -58,6 +69,8 @@ export function useUserProfile(): UseUserProfileReturn {
         .eq('id', user.id)
         .single();
 
+      if (currentUserId.current !== fetchedFor) return;
+
       if (fetchError) {
         // PGRST116 means no rows found - not an error for new users
         if (fetchError.code === 'PGRST116') {
@@ -71,9 +84,13 @@ export function useUserProfile(): UseUserProfileReturn {
       }
     } catch (err) {
       logger.error('Error in useUserProfile', { error: err });
-      setError('Failed to load profile');
+      if (currentUserId.current === fetchedFor)
+        setError('Failed to load profile');
     } finally {
-      setLoading(false);
+      if (currentUserId.current === fetchedFor) {
+        setLoading(false);
+        setSettledFor(fetchedFor);
+      }
     }
   }, [user?.id]);
 
@@ -81,9 +98,16 @@ export function useUserProfile(): UseUserProfileReturn {
     fetchProfile();
   }, [fetchProfile]);
 
+  // `loading` is only set to true inside the effect, which runs AFTER the render
+  // where `user` first appears. That render has loading false and no profile,
+  // which reads as "this user has no profile row", so callers briefly fell back
+  // to the account's own avatar copy and asked storage for a file that may be
+  // gone (#1514). Treat a user whose fetch has not finished as still loading.
+  const awaitingFirstFetch = Boolean(user?.id) && settledFor !== user?.id;
+
   return {
     profile,
-    loading,
+    loading: loading || awaitingFirstFetch,
     error,
     refetch: fetchProfile,
   };
