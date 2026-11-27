@@ -21,6 +21,7 @@
 
 'use strict';
 
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
@@ -80,6 +81,35 @@ function overlay(baseLines, fragmentLines) {
   return out;
 }
 
+/**
+ * The seeded test users need a password, and no password may live in a tracked
+ * file (#1246). So `.env.local-supabase` carries none: this fills any missing or
+ * blank TEST_USER_*_PASSWORD in the gitignored `.env` with a random value, once.
+ * A value that is already there is left alone, so signing in keeps working across
+ * switches. The values are never printed.
+ */
+const TEST_PASSWORD_KEYS = [
+  'TEST_USER_PRIMARY_PASSWORD',
+  'TEST_USER_SECONDARY_PASSWORD',
+  'TEST_USER_TERTIARY_PASSWORD',
+];
+
+function ensureTestPasswords(lines) {
+  const out = [...lines];
+  const filled = [];
+  for (const key of TEST_PASSWORD_KEYS) {
+    const re = new RegExp(`^${key}=(.*)$`);
+    const idx = out.findIndex((l) => re.test(l));
+    const current = idx === -1 ? '' : re.exec(out[idx])[1].trim();
+    if (current) continue;
+    const value = crypto.randomBytes(24).toString('base64url');
+    if (idx === -1) out.push(`${key}=${value}`);
+    else out[idx] = `${key}=${value}`;
+    filled.push(key);
+  }
+  return { lines: out, filled };
+}
+
 function switchToLocal() {
   if (!fs.existsSync(ENV)) die('.env not found — nothing to switch.');
   if (!fs.existsSync(ENV_LOCAL)) die('.env.local-supabase not found.');
@@ -96,8 +126,14 @@ function switchToLocal() {
     );
   }
 
-  const merged = overlay(readLines(ENV), readLines(ENV_LOCAL));
+  const overlaid = overlay(readLines(ENV), readLines(ENV_LOCAL));
+  const { lines: merged, filled } = ensureTestPasswords(overlaid);
   fs.writeFileSync(ENV, merged.join('\n'));
+  if (filled.length) {
+    console.log(
+      `✓ Generated random values in .env for: ${filled.join(', ')} (never printed).`
+    );
+  }
   console.log('✓ .env now points at LOCAL Supabase (http://localhost:54321).');
   console.log(
     '  Machine vars (GH_TOKEN, git identity, author info) preserved.'

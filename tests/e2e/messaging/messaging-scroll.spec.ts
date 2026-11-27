@@ -1,3 +1,4 @@
+import { requireEnv } from '../../utils/require-env';
 import { test, expect, Page } from '@playwright/test';
 import { settleFrames } from '../utils/settle';
 import {
@@ -9,8 +10,7 @@ import {
 } from '../utils/test-user-factory';
 
 // Test user credentials
-const TEST_USER_PASSWORD =
-  process.env.TEST_USER_PRIMARY_PASSWORD || 'TestPassword123!';
+const TEST_USER_PASSWORD = requireEnv('TEST_USER_PRIMARY_PASSWORD');
 const PRIMARY_EMAIL = process.env.TEST_USER_PRIMARY_EMAIL;
 
 // Issue #109: T007-T008 needs a thread tall enough to scroll, but the shared

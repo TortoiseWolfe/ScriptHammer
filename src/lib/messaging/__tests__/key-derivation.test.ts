@@ -51,7 +51,7 @@ describe('KeyDerivationService', () => {
 
   describe('deriveKeyPair', () => {
     it('should derive same key pair from same password and salt (determinism)', async () => {
-      const password = 'TestPassword123!';
+      const password = 'unit-test-passphrase';
       const salt = service.generateSalt();
 
       const keyPair1 = await service.deriveKeyPair({ password, salt });
@@ -88,7 +88,7 @@ describe('KeyDerivationService', () => {
     });
 
     it('should derive valid P-256 ECDH key pair', async () => {
-      const password = 'TestPassword123!';
+      const password = 'unit-test-passphrase';
       const salt = service.generateSalt();
 
       const keyPair = await service.deriveKeyPair({ password, salt });
@@ -111,7 +111,7 @@ describe('KeyDerivationService', () => {
     });
 
     it('should produce non-extractable private key for XSS resistance', async () => {
-      const password = 'TestPassword123!';
+      const password = 'unit-test-passphrase';
       const salt = service.generateSalt();
 
       const keyPair = await service.deriveKeyPair({ password, salt });
@@ -126,7 +126,7 @@ describe('KeyDerivationService', () => {
     });
 
     it('should return base64-encoded salt in result', async () => {
-      const password = 'TestPassword123!';
+      const password = 'unit-test-passphrase';
       const salt = service.generateSalt();
 
       const keyPair = await service.deriveKeyPair({ password, salt });
@@ -168,7 +168,7 @@ describe('KeyDerivationService', () => {
       // asserted that the class existed.
       const error = await service
         .deriveKeyPair({
-          password: 'TestPassword123!',
+          password: 'unit-test-passphrase',
           salt: new Uint8Array(4),
         })
         .catch((e: unknown) => e);
@@ -185,7 +185,7 @@ describe('KeyDerivationService', () => {
 
   describe('verifyPublicKey', () => {
     it('should return true for matching public keys', async () => {
-      const password = 'TestPassword123!';
+      const password = 'unit-test-passphrase';
       const salt = service.generateSalt();
 
       const keyPair = await service.deriveKeyPair({ password, salt });
@@ -219,7 +219,7 @@ describe('KeyDerivationService', () => {
     });
 
     it('should compare x and y coordinates correctly', async () => {
-      const password = 'TestPassword123!';
+      const password = 'unit-test-passphrase';
       const salt = service.generateSalt();
 
       const keyPair = await service.deriveKeyPair({ password, salt });

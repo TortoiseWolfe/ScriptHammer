@@ -260,7 +260,7 @@ docker compose exec scripthammer pnpm run dev
 **Step 3:** Create test account
 
 - Enter email: `test@example.com`
-- Enter password: `TestPassword123!`
+- Enter password: `$TEST_USER_PRIMARY_PASSWORD`
 - Click **"Sign Up"**
 
 **Step 4:** Check email for verification

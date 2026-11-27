@@ -17,6 +17,7 @@
  * the signup POST is intercepted and fulfilled with a stub response.
  */
 
+import { randomUUID } from 'node:crypto';
 import { test, expect } from '@playwright/test';
 import { dismissCookieBanner } from '../utils/test-user-factory';
 
@@ -65,9 +66,11 @@ test.describe('basePath-aware signup redirect (#157)', () => {
 
     // Drive the sign-up form (fields: #email, #password, #confirm-password).
     const email = `basepath-smoke-${Date.now()}@example.com`;
+    // A throwaway account that is never created for real: any valid password will do.
+    const signupPassword = `Aa1!${randomUUID()}`;
     await page.locator('#email').fill(email);
-    await page.locator('#password').fill('TestPassword123!');
-    await page.locator('#confirm-password').fill('TestPassword123!');
+    await page.locator('#password').fill(signupPassword);
+    await page.locator('#confirm-password').fill(signupPassword);
     await page.getByRole('button', { name: /sign up/i }).click();
 
     // Wait for the intercepted POST to have fired.
