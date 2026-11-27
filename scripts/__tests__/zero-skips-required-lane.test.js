@@ -50,13 +50,18 @@ function stripSlashComments(text) {
 const ALLOWED_INVERTS = ['@local-only', '@local-captcha'];
 
 /**
- * Every `--grep` / `--grep-invert` on a command line, in either spelling Playwright
- * accepts (`--grep=X` and `--grep X`), with surrounding quotes removed from the value.
+ * Every `--grep` / `--grep-invert` (and the short `-g` / `-gv`) on a command line, in
+ * both spellings Playwright accepts (`--grep=X` and `--grep X`), with surrounding
+ * quotes removed from the value.
  */
 function parseGreps(text) {
-  return [...text.matchAll(/--grep(-invert)?(?:=|[ \t]+)(\S+)/g)].map((m) => ({
-    invert: Boolean(m[1]),
-    value: m[2].replace(/^(['"])(.*)\1$/, '$2'),
+  return [
+    ...text.matchAll(
+      /(?<![\w-])(?:--grep(-invert)?|-g(v)?)(?:=|[ \t]+)(\S+)/g
+    ),
+  ].map((m) => ({
+    invert: Boolean(m[1] || m[2]),
+    value: m[3].replace(/^(['"])(.*)\1$/, '$2'),
   }));
 }
 
@@ -144,6 +149,15 @@ describe('zero skipped tests on the required E2E lane (#1464)', () => {
     // other invert, `@local-captcha`, is the unsharded sign-up smoke step (no --shard,
     // one spec file), so it cannot leave a shard empty; it stays allowed by name.
     const hosted = stripHashComments(read('.github', 'workflows', 'e2e.yml'));
+    // Floor: the parser must find what it asserts about. If it saw nothing, every
+    // check below would pass over an empty list.
+    const found = parseGreps(hosted).map((g) => g.value);
+    for (const tag of ALLOWED_INVERTS) {
+      assert.ok(
+        found.includes(tag),
+        `parser found no ${tag} invert in e2e.yml; the grep rule is asserting about nothing`
+      );
+    }
     assert.deepStrictEqual(
       parseGreps(hosted).filter((g) => !g.invert),
       [],
@@ -163,6 +177,10 @@ describe('zero skipped tests on the required E2E lane (#1464)', () => {
     ]);
     assert.deepStrictEqual(parseGreps('--grep @x \\\n'), [
       { invert: false, value: '@x' },
+    ]);
+    assert.deepStrictEqual(parseGreps('-g @x -gv @y --foo-g z'), [
+      { invert: false, value: '@x' },
+      { invert: true, value: '@y' },
     ]);
     for (const text of [
       "--grep-invert='@other' \\\n",
