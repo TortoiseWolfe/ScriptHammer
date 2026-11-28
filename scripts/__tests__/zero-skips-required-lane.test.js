@@ -10,8 +10,8 @@
  *      its registered firefox/webkit skips, so the check must be mode-scoped.
  *   2. `playwright.config.ts` — `LIVE_PROVIDER_GLOBS` EXCLUDES the live-Stripe spec from
  *      every project unless `LIVE_PROVIDER_TESTS` is set. Excluded, not skipped, and not
- *      tag + grep: `e2e.yml` takes no positive --grep, and its one --grep-invert is
- *      `@local-only` (see hosted-tag-lanes.test.js).
+ *      tag + grep: `e2e.yml` takes no positive --grep, and its --grep-invert values are
+ *      `@local-only` and `@local-captcha` (see hosted-tag-lanes.test.js).
  *   3. `scripts/e2e-live-acceptance.sh` — sets `LIVE_PROVIDER_TESTS=1`, otherwise the live
  *      spec could not be run by anyone.
  *   4. `tests/e2e/payment/*` — no empty `test.skip(...)` stub bodies come back.
@@ -44,6 +44,25 @@ function stripHashComments(text) {
 /** Drop `//` line comments so a commented-out spread cannot satisfy a match. */
 function stripSlashComments(text) {
   return text.replace(/\/\/.*$/gm, '');
+}
+
+/** The only `--grep-invert` values e2e.yml may carry (see the grep test below). */
+const ALLOWED_INVERTS = ['@local-only', '@local-captcha'];
+
+/**
+ * Every `--grep` / `--grep-invert` (and the short `-g` / `-gv`) on a command line, in
+ * both spellings Playwright accepts (`--grep=X` and `--grep X`), with surrounding
+ * quotes removed from the value.
+ */
+function parseGreps(text) {
+  return [
+    ...text.matchAll(
+      /(?<![\w-])(?:--grep(-invert)?|-g(v)?)(?:=|[ \t]+)(\S+)/g
+    ),
+  ].map((m) => ({
+    invert: Boolean(m[1] || m[2]),
+    value: m[3].replace(/^(['"])(.*)\1$/, '$2'),
+  }));
 }
 
 /** True when the aggregate fails a chromium-mode run that has skipped tests. */
@@ -116,7 +135,7 @@ describe('zero skipped tests on the required E2E lane (#1464)', () => {
     );
   });
 
-  it('e2e.yml has no positive --grep, and its only --grep-invert is @local-only (#1510)', () => {
+  it('e2e.yml has no positive --grep, and its only --grep-invert values are @local-only and @local-captcha (#1510)', () => {
     // A positive --grep can leave a shard with nothing to run, and Playwright hides
     // "No tests found" under --shard, so that shard would be an empty green tick.
     // --grep-invert='@local-only' can only REMOVE the 30 tagged tests, which are spread
@@ -124,31 +143,62 @@ describe('zero skipped tests on the required E2E lane (#1464)', () => {
     // cannot empty one. Two of the 30 sit inside session-persistence.spec.ts next to
     // tests that must keep running, so a config-level file exclusion (as for the
     // live-Stripe spec above) cannot express them. Any other grep still fails here.
+    //
+    // Playwright takes both `--grep=X` and `--grep X`, so the parser reads both. The
+    // space form used to slip past a `=`-only regex (#1513 review nit). The one
+    // other invert, `@local-captcha`, is the unsharded sign-up smoke step (no --shard,
+    // one spec file), so it cannot leave a shard empty; it stays allowed by name.
     const hosted = stripHashComments(read('.github', 'workflows', 'e2e.yml'));
-    assert.ok(
-      !/--grep=/.test(hosted),
+    // Floor: the parser must find what it asserts about. If it saw nothing, every
+    // check below would pass over an empty list.
+    const found = parseGreps(hosted).map((g) => g.value);
+    for (const tag of ALLOWED_INVERTS) {
+      assert.ok(
+        found.includes(tag),
+        `parser found no ${tag} invert in e2e.yml; the grep rule is asserting about nothing`
+      );
+    }
+    assert.deepStrictEqual(
+      parseGreps(hosted).filter((g) => !g.invert),
+      [],
       'e2e.yml gained a positive --grep; Playwright hides "No tests found" under --shard'
     );
-    const inverts = [...hosted.matchAll(/--grep-invert=(\S+)/g)].map(
-      (m) => m[1]
-    );
-    for (const value of inverts) {
-      assert.strictEqual(
-        value,
-        "'@local-only'",
-        `e2e.yml has --grep-invert=${value}; only '@local-only' (#1510) is allowed`
+    for (const { value } of parseGreps(hosted)) {
+      assert.ok(
+        ALLOWED_INVERTS.includes(value),
+        `e2e.yml has --grep-invert ${value}; only ${ALLOWED_INVERTS.join(' and ')} are allowed`
       );
     }
   });
 
-  it('the grep rule can fail — a positive grep and a foreign invert are both rejected', () => {
-    const positive = "--grep='@x' \\\n";
-    const foreign = "--grep-invert='@other' \\\n";
-    assert.ok(/--grep=/.test(positive));
-    const value = [...foreign.matchAll(/--grep-invert=(\S+)/g)].map(
-      (m) => m[1]
-    )[0];
-    assert.notStrictEqual(value, "'@local-only'");
+  it('the grep rule can fail — positive and foreign greps are rejected in both spellings', () => {
+    assert.deepStrictEqual(parseGreps("--grep='@x' \\\n"), [
+      { invert: false, value: '@x' },
+    ]);
+    assert.deepStrictEqual(parseGreps('--grep @x \\\n'), [
+      { invert: false, value: '@x' },
+    ]);
+    assert.deepStrictEqual(parseGreps('-g @x -gv @y --foo-g z'), [
+      { invert: false, value: '@x' },
+      { invert: true, value: '@y' },
+    ]);
+    for (const text of [
+      "--grep-invert='@other' \\\n",
+      '--grep-invert @other \\\n',
+    ]) {
+      const [g] = parseGreps(text);
+      assert.strictEqual(g.invert, true);
+      assert.ok(
+        !ALLOWED_INVERTS.includes(g.value),
+        `${text.trim()} was not treated as foreign`
+      );
+    }
+    assert.deepStrictEqual(
+      parseGreps("--grep-invert='@local-only' --grep-invert @local-captcha").map(
+        (g) => g.value
+      ),
+      ['@local-only', '@local-captcha']
+    );
   });
 
   it('no empty skipped stub is left in the payment specs', () => {
